@@ -57,7 +57,7 @@ fun TopBar(){
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = Coloar.Cyan)
+            .background(color = Color.Cyan)
             .height(80.dp)
     ) {
         Row{
