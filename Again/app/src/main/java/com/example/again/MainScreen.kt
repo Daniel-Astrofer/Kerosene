@@ -1,6 +1,7 @@
 package com.example.again
 
 import android.annotation.SuppressLint
+import android.net.Credentials
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,14 +27,23 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.Navigator
+import androidx.navigation.compose.rememberNavController
+
+
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun Main(navController:NavController){
-    Button(onClick = {navController.navigate("second")}) { Text("Login") }
+    Button(onClick = {navController.navigate("main")}) { Text("Login") }
     Scaffold(
-        topBar = {TopBar()},
+        topBar = {TopBar(navController)},
         bottomBar = { BottomBar() } ,
         modifier = Modifier
             .padding(top= 25.dp)
@@ -51,9 +61,10 @@ fun Main(navController:NavController){
 
 
 }
-//hello GITHUBsadasdaadaasdadsadadadada
+
 @Composable
-fun TopBar(){
+fun TopBar(navController: NavController,
+           viewModel: oi = viewModel()){
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -61,7 +72,7 @@ fun TopBar(){
             .height(80.dp)
     ) {
         Row{
-            IconButton(onClick = {}) {
+            IconButton(onClick = { navController.navigate("main") }) {
                 Icon(Icons.TwoTone.AccountBox, contentDescription = "Perfil")
             }
 
@@ -70,7 +81,8 @@ fun TopBar(){
                 Icon(Icons.Default.Face, contentDescription = "Face")
             }
         }
-        Text("Olá, Astrofer")
+        Text("Olá,${viewModel.name}")
+        Text(viewModel.name)
     }
 }
 
@@ -112,7 +124,7 @@ fun BoxOne(){
     Column(modifier = Modifier
         .fillMaxWidth()
         .height(200.dp)
-        .background(color= Color.Green),
+        .background(color = Color.Green),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally)
 
@@ -126,7 +138,7 @@ fun BoxTwo(){
 
     Column(modifier = Modifier
         .fillMaxWidth()
-        .background(color= Color.Yellow)
+        .background(color = Color.Yellow)
         .height(300.dp),
         horizontalAlignment = Alignment.CenterHorizontally)
 
