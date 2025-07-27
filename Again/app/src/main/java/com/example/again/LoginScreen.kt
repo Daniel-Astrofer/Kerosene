@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Arrangement
 
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -48,7 +50,6 @@ fun LoginScreen(navController: NavController){
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         BoxLogin(navController)
-
     }
 
 
@@ -57,13 +58,9 @@ fun LoginScreen(navController: NavController){
 
 }
 @Composable
-fun BoxLogin(navController: NavController,
-             viewModel: oi = viewModel()){
+fun BoxLogin(navController: NavController){
     var rememberText by remember{mutableStateOf("")}
     var rememberPass by remember{mutableStateOf("")}
-
-
-
 
     Column(horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -73,12 +70,18 @@ fun BoxLogin(navController: NavController,
     ){
 
         Text("Login")
-        TextField(value= viewModel.name, onValueChange = { viewModel.set(it)},label = { Text("Email") })
+
+        TextField(value= rememberText , keyboardActions = KeyboardActions.Default, onValueChange = { rememberText = it },label = { Text("Email") })
+
+        Spacer(Modifier.padding(23.dp))
+
         TextField(value= rememberPass, onValueChange = { rememberPass = it },label = { Text("Senha") })
-        Text(viewModel.name)
+
+        if ( (Verify(rememberText,rememberPass)) == true ){Text("Perfeito")
+            Button(onClick = {navController.navigate("second")}) { Text("Entrar") }}
 
 
-        Button(onClick = {navController.navigate("second")}) { Text("Entrar") }
+
 
 
     }
