@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,10 +41,10 @@ import androidx.navigation.compose.rememberNavController
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun Main(navController:NavController){
+fun Main(navController:NavController,viewModel: oi = viewModel()){
     Button(onClick = {navController.navigate("main")}) { Text("Login") }
     Scaffold(
-        topBar = {TopBar(navController)},
+        topBar = {TopBar(navController, viewModel)},
         bottomBar = { BottomBar() } ,
         modifier = Modifier
             .padding(top= 25.dp)
@@ -65,6 +66,7 @@ fun Main(navController:NavController){
 @Composable
 fun TopBar(navController: NavController,
            viewModel: oi = viewModel()){
+    val nome by viewModel.name.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,8 +83,8 @@ fun TopBar(navController: NavController,
                 Icon(Icons.Default.Face, contentDescription = "Face")
             }
         }
-        Text("Olá,${viewModel.name}")
-        Text(viewModel.name)
+        Text("Olá,${nome}")
+
     }
 }
 

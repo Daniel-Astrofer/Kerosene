@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.implementation
+import java.lang.module.ModuleFinder.compose
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -54,6 +57,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.adaptive.android)
+
+
+
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

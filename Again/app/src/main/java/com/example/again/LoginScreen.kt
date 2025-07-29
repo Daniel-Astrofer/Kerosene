@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,14 +43,14 @@ import com.example.again.ui.theme.AgainTheme
 
 
 @Composable
-fun LoginScreen(navController: NavController){
+fun LoginScreen(navController: NavController, viewModel: oi = viewModel()){
 
     Column(modifier = Modifier
         .fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
-        BoxLogin(navController)
+        BoxLogin(navController,viewModel)
     }
 
 
@@ -58,9 +59,11 @@ fun LoginScreen(navController: NavController){
 
 }
 @Composable
-fun BoxLogin(navController: NavController){
+fun BoxLogin(navController: NavController, viewModel: oi = viewModel()){
     var rememberText by remember{mutableStateOf("")}
     var rememberPass by remember{mutableStateOf("")}
+    val nome  by viewModel.name.collectAsState()
+
 
     Column(horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -71,11 +74,12 @@ fun BoxLogin(navController: NavController){
 
         Text("Login")
 
-        TextField(value= rememberText , keyboardActions = KeyboardActions.Default, onValueChange = { rememberText = it },label = { Text("Email") })
+        TextField(value= rememberText , keyboardActions = KeyboardActions.Default, onValueChange = { rememberText = it
+            viewModel.set(rememberText)},label = { Text("Email") })
 
         Spacer(Modifier.padding(23.dp))
 
-        TextField(value= rememberPass, onValueChange = { rememberPass = it },label = { Text("Senha") })
+        TextField(value= rememberPass, onValueChange = { rememberPass = it},label = { Text("Senha") })
 
         if ( (Verify(rememberText,rememberPass)) == true ){Text("Perfeito")
             Button(onClick = {navController.navigate("second")}) { Text("Entrar") }}
