@@ -20,4 +20,24 @@ fun Verify(email:String,senha:String) : Boolean{
 }
 
 
+fun VerifyE(email:String) : Boolean{
+    val Regex = Regex("^[a-z0-9.]+@[a-z0-9]+\\.[a-z]+(\\.[a-z]+)?$", RegexOption.IGNORE_CASE)
+    val emailV = Regex.matches(email)
+     return emailV
+
+
+
+}
+fun VerifyP(pass:String) : Boolean {
+    val senhaRegex = Regex("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[$*.&@#])[0-9a-zA-Z$*.&@#]{8,}$")
+    val passV = senhaRegex.matches(pass)
+    return passV
+}
+
+
+
+
+
+
+
 

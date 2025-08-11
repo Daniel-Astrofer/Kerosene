@@ -14,6 +14,6 @@
 
         NavHost(navController, startDestination = "main"){
             composable("main"){ LoginScreen(navController) }
-            composable("second"){ Main(navController) }
+            composable("second"){ Screen(navController) }
         }
     }
