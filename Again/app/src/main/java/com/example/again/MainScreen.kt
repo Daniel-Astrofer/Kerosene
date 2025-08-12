@@ -191,7 +191,7 @@ fun Content(navController: NavController){
 
         }
 
-        Options()
+        Buttons()
 
 
     }

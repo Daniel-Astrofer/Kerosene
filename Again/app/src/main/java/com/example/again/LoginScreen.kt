@@ -78,7 +78,7 @@
 
 
     @Composable
-    fun LoginScreen(navController: NavController, viewModel: oi = viewModel()){
+    fun LoginScreen(navController: NavController){
 
         Column(modifier = Modifier
             .fillMaxSize()
@@ -86,12 +86,12 @@
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally)
         {
-            BoxLogin(navController,viewModel)
+            BoxLogin(navController)
         }
     }
 
     @Composable
-    fun BoxLogin(navController: NavController, viewModel: oi = viewModel()){
+    fun BoxLogin(navController: NavController){
         var rememberText by remember{mutableStateOf("")}
         var rememberPass by remember{mutableStateOf("")}
         var submitAttemptedE by remember{mutableStateOf(false)}
@@ -115,7 +115,7 @@
                     keyboardActions = KeyboardActions.Default,
                     onValueChange = {
                         rememberText = it
-                        viewModel.set(rememberText)
+
                     },
                     shape = RoundedCornerShape(30.dp),
                     colors = TextFieldDefaults.colors(unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = Color.Transparent),
@@ -136,7 +136,7 @@
                     keyboardActions = KeyboardActions.Default,
                     onValueChange = {
                         rememberPass= it
-                        viewModel.set(rememberPass)
+
                     },
                     shape = RoundedCornerShape(30.dp),
                     colors = TextFieldDefaults.colors(unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = Color.Transparent),
