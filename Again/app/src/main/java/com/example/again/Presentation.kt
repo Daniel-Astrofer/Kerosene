@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,10 +48,10 @@ fun Presentation(navController: NavController){
     )
 
 
-    BoxWithConstraints {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val size = this
 
-        Image(painter = painterResource(id = R.drawable.space), contentDescription = "Background", contentScale = ContentScale.Crop)
+        Image(modifier = Modifier.fillMaxSize(),painter = painterResource(id = R.drawable.space), contentDescription = "Background", contentScale = ContentScale.FillHeight)
 
         Box(modifier = Modifier.matchParentSize().background(brush = Brush.verticalGradient(listOf(Color.Transparent, Color.Black), startY = 800f)))
         Box(modifier = Modifier.align(Alignment.CenterStart).padding(start = 40.dp)) {
@@ -72,7 +73,7 @@ fun Presentation(navController: NavController){
             }
         }
         Box(modifier = Modifier.align(Alignment.BottomCenter  )){
-            Column(modifier = Modifier.padding(bottom = 20.dp)) {
+            Column(modifier = Modifier.padding(bottom = 100.dp)) {
 
                 Button(
                     modifier = Modifier

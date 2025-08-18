@@ -2,8 +2,10 @@
     package com.example.again
 
     import android.R.attr.shape
+    import android.content.ClipboardManager
     import androidx.compose.foundation.Image
     import androidx.compose.foundation.background
+    import androidx.compose.foundation.border
     import androidx.compose.foundation.clickable
     import androidx.compose.foundation.layout.Arrangement
     import androidx.compose.foundation.layout.Box
@@ -43,6 +45,9 @@
     import androidx.compose.ui.graphics.asComposePath
     import androidx.compose.ui.graphics.drawscope.rotate
     import androidx.compose.ui.layout.ContentScale
+    import androidx.compose.ui.platform.Clipboard
+    import androidx.compose.ui.platform.LocalClipboard
+    import androidx.compose.ui.platform.LocalClipboardManager
     import androidx.compose.ui.res.painterResource
     import androidx.compose.ui.text.font.Font
     import androidx.compose.ui.text.font.FontFamily
@@ -64,13 +69,13 @@
 
     )
 
-    val buttoncolor = Color(0xFF0B73C7)
+    val buttoncolor = Color(0xFF1F6299)
     @Composable
     fun CreatingAccount(navController: NavController){
-
         Box(modifier = Modifier
             .fillMaxSize()
-            .background(paleta1)) {
+            .background(paleta1)
+            .padding(30.dp)) {
 
             Column(
                 modifier = Modifier
@@ -84,11 +89,57 @@
                 BoxLogin(navController)
 
             }
-            IconButton(
-                onClick = {}
+            Box(
+                modifier = Modifier.clip(RoundedCornerShape(bottomEnd = 20.dp)).background(paleta2)
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White, modifier = Modifier.align(Alignment.TopStart) )
+                IconButton(
+                    onClick = {}
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Color.White,
+                        modifier = Modifier.align(Alignment.TopStart).size(60.dp)
+                    )
+                }
             }
+
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .clickable {
+
+                    }
+                    .align(Alignment.BottomEnd)
+                    .drawWithCache {
+                        val sizebutton = size.minDimension * 2f
+                        val centerY = size.height / 2f
+                        val centerX = size.width / 2f
+                        val roundedPolygon = RoundedPolygon(
+                            numVertices = 3,
+                            radius = sizebutton,
+                            centerX = centerX,
+                            centerY = centerY
+                        )
+                        val roundedPolygonPath = roundedPolygon.toPath().asComposePath()
+                        onDrawBehind {
+                            rotate(
+                                45f,
+                                Offset(centerX, centerY),
+                                block = { drawPath(roundedPolygonPath, color = buttoncolor) }
+
+                            )
+
+                        }
+                    }
+
+                , contentAlignment = Alignment.BottomCenter
+            ){
+                val size = this
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Prosseguir", modifier = Modifier.size(120.dp), tint = Color.White)
+            }
+
+
         }
     }
 
@@ -113,6 +164,8 @@
         BoxWithConstraints {
             val size = this
             var passPhrasse by remember { mutableStateOf("") }
+            var username by remember { mutableStateOf("") }
+            val clipboardManager: Clipboard = LocalClipboard.current
 
             Column(modifier = Modifier
                 .fillMaxSize()
@@ -129,8 +182,8 @@
                         .height(50.dp)
                         ,
                     label = {Text("Usuário", color = Color.LightGray, fontFamily = ggsans)},
-                    value = rememberText,
-                    onValueChange = {rememberText = it},
+                    value = username,
+                    onValueChange = {username = it},
                     colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.DarkGray),
                     shape = RoundedCornerShape(0.dp)
 
@@ -142,6 +195,7 @@
 
                 TextField(value = passPhrasse,
                     onValueChange = {passPhrasse = it},
+                    maxLines = 1,
                     label = {Text("casaco pista tigela roxo planeta minuto jovem salto febre solo livro chave", color = Color.Black, fontFamily = ggsans)},
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.DarkGray),
@@ -179,6 +233,7 @@
 
         Box(modifier = Modifier
             .fillMaxSize()
+            .padding(top = 30.dp)
             .background(paleta1)) {
 
             Column(
@@ -214,11 +269,11 @@
                         .clickable {
 
                         }
-                        .b
+                        .align(Alignment.BottomEnd)
                         .drawWithCache {
-                            val sizebutton = size.minDimension
-                            val centerY = size.height * 1f
-                            val centerX = size.width
+                            val sizebutton = size.minDimension * 2f
+                            val centerY = size.height / 2f
+                            val centerX = size.width / 2f
                             val roundedPolygon = RoundedPolygon(
                                 numVertices = 3,
                                 radius = sizebutton,
@@ -228,7 +283,7 @@
                             val roundedPolygonPath = roundedPolygon.toPath().asComposePath()
                             onDrawBehind {
                                 rotate(
-                                    40f,
+                                    45f,
                                     Offset(centerX, centerY),
                                     block = { drawPath(roundedPolygonPath, color = buttoncolor) }
 
@@ -236,12 +291,11 @@
 
                             }
                         }
-                        .fillMaxSize()
+
+                    , contentAlignment = Alignment.BottomCenter
                 ){
                     val size = this
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Prosseguir", modifier = Modifier.size(120.dp).offset(
-                        x = (size.maxWidth / 3f) , y = (size.maxHeight / 2.5f)
-                    ))
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Prosseguir", modifier = Modifier.size(120.dp), tint = Color.White)
                 }
 
 
