@@ -1,6 +1,8 @@
 package com.example.again
 
 import android.annotation.SuppressLint
+import android.text.Layout
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.ui.unit.dp
@@ -24,99 +26,138 @@ import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.sharp.Build
 import androidx.compose.material.icons.sharp.Menu
+import androidx.compose.material.icons.sharp.Search
 import androidx.compose.material.icons.sharp.Settings
 import androidx.compose.material.icons.twotone.AccountCircle
 import androidx.compose.material.icons.twotone.Build
+import androidx.compose.material3.ScaffoldDefaults.contentWindowInsets
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 
 
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun Screen(navController:NavController){
-    Scaffold(
-        topBar = {TopBar(navController)},
-        bottomBar = { BottomBar() } ,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top= 25.dp))
-    {
+fun Screen(navController: NavController) {
 
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val size = this
         Column {
-
-            Box(){
-                FirstWindow()
-            }
-
-            Box(){
-                Buttons()
-            }
-
-
+            EarthRender()
+            MidBar()
+            ClickableMenu()
         }
-
+        TopBar(navController)
     }
+
+
+
 }
 
 @Composable
 fun TopBar(navController: NavController){
+    var optionsClick by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(45.dp)
-            ,horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    BoxWithConstraints(modifier = Modifier
+        .fillMaxWidth()
+        ,
+        contentAlignment = Alignment.TopCenter) {
+
+        val size = this
 
 
+            if (!optionsClick){
 
+                Row(modifier = Modifier
+                    .width(size.maxWidth * 0.75f)
+                    .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp))
+                    .background(color=Color.Black),
+                    horizontalArrangement = Arrangement.Center){
 
-            Row(modifier = Modifier.clip(RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp)).background(color=Color.Black)){
-                IconButton(onClick = {} ) {
-                    Icon(Icons.Sharp.Menu, tint = Color.White, contentDescription = "Menu" )
-                }
-                Spacer(modifier = Modifier.padding(end = 110.dp))
-                IconButton(onClick = { navController.navigate("main") }) {
-                    Icon(Icons.TwoTone.AccountCircle, contentDescription = "Perfil", tint =Color.White)
-                }
-                Spacer(modifier = Modifier.padding(start = 110.dp))
-                IconButton(onClick ={}) {
-                    Icon(Icons.Sharp.Settings,contentDescription = "Configurações", tint = Color.White)
+                    IconButton(onClick = {
+                        optionsClick = true } ) {
+                        Icon(Icons.Sharp.Menu, tint = Color.White, contentDescription = "Menu" )
+                    }
+
+                    Spacer(modifier = Modifier.padding(end = size.maxWidth * 0.15f))
+
+                    IconButton(onClick = { navController.navigate("main") }) {
+                        Icon(Icons.TwoTone.AccountCircle, contentDescription = "Perfil", tint =Color.White)
+                    }
+
+                    Spacer(modifier = Modifier.padding(start = size.maxWidth * 0.15f))
+
+                    IconButton(onClick ={}) {
+                        Icon(Icons.Sharp.Settings,contentDescription = "Configurações", tint = Color.White)
+
+                    }
+
 
                 }
             }
-        }
     }
+}
 
 
 @Composable
-fun FirstWindow(){
+fun EarthRender(){
+
+    val saldo : Double = 1000000.00
+
+    BoxWithConstraints(modifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(1f)) {
+
+        val size = this
 
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(370.dp)
-            .background(color = Color.DarkGray),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally){
-        Box(contentAlignment = Alignment.BottomStart){
-            Earth()}
-
-        Text("$1.000.000.000,00", fontFamily =  FontFamily.Monospace, fontWeight =  FontWeight.ExtraBold, fontStyle =  FontStyle.Italic)
+        Box(contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(size.maxHeight * 1f)){
+            Image(
+                painter = painterResource(id = R.drawable.olaaa),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Earth()
+            Text(
+                text = "R\$ ${"%,.2f".format(saldo)}",
+                color = Color(0xFF4CAF50),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                textAlign = TextAlign.Center,
+                letterSpacing = 1.sp
+            )
+        }
 
 
     }
@@ -125,29 +166,48 @@ fun FirstWindow(){
 }
 
 @Composable
-fun Buttons(){
-
-    Surface(modifier = Modifier.fillMaxWidth().background(color = Color.Black) ) {
+fun MidBar(){
 
 
-        Column (){
+    Column(modifier = Modifier.background(Color.Black).fillMaxWidth().height(70.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Sharp.Menu, contentDescription = "Menu", tint = Color.White, modifier = Modifier.size(18 .dp))
+    }
 
 
-            Row() {
 
-                Box(modifier = Modifier.size(200.dp).border(2.dp,color = Color.DarkGray,).background(color = Color.Black), contentAlignment = Alignment.Center){
+
+}
+
+@Composable
+fun ClickableMenu(){
+
+    BoxWithConstraints(modifier = Modifier
+        .fillMaxSize()
+        .aspectRatio(1f)
+        .background(Color.Black),
+        contentAlignment = Alignment.Center) {
+        val size = this
+
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)){
+
+                Box(modifier = Modifier.size(size.maxWidth * 0.45f).clip(RoundedCornerShape(30.dp)).background(color = Color.DarkGray), contentAlignment = Alignment.Center){
 
                     IconButton(onClick = {}) {
-                        Icon(Icons.TwoTone.Build ,contentDescription = "Miner",tint = Color.White)
+                        Icon(Icons.Filled.Place ,contentDescription = "Miner",tint = Color.White, modifier = Modifier.size(100.dp))
 
                     }
+                    Text("Krinse",modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp) )
 
                 }
 
-                Box(modifier = Modifier.border(2.dp,color = Color.DarkGray,).background(color = Color.Black).size(200.dp), contentAlignment = Alignment.Center){
+                Box(modifier = Modifier.size(size.maxWidth * 0.45f).clip(RoundedCornerShape(30.dp)).background(color = Color.DarkGray), contentAlignment = Alignment.Center){
 
                     IconButton(onClick = {}) {
-                        Icon(Icons.Default.Star, contentDescription = "Krinse",modifier = Modifier.size(100.dp),tint = Color.White)
+                        Icon(Icons.Filled.Info, contentDescription = "Krinse",modifier = Modifier.size(100.dp),tint = Color.White)
 
                     }
 
@@ -155,9 +215,9 @@ fun Buttons(){
 
             }
 
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)){
 
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.border(2.dp,color = Color.DarkGray,).size(200.dp).background(color=Color.Black)){
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size.maxWidth * 0.45f).clip(RoundedCornerShape(30.dp)).background(color = Color.DarkGray)){
                     IconButton(onClick = {}) {
 
                         Icon(Icons.Default.Search, contentDescription = "Buy", modifier = Modifier.size(100.dp), tint = Color.White)
@@ -165,7 +225,7 @@ fun Buttons(){
                     }
                 }
 
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.border(2.dp,color = Color.DarkGray,).size(200.dp).background(color=Color.Black)){
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size.maxWidth * 0.45f).clip(RoundedCornerShape(30.dp)).background(color = Color.DarkGray)){
                     IconButton(onClick = {}) {
 
                         Icon(Icons.Default.Menu , contentDescription = "Buy", modifier = Modifier.size(100.dp),tint = Color.White)
@@ -175,88 +235,40 @@ fun Buttons(){
             }
         }
     }
-}
-
-@Composable
-fun Content(navController: NavController){
-
-    Column (modifier = Modifier
-        .fillMaxSize()
-        ,
-        horizontalAlignment = Alignment.CenterHorizontally){
-        Box(modifier = Modifier.background(Color.Black)){
-
-            FirstWindow()
-
-
-        }
-
-        Buttons()
-
-
-    }
 
 }
-
-
-@Composable
-fun BottomBar(){
-
-    Row (modifier = Modifier
-        .height(40.dp)
-        .fillMaxWidth()
-
-        .background(color = Color.DarkGray)
-    ){ Text("bottom activer") }
-
-
-
-}
-
-
-
-
 
 @Composable
 fun Earth() {
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
+            .fillMaxSize()
             .drawBehind {
-                val arcDiameter = size.width * 2f
+                val brush = Brush.horizontalGradient(listOf(Color.Blue,Color.Black))
+                val arcDiameter = size.width * 1.8f
                 drawArc(
-                    color = Color.Blue,
-                    startAngle = 180f,
-                    sweepAngle = 180f,
+                    brush = brush,
+                    startAngle = -90f,
+                    sweepAngle = 90f,
                     useCenter = true,
-                    topLeft = Offset(x = -size.width / 1f, y = -size.height),
+                    topLeft = Offset(x = -arcDiameter / 2f, y = size.height - (arcDiameter / 2f)),
                     size = Size(arcDiameter, arcDiameter) ) } )
 }
 
-
 @Preview
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun Main(){
-    val navController=rememberNavController()
+fun Screen() {
 
-    Scaffold(
-        topBar = {TopBar(navController)},
-        bottomBar = { BottomBar() } ,
-        modifier = Modifier
-            .padding(top= 25.dp)
-
-    ) {
-
-        Box{
-
-
-            Content(navController)
-
-
-        } }
-
+    val navController = rememberNavController()
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val size = this
+        Column {
+            EarthRender()
+            MidBar()
+            ClickableMenu()
+        }
+        TopBar(navController)
+    }
 
 
 
