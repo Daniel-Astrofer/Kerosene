@@ -1,4 +1,4 @@
-package com.example.again
+package com.example.again.main
 
 
 import android.os.Build
@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.core.view.WindowCompat
+import com.example.again.navigation.AppNavigation
 
 import com.example.again.ui.theme.AgainTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController

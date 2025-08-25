@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.Packaging
 import org.gradle.kotlin.dsl.implementation
 
 
@@ -11,6 +12,16 @@ plugins {
 android {
     namespace = "com.example.again"
     compileSdk = 35
+
+
+        packaging {
+            resources {
+                excludes +="META-INF/INDEX.LIST"
+                excludes +="META-INF/DEPENDENCIES"
+                excludes +="META-INF/io.netty.versions.properties"
+            }
+        }
+
 
     defaultConfig {
         applicationId = "com.example.again"
@@ -52,7 +63,10 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.6.0-alpha08")
     implementation("androidx.compose.material3:material3:1.2.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.30.1")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
+    implementation("com.google.code.gson:gson:2.10.1")
 
 
 
@@ -70,6 +84,13 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.adaptive.android)
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0") // Para converter JSON em objetos Kotlin
+
+// OkHttp (usado pelo Retrofit para as requisições)
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation(libs.firebase.appdistribution.gradle)
 
 
 

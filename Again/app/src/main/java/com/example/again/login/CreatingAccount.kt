@@ -1,11 +1,7 @@
+package com.example.again.login
 
-    package com.example.again
-
-    import android.R.attr.shape
-    import android.content.ClipboardManager
     import androidx.compose.foundation.Image
     import androidx.compose.foundation.background
-    import androidx.compose.foundation.border
     import androidx.compose.foundation.clickable
     import androidx.compose.foundation.layout.Arrangement
     import androidx.compose.foundation.layout.Box
@@ -15,14 +11,13 @@
     import androidx.compose.foundation.layout.fillMaxSize
     import androidx.compose.foundation.layout.fillMaxWidth
     import androidx.compose.foundation.layout.height
-    import androidx.compose.foundation.layout.offset
     import androidx.compose.foundation.layout.padding
     import androidx.compose.foundation.layout.size
     import androidx.compose.foundation.shape.RoundedCornerShape
     import androidx.compose.material.icons.Icons
     import androidx.compose.material.icons.automirrored.filled.ArrowBack
     import androidx.compose.material.icons.automirrored.filled.ArrowForward
-    import androidx.compose.material.icons.rounded.ArrowBack
+    import androidx.compose.material3.Button
     import androidx.compose.material3.Icon
     import androidx.compose.material3.IconButton
     import androidx.compose.material3.Text
@@ -36,23 +31,17 @@
     import androidx.compose.ui.Alignment
     import androidx.compose.ui.Modifier
     import androidx.compose.ui.draw.clip
-    import androidx.compose.ui.draw.drawBehind
     import androidx.compose.ui.draw.drawWithCache
-    import androidx.compose.ui.draw.drawWithContent
-    import androidx.compose.ui.draw.rotate
     import androidx.compose.ui.geometry.Offset
     import androidx.compose.ui.graphics.Color
     import androidx.compose.ui.graphics.asComposePath
     import androidx.compose.ui.graphics.drawscope.rotate
-    import androidx.compose.ui.layout.ContentScale
     import androidx.compose.ui.platform.Clipboard
     import androidx.compose.ui.platform.LocalClipboard
-    import androidx.compose.ui.platform.LocalClipboardManager
     import androidx.compose.ui.res.painterResource
     import androidx.compose.ui.text.font.Font
     import androidx.compose.ui.text.font.FontFamily
     import androidx.compose.ui.text.font.FontWeight
-    import androidx.compose.ui.text.style.LineHeightStyle
     import androidx.compose.ui.tooling.preview.Preview
     import androidx.compose.ui.unit.dp
     import androidx.compose.ui.unit.sp
@@ -60,8 +49,11 @@
     import androidx.graphics.shapes.toPath
     import androidx.navigation.NavController
     import androidx.navigation.compose.rememberNavController
+    import com.example.again.R
 
-    val  paleta1= Color(0xFF11202B)
+    import criarNovoUsuario
+
+val  paleta1= Color(0xFF11202B)
     val paleta2 = Color(0xFF1F2A33)
     val ggsans = FontFamily(
         Font(R.font.ggsanssemibold, FontWeight.SemiBold)
@@ -75,7 +67,7 @@
         Box(modifier = Modifier
             .fillMaxSize()
             .background(paleta1)
-            .padding(30.dp)) {
+            .padding(start = 30.dp)) {
 
             Column(
                 modifier = Modifier
@@ -145,26 +137,26 @@
 
     @Composable
     fun BoxLogin(navController: NavController){
+        var passPhrasse by remember { mutableStateOf("") }
+        var username by remember { mutableStateOf("") }
         var rememberText by remember{mutableStateOf("")}
         var rememberPass by remember{mutableStateOf("")}
         var submitAttemptedE by remember{mutableStateOf(false)}
 
         val poppins = FontFamily(
 
-            Font(com.example.again.R.font.poppins_semibold, FontWeight.SemiBold)
+            Font(R.font.poppins_semibold, FontWeight.SemiBold)
 
 
         )
         val inter = FontFamily(
-            Font(com.example.again.R.font.inter_18pt_black, FontWeight.SemiBold)
+            Font(R.font.inter_18pt_black, FontWeight.SemiBold)
         )
 
 
 
         BoxWithConstraints {
             val size = this
-            var passPhrasse by remember { mutableStateOf("") }
-            var username by remember { mutableStateOf("") }
             val clipboardManager: Clipboard = LocalClipboard.current
 
             Column(modifier = Modifier
@@ -199,7 +191,7 @@
                     label = {Text("casaco pista tigela roxo planeta minuto jovem salto febre solo livro chave", color = Color.Black, fontFamily = ggsans)},
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.DarkGray),
-                    readOnly = true,
+                    readOnly = false,
                     shape = RoundedCornerShape(0.dp))
 
                 Text("Impressão Digital : ", fontSize = 17.sp, color = Color.LightGray, fontFamily = ggsans, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 30.dp, bottom = 15.dp))
@@ -214,9 +206,15 @@
                     modifier = Modifier.fillMaxWidth().align(Alignment.CenterHorizontally),
                     colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.DarkGray))
 
-
-
             }
+            Button(onClick = {
+
+                criarNovoUsuario("android","dg36gd3","h78dwhd")
+
+            }) { Text("clica")}
+
+
+
 
 
         }
