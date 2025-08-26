@@ -63,10 +63,10 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.6.0-alpha08")
     implementation("androidx.compose.material3:material3:1.2.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.30.1")
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-
+    implementation("cash.z.ecc.android:kotlin-bip39:1.0.9")
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
 
 

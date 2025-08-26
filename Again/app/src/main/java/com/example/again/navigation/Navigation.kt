@@ -19,18 +19,5 @@ package com.example.again.navigation
             composable("main") { Screen(navController) }
 
         }
-        /*if (lastLogged){
 
-            NavHost(navController, startDestination = "main"){
-
-                composable("main"){Screen(navController)}
-
-            }
-
-
-
-        }else {
-
-
-        }*/
     }
