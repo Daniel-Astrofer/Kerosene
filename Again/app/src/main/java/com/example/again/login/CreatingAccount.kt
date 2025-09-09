@@ -30,7 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.again.R
 import com.example.again.api.RetrofitClient
 import com.example.again.api.gerarFraseBip39
-import com.example.again.data.model.Usuario
+import com.example.again.api.model.Usuario
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.net.ConnectException
@@ -204,6 +204,9 @@ fun BoxLogin(navController: NavController) {
             if (message.isNotEmpty()) {
                 Text(message, color = Color.White, modifier = Modifier.padding(top = 10.dp))
             }
+
+
+            CriarUsuarioScreen()
         }
     }
 }
@@ -272,3 +275,47 @@ fun CreatingAccoun(){
         }
     }
 }
+
+@Composable
+fun CriarUsuarioScreen() {
+    var username by remember { mutableStateOf("") }
+    var passphrase by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    Column {
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") }
+        )
+        OutlinedTextField(
+            value = passphrase,
+            onValueChange = { passphrase = it },
+            label = { Text("Passphrase") }
+        )
+
+        Button(onClick = {
+            coroutineScope.launch {
+                try {
+                    val usuario = Usuario(username, passphrase)
+                    val response = RetrofitClient.instance.createUser(usuario)
+                    message = "Usuário criado com id: ${response.request()}"
+                } catch (e: Exception) {
+                    message = "Erro: ${e.localizedMessage ?: "Erro desconhecido"}"
+                }
+            }
+        }) {
+            Text("Criar Usuário")
+        }
+        Text(text = message)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewCriarUsuarioScreen() {
+    CriarUsuarioScreen()
+}
+
