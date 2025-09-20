@@ -6,6 +6,7 @@ package com.example.again.navigation
     import androidx.navigation.compose.rememberNavController
     import com.example.again.login.CreatingAccount
     import com.example.again.main.Screen
+    import com.example.again.presentation.LoginScreen
     import com.example.again.presentation.Presentation
 
 
@@ -17,6 +18,7 @@ package com.example.again.navigation
             composable("initialize") { Presentation(navController) }
             composable("Criar Conta") { CreatingAccount(navController) }
             composable("main") { Screen(navController) }
+            composable("login"){ LoginScreen(navController) }
 
         }
 

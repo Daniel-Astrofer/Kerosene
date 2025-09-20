@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +38,11 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.toPath
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import cash.z.ecc.android.bip39.Mnemonics.ChecksumException.message
 import com.example.again.R
+import com.example.again.api.RetrofitClient
+import com.example.again.api.hash
+import com.example.again.api.model.Usuario
 
 
 @Composable
@@ -151,11 +156,12 @@ fun CreateAccountBox(navController: NavController){
         .height(550.dp)
         .width(360.dp)
         .clip(shape = RoundedCornerShape(60.dp))
-        .background(Color.Black),
+        .background(Color.Blue),
 
 
         ){
-        var rememberText by remember{ mutableStateOf("")}
+        var rememberText by remember{ mutableStateOf("") }
+        var rememberPass by remember{ mutableStateOf("")}
         Text("Kerosene", modifier = Modifier.align(Alignment.TopCenter), textDecoration = TextDecoration.Underline, color = Color.Red, fontWeight = FontWeight.ExtraBold, fontSize = 40.sp)
 
         Box(modifier = Modifier.align(Alignment.Center)) {
@@ -173,9 +179,9 @@ fun CreateAccountBox(navController: NavController){
             Column {
                 Text("Frase de Segurança : ", fontSize = 19.sp, color = Color.LightGray)
                 TextField(
-                    value = rememberText,
+                    value = rememberPass,
                     onValueChange = {
-                        rememberText = it },
+                        rememberPass = it },
                     label = {  })
             }
         }
@@ -184,8 +190,43 @@ fun CreateAccountBox(navController: NavController){
 
 
         Box(modifier = Modifier.align(Alignment.BottomCenter)){
+            var message by remember { mutableStateOf("") }
+
+
+            val coroutineScope = rememberCoroutineScope()
             Row(){
-                Button(onClick = {}) { Text("Entrar")}
+                Button(onClick = {
+
+                    RetrofitClient.instance.findbyname(rememberText).enqueue(object : retrofit2.Callback<Usuario> {
+                        override fun onResponse(
+                            call: retrofit2.Call<Usuario>,
+                            response: retrofit2.Response<Usuario>
+                        ) {
+                            message = if (response.isSuccessful) {
+
+                                    navController.navigate("main")
+                                    "login sucedido"
+                                
+
+                            } else {
+                                "Erro: ${response.code()}"
+                            }
+
+
+
+
+                        }
+
+                        override fun onFailure(call: retrofit2.Call<Usuario>, t: Throwable) {
+                            message = "Falha na requisição: ${t.localizedMessage}"
+                        }
+
+                    })
+
+
+
+
+                }) { Text("Entrar")}
                 Button(onClick = {navController.navigate("Criar Conta")}) { Text("Não tenho Conta")}
             }
         }

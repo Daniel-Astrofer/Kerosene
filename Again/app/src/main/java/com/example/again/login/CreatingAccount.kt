@@ -30,8 +30,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.again.R
 import com.example.again.api.RetrofitClient
 import com.example.again.api.gerarFraseBip39
+import com.example.again.api.hash
 import com.example.again.api.model.Usuario
 import kotlinx.coroutines.launch
+import okhttp3.Callback
 import retrofit2.Response
 import java.net.ConnectException
 import java.net.UnknownHostException
@@ -156,10 +158,10 @@ fun BoxLogin(navController: NavController) {
             Text("Frase de Login :", color = Color.LightGray, fontFamily = ggsans, fontSize = 17.sp)
 
             TextField(
-                value = passPhrasse,
+                value = frase,
                 onValueChange = { passPhrasse = it },
                 maxLines = 1,
-                label = { Text(frase, color = Color.Black, fontFamily = ggsans) },
+                label = {  },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TextFieldDefaults.colors(unfocusedContainerColor = Color.DarkGray),
                 readOnly = false,
@@ -169,34 +171,24 @@ fun BoxLogin(navController: NavController) {
             Spacer(modifier = Modifier.padding(top = 20.dp))
 
             Button(onClick = {
-                // Inicia uma nova coroutine
-                coroutineScope.launch {
-                    try {
-                        val usuario = Usuario( username = username, passphrase = frase)
+                val usuario = Usuario(username, frase )
 
-                        // Imprime o URL completo para depuração.
-                        val call = RetrofitClient.instance.createUser(usuario)
-                        println("Tentando conectar ao URL: ${call.request().url}")
-
-                        // Chamada SÍNCRONA para testes - NUNCA use isso na produção!
-                        val response: Response<Usuario> = call.execute()
-
-                        if (response.isSuccessful) {
-                            message = "Usuário criado com sucesso! Resposta: ${response.body()?.username}"
-                            println("Sucesso: ${response.body()}")
+                // Chamada assíncrona
+                RetrofitClient.instance.createUser(usuario).enqueue(object : retrofit2.Callback<Usuario> {
+                    override fun onResponse(call: retrofit2.Call<Usuario>, response: retrofit2.Response<Usuario>) {
+                        message = if (response.isSuccessful) {
+                            "Usuário criado com sucesso: ${response.body()?.username}"
                         } else {
-                            message = "Erro ao criar usuário: ${response.code()}"
-                            println("Erro: ${response.code()} - ${response.errorBody()?.string()}")
+                            "Erro: ${response.code()}"
                         }
-                    } catch (e: Exception) {
-                        message = when (e) {
-                            is ConnectException -> "Falha na conexão. Verifique se o servidor está rodando e se o IP/Porta estão corretos. Erro: ${e.message}"
-                            is UnknownHostException -> "Host desconhecido. Verifique o IP do servidor na BASE_URL. Erro: ${e.message}"
-                            else -> "Falha na requisição: ${e.message}"
-                        }
-                        println("Falha: ${e.message}")
                     }
-                }
+
+                    override fun onFailure(call: retrofit2.Call<Usuario>, t: Throwable) {
+                        message = "Falha na requisição: ${t.localizedMessage}"
+                    }
+                })
+
+
             }) {
                 Text("clica")
             }
@@ -206,7 +198,7 @@ fun BoxLogin(navController: NavController) {
             }
 
 
-            CriarUsuarioScreen()
+
         }
     }
 }

@@ -1,17 +1,13 @@
 package kerosene.v05.repository;
 
-
-import kerosene.v05.model.Usuario;
+import kerosene.v05.model.UserDataBase;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
-public interface UsuarioRepository extends JpaRepository<Usuario,Long> {
+public interface UsuarioRepository extends JpaRepository<UserDataBase,Long> {
 
-    List<Usuario> findByUsername(String username);
-
-
+    UserDataBase findByUsername(String username);
+    Boolean existsByUsernameAndPassphrase(String username,String passphrase);
 
 }

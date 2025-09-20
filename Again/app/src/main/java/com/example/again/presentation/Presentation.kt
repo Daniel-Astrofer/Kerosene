@@ -34,7 +34,6 @@ fun Presentation(navController: NavController){
 
     val paleta2 = Color(0xFF294A66)
     val paleta3 = Color(0xFF1F2A33)
-    val paleta4 = Color(0xFF1F6299)
     val paleta6 = Color(0xFF0B73C7)
 
     val poppins = FontFamily(
@@ -92,6 +91,7 @@ fun Presentation(navController: NavController){
                 }
                 Button(
                     onClick = {
+                        navController.navigate("login")
 
 
 

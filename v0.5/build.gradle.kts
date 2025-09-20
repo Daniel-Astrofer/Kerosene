@@ -10,7 +10,7 @@ description = "backend"
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(24)
 	}
 }
 
@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.bitcoinj:bitcoinj-core:0.15.10")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	runtimeOnly("com.h2database:h2")
@@ -26,6 +27,11 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.jboss.aerogear:aerogear-otp-java:1.0.0.M1")
+    implementation("commons-codec:commons-codec:1.16.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation(group = "io.lettuce", name = "lettuce-core", version = "6.8.1.RELEASE")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     runtimeOnly("org.postgresql:postgresql:42.6.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
