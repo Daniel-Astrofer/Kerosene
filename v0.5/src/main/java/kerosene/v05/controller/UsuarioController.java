@@ -1,15 +1,11 @@
 package kerosene.v05.controller;
 
+import kerosene.v05.contracts.*;
 import kerosene.v05.dto.SignupUserDTO;
 import kerosene.v05.model.UserDataBase;
-import kerosene.v05.model.Usuario;
-import kerosene.v05.service.cache.UserRedisService;
-import kerosene.v05.service.UsuarioService;
-import kerosene.v05.service.validation.SignupValidator;
-import kerosene.v05.service.validation.TOTPValidator;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 /**
@@ -19,32 +15,34 @@ import java.util.List;
 @RequestMapping("/user")
 public class UsuarioController {
 
-    private final UsuarioService service;
-    private final UserRedisService redisService;
-    private final SignupValidator verification;
-    private final TOTPValidator totp;
+   private final LoginVerifier loginVerifier;
+   private final SignupVerifier signupVerifier;
+   private final TOTPKeyGenerate TOTPKeyGenerator;
+   private final Service service;
+   private final RedisService redisService;
 
-    /**
-     * Constructor for dependency injection.
-     *
-     * @param service the user service
-     */
-    public UsuarioController(UsuarioService service,
-                             UserRedisService redisService, SignupValidator verification, TOTPValidator totp) {
+
+
+
+
+    public UsuarioController(LoginVerifier loginVerifier,
+                             SignupVerifier signupVerifier,
+                             TOTPKeyGenerate totpKeyGenerator,
+                             @Qualifier("ServiceFromUser") Service service,
+                             RedisService redisService) {
+        this.loginVerifier = loginVerifier;
+        this.signupVerifier = signupVerifier;
+        TOTPKeyGenerator = totpKeyGenerator;
         this.service = service;
         this.redisService = redisService;
-
-        this.verification = verification;
-        this.totp = totp;
     }
-
     /**
      * Lists all users.
      *
      * @return list of users
      */
     @GetMapping("/list")
-    public List<Usuario> list() {
+    public List<UserDataBase> list() {
         return service.listar();
     }
 
@@ -54,8 +52,8 @@ public class UsuarioController {
      * @param id the user ID
      * @return the user if found, otherwise null
      */
-    @GetMapping("/{id}")
-    public Usuario find(@PathVariable long id) {
+    @GetMapping("/id/{id}")
+    public UserDataBase find(@PathVariable long id) {
         return service.buscarPorId(id).orElse(null);
     }
 
@@ -66,19 +64,23 @@ public class UsuarioController {
      * @return ResponseEntity with authentication result
      */
     @PostMapping("/authenticate")
-    public ResponseEntity<String> authenticateUser(@RequestBody SignupUserDTO signupUserDTO) {
-        UserDataBase user = service.fromDTO(signupUserDTO);
-        return service.auth(signupUserDTO);
+    public boolean authenticateUser(@RequestBody SignupUserDTO signupUserDTO) {
+        return loginVerifier.checkUsername(signupUserDTO.getUsername()) && loginVerifier.passphraseMatcher(signupUserDTO.getUsername(), signupUserDTO.getPassphrase());
     }
 
 
     @PostMapping("/signup")
     public ResponseEntity<String> createUserInRedis(@RequestBody SignupUserDTO signupUserDTO){
-        String key = totp.keyGenerator();
-        String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "appName", signupUserDTO.getUsername(), key, "appName");
-        verification.verify(service.fromDTO(signupUserDTO));
 
-        signupUserDTO.setTotp_secret(key);
+        if (!signupVerifier.verify(signupUserDTO.getUsername(),signupUserDTO.getPassphrase())){
+            return ResponseEntity.badRequest().body("fez cagada no  bagulho");
+        }
+
+        String key = TOTPKeyGenerator.keyGenerator();
+        String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "appName", signupUserDTO.getUsername(), key, "appName");
+
+
+        signupUserDTO.setTOTPSecret(key);
 
         redisService.createTempUser(signupUserDTO);
 

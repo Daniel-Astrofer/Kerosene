@@ -11,6 +11,7 @@ public interface SignupVerifier {
     void checkPassphraseLength(String passphrase);
     void checkPassphraseBip39(String passphrase);
     void checkUsernameExists(String username);
+    boolean verify(String username,String passphrase);
 
 
 }

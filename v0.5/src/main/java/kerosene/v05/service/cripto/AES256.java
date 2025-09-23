@@ -9,7 +9,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-@Component
+@Component("aes256")
 public class AES256 implements Cryptography {
 
 

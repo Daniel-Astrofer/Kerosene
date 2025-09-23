@@ -80,7 +80,7 @@ public class SignupValidator implements SignupVerifier {
             throw new Exceptions.UserAlreadyExistsException("User already exists");
         }
     }
-    public Boolean verify(String username,String passphrase) {
+    public boolean verify(String username,String passphrase) {
 
         checkUsernameNotNull(username);
         checkPassphraseNotNull(passphrase);

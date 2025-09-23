@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class TOTPValidator implements TOTPVerifier {
 
-    public boolean totpMatcher(String totpSecret,String code){
+    public boolean TOTPMatcher(String totpSecret,String code){
 
         Totp totp = new Totp(totpSecret);
 

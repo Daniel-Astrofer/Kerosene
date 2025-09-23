@@ -5,9 +5,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kerosene.v05.contracts.Cryptography;
 import kerosene.v05.contracts.Hasher;
+import kerosene.v05.contracts.RedisService;
 import kerosene.v05.dto.SignupUserDTO;
+import kerosene.v05.model.UserDataBase;
 import kerosene.v05.service.UsuarioService;
 import kerosene.v05.service.validation.TOTPValidator;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import javax.crypto.SecretKey;
@@ -17,7 +20,7 @@ import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class UserRedisService {
+public class UserRedisService implements RedisService {
 
     private final static String keybase = "w4K+9Vx3y6dR1P8h2mYtB3vQjL6uXk7nZq5sF0aV8pU=";
     static final byte[] decodedKey = Base64.getDecoder().decode(keybase);
@@ -29,9 +32,11 @@ public class UserRedisService {
     private final UsuarioService service;
     private final Hasher hasher;
 
-    public UserRedisService(StringRedisTemplate redisTemplate, Cryptography cryptography,
+    public UserRedisService(StringRedisTemplate redisTemplate,
+                            @Qualifier("aes256") Cryptography cryptography,
                             TOTPValidator TOTPValidator,
-                            UsuarioService service, Hasher hasher) {
+                            UsuarioService service,
+                            @Qualifier("SHAHasher") Hasher hasher) {
         this.redisTemplate = redisTemplate;
         this.cryptography = cryptography;
         this.TOTPValidator = TOTPValidator;
@@ -45,18 +50,17 @@ public class UserRedisService {
 
     public void createTempUser(SignupUserDTO signupUserDTO){
 
-        byte[] passByte = Base64.getEncoder().encode(signupUserDTO.getPassphrase().getBytes());
-        String hashPassString = Base64.getEncoder().encodeToString(hasher.hash(passByte));
+        String hashPassString = hasher.hash(signupUserDTO.getPassphrase());
 
-        String totpSecret = signupUserDTO.getTotp_secret();
+        String totpSecret = signupUserDTO.getTOTPSecret();
 
         try{
 
 
             signupUserDTO.setPassphrase(hashPassString);
-            byte[] encriptedTotp = cryptography.encrypt(signupUserDTO.getTotp_secret().getBytes(),secretKey);
-            String totpString = Base64.getEncoder().encodeToString(encriptedTotp);
-            signupUserDTO.setTotp_secret(totpString);
+            byte[] encriptedTotp = cryptography.encrypt(totpSecret.getBytes(StandardCharsets.UTF_8),secretKey);
+            String totpString = new String(encriptedTotp,StandardCharsets.UTF_8);
+            signupUserDTO.setTOTPCode(totpString);
 
             String json = objectMapper.writeValueAsString(signupUserDTO);
 
@@ -70,7 +74,7 @@ public class UserRedisService {
         return redisTemplate.opsForValue().get(key);
     }
 
-    public SignupUserDTO jsonToUserDTO(String key, String username ){
+    public SignupUserDTO jsonToSignupUserDTO(String key, String username ){
         String json =  getFromRedis(key + username);
         try{
             return objectMapper.readValue(json, SignupUserDTO.class);
@@ -80,15 +84,10 @@ public class UserRedisService {
         return null;
     }
 
-    public byte[] totpDecoder(SignupUserDTO signupUserDTO){
-        return  Base64.getDecoder().decode(signupUserDTO.getTotp_secret());
-    }
 
-
-    public String totpDecryptedString(SignupUserDTO signupUserDTO, SecretKey keybase){
-
+    public String TOTPDecryptedToString(SignupUserDTO signupUserDTO, SecretKey keybase){
         try{
-            byte[] totp = cryptography.decrypt(totpDecoder(signupUserDTO),keybase);
+            byte[] totp = cryptography.decrypt(signupUserDTO.getTOTPCode().getBytes(StandardCharsets.UTF_8),keybase);
             return new String(totp,StandardCharsets.UTF_8);
         }catch (Exception e){
             e.printStackTrace();
@@ -100,14 +99,14 @@ public class UserRedisService {
 
         try {
 
-            SignupUserDTO usuario = jsonToUserDTO("signup:", signupUserDTO.getUsername());
+            SignupUserDTO usuario = jsonToSignupUserDTO("signup:", signupUserDTO.getUsername());
 
-            String totpDecodedString = totpDecryptedString(usuario,secretKey);
+            String totpDecodedString = TOTPDecryptedToString(usuario,secretKey);
 
-            if (TOTPValidator.totpMatcher(totpDecodedString,usuario.getTot_code())){
-                Usuario usuarioDB = service.fromDTO(usuario);
-                usuarioDB.setTot_secret(signupUserDTO.getTotp_secret().getBytes());
-                service.createUser(usuarioDB);
+            if (TOTPValidator.TOTPMatcher(totpDecodedString,usuario.getTOTPCode())){
+                UserDataBase user = service.fromDTO(usuario);
+                user.setTOTPSecret(signupUserDTO.getTOTPSecret());
+                    service.createUserInDataBase(user);
                 return true;
 
             }

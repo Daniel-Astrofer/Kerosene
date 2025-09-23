@@ -16,8 +16,8 @@ import java.util.Optional;
 
 
 
-@Service
-public class UsuarioService  {
+@Service("ServiceFromUser")
+public class UsuarioService implements kerosene.v05.contracts.Service {
 
     private final UsuarioRepository repository;
 
@@ -45,7 +45,7 @@ public class UsuarioService  {
 
     public UserDataBase fromDTO(SignupUserDTO signupUserDTO){
         UserDataBase user = new UserDataBase();
-        user.setPassphrase(signupUserDTO.getPassphrase().getBytes());
+        user.setPassphrase(signupUserDTO.getPassphrase());
         user.setUsername(signupUserDTO.getUsername());
 
         return user;

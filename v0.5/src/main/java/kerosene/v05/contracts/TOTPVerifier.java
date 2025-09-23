@@ -2,5 +2,5 @@ package kerosene.v05.contracts;
 
 public interface TOTPVerifier {
 
-    boolean totpMatcher(String totpSecret,String code);
+    boolean TOTPMatcher(String totpSecret,String code);
 }

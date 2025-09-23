@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import kerosene.v05.contracts.UserDB;
 
 
-@Entity
+@Entity()
 @Table(name = "users_credentials" ,schema = "auth")
 public class UserDataBase implements UserDB {
 
@@ -46,13 +46,14 @@ public class UserDataBase implements UserDB {
     }
 
     @Override
+    public void setPassphrase(String passphrase) {
+
+    }
+
+    @Override
     public String getPassphrase() {
         return passphrase;
     }
 
-    @Override
-    public void setPassphrase(String passphrase) {
-        this.passphrase = passphrase;
-    }
 }
 
