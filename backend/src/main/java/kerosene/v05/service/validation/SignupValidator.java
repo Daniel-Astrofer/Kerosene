@@ -76,7 +76,7 @@ public class SignupValidator implements SignupVerifier {
     }
     @Override
     public void checkUsernameExists(String username) {
-        if (repository.findByUsername(username) != null) {
+        if (repository.findByUsername(username).isPresent()) {
             throw new Exceptions.UserAlreadyExistsException("User already exists");
         }
     }

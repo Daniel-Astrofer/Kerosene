@@ -1,13 +1,36 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:teste/colors.dart';
+import 'package:teste/features/authentication/domain/interactors/register_user.dart';
 
-class CreateAccountScreen extends StatelessWidget{
 
+
+
+
+
+
+
+class CreateAccountScreen extends StatefulWidget{
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController passphraseController = TextEditingController();
+  final formKey = GlobalKey<FormState>() ;
+  var usernameError = '';
+  @override
+  State<StatefulWidget> createState() => CreateAccountScreenState();
+
+
+
+}
+
+
+
+
+class CreateAccountScreenState extends State<CreateAccountScreen>{
+
+  var texto = 'Login' ;
   @override
   Widget build(BuildContext context){
-    return MaterialApp(
-      home: Material(
+    return Material(
         child: Scaffold(
           body:Container(
             width: double.infinity,
@@ -15,13 +38,13 @@ class CreateAccountScreen extends StatelessWidget{
             decoration:BoxDecoration(
               gradient: SweepGradient(colors: [Cores.instance.cor1,Cores.instance.cor6],center: AlignmentGeometry.bottomRight),
             ),child:
-          loginContainer(),),
+          loginContainer(context),),
         ),
-      ),
-    );
+      );
   }
 
-  Widget loginContainer(){
+  Widget loginContainer(BuildContext context){
+
 
     return Center(
       child: Container(
@@ -46,7 +69,7 @@ class CreateAccountScreen extends StatelessWidget{
               alignment: Alignment.centerLeft,
 
               child:
-                Text("Login",
+                Text(texto,
                 style:TextStyle(
                   color: Colors.white,
                   fontFamily: 'HubotSansExpanded',
@@ -63,9 +86,19 @@ class CreateAccountScreen extends StatelessWidget{
               padding: EdgeInsets.only(left: 25,right: 25),
               child:Column(
                 children: [
-                  TextFieldCustom('assets/userwhite.png',"Username"),
+                  TextFieldCustom(icon: 'assets/userwhite.png',label:"Username",controller: widget.usernameController, validator: (value){
+
+
+
+
+            }),
                   Container(height: 20,),
-                  TextFieldCustom('assets/cadeadowhite.png',"Passphrase")
+                  TextFieldCustom(icon: 'assets/cadeadowhite.png',label: "Passphrase",controller: widget.passphraseController, validator: (value){
+
+
+
+
+                  })
                 ],
               ),
             ),
@@ -74,8 +107,24 @@ class CreateAccountScreen extends StatelessWidget{
               spacing: 218,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(onPressed: (){}, icon: Image.asset('assets/voltarwhite.png',width: 40,height: 40,alignment: Alignment.bottomLeft,),),
-                IconButton(onPressed: (){}, icon: Image.asset('assets/seguirwhite.png',width: 40,height: 40,),alignment: Alignment.bottomRight)
+                IconButton(onPressed: (){
+                  Navigator.of(context).pushNamed('/init');
+                }, icon: Image.asset('assets/voltarwhite.png',width: 40,height: 40,alignment: Alignment.bottomLeft,),),
+                IconButton(onPressed: () async {
+
+                  if( await register(widget.usernameController.text,widget.passphraseController.text)){
+
+                    setState(() {
+                      texto = "aceito";
+                    });
+                  }else{
+                    setState(() {
+                      texto = "nao aceito";
+                    });
+                  }
+                  Text(texto,style: TextStyle(fontSize: 40),);
+
+                }, icon: Image.asset('assets/seguirwhite.png',width: 40,height: 40,),alignment: Alignment.bottomRight)
 
               ],
             )
@@ -90,17 +139,20 @@ class CreateAccountScreen extends StatelessWidget{
 }
 
 class TextFieldCustom extends StatefulWidget{
-  String icon = '';
-  String label = '';
+  final String icon;
+  final String label;
+  final String? Function(String?)? validator;
 
-  TextFieldCustom(String icon,String label){
-    this.icon = icon;
-    this.label = label;
-  }
+
+
+
+  final TextEditingController controller;
+
+
+  const TextFieldCustom({super.key,  required this.icon, required this.label, required this.controller, required this.validator});
 
   @override
-  State<TextFieldCustom> createState() => TestFieldCustomState(icon,label);
-
+  State<TextFieldCustom> createState() => TestFieldCustomState();
 
 }
 
@@ -110,15 +162,8 @@ class TestFieldCustomState extends State<TextFieldCustom>{
 
   FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
-  String icon = '';
-  String label = '';
 
 
-
-  TestFieldCustomState(String icon,String label){
-    this.icon = icon;
-    this.label = label;
-  }
 
   @override
     void initState(){
@@ -147,17 +192,19 @@ class TestFieldCustomState extends State<TextFieldCustom>{
           )
         ]
       ) ,
-      child:TextField(
-
+      child:TextFormField(
+        controller:widget.controller,
+        validator: widget.validator,
         focusNode: _focusNode,
         style: TextStyle(
+
           fontSize: 13,
           fontFamily: 'SFProDisplay',
           fontWeight: FontWeight.bold,
             color: Colors.white
         ),
         decoration: InputDecoration(
-          hintText: label,
+          hintText: widget.label,
             hintStyle: TextStyle(
               color: Colors.grey,
                   fontSize: 12,
@@ -165,7 +212,7 @@ class TestFieldCustomState extends State<TextFieldCustom>{
 
 
             prefixIcon: Padding(padding: EdgeInsets.only(left:10),child:
-            Image.asset(icon,width: 20,height: 20,),),
+            Image.asset(widget.icon,width: 20,height: 20,),),
             prefixIconConstraints: BoxConstraints(
                 minWidth: 25,
                 minHeight: 25

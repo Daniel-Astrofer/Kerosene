@@ -13,4 +13,5 @@ public interface Service {
     void createUserInDataBase(UserDataBase user);
     void deletar(Long id);
     UserDataBase fromDTO(SignupUserDTO signupUserDTO);
+    boolean findByUsername(String username);
 }

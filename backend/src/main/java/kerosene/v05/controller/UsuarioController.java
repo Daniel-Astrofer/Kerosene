@@ -3,7 +3,9 @@ package kerosene.v05.controller;
 import kerosene.v05.contracts.*;
 import kerosene.v05.dto.SignupUserDTO;
 import kerosene.v05.model.UserDataBase;
+import kerosene.v05.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -57,34 +59,39 @@ public class UsuarioController {
         return service.buscarPorId(id).orElse(null);
     }
 
-    /**
-     * Authenticates a user.
-     *
-     * @param signupUserDTO the user credentials
-     * @return ResponseEntity with authentication result
-     */
+
+
+    @PostMapping("/usernameExists")
+    public ResponseEntity<Void> usernameExists(@RequestBody String username){
+
+        return service.findByUsername(username) ? ResponseEntity.status(HttpStatus.CONFLICT).build() : ResponseEntity.status(HttpStatus.ACCEPTED).build();
+
+    }
+
     @PostMapping("/authenticate")
-    public boolean authenticateUser(@RequestBody SignupUserDTO signupUserDTO) {
-        return loginVerifier.checkUsername(signupUserDTO.getUsername()) && loginVerifier.passphraseMatcher(signupUserDTO.getUsername(), signupUserDTO.getPassphrase());
+    public ResponseEntity<String> authenticateUser(@RequestBody SignupUserDTO signupUserDTO) {
+        if(loginVerifier.checkUsername(signupUserDTO.getUsername()) && loginVerifier.passphraseMatcher(signupUserDTO.getUsername(), signupUserDTO.getPassphrase())){
+            return ResponseEntity.ok("Authenticated");
+        }return ResponseEntity.badRequest().body("Not Authenticated");
     }
 
 
     @PostMapping("/signup")
-    public ResponseEntity<String> createUserInRedis(@RequestBody SignupUserDTO signupUserDTO){
+    public ResponseEntity<Object> createUserInRedis(@RequestBody SignupUserDTO signupUserDTO){
 
         if (!signupVerifier.verify(signupUserDTO.getUsername(),signupUserDTO.getPassphrase())){
-            return ResponseEntity.badRequest().body("fez cagada no  bagulho");
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         String key = TOTPKeyGenerator.keyGenerator();
         String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "appName", signupUserDTO.getUsername(), key, "appName");
 
-
         signupUserDTO.setTOTPSecret(key);
 
         redisService.createTempUser(signupUserDTO);
 
-        return ResponseEntity.ok(otpUri);
+        return ResponseEntity.accepted().body(otpUri);
+
     }
     @PostMapping("/verify")
     public ResponseEntity<String> totpCodeVerify(@RequestBody SignupUserDTO signupUserDTO)  {

@@ -7,8 +7,13 @@ environment:
   sdk: '^3.9.2'
 
 dependencies:
+  bip39_mnemonic: ^4.0.1
+  blockchain_utils: ^1.0.0
+  qr_flutter: ^4.1.0
+  http: ^1.2.0
   flutter:
     sdk: flutter
+
   cupertino_icons: '^1.0.8'
 
 dev_dependencies:
@@ -39,6 +44,7 @@ flutter:
     - 'assets/voltarwhite.png'
     - 'assets/seguirwhite.png'
     - 'assets/cadeadoverify.png'
+    - 'assets/presentationimage.png'
   fonts:
     - family: "Lato"
       fonts:

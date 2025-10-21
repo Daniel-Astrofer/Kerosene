@@ -8,6 +8,7 @@ import kerosene.v05.repository.UsuarioRepository;
 import kerosene.v05.service.authentication.LoginValidator;
 import kerosene.v05.service.validation.SignupValidator;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -32,6 +33,11 @@ public class UsuarioService implements kerosene.v05.contracts.Service {
 
     public Optional<UserDataBase> buscarPorId(Long id) {
         return repository.findById(id);
+    }
+
+    public boolean findByUsername(String username) {
+        Optional<UserDataBase> userotp = repository.findByUsername(username);
+        return userotp.isPresent();
     }
 
     public void createUserInDataBase(UserDataBase user) {
