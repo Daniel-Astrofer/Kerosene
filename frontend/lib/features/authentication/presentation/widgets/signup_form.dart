@@ -7,11 +7,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/colors.dart';
+import 'package:teste/features/authentication/domain/entities/UserDTO.dart';
 import 'package:teste/features/authentication/domain/interactors/register_user.dart';
 import 'package:teste/features/authentication/domain/validators/passphrase_field_validator.dart';
 import 'package:teste/features/authentication/presentation/pages/login.dart';
+import 'package:teste/features/authentication/presentation/pages/totp_verification.dart';
 import 'package:teste/features/authentication/presentation/widgets/signup_row_buttons.dart';
 import 'package:teste/features/authentication/domain/usecases/mnemonic_bip39/bip39.dart';
+import 'package:teste/features/authentication/presentation/widgets/totp_qrcode.dart';
 
 
 class SignupForm extends StatefulWidget {
@@ -44,8 +47,6 @@ class _SignupFormState extends State<SignupForm> {
         mainAxisSize: MainAxisSize.min,
         spacing: 10,
         children: [
-          if( widget.totpsecret.isNotEmpty)
-            QrImageView(data: widget.totpsecret,version: QrVersions.auto,backgroundColor: Colors.white,size: 200,),
           SizedBox(
             width: (width * 0.9),
             child: TextFieldCustom(icon: 'assets/userwhite.png', label: 'User', controller: widget.userController, validator: (value){
@@ -154,8 +155,16 @@ class _SignupFormState extends State<SignupForm> {
               if(await usernameExists(widget.userController.text)){
                 final response = await create(widget.userController.text, widget.passphraseController.text);
                 setState(() {
+                  User.instance.setUsername(widget.userController.text);
+                  User.instance.setPassphrase(widget.passphraseController.text);
+
                   widget.totpsecret = response;
+                  User.instance.setTotpSecret(widget.totpsecret);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => TotpScreen(totpsecret: widget.totpsecret)));
                 });
+
+
+
 
               }
             }

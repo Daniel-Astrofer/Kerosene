@@ -5,13 +5,13 @@ public interface UserDTO {
 
     String getUsername();
     String getPassphrase();
-    String getTOTPSecret();
-    String getTOTPCode();
+    String getTotpSecret();
+    String getTotpCode();
 
     void setUsername(String username);
     void setPassphrase(String passphrase);
-    void setTOTPSecret(String totpSecret);
-    void setTOTPCode(String totpCode);
+    void setTotpSecret(String totpSecret);
+    void setTotpCode(String totpCode);
 
 
 

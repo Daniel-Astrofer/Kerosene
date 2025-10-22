@@ -18,6 +18,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
+import org.jboss.aerogear.security.otp.api.Base32;
 
 @Service
 public class UserRedisService implements RedisService {
@@ -52,15 +53,15 @@ public class UserRedisService implements RedisService {
 
         String hashPassString = hasher.hash(signupUserDTO.getPassphrase());
 
-        String totpSecret = signupUserDTO.getTOTPSecret();
+        String totpSecret = signupUserDTO.getTotpSecret();
 
         try{
 
 
             signupUserDTO.setPassphrase(hashPassString);
             byte[] encriptedTotp = cryptography.encrypt(totpSecret.getBytes(StandardCharsets.UTF_8),secretKey);
-            String totpString = new String(encriptedTotp,StandardCharsets.UTF_8);
-            signupUserDTO.setTOTPCode(totpString);
+            String totpString = Base32.encode(encriptedTotp);
+            signupUserDTO.setTotpSecret(totpString);
 
             String json = objectMapper.writeValueAsString(signupUserDTO);
 
@@ -87,7 +88,8 @@ public class UserRedisService implements RedisService {
 
     public String TOTPDecryptedToString(SignupUserDTO signupUserDTO, SecretKey keybase){
         try{
-            byte[] totp = cryptography.decrypt(signupUserDTO.getTOTPCode().getBytes(StandardCharsets.UTF_8),keybase);
+            byte[] decrypted = signupUserDTO.getTotpSecret().getBytes(StandardCharsets.UTF_8);
+            byte[] totp = cryptography.decrypt(decrypted,keybase);
             return new String(totp,StandardCharsets.UTF_8);
         }catch (Exception e){
             e.printStackTrace();
@@ -102,9 +104,9 @@ public class UserRedisService implements RedisService {
 
             String totpDecodedString = TOTPDecryptedToString(usuario,secretKey);
 
-            if (TOTPValidator.TOTPMatcher(totpDecodedString,usuario.getTOTPCode())){
+            if (TOTPValidator.TOTPMatcher(signupUserDTO.getTotpSecret(), signupUserDTO.getTotpCode())){
                 UserDataBase user = service.fromDTO(usuario);
-                user.setTOTPSecret(signupUserDTO.getTOTPSecret());
+                user.setTOTPSecret(signupUserDTO.getTotpSecret());
                     service.createUserInDataBase(user);
                 return true;
 

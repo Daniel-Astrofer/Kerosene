@@ -84,17 +84,21 @@ public class UsuarioController {
         }
 
         String key = TOTPKeyGenerator.keyGenerator();
-        String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "appName", signupUserDTO.getUsername(), key, "appName");
+        String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "Kerosene", signupUserDTO.getUsername(), key, "Kerosene");
 
-        signupUserDTO.setTOTPSecret(key);
+        signupUserDTO.setTotpSecret(key);
 
         redisService.createTempUser(signupUserDTO);
 
-        return ResponseEntity.accepted().body(otpUri);
+        return ResponseEntity.accepted().body(key);
 
     }
     @PostMapping("/verify")
     public ResponseEntity<String> totpCodeVerify(@RequestBody SignupUserDTO signupUserDTO)  {
+        System.out.println(signupUserDTO.getUsername());
+        System.out.println(signupUserDTO.getPassphrase());
+        System.out.println(signupUserDTO.getTotpSecret());
+        System.out.println(signupUserDTO.getTotpCode());
 
         if (!redisService.totpVerify(signupUserDTO)){
             return ResponseEntity.badRequest().body("Not verified");

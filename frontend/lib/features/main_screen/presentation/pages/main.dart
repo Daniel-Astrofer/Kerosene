@@ -8,6 +8,7 @@ import 'package:teste/colors.dart';
 import 'package:teste/features/authentication/presentation/pages/login.dart';
 import 'package:teste/features/authentication/presentation/pages/begin.dart';
 import 'package:teste/features/authentication/presentation/pages/signup.dart';
+import 'package:teste/features/authentication/presentation/pages/totp_verification.dart';
 
 
 class MainScreen extends StatelessWidget{
@@ -393,7 +394,8 @@ class MainMaterial extends StatelessWidget{
         '/login':(context) => CreateAccountScreen(),
         '/signup':(context) => SignupScreen(),
         '/init': (context)=> Presentation(),
-        '/': (context) => MainScreen()
+        '/': (context) => MainScreen(),
+        '/totp' : (context) => TotpScreen(totpsecret: '',),
       },initialRoute: '/init',
     );
   }

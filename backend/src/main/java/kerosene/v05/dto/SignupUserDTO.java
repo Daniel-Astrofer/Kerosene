@@ -25,12 +25,12 @@ public class SignupUserDTO implements UserDTO {
     }
 
     @Override
-    public String getTOTPSecret() {
+    public String getTotpSecret() {
         return totpSecret;
     }
 
     @Override
-    public String getTOTPCode() {
+    public String getTotpCode() {
         return totpCode;
     }
 
@@ -45,12 +45,12 @@ public class SignupUserDTO implements UserDTO {
     }
 
     @Override
-    public void setTOTPSecret(String totpSecret) {
+    public void setTotpSecret(String totpSecret) {
         this.totpSecret = totpSecret;
     }
 
     @Override
-    public void setTOTPCode(String totpCode) {
+    public void setTotpCode(String totpCode) {
         this.totpCode = totpCode;
     }
 }
