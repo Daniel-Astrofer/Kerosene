@@ -24,9 +24,10 @@ Future<bool> register(String username,
 
 Future<String> create(String username,String passphrase) async {
 
-  var url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/user/signup");
+  var url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/signup");
   var response = await http.post(url,
-  headers:{'Content-Type': 'application/json'},
+  headers:{'Content-Type': 'application/json',
+  'X-Device-Hash':'seraquedeucerto'},
   body: jsonEncode({'username': username, 'passphrase': passphrase}));
   String body = response.body;
   return body;
@@ -34,7 +35,7 @@ Future<String> create(String username,String passphrase) async {
 }
 
 Future<bool> usernameExists(String username) async{
-  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/user/usernameExists");
+  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/usernameExists");
   var response = await http.post(url,
   headers: {'Content-Type': 'application/json'},
   body: jsonEncode({'username': username}));
@@ -49,9 +50,10 @@ Future<bool> usernameExists(String username) async{
 
 Future<bool> verifytotp(User user) async{
 
-  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/user/verify");
+  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/code");
   var response = await http.post(url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json',
+      'X-Device-Hash':'seraquedeucerto'},
       body: jsonEncode({"username": user.username,
         "passphrase": user.passphrase,
         "totpSecret": user.totpSecret,

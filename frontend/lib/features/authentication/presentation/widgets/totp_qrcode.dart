@@ -2,10 +2,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:teste/features/authentication/domain/entities/UserDTO.dart';
 
 class TotpQrcode extends StatefulWidget {
-  const TotpQrcode({super.key, required this.totpsecret});
+  TotpQrcode({super.key, required this.totpsecret});
   final String totpsecret;
+  late String  otpPauth = "otpauth://totp/Kerosene:${User.instance.username}?secret=${totpsecret}&issuer=Kerosene&algorithm=SHA1&digits=6&period=30";
 
   @override
   State<TotpQrcode> createState() => _TotpQrcodeState();
@@ -23,7 +25,7 @@ class _TotpQrcodeState extends State<TotpQrcode> {
           children: [
             
             if(widget.totpsecret.isNotEmpty)
-              QrImageView(data: widget.totpsecret,
+              QrImageView(data: widget.otpPauth,
                 size: 200,
                 version: QrVersions.auto,
                 backgroundColor: Colors.white,)

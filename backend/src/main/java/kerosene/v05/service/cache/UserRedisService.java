@@ -59,9 +59,11 @@ public class UserRedisService implements RedisService {
 
 
             signupUserDTO.setPassphrase(hashPassString);
-            byte[] encriptedTotp = cryptography.encrypt(totpSecret.getBytes(StandardCharsets.UTF_8),secretKey);
-            String totpString = Base32.encode(encriptedTotp);
-            signupUserDTO.setTotpSecret(totpString);
+            byte[] encriptedTotpSecret = cryptography.encrypt(totpSecret.getBytes(StandardCharsets.UTF_8),secretKey);
+
+            String base64 = Base64.getEncoder().encodeToString(encriptedTotpSecret);
+
+            signupUserDTO.setTotpSecret(base64);
 
             String json = objectMapper.writeValueAsString(signupUserDTO);
 
@@ -87,9 +89,10 @@ public class UserRedisService implements RedisService {
 
 
     public String TOTPDecryptedToString(SignupUserDTO signupUserDTO, SecretKey keybase){
+
+        byte[] totpCoded =  Base64.getDecoder().decode(signupUserDTO.getTotpSecret());
         try{
-            byte[] decrypted = signupUserDTO.getTotpSecret().getBytes(StandardCharsets.UTF_8);
-            byte[] totp = cryptography.decrypt(decrypted,keybase);
+            byte[] totp = cryptography.decrypt(totpCoded,keybase);
             return new String(totp,StandardCharsets.UTF_8);
         }catch (Exception e){
             e.printStackTrace();
@@ -104,14 +107,15 @@ public class UserRedisService implements RedisService {
 
             String totpDecodedString = TOTPDecryptedToString(usuario,secretKey);
 
-            if (TOTPValidator.TOTPMatcher(signupUserDTO.getTotpSecret(), signupUserDTO.getTotpCode())){
+            if (TOTPValidator.TOTPMatcher(totpDecodedString,signupUserDTO.getTotpCode())){
                 UserDataBase user = service.fromDTO(usuario);
-                user.setTOTPSecret(signupUserDTO.getTotpSecret());
-                    service.createUserInDataBase(user);
+                user.setTOTPSecret(usuario.getTotpSecret());
+                service.createUserInDataBase(user);
                 return true;
 
             }
         }catch(Exception e){
+
             e.printStackTrace();
         }return false;
 

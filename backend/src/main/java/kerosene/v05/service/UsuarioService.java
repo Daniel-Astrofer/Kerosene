@@ -2,6 +2,7 @@ package kerosene.v05.service;
 
 import kerosene.v05.Exceptions;
 import kerosene.v05.contracts.Hasher;
+import kerosene.v05.contracts.User;
 import kerosene.v05.dto.SignupUserDTO;
 import kerosene.v05.model.UserDataBase;
 import kerosene.v05.repository.UsuarioRepository;
@@ -35,9 +36,9 @@ public class UsuarioService implements kerosene.v05.contracts.Service {
         return repository.findById(id);
     }
 
-    public boolean findByUsername(String username) {
-        Optional<UserDataBase> userotp = repository.findByUsername(username);
-        return userotp.isPresent();
+    public Optional<UserDataBase> findByUsername(String username) {
+
+        return repository.findByUsername(username);
     }
 
     public void createUserInDataBase(UserDataBase user) {

@@ -12,7 +12,24 @@ public class SignupUserDTO implements UserDTO {
     private String passphrase;
     private String totpSecret;
     private String totpCode;
+    private String ip;
+    private String deviceHash;
 
+    public String getDeviceHash() {
+        return deviceHash;
+    }
+
+    public void setDeviceHash(String deviceHash) {
+        this.deviceHash = deviceHash;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
 
     @Override
     public String getUsername() {

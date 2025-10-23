@@ -152,7 +152,7 @@ class _SignupFormState extends State<SignupForm> {
           ButtonsRow(onBack: () { Navigator.of(context).pushNamed('/init'); }, onNext: () async {
 
             if(widget.formKey.currentState!.validate()){
-              if(await usernameExists(widget.userController.text)){
+
                 final response = await create(widget.userController.text, widget.passphraseController.text);
                 setState(() {
                   User.instance.setUsername(widget.userController.text);
@@ -166,7 +166,7 @@ class _SignupFormState extends State<SignupForm> {
 
 
 
-              }
+
             }
 
 

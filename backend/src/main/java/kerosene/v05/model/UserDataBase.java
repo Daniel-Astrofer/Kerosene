@@ -6,7 +6,7 @@ import kerosene.v05.contracts.UserDB;
 
 
 @Entity()
-@Table(name = "users_credentials")
+@Table(schema = "auth", name = "users_credentials" )
 public class UserDataBase implements UserDB {
 
     public UserDataBase() {
@@ -53,6 +53,11 @@ public class UserDataBase implements UserDB {
     @Override
     public String getPassphrase() {
         return passphrase;
+    }
+
+    @Override
+    public long getId() {
+        return this.id;
     }
 
 }
