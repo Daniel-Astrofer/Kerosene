@@ -195,6 +195,7 @@ class TestFieldCustomState extends State<TextFieldCustom>{
       child:TextFormField(
         controller:widget.controller,
         validator: widget.validator,
+        keyboardType: TextInputType.text,
         focusNode: _focusNode,
         style: TextStyle(
 

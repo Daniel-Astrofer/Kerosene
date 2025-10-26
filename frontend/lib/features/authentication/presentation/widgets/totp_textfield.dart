@@ -5,7 +5,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:teste/features/authentication/domain/entities/UserDTO.dart';
+import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 import 'package:teste/features/authentication/domain/interactors/register_user.dart';
 
 class TotpTextField extends StatefulWidget {

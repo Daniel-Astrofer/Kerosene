@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<UserDataBase,Long> {
 
     Optional<UserDataBase> findByUsername(String username);
-    Boolean existsByUsernameAndPassphrase(String username,String passphrase);
+    boolean existsByUsername(String username);
+    boolean existsByUsernameAndPassphrase(String username,String passphrase);
 
 }

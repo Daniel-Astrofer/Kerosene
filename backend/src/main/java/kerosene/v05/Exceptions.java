@@ -3,6 +3,7 @@ package kerosene.v05;
 public class Exceptions {
 
 
+
     public static class AuthValidationException extends RuntimeException{
         public AuthValidationException(String message){
             super(message);

@@ -1,10 +1,14 @@
 package kerosene.v05.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import kerosene.v05.contracts.*;
 import kerosene.v05.dto.SignupUserDTO;
 import kerosene.v05.model.UserDataBase;
+import kerosene.v05.model.UserDevice;
 import kerosene.v05.repository.UsuarioRepository;
+import kerosene.v05.service.UserDeviceService;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +29,8 @@ public class UsuarioController {
    private final TOTPKeyGenerate TOTPKeyGenerator;
    private final Service service;
    private final RedisService redisService;
-   private final AuthenticationManager authentication;
+   private final UserDeviceService deviceService;
+   private final IP ip;
 
 
 
@@ -35,33 +40,36 @@ public class UsuarioController {
                              SignupVerifier signupVerifier,
                              TOTPKeyGenerate totpKeyGenerator,
                              @Qualifier("ServiceFromUser") Service service,
-                             RedisService redisService,
-                             AuthenticationManager authentication
+                             RedisService redisService, UserDeviceService deviceService,
+                             @Qualifier("IPValidator") IP ip
+
     ) {
         this.loginVerifier = loginVerifier;
-        this.authentication = authentication;
+
         this.signupVerifier = signupVerifier;
         TOTPKeyGenerator = totpKeyGenerator;
         this.service = service;
         this.redisService = redisService;
+        this.deviceService = deviceService;
+        this.ip = ip;
     }
 
-
+    
     @PostMapping("/login")
-    public ResponseEntity<String> authenticateUser(@RequestBody SignupUserDTO signupUserDTO) {
-        if(loginVerifier.loginUser(signupUserDTO)){
+    public ResponseEntity<String> login(@RequestBody SignupUserDTO signupUserDTO,HttpServletRequest request) {
+        if(loginVerifier.Matcher(signupUserDTO,request)){
             return ResponseEntity.status(HttpStatus.ACCEPTED).build();
         }return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
 
     @PostMapping("/signup")
-    public ResponseEntity<Object> createUserInRedis(@RequestBody SignupUserDTO signupUserDTO){
+    public ResponseEntity<Object> createUserInRedis(@RequestBody SignupUserDTO signupUserDTO, HttpServletRequest request){
+
 
         if (!signupVerifier.verify(signupUserDTO.getUsername(),signupUserDTO.getPassphrase())){
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
         }
-
         String key = TOTPKeyGenerator.keyGenerator();
         String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "Kerosene", signupUserDTO.getUsername(), key, "Kerosene");
 
@@ -72,18 +80,31 @@ public class UsuarioController {
         return ResponseEntity.ok(key);
 
     }
-    @PostMapping("/code")
-    public ResponseEntity<String> totpCodeVerify(@RequestBody SignupUserDTO signupUserDTO)  {
+    @PostMapping("/totp/verify")
+    public ResponseEntity<String> totpCodeVerify(@RequestBody SignupUserDTO signupUserDTO,HttpServletRequest request)  {
 
         if (!redisService.totpVerify(signupUserDTO)){
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
         }
-        Authentication auth = authentication.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        signupUserDTO.getUsername(),
-                        signupUserDTO.getPassphrase()
-                )
-        );return ResponseEntity.status(HttpStatus.CREATED).build();
+
+
+
+        String deviceHash = request.getHeader("X-Device-Hash");
+
+
+        if (!deviceHash.isEmpty() && !deviceHash.equalsIgnoreCase("unknown")){
+
+            UserDataBase user = service.findByUsername(signupUserDTO.getUsername()).get();
+            UserDevice device = new UserDevice();
+            device.setUser(user);
+            device.setDeviceHash(deviceHash);
+            device.setIpAddress(ip.getIP(request));
+            deviceService.create(device);
+
+        }
+
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
 }

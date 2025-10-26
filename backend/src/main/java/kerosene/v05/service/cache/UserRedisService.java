@@ -57,7 +57,6 @@ public class UserRedisService implements RedisService {
 
         try{
 
-
             signupUserDTO.setPassphrase(hashPassString);
             byte[] encriptedTotpSecret = cryptography.encrypt(totpSecret.getBytes(StandardCharsets.UTF_8),secretKey);
 

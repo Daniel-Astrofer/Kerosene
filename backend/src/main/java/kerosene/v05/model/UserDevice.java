@@ -5,7 +5,7 @@ package kerosene.v05.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(schema = "auth", name = "auth.users_device")
+@Table(schema = "auth", name = "users_device")
 public class UserDevice{
 
     @Id

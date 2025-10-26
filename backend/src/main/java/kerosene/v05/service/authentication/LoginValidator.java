@@ -1,13 +1,17 @@
 package kerosene.v05.service.authentication;
 
+import jakarta.servlet.http.HttpServletRequest;
 import kerosene.v05.Exceptions;
 
 import kerosene.v05.contracts.Hasher;
+import kerosene.v05.contracts.IP;
 import kerosene.v05.contracts.LoginVerifier;
 import kerosene.v05.contracts.SignupVerifier;
 import kerosene.v05.dto.SignupUserDTO;
 import kerosene.v05.model.UserDataBase;
+import kerosene.v05.model.UserDevice;
 import kerosene.v05.repository.UsuarioRepository;
+import kerosene.v05.service.UserDeviceService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -21,39 +25,49 @@ public class LoginValidator implements LoginVerifier {
 
     private final UsuarioRepository repository;
     private final Hasher hasher;
+    private final IP ip;
+    private final UserDeviceService deviceService;
 
     public LoginValidator(UsuarioRepository repository,
-                          @Qualifier("SHAHasher") Hasher hasher
+                          @Qualifier("SHAHasher") Hasher hasher,
+                          @Qualifier("IPValidator") IP ip,
+                          UserDeviceService deviceService
     ) {
         this.repository = repository;
         this.hasher = hasher;
+        this.ip = ip;
+        this.deviceService = deviceService;
     }
 
-    @Override
-    public boolean checkUsername(String username) throws Exceptions.UserNoExists{
-        return repository.findByUsername(username).isPresent();
-    }
-    @Override
-    public boolean passphraseMatcher(String username,String passphrase)throws Exceptions.InvalidPassphrase {
 
-        return repository.existsByUsernameAndPassphrase(
-                username,
-                passphrase
-        );
-    }
 
-    public boolean loginUser(SignupUserDTO user) {
+
+
+    public boolean Matcher(SignupUserDTO user, HttpServletRequest request){
 
         String username = user.getUsername();
         String passphrase = hasher.hash(user.getPassphrase());
-        try {
-            return checkUsername(username) && passphraseMatcher(username, passphrase);
-        } catch (Exceptions.UserNoExists | Exceptions.InvalidPassphrase e ) {
-            return false;
-        }
+
+            if (repository.existsByUsernameAndPassphrase(username,passphrase)){
+
+                UserDataBase person = repository.findByUsername(username).get();
+                long clientId = person.getId();
+                String requestIp = ip.getIP(request);
+
+                UserDevice device = deviceService.find(clientId).get();
+                String clientIp = device.getIpAddress();
+                String clientDeviceHash = device.getDeviceHash();
+                String requestDeviceHash  = ip.getDeviceHash(request);
+
+                return requestIp.equals(clientIp) && requestDeviceHash.equals(clientDeviceHash);
+
+
+            } return false;
+
+
+
+
     }
-
-
 
 
 }

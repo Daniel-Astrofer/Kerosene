@@ -2,6 +2,7 @@ package kerosene.v05.service;
 
 
 
+import kerosene.v05.model.UserDataBase;
 import kerosene.v05.model.UserDevice;
 import kerosene.v05.repository.UserDeviceRepository;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,8 @@ import java.util.Optional;
 public class UserDeviceService {
 
     private final UserDeviceRepository deviceRepository;
+
+
 
     public UserDeviceService(UserDeviceRepository deviceRepository){
 
@@ -25,6 +28,10 @@ public class UserDeviceService {
         deviceRepository.save(userDevice);
 
     }
+    public Optional<UserDevice> find(long userId){
+        return deviceRepository.findByUserId(userId);
+    }
+
 
     public boolean delete(UserDevice userDevice){
 

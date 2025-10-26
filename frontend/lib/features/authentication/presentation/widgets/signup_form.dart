@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/colors.dart';
-import 'package:teste/features/authentication/domain/entities/UserDTO.dart';
+import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 import 'package:teste/features/authentication/domain/interactors/register_user.dart';
 import 'package:teste/features/authentication/domain/validators/passphrase_field_validator.dart';
 import 'package:teste/features/authentication/presentation/pages/login.dart';

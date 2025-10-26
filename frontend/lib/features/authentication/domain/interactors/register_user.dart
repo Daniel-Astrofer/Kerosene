@@ -1,18 +1,19 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:teste/features/authentication/domain/entities/UserDTO.dart';
+import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 
 Future<bool> register(String username,
                       String passphrase) async{
 
   
-  var url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/user/authenticate");
+  var url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/login");
   var response = await http.post(url,
-  headers: {'Content-Type': 'application/json'},
+  headers: {'Content-Type': 'application/json',
+  'X-Device-hash':'seraquedeucerto'},
   body: jsonEncode({'username':username, 'passphrase': passphrase}));
 
-  if(response.statusCode == 200 ) {
+  if(response.statusCode == 202 ) {
     var data = jsonDecode(response.body);
 
     return true;
@@ -50,7 +51,7 @@ Future<bool> usernameExists(String username) async{
 
 Future<bool> verifytotp(User user) async{
 
-  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/code");
+  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/totp/verify");
   var response = await http.post(url,
       headers: {'Content-Type': 'application/json',
       'X-Device-Hash':'seraquedeucerto'},

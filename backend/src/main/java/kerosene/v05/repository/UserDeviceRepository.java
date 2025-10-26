@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface UserDeviceRepository extends JpaRepository<UserDevice, Long> {
 
-    Optional<UserDevice> findById(long id);
+    Optional<UserDevice> findByUserId(long id);
     Optional<UserDevice> findByIdAndDeviceHash(long id,String deviceHash);
 
 

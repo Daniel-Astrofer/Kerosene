@@ -2,7 +2,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/features/authentication/domain/entities/UserDTO.dart';
+import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 
 class TotpQrcode extends StatefulWidget {
   TotpQrcode({super.key, required this.totpsecret});
