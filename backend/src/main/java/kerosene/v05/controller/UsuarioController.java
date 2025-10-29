@@ -31,11 +31,7 @@ public class UsuarioController {
    private final RedisService redisService;
    private final UserDeviceService deviceService;
    private final IP ip;
-
-
-
-
-
+   
     public UsuarioController(LoginVerifier loginVerifier,
                              SignupVerifier signupVerifier,
                              TOTPKeyGenerate totpKeyGenerator,
@@ -54,22 +50,16 @@ public class UsuarioController {
         this.ip = ip;
     }
 
-    
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody SignupUserDTO signupUserDTO,HttpServletRequest request) {
-        if(loginVerifier.Matcher(signupUserDTO,request)){
-            return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-        }return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        loginVerifier.Matcher(signupUserDTO,request);
+        return ResponseEntity.ok("Login successful");
     }
-
 
     @PostMapping("/signup")
     public ResponseEntity<Object> createUserInRedis(@RequestBody SignupUserDTO signupUserDTO, HttpServletRequest request){
 
-
-        if (!signupVerifier.verify(signupUserDTO.getUsername(),signupUserDTO.getPassphrase())){
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
-        }
+        signupVerifier.verify(signupUserDTO.getUsername(),signupUserDTO.getPassphrase());
         String key = TOTPKeyGenerator.keyGenerator();
         String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "Kerosene", signupUserDTO.getUsername(), key, "Kerosene");
 
@@ -77,20 +67,15 @@ public class UsuarioController {
 
         redisService.createTempUser(signupUserDTO);
 
-        return ResponseEntity.ok(key);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(key);
 
     }
     @PostMapping("/totp/verify")
     public ResponseEntity<String> totpCodeVerify(@RequestBody SignupUserDTO signupUserDTO,HttpServletRequest request)  {
 
-        if (!redisService.totpVerify(signupUserDTO)){
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
-        }
-
-
+       redisService.totpVerify(signupUserDTO);
 
         String deviceHash = request.getHeader("X-Device-Hash");
-
 
         if (!deviceHash.isEmpty() && !deviceHash.equalsIgnoreCase("unknown")){
 

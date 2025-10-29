@@ -4,6 +4,7 @@ public class Exceptions {
 
 
 
+
     public static class AuthValidationException extends RuntimeException{
         public AuthValidationException(String message){
             super(message);
@@ -49,6 +50,9 @@ public class Exceptions {
             public InvalidPassphrase(String message){
                 super(message);
             }
+        }
+        public static class incorrectTotp extends AuthValidationException{
+            public incorrectTotp(String message){ super(message); }
         }
 
 

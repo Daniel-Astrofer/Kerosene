@@ -3,6 +3,7 @@ package kerosene.v05.service.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kerosene.v05.Exceptions;
 import kerosene.v05.contracts.Cryptography;
 import kerosene.v05.contracts.Hasher;
 import kerosene.v05.contracts.RedisService;
@@ -98,9 +99,7 @@ public class UserRedisService implements RedisService {
         }return null;
     }
 
-    public Boolean totpVerify(SignupUserDTO signupUserDTO){
-
-        try {
+    public Boolean totpVerify(SignupUserDTO signupUserDTO)throws Exceptions.incorrectTotp {
 
             SignupUserDTO usuario = jsonToSignupUserDTO("signup:", signupUserDTO.getUsername());
 
@@ -112,11 +111,9 @@ public class UserRedisService implements RedisService {
                 service.createUserInDataBase(user);
                 return true;
 
+            }else {
+                throw new Exceptions.incorrectTotp("Incorrect TOTP code");
             }
-        }catch(Exception e){
-
-            e.printStackTrace();
-        }return false;
 
     }
 
