@@ -35,19 +35,7 @@ Future<String> create(String username,String passphrase) async {
 
 }
 
-Future<bool> usernameExists(String username) async{
-  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/usernameExists");
-  var response = await http.post(url,
-  headers: {'Content-Type': 'application/json'},
-  body: jsonEncode({'username': username}));
 
-  if(response.statusCode == 202) return true;
-  else{
-    return false;
-  }
-
-
-}
 
 Future<bool> verifytotp(User user) async{
 
