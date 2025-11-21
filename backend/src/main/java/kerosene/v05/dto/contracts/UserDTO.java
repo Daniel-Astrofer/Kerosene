@@ -2,7 +2,6 @@ package kerosene.v05.dto.contracts;
 
 public interface UserDTO {
 
-
     String getUsername();
     String getPassphrase();
     String getTotpSecret();

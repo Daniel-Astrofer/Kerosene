@@ -1,4 +1,4 @@
-package kerosene.v05.application.service.cripto.encrypter;
+package kerosene.v05.application.service.cripto.hasher;
 
 
 import kerosene.v05.application.service.cripto.contracts.Hasher;
@@ -8,11 +8,17 @@ import org.springframework.stereotype.Component;
 
 @Component("BcryptHasher")
 public class BcriptHasher implements Hasher {
+    private SHA256 sha256;
+
+    public BcriptHasher(SHA256 sha256) {
+        this.sha256 = sha256;
+    }
 
     @Override
     public String hash(String passphrase) {
+        String pass = sha256.hash(passphrase);
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        return passwordEncoder.encode(passphrase);
+        return passwordEncoder.encode(pass);
     }
     @Override
     public Boolean verify(String passphrase,String hash){

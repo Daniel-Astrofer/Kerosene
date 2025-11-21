@@ -30,7 +30,7 @@ public class LoginValidator implements LoginVerifier {
     private final UserDeviceService deviceService;
 
     public LoginValidator(UserRepository repository,
-                          @Qualifier("SHAHasher") Hasher hasher,
+                          @Qualifier("BcryptHasher") Hasher hasher,
                           @Qualifier("IPValidator") IP ip,
                           UserDeviceService deviceService
     ) {

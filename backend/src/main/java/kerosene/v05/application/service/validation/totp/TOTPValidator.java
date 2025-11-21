@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -20,16 +21,21 @@ import java.util.Base64;
 @Service
 public class TOTPValidator implements TOTPVerifier {
 
-    @Value("${api.secret.aes.secret}")
-    private SecretKey secretKey;
+;
     private final RedisService service;
-
     private final Cryptography cryptography ;
+    private SecretKey secretKey;
+
 
     public TOTPValidator(RedisService service,
-                         @Qualifier("aes256") Cryptography cryptography) {
+                         @Qualifier("aes256") Cryptography cryptography,
+                         @Value("${api.secret.aes.secret}") String secretKey) {
         this.service = service;
+
         this.cryptography = cryptography;
+        byte[] decodedKey = Base64.getDecoder().decode(secretKey);
+        this.secretKey = new SecretKeySpec(decodedKey, "AES");
+
     }
 
     @Override
@@ -41,6 +47,7 @@ public class TOTPValidator implements TOTPVerifier {
     }
     @Override
     public String totpDecryptedToString(String totpSecret, SecretKey secretKey){
+
         byte[] totpCoded =  Base64.getDecoder().decode(totpSecret);
         try{
             byte[] totp = cryptography.decrypt(totpCoded,secretKey);
@@ -53,7 +60,6 @@ public class TOTPValidator implements TOTPVerifier {
     @Override
     public void totpVerify(String totpSecret,String totpCode){
 
-        /*UserDTO usuario = service.getFromRedis(userDTO); */
         String totp = totpDecryptedToString(totpSecret,secretKey);
 
         if (!totpMatcher(totp, totpCode)){

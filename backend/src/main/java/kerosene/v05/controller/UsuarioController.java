@@ -2,6 +2,7 @@ package kerosene.v05.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import kerosene.v05.application.orchestrator.login.contracts.Login;
+import kerosene.v05.application.orchestrator.login.contracts.Signup;
 import kerosene.v05.application.service.validation.totp.contratcs.TOTPKeyGenerate;
 import kerosene.v05.application.service.user.contract.UserServiceContract;
 import kerosene.v05.application.service.validation.ip_handler.contracts.IP;
@@ -33,7 +34,7 @@ public class UsuarioController {
    private final UserDeviceService deviceService;
    private final IP ip;
    private final JwtService jwt;
-   private final TOTPVerifier totp;
+   private final Signup signup;
    
     public UsuarioController(Login login,
                              SignupVerifier signupVerifier,
@@ -42,7 +43,7 @@ public class UsuarioController {
                              RedisService redisService, UserDeviceService deviceService,
                              @Qualifier("IPValidator") IP ip,
                              @Qualifier("JwtService") JwtService jwt,
-                             TOTPVerifier totp1
+                             TOTPVerifier totp1, Signup signup
 
     ) {
         this.login = login;
@@ -55,8 +56,9 @@ public class UsuarioController {
         this.deviceService = deviceService;
         this.ip = ip;
         this.jwt = jwt;
+        this.signup = signup;
 
-        this.totp = totp1;
+
     }
 
     @PostMapping("/login")
@@ -82,14 +84,17 @@ public class UsuarioController {
     @PostMapping("/totp/verify")
     public ResponseEntity<String> totpCodeVerify(@RequestBody UserDTO userDTO, HttpServletRequest request)  {
 
-        totp.totpVerify(userDTO);
+
+        signup.signupUser(userDTO);
         String deviceHash = request.getHeader("X-Device-Hash");
         String token = "";
 
 
         if (!deviceHash.isEmpty() && !deviceHash.equalsIgnoreCase("unknown")){
 
-            UserDataBase user = service.findByUsername(userDTO.getUsername()).get();
+            UserDataBase user = service.fromDTO(userDTO);
+            service.createUserInDataBase(user);
+
             UserDevice device = new UserDevice();
             device.setUser(user);
             device.setDeviceHash(deviceHash);

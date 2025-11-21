@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -17,23 +18,27 @@ import java.util.Base64;
 @Service
 public class RedisService implements kerosene.v05.application.service.cache.contracts.RedisService {
 
-    @Value("${api.secret.aes.secret}")
-    private static String keybase;
-    static final byte[] decodedKey = Base64.getDecoder().decode(keybase);
-    static final SecretKeySpec secretKey = new SecretKeySpec(decodedKey,"AES");
-
     private final Cryptography cryptography;
     private final RedisRepository repository;
     private final Hasher hasher;
     private static final String key = "signup:" ;
+    private String keybase;
+    private SecretKey secretKey;
 
-    public RedisService(RedisRepository repository,
-                        @Qualifier("aes256") Cryptography cryptography,
-                        @Qualifier("Bcrypt") Hasher hasher)
-    {
+
+    public RedisService(
+            RedisRepository repository,
+            @Qualifier("aes256") Cryptography cryptography,
+            @Qualifier("SHAHasher") Hasher hasher,
+            @Value("${api.secret.aes.secret}") String keybase
+    ) {
         this.repository = repository;
         this.cryptography = cryptography;
         this.hasher = hasher;
+        this.keybase = keybase;
+
+        byte[] decodedKey = Base64.getDecoder().decode(keybase);
+        this.secretKey = new SecretKeySpec(decodedKey, "AES");
     }
 
     @Override
@@ -57,6 +62,7 @@ public class RedisService implements kerosene.v05.application.service.cache.cont
 
     @Override
     public UserDTO getFromRedis(UserDTO dto) {
+
         return repository.find(key, dto);
     }
 
@@ -64,6 +70,5 @@ public class RedisService implements kerosene.v05.application.service.cache.cont
     public void deleteFromRedis(UserDTO dto) {
         repository.delete(key, dto);
     }
-
 
 }

@@ -47,6 +47,8 @@ public class UserService implements UserServiceContract {
         UserDataBase user = new UserDataBase();
         user.setPassphrase(userDTO.getPassphrase());
         user.setUsername(userDTO.getUsername());
+        user.setTOTPSecret(userDTO.getTotpSecret());
+
 
         return user;
     }

@@ -15,6 +15,7 @@ public class Redis implements RedisRepository{
     private final ObjectMapper mapper;
     private final StringRedisTemplate redis;
 
+
     public Redis(ObjectMapper mapper, StringRedisTemplate redis) {
         this.mapper = mapper;
         this.redis = redis;
@@ -34,9 +35,10 @@ public class Redis implements RedisRepository{
     }
 
     @Override
-    public UserDTO find(String key ,UserDTO dto) {
+    public kerosene.v05.dto.UserDTO find(String key , UserDTO dto) {
         try {
-            return mapper.readValue(redis.opsForValue().get(key + dto.getUsername()),UserDTO.class);
+            System.out.println(dto.getUsername());
+            return mapper.readValue(redis.opsForValue().get("signup:" + dto.getUsername()), kerosene.v05.dto.UserDTO.class);
         }catch (JsonProcessingException e){
             throw new AuthExceptions.InvalidCredentials("User not found");
         }
