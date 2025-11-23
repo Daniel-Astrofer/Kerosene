@@ -32,7 +32,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t   app:latest -f backend/dockerfile backend
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest -f backend/dockerfile backend
 
       - name: Push image
         run: |
