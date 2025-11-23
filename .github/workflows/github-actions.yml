@@ -28,7 +28,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t   app:latest -f backend/dockerfile .
+          docker build -t   app:latest -f backend/dockerfile backend
 
       - name: Push image
         run: |
