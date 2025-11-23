@@ -28,7 +28,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+          docker build -t ***:latest -f backend/Dockerfile .
 
       - name: Push image
         run: |
