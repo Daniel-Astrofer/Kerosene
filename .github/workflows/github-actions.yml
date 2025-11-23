@@ -36,4 +36,4 @@ jobs:
 
       - name: Push image
         run: |
-          docker push ${{ secrets.ECR_REPOSITORY }}app:latest
+          docker push ${{ secrets.ECR_REPOSITORY }}app:latest -f backend/dockerfile backend
