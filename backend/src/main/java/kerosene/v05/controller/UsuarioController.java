@@ -3,6 +3,7 @@ package kerosene.v05.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import kerosene.v05.application.orchestrator.login.contracts.Login;
 import kerosene.v05.application.orchestrator.login.contracts.Signup;
+import kerosene.v05.application.orchestrator.signup.SignupUseCase;
 import kerosene.v05.application.service.validation.totp.contratcs.TOTPKeyGenerate;
 import kerosene.v05.application.service.user.contract.UserServiceContract;
 import kerosene.v05.application.service.validation.ip_handler.contracts.IP;
@@ -25,86 +26,32 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 public class UsuarioController {
-
    private final Login login;
-   private final SignupVerifier signupVerifier;
-   private final TOTPKeyGenerate TOTPKeyGenerator;
-   private final UserServiceContract service;
-   private final RedisService redisService;
-   private final UserDeviceService deviceService;
-   private final IP ip;
-   private final JwtService jwt;
    private final Signup signup;
-   
-    public UsuarioController(Login login,
-                             SignupVerifier signupVerifier,
-                             TOTPKeyGenerate totpKeyGenerator,
-                             @Qualifier("ServiceFromUser") UserServiceContract service,
-                             RedisService redisService, UserDeviceService deviceService,
-                             @Qualifier("IPValidator") IP ip,
-                             @Qualifier("JwtService") JwtService jwt,
-                             TOTPVerifier totp1, Signup signup
 
+    public UsuarioController(Login login,
+                             Signup signup
     ) {
         this.login = login;
-
-
-        this.signupVerifier = signupVerifier;
-        TOTPKeyGenerator = totpKeyGenerator;
-        this.service = service;
-        this.redisService = redisService;
-        this.deviceService = deviceService;
-        this.ip = ip;
-        this.jwt = jwt;
         this.signup = signup;
-
-
     }
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody UserDTO userDTO, HttpServletRequest request) {
         String id = login.loginUser(userDTO,request);
+
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(id) ;
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> createUserInRedis(@RequestBody UserDTO userDTO, HttpServletRequest request){
-
-        signupVerifier.verify(userDTO.getUsername(), userDTO.getPassphrase());
-        String key = TOTPKeyGenerator.keyGenerator();
-        String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "Kerosene", userDTO.getUsername(), key, "Kerosene");
-
-        userDTO.setTotpSecret(key);
-
-        redisService.createTempUser(userDTO);
+    public ResponseEntity<String> signup(@RequestBody UserDTO userDTO, HttpServletRequest request){
+        String key = signup.signupUser(userDTO);
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(key);
-
     }
-    @PostMapping("/totp/verify")
+    @PostMapping("/signup/totp/verify")
     public ResponseEntity<String> totpCodeVerify(@RequestBody UserDTO userDTO, HttpServletRequest request)  {
-
-
-        signup.signupUser(userDTO);
-        String deviceHash = request.getHeader("X-Device-Hash");
-        String token = "";
-
-
-        if (!deviceHash.isEmpty() && !deviceHash.equalsIgnoreCase("unknown")){
-
-            UserDataBase user = service.fromDTO(userDTO);
-            service.createUserInDataBase(user);
-
-            UserDevice device = new UserDevice();
-            device.setUser(user);
-            device.setDeviceHash(deviceHash);
-            device.setIpAddress(ip.getIP(request));
-            deviceService.create(device);
-            token = jwt.generateToken(user.getId(),device.getDeviceHash());
-
-        }
-
-
+        String token = signup.createUser(userDTO,request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(token);
     }
 

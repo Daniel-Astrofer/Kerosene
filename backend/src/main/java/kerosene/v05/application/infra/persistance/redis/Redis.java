@@ -3,7 +3,7 @@ package kerosene.v05.application.infra.persistance.redis;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kerosene.v05.AuthExceptions;
-import kerosene.v05.dto.contracts.UserDTO;
+import kerosene.v05.dto.UserDTO;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 

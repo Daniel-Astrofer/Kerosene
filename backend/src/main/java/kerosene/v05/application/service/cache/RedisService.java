@@ -4,7 +4,7 @@ package kerosene.v05.application.service.cache;
 import kerosene.v05.application.infra.persistance.redis.RedisRepository;
 import kerosene.v05.application.service.cripto.contracts.Cryptography;
 import kerosene.v05.application.service.cripto.contracts.Hasher;
-import kerosene.v05.dto.contracts.UserDTO;
+import kerosene.v05.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

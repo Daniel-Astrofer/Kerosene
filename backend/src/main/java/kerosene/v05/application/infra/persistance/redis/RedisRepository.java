@@ -1,6 +1,6 @@
 package kerosene.v05.application.infra.persistance.redis;
 
-import kerosene.v05.dto.contracts.UserDTO;
+import kerosene.v05.dto.UserDTO;
 
 import java.time.Duration;
 

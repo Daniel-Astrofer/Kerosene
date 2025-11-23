@@ -64,6 +64,9 @@ public class AuthExceptions {
                 super(message);
             }
         }
+        public static class TotpTimeExceded extends AuthValidationException{
+            public TotpTimeExceded(String message){super(message);}
+        }
 
 
 

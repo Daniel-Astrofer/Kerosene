@@ -5,6 +5,7 @@ import kerosene.v05.application.service.authentication.contracts.SignupVerifier;
 import kerosene.v05.application.infra.persistance.jpa.UserRepository;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.crypto.MnemonicException;
+import org.reactivestreams.Publisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -79,7 +80,7 @@ public class SignupValidator implements SignupVerifier {
             throw new AuthExceptions.UserAlreadyExistsException("User already exists");
         }
     }
-    public boolean verify(String username,String passphrase) {
+    public boolean verify(String username, String passphrase) {
 
         checkUsernameNotNull(username);
         checkPassphraseNotNull(passphrase);

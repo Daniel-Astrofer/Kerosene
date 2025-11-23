@@ -1,7 +1,7 @@
 package kerosene.v05.application.service.cache.contracts;
 
 
-import kerosene.v05.dto.contracts.UserDTO;
+import kerosene.v05.dto.UserDTO;
 
 
 public interface RedisService {

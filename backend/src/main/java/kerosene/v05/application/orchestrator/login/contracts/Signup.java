@@ -1,9 +1,14 @@
 package kerosene.v05.application.orchestrator.login.contracts;
 
-import kerosene.v05.dto.contracts.UserDTO;
+import jakarta.servlet.http.HttpServletRequest;
+import kerosene.v05.dto.UserDTO;
 
 public interface Signup {
 
-    void signupUser(UserDTO dto);
 
+
+    String signupUser(UserDTO dto);
+
+    String createUser(UserDTO dto,
+                    HttpServletRequest request);
 }

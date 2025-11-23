@@ -64,7 +64,7 @@ public class RestResponseErrors extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthExceptions.UnrrecognizedDevice.class)
     public ResponseEntity<ResponseError> unrecognizedDevice(AuthExceptions.UnrrecognizedDevice ex,
                                                             HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header("Next-Endpoint", "auth/totp/verify").body(
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header("Next-Endpoint", "auth/signup/totp/verify").body(
                 new ResponseError(
                 LocalDateTime.now(),
                 HttpStatus.SEE_OTHER,
@@ -72,6 +72,20 @@ public class RestResponseErrors extends ResponseEntityExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         ));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ResponseError> TotpTimeExceded (AuthExceptions.TotpTimeExceded ex,
+                                                          HttpServletRequest request){
+        return ResponseEntity.status(HttpStatus.GONE).body(
+                new ResponseError(
+                        LocalDateTime.now(),
+                        HttpStatus.GONE,
+                        "account is no more available,signup again",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                )
+        );
     }
 
 }
