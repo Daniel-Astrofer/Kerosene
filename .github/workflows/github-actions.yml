@@ -36,4 +36,4 @@ jobs:
 
       - name: Push image
         run: |
-          docker push ${{ secrets.ECR_REPOSITORY }}:latest
+          docker push ${{ secrets.ECR_REPOSITORY }}app:latest
