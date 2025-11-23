@@ -1,5 +1,6 @@
 package kerosene.v05.application.infra.security;
 
+import kerosene.v05.application.service.validation.jwt.contracts.JwtServicer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -40,7 +41,7 @@ public class Security {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtServicer jwtService) {
         return new JwtAuthenticationFilter(jwtService);
     }
 

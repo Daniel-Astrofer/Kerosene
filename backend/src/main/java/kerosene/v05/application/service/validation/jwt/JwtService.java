@@ -3,6 +3,7 @@ package kerosene.v05.application.service.validation.jwt;
 
 
 import io.jsonwebtoken.Jwts;
+import kerosene.v05.application.service.validation.jwt.contracts.JwtServicer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +12,7 @@ import java.util.Date;
 
 
 @Service("JwtService")
-public class JwtService implements kerosene.v05.application.infra.security.JwtService {
+public class JwtService implements JwtServicer {
 
     @Value("${api.secret.token.secret}")
     private String secretKey ;

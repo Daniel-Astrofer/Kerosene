@@ -2,16 +2,14 @@ package kerosene.v05.service.orchestratorTest.signupTest;
 
 
 import jakarta.servlet.http.HttpServletRequest;
-import kerosene.v05.application.infra.security.JwtService;
+import kerosene.v05.application.service.validation.jwt.contracts.JwtServicer;
 import kerosene.v05.application.orchestrator.signup.SignupUseCase;
 import kerosene.v05.application.service.cache.contracts.RedisService;
 import kerosene.v05.application.service.device.UserDeviceService;
 import kerosene.v05.application.service.user.contract.UserServiceContract;
 import kerosene.v05.application.service.validation.ip_handler.contracts.IP;
 import kerosene.v05.dto.UserDTO;
-import kerosene.v05.model.contracts.User;
 import kerosene.v05.model.entity.UserDataBase;
-import kerosene.v05.model.entity.UserDevice;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +31,7 @@ public class signupCreateUserTest {
     private UserServiceContract userService;
 
     @Mock
-    private JwtService jwt;
+    private JwtServicer jwt;
 
     @Mock
     private UserDeviceService deviceService;

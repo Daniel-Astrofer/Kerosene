@@ -2,7 +2,7 @@ package kerosene.v05.application.orchestrator.signup;
 
 import jakarta.servlet.http.HttpServletRequest;
 import kerosene.v05.AuthExceptions;
-import kerosene.v05.application.infra.security.JwtService;
+import kerosene.v05.application.service.validation.jwt.contracts.JwtServicer;
 import kerosene.v05.application.orchestrator.login.contracts.Signup;
 import kerosene.v05.application.service.authentication.contracts.SignupVerifier;
 import kerosene.v05.application.service.cache.contracts.RedisService;
@@ -25,7 +25,7 @@ public class SignupUseCase implements Signup {
     private final UserServiceContract userService;
     private final UserDeviceService deviceService;
     private final IP ip;
-    private final JwtService jwt;
+    private final JwtServicer jwt;
     public SignupUseCase(RedisService cacheService,
                          TOTPKeyGenerate totpGenerator,
                          SignupVerifier verifier,
@@ -33,7 +33,7 @@ public class SignupUseCase implements Signup {
                          UserServiceContract userService,
                          UserDeviceService deviceService,
                          IP ip,
-                         JwtService jwt) {
+                         JwtServicer jwt) {
         this.cacheService = cacheService;
         this.totpGenerator = totpGenerator;
         this.verifier = verifier;

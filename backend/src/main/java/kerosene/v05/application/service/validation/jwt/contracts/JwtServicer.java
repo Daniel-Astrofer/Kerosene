@@ -1,6 +1,6 @@
-package kerosene.v05.application.infra.security;
+package kerosene.v05.application.service.validation.jwt.contracts;
 
-public interface JwtService {
+public interface JwtServicer {
     String generateToken(long id , String devicehash );
     String extractDevice(String token);
     long extractId(String token);
