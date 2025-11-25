@@ -1,3 +1,5 @@
+![Logo](./kerosene-logo.png)
+
 # KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (PRE-ALPHA-1.0.0)
 
 Plataforma de pagamentos e custódia cripto, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
