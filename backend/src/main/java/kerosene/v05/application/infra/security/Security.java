@@ -32,7 +32,8 @@ public class Security {
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers("/auth/signup").permitAll()
-                        .requestMatchers("/auth/totp/verify").permitAll()
+                        .requestMatchers("/auth/signup/totp/verify").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
                         .anyRequest().authenticated()
                 ).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

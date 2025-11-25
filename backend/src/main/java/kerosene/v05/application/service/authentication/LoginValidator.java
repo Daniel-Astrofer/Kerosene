@@ -30,7 +30,7 @@ public class LoginValidator implements LoginVerifier {
     private final UserDeviceService deviceService;
 
     public LoginValidator(UserRepository repository,
-                          @Qualifier("BcryptHasher") Hasher hasher,
+                          @Qualifier("SHAHasher") Hasher hasher,
                           @Qualifier("IPValidator") IP ip,
                           UserDeviceService deviceService
     ) {
@@ -52,6 +52,9 @@ public class LoginValidator implements LoginVerifier {
 
             if (user.isPresent()){
                 UserDataBase person = user.get();
+
+                if (!person.getPassphrase().equals(passphrase)) throw new AuthExceptions.InvalidCredentials("Passphrase or username incorrect");
+
                 long clientId = person.getId();
 
                 String requestIp = ip.getIP(request);
@@ -59,9 +62,9 @@ public class LoginValidator implements LoginVerifier {
                 String clientIp = device.getIpAddress();
                 String clientDeviceHash = device.getDeviceHash();
                 String requestDeviceHash  = ip.getDeviceHash(request);
-                if (!clientDeviceHash.equals(requestDeviceHash)){
-                    throw new AuthExceptions.UnrrecognizedDevice("Your device is not recognized");
-                }
+
+                if (!clientDeviceHash.equals(requestDeviceHash)) throw new AuthExceptions.UnrrecognizedDevice("Your device is not recognized");
+
 
                 return person;
 

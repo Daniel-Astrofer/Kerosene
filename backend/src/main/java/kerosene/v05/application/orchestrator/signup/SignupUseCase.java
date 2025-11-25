@@ -46,7 +46,7 @@ public class SignupUseCase implements Signup {
 
     @Override
     public String signupUser(UserDTO dto) {
-
+        dto.setUsername(dto.getUsername().toLowerCase());
         verifier.verify(dto.getUsername(), dto.getPassphrase());
         String key = totpGenerator.keyGenerator();
         String otpUri = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s", "Kerosene", dto.getUsername(), key, "Kerosene");
@@ -75,6 +75,7 @@ public class SignupUseCase implements Signup {
             device.setDeviceHash(deviceHash);
             device.setIpAddress(ip.getIP(request));
             deviceService.create(device);
+            cache.deleteFromRedis(user);
 
         return jwt.generateToken(userDB.getId(),device.getDeviceHash());
 
