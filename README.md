@@ -1,10 +1,10 @@
 # KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (PRE-ALPHA-1.0.0)
 
-Plataforma de pagamentos e custódia cripto não-custodial, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
+Plataforma de pagamentos e custódia cripto, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
 
 ## 1) Visão Geral
 
-A Kerosene é uma plataforma não-custodial híbrida, onde:
+A Kerosene é uma plataforma custodial, onde:
 
 *   O usuário controla suas chaves de acesso via passphrase BIP39.
 *   A plataforma nunca armazena seeds de carteiras; apenas hashes necessários para débito das transferências.
