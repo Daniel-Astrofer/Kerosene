@@ -1,4 +1,4 @@
-# KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (v1.0)
+# KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (PRE-ALPHA-1.0.0)
 
 Plataforma de pagamentos e custódia cripto não-custodial, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
 
