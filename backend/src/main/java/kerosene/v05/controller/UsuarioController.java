@@ -30,7 +30,6 @@ public class UsuarioController {
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(id) ;
     }
-
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@RequestBody UserDTO userDTO, HttpServletRequest request){
         String key = signup.signupUser(userDTO);
