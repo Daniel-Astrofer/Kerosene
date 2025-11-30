@@ -2,7 +2,7 @@
 
 # KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (PRE-ALPHA-1.0.0)
 
-Plataforma de pagamentos e custódia cripto, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
+Plataforma de pagamentos e custódia cripto, de código aberto, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
 
 ## 1) Visão Geral
 
