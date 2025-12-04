@@ -1,7 +1,7 @@
 
 
 
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 
 
@@ -19,7 +19,7 @@ class ButtonsRow extends StatelessWidget{
 
     return LayoutBuilder(builder: (context,constraints){
       final width = constraints.maxWidth;
-      final height = constraints.maxHeight;
+
 
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,

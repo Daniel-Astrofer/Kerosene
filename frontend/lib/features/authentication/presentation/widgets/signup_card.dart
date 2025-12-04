@@ -1,17 +1,7 @@
-
-
-
-import 'dart:math';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:teste/colors.dart';
-import 'package:teste/features/authentication/domain/interactors/register_user.dart';
 import 'package:teste/features/authentication/presentation/widgets/signup_form.dart';
-import 'package:teste/features/authentication/presentation/widgets/signup_header.dart';
-import 'package:teste/features/authentication/presentation/widgets/signup_row_buttons.dart';
-
-class SignupCard extends StatefulWidget {
+import 'package:teste/features/authentication/presentation/widgets/signup_header.dart';class SignupCard extends StatefulWidget {
   final TextEditingController usernameController;
   final TextEditingController passphraseController;
   final TextEditingController passphrase2Controller;
@@ -27,7 +17,7 @@ class _SignupCardState extends State<SignupCard> {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context,constraints){
       final width = constraints.maxWidth;
-      bool pressed = false;
+
 
       return Center(
         child: Container(

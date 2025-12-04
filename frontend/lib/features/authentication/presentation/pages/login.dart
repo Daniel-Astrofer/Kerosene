@@ -1,242 +1,219 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:teste/colors.dart';
-import 'package:teste/features/authentication/domain/interactors/register_user.dart';
+import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 
 
+class CreateAccountScreen extends StatefulWidget {
+  const CreateAccountScreen({super.key});
 
-
-
-
-
-
-class CreateAccountScreen extends StatefulWidget{
-  TextEditingController usernameController = TextEditingController();
-  TextEditingController passphraseController = TextEditingController();
-  final formKey = GlobalKey<FormState>() ;
-  var usernameError = '';
   @override
-  State<StatefulWidget> createState() => CreateAccountScreenState();
-
-
-
+  State<CreateAccountScreen> createState() => _CreateAccountScreenState();
 }
 
+class _CreateAccountScreenState extends State<CreateAccountScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passphraseController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
-
-
-class CreateAccountScreenState extends State<CreateAccountScreen>{
-
-  var texto = 'Login' ;
   @override
-  Widget build(BuildContext context){
-    return Material(
-        child: Scaffold(
-          body:Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration:BoxDecoration(
-              gradient: SweepGradient(colors: [Cores.instance.cor1,Cores.instance.cor6],center: AlignmentGeometry.bottomRight),
-            ),child:
-          loginContainer(context),),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-      );
-  }
-
-  Widget loginContainer(BuildContext context){
-
-
-    return Center(
-      child: Container(
+      ),
+      body: Container(
         decoration: BoxDecoration(
-          boxShadow: [BoxShadow(
-            color: Colors.black,
-            spreadRadius: 1,
-            blurRadius: 20,
-            offset: Offset(2, 5)
-          )],
-          borderRadius: BorderRadius.circular(30),
-          gradient: LinearGradient(colors: [Cores.instance.cor1,Cores.instance.cor6],
-          begin: AlignmentGeometry.topRight),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Cores.instance.cor1,
+              Cores.instance.cor5,
+              Colors.black,
+            ],
+          ),
         ),
-        width: 350,
-        height: 500,
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.only(left: 20,top: 20),
-              margin: EdgeInsets.zero,
-              alignment: Alignment.centerLeft,
-
-              child:
-                Text(texto,
-                style:TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'HubotSansExpanded',
-                  fontWeight: FontWeight.normal,
-                  fontSize: 30
-                ),),
-            ),
-            Container(
-              margin: EdgeInsets.only(top: 40,bottom: 40),
-              child: Image.asset('assets/kerosenelogo.png',width: 90,height: 40,),
-            ),
-            Container(
-              margin: EdgeInsets.only(bottom: 40),
-              padding: EdgeInsets.only(left: 25,right: 25),
-              child:Column(
-                children: [
-                  TextFieldCustom(icon: 'assets/userwhite.png',label:"Username",controller: widget.usernameController, validator: (value){
-
-
-
-
-            }),
-                  Container(height: 20,),
-                  TextFieldCustom(icon: 'assets/cadeadowhite.png',label: "Passphrase",controller: widget.passphraseController, validator: (value){
-
-
-
-
-                  })
-                ],
-              ),
-            ),
-            Container(height: 60,),
-            Row(
-              spacing: 218,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(onPressed: (){
-                  Navigator.of(context).pushNamed('/init');
-                }, icon: Image.asset('assets/voltarwhite.png',width: 40,height: 40,alignment: Alignment.bottomLeft,),),
-                IconButton(onPressed: () async {
-
-                  if( await register(widget.usernameController.text,widget.passphraseController.text)){
-
-                    setState(() {
-                      texto = "aceito";
-                    });
-                  }else{
-                    setState(() {
-                      texto = "nao aceito";
-                    });
-                  }
-                  Text(texto,style: TextStyle(fontSize: 40),);
-
-                }, icon: Image.asset('assets/seguirwhite.png',width: 40,height: 40,),alignment: Alignment.bottomRight)
-
+                Hero(
+                  tag: 'logo',
+                  child: Image.asset(
+                    'assets/kerosenelogo.png',
+                    height: 80,
+                    width: 80,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Welcome Back',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontFamily: 'HubotSansExpanded',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sign in to continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white70,
+                    fontFamily: 'HubotSans',
+                  ),
+                ),
+                const SizedBox(height: 48),
+                
+                // Glassmorphism Form Container
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(25),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withAlpha(30)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(50),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildTextField(
+                          controller: _usernameController,
+                          label: 'Username',
+                          icon: Icons.person_outline,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _passphraseController,
+                          label: 'Passphrase',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                        ),
+                        const SizedBox(height: 32),
+                        _buildLoginButton(),
+                      ],
+                    ),
+                  ),
+                ),
               ],
-            )
-          ],
-        ),
-
-      ) ,
-    );
-
-
-  }
-}
-
-class TextFieldCustom extends StatefulWidget{
-  final String icon;
-  final String label;
-  final String? Function(String?)? validator;
-
-
-
-
-  final TextEditingController controller;
-
-
-  const TextFieldCustom({super.key,  required this.icon, required this.label, required this.controller, required this.validator});
-
-  @override
-  State<TextFieldCustom> createState() => TestFieldCustomState();
-
-}
-
-
-
-class TestFieldCustomState extends State<TextFieldCustom>{
-
-  FocusNode _focusNode = FocusNode();
-  bool _isFocused = false;
-
-
-
-  @override
-    void initState(){
-    super.initState();
-    _focusNode.addListener((){
-      setState(() {
-        _isFocused = _focusNode.hasFocus;
-      });
-    });
-
-  }
-
-  @override
-  Widget build(BuildContext context){
-
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(40),
-        boxShadow: [
-          BoxShadow(
-            color: Cores.instance.cor2,
-            blurRadius: 20,
-            spreadRadius: _isFocused ? 12 : 2,
-            offset: _isFocused ?  Offset(5, 5):Offset(3, 1)
-          )
-        ]
-      ) ,
-      child:TextFormField(
-        controller:widget.controller,
-        validator: widget.validator,
-        keyboardType: TextInputType.text,
-        focusNode: _focusNode,
-        style: TextStyle(
-
-          fontSize: 13,
-          fontFamily: 'SFProDisplay',
-          fontWeight: FontWeight.bold,
-            color: Colors.white
-        ),
-        decoration: InputDecoration(
-          hintText: widget.label,
-            hintStyle: TextStyle(
-              color: Colors.grey,
-                  fontSize: 12,
             ),
-
-
-            prefixIcon: Padding(padding: EdgeInsets.only(left:10),child:
-            Image.asset(widget.icon,width: 20,height: 20,),),
-            prefixIconConstraints: BoxConstraints(
-                minWidth: 25,
-                minHeight: 25
-            ),
-            filled: true,
-            fillColor: Cores.instance.cor1,
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color:Cores.instance.cor3,width: 1)),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(40),
-                gapPadding: 10
-            )
+          ),
         ),
       ),
     );
-
   }
 
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: isPassword,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white70),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        filled: true,
+        fillColor: Colors.black.withAlpha(50),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withAlpha(20)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Cores.instance.cor3),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your $label';
+        }
+        return null;
+      },
+    );
   }
 
+  Widget _buildLoginButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [Cores.instance.cor3, Cores.instance.cor4],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Cores.instance.cor3.withAlpha(100),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _handleLogin,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text(
+                    'Login',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'HubotSans',
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      
+      // Simulate login delay or actual logic
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // Update User DTO
+      User.instance.username = _usernameController.text;
+      User.instance.passphrase = _passphraseController.text;
+      
+      setState(() => _isLoading = false);
+      
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
+    }
+  }
 }
-
-

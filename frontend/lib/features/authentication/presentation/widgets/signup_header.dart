@@ -1,6 +1,7 @@
 
 
-import 'package:flutter/cupertino.dart';
+
+import 'package:flutter/material.dart';
 import 'package:teste/colors.dart';
 
 class SignupTopContent extends StatelessWidget{
@@ -13,7 +14,7 @@ class SignupTopContent extends StatelessWidget{
 
     return LayoutBuilder(builder: (context,constraints){
       final width = constraints.maxWidth;
-      final height = constraints.maxHeight;
+
       return Column(
         spacing: 10,
         mainAxisAlignment: MainAxisAlignment.center,

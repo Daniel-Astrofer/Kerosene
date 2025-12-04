@@ -1,7 +1,5 @@
 
-
-
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:teste/colors.dart';
 
 class TotpHeader extends StatelessWidget{
@@ -12,7 +10,7 @@ class TotpHeader extends StatelessWidget{
 
     return LayoutBuilder(builder: (context,constraints){
       final width = constraints.maxWidth;
-      return Container(
+      return SizedBox(
         width: width,
         child: Column(
           children: [

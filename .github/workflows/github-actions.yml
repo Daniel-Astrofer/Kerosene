@@ -13,11 +13,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Permitir execução do Gradle
+        run: chmod +x gradlew
+        working-directory: backend/kerosene
+
       - name: Build JAR
         run: ./gradlew build
-        working-directory: backend
-
-      - name: Build image
-        run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest -f backend/dockerfile backend
-
+        working-directory: backend/kerosene

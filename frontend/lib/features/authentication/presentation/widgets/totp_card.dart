@@ -1,7 +1,7 @@
 
 
 
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:teste/colors.dart';
 import 'package:teste/features/authentication/presentation/widgets/totp_header.dart';
@@ -9,7 +9,7 @@ import 'package:teste/features/authentication/presentation/widgets/totp_qrcode.d
 import 'package:teste/features/authentication/presentation/widgets/totp_textfield.dart';
 
 class TotpCard extends StatefulWidget {
-  final totpsecret;
+  final String totpsecret;
 
   const TotpCard({super.key,required this.totpsecret});
 

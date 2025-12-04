@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 
-class service extends ChangeNotifier{
+class Service extends ChangeNotifier{
   var isDarttheme = false;
-  static service instance = service();
+  static Service instance = Service();
 
   changeTheme(){
 

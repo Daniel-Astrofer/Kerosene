@@ -1,27 +1,63 @@
-
-
-
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
-import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/colors.dart';
 import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 import 'package:teste/features/authentication/domain/interactors/register_user.dart';
-import 'package:teste/features/authentication/domain/validators/passphrase_field_validator.dart';
-import 'package:teste/features/authentication/presentation/pages/login.dart';
 import 'package:teste/features/authentication/presentation/pages/totp_verification.dart';
 import 'package:teste/features/authentication/presentation/widgets/signup_row_buttons.dart';
 import 'package:teste/features/authentication/domain/usecases/mnemonic_bip39/bip39.dart';
-import 'package:teste/features/authentication/presentation/widgets/totp_qrcode.dart';
+
+// Custom TextField Widget
+class TextFieldCustom extends StatelessWidget {
+  final String icon;
+  final String label;
+  final TextEditingController controller;
+  final String? Function(String?)? validator;
+  final bool obscureText;
+
+  const TextFieldCustom({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.controller,
+    this.validator,
+    this.obscureText = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      validator: validator,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white70),
+        prefixIcon: Image.asset(icon, width: 24, height: 24),
+        filled: true,
+        fillColor: Colors.black.withAlpha(50),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withAlpha(20)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Cores.instance.cor3),
+        ),
+      ),
+    );
+  }
+}
 
 
 class SignupForm extends StatefulWidget {
   final TextEditingController userController;
   final TextEditingController passphraseController;
-  bool pressed = true;
-  var totpsecret = '';
   final TextEditingController passphrase2Controller;
   final formKey = GlobalKey<FormState>();
 
@@ -33,12 +69,15 @@ class SignupForm extends StatefulWidget {
 }
 
 class _SignupFormState extends State<SignupForm> {
+  bool pressed = true;
+  var totpsecret = '';
+
   @override
   Widget build(BuildContext context) {
 
     return LayoutBuilder(builder: (context,constraints){
       final width = (constraints.maxWidth) * 0.9;
-      final height = constraints.maxHeight;
+
       return Form(
       key: widget.formKey,
       child: Column(
@@ -55,6 +94,7 @@ class _SignupFormState extends State<SignupForm> {
               if(value == null || value.isEmpty) {
                 return 'nao pode';
               }
+              return null;
 
 
             }),
@@ -62,10 +102,10 @@ class _SignupFormState extends State<SignupForm> {
           GestureDetector(
             onTap: () {
               setState(() {
-                widget.pressed = false;
+                pressed = false;
               });
             },
-            child: widget.pressed
+            child: pressed
                 ? Container(
               width: 100,
               height: 20,
@@ -132,6 +172,7 @@ class _SignupFormState extends State<SignupForm> {
               if(!Bip39.validatePasspharse(passphrase: value!)){
                 return 'not a passphrase';
               }
+              return null;
 
 
 
@@ -144,6 +185,7 @@ class _SignupFormState extends State<SignupForm> {
               if(!Bip39.validatePasspharse(passphrase: value!)){
                 return 'not a passphrase';
               }
+              return null;
 
 
 
@@ -155,12 +197,12 @@ class _SignupFormState extends State<SignupForm> {
 
                 final response = await create(widget.userController.text, widget.passphraseController.text);
                 setState(() {
-                  User.instance.setUsername(widget.userController.text);
-                  User.instance.setPassphrase(widget.passphraseController.text);
+                  User.instance.username = widget.userController.text;
+                  User.instance.passphrase = widget.passphraseController.text;
 
-                  widget.totpsecret = response;
-                  User.instance.setTotpSecret(widget.totpsecret);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => TotpScreen(totpsecret: widget.totpsecret)));
+                  totpsecret = response;
+                  User.instance.totpSecret = totpsecret;
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => TotpScreen(totpsecret: totpsecret)));
                 });
 
 

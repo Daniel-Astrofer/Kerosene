@@ -14,7 +14,6 @@ Future<bool> register(String username,
   body: jsonEncode({'username':username, 'passphrase': passphrase}));
 
   if(response.statusCode == 202 ) {
-    var data = jsonDecode(response.body);
 
     return true;
 
@@ -39,7 +38,7 @@ Future<String> create(String username,String passphrase) async {
 
 Future<bool> verifytotp(User user) async{
 
-  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/totp/verify");
+  final url = Uri.parse("https://nan-ichnological-unchidingly.ngrok-free.dev/auth/signup/totp/verify");
   var response = await http.post(url,
       headers: {'Content-Type': 'application/json',
       'X-Device-Hash':'seraquedeucerto'},
@@ -48,7 +47,9 @@ Future<bool> verifytotp(User user) async{
         "totpSecret": user.totpSecret,
         "totpCode": user.totpCode}));
 
-  if(response.statusCode == 202) return true;
+  if(response.statusCode == 202) {
+    return true;
+  }
   else{
     return false;
   }

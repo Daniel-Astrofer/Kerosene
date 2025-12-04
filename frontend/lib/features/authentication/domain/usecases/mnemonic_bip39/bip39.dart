@@ -2,7 +2,6 @@
 
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:convert/convert.dart';
 
 
 

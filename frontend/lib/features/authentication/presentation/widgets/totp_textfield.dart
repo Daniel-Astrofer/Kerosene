@@ -2,15 +2,14 @@
 
 
 
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teste/features/authentication/domain/entities/user_dto.dart';
 import 'package:teste/features/authentication/domain/interactors/register_user.dart';
 
 class TotpTextField extends StatefulWidget {
-  final
-  String totpkey ;
+  final String totpkey;
   const TotpTextField({super.key, required this.totpkey});
 
   @override
@@ -67,12 +66,12 @@ class _TotpTextFieldState extends State<TotpTextField> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
 
-          _TextfieldCustom(f1,f2,c1),
-          _TextfieldCustom(f2,f3,c2),
-          _TextfieldCustom(f3,f4,c3),
-          _TextfieldCustom(f4,f5,c4),
-          _TextfieldCustom(f5,f6,c5),
-          _TextfieldCustom(f6,null,c6),
+          _textFieldCustom(f1,f2,c1),
+          _textFieldCustom(f2,f3,c2),
+          _textFieldCustom(f3,f4,c3),
+          _textFieldCustom(f4,f5,c4),
+          _textFieldCustom(f5,f6,c5),
+          _textFieldCustom(f6,null,c6),
 
 
 
@@ -85,7 +84,7 @@ class _TotpTextFieldState extends State<TotpTextField> {
     });
   }
 
-  Widget _TextfieldCustom(FocusNode current, FocusNode? next,TextEditingController controller){
+  Widget _textFieldCustom(FocusNode current, FocusNode? next,TextEditingController controller){
 
 
 
@@ -109,7 +108,7 @@ class _TotpTextFieldState extends State<TotpTextField> {
 
           }
           if(totpsecret?.length == 6 ){
-            User.instance.setTotpCode(totpsecret!);
+            User.instance.totpCode = totpsecret!;
             verifytotp(User.instance);
           }
         },
