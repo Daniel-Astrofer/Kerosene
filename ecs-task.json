@@ -17,7 +17,15 @@
                     "containerPort": 8080,
                     "protocol": "tcp"
                 }
-            ]
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/backend",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
         }
     ]
 }
