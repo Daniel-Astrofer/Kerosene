@@ -1,5 +1,6 @@
 {
-    "family": "minha-api",
+    "family": "backend",
+    "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
     "requiresCompatibilities": [
         "FARGATE"
@@ -9,7 +10,7 @@
     "containerDefinitions": [
         {
             "name": "app",
-            "image": "<ECR_URI>:latest",
+            "image": "123456789012.dkr.ecr.sa-east-1.amazonaws.com/meu-repo:latest",
             "essential": true,
             "portMappings": [
                 {
