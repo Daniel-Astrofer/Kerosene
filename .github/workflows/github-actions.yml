@@ -1,28 +1,43 @@
-name: Actions
+name: Deploy to ECS
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Permitir execução do Gradle
-        run: chmod +x gradlew
-        working-directory: backend/kerosene
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build JAR
-        run: ./gradlew build
-        working-directory: backend/kerosene
+      - name: Build and push image
+        run: |
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+          docker push ${{ secrets.ECR_REPOSITORY }}:latest
+
+      - name: Render task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs-task.json
+          container-name: app
+          image: ${{ secrets.ECR_REPOSITORY }}:latest
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v3
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
+          service: ${{ secrets.ECS_SERVICE }}
+          wait-for-service-stability: true
