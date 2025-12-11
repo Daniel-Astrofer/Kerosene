@@ -1,6 +1,6 @@
 {
     "family": "backend",
-    "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::912194031318:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
     "requiresCompatibilities": [
         "FARGATE"
@@ -10,7 +10,7 @@
     "containerDefinitions": [
         {
             "name": "app",
-            "image": "123456789012.dkr.ecr.sa-east-1.amazonaws.com/meu-repo:latest",
+            "image": "912194031318.dkr.ecr.sa-east-1.amazonaws.com/meu-repo:latest",
             "essential": true,
             "portMappings": [
                 {
