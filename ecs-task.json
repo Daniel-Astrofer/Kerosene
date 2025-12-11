@@ -29,11 +29,11 @@
             "secrets": [
                 {
                     "name": "JWT_SECRET",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-2:912194031318:secret:JWT_SECRET-XXXXXX"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:912194031318:secret:SECRETS-YoZDbw"
                 },
                 {
                     "name": "AES_SECRET",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-2:912194031318:secret:AES_SECRET-XXXXXX"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:912194031318:secret:secret2-rhPOhC"
                 }
             ]
         }
