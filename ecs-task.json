@@ -25,7 +25,17 @@
                     "awslogs-region": "us-east-2",
                     "awslogs-stream-prefix": "ecs"
                 }
-            }
+            },
+            "secrets": [
+                {
+                    "name": "JWT_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:912194031318:secret:JWT_SECRET-XXXXXX"
+                },
+                {
+                    "name": "AES_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:912194031318:secret:AES_SECRET-XXXXXX"
+                }
+            ]
         }
     ]
 }
