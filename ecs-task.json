@@ -1,20 +1,21 @@
 {
-    "family": "backend",
+    "family": "backend-ec2-m7i",
     "executionRoleArn": "arn:aws:iam::912194031318:role/ecsTaskExecutionRole",
-    "networkMode": "awsvpc",
+    "networkMode": "bridge",
     "requiresCompatibilities": [
-        "FARGATE"
+        "EC2"
     ],
-    "cpu": "2048",
-    "memory": "4096",
     "containerDefinitions": [
         {
             "name": "backend",
             "image": "912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest",
+            "cpu": 1536,
+            "memory": 6144,
             "essential": true,
             "portMappings": [
                 {
                     "containerPort": 8080,
+                    "hostPort": 80,
                     "protocol": "tcp"
                 }
             ],
