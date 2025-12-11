@@ -35,7 +35,7 @@ jobs:
           image: ${{ secrets.ECR_REPOSITORY }}:latest
 
       - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v3
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.render.outputs.task-definition }}
           cluster: ${{ secrets.ECS_CLUSTER }}
