@@ -21,9 +21,14 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push image
+      - name: Build backend JAR
         run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+          cd backend/kerosene
+          ./gradlew clean build -x test
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest backend/kerosene
           docker push ${{ secrets.ECR_REPOSITORY }}:latest
 
       - name: Render task definition
@@ -31,7 +36,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ecs-task.json
-          container-name: app
+          container-name: backend
           image: ${{ secrets.ECR_REPOSITORY }}:latest
 
       - name: Deploy to ECS
