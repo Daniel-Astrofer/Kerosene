@@ -9,8 +9,8 @@
     "memory": "4096",
     "containerDefinitions": [
         {
-            "name": "app",
-            "image": "912194031318.dkr.ecr.sa-east-1.amazonaws.com/meu-repo:latest",
+            "name": "backend",
+            "image": "912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest",
             "essential": true,
             "portMappings": [
                 {
