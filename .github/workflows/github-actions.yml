@@ -26,7 +26,7 @@ jobs:
       - name: Build and Push image
         run: |
           IMAGE_URI=912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
-          docker build -t $IMAGE_URI .
+          docker build -t $IMAGE_URI ./backend/kerosene
           docker push $IMAGE_URI
 
       - name: Prepare SSH key
