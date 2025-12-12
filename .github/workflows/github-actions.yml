@@ -12,18 +12,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
       - name: Build JAR
         run: |
           cd backend/kerosene
           ./gradlew bootJar --no-daemon
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          registry-type: private
 
       - name: Build and Push Docker image
         run: |
@@ -47,7 +51,5 @@ jobs:
             sudo docker rm api || true
 
             sudo docker run -d --name api -p 80:8080 \
-              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
-              -e AES_SECRET=${{ secrets.AES_SECRET }} \
-              912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
-          EOF
+              -e JWT_SECRET=$(aws secretsmanager get-secret-value --secret-id SECRETS-YoZDbw --query SecretString --output text) \
+              -e AES_SECRET=$(aws secretsmanager get-secret-value --secret-id secret2-rhPOhC --query S_
