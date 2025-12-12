@@ -52,4 +52,4 @@ jobs:
           task-definition: ${{ steps.render.outputs.task-definition }}
           cluster: kerosene-cluster
           service: task-service-jfrk5ven
-          wait-for-service-stability: true
+          
