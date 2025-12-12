@@ -39,12 +39,6 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
           chmod 600 ~/.ssh/key.pem
 
-      - name: Get Secrets
-        id: secrets
-        run: |
-          echo "JWT_SECRET=$(aws secretsmanager get-secret-value --secret-id SECRETS-YoZDbw --query SecretString --output text)" >> $GITHUB_ENV
-          echo "AES_SECRET=$(aws secretsmanager get-secret-value --secret-id secret2-rhPOhC --query SecretString --output text)" >> $GITHUB_ENV
-
       - name: Deploy on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << EOF
@@ -56,7 +50,7 @@ jobs:
 
             # Usando host network para evitar problemas de iptables
             sudo docker run -d --name api --network host \
-              -e JWT_SECRET=$JWT_SECRET \
-              -e AES_SECRET=$AES_SECRET \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e AES_SECRET="${{ secrets.AES_SECRET }}" \
               912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
           EOF
