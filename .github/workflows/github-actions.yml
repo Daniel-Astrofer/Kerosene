@@ -49,7 +49,8 @@ jobs:
             sudo docker stop api || true
             sudo docker rm api || true
 
-            sudo docker run -d --name api -p 80:8080 \
+            # Usando host network para evitar problemas de iptables
+            sudo docker run -d --name api --network host \
               -e JWT_SECRET=$(aws secretsmanager get-secret-value --secret-id SECRETS-YoZDbw --query SecretString --output text) \
               -e AES_SECRET=$(aws secretsmanager get-secret-value --secret-id secret2-rhPOhC --query SecretString --output text) \
               912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
