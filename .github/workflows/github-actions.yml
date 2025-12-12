@@ -9,24 +9,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Pega o código do repositório
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Configura o Java 21
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 21
 
-      # 3. Build do JAR
       - name: Build JAR
         run: |
           cd backend/kerosene
           ./gradlew clean bootJar -x test
 
-      # 4. Configura AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,30 +30,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 5. Login no ECR
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 6. Build e push da imagem Docker
       - name: Build and push Docker image
         run: |
           docker build -t ${{ secrets.ECR_REPOSITORY }}:latest backend/kerosene
           docker push ${{ secrets.ECR_REPOSITORY }}:latest
 
-      # 7. Render task definition ECS
       - name: Render ECS task definition
         id: render
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ecs-task.json
-          container-name: backend  # deve bater com o nome no JSON
+          container-name: backend
           image: ${{ secrets.ECR_REPOSITORY }}:latest
 
-      # 8. Deploy para ECS
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.render.outputs.task-definition }}
-          cluster: ${{ secrets.ECS_CLUSTER }}
-          service: ${{ secrets.ECS_SERVICE }}
+          cluster: kerosene-cluster
+          service: task-service-jfrk5ven
           wait-for-service-stability: true
