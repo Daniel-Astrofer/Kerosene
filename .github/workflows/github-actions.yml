@@ -41,15 +41,15 @@ jobs:
 
       - name: Deploy on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << EOF
-            sudo docker login -u AWS -p \$(aws ecr get-login-password --region us-east-2) 912194031318.dkr.ecr.us-east-2.amazonaws.com
-            sudo docker pull 912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+          sudo docker login -u AWS -p $(aws ecr get-login-password --region us-east-2) 912194031318.dkr.ecr.us-east-2.amazonaws.com
+          sudo docker pull 912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
 
-            sudo docker stop api || true
-            sudo docker rm api || true
+          sudo docker stop api || true
+          sudo docker rm api || true
 
-            sudo docker run -d --name api -p 80:8080 \
-              -e JWT_SECRET=\$(aws secretsmanager get-secret-value --secret-id SECRETS-YoZDbw --query SecretString --output text) \
-              -e AES_SECRET=\$(aws secretsmanager get-secret-value --secret-id secret2-rhPOhC --query SecretString --output text) \
-              912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
-EOF
+          sudo docker run -d --name api -p 80:8080 \
+            -e JWT_SECRET="$(aws secretsmanager get-secret-value --secret-id SECRETS-YoZDbw --query SecretString --output text)" \
+            -e AES_SECRET="$(aws secretsmanager get-secret-value --secret-id secret2-rhPOhC --query SecretString --output text)" \
+            912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
+          EOF
