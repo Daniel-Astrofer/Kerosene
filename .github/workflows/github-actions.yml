@@ -19,22 +19,28 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      # 1. Build do JAR
+      - name: Build JAR
+        run: |
+          cd backend/kerosene
+          ./gradlew bootJar -x test
 
+      # 2. Build + Push Docker
       - name: Build and Push image
         run: |
           IMAGE_URI=912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
-          docker build -t $IMAGE_URI ./backend/kerosene
+          cd backend/kerosene
+          docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
+      # 3. Preparar chave SSH
       - name: Prepare SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
           chmod 600 ~/.ssh/key.pem
 
+      # 4. Deploy na EC2
       - name: Deploy on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
