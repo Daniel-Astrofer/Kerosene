@@ -49,5 +49,8 @@ jobs:
             sudo docker run -d --name api --network host \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e AES_SECRET="${{ secrets.AES_SECRET }}" \
+              echo $JWT_SECRET
+              echo $AES_SECRET
+
               912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
           EOF
