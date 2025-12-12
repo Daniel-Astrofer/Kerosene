@@ -25,6 +25,7 @@ jobs:
           ./gradlew bootJar --no-daemon
 
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and Push Docker image
@@ -41,6 +42,10 @@ jobs:
 
       - name: Deploy on EC2
         run: |
+          # Exporta os secrets do GitHub
+          export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+          export AES_SECRET="${{ secrets.AES_SECRET }}"
+
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << EOF
             sudo docker login -u AWS -p \$(aws ecr get-login-password --region us-east-2) 912194031318.dkr.ecr.us-east-2.amazonaws.com
             sudo docker pull 912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
@@ -48,9 +53,8 @@ jobs:
             sudo docker stop api || true
             sudo docker rm api || true
 
-            # Usando host network para evitar problemas de iptables
             sudo docker run -d --name api --network host \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e AES_SECRET="${{ secrets.AES_SECRET }}" \
+              -e JWT_SECRET="\$JWT_SECRET" \
+              -e AES_SECRET="\$AES_SECRET" \
               912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
           EOF
