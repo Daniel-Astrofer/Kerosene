@@ -1,55 +1,52 @@
-name: Deploy to ECS
+name: Deploy Kerosene API
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - name: Build JAR
-        run: |
-          cd backend/kerosene
-          ./gradlew clean bootJar -x test
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-2
 
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push Docker image
+      - name: Build and Push image
         run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest backend/kerosene
-          docker push ${{ secrets.ECR_REPOSITORY }}:latest
+          IMAGE_URI=912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
 
-      - name: Render ECS task definition
-        id: render
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ecs-task.json
-          container-name: backend
-          image: ${{ secrets.ECR_REPOSITORY }}:latest
+      - name: Prepare SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          chmod 600 ~/.ssh/key.pem
 
-      - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.render.outputs.task-definition }}
-          cluster: kerosene-cluster
-          service: api
-          
+      - name: Deploy on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo docker login -u AWS -p $(aws ecr get-login-password --region us-east-2) 912194031318.dkr.ecr.us-east-2.amazonaws.com
+
+            sudo docker pull 912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
+
+            sudo docker stop api || true
+            sudo docker rm api || true
+
+            sudo docker run -d --name api -p 80:8080 \
+              -e JWT_SECRET=$(aws secretsmanager get-secret-value --secret-id SECRETS-YoZDbw --query SecretString --output text) \
+              -e AES_SECRET=$(aws secretsmanager get-secret-value --secret-id secret2-rhPOhC --query SecretString --output text) \
+              912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
+          EOF
