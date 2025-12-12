@@ -1,7 +1,7 @@
 {
     "family": "backend-ec2-m7i",
     "executionRoleArn": "arn:aws:iam::912194031318:role/ecsTaskExecutionRole",
-    "networkMode": "bridge",
+    "networkMode": "awsvpc",
     "requiresCompatibilities": [
         "EC2"
     ],
