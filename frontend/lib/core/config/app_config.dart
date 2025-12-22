@@ -3,7 +3,7 @@ class AppConfig {
   // ==================== API Configuration ====================
 
   /// URL base da API Kerosene
-  static const String apiBaseUrl = 'http://18.117.96.94:8080';
+  static const String apiBaseUrl = 'http://3.21.13.208:8080';
 
   /// Timeout para requisições HTTP (em milissegundos)
   static const int connectionTimeout = 30000;

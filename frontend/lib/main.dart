@@ -5,6 +5,8 @@ import 'features/auth/presentation/screens/welcome_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
 import 'features/wallet/presentation/screens/wallet_home_screen.dart';
+import 'features/wallet/presentation/screens/create_wallet_screen.dart';
+import 'features/wallet/presentation/screens/send_money_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -137,6 +139,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/home': (context) => const WalletHomeScreen(),
+        '/create_wallet': (context) => const CreateWalletScreen(),
+        '/send-money': (context) => const SendMoneyScreen(),
       },
     );
   }

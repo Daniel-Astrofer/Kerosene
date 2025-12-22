@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/wallet.dart';
 import '../../domain/entities/transaction.dart';
 import '../providers/wallet_provider.dart';
 import '../state/wallet_state.dart';
 import '../widgets/wallet_card.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'send_money_screen.dart';
+import '../../../../../shared/widgets/navigation/shared_bottom_nav_bar.dart';
 
 class WalletHomeScreen extends ConsumerStatefulWidget {
   const WalletHomeScreen({super.key});
@@ -60,7 +60,7 @@ class _WalletHomeScreenState extends ConsumerState<WalletHomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'My Cards',
+                          'Welcome',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -83,6 +83,29 @@ class _WalletHomeScreenState extends ConsumerState<WalletHomeScreen> {
                             icon: const Icon(Icons.add, color: Colors.white),
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/create_wallet'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Reset Token Button
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                            color: const Color(0xFF1A1F3C),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.lock_reset,
+                              color: Colors.white,
+                            ),
+                            tooltip: "Reset Token",
+                            onPressed: () {
+                              ref.read(authProvider.notifier).logout();
+                            },
                           ),
                         ),
                       ],
@@ -493,77 +516,6 @@ class _WalletHomeScreenState extends ConsumerState<WalletHomeScreen> {
   }
 
   Widget _buildFloatingNavBar() {
-    return Positioned(
-      bottom: 32,
-      left: 24,
-      right: 24,
-      child: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1F3C).withOpacity(0.9),
-          borderRadius: BorderRadius.circular(35),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              icon: const Icon(
-                Icons.home_filled,
-                color: Color(0xFF7B61FF),
-                size: 28,
-              ),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.credit_card,
-                color: Colors.white38,
-                size: 28,
-              ),
-              onPressed: () {},
-            ),
-            // Middle special button
-            Container(
-              width: 50,
-              height: 50,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF7B61FF), Color(0xFF00D4FF)],
-                ),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-                onPressed: () {},
-              ),
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.pie_chart_outline,
-                color: Colors.white38,
-                size: 28,
-              ),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.person_outline,
-                color: Colors.white38,
-                size: 28,
-              ),
-              onPressed: () => ref.read(authProvider.notifier).logout(),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const SharedBottomNavBar(currentIndex: 0);
   }
 }

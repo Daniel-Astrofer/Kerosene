@@ -127,34 +127,6 @@ class WalletCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Right: Logo (Mastercard style circles for Bitcoin)
-                    SizedBox(
-                      width: 40,
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.8),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Positioned(
-                            left: 14,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.5),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
 

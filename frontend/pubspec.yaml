@@ -25,6 +25,8 @@ dependencies:
 
   cupertino_icons: '^1.0.8'
   bip39: ^1.0.6
+  fl_chart: ^1.1.1
+  lottie: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +57,8 @@ flutter:
     - 'assets/seguirwhite.png'
     - 'assets/cadeadoverify.png'
     - 'assets/presentationimage.png'
+    - 'assets/images/'
+    - 'assets/lottie/'
   fonts:
     - family: "Lato"
       fonts:

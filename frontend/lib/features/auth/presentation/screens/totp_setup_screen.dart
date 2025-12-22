@@ -47,9 +47,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
           context,
         ).pushNamedAndRemoveUntil('/home', (route) => false);
       } else if (next is AuthError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message), backgroundColor: Colors.red),
-        );
+        showCustomErrorDialog(context, next.message);
       }
     });
 
@@ -57,150 +55,206 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
     final isLoading = authState is AuthLoading;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        title: const Text('2FA Setup', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Center(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF050511), Color(0xFF1A1F3C), Color(0xFF2D2F4E)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const KeroseneLogo(size: 60),
-                const SizedBox(height: 32),
-                const Text(
-                  'Segurança em Duas Etapas',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+          child: SafeArea(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  const KeroseneLogo(size: 80),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Secure Your Account',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Escaneie o QR Code com seu app autenticador (Google Auth, Authy, etc).',
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-
-                // QR Code
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  Text(
+                    'Scan the QR code with your authenticator app (Google Auth, Authy, etc).',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  child: QrImageView(
-                    data: qrData,
-                    version: QrVersions.auto,
-                    size: 200.0,
-                    foregroundColor: const Color(0xFF1E293B),
+                  const SizedBox(height: 40),
+
+                  // QR Code Container
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00D4FF).withOpacity(0.2),
+                          blurRadius: 30,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: QrImageView(
+                      data: qrData,
+                      version: QrVersions.auto,
+                      size: 220.0,
+                      foregroundColor: const Color(0xFF050511),
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 32),
+                  const SizedBox(height: 40),
 
-                // Secret em texto (caso não consiga ler QR)
-                GestureDetector(
-                  onTap: () {
-                    // TODO: Copiar para clipboard
-                  },
-                  child: Container(
+                  // Secret Display
+                  Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                      horizontal: 20,
+                      vertical: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
                     ),
-                    child: Text(
-                      // Se for URL, tenta extrair o secret para mostrar clean
-                      widget.totpSecret.startsWith('otpauth')
-                          ? Uri.tryParse(
-                                  widget.totpSecret,
-                                )?.queryParameters['secret'] ??
-                                widget.totpSecret
-                          : widget.totpSecret,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Input para código
-                TextFormField(
-                  controller: _codeController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  maxLength: 6,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    letterSpacing: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '000000',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    counterText: '',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.length != 6) {
-                      return 'Digite o código de 6 dígitos';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 32),
-
-                // Botão Verificar
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _verifyCode,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A3FF),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Verificar e Entrar',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'OR ENTER MANUAL CODE',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          // Se for URL, tenta extrair o secret para mostrar clean
+                          widget.totpSecret.startsWith('otpauth')
+                              ? Uri.tryParse(
+                                      widget.totpSecret,
+                                    )?.queryParameters['secret'] ??
+                                    widget.totpSecret
+                              : widget.totpSecret,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF00D4FF),
+                            fontSize: 16,
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 40),
+
+                  // Verification Input
+                  TextFormField(
+                    controller: _codeController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    maxLength: 6,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      letterSpacing: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: '000000',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.1),
+                        letterSpacing: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF00D4FF),
+                          width: 1.5,
+                        ),
+                      ),
+                      counterText: '',
+                      contentPadding: const EdgeInsets.symmetric(vertical: 24),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.length != 6) {
+                        return 'Enter 6 digits';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Verify Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _verifyCode,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00D4FF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        elevation: 8,
+                        shadowColor: const Color(0xFF00D4FF).withOpacity(0.4),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'VERIFY & CONTINUE',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
@@ -225,5 +279,25 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
             totpCode: _codeController.text,
           );
     }
+  }
+
+  void showCustomErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1F3C),
+        title: const Text("Error", style: TextStyle(color: Colors.white)),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK", style: TextStyle(color: Color(0xFF00D4FF))),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -58,125 +58,87 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // AppBar custom
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        "Send Money",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        // AppBar custom
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              const Expanded(
+                                child: Text(
+                                  "Send Money",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 48), // Balance for arrow
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 48), // Balance for arrow
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-              // Receiver Avatar & Name
-              Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF3B3E5B),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Input para nome disfarçado
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: TextField(
-                      controller: _receiverController,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: "Enter Receiver Name",
-                        hintStyle: TextStyle(color: Colors.white30),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    "Wallet ID / Name",
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              // Amount Display
-              Text(
-                "\$$_amount",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Wallet Selector
-              if (walletState is WalletLoaded &&
-                  walletState.selectedWallet != null)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.credit_card, color: Colors.white70),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // Receiver Avatar & Name
+                        Column(
                           children: [
-                            Text(
-                              walletState.selectedWallet!.name,
-                              style: const TextStyle(
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF3B3E5B),
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                size: 40,
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Input para nome disfarçado
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                              ),
+                              child: TextField(
+                                controller: _receiverController,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: "Enter Receiver Name",
+                                  hintStyle: TextStyle(color: Colors.white30),
+                                  border: InputBorder.none,
+                                ),
                               ),
                             ),
                             const Text(
-                              "Bitcoin Wallet",
+                              "Wallet ID / Name",
                               style: TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -184,48 +146,123 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             ),
                           ],
                         ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Colors.white54,
-                      ),
-                    ],
-                  ),
-                ),
 
-              const SizedBox(height: 20),
+                        const Spacer(),
 
-              // Continue Button
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: sendMoneyState is SendMoneySending
-                      ? null
-                      : _handleContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7B61FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                        // Amount Display
+                        Text(
+                          "\$$_amount",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // Wallet Selector
+                        if (walletState is WalletLoaded &&
+                            walletState.selectedWallet != null)
+                          InkWell(
+                            onTap: () =>
+                                _showWalletSelector(context, walletState),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white10),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.credit_card,
+                                    color: Colors.white70,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          walletState.selectedWallet!.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          "${(walletState.selectedWallet!.balanceSatoshis / 100000000).toStringAsFixed(8)} BTC",
+                                          style: const TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: Colors.white54,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                        const SizedBox(height: 20),
+
+                        // Continue Button
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: sendMoneyState is SendMoneySending
+                                ? null
+                                : _handleContinue,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7B61FF),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: sendMoneyState is SendMoneySending
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    "Continue",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        // Numeric Keypad
+                        // Hide keypad if keyboard is open to avoid overflow
+                        if (MediaQuery.of(context).viewInsets.bottom == 0)
+                          _buildKeypad(),
+
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
-                  child: sendMoneyState is SendMoneySending
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Continue",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
                 ),
-              ),
-
-              const Spacer(),
-
-              // Numeric Keypad
-              _buildKeypad(),
-
-              const SizedBox(height: 20),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -328,5 +365,126 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           feeSatoshis: 1000,
           description: "Send Money App Transfer",
         );
+  }
+
+  void _showWalletSelector(BuildContext context, WalletLoaded state) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1F3C),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "Select Wallet",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: state.wallets.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final wallet = state.wallets[index];
+                    final balanceBtc = wallet.balanceSatoshis / 100000000;
+                    final isSelected =
+                        wallet.name == state.selectedWallet?.name;
+
+                    return InkWell(
+                      onTap: () {
+                        ref.read(walletProvider.notifier).selectWallet(wallet);
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF7B61FF).withOpacity(0.2)
+                              : Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: isSelected
+                              ? Border.all(color: const Color(0xFF7B61FF))
+                              : Border.all(color: Colors.transparent),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(0xFF7B61FF)
+                                    : Colors.white10,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.account_balance_wallet,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    wallet.name,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? const Color(0xFF7B61FF)
+                                          : Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${balanceBtc.toStringAsFixed(8)} BTC",
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.7),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF7B61FF),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
