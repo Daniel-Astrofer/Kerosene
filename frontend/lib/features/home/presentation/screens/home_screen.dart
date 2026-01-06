@@ -186,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
 
       final currentWallet = state.wallets[_currentIndex];
-
+      /**/
       return Column(
         children: [
           // Carousel
