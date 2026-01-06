@@ -21,10 +21,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-
+
       - name: Build JAR
         run: |
           cd backend/kerosene
-          ./gradlew bootJar --no-daemon
+          ./gradlew bootJar --no-daemon --refresh-dependencies || \
+          ./gradlew bootJar --no-daemon --refresh-dependencies
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
@@ -65,7 +76,6 @@ jobs:
         uses: subosito/flutter-action@v2.7.3
         with:
           flutter-version: 'stable'
-
 
       - name: Install dependencies
         run: flutter pub get
