@@ -1,11 +1,13 @@
-name: Deploy Kerosene API
+name: CI/CD — Kerosene API + Flutter APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  deploy-api:
+    name: Deploy Backend (API)
     runs-on: ubuntu-latest
 
     steps:
@@ -22,10 +24,10 @@ jobs:
       - name: Build JAR
         run: |
           cd backend/kerosene
+          chmod +x ./gradlew
           ./gradlew bootJar --no-daemon
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and Push Docker image
@@ -43,11 +45,40 @@ jobs:
       - name: Deploy on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@${{ secrets.EC2_HOST }} << EOF
+            sudo docker pull 912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
             sudo docker stop api || true
             sudo docker rm api || true
-
             sudo docker run -d --name api --network host \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e AES_SECRET="${{ secrets.AES_SECRET }}" \
               912194031318.dkr.ecr.us-east-2.amazonaws.com/kerosene:latest
           EOF
+
+  build-apk:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+    needs: deploy-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Create or Update Release (latest)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          name: Latest Build
+          body: Build automático gerado a partir do último commit em main.
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
