@@ -80,10 +80,14 @@ jobs:
 
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          cd app 
+          flutter pub get
 
       - name: Build APK (release)
-        run: flutter build apk --release
+        run: |
+          cd app
+          flutter build apk --release
 
       - name: Create or Update Release (latest)
         uses: softprops/action-gh-release@v1
