@@ -185,5 +185,3 @@ WebSocket é utilizado para:
 - Incentivos de rede  
 - Expansão para varejo em larga escala  
 
----
-
