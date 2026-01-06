@@ -12,204 +12,178 @@
 
 Plataforma de pagamentos e custódia cripto, de código aberto, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
 
-## 1) Visão Geral
+# Kerosene — Documentação de Produto e Arquitetura (Atualizada)
 
-A Kerosene é uma plataforma custodial, onde:
+## 1. Visão Geral
 
-*   O usuário controla suas chaves de acesso via passphrase BIP39.
-*   A plataforma nunca armazena seeds de carteiras; apenas hashes necessários para débito das transferências.
+A **Kerosene** é uma plataforma financeira em **Bitcoin** focada em **privacidade**, **ausência de taxas internas**, **anti-censura** e **usabilidade para usuários e varejistas**.
 
-A conta é protegida por duas camadas independentes:
+O sistema opera com **saldo interno off-chain**, permitindo **transferências instantâneas sem taxas**, utilizando a **blockchain apenas para depósitos e saques**.
 
-*   **Passphrase BIP39 de login** (18 palavras) → acesso à conta.
-*   **Passphrases BIP39 independentes das carteiras** → acesso aos saldos e autorização de transferências.
+A Kerosene **não armazena histórico detalhado de transações** dos usuários e oferece modos avançados de privacidade como **Modo Tor** e **Modo Fantasma**.
 
-O sistema processa:
+---
 
-*   Pagamentos internos sem taxa.
-*   Compra e venda P2P de criptomoedas (0.1% por operação).
-*   Depósitos e retiradas de BTC com taxa de 1%.
-*   Múltiplas carteiras (até 10 por usuário), cada uma com sua própria passphrase.
+## 2. Princípios Fundamentais
 
-<div style="page-break-after: always;"></div>
+- Sem taxas para transferências internas  
+- Privacidade por padrão  
+- Anti-censura e alta disponibilidade  
+- Escalabilidade para milhões de usuários  
+- Simplicidade para varejistas  
+- Custódia técnica com isolamento e segurança máxima  
 
-## 2) Cadastro e Autenticação
+---
 
-### 2.1 Fluxo de Criação de Conta
+## 3. Gestão de Saldo
 
-Usuário informa:
+### 3.1 Arquitetura de Saldo Interno
 
-*   Nome de usuário (único).
-*   Passphrase BIP39 de 18 palavras (para login).
+- Uma carteira BTC principal (seed de 24 palavras, alta entropia) recebe depósitos **on-chain**
+- Cada usuário possui um **saldo interno** mantido fora da blockchain
+- Transferências internas atualizam **apenas saldos (off-chain)**
+- A blockchain é usada somente para:
+  - Depósitos
+  - Saques
 
-O sistema gera:
+---
 
-*   `totp_secret` exclusivo.
-*   Registro temporário no Redis aguardando validação TOTP.
+### 3.2 Taxas
 
-Usuário confirma o código TOTP. Após isso, os dados são persistidos no PostgreSQL.
+- **Zero taxa** para transferências internas
+- **Taxa de rede** aplicada apenas em saques externos
+- **Taxação progressiva automática** para movimentações acima de **100k/mês**, destinada a:
+  - Reinvestimento na plataforma
+  - Desenvolvimento local
 
-Usuário envia:
+---
 
-*   Device hash
-*   IP atual
+## 4. Transferências e Pagamentos
 
-Sistema cria:
+### 4.1 Tipos de Transferência
 
-*   Registro em `users_devices`
-*   JWT de sessão para login inicial
+- Transferência interna instantânea  
+- Pagamentos via **QR Code**  
+- Pagamentos via **NFC**  
+- **Cheques digitais** com expiração  
 
-### 2.2 Dados armazenados em users_credentials
+---
 
-| Campo | Descrição |
-| :--- | :--- |
-| `id` | PK |
-| `username` | único |
-| `passphrase_hash` | hash Argon2id da passphrase de login |
-| `totp_secret` | criptografado (AES-256-GCM) |
-| `created_at` | data |
-| `status` | ativo / bloqueado |
+### 4.2 Varejistas
 
-**Importante:** A passphrase original nunca é salva, apenas um hash Argon2id de alta segurança.
+- Recebimento instantâneo sem taxa  
+- Liquidação imediata em saldo interno  
+- QR dinâmico para cobrança  
+- Integração simples, sem hardware especial  
 
-### 2.3 Tabela users_devices
+---
 
-| Campo | Descrição |
-| :--- | :--- |
-| `id` | PK |
-| `user_id` | FK para users_credentials |
-| `device_hash` | identificador do dispositivo |
-| `ip` | último IP |
-| `created_at` | data |
+## 5. Rede P2P de Compra e Venda de BTC
 
-JWT sempre vinculado ao `device_hash`.
+- Marketplace P2P interno  
+- Compra e venda direta entre usuários  
+- Liquidação via saldo interno  
+- Matching automático  
+- Proteções antifraude  
+- Compatível com **Modo Tor**
 
-<div style="page-break-after: always;"></div>
+---
 
-## 3) Estrutura de Carteiras Internas
+## 6. WebSocket e Tempo Real
 
-Cada usuário pode ter até 10 carteiras independentes, cada uma protegida por sua própria passphrase BIP39.
+### 6.1 Uso de WebSocket
 
-O sistema armazena apenas:
+WebSocket é utilizado para:
+- Atualização de saldo em tempo real  
+- Cotações  
+- Notificações  
 
-*   Hash da carteira
-*   Hash da passphrase da carteira
-*   Saldo associado
+---
 
-As carteiras não são derivadas da passphrase de login. São outra camada de segurança.
+### 6.2 Estratégia Híbrida
 
-**Por que isso existe?**
+- WebSocket em redes normais  
+- HTTPS como fallback  
+- HTTPS preferencial quando o **Tor** estiver ativo  
 
-Para impedir que alguém com acesso à conta consiga mover valores sem a segunda passphrase.
+---
 
-<div style="page-break-after: always;"></div>
+## 7. Modo Tor
 
-## 4) Transferências Internas
+- Backend acessível via endereços **.onion**
+- Comunicação via Tor opcional no aplicativo
+- Proteção contra censura e rastreamento
+- Botão ligar/desligar no app
 
-**Processo:**
+---
 
-1.  Usuário escolhe qual carteira deseja usar.
-2.  Sistema solicita a passphrase da carteira.
-3.  Passphrase é validada contra o hash salvo no banco.
-4.  Transferência é criada e armazenada por 24 horas.
+## 8. Modo Fantasma
 
-**Campos salvos temporariamente:**
+- Transações temporárias  
+- Carteiras efêmeras  
+- Apagamento automático de dados sensíveis  
+- Ideal para pagamentos rápidos e privados  
 
-| Campo | Descrição |
-| :--- | :--- |
-| `tx_id` | PK |
-| `from_wallet_hash` | hash da carteira de origem |
-| `to_username` | username destino |
-| `amount` | valor |
-| `created_at` | timestamp |
-| `status` | pending, success, canceled |
+---
 
-**Após 24h:**
+## 9. Segurança
 
-*   Se não houver contestação → remoção automática do registro.
-*   Se houver contestação → análise manual / reversão.
+- Criptografia ponta a ponta  
+- Proteção contra replay  
+- Chaves protegidas (HSM ou hardware wallet)  
+- Backend **stateless**  
+- Auditoria interna contínua  
 
-**Taxa**
+---
 
-Transferências internas possuem taxa 0.
+## 10. Infraestrutura
 
-<div style="page-break-after: always;"></div>
+- Mínimo de **3 servidores ativos**  
+- Failover automático  
+- Escalabilidade horizontal  
+- Relays P2P  
+- Multi-cloud  
 
-## 5) Depósitos e Saques (BTC)
+---
 
-### Depósito BTC → Kerosene
+## 11. Aplicativo Mobile
 
-*   **Taxa:** 1%
-*   Após a confirmação on-chain, o saldo é creditado na carteira interna selecionada.
+- Modo Tor  
+- Modo Fantasma  
+- QR Code  
+- NFC  
+- WebSocket  
+- P2P BTC  
+- Interface clara focada em privacidade  
 
-### Saque BTC → carteira externa
+---
 
-*   **Taxa:** 1%
-*   A transação é assinada no cliente e enviada ao servidor para broadcasting.
+## 12. O que a Kerosene NÃO é
 
-<div style="page-break-after: always;"></div>
+- Não é um banco tradicional  
+- Não armazena histórico detalhado de transações  
+- Não cobra taxas internas  
+- Não depende de um único servidor  
 
-## 6) Home Broker Cripto (P2P)
+---
 
-Usuários negociam criptos entre si. A Kerosene apenas garante matching e liquidação interna.
+## 13. Roadmap
 
-**Taxas:**
+### MVP
+- Saldo interno  
+- QR Code  
+- WebSocket  
+- Infraestrutura redundante  
 
-*   Compra: 0.1%
-*   Venda: 0.1%
+### Fase 2
+- Modo Tor  
+- Modo Fantasma  
+- P2P BTC  
 
-A liquidação é feita usando carteiras internas.
+### Fase 3
+- Relays comunitários  
+- Incentivos de rede  
+- Expansão para varejo em larga escala  
 
-<div style="page-break-after: always;"></div>
+---
 
-## 7) Segurança
-
-*   Passphrases protegidas com Argon2id + salt único.
-*   TOTP obrigatório para criação e acesso.
-*   JWT vinculado ao `device_hash`.
-*   Carteiras com passphrases independentes.
-*   Transações expiram em 24h.
-*   Nenhuma seed é salva no servidor.
-*   Dados sensíveis sempre armazenados com AES-256-GCM.
-
-<div style="page-break-after: always;"></div>
-
-## 8) Modelo de Dados Simplificado
-
-*   **users_credentials**
-    *   (id, username, passphrase_hash, totp_secret, created_at)
-*   **users_devices**
-    *   (id, user_id, device_hash, ip, created_at)
-*   **wallets**
-    *   (id, user_id, wallet_hash, wallet_passphrase_hash, balance, created_at)
-*   **internal_transactions**
-    *   (id, from_wallet_hash, to_username, amount, created_at, status)
-*   **p2p_orders**
-    *   (id, user_id, asset, amount, price, type, status)
-
-<div style="page-break-after: always;"></div>
-
-## 9) Regras de Negócio
-
-*   Username é único.
-*   Cada carteira funciona como um “cofre” separado.
-*   Transferência só acontece com:
-    *   Passphrase da carteira
-    *   Username destino
-*   Depósitos e saques têm taxa fixa.
-*   Transações internas têm taxa zero.
-*   KYC é opcional e só usado para saques fiduciários.
-*   Contestação de transações só dentro de 24h.
-*   Após 24h, a transferência é definitiva.
-
-<div style="page-break-after: always;"></div>
-
-## 10) Arquitetura
-
-*   Backend em ambientes multi-cloud.
-*   Dados críticos em PostgreSQL.
-*   Redis para cadastros temporários e rate limit.
-*   JWT para sessões.
-*   API stateless REST.
-*   Logs sem PII.
-*   Possibilidade futura de relays P2P.
