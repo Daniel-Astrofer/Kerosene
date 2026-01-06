@@ -97,4 +97,4 @@ jobs:
           body: Build automático gerado a partir do último commit em main.
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FLUTTER_TOKEN: ${{ secrets.FLUTTER_TOKEN }}
