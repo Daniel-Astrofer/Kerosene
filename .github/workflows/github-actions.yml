@@ -81,12 +81,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd app 
+          cd frontend
           flutter pub get
 
       - name: Build APK (release)
         run: |
-          cd app
+          cd frontend
           flutter build apk --release
 
       - name: Create or Update Release (latest)
