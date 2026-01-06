@@ -24,7 +24,6 @@ jobs:
       - name: Build JAR
         run: |
           cd backend/kerosene
-          chmod +x ./gradlew
           ./gradlew bootJar --no-daemon
 
       - name: Login to Amazon ECR
