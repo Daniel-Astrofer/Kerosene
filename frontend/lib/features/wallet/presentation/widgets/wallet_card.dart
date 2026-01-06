@@ -9,161 +9,247 @@ class WalletCard extends StatelessWidget {
   const WalletCard({super.key, required this.wallet, this.isSelected = false});
 
   @override
+  @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           colors: isSelected
               ? [
-                  const Color(0xFFFF9966), // Orange
-                  const Color(0xFFFF5E62), // Pink
-                  const Color(0xFF7B61FF), // Purple
+                  const Color(0xFF0054FF), // Blue
+                  const Color(0xFF00D4FF), // Cyan
                 ]
-              : [const Color(0xFF252A40), const Color(0xFF1A1F3C)],
+              : [const Color(0xFF1A1F3C), const Color(0xFF2D2F4E)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
             color: isSelected
-                ? const Color(0xFF7B61FF).withOpacity(0.4)
-                : Colors.black.withOpacity(0.2),
-            blurRadius: isSelected ? 24 : 10,
-            offset: const Offset(0, 12),
+                ? const Color(0xFF0054FF).withOpacity(0.4)
+                : Colors.black.withOpacity(0.3),
+            blurRadius: isSelected ? 12 : 8,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Background decoration (Soft glow)
-          if (isSelected)
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Decorative subtle patterns for texture (Optional, keeping clean for now)
+
+            // BTC Chip Icon (Top Left)
             Positioned(
-              right: -40,
-              top: -40,
+              left: 28,
+              top: 28,
               child: Container(
-                width: 200,
-                height: 200,
+                width: 48,
+                height: 36,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+                  color: const Color(0xFFE0B050), // Gold base
+                  borderRadius: BorderRadius.circular(8),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFFDD835), // Light Gold
+                      Color(0xFFFBC02D), // Dark Gold
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.05),
-                      blurRadius: 50,
-                      spreadRadius: 10,
+                    const BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Chip Details
+                    Positioned.fill(
+                      child: CustomPaint(painter: _ChipPainter()),
+                    ),
+                    Center(
+                      child: Icon(
+                        Icons.currency_bitcoin,
+                        size: 20,
+                        color: Colors.black.withOpacity(0.4),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-          Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Top Row: Name/Address + Logo
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left: Name & Address
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top Row: Spacer for Chip + Name/Logo on right?
+                  // Just Name on the right to balance
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            left: 60,
+                          ), // Space for chip
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                wallet.name.toUpperCase(),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
+                                ),
+                                textAlign: TextAlign.end,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: wallet.address),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Address copied!'),
+                                      duration: Duration(milliseconds: 1500),
+                                      backgroundColor: Color(0xFF00D4FF),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "**** ${wallet.address.substring(wallet.address.length > 4 ? wallet.address.length - 4 : 0)}",
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.6),
+                                        fontSize: 12,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.copy,
+                                      size: 10,
+                                      color: Colors.white.withOpacity(0.4),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // Balance at bottom left
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Balance",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            wallet.name,
+                            "${wallet.balanceSatoshis}",
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
+                              fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
+                              letterSpacing: -0.5,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
-                          GestureDetector(
-                            onTap: () {
-                              Clipboard.setData(
-                                ClipboardData(text: wallet.address),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Address copied to clipboard!'),
-                                  duration: Duration(seconds: 2),
-                                  backgroundColor: Color(0xFF00D4FF),
-                                ),
-                              );
-                            },
-                            child: Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    _formatAddress(wallet.address),
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
-                                      fontSize: 12, // Small monospace text
-                                      fontFamily: 'monospace',
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.copy_rounded,
-                                  size: 12,
-                                  color: Colors.white.withOpacity(0.5),
-                                ),
-                              ],
+                          const SizedBox(width: 6),
+                          const Text(
+                            "SATS",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-
-                // Bottom: Balance
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${wallet.balanceSatoshis}",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 36, // Big bold balance
-                        fontWeight: FontWeight.bold,
-                        height: 1.0,
+                      // BTC Amount small
+                      Text(
+                        "≈ ${(wallet.balanceSatoshis / 100000000).toStringAsFixed(8)} BTC",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "SATS",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  String _formatAddress(String address) {
-    if (address.isEmpty) return "NO ADDRESS";
-    return address;
+class _ChipPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withOpacity(0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Horizontal lines
+    canvas.drawLine(
+      Offset(0, size.height * 0.35),
+      Offset(size.width, size.height * 0.35),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height * 0.65),
+      Offset(size.width, size.height * 0.65),
+      paint,
+    );
+
+    // Vertical lines side
+    canvas.drawLine(
+      Offset(size.width * 0.35, 0),
+      Offset(size.width * 0.35, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.65, 0),
+      Offset(size.width * 0.65, size.height),
+      paint,
+    );
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

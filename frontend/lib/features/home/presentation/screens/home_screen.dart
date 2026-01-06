@@ -191,7 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           // Carousel
           SizedBox(
-            height: 240, // Height for cards
+            height: 220, // Increased height for better card visibility
             child: PageView.builder(
               controller: _pageController,
               itemCount: state.wallets.length,

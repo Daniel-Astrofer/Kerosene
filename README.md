@@ -2,6 +2,14 @@
 
 # KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (PRE-ALPHA-1.0.0)
 
+
+
+
+![Logo](./screen (1).png)![Logo](./screen (2).png)![Logo](./screen (3).png)![Logo](./screen (4).png)
+
+![Logo](./screen (5).png)![Logo](./screen (6).png)![Logo](./screen (7).png)![Logo](./screen (8).png)
+
+
 Plataforma de pagamentos e custódia cripto, de código aberto, com múltiplas carteiras internas, autenticação forte e transações internas sem taxa.
 
 ## 1) Visão Geral
