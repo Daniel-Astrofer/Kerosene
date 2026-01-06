@@ -2,7 +2,7 @@
 
 # KEROSENE — DOCUMENTAÇÃO TÉCNICA ATUALIZADA (PRE-ALPHA-1.0.0)
 
-[⬇️ Baixar APK mais recente](https://github.com/Daniel-Astrofer/Kerosene/releases/download/latest/app-release.apk)
+[⬇️ Baixar APK mais recente](https://github.com/Daniel-Astrofer/Kerosene/releases/tag/latest)
 
 
 ![img1](./screenshots/screen%20(1).png) ![img2](./screenshots/screen%20(2).png) ![img3](./screenshots/screen%20(3).png) ![img4](./screenshots/screen%20(4).png)
