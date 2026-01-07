@@ -1,10 +1,16 @@
 ![Kerosene Logo](./kerosene-logo.png)
 
-# KEROSENE  
-### Plataforma Financeira em Bitcoin — Privacidade, Escalabilidade e Anti-Censura  
+# KEROSENE
+
+### Plataforma Financeira em Bitcoin — Privacidade, Escalabilidade e Anti-Censura
+
 **Status:** Pre-Alpha `v1.0.0`
 
 [⬇️ Download APK mais recente](https://github.com/Daniel-Astrofer/Kerosene/releases/latest)
+
+[📋 Project Board / Issues](https://github.com/users/Daniel-Astrofer/projects/2)
+
+[🧪 Testar API (Scalar)](https://registry.scalar.com/@default-team-qjzm1/apis/openapi-definition/latest#tag/auth)
 
 ---
 
@@ -24,111 +30,132 @@
 
 ---
 
-## Visão Geral
+## Visão Geral Técnica
 
-A **Kerosene** é uma plataforma financeira open-source baseada em **Bitcoin**, projetada para permitir **pagamentos, transferências e custódia** com foco em:
+A **Kerosene** é uma plataforma financeira **open-source**, orientada a **custódia, pagamentos e transferências em Bitcoin**, projetada para operar de forma **anti-censura**, **privada** e **altamente escalável**.
 
-- Privacidade por padrão  
-- Zero taxas internas  
-- Resistência à censura  
-- Usabilidade real para usuários e varejistas  
+A arquitetura separa claramente:
 
-O sistema utiliza **saldo interno off-chain**, permitindo **transferências instantâneas**, utilizando a blockchain **apenas para depósitos e saques**.
+* **Liquidação on-chain (Bitcoin)** para depósitos e saques
+* **Liquidação off-chain** para transferências internas instantâneas
 
 ---
 
-## Princípios do Projeto
+## Stack Tecnológica
 
-- Sem taxas para transferências internas  
-- Arquitetura anti-censura  
-- Alta disponibilidade  
-- Escalável para milhões de usuários  
-- Código aberto e auditável  
+### Backend
+
+* **Java 21**
+* **Spring Boot / Spring WebFlux**
+* **Gradle** (build e gerenciamento de dependências)
+* **PostgreSQL** (persistência relacional)
+* **Redis** (cache, sessões, rate-limit e eventos temporários)
+* **WebSocket** (comunicação em tempo real)
+* **API REST documentada via Scalar / OpenAPI**
+
+### Frontend Mobile
+
+* **Flutter**
+* **Dart**
+* Aplicação multiplataforma focada em **Android (APK disponível)**
 
 ---
 
 ## Arquitetura de Saldo
 
-- Carteira BTC principal para depósitos on-chain  
-- Saldo interno individual por usuário  
-- Transferências internas não utilizam blockchain  
-- Blockchain usada apenas para:
-  - Depósitos
-  - Saques
+* Carteira BTC principal (hot/warm wallet) para depósitos
+* Saldo interno individualizado por usuário
+* Transferências internas **não utilizam blockchain**
+* Blockchain utilizada apenas para:
+
+  * Depósitos on-chain
+  * Saques on-chain
+
+Esse modelo permite:
+
+* Transferências instantâneas
+* Zero taxas internas
+* Redução de custos operacionais
 
 ---
 
-## Transferências e Pagamentos
+## Funcionalidades Principais
 
-- Transferências internas instantâneas  
-- Pagamentos via **QR Code**  
-- Pagamentos via **NFC**  
-- Cheques digitais com expiração  
+* Transferências internas instantâneas
+* Pagamentos via **QR Code**
+* Pagamentos via **NFC**
+* Cheques digitais com expiração
+* Comunicação em tempo real via WebSocket
 
 ---
 
-## Privacidade
+## Privacidade e Anti-Censura
 
 ### Modo Tor
-- Backend acessível via `.onion`
-- Comunicação opcional via Tor
-- Proteção contra rastreamento e censura
+
+* Backend acessível via endereço `.onion`
+* Comunicação opcional via rede Tor
+* Mitigação de rastreamento e bloqueios geográficos
 
 ### Modo Fantasma
-- Carteiras efêmeras
-- Transações temporárias
-- Apagamento automático de dados sensíveis
+
+* Carteiras efêmeras
+* Dados temporários
+* Limpeza automática de informações sensíveis
 
 ---
 
 ## Segurança
 
-- Criptografia ponta a ponta  
-- Proteção contra replay  
-- Backend stateless  
-- Isolamento de chaves  
-- Auditoria contínua  
+* Criptografia ponta a ponta
+* Proteção contra replay attacks
+* Backend stateless
+* Isolamento de chaves privadas
+* Auditoria contínua de código
 
 ---
 
 ## Infraestrutura
 
-- Múltiplos servidores ativos  
-- Failover automático  
-- Escalabilidade horizontal  
-- Relays P2P  
-- Multi-cloud  
+* Arquitetura distribuída
+* Escalabilidade horizontal
+* Failover automático
+* Relays P2P
+* Ambiente multi-cloud
 
 ---
 
 ## Roadmap
 
 ### MVP
-- Saldo interno
-- QR Code
-- WebSocket
-- Infraestrutura redundante
+
+* Saldo interno
+* QR Code
+* WebSocket
+* Infraestrutura redundante
 
 ### Fase 2
-- Modo Tor
-- Modo Fantasma
-- Marketplace P2P BTC
+
+* Modo Tor
+* Modo Fantasma
+* Marketplace P2P BTC
 
 ### Fase 3
-- Relays comunitários
-- Incentivos de rede
-- Expansão para varejo
+
+* Relays comunitários
+* Incentivos de rede
+* Expansão para varejo
 
 ---
 
 ## Contribuição
 
-Contribuições são bem-vindas.  
-Veja `CONTRIBUTING.md` e utilize Pull Requests via branch `develop`.
+Contribuições são bem-vindas.
+Utilize **Pull Requests** a partir da branch `develop`.
 
 ---
 
 ## Licença
 
-Este projeto é distribuído sob licença open-source.  
-Consulte
+Projeto distribuído sob licença open-source.
+Consulte o arquivo de licença para mais informações.
