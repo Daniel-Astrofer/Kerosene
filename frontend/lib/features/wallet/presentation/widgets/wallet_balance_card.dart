@@ -5,13 +5,8 @@ import 'dart:math' as math;
 /// Widget do card de balanço com gráfico circular
 class WalletBalanceCard extends StatelessWidget {
   final Wallet wallet;
-  final double btcToUsdRate;
 
-  const WalletBalanceCard({
-    super.key,
-    required this.wallet,
-    required this.btcToUsdRate,
-  });
+  const WalletBalanceCard({super.key, required this.wallet});
 
   @override
   Widget build(BuildContext context) {
@@ -21,15 +16,12 @@ class WalletBalanceCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1A1F3A),
-            const Color(0xFF0F1229),
-          ],
+          colors: [const Color(0xFF1A1F3A), const Color(0xFF0F1229)],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7B61FF).withOpacity(0.1),
+            color: const Color(0xFF7B61FF).withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -73,26 +65,20 @@ class WalletBalanceCard extends StatelessWidget {
           // Label "Balance"
           const Text(
             'Balance',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 4),
 
           // Endereço da carteira (mascarado)
           Text(
             _maskAddress(wallet.address),
-            style: const TextStyle(
-              color: Colors.white38,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white38, fontSize: 12),
           ),
           const SizedBox(height: 12),
 
-          // Saldo em USD
+          // Saldo em BTC
           Text(
-            wallet.balanceInUSD(btcToUsdRate),
+            '${wallet.balance.toStringAsFixed(8)} BTC',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -101,13 +87,10 @@ class WalletBalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
 
-          // Saldo em BTC
-          Text(
-            '${wallet.balanceBTC.toStringAsFixed(8)} BTC',
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 14,
-            ),
+          // Label "Total Portfolio"
+          const Text(
+            'Total Portfolio Value',
+            style: TextStyle(color: Colors.white54, fontSize: 14),
           ),
         ],
       ),
@@ -145,10 +128,7 @@ class BalanceChartPainter extends CustomPainter {
     final gradient = SweepGradient(
       startAngle: -math.pi / 2,
       endAngle: -math.pi / 2 + (2 * math.pi * percentage),
-      colors: const [
-        Color(0xFF7B61FF),
-        Color(0xFF00D4FF),
-      ],
+      colors: const [Color(0xFF7B61FF), Color(0xFF00D4FF)],
     );
 
     final progressPaint = Paint()

@@ -3,11 +3,15 @@ class AppConfig {
   // ==================== API Configuration ====================
 
   /// URL base da API Kerosene
-  static const String apiBaseUrl = 'http://3.21.13.208:8080';
+  static const String apiBaseUrl =
+      'https://disingenuously-undelightful-lino.ngrok-free.dev';
 
   /// Timeout para requisições HTTP (em milissegundos)
   static const int connectionTimeout = 30000;
   static const int receiveTimeout = 30000;
+
+  // ==================== API Headers ====================
+  static const String newTokenHeader = 'X-New-Token';
 
   // ==================== API Endpoints ====================
 
@@ -30,6 +34,32 @@ class AppConfig {
   static const String ledgerBalance = '/ledger/balance';
   static const String ledgerAll = '/ledger/all';
   static const String ledgerDelete = '/ledger/delete';
+
+  // Transactions - Fee & Status
+  static const String transactionsEstimateFee = '/transactions/estimate-fee';
+  static const String transactionsStatus = '/transactions/status';
+
+  // Transactions - Send & Broadcast
+  static const String transactionsSend = '/transactions/send';
+  static const String transactionsBroadcast = '/transactions/broadcast';
+
+  // Transactions - Deposits
+  static const String transactionsDepositAddress =
+      '/transactions/deposit-address';
+  static const String transactionsConfirmDeposit =
+      '/transactions/confirm-deposit';
+  static const String transactionsDeposits = '/transactions/deposits';
+  static const String transactionsDepositBalance =
+      '/transactions/deposit-balance';
+  static const String transactionsDeposit =
+      '/transactions/deposit'; // + /{txid}
+
+  // Transactions - Payment Links
+  static const String transactionsCreatePaymentLink =
+      '/transactions/create-payment-link';
+  static const String transactionsPaymentLink =
+      '/transactions/payment-link'; // + /{linkId}
+  static const String transactionsPaymentLinks = '/transactions/payment-links';
 
   // ==================== Storage Keys ====================
 

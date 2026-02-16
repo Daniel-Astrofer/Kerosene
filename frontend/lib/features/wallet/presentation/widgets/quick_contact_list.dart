@@ -45,7 +45,7 @@ class QuickContactList extends StatelessWidget {
             height: 60,
             decoration: BoxDecoration(
               color: icon != null
-                  ? const Color(0xFF7B61FF).withOpacity(0.2)
+                  ? const Color(0xFF7B61FF).withValues(alpha: 0.2)
                   : const Color(0xFF1A1F3A),
               shape: BoxShape.circle,
               border: icon != null

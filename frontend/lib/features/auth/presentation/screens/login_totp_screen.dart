@@ -87,11 +87,11 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                         height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           border: Border.all(color: Colors.white10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00D4FF).withOpacity(0.2),
+                              color: const Color(0xFF00D4FF).withValues(alpha: 0.2),
                               blurRadius: 40,
                               spreadRadius: -10,
                             ),
@@ -124,7 +124,7 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                           height: 1.5,
                         ),
                       ),
@@ -153,12 +153,12 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                                 counterText: "",
                                 hintText: "000000",
                                 hintStyle: TextStyle(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Colors.white.withValues(alpha: 0.1),
                                   fontSize: 24,
                                   letterSpacing: 8,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.05),
+                                fillColor: Colors.white.withValues(alpha: 0.05),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,

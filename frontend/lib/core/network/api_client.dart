@@ -18,6 +18,7 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
         },
       ),
     );
@@ -25,6 +26,14 @@ class ApiClient {
     // Adicionar interceptors
     _dio.interceptors.add(_LogInterceptor());
     _dio.interceptors.add(_ErrorInterceptor());
+  }
+
+  /// Adicionar um interceptor customizado
+  void addInterceptor(Interceptor interceptor) {
+    _dio.interceptors.insert(
+      0,
+      interceptor,
+    ); // Insert at beginning to run before others
   }
 
   /// GET request
@@ -143,7 +152,21 @@ class ApiClient {
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
-          final message = error.response?.data['message'] ?? 'Erro no servidor';
+          var message = 'Erro no servidor';
+
+          final data = error.response?.data;
+          if (data is Map && data.containsKey('message')) {
+            message = data['message'];
+          } else if (data is String) {
+            try {
+              // Tenta parsear caso seja um JSON válido em string
+              // import 'dart:convert'; (precisamos garantir esse import)
+              // Mas como não temos import fácil aqui, vamos assumir que se for string, é a mensagem
+              // ou tentar parsear de forma simples se possível.
+              // Melhor: se for string, usa ela (truncada se necessário)
+              message = data.length > 100 ? data.substring(0, 100) : data;
+            } catch (_) {}
+          }
 
           if (statusCode == 401 || statusCode == 403) {
             return AuthException(message: message, statusCode: statusCode);

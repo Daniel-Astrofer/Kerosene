@@ -11,6 +11,7 @@ import '../../domain/usecases/get_wallets_usecase.dart';
 import '../../domain/usecases/get_transactions_usecase.dart';
 import '../../domain/usecases/send_bitcoin_usecase.dart';
 import '../../domain/usecases/create_wallet_usecase.dart';
+import '../../domain/usecases/wallet_crud_usecases.dart'; // [NEW]
 import '../state/wallet_state.dart';
 import '../state/create_wallet_state.dart';
 
@@ -47,6 +48,34 @@ final sendBitcoinUseCaseProvider = Provider<SendBitcoinUseCase>((ref) {
 final createWalletUseCaseProvider = Provider<CreateWalletUseCase>((ref) {
   final repository = ref.watch(walletRepositoryProvider);
   return CreateWalletUseCase(repository);
+});
+
+// [NEW] Wallet CRUD Providers
+final findWalletUseCaseProvider = Provider<FindWalletUseCase>((ref) {
+  final repository = ref.watch(walletRepositoryProvider);
+  return FindWalletUseCase(repository);
+});
+
+final updateWalletUseCaseProvider = Provider<UpdateWalletUseCase>((ref) {
+  final repository = ref.watch(walletRepositoryProvider);
+  return UpdateWalletUseCase(repository);
+});
+
+final deleteWalletUseCaseProvider = Provider<DeleteWalletUseCase>((ref) {
+  final repository = ref.watch(walletRepositoryProvider);
+  return DeleteWalletUseCase(repository);
+});
+
+final getLedgerBalanceUseCaseProvider = Provider<GetLedgerBalanceUseCase>((
+  ref,
+) {
+  final repository = ref.watch(walletRepositoryProvider);
+  return GetLedgerBalanceUseCase(repository);
+});
+
+final deleteLedgerUseCaseProvider = Provider<DeleteLedgerUseCase>((ref) {
+  final repository = ref.watch(walletRepositoryProvider);
+  return DeleteLedgerUseCase(repository);
 });
 
 // ==================== State Notifiers ====================
@@ -115,6 +144,11 @@ class WalletNotifier extends StateNotifier<WalletState> {
         selectedWallet: wallets.isNotEmpty ? wallets.first : null,
         btcToUsdRate: btcToUsdRate,
       );
+
+      // Trigger balance update for all wallets to ensure consistency with Ledger
+      for (final wallet in wallets) {
+        updateWalletBalance(wallet.id);
+      }
     });
   }
 
@@ -208,10 +242,12 @@ final transactionProvider =
 class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
   final SendBitcoinUseCase sendBitcoinUseCase;
   final WalletRepository walletRepository;
+  final Ref ref;
 
   SendMoneyNotifier({
     required this.sendBitcoinUseCase,
     required this.walletRepository,
+    required this.ref,
   }) : super(const SendMoneyInitial());
 
   /// Valida endereço e estima taxa
@@ -262,10 +298,15 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
       description: description,
     );
 
-    result.fold(
-      (failure) => state = SendMoneyError(failure.message),
-      (transaction) => state = SendMoneySuccess(transaction),
-    );
+    result.fold((failure) => state = SendMoneyError(failure.message), (
+      transaction,
+    ) {
+      state = SendMoneySuccess(transaction);
+
+      // Refresh wallet balances and transaction history
+      ref.read(walletProvider.notifier).refresh();
+      ref.read(transactionProvider.notifier).loadTransactions(fromWalletId);
+    });
   }
 
   /// Reseta estado
@@ -282,5 +323,6 @@ final sendMoneyProvider =
       return SendMoneyNotifier(
         sendBitcoinUseCase: sendBitcoinUseCase,
         walletRepository: walletRepository,
+        ref: ref,
       );
     });

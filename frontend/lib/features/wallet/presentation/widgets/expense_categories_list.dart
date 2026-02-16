@@ -48,7 +48,7 @@ class ExpenseCategoriesList extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '\$${(category.amountSatoshis / 100000000 * 50000).toStringAsFixed(2)}',
+              '${category.amountBTC.toStringAsFixed(8)} BTC',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,

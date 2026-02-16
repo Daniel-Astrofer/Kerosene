@@ -223,6 +223,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw ServerException(message: 'REQ_LOGIN_2FA');
       }
 
+      final responseText = response.data.toString();
+      if (responseText.toLowerCase().contains('unrecognized device')) {
+        throw ServerException(message: 'REQ_LOGIN_2FA');
+      }
+
       return _handleResponse(response);
     } catch (e) {
       if (e is ServerException) rethrow;

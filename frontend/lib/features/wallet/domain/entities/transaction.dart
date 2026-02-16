@@ -69,12 +69,51 @@ final class Transaction extends Equatable {
   /// Verifica se a transação está pendente
   bool get isPending => status == TransactionStatus.pending;
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fromAddress': fromAddress,
+      'toAddress': toAddress,
+      'amountSatoshis': amountSatoshis,
+      'feeSatoshis': feeSatoshis,
+      'status': status.name,
+      'type': type.name,
+      'confirmations': confirmations,
+      'timestamp': timestamp.toIso8601String(),
+      'blockHash': blockHash,
+      'blockHeight': blockHeight,
+      'description': description,
+    };
+  }
+
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    // If it's from local storage (newly added format)
+    if (json.containsKey('status') && json['status'] is String) {
+      return Transaction(
+        id: json['id'],
+        fromAddress: json['fromAddress'],
+        toAddress: json['toAddress'],
+        amountSatoshis: json['amountSatoshis'] is int
+            ? json['amountSatoshis']
+            : (json['amountSatoshis'] as num).toInt(),
+        feeSatoshis: json['feeSatoshis'] is int
+            ? json['feeSatoshis']
+            : (json['feeSatoshis'] as num).toInt(),
+        status: TransactionStatus.values.firstWhere(
+          (e) => e.name == json['status'],
+        ),
+        type: TransactionType.values.firstWhere((e) => e.name == json['type']),
+        confirmations: json['confirmations'],
+        timestamp: DateTime.parse(json['timestamp']),
+        blockHash: json['blockHash'],
+        blockHeight: json['blockHeight'],
+        description: json['description'],
+      );
+    }
+
+    // Original Ledger API format
     final amountVal = json['amount'] as num? ?? 0;
-    final isNegative =
-        amountVal < 0; // Se negativo, saiu da conta? Depende da perspectiva.
-    // Ledger: amount positivo = entrada, negativo = saída?
-    // "Valor da transação (positivo para entrada, negativo para saída)." - Spec
+    final isNegative = amountVal < 0;
 
     return Transaction(
       id: (json['id'] ?? '').toString(),
@@ -82,11 +121,10 @@ final class Transaction extends Equatable {
       toAddress: json['receiver'] ?? (isNegative ? 'External' : 'Me'),
       amountSatoshis: amountVal.abs().toInt(),
       feeSatoshis: 0,
-      status: TransactionStatus.confirmed, // Ledger só tem confirmadas
+      status: TransactionStatus.confirmed,
       type: isNegative ? TransactionType.send : TransactionType.receive,
-      confirmations:
-          (json['nonce'] ?? 6) as int, // Usando nonce como proxy ou default
-      timestamp: DateTime.now(), // Sem data na API
+      confirmations: (json['nonce'] ?? 6) as int,
+      timestamp: DateTime.now(),
       description: json['context'] ?? json['walletName'],
     );
   }

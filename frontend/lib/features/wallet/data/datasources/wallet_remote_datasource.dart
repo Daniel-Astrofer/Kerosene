@@ -28,6 +28,35 @@ abstract class WalletRemoteDataSource {
     required String context,
     required String token,
   });
+
+  // Wallet CRUD
+  Future<Map<String, dynamic>> findWallet({
+    required String name,
+    required String token,
+  });
+
+  Future<String> updateWallet({
+    required String name,
+    required String newName,
+    required String token,
+  });
+
+  Future<String> deleteWallet({
+    required String name,
+    required String passphrase,
+    required String token,
+  });
+
+  // Ledger
+  Future<double> getBalance({
+    required String walletName,
+    required String token,
+  });
+
+  Future<String> deleteLedger({
+    required String walletName,
+    required String token,
+  });
 }
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
@@ -175,6 +204,108 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
           : {'result': response.data};
     } catch (e) {
       throw ServerException(message: 'Erro ao enviar transação: $e');
+    }
+  }
+
+  // ==================== Wallet CRUD ====================
+
+  @override
+  Future<Map<String, dynamic>> findWallet({
+    required String name,
+    required String token,
+  }) async {
+    try {
+      final headers = await _getHeaders(token);
+      final response = await apiClient.get(
+        AppConfig.walletFind,
+        queryParameters: {'name': name},
+        headers: headers,
+      );
+      return response.data is Map<String, dynamic>
+          ? response.data
+          : {'data': response.data};
+    } catch (e) {
+      throw ServerException(message: 'Erro ao buscar carteira: $e');
+    }
+  }
+
+  @override
+  Future<String> updateWallet({
+    required String name,
+    required String newName,
+    required String token,
+  }) async {
+    try {
+      final headers = await _getHeaders(token);
+      final response = await apiClient.put(
+        AppConfig.walletUpdate,
+        data: {'name': name, 'newName': newName},
+        headers: headers,
+        options: Options(responseType: ResponseType.plain),
+      );
+      return response.data.toString();
+    } catch (e) {
+      throw ServerException(message: 'Erro ao atualizar carteira: $e');
+    }
+  }
+
+  @override
+  Future<String> deleteWallet({
+    required String name,
+    required String passphrase,
+    required String token,
+  }) async {
+    try {
+      final headers = await _getHeaders(token);
+      final response = await apiClient.delete(
+        AppConfig.walletDelete,
+        data: {'name': name, 'passphrase': passphrase},
+        headers: headers,
+        options: Options(responseType: ResponseType.plain),
+      );
+      return response.data.toString();
+    } catch (e) {
+      throw ServerException(message: 'Erro ao deletar carteira: $e');
+    }
+  }
+
+  // ==================== Ledger ====================
+
+  @override
+  Future<double> getBalance({
+    required String walletName,
+    required String token,
+  }) async {
+    try {
+      final headers = await _getHeaders(token);
+      final response = await apiClient.get(
+        AppConfig.ledgerBalance,
+        queryParameters: {'walletName': walletName},
+        headers: headers,
+        options: Options(responseType: ResponseType.plain),
+      );
+      return double.tryParse(response.data.toString().trim()) ?? 0;
+    } catch (e) {
+      throw ServerException(message: 'Erro ao buscar saldo: $e');
+    }
+  }
+
+  @override
+  Future<String> deleteLedger({
+    required String walletName,
+    required String token,
+  }) async {
+    try {
+      final headers = await _getHeaders(token);
+      final response = await apiClient.delete(
+        AppConfig.ledgerDelete,
+        queryParameters: {'walletName': walletName},
+        headers: headers,
+        options: Options(responseType: ResponseType.plain),
+      );
+      return response.data.toString();
+    } catch (e) {
+      throw ServerException(message: 'Erro ao deletar ledger: $e');
     }
   }
 }

@@ -144,7 +144,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     color: Colors.white70,
                                   ),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.05),
+                                  fillColor: Colors.white.withValues(alpha: 0.05),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     borderSide: BorderSide.none,
@@ -238,7 +238,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                       'Save this phrase securely. It is the ONLY way to recover your account.',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.white.withOpacity(0.6),
+                                        color: Colors.white.withValues(alpha: 0.6),
                                       ),
                                     ),
                                   ),

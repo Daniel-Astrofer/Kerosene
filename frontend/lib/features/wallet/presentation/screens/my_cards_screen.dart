@@ -47,7 +47,7 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.add, size: 20),
@@ -69,7 +69,7 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                 color: Colors.transparent,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF7B61FF).withOpacity(0.2),
+                    color: const Color(0xFF7B61FF).withValues(alpha: 0.2),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -88,7 +88,7 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                 color: Colors.transparent,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00D4FF).withOpacity(0.15),
+                    color: const Color(0xFF00D4FF).withValues(alpha: 0.15),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -179,10 +179,10 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                       ),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1F3C).withOpacity(0.5),
+                        color: const Color(0xFF1A1F3C).withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                         ),
                       ),
                       child: Row(
@@ -195,8 +195,8 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: isReceived
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.red.withOpacity(0.1),
+                                        ? Colors.green.withValues(alpha: 0.1)
+                                        : Colors.red.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -233,7 +233,7 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                                             ? t.fromAddress
                                             : t.toAddress,
                                         style: TextStyle(
-                                          color: Colors.white.withOpacity(0.5),
+                                          color: Colors.white.withValues(alpha: 0.5),
                                           fontSize: 11,
                                         ),
                                         maxLines: 1,
@@ -296,7 +296,7 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: gradientColors[0].withOpacity(0.4),
+            color: gradientColors[0].withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -312,13 +312,13 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                 filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.2),
-                        Colors.white.withOpacity(0.05),
+                        Colors.white.withValues(alpha: 0.2),
+                        Colors.white.withValues(alpha: 0.05),
                       ],
                     ),
                   ),
@@ -377,12 +377,12 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
                             Text(
                               "Balance",
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 10,
                               ),
                             ),
                             Text(
-                              "${(wallet.balanceSatoshis / 100000000).toStringAsFixed(4)} BTC",
+                              "${wallet.balance.toStringAsFixed(8)} BTC",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -411,14 +411,14 @@ class _MyCardsScreenState extends ConsumerState<MyCardsScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFF1A1F3C),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Icon(icon, color: Colors.white70, size: 24),
         ),
         const SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
         ),
       ],
     );

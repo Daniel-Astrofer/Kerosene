@@ -54,8 +54,8 @@ class RecentTransactionsList extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: isSent
-                  ? Colors.red.withOpacity(0.1)
-                  : Colors.green.withOpacity(0.1),
+                  ? Colors.red.withValues(alpha: 0.1)
+                  : Colors.green.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -96,7 +96,7 @@ class RecentTransactionsList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isSent ? '-' : '+'}\$${(transaction.amountBTC * 50000).toStringAsFixed(2)}',
+                '${isSent ? '-' : '+'}${transaction.amountBTC.toStringAsFixed(8)} BTC',
                 style: TextStyle(
                   color: isSent ? Colors.red : Colors.green,
                   fontSize: 16,
@@ -138,7 +138,7 @@ class RecentTransactionsList extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

@@ -49,9 +49,63 @@ class WalletRepositoryImpl implements WalletRepository {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
 
       final result = await remoteDataSource.getWallets(token);
-      final wallets = result.map((data) => Wallet.fromJson(data)).toList();
+      final walletsList = result.map((data) => Wallet.fromJson(data)).toList();
 
-      return Right(wallets);
+      // Enforce Ledger Balance: Fetch all ledgers to get real-time balances
+      Map<String, double> balances = {};
+      try {
+        final allLedgers = await remoteDataSource.getAllLedgers(token);
+        for (final item in allLedgers) {
+          if (item is Map) {
+            final name = item['walletName'] ?? item['id'];
+            final balance = item['balance'];
+            if (name != null && balance != null) {
+              balances[name.toString()] = (balance is num)
+                  ? balance.toDouble()
+                  : 0.0;
+            }
+          }
+        }
+      } catch (e) {
+        print('Error fetching all ledgers: $e');
+        // Fallback or ignore, keeping initial wallet balances
+      }
+
+      final List<Wallet> walletsWithBalance = [];
+
+      for (final wallet in walletsList) {
+        // Check if we have a balance from the ledger
+        if (balances.containsKey(wallet.name)) {
+          // Ledger balance is usually in BTC or Satoshis?
+          // If double, assume BTC and convert to sats, OR if large int, assume sats.
+          // Given getBalance was returning double and we cast to int, let's look at the value.
+          // If value is small (< 21M), it's BTC. If huge, it's sats.
+          // Safest is to assume the API returns the same unit as getBalance did.
+          // Converting double to int.
+
+          final bal = balances[wallet.name]!;
+          // Directly use double value as BTC
+          walletsWithBalance.add(wallet.copyWith(balance: bal));
+        } else {
+          // Try individual fetch if missing from all (fallback) using getLedger instead of getBalance
+          try {
+            final ledger = await remoteDataSource.getLedger(
+              walletName: wallet.name,
+              token: token,
+            );
+            final bal = ledger['balance'];
+            if (bal is num) {
+              walletsWithBalance.add(wallet.copyWith(balance: bal.toDouble()));
+            } else {
+              walletsWithBalance.add(wallet);
+            }
+          } catch (_) {
+            walletsWithBalance.add(wallet);
+          }
+        }
+      }
+
+      return Right(walletsWithBalance);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     } catch (e) {
@@ -73,7 +127,35 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<Either<Failure, Wallet>> updateWalletBalance(String walletId) async {
-    return getWalletById(walletId);
+    // 1. Get current wallet to ensure it exists and get other data
+    final walletResult = await getWalletById(walletId);
+
+    return walletResult.fold((failure) => Left(failure), (wallet) async {
+      try {
+        // 2. Fetch real balance from Ledger
+        final token = await authLocalDataSource.getToken();
+        if (token == null) {
+          return Left(AuthFailure(message: 'Usuário não autenticado'));
+        }
+
+        // 3. Use getLedger instead of getBalance (avoid 403)
+        final ledger = await remoteDataSource.getLedger(
+          walletName: walletId,
+          token: token,
+        );
+
+        double balance = wallet.balance;
+        if (ledger.containsKey('balance') && ledger['balance'] is num) {
+          balance = (ledger['balance'] as num).toDouble();
+        }
+
+        return Right(wallet.copyWith(balance: balance));
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message));
+      } catch (e) {
+        return Left(UnknownFailure(message: 'Erro ao atualizar saldo: $e'));
+      }
+    });
   }
 
   @override
@@ -103,10 +185,9 @@ class WalletRepositoryImpl implements WalletRepository {
           token: token,
         );
 
-        List<dynamic> list = [];
         // Se a resposta contiver transactions explicitamente
         if (result['transactions'] is List) {
-          list = result['transactions'];
+          // list = result['transactions'];
         }
         // Se a resposta for um único registro de ledger (estado atual), converte em transação única de "Saldo Inicial" ou similar?
         // Ou assume que não tem histórico detalhado.
@@ -152,7 +233,7 @@ class WalletRepositoryImpl implements WalletRepository {
       final result = await remoteDataSource.sendTransaction(
         sender: fromWalletId,
         receiver: toAddress,
-        amount: amountSatoshis.toDouble(),
+        amount: amountSatoshis / 100000000.0,
         context: description ?? 'transfer',
         token: token,
       );
@@ -190,5 +271,112 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<Either<Failure, double>> getBTCtoUSDRate() async {
     return const Right(50000.0); // Valor fixo temporário
+  }
+
+  // ==================== Wallet CRUD ====================
+
+  @override
+  Future<Either<Failure, Wallet>> findWallet(String name) async {
+    try {
+      final token = await authLocalDataSource.getToken();
+      if (token == null)
+        return Left(AuthFailure(message: 'Usuário não autenticado'));
+
+      final result = await remoteDataSource.findWallet(
+        name: name,
+        token: token,
+      );
+      return Right(Wallet.fromJson(result));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao buscar carteira: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> updateWallet({
+    required String name,
+    required String newName,
+  }) async {
+    try {
+      final token = await authLocalDataSource.getToken();
+      if (token == null)
+        return Left(AuthFailure(message: 'Usuário não autenticado'));
+
+      final result = await remoteDataSource.updateWallet(
+        name: name, // This is the old/current name
+        newName: newName,
+        token: token,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao atualizar carteira: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteWallet({
+    required String name,
+    required String passphrase,
+  }) async {
+    try {
+      final token = await authLocalDataSource.getToken();
+      if (token == null)
+        return Left(AuthFailure(message: 'Usuário não autenticado'));
+
+      final result = await remoteDataSource.deleteWallet(
+        name: name,
+        passphrase: passphrase,
+        token: token,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao deletar carteira: $e'));
+    }
+  }
+
+  // ==================== Ledger ====================
+
+  @override
+  Future<Either<Failure, double>> getBalance(String walletName) async {
+    try {
+      final token = await authLocalDataSource.getToken();
+      if (token == null)
+        return Left(AuthFailure(message: 'Usuário não autenticado'));
+
+      final result = await remoteDataSource.getBalance(
+        walletName: walletName,
+        token: token,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao buscar saldo: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteLedger(String walletName) async {
+    try {
+      final token = await authLocalDataSource.getToken();
+      if (token == null)
+        return Left(AuthFailure(message: 'Usuário não autenticado'));
+
+      final result = await remoteDataSource.deleteLedger(
+        walletName: walletName,
+        token: token,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao deletar ledger: $e'));
+    }
   }
 }

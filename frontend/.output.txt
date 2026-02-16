@@ -1,0 +1,293 @@
+Resolving dependencies...
+Downloading packages...
+  blockchain_utils 1.6.0 (6.0.0 available)
+  characters 1.4.0 (1.4.1 available)
+  device_info_plus 9.1.2 (12.3.0 available)
+  dio 5.9.0 (5.9.1 available)
+  equatable 2.0.7 (2.0.8 available)
+  ffi 2.1.4 (2.2.0 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_riverpod 2.6.1 (3.2.1 available)
+  http 1.5.0 (1.6.0 available)
+  intl 0.18.1 (0.20.2 available)
+  lints 5.1.1 (6.1.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.17.0 (1.18.1 available)
+  mobile_scanner 5.2.3 (7.1.4 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  pointycastle 3.9.1 (4.0.0 available)
+  riverpod 2.6.1 (3.2.1 available)
+  shared_preferences_android 2.4.18 (2.4.20 available)
+  source_span 1.10.1 (1.10.2 available)
+  test_api 0.7.7 (0.7.9 available)
+  web_socket_channel 2.4.0 (3.0.3 available)
+  win32_registry 1.1.5 (2.1.0 available)
+Got dependencies!
+24 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing frontend...
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:194:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:195:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:196:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:202:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:210:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:213:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:214:5 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:216:7 - avoid_print
+   info - Don't invoke 'print' in production code -
+          lib\core\network\api_client.dart:219:7 - avoid_print
+   info - 'background' is deprecated and shouldn't be used. Use surface instead.
+          This feature was deprecated after v3.18.0-0.1.pre -
+          lib\core\theme\app_theme.dart:16:7 - deprecated_member_use
+   info - Don't invoke 'print' in production code -
+          lib\features\auth\data\interceptors\token_interceptor.dart:17:7 -
+          avoid_print
+   info - Statements in an if should be enclosed in a block -
+          lib\features\auth\presentation\screens\signup_screen.dart:163:37 -
+          curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\home\presentation\screens\home_screen.dart:473:56 -
+          use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block -
+          lib\features\market\presentation\screens\market_screen.dart:489:27 -
+          curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\market\presentation\screens\market_screen.dart:796:31 -
+          curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\transactions\data\repositories\transaction_repository_imp
+          l.dart:22:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:49:9
+          - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:70:9
+          - avoid_print
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:179:
+          9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:231:
+          9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:283:
+          9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:305:
+          9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:328:
+          9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:350:
+          9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\data\repositories\wallet_repository_impl.dart:369:
+          9 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code -
+          lib\features\wallet\presentation\providers\wallet_provider.dart:177:9
+          - avoid_print
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\presentation\screens\analytics_screen.dart:486:41
+          - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\presentation\screens\analytics_screen.dart:490:41
+          - curly_braces_in_flow_control_structures
+   info - The local variable '_getLeftTopPath' starts with an underscore -
+          lib\features\wallet\presentation\screens\qr_scanner_screen.dart:133:10
+          - no_leading_underscores_for_local_identifiers
+   info - The local variable '_cutOutBottomOffset' starts with an underscore -
+          lib\features\wallet\presentation\screens\qr_scanner_screen.dart:148:11
+          - no_leading_underscores_for_local_identifiers
+   info - The local variable '_cutOutSize' starts with an underscore -
+          lib\features\wallet\presentation\screens\qr_scanner_screen.dart:149:11
+          - no_leading_underscores_for_local_identifiers
+   info - Statements in an if should be enclosed in a block -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:413:3
+          1 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:420:5
+          4 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:436:5
+          4 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:449:3
+          1 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:471:5
+          2 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:483:5
+          2 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated
+          'mounted' check -
+          lib\features\wallet\presentation\screens\wallet_home_screen.dart:495:3
+          1 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:195:44 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:199:44 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:206:39 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:211:39 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:218:33 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:219:36 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:239:45 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:274:44 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:275:44 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:276:44 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:297:42 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:298:42 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:299:42 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:335:53 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:389:49 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:407:55 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:425:53 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:449:63 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:462:65 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:542:23 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:557:15 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:558:15 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:559:15 -
+          deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues()
+          to avoid precision loss -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:572:30 -
+          deprecated_member_use
+warning - The declaration '_CardIconButton' isn't referenced -
+       lib\features\wallet\presentation\widgets\wallet_card.dart:589:7 -
+       unused_element
+warning - A value for optional parameter 'onPressed' isn't ever given -
+       lib\features\wallet\presentation\widgets\wallet_card.dart:593:51 -
+       unused_element_parameter
+   info - 'value' is deprecated and shouldn't be used. Use component accessors
+          like .r or .g, or toARGB32 for an explicit conversion -
+          lib\features\wallet\presentation\widgets\wallet_card.dart:666:28 -
+          deprecated_member_use
+   info - 'translate' is deprecated and shouldn't be used. Use
+          translateByVector3, translateByVector4, or translateByDouble instead -
+          lib\features\wallet\presentation\widgets\wallet_card_stack.dart:265:23
+          - deprecated_member_use
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3,
+          scaleByVector4, or scaleByDouble instead -
+          lib\features\wallet\presentation\widgets\wallet_card_stack.dart:268:23
+          - deprecated_member_use
+  error - The named parameter 'onNfcPressed' isn't defined -
+         lib\features\wallet\presentation\widgets\wallet_card_stack.dart:279:25
+         - undefined_named_parameter
+  error - The named parameter 'onQrPressed' isn't defined -
+         lib\features\wallet\presentation\widgets\wallet_card_stack.dart:280:25
+         - undefined_named_parameter
+warning - The value of the field '_animation' isn't used -
+       lib\features\wallet\presentation\widgets\wallet_card_stack_draggable.dart
+       :32:26 - unused_field
+   info - The private field _isDraggableMode could be 'final' -
+          lib\features\wallet\presentation\widgets\wallet_card_stack_draggable.d
+          art:42:8 - prefer_final_fields
+warning - The declaration '_onVerticalDragUpdate' isn't referenced -
+       lib\features\wallet\presentation\widgets\wallet_card_stack_draggable.dart
+       :76:8 - unused_element
+warning - The declaration '_onVerticalDragEnd' isn't referenced -
+       lib\features\wallet\presentation\widgets\wallet_card_stack_draggable.dart
+       :87:8 - unused_element
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3,
+          scaleByVector4, or scaleByDouble instead -
+          lib\shared\widgets\draggable_card_3d.dart:205:13 -
+          deprecated_member_use
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3,
+          scaleByVector4, or scaleByDouble instead -
+          lib\shared\widgets\draggable_card_3d.dart:267:13 -
+          deprecated_member_use
+warning - The value of the field '_cardVisible' isn't used -
+       lib\shared\widgets\draggable_card_demo.dart:16:8 - unused_field
+warning - The declaration '_resetCard' isn't referenced -
+       lib\shared\widgets\draggable_card_demo.dart:18:8 - unused_element
+warning - The declaration '_PlaceholderCard' isn't referenced -
+       lib\shared\widgets\draggable_card_demo.dart:232:7 - unused_element
+   info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3,
+          scaleByVector4, or scaleByDouble instead -
+          lib\shared\widgets\horizontal_card_swap_3d.dart:230:12 -
+          deprecated_member_use
+79 issues found. (ran in 25.7s)

@@ -11,6 +11,7 @@ dependencies:
   blockchain_utils: ^1.0.0
   qr_flutter: ^4.1.0
   http: ^1.2.0
+  web_socket_channel: ^2.4.0
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.5.1
@@ -27,6 +28,11 @@ dependencies:
   bip39: ^1.0.6
   fl_chart: ^1.1.1
   lottie: ^3.1.0
+  mobile_scanner: ^5.2.1
+  nfc_manager: ^4.1.0
+  nfc_manager_ndef: ^1.1.0
+  ndef_record: ^1.4.0
+  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:

@@ -50,7 +50,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
   bool _isLoading = true;
   ChartRange _selectedRange = ChartRange.oneDay;
-  Currency _selectedCurrency = Currency.usd;
+  final Currency _selectedCurrency = Currency.usd;
   double _minY = 0;
   double _maxY = 0;
   double _minX = 0;
@@ -209,18 +209,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     }
   }
 
-  void _onCurrencySelected(Currency? currency) {
-    if (currency != null && _selectedCurrency != currency) {
-      setState(() {
-        _selectedCurrency = currency;
-        // Reset data to avoid confusing visual
-        _currentPrice = 0;
-        _isLoading = true;
-      });
-      _fetchData();
-    }
-  }
-
   String _formatDate(double timestamp) {
     if (timestamp == 0) return '';
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp.toInt());
@@ -256,17 +244,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     return "${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
   }
 
-  String _formatKmb(double value) {
-    if (value >= 1e9) {
-      return "${(value / 1e9).toStringAsFixed(2)}B";
+  String _formatBtc(double btc) {
+    if (btc >= 1e6) {
+      return "${(btc / 1e6).toStringAsFixed(2)}M";
     }
-    if (value >= 1e6) {
-      return "${(value / 1e6).toStringAsFixed(2)}M";
+    if (btc >= 1e3) {
+      return "${(btc / 1e3).toStringAsFixed(2)}K";
     }
-    if (value >= 1e3) {
-      return "${(value / 1e3).toStringAsFixed(2)}K";
-    }
-    return value.toStringAsFixed(2);
+    return btc.toStringAsFixed(4);
   }
 
   @override
@@ -276,11 +261,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     if (walletState is WalletLoaded) {
       for (var w in walletState.wallets) {
-        totalBalanceBtc += w.balanceSatoshis / 100000000.0;
+        totalBalanceBtc += w.balance;
       }
     }
 
-    final totalBalanceFiat = totalBalanceBtc * _currentPrice;
+    // Removal of totalBalanceFiat calculation as we are standardizing on BTC unit.
 
     return Scaffold(
       backgroundColor: const Color(0xFF050511),
@@ -311,17 +296,19 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
                   ),
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-                      _isLoading && _currentPrice == 0
+                      _isLoading && totalBalanceBtc == 0
                           ? const CircularProgressIndicator(
                               color: Color(0xFF00D4FF),
                             )
                           : Text(
-                              "${_selectedCurrency.symbol}${totalBalanceFiat.toStringAsFixed(2)}",
+                              "${totalBalanceBtc.toStringAsFixed(8)} BTC",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 40,
@@ -335,12 +322,12 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00D4FF).withOpacity(0.1),
+                          color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
-                          "${totalBalanceBtc.toStringAsFixed(8)} BTC",
-                          style: const TextStyle(
+                        child: const Text(
+                          "Total Portfolio Value",
+                          style: TextStyle(
                             color: Color(0xFF00D4FF),
                             fontWeight: FontWeight.bold,
                           ),
@@ -360,9 +347,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "Bitcoin / ${_selectedCurrency.label}",
-                            style: const TextStyle(
+                          const Text(
+                            "Bitcoin Market Trend",
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -374,7 +361,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.2),
+                              color: Colors.green.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Row(
@@ -403,7 +390,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -429,7 +416,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                     style: TextStyle(
                                       color: isSelected
                                           ? Colors.white
-                                          : Colors.white.withOpacity(0.5),
+                                          : Colors.white.withValues(alpha: 0.5),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -474,7 +461,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                 show: true,
                                 drawVerticalLine: false,
                                 getDrawingHorizontalLine: (value) => FlLine(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   strokeWidth: 1,
                                 ),
                               ),
@@ -509,8 +496,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                         child: Text(
                                           text,
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(
-                                              0.5,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
                                             ),
                                             fontSize: 10,
                                           ),
@@ -537,10 +524,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                       colors: [
                                         const Color(
                                           0xFF7B61FF,
-                                        ).withOpacity(0.3),
+                                        ).withValues(alpha: 0.3),
                                         const Color(
                                           0xFF7B61FF,
-                                        ).withOpacity(0.0),
+                                        ).withValues(alpha: 0.0),
                                       ],
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
@@ -560,8 +547,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                       final dateStr = _formatFullDate(
                                         touchedSpot.x,
                                       );
+                                      final btcEquivalent = _currentPrice > 0 ? touchedSpot.y / _currentPrice : 0.0;
                                       return LineTooltipItem(
-                                        "${_selectedCurrency.symbol}${touchedSpot.y.toStringAsFixed(2)}\n",
+                                        "${btcEquivalent.toStringAsFixed(8)} BTC\n",
                                         const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -571,8 +559,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                           TextSpan(
                                             text: dateStr,
                                             style: TextStyle(
-                                              color: Colors.white.withOpacity(
-                                                0.7,
+                                              color: Colors.white.withValues(
+                                                alpha: 0.7,
                                               ),
                                               fontSize: 10,
                                               fontWeight: FontWeight.normal,
@@ -610,8 +598,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                         childAspectRatio: aspectRatio,
                         children: [
                           _buildStatCard(
-                            "Current Price",
-                            "${_selectedCurrency.symbol}${_currentPrice.toStringAsFixed(2)}",
+                            "BTC",
+                            "1.0 BTC",
                             Icons.currency_bitcoin,
                           ),
                           _buildStatCard(
@@ -622,12 +610,12 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                           ),
                           _buildStatCard(
                             "Market Cap",
-                            "${_selectedCurrency.symbol}${_formatKmb(_marketCap)}",
+                            _currentPrice > 0 ? "${_formatBtc(_marketCap / _currentPrice)} BTC" : "— BTC",
                             Icons.pie_chart,
                           ),
                           _buildStatCard(
                             "Volume (24h)",
-                            "${_selectedCurrency.symbol}${_formatKmb(_volume24h)}",
+                            _currentPrice > 0 ? "${_formatBtc(_volume24h / _currentPrice)} BTC" : "— BTC",
                             Icons.bar_chart,
                           ),
                         ],
@@ -656,10 +644,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1F3C),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -671,7 +659,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: Colors.white.withOpacity(0.6), size: 18),
+              Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 18),
             ],
           ),
           const Spacer(),
@@ -695,7 +683,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

@@ -4,6 +4,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../main.dart' show sharedPreferencesProvider;
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
+import '../../data/interceptors/token_interceptor.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
@@ -14,7 +15,19 @@ import '../state/auth_state.dart';
 
 /// Provider do ApiClient
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(baseUrl: AppConfig.apiUrl);
+  final client = ApiClient(baseUrl: AppConfig.apiUrl);
+  return client;
+});
+
+// Criamos um provider separado para "inicializar" o client com interceptors
+// Isso evita circularidade caso o interceptor precise de outros providers que usem o apiClient
+final apiClientInitializerProvider = Provider<void>((ref) {
+  final client = ref.watch(apiClientProvider);
+  final localDataSource = ref.watch(authLocalDataSourceProvider);
+
+  client.addInterceptor(
+    TokenInterceptor(localDataSource: localDataSource, apiClient: client),
+  );
 });
 
 /// Provider do AuthRemoteDataSource
@@ -66,7 +79,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.loginUseCase,
     required this.signupUseCase,
     required this.authRepository,
+    required Ref ref,
   }) : super(const AuthInitial()) {
+    // Inicializar ApiClient com interceptors
+    ref.read(apiClientInitializerProvider);
     _checkAuthStatus();
   }
 
@@ -193,5 +209,6 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
     loginUseCase: loginUseCase,
     signupUseCase: signupUseCase,
     authRepository: authRepository,
+    ref: ref,
   );
 });

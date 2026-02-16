@@ -98,7 +98,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                     'Scan the QR code with your authenticator app (Google Auth, Authy, etc).',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -112,7 +112,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00D4FF).withOpacity(0.2),
+                          color: const Color(0xFF00D4FF).withValues(alpha: 0.2),
                           blurRadius: 30,
                           spreadRadius: 5,
                         ),
@@ -122,7 +122,14 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                       data: qrData,
                       version: QrVersions.auto,
                       size: 220.0,
-                      foregroundColor: const Color(0xFF050511),
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: Color(0xFF050511),
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: Color(0xFF050511),
+                      ),
                     ),
                   ),
 
@@ -135,16 +142,18 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                       vertical: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: Column(
                       children: [
                         Text(
                           'OR ENTER MANUAL CODE',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
@@ -189,11 +198,11 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                     decoration: InputDecoration(
                       hintText: '000000',
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         letterSpacing: 12,
                       ),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: Colors.white.withValues(alpha: 0.05),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
@@ -231,7 +240,9 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         elevation: 8,
-                        shadowColor: const Color(0xFF00D4FF).withOpacity(0.4),
+                        shadowColor: const Color(
+                          0xFF00D4FF,
+                        ).withValues(alpha: 0.4),
                       ),
                       child: isLoading
                           ? const SizedBox(
@@ -289,7 +300,7 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
         title: const Text("Error", style: TextStyle(color: Colors.white)),
         content: Text(
           message,
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         ),
         actions: [
           TextButton(

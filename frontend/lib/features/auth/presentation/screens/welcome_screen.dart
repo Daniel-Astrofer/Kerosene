@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
+import '../../../wallet/presentation/widgets/wallet_card.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-carregar imagens dos cartões para que estejam prontas quando o usuário logar
+    WalletCard.precacheAllImages(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +32,8 @@ class WelcomeScreen extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.black.withOpacity(0.3),
-                Colors.black.withOpacity(0.8),
+                Colors.black.withValues(alpha: 0.3),
+                Colors.black.withValues(alpha: 0.8),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,

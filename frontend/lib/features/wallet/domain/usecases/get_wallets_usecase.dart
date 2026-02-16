@@ -13,15 +13,12 @@ class GetWalletsUseCase {
   Future<Either<Failure, List<Wallet>>> call() async {
     final result = await repository.getWallets();
 
-    return result.fold(
-      (failure) => Left(failure),
-      (wallets) {
-        // Ordenar por saldo (maior primeiro)
-        final sortedWallets = List<Wallet>.from(wallets)
-          ..sort((a, b) => b.balanceSatoshis.compareTo(a.balanceSatoshis));
+    return result.fold((failure) => Left(failure), (wallets) {
+      // Ordenar por saldo (maior primeiro)
+      final sortedWallets = List<Wallet>.from(wallets)
+        ..sort((a, b) => b.balance.compareTo(a.balance));
 
-        return Right(sortedWallets);
-      },
-    );
+      return Right(sortedWallets);
+    });
   }
 }
