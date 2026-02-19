@@ -18,174 +18,145 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, User>> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      // Fazer login e obter JWT
-      final tokenResponse = await remoteDataSource.login(
-        username: email,
-        passphrase: password,
-      );
-
-      // Salvar token localmente
-      // Parsear resposta: Pode vir "ID JWT"
-      final parts = tokenResponse.trim().split(' ');
-      String token;
-      String userId;
-
-      if (parts.length >= 2) {
-        userId = parts[0];
-        token = parts.sublist(1).join(' ');
-      } else {
-        token = tokenResponse;
-        userId = email; // Fallback se não vier ID
-      }
-
-      await localDataSource.saveToken(token);
-
-      // Criar modelo de usuário
-      final user = UserModel(
-        id: userId,
-        email: '$email@kerosene.app',
-        name: email, // ou userId se preferir
-        createdAt: DateTime.now(),
-      );
-
-      // Salvar usuário localmente
-      await localDataSource.saveUser(user);
-
-      return Right(user);
-    } on ServerException catch (e) {
-      if (e.message == 'REQ_LOGIN_2FA') {
-        // Retorna um erro específico que o Notifier vai capturar para mudar de tela
-        return Left(AuthFailure(message: 'REQ_LOGIN_2FA'));
-      }
-      return Left(ServerFailure(message: e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao fazer login: $e'));
-    }
-  }
-
-  @override
   Future<Either<Failure, User>> verifyLoginTotp({
     required String username,
     required String passphrase,
     required String totpCode,
   }) async {
     try {
-      // 1. Verificar TOTP na API (Retorna "ID TOKEN")
-      final responseString = await remoteDataSource.verifyLoginTotp(
+      final result = await remoteDataSource.verifyLoginTotp(
         username: username,
         passphrase: passphrase,
         totpCode: totpCode,
       );
 
-      // 2. Parsear resposta: Esperado "USER_ID JWT_TOKEN"
-      // Reutilizando lógica existente, idealmente refatorar em um helper
-      final parts = responseString.trim().split(' ');
-      String token;
-      String userId;
+      final token =
+          result['accessToken'] ??
+          result['token'] ??
+          result['jwt'] ??
+          result['access_token'] ??
+          result['auth_token'];
+      final userId = result['userId'] ?? result['id'] ?? result['sub'] ?? '0';
 
-      if (parts.length >= 2) {
-        userId = parts[0];
-        token = parts.sublist(1).join(' ');
-      } else {
-        token = responseString;
-        userId = username;
+      if (token == null) {
+        final keys = result.keys.join(', ');
+        return Left(
+          ServerFailure(
+            message: 'Falha login 2FA: token não encontrado (campos: $keys)',
+          ),
+        );
       }
 
-      // 3. Salvar Token e User
       await localDataSource.saveToken(token);
+      await localDataSource.saveMnemonic(
+        passphrase,
+      ); // Save mnemonic for signing
 
+      // Construir User com dados disponíveis
       final user = UserModel(
-        id: userId,
+        id: userId.toString(),
         email: '$username@kerosene.app',
         name: username,
         createdAt: DateTime.now(),
       );
 
       await localDataSource.saveUser(user);
-
       return Right(user);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao verificar 2FA: $e'));
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> login({
+    required String username,
+    required String passphrase,
+  }) async {
+    try {
+      final result = await remoteDataSource.login(
+        username: username,
+        passphrase: passphrase,
+      );
+
+      final token =
+          result['accessToken'] ??
+          result['token'] ??
+          result['jwt'] ??
+          result['access_token'] ??
+          result['auth_token'];
+      final userId = result['userId'] ?? result['id'] ?? result['sub'] ?? '0';
+
+      if (token == null) {
+        final keys = result.keys.join(', ');
+        final hasBody = result['__raw_body__'] != null;
+        return Left(
+          ServerFailure(
+            message:
+                'Login falhou: token não encontrado no 202 (Campos: $keys, RawBody: $hasBody)',
+          ),
+        );
+      }
+
+      await localDataSource.saveToken(token);
+      await localDataSource.saveMnemonic(
+        passphrase,
+      ); // Save mnemonic for signing
+
+      // Construir User com dados disponíveis
+      final user = UserModel(
+        id: userId.toString(),
+        email: '$username@kerosene.app',
+        name: username,
+        createdAt: DateTime.now(),
+      );
+
+      await localDataSource.saveUser(user);
+      return Right(user);
+    } on AuthFailure catch (e) {
+      return Left(e);
+    } on AppException catch (e) {
+      if (e.message == 'REQ_LOGIN_2FA') {
+        return const Left(
+          AuthFailure(message: 'REQ_LOGIN_2FA', statusCode: 403),
+        );
+      }
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
   Future<Either<Failure, String>> signup({
-    required String email,
-    required String password,
-    required String name,
+    required String username,
+    required String passphrase,
   }) async {
     try {
-      // Passo 1: Criar usuário e obter TOTP secret
-      final signupResult = await remoteDataSource.signup(
-        username: name,
-        passphrase: password,
+      final totpUri = await remoteDataSource.signup(
+        username: username,
+        passphrase: passphrase,
       );
-
-      // Salvar TOTP secret para uso posterior
-      final totpSecret = signupResult['totpSecret'] as String;
-      // Salvar localmente também por segurança
-      await localDataSource.saveTotpSecret(totpSecret);
-
-      return Right(totpSecret);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+      return Right(totpUri);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao criar conta: $e'));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      // Fazer logout no servidor (se houver endpoint)
       await remoteDataSource.logout();
-
-      // Limpar dados locais
-      await localDataSource.clearAll();
-
+      await localDataSource
+          .clearAll(); // Clears token, user, totp, and mnemonic
       return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao fazer logout: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, User>> getCurrentUser() async {
-    try {
-      // Tentar obter usuário do cache local
-      final cachedUser = await localDataSource.getUser();
-
-      if (cachedUser != null) {
-        return Right(cachedUser);
-      }
-
-      // Se não houver cache, tentar obter do servidor
-      try {
-        final user = await remoteDataSource.getCurrentUser();
-        await localDataSource.saveUser(user);
-        return Right(user);
-      } catch (e) {
-        // Se falhar, retornar erro
-        return Left(CacheFailure(message: 'Usuário não encontrado'));
-      }
-    } on CacheException catch (e) {
-      return Left(CacheFailure(message: e.message));
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
     }
   }
 
@@ -199,22 +170,58 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> refreshToken() async {
+  Future<Either<Failure, User>> getCurrentUser() async {
     try {
-      final currentToken = await localDataSource.getToken();
-
-      if (currentToken == null) {
-        return Left(AuthFailure(message: 'Token não encontrado'));
+      final cachedUser = await localDataSource.getUser();
+      if (cachedUser != null) {
+        return Right(cachedUser);
       }
 
-      final newToken = await remoteDataSource.refreshToken(currentToken);
-      await localDataSource.saveToken(newToken);
+      try {
+        final user = await remoteDataSource.getCurrentUser();
+        await localDataSource.saveUser(user);
+        return Right(user);
+      } catch (e) {
+        return Left(CacheFailure(message: 'Usuário não encontrado'));
+      }
+    } on CacheException catch (e) {
+      return Left(CacheFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
+    }
+  }
 
-      // Obter usuário atual
-      final user = await getCurrentUser();
-      return user;
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+  @override
+  Future<Either<Failure, User>> refreshToken() async {
+    try {
+      final result = await remoteDataSource.refreshToken();
+      final newToken =
+          result['accessToken'] ??
+          result['token'] ??
+          result['jwt'] ??
+          result['access_token'] ??
+          result['auth_token'];
+      final userId = result['userId'] ?? result['id'] ?? result['sub'] ?? '0';
+
+      if (newToken != null) {
+        await localDataSource.saveToken(newToken);
+        final currentUser = await localDataSource.getUser();
+        final user = currentUser != null
+            ? UserModel.fromEntity(currentUser)
+            : UserModel(
+                id: userId.toString(),
+                email: 'user@kerosene.app',
+                name: 'User',
+                createdAt: DateTime.now(),
+              );
+
+        await localDataSource.saveUser(user);
+        return Right(user);
+      }
+
+      return const Left(AuthFailure(message: 'Falha ao renovar token'));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao renovar token: $e'));
     }
@@ -225,43 +232,35 @@ class AuthRepositoryImpl implements AuthRepository {
     required String username,
     required String passphrase,
     required String totpCode,
+    String? totpSecret,
   }) async {
     try {
-      // Obter TOTP secret salvo
-      final totpSecret = await localDataSource.getTotpSecret();
-
-      if (totpSecret == null) {
-        return Left(ValidationFailure(message: 'TOTP secret não encontrado'));
-      }
-
-      // 1. Verificar TOTP na API (Retorna "ID TOKEN")
-      final responseString = await remoteDataSource.verifyTotp(
+      final result = await remoteDataSource.verifySignupTotp(
         username: username,
         passphrase: passphrase,
-        totpSecret: totpSecret,
         totpCode: totpCode,
       );
 
-      // 2. Parsear resposta: Esperado "USER_ID JWT_TOKEN"
-      final parts = responseString.trim().split(' ');
-      String token;
-      String userId;
+      final token =
+          result['accessToken'] ??
+          result['token'] ??
+          result['jwt'] ??
+          result['access_token'] ??
+          result['auth_token'];
+      final userId = result['userId'] ?? result['id'] ?? result['sub'] ?? '0';
 
-      if (parts.length >= 2) {
-        // Formato ID TOKEN
-        userId = parts[0];
-        token = parts.sublist(1).join(' '); // O resto é o token
-      } else {
-        // Fallback se vier só token
-        token = responseString;
-        userId = username;
+      if (token == null) {
+        final keys = result.keys.join(', ');
+        return Left(
+          ServerFailure(message: 'Token não encontrado no 202 (Campos: $keys)'),
+        );
       }
 
-      // 3. Salvar Token e User
       await localDataSource.saveToken(token);
+      await localDataSource.saveMnemonic(passphrase);
 
       final user = UserModel(
-        id: userId,
+        id: userId.toString(),
         email: '$username@kerosene.app',
         name: username,
         createdAt: DateTime.now(),
@@ -269,12 +268,30 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await localDataSource.saveUser(user);
 
-      // 4. Retornar User autenticado
+      if (totpSecret != null) {
+        await localDataSource.saveTotpSecret(totpSecret);
+      }
+
       return Right(user);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao verificar TOTP: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> validatePassphrase(String passphrase) async {
+    try {
+      final storedMnemonic = await localDataSource.getMnemonic();
+      if (storedMnemonic == null) {
+        return const Left(
+          CacheFailure(message: 'Nenhuma passphrase salva encontrada.'),
+        );
+      }
+      return Right(storedMnemonic == passphrase);
+    } catch (e) {
+      return Left(CacheFailure(message: 'Erro ao validar passphrase: $e'));
     }
   }
 }

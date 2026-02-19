@@ -1,10 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/config/app_config.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/providers/price_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart'
-    show authLocalDataSourceProvider;
+    show authLocalDataSourceProvider, apiClientProvider;
+import '../../../../core/services/wallet_security_service.dart';
+import '../../../../core/utils/transaction_signer.dart';
 import '../../data/datasources/wallet_remote_datasource.dart';
 import '../../data/repositories/wallet_repository_impl.dart';
+import '../../../transactions/data/datasources/transaction_remote_datasource.dart'; // [NEW]
+import '../../../transactions/data/repositories/transaction_repository_impl.dart'; // [NEW]
+import '../../../transactions/domain/repositories/transaction_repository.dart'; // [NEW]
+import '../../domain/entities/transaction.dart';
 import '../../domain/entities/wallet.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../../domain/usecases/get_wallets_usecase.dart';
@@ -12,17 +18,32 @@ import '../../domain/usecases/get_transactions_usecase.dart';
 import '../../domain/usecases/send_bitcoin_usecase.dart';
 import '../../domain/usecases/create_wallet_usecase.dart';
 import '../../domain/usecases/wallet_crud_usecases.dart'; // [NEW]
+import '../../domain/usecases/create_unsigned_transaction_usecase.dart';
+import '../../domain/usecases/broadcast_transaction_usecase.dart';
+import '../../domain/usecases/get_deposit_address_usecase.dart';
 import '../state/wallet_state.dart';
 import '../state/create_wallet_state.dart';
 
 // ==================== Repository Provider ====================
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
-  final apiClient = ApiClient(baseUrl: AppConfig.apiUrl);
+  final apiClient = ref.watch(apiClientProvider);
   final remoteDataSource = WalletRemoteDataSourceImpl(apiClient);
   final authLocalDataSource = ref.watch(authLocalDataSourceProvider);
 
   return WalletRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    authLocalDataSource: authLocalDataSource,
+    walletSecurityService: WalletSecurityService(),
+  );
+});
+
+final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  final remoteDataSource = TransactionRemoteDataSourceImpl(apiClient);
+  final authLocalDataSource = ref.watch(authLocalDataSourceProvider);
+
+  return TransactionRepositoryImpl(
     remoteDataSource: remoteDataSource,
     authLocalDataSource: authLocalDataSource,
   );
@@ -76,6 +97,25 @@ final getLedgerBalanceUseCaseProvider = Provider<GetLedgerBalanceUseCase>((
 final deleteLedgerUseCaseProvider = Provider<DeleteLedgerUseCase>((ref) {
   final repository = ref.watch(walletRepositoryProvider);
   return DeleteLedgerUseCase(repository);
+});
+
+final createUnsignedTransactionUseCaseProvider =
+    Provider<CreateUnsignedTransactionUseCase>((ref) {
+      final repository = ref.watch(transactionRepositoryProvider);
+      return CreateUnsignedTransactionUseCase(repository);
+    });
+
+final broadcastTransactionUseCaseProvider =
+    Provider<BroadcastTransactionUseCase>((ref) {
+      final repository = ref.watch(transactionRepositoryProvider);
+      return BroadcastTransactionUseCase(repository);
+    });
+
+final getDepositAddressUseCaseProvider = Provider<GetDepositAddressUseCase>((
+  ref,
+) {
+  final repository = ref.watch(transactionRepositoryProvider);
+  return GetDepositAddressUseCase(repository);
 });
 
 // ==================== State Notifiers ====================
@@ -145,10 +185,12 @@ class WalletNotifier extends StateNotifier<WalletState> {
         btcToUsdRate: btcToUsdRate,
       );
 
-      // Trigger balance update for all wallets to ensure consistency with Ledger
-      for (final wallet in wallets) {
-        updateWalletBalance(wallet.id);
-      }
+      // **OTIMIZAÇÃO**: Removido loop que disparava N requisições paralelas
+      // O saldo será atualizado sob demanda quando o usuário selecionar um wallet
+      // ou quando explicitamente solicitar refresh
+      // for (final wallet in wallets) {
+      //   updateWalletBalance(wallet.name); // Agora usa wallet.name!
+      // }
     });
   }
 
@@ -166,6 +208,7 @@ class WalletNotifier extends StateNotifier<WalletState> {
   }
 
   /// Atualiza saldo de uma carteira específica
+  /// IMPORTANTE: walletId deve ser o NOME da wallet, não o ID numérico!
   Future<void> updateWalletBalance(String walletId) async {
     if (state is! WalletLoaded) return;
 
@@ -174,16 +217,37 @@ class WalletNotifier extends StateNotifier<WalletState> {
     result.fold(
       (failure) {
         // Log error mas não muda estado para não interromper UX
-        print('Erro ao atualizar saldo: ${failure.message}');
+        debugPrint('Erro ao atualizar saldo: ${failure.message}');
       },
       (updatedWallet) {
         final currentState = state as WalletLoaded;
         final updatedWallets = currentState.wallets.map((wallet) {
-          return wallet.id == walletId ? updatedWallet : wallet;
+          // Comparar por NAME, não por ID!
+          return wallet.name == walletId ? updatedWallet : wallet;
         }).toList();
 
         state = currentState.copyWith(wallets: updatedWallets);
       },
+    );
+  }
+
+  /// Atualiza saldo de uma wallet via WebSocket (tempo real)
+  /// Este método é chamado quando uma atualização de saldo é recebida via WebSocket
+  void updateBalanceFromWebSocket(String walletName, double newBalance) {
+    if (state is! WalletLoaded) return;
+
+    final currentState = state as WalletLoaded;
+    final updatedWallets = currentState.wallets.map((wallet) {
+      if (wallet.name == walletName) {
+        return wallet.copyWith(balance: newBalance);
+      }
+      return wallet;
+    }).toList();
+
+    state = currentState.copyWith(wallets: updatedWallets);
+
+    debugPrint(
+      '💰 Saldo atualizado via WebSocket: $walletName = $newBalance BTC',
     );
   }
 }
@@ -242,11 +306,13 @@ final transactionProvider =
 class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
   final SendBitcoinUseCase sendBitcoinUseCase;
   final WalletRepository walletRepository;
+  final TransactionRepository transactionRepository; // [NEW]
   final Ref ref;
 
   SendMoneyNotifier({
     required this.sendBitcoinUseCase,
     required this.walletRepository,
+    required this.transactionRepository, // [NEW]
     required this.ref,
   }) : super(const SendMoneyInitial());
 
@@ -270,7 +336,7 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
     // Estimar taxa
     state = const SendMoneyEstimatingFee();
 
-    // TODO: Implementar estimativa de taxa real
+    // TODO: Implementar estimativa de taxa real via TransactionRepository?
     const feeSatoshis = 1000; // ~1000 sats para tx padrão
 
     state = SendMoneyReady(
@@ -290,6 +356,92 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
   }) async {
     state = const SendMoneySending();
 
+    // 1. Tentar obter mnemônico (Autenticação Biométrica)
+    final mnemonicResult = await walletRepository.getMnemonic();
+
+    // Se obteve mnemônico com sucesso, prosseguir com fluxo Client-Side
+    if (mnemonicResult.isRight() &&
+        mnemonicResult.getOrElse(() => null) != null) {
+      final mnemonic = mnemonicResult.getOrElse(() => null)!;
+
+      try {
+        // 2. Criar Transação Não Assinada (PSBT/Hex)
+        // Precisamos do fromAddress. Se fromWalletId for o ID, precisamos buscar a wallet para ter o endereço?
+        // Ou assumimos que o backend resolve pelo ID/Nome no createUnsigned?
+        // createUnsignedTransaction pede fromAddress.
+        // Vamos buscar a wallet para garantir.
+        final walletResult = await walletRepository.getWalletById(fromWalletId);
+        String fromAddress = fromWalletId; // Fallback
+
+        walletResult.fold((_) {}, (w) {
+          if (w.address.isNotEmpty) fromAddress = w.address;
+        });
+
+        final unsignedResult = await transactionRepository
+            .createUnsignedTransaction(
+              fromAddress: fromAddress,
+              toAddress: toAddress,
+              amount: amountSatoshis / 100000000.0,
+              feeSatoshis: feeSatoshis,
+            );
+
+        await unsignedResult.fold(
+          (failure) async {
+            // Se falhar criar unsigned, tentar fallback custodial?
+            // Provavelmente erro de saldo ou backend.
+            state = SendMoneyError(failure.message);
+          },
+          (unsignedTx) async {
+            // 3. Assinar Localmente
+            final signedTxHex = await TransactionSigner.sign(
+              unsignedTx: unsignedTx,
+              mnemonic: mnemonic,
+            );
+
+            // 4. Broadcast
+            final broadcastResult = await transactionRepository
+                .broadcastTransaction(signedTxHex);
+
+            broadcastResult.fold(
+              (failure) => state = SendMoneyError(failure.message),
+              (txStatus) {
+                // Sucesso!
+                // Converter TxStatus para Transaction entity se necessário ou apenas sucesso
+                // O estado espera 'Transaction'. Vamos criar um mock ou buscar?
+                // TxStatus tem txid.
+
+                // Simular Transaction object a partir de txStatus
+                // Ou refetch transactions.
+                state = SendMoneySuccess(
+                  Transaction(
+                    id: txStatus.txid,
+                    amountSatoshis: amountSatoshis,
+                    feeSatoshis: feeSatoshis,
+                    timestamp: DateTime.now(),
+                    fromAddress: fromAddress,
+                    toAddress: toAddress,
+                    status: TransactionStatus.pending,
+                    type: TransactionType.send,
+                    confirmations: 0,
+                  ),
+                );
+
+                // Refresh wallet balances and transaction history
+                ref.read(walletProvider.notifier).refresh();
+                ref
+                    .read(transactionProvider.notifier)
+                    .loadTransactions(fromWalletId);
+              },
+            );
+          },
+        );
+      } catch (e) {
+        state = SendMoneyError('Erro no fluxo seguro: $e');
+      }
+      return;
+    }
+
+    // Fallback: Fluxo Custodial / Legacy
     final result = await sendBitcoinUseCase(
       fromWalletId: fromWalletId,
       toAddress: toAddress,
@@ -303,7 +455,7 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
     ) {
       state = SendMoneySuccess(transaction);
 
-      // Refresh wallet balances and transaction history
+      // Refresh wallet balances andTransaction history
       ref.read(walletProvider.notifier).refresh();
       ref.read(transactionProvider.notifier).loadTransactions(fromWalletId);
     });
@@ -319,10 +471,44 @@ final sendMoneyProvider =
     StateNotifierProvider<SendMoneyNotifier, SendMoneyState>((ref) {
       final sendBitcoinUseCase = ref.watch(sendBitcoinUseCaseProvider);
       final walletRepository = ref.watch(walletRepositoryProvider);
+      final transactionRepository = ref.watch(transactionRepositoryProvider);
 
       return SendMoneyNotifier(
         sendBitcoinUseCase: sendBitcoinUseCase,
         walletRepository: walletRepository,
+        transactionRepository: transactionRepository,
         ref: ref,
       );
     });
+
+// ==================== Total Balance Providers ====================
+
+/// Provider for total BTC balance across all wallets
+final totalBalanceBtcProvider = Provider<double>((ref) {
+  final walletState = ref.watch(walletProvider);
+
+  if (walletState is! WalletLoaded) return 0.0;
+
+  return walletState.wallets.fold(0.0, (sum, wallet) {
+    return sum + wallet.balance;
+  });
+});
+
+/// Provider for total balance in USD using real-time price
+final totalBalanceUsdProvider = Provider<double?>((ref) {
+  final balanceBtc = ref.watch(totalBalanceBtcProvider);
+  final priceAsync = ref.watch(btcPriceProvider);
+
+  return priceAsync.when(
+    data: (price) => balanceBtc * price,
+    loading: () => null,
+    error: (_, __) => null,
+  );
+});
+
+// ==================== UI State Providers ====================
+
+final balanceVisibilityProvider = StateProvider<bool>((ref) => true);
+final decimalPrecisionProvider = StateProvider<bool>(
+  (ref) => true,
+); // true = 8 digits, false = 2 digits

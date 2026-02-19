@@ -5,17 +5,16 @@ import '../entities/user.dart';
 /// Interface do repositório de autenticação
 /// Define o contrato que a camada de dados deve implementar
 abstract class AuthRepository {
-  /// Fazer login com email e senha
+  /// Fazer login com username e passphrase
   Future<Either<Failure, User>> login({
-    required String email,
-    required String password,
+    required String username,
+    required String passphrase,
   });
 
-  /// Fazer cadastro
+  /// Fazer cadastro e retornar URI TOTP
   Future<Either<Failure, String>> signup({
-    required String email,
-    required String password,
-    required String name,
+    required String username,
+    required String passphrase,
   });
 
   /// Fazer logout
@@ -43,4 +42,7 @@ abstract class AuthRepository {
     required String passphrase,
     required String totpCode,
   });
+
+  /// Validar passphrase localmente
+  Future<Either<Failure, bool>> validatePassphrase(String passphrase);
 }

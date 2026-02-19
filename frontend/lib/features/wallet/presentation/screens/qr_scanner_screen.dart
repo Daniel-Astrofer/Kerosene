@@ -130,14 +130,14 @@ class QrScannerOverlayShape extends ShapeBorder {
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
-    Path _getLeftTopPath(Rect rect) {
+    Path getLeftTopPath(Rect rect) {
       return Path()
         ..moveTo(rect.left, rect.bottom)
         ..lineTo(rect.left, rect.top)
         ..lineTo(rect.right, rect.top);
     }
 
-    return _getLeftTopPath(rect);
+    return getLeftTopPath(rect);
   }
 
   @override
@@ -145,8 +145,8 @@ class QrScannerOverlayShape extends ShapeBorder {
     final width = rect.width;
     final height = rect.height;
     final borderOffset = borderWidth / 2;
-    final _cutOutBottomOffset = cutOutBottomOffset + (borderWidth / 2);
-    final _cutOutSize = cutOutSize + borderWidth;
+    final bottomOffset = cutOutBottomOffset + (borderWidth / 2);
+    final size = cutOutSize + borderWidth;
 
     final backgroundPaint = Paint()
       ..color = overlayColor
@@ -158,14 +158,10 @@ class QrScannerOverlayShape extends ShapeBorder {
       ..strokeWidth = borderWidth;
 
     final cutOutRect = Rect.fromLTWH(
-      rect.left + width / 2 - _cutOutSize / 2 + borderOffset,
-      rect.top +
-          height / 2 -
-          _cutOutSize / 2 +
-          borderOffset -
-          _cutOutBottomOffset,
-      _cutOutSize - borderWidth,
-      _cutOutSize - borderWidth,
+      rect.left + width / 2 - size / 2 + borderOffset,
+      rect.top + height / 2 - size / 2 + borderOffset - bottomOffset,
+      size - borderWidth,
+      size - borderWidth,
     );
 
     canvas
@@ -178,14 +174,10 @@ class QrScannerOverlayShape extends ShapeBorder {
       ..restore();
 
     final cutOutRectBorder = Rect.fromLTWH(
-      rect.left + width / 2 - _cutOutSize / 2 + borderOffset,
-      rect.top +
-          height / 2 -
-          _cutOutSize / 2 +
-          borderOffset -
-          _cutOutBottomOffset,
-      _cutOutSize - borderWidth,
-      _cutOutSize - borderWidth,
+      rect.left + width / 2 - size / 2 + borderOffset,
+      rect.top + height / 2 - size / 2 + borderOffset - bottomOffset,
+      size - borderWidth,
+      size - borderWidth,
     );
 
     // Draw corners

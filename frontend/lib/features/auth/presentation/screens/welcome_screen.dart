@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../wallet/presentation/widgets/wallet_card.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -13,8 +13,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-carregar imagens dos cartões para que estejam prontas quando o usuário logar
-    WalletCard.precacheAllImages(context);
+    // Images removed - using solid gradients now
   }
 
   @override
@@ -48,44 +47,47 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   const Spacer(),
 
                   // Logo and Platform Name side-by-side
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      KeroseneLogo(
-                        size: 60,
-                      ), // Adjusted size for inline display
-                      SizedBox(width: 16),
-                      Text(
-                        'Kerosene',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -1,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 2),
-                              blurRadius: 4.0,
-                              color: Colors.black45,
-                            ),
-                          ],
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const KeroseneLogo(size: 80), // Increased size
+                        const SizedBox(width: 16),
+                        Text(
+                          'Kerosene',
+                          style: const TextStyle(
+                            fontFamily: 'HubotSansExpanded',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 56,
+                            color: Colors.white,
+                            letterSpacing: -2,
+                            height: 1.0,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0, 4),
+                                blurRadius: 12.0,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 12),
-                  const Text(
-                    'The decentralized financial platform\nbuilt on Bitcoin.',
+                  const SizedBox(height: 24),
+                  Text(
+                    AppLocalizations.of(context)!.welcomeSlogan,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      height: 1.5,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontSize: 18,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      height: 1.4,
                       shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 2.0,
+                        const Shadow(
+                          offset: Offset(0, 2),
+                          blurRadius: 4.0,
                           color: Colors.black87,
                         ),
                       ],
@@ -111,9 +113,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.signIn,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -137,9 +139,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Text(
-                            'Create Account',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.createAccount,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),

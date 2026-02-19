@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
 import 'wallet_card.dart';

@@ -1,231 +1,201 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
+import '../../data/datasources/binance_socket_service.dart';
 
-class CandleSpot {
-  final DateTime time;
-  final double open;
-  final double high;
-  final double low;
-  final double close;
-  final double volume;
+class OrderBookEntry {
+  final double price;
+  final double amount;
 
-  CandleSpot({
-    required this.time,
-    required this.open,
-    required this.high,
-    required this.low,
-    required this.close,
-    required this.volume,
-  });
+  OrderBookEntry({required this.price, required this.amount});
 }
 
 class MarketState {
   final double currentPrice;
-  final double btcCurrentPrice;
   final double priceChange24h;
   final double high24h;
   final double low24h;
   final double totalVolume;
   final double marketCap;
   final List<FlSpot> spots;
-  final List<FlSpot> volumeSpots;
-  final List<CandleSpot> candles;
-  final List<DateTime> timestamps;
   final bool isLoading;
-  final bool isConnected;
   final String? error;
   final String timeframe;
-  final String currency;
-  final List<String> availableCurrencies;
+  final Map<String, dynamic>? fearAndGreed;
+  final List<OrderBookEntry> bids;
+  final List<OrderBookEntry> asks;
 
   MarketState({
     this.currentPrice = 0.0,
-    this.btcCurrentPrice = 0.0,
     this.priceChange24h = 0.0,
     this.high24h = 0.0,
     this.low24h = 0.0,
     this.totalVolume = 0.0,
     this.marketCap = 0.0,
     this.spots = const [],
-    this.volumeSpots = const [],
-    this.candles = const [],
-    this.timestamps = const [],
     this.isLoading = false,
-    this.isConnected = true,
     this.error,
     this.timeframe = "1D",
-    this.currency = "USD",
-    this.availableCurrencies = const ["USD", "BRL", "EUR", "BTC"],
+    this.fearAndGreed,
+    this.bids = const [],
+    this.asks = const [],
   });
 
   MarketState copyWith({
     double? currentPrice,
-    double? btcCurrentPrice,
     double? priceChange24h,
     double? high24h,
     double? low24h,
     double? totalVolume,
     double? marketCap,
     List<FlSpot>? spots,
-    List<FlSpot>? volumeSpots,
-    List<CandleSpot>? candles,
-    List<DateTime>? timestamps,
     bool? isLoading,
-    bool? isConnected,
     String? error,
     String? timeframe,
-    String? currency,
-    List<String>? availableCurrencies,
+    Map<String, dynamic>? fearAndGreed,
+    List<OrderBookEntry>? bids,
+    List<OrderBookEntry>? asks,
   }) {
     return MarketState(
       currentPrice: currentPrice ?? this.currentPrice,
-      btcCurrentPrice: btcCurrentPrice ?? this.btcCurrentPrice,
       priceChange24h: priceChange24h ?? this.priceChange24h,
       high24h: high24h ?? this.high24h,
       low24h: low24h ?? this.low24h,
       totalVolume: totalVolume ?? this.totalVolume,
       marketCap: marketCap ?? this.marketCap,
       spots: spots ?? this.spots,
-      volumeSpots: volumeSpots ?? this.volumeSpots,
-      candles: candles ?? this.candles,
-      timestamps: timestamps ?? this.timestamps,
       isLoading: isLoading ?? this.isLoading,
-      isConnected: isConnected ?? this.isConnected,
       error: error,
       timeframe: timeframe ?? this.timeframe,
-      currency: currency ?? this.currency,
-      availableCurrencies: availableCurrencies ?? this.availableCurrencies,
+      fearAndGreed: fearAndGreed ?? this.fearAndGreed,
+      bids: bids ?? this.bids,
+      asks: asks ?? this.asks,
     );
   }
 }
 
+final binanceSocketProvider = Provider((ref) => BinanceSocketService());
+
 final marketProvider = StateNotifierProvider<MarketNotifier, MarketState>((ref) {
-  return MarketNotifier();
+  final socketService = ref.watch(binanceSocketProvider);
+  return MarketNotifier(socketService);
 });
 
 class MarketNotifier extends StateNotifier<MarketState> {
-  MarketNotifier() : super(MarketState()) {
+  final BinanceSocketService _socketService;
+  
+  MarketNotifier(this._socketService) : super(MarketState()) {
+    _socketService.connect();
+    _listenToSocket();
     fetchMarketData("1D");
   }
 
-  int _lastRequestId = 0;
+  void _listenToSocket() {
+    _socketService.dataStream.listen((event) {
+      final stream = event['stream'] as String?;
+      final data = event['data'] as Map<String, dynamic>?;
 
-  Future<void> changeCurrency(String newCurrency) async {
-    if (state.currency == newCurrency) return;
-    state = state.copyWith(currency: newCurrency);
-    await fetchMarketData(state.timeframe);
+      if (data == null) return;
+
+      if (stream == 'btcusdt@ticker') {
+        _handleTickerData(data);
+      } else if (stream?.contains('@kline_') ?? false) {
+        _handleKlineData(data);
+      } else if (stream == 'btcusdt@depth20') {
+        _handleDepthData(data);
+      }
+    });
+  }
+
+  void _handleTickerData(Map<String, dynamic> data) {
+    final price = double.tryParse(data['c']?.toString() ?? '') ?? 0.0;
+    final change = double.tryParse(data['P']?.toString() ?? '') ?? 0.0;
+    final high = double.tryParse(data['h']?.toString() ?? '') ?? 0.0;
+    final low = double.tryParse(data['l']?.toString() ?? '') ?? 0.0;
+    final volume = double.tryParse(data['v']?.toString() ?? '') ?? 0.0;
+
+    state = state.copyWith(
+      currentPrice: price,
+      priceChange24h: change,
+      high24h: high,
+      low24h: low,
+      totalVolume: volume,
+    );
+  }
+
+  void _handleKlineData(Map<String, dynamic> klineData) {
+    final k = klineData['k'] as Map<String, dynamic>?;
+    if (k == null) return;
+
+    final closePrice = double.tryParse(k['c']?.toString() ?? '') ?? 0.0;
+    final isFinal = k['x'] == true;
+
+    if (state.spots.isEmpty) return;
+
+    final newSpots = List<FlSpot>.from(state.spots);
+    newSpots[newSpots.length - 1] = FlSpot(newSpots.last.x, closePrice);
+    
+    if (isFinal) {
+      newSpots.add(FlSpot(newSpots.length.toDouble(), closePrice));
+      if (newSpots.length > 1000) newSpots.removeAt(0);
+    }
+
+    state = state.copyWith(spots: newSpots, currentPrice: closePrice);
+  }
+
+  void _handleDepthData(Map<String, dynamic> data) {
+    final rawBids = data['bids'] as List? ?? [];
+    final rawAsks = data['asks'] as List? ?? [];
+
+    final bids = rawBids.take(10).map((e) => OrderBookEntry(
+      price: double.tryParse(e[0].toString()) ?? 0.0,
+      amount: double.tryParse(e[1].toString()) ?? 0.0,
+    )).toList();
+
+    final asks = rawAsks.take(10).map((e) => OrderBookEntry(
+      price: double.tryParse(e[0].toString()) ?? 0.0,
+      amount: double.tryParse(e[1].toString()) ?? 0.0,
+    )).toList();
+
+    state = state.copyWith(bids: bids, asks: asks);
   }
 
   Future<void> fetchMarketData(String timeframe) async {
-    final requestId = ++_lastRequestId;
-    state = state.copyWith(isLoading: true, timeframe: timeframe, error: null);
+    state = state.copyWith(isLoading: state.spots.isEmpty, timeframe: timeframe, error: null);
 
     try {
-      String days = '1';
+      String interval = '1h';
+      int limit = 200;
+      
       switch (timeframe) {
-        case "1H": days = '0.0416'; break;
-        case "1D": days = '1'; break;
-        case "1W": days = '7'; break;
-        case "1M": days = '30'; break;
-        case "3M": days = '90'; break;
-        case "1Y": days = '365'; break;
-        case "ALL": days = 'max'; break;
+        case "1H": interval = '1m'; limit = 60; break;
+        case "1D": interval = '15m'; limit = 96; break;
+        case "1W": interval = '1h'; limit = 168; break;
+        case "1M": interval = '4h'; limit = 180; break;
+        case "1Y": interval = '1d'; limit = 365; break;
+        case "ALL": interval = '1w'; limit = 500; break;
       }
 
-      final chartUrl = Uri.parse(
-        'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=${state.currency.toLowerCase()}&days=$days',
+      final candles = await _socketService.fetchHistoricalCandles('BTCUSDT', interval, limit: limit);
+      
+      if (candles.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+
+      final spots = <FlSpot>[];
+      for (int i = 0; i < candles.length; i++) {
+        final closePrice = double.tryParse(candles[i][4].toString()) ?? 0.0;
+        spots.add(FlSpot(i.toDouble(), closePrice));
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        spots: spots,
       );
-
-      final chartResponse = await http.get(chartUrl);
-      if (requestId != _lastRequestId) return;
-
-      if (chartResponse.statusCode != 200) {
-         state = state.copyWith(isLoading: false, error: "API limit. Try again later.");
-         return;
-      }
-
-      final chartData = jsonDecode(chartResponse.body);
-      final List<dynamic> prices = chartData['prices'] ?? [];
-      final List<dynamic> volumes = chartData['total_volumes'] ?? [];
-
-      List<FlSpot> rawSpots = [];
-      List<FlSpot> volumeSpots = [];
-      List<DateTime> timestamps = [];
-      List<CandleSpot> candles = [];
-
-      for (var i = 0; i < prices.length; i++) {
-        final ms = (prices[i][0] as num).toInt();
-        final price = (prices[i][1] as num).toDouble();
-        final volume = (volumes.length > i) ? (volumes[i][1] as num).toDouble() : 0.0;
-        
-        rawSpots.add(FlSpot(i.toDouble(), price));
-        volumeSpots.add(FlSpot(i.toDouble(), volume));
-        timestamps.add(DateTime.fromMillisecondsSinceEpoch(ms));
-        
-        // Mocking candles from line data since CoinGecko free API doesn't provide OHLC for free in all timeframes easily
-        // In a real app, we would use /ohlc endpoint or aggregate this data
-        candles.add(CandleSpot(
-          time: DateTime.fromMillisecondsSinceEpoch(ms),
-          open: price * 0.999,
-          high: price * 1.002,
-          low: price * 0.998,
-          close: price,
-          volume: volume,
-        ));
-      }
-
-      // Suavização por Média Móvel (SMA) para uma trilha mais fluida
-      List<FlSpot> finalSpots = [];
-      int windowSize = (rawSpots.length / 60).clamp(1, 12).toInt();
-      
-      for (int i = 0; i < rawSpots.length; i++) {
-        double sum = 0;
-        int count = 0;
-        for (int j = math.max(0, i - windowSize); j <= math.min(rawSpots.length - 1, i + windowSize); j++) {
-          sum += rawSpots[j].y;
-          count++;
-        }
-        finalSpots.add(FlSpot(i.toDouble(), sum / count));
-      }
-
-      final marketUrl = Uri.parse('https://api.coingecko.com/api/v3/coins/markets?vs_currency=${state.currency.toLowerCase()}&ids=bitcoin');
-      final marketResponse = await http.get(marketUrl);
-      
-      if (requestId == _lastRequestId && marketResponse.statusCode == 200) {
-        final List<dynamic> marketList = jsonDecode(marketResponse.body);
-        if (marketList.isNotEmpty) {
-          final data = marketList[0];
-          state = state.copyWith(
-            isLoading: false,
-            spots: finalSpots,
-            volumeSpots: volumeSpots,
-            candles: candles,
-            timestamps: timestamps,
-            currentPrice: (data['current_price'] as num).toDouble(),
-            btcCurrentPrice: (data['current_price'] as num).toDouble(), // Simplificado
-            priceChange24h: (data['price_change_percentage_24h'] as num).toDouble(),
-            high24h: (data['high_24h'] as num? ?? 0.0).toDouble(),
-            low24h: (data['low_24h'] as num? ?? 0.0).toDouble(),
-            totalVolume: (data['total_volume'] as num).toDouble(),
-            marketCap: (data['market_cap'] as num).toDouble(),
-          );
-        }
-      } else {
-         state = state.copyWith(
-           isLoading: false, 
-           spots: finalSpots, 
-           volumeSpots: volumeSpots,
-           candles: candles,
-           timestamps: timestamps,
-         );
-      }
     } catch (e) {
-      if (requestId == _lastRequestId) {
-        state = state.copyWith(isLoading: false, error: e.toString());
-      }
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }

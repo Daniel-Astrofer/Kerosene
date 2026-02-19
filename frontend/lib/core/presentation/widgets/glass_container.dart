@@ -20,7 +20,7 @@ class GlassContainer extends StatelessWidget {
     this.height,
     this.blur = 10.0,
     this.opacity = 0.1,
-    this.color = Colors.white,
+    this.color = Colors.black, // Default to black for dark mode safety
     this.borderRadius,
     this.padding,
     this.margin,
@@ -33,6 +33,7 @@ class GlassContainer extends StatelessWidget {
       margin: margin,
       child: ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.circular(20),
+        clipBehavior: Clip.hardEdge,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(

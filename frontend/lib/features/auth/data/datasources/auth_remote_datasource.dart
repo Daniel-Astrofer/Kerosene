@@ -1,47 +1,42 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/device_helper.dart';
 import '../models/user_model.dart';
 
-/// Interface do AuthRemoteDataSource
 abstract class AuthRemoteDataSource {
-  /// Fazer signup (criar usuário temporário)
-  /// Retorna o TOTP secret para configurar no app autenticador
-  Future<Map<String, dynamic>> signup({
-    required String username,
-    required String passphrase,
-  });
+  /// Fazer signup e retornar URI do TOTP
+  Future<String> signup({required String username, required String passphrase});
 
-  /// Verificar código TOTP e finalizar criação da conta
-  Future<String> verifyTotp({
-    required String username,
-    required String passphrase,
-    required String totpSecret,
-    required String totpCode,
-  });
-
-  /// Fazer login
-  /// Retorna JWT token
-  Future<String> login({required String username, required String passphrase});
-
-  /// Verificar TOTP para Login (2FA em novo dispositivo)
-  Future<String> verifyLoginTotp({
+  /// Verificar TOTP de cadastro e retornar sessão
+  Future<Map<String, dynamic>> verifySignupTotp({
     required String username,
     required String passphrase,
     required String totpCode,
   });
 
-  /// Fazer logout
+  /// Login e retornar sessão
+  Future<Map<String, dynamic>> login({
+    required String username,
+    required String passphrase,
+  });
+
+  /// Verificar TOTP de login (quando device não reconhecido)
+  Future<Map<String, dynamic>> verifyLoginTotp({
+    required String username,
+    required String passphrase,
+    required String totpCode,
+  });
+
+  /// Refresh token (usando cookie)
+  Future<Map<String, dynamic>> refreshToken();
+
+  /// Logout
   Future<void> logout();
 
   /// Obter usuário atual
   Future<UserModel> getCurrentUser();
-
-  /// Refresh token
-  Future<String> refreshToken(String token);
 }
 
 /// Implementação do AuthRemoteDataSource
@@ -53,51 +48,53 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   /// Processa a resposta do servidor:
   /// - Sucesso (200): Retorna o corpo como String (texto puro ou JSON stringificado).
   /// - Erro (!= 200): Tenta parsear JSON para extrair mensagem amigável, senão lança o texto cru ou mensagem padrão.
-  String _handleResponse(Response response) {
-    // Se a resposta contiver otpauth, é sucesso (signup ou verify), independente do status code
-    if (response.data.toString().contains('otpauth://')) {
-      return response.data.toString();
+  Map<String, dynamic> _processResponse(
+    Response response, {
+    bool isLoginEndpoint = false,
+  }) {
+    final status = response.statusCode ?? 0;
+
+    if (status >= 200 && status < 300) {
+      return _extractSessionData(response.data);
     }
 
-    if (response.statusCode != null &&
-        response.statusCode! >= 200 &&
-        response.statusCode! < 300) {
-      return response.data.toString();
-    }
+    String errorMessage = 'Ocorreu um erro (${response.statusCode}).';
 
-    String errorMessage = 'Ocorreu um erro desconhecido.';
-
-    // Tentar ler erro do JSON
     try {
-      if (response.data is String) {
-        final json = jsonDecode(response.data);
-        if (json is Map) {
-          errorMessage = json['message'] ?? json['error'] ?? json.toString();
-        }
-      } else if (response.data is Map) {
-        final json = response.data;
-        errorMessage = json['message'] ?? json['error'] ?? json.toString();
-      } else {
-        errorMessage = response.data.toString();
+      final decoded = _extractSessionData(response.data);
+      if (decoded.containsKey('message')) {
+        errorMessage = decoded['message'];
+      } else if (decoded.containsKey('error')) {
+        errorMessage = decoded['error'];
       }
     } catch (_) {
-      // Falha no parse, usar texto cru se disponível
-      if (response.data != null) errorMessage = response.data.toString();
+      if (response.data != null && response.data.toString().isNotEmpty) {
+        errorMessage = response.data.toString();
+      }
     }
 
-    // Tratamento específico para 403/Forbidden se não vier mensagem clara
-    if (response.statusCode == 403 &&
-        (errorMessage.isEmpty || errorMessage.contains('Forbidden'))) {
-      throw ServerException(
-        message: 'Dispositivo ou credenciais não autorizados (403).',
-      );
+    if (status == 401 || status == 403) {
+      // On the login endpoint, ANY 401/403 means the device is unrecognized
+      // and the user must verify via TOTP. The API may return various messages
+      // ("session expired", "unauthorized", "unrecognized device", etc.)
+      if (isLoginEndpoint) {
+        throw AuthException(message: 'REQ_LOGIN_2FA', statusCode: status);
+      }
+      // For other endpoints, check for device-related keywords
+      if (errorMessage.toLowerCase().contains('unrecognized') ||
+          errorMessage.toLowerCase().contains('device') ||
+          errorMessage.toLowerCase().contains('2fa') ||
+          errorMessage.toLowerCase().contains('totp')) {
+        throw AuthException(message: 'REQ_LOGIN_2FA', statusCode: status);
+      }
+      throw AuthException(message: errorMessage, statusCode: status);
     }
 
-    throw ServerException(message: errorMessage);
+    throw ServerException(message: errorMessage, statusCode: status);
   }
 
   @override
-  Future<Map<String, dynamic>> signup({
+  Future<String> signup({
     required String username,
     required String passphrase,
   }) async {
@@ -107,174 +104,169 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {'username': username, 'passphrase': passphrase},
         options: Options(
           responseType: ResponseType.plain,
-          validateStatus: (status) => true,
+          validateStatus: (status) =>
+              status != null && (status == 202 || status == 200),
         ),
       );
 
-      final responseData = _handleResponse(response);
-
-      // Sucesso: responseData deve conter mensagem e talvez o secret (se o backend mudou para JSON no sucesso tb, ajustar aqui)
-      // O prompt diz: "somente nas mensagens de sucesso que o retorno é texto puro"
-
-      return {
-        'message': responseData,
-        'totpSecret': _extractTotpSecret(responseData),
-      };
+      return response.data.toString();
     } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException(message: 'Erro ao criar usuário: $e');
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao iniciar cadastro: $e');
     }
   }
 
   @override
-  Future<String> verifyTotp({
+  Future<Map<String, dynamic>> verifySignupTotp({
     required String username,
     required String passphrase,
-    required String totpSecret,
     required String totpCode,
   }) async {
     try {
-      // Obter headers de segurança
-      final securityHeaders = await DeviceHelper.getSecurityHeaders();
-
-      // Extrair o segredo limpo se for uma URL otpauth
-      String cleanSecret = totpSecret;
-      if (totpSecret.contains('otpauth://')) {
-        final uri = Uri.tryParse(totpSecret);
-        if (uri != null) {
-          cleanSecret = uri.queryParameters['secret'] ?? totpSecret;
-        }
-      }
-
       final response = await apiClient.post(
-        AppConfig.authTotpVerify,
+        AppConfig.authSignupVerify,
         data: {
           'username': username,
           'passphrase': passphrase,
-          'totpSecret': cleanSecret,
           'totpCode': totpCode,
         },
-        headers: securityHeaders,
-        options: Options(
-          responseType: ResponseType.plain,
-          validateStatus: (status) => true,
-        ),
+        options: Options(responseType: ResponseType.plain),
       );
 
-      return _handleResponse(response);
+      return _processResponse(response);
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao verificar TOTP: $e');
     }
   }
 
   @override
-  Future<String> verifyLoginTotp({
-    required String username,
-    required String passphrase,
-    required String totpCode,
-  }) async {
-    try {
-      final securityHeaders = await DeviceHelper.getSecurityHeaders();
-
-      final response = await apiClient.post(
-        AppConfig.authLoginVerify, // Novo endpoint
-        data: {
-          'username': username,
-          'passphrase': passphrase,
-          'totpCode': totpCode,
-        },
-        headers: securityHeaders,
-        options: Options(
-          responseType: ResponseType.plain,
-          validateStatus: (status) => true,
-        ),
-      );
-
-      return _handleResponse(response);
-    } catch (e) {
-      if (e is ServerException) rethrow;
-      throw ServerException(message: 'Erro ao verificar 2FA de login: $e');
-    }
-  }
-
-  @override
-  Future<String> login({
+  Future<Map<String, dynamic>> login({
     required String username,
     required String passphrase,
   }) async {
     try {
-      // Obter headers de segurança
-      final securityHeaders = await DeviceHelper.getSecurityHeaders();
-
       final response = await apiClient.post(
         AppConfig.authLogin,
         data: {'username': username, 'passphrase': passphrase},
-        headers: securityHeaders,
         options: Options(
           responseType: ResponseType.plain,
-          validateStatus: (status) => true,
+          validateStatus: (status) => status != null && status < 500,
         ),
       );
 
-      // Tratamento específico para 403: Requer 2FA
-      if (response.statusCode == 403) {
-        // Lança uma exceção específica que será capturada pelo Repo/Notifier para mudar o estado
-        throw ServerException(message: 'REQ_LOGIN_2FA');
-      }
-
-      final responseText = response.data.toString();
-      if (responseText.toLowerCase().contains('unrecognized device')) {
-        throw ServerException(message: 'REQ_LOGIN_2FA');
-      }
-
-      return _handleResponse(response);
+      // isLoginEndpoint: true → any 401/403 triggers REQ_LOGIN_2FA
+      return _processResponse(response, isLoginEndpoint: true);
     } catch (e) {
-      if (e is ServerException) rethrow;
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao fazer login: $e');
     }
   }
 
   @override
+  Future<Map<String, dynamic>> verifyLoginTotp({
+    required String username,
+    required String passphrase,
+    required String totpCode,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        AppConfig.authLoginVerify,
+        data: {
+          'username': username,
+          'passphrase': passphrase,
+          'totpCode': totpCode,
+        },
+        options: Options(responseType: ResponseType.plain),
+      );
+
+      return _processResponse(response);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao verificar 2FA: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> refreshToken() async {
+    try {
+      // Cookie é enviado automaticamente
+      final response = await apiClient.post(
+        AppConfig.authRefresh,
+        options: Options(responseType: ResponseType.plain),
+      );
+
+      return _processResponse(response);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao renovar sessão: $e');
+    }
+  }
+
+  @override
   Future<void> logout() async {
-    // Não há endpoint de logout na API
-    // Apenas limpar dados locais
-    return;
+    try {
+      // Tentar chamar endpoint de logout
+      await apiClient.post(AppConfig.authLogout);
+      // Limpar cookies localmente seria ideal, mas CookieManager cuida da persistencia.
+      // Se o backend limpar o cookie (Set-Cookie: ...; Max-Age=0), o CookieManager deve acatar.
+    } catch (_) {
+      // Ignorar erro de logout
+    }
   }
 
   @override
   Future<UserModel> getCurrentUser() async {
-    // A API não tem endpoint para obter usuário atual
-    // Retornar dados mockados ou do token JWT
-    throw UnimplementedError('getCurrentUser não implementado pela API');
+    throw UnimplementedError();
   }
 
-  @override
-  Future<String> refreshToken(String token) async {
-    // A API não tem endpoint de refresh token
-    throw UnimplementedError('refreshToken não implementado pela API');
-  }
+  Map<String, dynamic> _extractSessionData(dynamic data) {
+    debugPrint('🔍 Parsing Session Data: $data'); // Debug Log
 
-  /// Extrai o TOTP secret da resposta
-  String _extractTotpSecret(dynamic data) {
-    if (data == null) return '';
-    String stringData = data.toString();
+    if (data == null) return {};
 
-    // Lógica existente de extração...
-    // Simplificando pois reescrevi o metodo todo
+    // 1. Map (JSON standard)
+    if (data is Map) return Map<String, dynamic>.from(data);
 
-    if (stringData.contains('otpauth://')) {
-      return stringData;
+    // 2. String (Raw)
+    if (data is String) {
+      final trimmed = data.trim();
+      if (trimmed.isEmpty) return {};
+
+      // Cleanup quotes
+      var cleanBody = trimmed;
+      if (cleanBody.startsWith('"') && cleanBody.endsWith('"')) {
+        cleanBody = cleanBody.substring(1, cleanBody.length - 1).trim();
+      }
+
+      // Case A: "<USER_ID> <JWT_TOKEN>" (Space separated)
+      // Check if it contains a space and the second part looks like a JWT
+      final parts = cleanBody.split(RegExp(r'\s+'));
+      if (parts.length >= 2) {
+        final userId = parts[0].trim();
+        final potentialToken = parts.sublist(1).join('').trim(); // Concat rest
+
+        // JWT heuristics: starts with 'ey', contains '.'
+        if (potentialToken.startsWith('ey') && potentialToken.contains('.')) {
+          return {
+            'userId': userId,
+            'accessToken': potentialToken,
+            '__raw_body__': cleanBody,
+          };
+        }
+      }
+
+      // Case B: Just JWT
+      if (cleanBody.startsWith('ey') && cleanBody.contains('.')) {
+        return {'accessToken': cleanBody};
+      }
+
+      // Case C: Fallback - treat whole body as token if it looks reasonably like one
+      if (cleanBody.length > 20 && !cleanBody.contains(' ')) {
+        return {'accessToken': cleanBody, '__raw_body__': cleanBody};
+      }
     }
 
-    // Tenta regex direto
-    final match = RegExp(r'otpauth://[^\s"\}]+').firstMatch(stringData);
-    if (match != null) {
-      return match.group(0)!;
-    }
-
-    // Se falhar e for sucesso, talvez o backend mande o secret limpo?
-    // Assumindo comportamento atual.
-    return stringData;
+    return {};
   }
 }

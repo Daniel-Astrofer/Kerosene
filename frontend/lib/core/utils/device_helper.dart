@@ -39,8 +39,10 @@ class DeviceHelper {
         IosDeviceInfo iosInfo = await _deviceInfo.iosInfo;
         return '${iosInfo.identifierForVendor}_${iosInfo.model}_${iosInfo.systemVersion}';
       } else {
-        // Fallback para outras plataformas
-        return 'unknown_device_${DateTime.now().millisecondsSinceEpoch}';
+        // Fallback estável para Windows/Desktop
+        // Usamos o hostname + um sufixo estático
+        final computerName = Platform.localHostname;
+        return 'kerosene_desktop_v1_$computerName';
       }
     } catch (e) {
       // Em caso de erro, gerar ID baseado em timestamp
@@ -74,9 +76,8 @@ class DeviceHelper {
   /// Cria headers de segurança para requisições
   static Future<Map<String, String>> getSecurityHeaders() async {
     final deviceHash = await getDeviceHash();
-    final deviceIP = await getDeviceIP();
 
-    return {'X-Device-Hash': deviceHash, 'X-Forwarded-For': deviceIP};
+    return {'X-Device-Hash': deviceHash};
   }
 
   /// Limpa o device hash salvo (útil para logout)

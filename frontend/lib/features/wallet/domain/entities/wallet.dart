@@ -78,8 +78,7 @@ final class Wallet extends Equatable {
                   DateTime.now().millisecondsSinceEpoch)
               .toString(),
       name: json['name'] ?? json['walletName'] ?? 'Wallet',
-      address:
-          json['address'] ?? json['walletName'] ?? '', // Fallback para nome
+      address: json['address'] ?? '',
       balance: btcValue,
       derivationPath: "m/84'/0'/0'",
       type: WalletType.nativeSegwit,

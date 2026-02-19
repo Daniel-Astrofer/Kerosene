@@ -30,6 +30,32 @@ subprojects {
     }
 }
 
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
+}
+
+
+subprojects {
+    if (project.name == "flutter_jailbreak_detection") {
+        fun setNamespace() {
+            val android = project.extensions.findByName("android")
+            if (android != null) {
+                try {
+                    val setNamespace = android.javaClass.getMethod("setNamespace", String::class.java)
+                    setNamespace.invoke(android, "appmire.be.flutterjailbreakdetection")
+                } catch (e: Exception) {
+                    println("Failed to set namespace for ${project.name}: $e")
+                }
+            }
+        }
+
+        if (project.state.executed) {
+            setNamespace()
+        } else {
+            project.afterEvaluate {
+                setNamespace()
+            }
+        }
+    }
 }

@@ -70,6 +70,18 @@ class LocalTransactionService {
     ];
   }
 
+  Future<void> removeTransaction(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<Transaction> transactions = await getTransactions();
+
+    transactions.removeWhere((t) => t.id == id);
+
+    final String jsonString = jsonEncode(
+      transactions.map((t) => t.toJson()).toList(),
+    );
+    await prefs.setString(_transactionsKey, jsonString);
+  }
+
   Future<void> clearTransactions() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_transactionsKey);

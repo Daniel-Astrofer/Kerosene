@@ -11,15 +11,19 @@ class AppConfig {
   static const int receiveTimeout = 30000;
 
   // ==================== API Headers ====================
+  // ==================== API Headers ====================
   static const String newTokenHeader = 'X-New-Token';
+  static const String deviceHashHeader = 'X-Device-Hash';
 
   // ==================== API Endpoints ====================
 
   // Auth
   static const String authSignup = '/auth/signup';
-  static const String authTotpVerify = '/auth/signup/totp/verify';
+  static const String authSignupVerify = '/auth/signup/totp/verify';
   static const String authLogin = '/auth/login';
   static const String authLoginVerify = '/auth/login/totp/verify';
+  static const String authRefresh = '/auth/refresh';
+  static const String authLogout = '/auth/logout';
 
   // Wallet
   static const String walletCreate = '/wallet/create';
@@ -30,17 +34,19 @@ class AppConfig {
 
   // Ledger
   static const String ledgerTransaction = '/ledger/transaction';
-  static const String ledgerFind = '/ledger/find';
+  // static const String ledgerFind = '/ledger/find'; // REMOVED: Not in API v1.1
   static const String ledgerBalance = '/ledger/balance';
   static const String ledgerAll = '/ledger/all';
-  static const String ledgerDelete = '/ledger/delete';
+  static const String ledgerDelete =
+      '/ledger/delete-entry'; // Note: Verify actual backend path if possible, usually it follows a pattern.
 
   // Transactions - Fee & Status
   static const String transactionsEstimateFee = '/transactions/estimate-fee';
   static const String transactionsStatus = '/transactions/status';
 
   // Transactions - Send & Broadcast
-  static const String transactionsSend = '/transactions/send';
+  static const String transactionsCreateUnsigned =
+      '/transactions/create-unsigned';
   static const String transactionsBroadcast = '/transactions/broadcast';
 
   // Transactions - Deposits
@@ -51,14 +57,15 @@ class AppConfig {
   static const String transactionsDeposits = '/transactions/deposits';
   static const String transactionsDepositBalance =
       '/transactions/deposit-balance';
-  static const String transactionsDeposit =
-      '/transactions/deposit'; // + /{txid}
+  static const String transactionsDeposit = '/transactions/deposit';
 
   // Transactions - Payment Links
   static const String transactionsCreatePaymentLink =
       '/transactions/create-payment-link';
   static const String transactionsPaymentLink =
       '/transactions/payment-link'; // + /{linkId}
+  static const String transactionsCompletePaymentLink =
+      '/transactions/payment-link'; // + /{linkId}/complete
   static const String transactionsPaymentLinks = '/transactions/payment-links';
 
   // ==================== Storage Keys ====================

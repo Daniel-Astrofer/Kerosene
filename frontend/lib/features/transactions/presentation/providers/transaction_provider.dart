@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
-import '../../../../core/config/app_config.dart';
-import '../../../../core/network/api_client.dart';
+
 import '../../../../core/services/local_transaction_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart'
-    show authLocalDataSourceProvider;
+    show authLocalDataSourceProvider, apiClientProvider;
 import '../../../wallet/domain/entities/transaction.dart';
 import '../../data/datasources/transaction_remote_datasource.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
@@ -16,17 +15,9 @@ import '../../domain/entities/payment_link.dart';
 
 // ==================== Core Providers ====================
 
-final _transactionApiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(
-    baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: AppConfig.connectionTimeout,
-    receiveTimeout: AppConfig.receiveTimeout,
-  );
-});
-
 final transactionRemoteDataSourceProvider =
     Provider<TransactionRemoteDataSource>((ref) {
-      final apiClient = ref.watch(_transactionApiClientProvider);
+      final apiClient = ref.watch(apiClientProvider);
       return TransactionRemoteDataSourceImpl(apiClient);
     });
 
@@ -63,7 +54,11 @@ final txStatusProvider = FutureProvider.family<TxStatus, String>((
 
 final depositAddressProvider = FutureProvider<String>((ref) async {
   final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getDepositAddress();
+  final result = await repo.getDepositAddress();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (address) => address,
+  );
 });
 
 // ==================== Deposits ====================
@@ -129,24 +124,28 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
     : super(const AsyncActionState());
 
   Future<TxStatus?> send({
-    required String fromAddress,
     required String toAddress,
     required double amount,
     required int feeSatoshis,
+    String? fromWalletId,
+    String? fromAddress,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
       final result = await _repository.sendTransaction(
-        fromAddress: fromAddress,
         toAddress: toAddress,
         amount: amount,
         feeSatoshis: feeSatoshis,
+        fromWalletId: fromWalletId,
+        fromAddress: fromAddress,
       );
+
+      debugPrint('>>> Notifier: Transaction sent successfully: ${result.txid}');
 
       // Save locally
       final transaction = Transaction(
         id: result.txid,
-        fromAddress: fromAddress,
+        fromAddress: fromAddress ?? fromWalletId ?? 'Unknown',
         toAddress: toAddress,
         amountSatoshis: (amount * 100000000).toInt(),
         feeSatoshis: feeSatoshis,
@@ -163,7 +162,9 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
 
       state = AsyncActionState(result: result);
       return result;
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('>>> Notifier Error: $e');
+      debugPrint('>>> Stack: $stack');
       state = AsyncActionState(error: e.toString());
       return null;
     }
@@ -171,14 +172,17 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
 
   Future<TxStatus?> broadcast(String rawTxHex) async {
     state = const AsyncActionState(isLoading: true);
-    try {
-      final result = await _repository.broadcastTransaction(rawTxHex);
-      state = AsyncActionState(result: result);
-      return result;
-    } catch (e) {
-      state = AsyncActionState(error: e.toString());
-      return null;
-    }
+    final result = await _repository.broadcastTransaction(rawTxHex);
+    return result.fold(
+      (failure) {
+        state = AsyncActionState(error: failure.message);
+        return null;
+      },
+      (txStatus) {
+        state = AsyncActionState(result: txStatus);
+        return txStatus;
+      },
+    );
   }
 
   void reset() => state = const AsyncActionState();
@@ -306,10 +310,14 @@ class TransactionHistoryNotifier extends StateNotifier<List<Transaction>> {
     try {
       debugPrint('>>> TransactionHistoryNotifier: Starting initialization');
       final transactions = await _service.getTransactions();
-      debugPrint('>>> TransactionHistoryNotifier: Loaded ${transactions.length} transactions');
+      debugPrint(
+        '>>> TransactionHistoryNotifier: Loaded ${transactions.length} transactions',
+      );
       state = transactions;
     } catch (e) {
-      debugPrint('>>> TransactionHistoryNotifier: Error during initialization: $e');
+      debugPrint(
+        '>>> TransactionHistoryNotifier: Error during initialization: $e',
+      );
     }
   }
 
@@ -317,15 +325,24 @@ class TransactionHistoryNotifier extends StateNotifier<List<Transaction>> {
     try {
       debugPrint('>>> TransactionHistoryNotifier: Loading transactions');
       state = await _service.getTransactions();
-      debugPrint('>>> TransactionHistoryNotifier: Loaded ${state.length} transactions');
+      debugPrint(
+        '>>> TransactionHistoryNotifier: Loaded ${state.length} transactions',
+      );
     } catch (e) {
-      debugPrint('>>> TransactionHistoryNotifier: Error loading transactions: $e');
+      debugPrint(
+        '>>> TransactionHistoryNotifier: Error loading transactions: $e',
+      );
     }
   }
 
   Future<void> addTransaction(Transaction transaction) async {
     await _service.saveTransaction(transaction);
     state = [transaction, ...state];
+  }
+
+  Future<void> removeTransaction(String id) async {
+    await _service.removeTransaction(id);
+    state = state.where((t) => t.id != id).toList();
   }
 }
 

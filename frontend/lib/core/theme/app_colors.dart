@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Dark Background from Image 2
-  static const Color background = Color(0xFF2B3033);
+  static const Color background = Color(0xFF263238); // Steel / Blue Grey 900
   static const Color darkSurface = Color(0xFF1B1F22);
 
   // Primary Blue / Teal from Image 2 (Accent)

@@ -83,6 +83,17 @@ abstract class WalletRepository {
 
   /// Deletar ledger de uma carteira
   Future<Either<Failure, String>> deleteLedger(String walletName);
+
+  // ==================== Security ====================
+
+  /// Salvar Mnemonic de forma segura
+  Future<Either<Failure, bool>> saveMnemonic(String mnemonic);
+
+  /// Obter Mnemonic de forma segura (pode requerer autenticação na implementação)
+  Future<Either<Failure, String?>> getMnemonic();
+
+  /// Remover Mnemonic de forma segura
+  Future<Either<Failure, void>> deleteMnemonic();
 }
 
 /// Estimativa de taxa de mineração

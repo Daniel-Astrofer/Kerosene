@@ -38,6 +38,18 @@ abstract class AuthLocalDataSource {
 
   /// Limpar todos os dados
   Future<void> clearAll();
+
+  /// Salvar Mnemonic (Inseguro - Apenas para dev/demo se secure storage não estiver disponível)
+  Future<void> saveMnemonic(String mnemonic);
+
+  /// Obter Mnemonic
+  Future<String?> getMnemonic();
+
+  /// Definir se biometria está habilitada
+  Future<void> setBiometricEnabled(bool enabled);
+
+  /// Verificar se biometria está habilitada
+  Future<bool> getBiometricEnabled();
 }
 
 /// Implementação do AuthLocalDataSource
@@ -148,8 +160,48 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
       await removeToken();
       await removeUser();
       await removeTotpSecret();
+      await sharedPreferences.remove('auth_mnemonic');
     } catch (e) {
       throw CacheException(message: 'Erro ao limpar dados: $e');
+    }
+  }
+
+  @override
+  Future<void> saveMnemonic(String mnemonic) async {
+    try {
+      await sharedPreferences.setString('auth_mnemonic', mnemonic);
+    } catch (e) {
+      throw CacheException(message: 'Erro ao salvar mnemonic: $e');
+    }
+  }
+
+  @override
+  Future<String?> getMnemonic() async {
+    try {
+      return sharedPreferences.getString('auth_mnemonic');
+    } catch (e) {
+      throw CacheException(message: 'Erro ao obter mnemonic: $e');
+    }
+  }
+
+  @override
+  Future<void> setBiometricEnabled(bool enabled) async {
+    try {
+      await sharedPreferences.setBool('auth_biometric_enabled', enabled);
+    } catch (e) {
+      throw CacheException(
+        message: 'Erro ao salvar preferência biométrica: $e',
+      );
+    }
+  }
+
+  @override
+  Future<bool> getBiometricEnabled() async {
+    try {
+      return sharedPreferences.getBool('auth_biometric_enabled') ?? false;
+    } catch (e) {
+      // Default info false if error
+      return false;
     }
   }
 }

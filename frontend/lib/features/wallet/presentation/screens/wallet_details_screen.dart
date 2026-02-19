@@ -100,7 +100,7 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
-                          SendMoneyScreen(walletId: widget.wallet.id),
+                          SendMoneyScreen(walletId: widget.wallet.name),
                     ),
                   );
                 },

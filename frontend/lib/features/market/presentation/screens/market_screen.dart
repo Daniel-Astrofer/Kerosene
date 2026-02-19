@@ -1,11 +1,170 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'dart:math' as math;
 import 'package:intl/intl.dart';
+import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/providers/currency_provider.dart';
+import '../../../../core/providers/price_provider.dart';
 import '../providers/market_provider.dart';
+import '../widgets/fear_and_greed_widget.dart';
+import '../widgets/order_book_widget.dart';
+import '../../../home/presentation/widgets/animated_balance_display.dart';
 
+// ─── Price Alert Model ─────────────────────────────────────────────────────────
+class PriceAlert {
+  final String id;
+  final double targetPrice;
+  final String direction; // 'above' or 'below'
+  final bool active;
+
+  PriceAlert({
+    required this.id,
+    required this.targetPrice,
+    required this.direction,
+    this.active = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'targetPrice': targetPrice,
+    'direction': direction,
+    'active': active,
+  };
+
+  factory PriceAlert.fromJson(Map<String, dynamic> json) => PriceAlert(
+    id: json['id'],
+    targetPrice: (json['targetPrice'] as num).toDouble(),
+    direction: json['direction'],
+    active: json['active'] ?? true,
+  );
+}
+
+// ─── Price Alert Provider ──────────────────────────────────────────────────────
+final priceAlertProvider =
+    StateNotifierProvider<PriceAlertNotifier, List<PriceAlert>>((ref) {
+      return PriceAlertNotifier();
+    });
+
+class PriceAlertNotifier extends StateNotifier<List<PriceAlert>> {
+  PriceAlertNotifier() : super([]) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('price_alerts') ?? [];
+    final alerts = <PriceAlert>[];
+    for (final s in raw) {
+      try {
+        final parts = s.split('|');
+        alerts.add(
+          PriceAlert(
+            id: parts[0],
+            targetPrice: double.parse(parts[1]),
+            direction: parts[2],
+            active: parts[3] == 'true',
+          ),
+        );
+      } catch (_) {}
+    }
+    state = alerts;
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = state
+        .map((a) => '${a.id}|${a.targetPrice}|${a.direction}|${a.active}')
+        .toList();
+    await prefs.setStringList('price_alerts', raw);
+  }
+
+  Future<void> addAlert(double price, String direction) async {
+    final alert = PriceAlert(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      targetPrice: price,
+      direction: direction,
+    );
+    state = [...state, alert];
+    await _save();
+  }
+
+  Future<void> removeAlert(String id) async {
+    state = state.where((a) => a.id != id).toList();
+    await _save();
+  }
+}
+
+// ─── Technical Indicator Helpers ───────────────────────────────────────────────
+List<FlSpot> computeSMA(List<FlSpot> data, int period) {
+  if (data.length < period) return [];
+  final result = <FlSpot>[];
+  for (int i = period - 1; i < data.length; i++) {
+    double sum = 0;
+    for (int j = i - period + 1; j <= i; j++) {
+      sum += data[j].y;
+    }
+    result.add(FlSpot(data[i].x, sum / period));
+  }
+  return result;
+}
+
+List<FlSpot> computeEMA(List<FlSpot> data, int period) {
+  if (data.length < period) return [];
+  final k = 2.0 / (period + 1);
+  double sum = 0;
+  for (int i = 0; i < period; i++) {
+    sum += data[i].y;
+  }
+  double ema = sum / period;
+  final result = <FlSpot>[FlSpot(data[period - 1].x, ema)];
+  for (int i = period; i < data.length; i++) {
+    ema = (data[i].y - ema) * k + ema;
+    result.add(FlSpot(data[i].x, ema));
+  }
+  return result;
+}
+
+List<FlSpot> computeRSI(List<FlSpot> data, int period) {
+  if (data.length < period + 1) return [];
+  final result = <FlSpot>[];
+
+  double avgGain = 0, avgLoss = 0;
+  for (int i = 1; i <= period; i++) {
+    final change = data[i].y - data[i - 1].y;
+    if (change > 0) {
+      avgGain += change;
+    } else {
+      avgLoss += change.abs();
+    }
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+  double rsi = 100 - (100 / (1 + rs));
+  result.add(FlSpot(data[period].x, rsi));
+
+  for (int i = period + 1; i < data.length; i++) {
+    final change = data[i].y - data[i - 1].y;
+    if (change > 0) {
+      avgGain = (avgGain * (period - 1) + change) / period;
+      avgLoss = (avgLoss * (period - 1)) / period;
+    } else {
+      avgGain = (avgGain * (period - 1)) / period;
+      avgLoss = (avgLoss * (period - 1) + change.abs()) / period;
+    }
+    rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+    rsi = 100 - (100 / (1 + rs));
+    result.add(FlSpot(data[i].x, rsi));
+  }
+  return result;
+}
+
+// ─── Market Screen ─────────────────────────────────────────────────────────────
 class MarketScreen extends ConsumerStatefulWidget {
   const MarketScreen({super.key});
 
@@ -13,114 +172,168 @@ class MarketScreen extends ConsumerStatefulWidget {
   ConsumerState<MarketScreen> createState() => _MarketScreenState();
 }
 
-class _MarketScreenState extends ConsumerState<MarketScreen>
-    with TickerProviderStateMixin {
-  final List<String> _timeframes = ["1H", "1D", "1W", "1M", "3M", "1Y"];
-  late AnimationController _fadeController;
-  late AnimationController _scaleController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-  int? _touchedCandleIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _setupAnimations();
-  }
-
-  void _setupAnimations() {
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 900),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
-    );
-
-    _fadeController.forward();
-    _scaleController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _scaleController.dispose();
-    super.dispose();
-  }
+class _MarketScreenState extends ConsumerState<MarketScreen> {
+  bool _showMA = false;
+  bool _showRSI = false;
 
   @override
   Widget build(BuildContext context) {
     final marketState = ref.watch(marketProvider);
-    final isPositive = marketState.priceChange24h >= 0;
-    final trendColor = isPositive
-        ? const Color(0xFF00FF94)
-        : const Color(0xFFFF0055);
+    final alerts = ref.watch(priceAlertProvider);
 
     return Scaffold(
-      backgroundColor:
-          Colors.transparent, // Background handled by parent/AppTheme
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(0, 0.1),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: _fadeController,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
+      backgroundColor: const Color(0xFF0A0A12),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await ref
+                .read(marketProvider.notifier)
+                .fetchMarketData(marketState.timeframe);
+          },
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Header using GlassContainer
-                    _buildHeader(marketState, isPositive, trendColor),
-                    const SizedBox(height: 24),
-
-                    // Currency Selector
-                    _buildCurrencySelector(marketState),
-                    const SizedBox(height: 20),
-
-                    // Candlestick Chart (Glass Effect)
-                    _buildCandlestickChart(marketState, trendColor),
-                    const SizedBox(height: 16),
-
-                    // Advanced Volume Chart (Glass Effect)
-                    _buildAdvancedVolumeChart(marketState, trendColor),
-                    const SizedBox(height: 20),
-
-                    // Chart Statistics
-                    _buildChartStatistics(marketState, trendColor),
-                    const SizedBox(height: 20),
-
-                    // Timeframe Selector
-                    _buildTimeframeButtons(marketState),
-                    const SizedBox(height: 24),
-
-                    // Stats Grid
-                    _buildStats(marketState, trendColor),
-                    const SizedBox(height: 100), // Bottom padding for dock
+                    const Text(
+                      "Bitcoin Trading",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      child: const Icon(
+                        Icons.settings,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 24),
+
+                // Price Header
+                _buildPriceHeader(marketState),
+                const SizedBox(height: 24),
+
+                // Main Chart
+                GestureDetector(
+                  onLongPressStart: (details) {
+                    _showPriceAlertDialog(context, marketState);
+                  },
+                  child: SizedBox(
+                    height: 300,
+                    child: _buildMainChart(marketState, alerts),
+                  ),
+                ),
+
+                // RSI Sub-Chart
+                if (_showRSI && marketState.spots.isNotEmpty)
+                  _buildRSIChart(marketState),
+
+                const SizedBox(height: 16),
+
+                // Indicator Toggles + Timeframe Selector
+                _buildIndicatorToggles(),
+                const SizedBox(height: 12),
+
+                // Timeframe Selector
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: ["1H", "1D", "1W", "1M", "1Y", "ALL"].map((tf) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: _buildTimeframeButton(
+                          tf,
+                          marketState.timeframe == tf,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Active Alerts
+                if (alerts.isNotEmpty) ...[
+                  _buildAlertsSection(alerts),
+                  const SizedBox(height: 24),
+                ],
+
+                // Stats Grid
+                Text(
+                  "Market Stats",
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        "24h High",
+                        _formatPrice(
+                          context,
+                          marketState.high24h * _getConversionFactor(ref),
+                          ref.watch(currencyProvider),
+                        ),
+                        isPositive: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        "24h Low",
+                        _formatPrice(
+                          context,
+                          marketState.low24h * _getConversionFactor(ref),
+                          ref.watch(currencyProvider),
+                        ),
+                        isPositive: false,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildStatCard(
+                  "Volume (24h)",
+                  _formatMarketCap(
+                    context,
+                    marketState.totalVolume * _getConversionFactor(ref),
+                    ref.watch(currencyProvider),
+                  ),
+                  subtitle: "USDT",
+                ),
+                const SizedBox(height: 24),
+
+                // Fear & Greed
+                if (marketState.fearAndGreed != null)
+                  FearAndGreedWidget(data: marketState.fearAndGreed!),
+
+                const SizedBox(height: 24),
+
+                // Order Book
+                OrderBookWidget(bids: marketState.bids, asks: marketState.asks),
+
+                const SizedBox(height: 100),
+              ],
             ),
           ),
         ),
@@ -128,496 +341,638 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
     );
   }
 
-  Widget _buildHeader(MarketState state, bool isPositive, Color trendColor) {
-    return GlassContainer(
-      opacity: 0.1,
-      blur: 15,
-      borderRadius: BorderRadius.circular(24),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+  // ─── Indicator Toggle Chips ────────────────────────────────────────────────
+  Widget _buildIndicatorToggles() {
+    return Row(
+      children: [
+        _buildChip(
+          label: "MA",
+          active: _showMA,
+          color: const Color(0xFFFFD700),
+          onTap: () => setState(() => _showMA = !_showMA),
+        ),
+        const SizedBox(width: 8),
+        _buildChip(
+          label: "RSI",
+          active: _showRSI,
+          color: const Color(0xFF7B61FF),
+          onTap: () => setState(() => _showRSI = !_showRSI),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChip({
+    required String label,
+    required bool active,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active
+              ? color.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active
+                ? color.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (active)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(Icons.check, size: 12, color: color),
+              ),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? color : Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Alerts Section ────────────────────────────────────────────────────────
+  Widget _buildAlertsSection(List<PriceAlert> alerts) {
+    final currency = ref.watch(currencyProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Price Alerts",
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              "${alerts.length} active",
+              style: TextStyle(
+                color: const Color(0xFF00D4FF).withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...alerts.map((alert) {
+          final icon = alert.direction == 'above'
+              ? Icons.arrow_upward
+              : Icons.arrow_downward;
+          final color = alert.direction == 'above'
+              ? const Color(0xFF00FF94)
+              : const Color(0xFFFF0055);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: GlassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              borderRadius: BorderRadius.circular(12),
+              opacity: 0.05,
+              child: Row(
                 children: [
-                  const Icon(
-                    Icons.currency_bitcoin,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  Icon(icon, color: color, size: 16),
                   const SizedBox(width: 8),
-                  const Text(
-                    "Bitcoin",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
+                  Expanded(
+                    child: Text(
+                      "${alert.direction == 'above' ? 'Above' : 'Below'} ${_formatPrice(context, alert.targetPrice, currency)}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => ref
+                        .read(priceAlertProvider.notifier)
+                        .removeAlert(alert.id),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white38,
+                      size: 16,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                state.currency.toUpperCase(),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // ─── Price Alert Dialog ────────────────────────────────────────────────────
+  void _showPriceAlertDialog(BuildContext context, MarketState state) {
+    final currency = ref.read(currencyProvider);
+    final factor = _getConversionFactor(ref);
+    final currentConverted = state.currentPrice * factor;
+    final controller = TextEditingController(
+      text: currentConverted.toStringAsFixed(2),
+    );
+    String direction = 'above';
+
+    HapticFeedback.mediumImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A24),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                MediaQuery.of(ctx).viewInsets.bottom + 24,
               ),
-              const SizedBox(height: 12),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: state.btcCurrentPrice),
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeOutExpo,
-                builder: (context, value, child) {
-                  return Text(
-                    "\$${value.toStringAsFixed(2)}",
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.notifications_active,
+                        color: Color(0xFF00D4FF),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Set Price Alert",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Direction toggle
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setSheetState(() => direction = 'above'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: direction == 'above'
+                                  ? const Color(
+                                      0xFF00FF94,
+                                    ).withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: direction == 'above'
+                                    ? const Color(
+                                        0xFF00FF94,
+                                      ).withValues(alpha: 0.5)
+                                    : Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.arrow_upward,
+                                  size: 16,
+                                  color: direction == 'above'
+                                      ? const Color(0xFF00FF94)
+                                      : Colors.white38,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "Above",
+                                  style: TextStyle(
+                                    color: direction == 'above'
+                                        ? const Color(0xFF00FF94)
+                                        : Colors.white38,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setSheetState(() => direction = 'below'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: direction == 'below'
+                                  ? const Color(
+                                      0xFFFF0055,
+                                    ).withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: direction == 'below'
+                                    ? const Color(
+                                        0xFFFF0055,
+                                      ).withValues(alpha: 0.5)
+                                    : Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.arrow_downward,
+                                  size: 16,
+                                  color: direction == 'below'
+                                      ? const Color(0xFFFF0055)
+                                      : Colors.white38,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "Below",
+                                  style: TextStyle(
+                                    color: direction == 'below'
+                                        ? const Color(0xFFFF0055)
+                                        : Colors.white38,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Price input
+                  TextField(
+                    controller: controller,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: 24,
+                      fontFamily: 'monospace',
                       fontWeight: FontWeight.bold,
-                      letterSpacing: -1,
                     ),
-                  );
-                },
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: trendColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: trendColor.withValues(alpha: 0.3),
-                    width: 1,
+                    decoration: InputDecoration(
+                      prefixText: currency == Currency.brl
+                          ? 'R\$ '
+                          : currency == Currency.eur
+                          ? '€ '
+                          : '\$ ',
+                      prefixStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: trendColor.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      color: trendColor,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      "${state.priceChange24h.toStringAsFixed(2)}%",
-                      style: TextStyle(
-                        color: trendColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                  const SizedBox(height: 20),
+                  // Confirm button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final price = double.tryParse(controller.text) ?? 0;
+                        if (price > 0) {
+                          ref
+                              .read(priceAlertProvider.notifier)
+                              .addAlert(price, direction);
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Alert set: ${direction == 'above' ? '↑' : '↓'} ${controller.text}",
+                              ),
+                              backgroundColor: const Color(0xFF00D4FF),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00D4FF),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        "Set Alert",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: state.isConnected
-                            ? const Color(0xFF00FF94)
-                            : Colors.orange,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: state.isConnected
-                                ? const Color(0xFF00FF94).withValues(alpha: 0.4)
-                                : Colors.orange.withValues(alpha: 0.4),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      state.isConnected ? "LIVE" : "OFFLINE",
-                      style: TextStyle(
-                        color: state.isConnected
-                            ? const Color(0xFF00FF94)
-                            : Colors.orange,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ─── Conversion Helpers ────────────────────────────────────────────────────
+  double _getConversionFactor(WidgetRef ref) {
+    final currency = ref.watch(currencyProvider);
+    if (currency == Currency.usd) return 1.0;
+
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+
+    if (btcUsd == null || btcUsd == 0) return 0.0;
+
+    switch (currency) {
+      case Currency.btc:
+        return 1.0 / btcUsd;
+      case Currency.eur:
+        return (btcEur ?? 0) / btcUsd;
+      case Currency.brl:
+        return (btcBrl ?? 0) / btcUsd;
+      default:
+        return 1.0;
+    }
+  }
+
+  String _formatPrice(BuildContext context, double price, Currency currency) {
+    if (price == 0) return "---";
+    final appLocale = Localizations.localeOf(context).toString();
+    final formatter = NumberFormat.currency(
+      locale: appLocale,
+      symbol: currency == Currency.brl
+          ? 'R\$'
+          : currency == Currency.eur
+          ? '€'
+          : currency == Currency.btc
+          ? '₿'
+          : '\$',
+      decimalDigits: currency == Currency.btc ? 8 : 2,
+    );
+    return formatter.format(price);
+  }
+
+  String _formatMarketCap(
+    BuildContext context,
+    double value,
+    Currency currency,
+  ) {
+    if (value == 0) return "---";
+    final symbol = currency == Currency.brl
+        ? 'R\$'
+        : currency == Currency.eur
+        ? '€'
+        : currency == Currency.btc
+        ? '₿'
+        : '\$';
+    if (value >= 1e12) {
+      return '$symbol${(value / 1e12).toStringAsFixed(2)}T';
+    } else if (value >= 1e9) {
+      return '$symbol${(value / 1e9).toStringAsFixed(2)}B';
+    } else if (value >= 1e6) {
+      return '$symbol${(value / 1e6).toStringAsFixed(2)}M';
+    }
+    return '$symbol${value.toStringAsFixed(0)}';
+  }
+
+  // ─── Price Header ──────────────────────────────────────────────────────────
+  Widget _buildPriceHeader(MarketState state) {
+    final currency = ref.watch(currencyProvider);
+    final factor = _getConversionFactor(ref);
+    final convertedPrice = state.currentPrice * factor;
+    final isPositive = state.priceChange24h >= 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            AnimatedBalanceDisplay(
+              balance: convertedPrice,
+              decimalPlaces: currency == Currency.btc ? 8 : 2,
+              prefix: currency == Currency.brl
+                  ? 'R\$ '
+                  : currency == Currency.eur
+                  ? '€ '
+                  : currency == Currency.btc
+                  ? '₿ '
+                  : '\$ ',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'monospace',
+                letterSpacing: -1,
               ),
-            ],
+            ),
+            const SizedBox(width: 8),
+            Text(
+              currency.code,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color:
+                (isPositive ? const Color(0xFF00FF94) : const Color(0xFFFF0055))
+                    .withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Text(
+            "${isPositive ? '+' : ''}${state.priceChange24h.toStringAsFixed(2)}% (24h)",
+            style: TextStyle(
+              color: isPositive
+                  ? const Color(0xFF00FF94)
+                  : const Color(0xFFFF0055),
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Timeframe Button ──────────────────────────────────────────────────────
+  Widget _buildTimeframeButton(String label, bool isActive) {
+    return GestureDetector(
+      onTap: () {
+        ref.read(marketProvider.notifier).fetchMarketData(label);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.4),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Stat Card ─────────────────────────────────────────────────────────────
+  Widget _buildStatCard(
+    String title,
+    String value, {
+    String? subtitle,
+    bool isPositive = true,
+  }) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(16),
+      opacity: 0.05,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.3),
+                fontSize: 11,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildCurrencySelector(MarketState state) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: state.availableCurrencies.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final currency = state.availableCurrencies[index];
-          final isSelected = state.currency == currency;
+  // ─── RSI Sub-Chart ─────────────────────────────────────────────────────────
+  Widget _buildRSIChart(MarketState state) {
+    final factor = _getConversionFactor(ref);
+    if (factor == 0) return const SizedBox();
 
-          return GestureDetector(
-            onTap: () =>
-                ref.read(marketProvider.notifier).changeCurrency(currency),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).primaryColor
-                    : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isSelected
-                      ? Theme.of(context).primaryColor.withValues(alpha: 0.5)
-                      : Colors.white.withValues(alpha: 0.1),
-                  width: 1,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Center(
-                child: Text(
-                  currency.toUpperCase(),
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white60,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    fontSize: 13,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+    final convertedSpots = state.spots
+        .map((s) => FlSpot(s.x, s.y * factor))
+        .toList();
+    final rsiData = computeRSI(convertedSpots, 14);
+    if (rsiData.isEmpty) return const SizedBox();
 
-  Widget _buildCandlestickChart(MarketState state, Color trendColor) {
-    if (state.isLoading) {
-      return SizedBox(
-        height: 380,
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF00D4FF),
-            strokeWidth: 3,
-          ),
-        ),
-      );
-    }
-
-    if (state.candles.isEmpty) {
-      return const SizedBox(
-        height: 380,
-        child: Center(
-          child: Text(
-            "Sem dados disponíveis",
-            style: TextStyle(color: Colors.white38),
-          ),
-        ),
-      );
-    }
-
-    List<FlSpot> spots = [];
-    for (int i = 0; i < state.candles.length; i++) {
-      spots.add(FlSpot(i.toDouble(), state.candles[i].close));
-    }
-
-    // Calcular min e max para melhor visualização
-    final minPrice = state.candles
-        .map((c) => c.low)
-        .reduce((a, b) => a < b ? a : b);
-    final maxPrice = state.candles
-        .map((c) => c.high)
-        .reduce((a, b) => a > b ? a : b);
-    final priceRange = maxPrice - minPrice;
-    final yAxisMin = minPrice - (priceRange * 0.1);
-    final yAxisMax = maxPrice + (priceRange * 0.1);
-
-    return GlassContainer(
-      opacity: 0.05,
-      blur: 10,
-      borderRadius: BorderRadius.circular(24),
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Chart Header Info
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.show_chart_rounded,
-                          color: trendColor,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Gráfico de Preço",
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_touchedCandleIndex != null &&
-                        _touchedCandleIndex! < state.candles.length)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _buildTouchedCandleInfo(state),
-                      ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: trendColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: trendColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Text(
-                    "${spots.length} velas",
-                    style: TextStyle(
-                      color: trendColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+          Text(
+            "RSI (14)",
+            style: TextStyle(
+              color: const Color(0xFF7B61FF).withValues(alpha: 0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          // Main Chart
+          const SizedBox(height: 4),
           SizedBox(
-            height: 320,
+            height: 70,
             child: LineChart(
               LineChartData(
-                minX: 0,
-                maxX: spots.isEmpty ? 1 : (spots.length - 1).toDouble(),
-                minY: yAxisMin,
-                maxY: yAxisMax,
+                minY: 0,
+                maxY: 100,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  drawHorizontalLine: true,
-                  horizontalInterval: priceRange / 5,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    strokeWidth: 1,
-                  ),
+                  horizontalInterval: 30,
+                  getDrawingHorizontalLine: (value) {
+                    final isKey = value == 30 || value == 70;
+                    return FlLine(
+                      color: isKey
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.03),
+                      strokeWidth: isKey ? 1 : 0.5,
+                      dashArray: isKey ? [4, 4] : null,
+                    );
+                  },
                 ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      interval: math.max(
-                        1,
-                        (spots.length / 4).ceil().toDouble(),
-                      ),
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index >= state.candles.length)
-                          return const SizedBox.shrink();
-
-                        final candle = state.candles[index];
-                        final label = _formatTimeLabel(
-                          candle.time,
-                          state.timeframe,
-                        );
-
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            label,
-                            style: const TextStyle(
-                              color: Colors.white30,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 60,
-                      interval: priceRange / 5,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          _formatPrice(value),
-                          style: const TextStyle(
-                            color: Colors.white24,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
+                titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  handleBuiltInTouches: true,
-                  touchCallback:
-                      (FlTouchEvent event, LineTouchResponse? response) {
-                        if (event is FlTapUpEvent ||
-                            event is FlPanUpdateEvent) {
-                          if (response != null &&
-                              response.lineBarSpots != null &&
-                              response.lineBarSpots!.isNotEmpty) {
-                            setState(() {
-                              _touchedCandleIndex = response
-                                  .lineBarSpots!
-                                  .first
-                                  .x
-                                  .toInt();
-                            });
-                          }
-                        }
-                      },
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) =>
-                        const Color(0xFF1A1F3C).withValues(alpha: 0.95),
-                    tooltipPadding: const EdgeInsets.all(12),
-                    tooltipMargin: 8,
-                    tooltipBorderRadius: BorderRadius.circular(12),
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((LineBarSpot spot) {
-                        final index = spot.x.toInt();
-                        if (index >= state.candles.length) {
-                          return LineTooltipItem('', const TextStyle());
-                        }
-
-                        final candle = state.candles[index];
-                        final tooltipText =
-                            'Fechamento: ${_formatPrice(spot.y)}\n'
-                            'Abertura: ${_formatPrice(candle.open)}\n'
-                            'Alta: ${_formatPrice(candle.high)}\n'
-                            'Baixa: ${_formatPrice(candle.low)}\n'
-                            'Data/Hora: ${_formatDateTime(candle.time, state.timeframe)}';
-
-                        return LineTooltipItem(
-                          tooltipText,
-                          TextStyle(
-                            color: trendColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                            height: 1.5,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: spots,
+                    spots: rsiData,
                     isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: trendColor,
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        if (_touchedCandleIndex == index) {
-                          return FlDotCirclePainter(
-                            radius: 6,
-                            color: trendColor,
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          );
-                        }
-                        return FlDotCirclePainter(
-                          radius: 2,
-                          color: trendColor.withValues(alpha: 0.3),
-                        );
-                      },
-                    ),
+                    color: const Color(0xFF7B61FF),
+                    barWidth: 1.5,
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          trendColor.withValues(alpha: 0.25),
-                          trendColor.withValues(alpha: 0.0),
+                          const Color(0xFF7B61FF).withValues(alpha: 0.1),
+                          const Color(0xFF7B61FF).withValues(alpha: 0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -625,6 +980,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
                     ),
                   ),
                 ],
+                lineTouchData: const LineTouchData(enabled: false),
               ),
             ),
           ),
@@ -633,636 +989,107 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
     );
   }
 
-  Widget _buildTouchedCandleInfo(MarketState state) {
-    if (_touchedCandleIndex == null ||
-        _touchedCandleIndex! >= state.candles.length) {
-      return const SizedBox.shrink();
-    }
-
-    final candle = state.candles[_touchedCandleIndex!];
-    final isPositive = candle.close >= candle.open;
-    final color = isPositive
-        ? const Color(0xFF00FF94)
-        : const Color(0xFFFF0055);
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _formatDateTime(candle.time, state.timeframe),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+  // ─── Main Chart ────────────────────────────────────────────────────────────
+  Widget _buildMainChart(MarketState state, List<PriceAlert> alerts) {
+    // Force black background immediately
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0A12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
+      height: 350,
+      width: double.infinity,
+      child: state.spots.isEmpty
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF00FF94),
+                strokeWidth: 2,
               ),
-              Text(
-                _formatPrice(candle.close),
-                style: TextStyle(
-                  color: color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+            )
+          : LineChart(
+              LineChartData(
+                minY: state.spots.isNotEmpty 
+                    ? state.spots.map((e) => e.y).reduce(math.min) * 0.999
+                    : 0,
+                maxY: state.spots.isNotEmpty
+                    ? state.spots.map((e) => e.y).reduce(math.max) * 1.001
+                    : 100,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      strokeWidth: 1,
+                    );
+                  },
                 ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            "${((candle.close - candle.open) / candle.open * 100).toStringAsFixed(2)}%",
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAdvancedVolumeChart(MarketState state, Color trendColor) {
-    if (state.volumeSpots.isEmpty) return const SizedBox.shrink();
-
-    // Calcular estatísticas de volume
-    final maxVolume = state.candles
-        .map((c) => c.volume)
-        .reduce((a, b) => a > b ? a : b);
-    final minVolume = state.candles
-        .map((c) => c.volume)
-        .reduce((a, b) => a < b ? a : b);
-    final avgVolume =
-        state.candles.fold<double>(0, (a, b) => a + b.volume) /
-        state.candles.length;
-
-    return Column(
-      children: [
-        // Volume Chart Container
-        GlassContainer(
-          opacity: 0.05,
-          blur: 10,
-          borderRadius: BorderRadius.circular(24),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.bar_chart_rounded,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Volume (24h)",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: trendColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: trendColor.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(
-                      "${state.candles.length} períodos",
-                      style: TextStyle(
-                        color: trendColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                titlesData: const FlTitlesData(show: false),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: state.spots,
+                    isCurved: true,
+                    curveSmoothness: 0.1,
+                    color: const Color(0xFF00FF94),
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF00FF94).withValues(alpha: 0.15),
+                          const Color(0xFF00FF94).withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 20),
-
-              // Main Volume Chart
-              SizedBox(
-                height: 120,
-                child: BarChart(
-                  BarChartData(
-                    maxY: 100,
-                    minY: 0,
-                    gridData: FlGridData(
-                      show: true,
-                      drawHorizontalLine: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: 25,
-                      getDrawingHorizontalLine: (value) => FlLine(
-                        color: Colors.white.withValues(alpha: 0.02),
-                        strokeWidth: 1,
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 30,
-                          interval: math.max(
-                            1,
-                            (state.volumeSpots.length / 6).ceil().toDouble(),
-                          ),
-                          getTitlesWidget: (value, meta) {
-                            final index = value.toInt();
-                            if (index >= state.candles.length)
-                              return const SizedBox.shrink();
-
-                            final candle = state.candles[index];
-                            final label = _formatTimeLabel(
-                              candle.time,
-                              state.timeframe,
-                            );
-
-                            return Text(
-                              label,
-                              style: const TextStyle(
-                                color: Colors.white24,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              '${value.toInt()}%',
-                              style: const TextStyle(
-                                color: Colors.white24,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    barGroups: List.generate(
-                      math.min(state.volumeSpots.length, 40),
-                      (index) {
-                        final dataIndex =
-                            (index *
-                                    (state.volumeSpots.length /
-                                        math.min(state.volumeSpots.length, 40)))
-                                .floor();
-                        if (dataIndex >= state.volumeSpots.length) return null;
-
-                        final spot = state.volumeSpots[dataIndex];
-                        final candle = state.candles[dataIndex];
-                        final isGrowing = candle.close >= candle.open;
-
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: spot.y,
-                              color: isGrowing
-                                  ? const Color(
-                                      0xFF00FF94,
-                                    ).withValues(alpha: 0.7)
-                                  : const Color(
-                                      0xFFFF0055,
-                                    ).withValues(alpha: 0.7),
-                              width: 3,
-                              borderRadius: BorderRadius.circular(2),
-                              backDrawRodData: BackgroundBarChartRodData(
-                                show: true,
-                                toY: 100,
-                                color: Colors.white.withValues(alpha: 0.02),
-                              ),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  getTouchedSpotIndicator:
+                      (LineChartBarData barData, List<int> spotIndexes) {
+                        return spotIndexes.map((spotIndex) {
+                          return TouchedSpotIndicatorData(
+                            FlLine(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              strokeWidth: 1,
                             ),
-                          ],
-                        );
+                            FlDotData(
+                              getDotPainter: (spot, percent, barData, index) {
+                                return FlDotCirclePainter(
+                                  radius: 4,
+                                  color: const Color(0xFF00FF94),
+                                  strokeWidth: 2,
+                                  strokeColor: Colors.black,
+                                );
+                              },
+                            ),
+                          );
+                        }).toList();
                       },
-                    ).whereType<BarChartGroupData>().toList(),
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => const Color(0xFF1A1A24),
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        return LineTooltipItem(
+                          '\$${barSpot.y.toStringAsFixed(2)}',
+                          const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        );
+                      }).toList();
+                    },
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Volume Statistics Grid
-        Row(
-          children: [
-            Expanded(
-              child: _buildVolumeStatCard(
-                "Máximo",
-                _formatLargeNumber(maxVolume),
-                Icons.trending_up_rounded,
-                const Color(0xFF00FF94),
-              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildVolumeStatCard(
-                "Médio",
-                _formatLargeNumber(avgVolume),
-                Icons.equalizer_rounded,
-                trendColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildVolumeStatCard(
-                "Mínimo",
-                _formatLargeNumber(minVolume),
-                Icons.trending_down_rounded,
-                const Color(0xFFFF0055),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
-  }
-
-
-  Widget _buildVolumeStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return GlassContainer(
-      opacity: 0.08,
-      blur: 8,
-      borderRadius: BorderRadius.circular(16),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Icon(icon, color: color.withValues(alpha: 0.7), size: 14),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChartStatistics(MarketState state, Color trendColor) {
-    if (state.candles.isEmpty) return const SizedBox.shrink();
-
-    // Calcular estatísticas
-    final opens = state.candles.map((c) => c.open).toList();
-    final closes = state.candles.map((c) => c.close).toList();
-    final highestHigh = state.candles
-        .map((c) => c.high)
-        .reduce((a, b) => a > b ? a : b);
-    final lowestLow = state.candles
-        .map((c) => c.low)
-        .reduce((a, b) => a < b ? a : b);
-
-    final bullishCandles = state.candles.where((c) => c.close >= c.open).length;
-    final bullishPercent = (bullishCandles / state.candles.length * 100)
-        .toStringAsFixed(1);
-
-    final firstOpen = opens.first;
-    final lastClose = closes.last;
-    final periodChange = ((lastClose - firstOpen) / firstOpen * 100);
-
-    return GlassContainer(
-      opacity: 0.05,
-      blur: 10,
-      borderRadius: BorderRadius.circular(24),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.analytics_rounded,
-                color: Colors.white.withValues(alpha: 0.6),
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "Estatísticas do Período",
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 2.0,
-            children: [
-              _buildStatChip(
-                "Máxima",
-                _formatPrice(highestHigh),
-                const Color(0xFF00FF94),
-              ),
-              _buildStatChip(
-                "Mínima",
-                _formatPrice(lowestLow),
-                const Color(0xFFFF0055),
-              ),
-              _buildStatChip(
-                "Variação",
-                "${periodChange.toStringAsFixed(2)}%",
-                periodChange >= 0
-                    ? const Color(0xFF00FF94)
-                    : const Color(0xFFFF0055),
-              ),
-              _buildStatChip("Touros", "$bullishPercent%", trendColor),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeframeButtons(MarketState state) {
-    return SizedBox(
-      height: 48,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _timeframes.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final tf = _timeframes[index];
-          final isSelected = state.timeframe == tf;
-          return GestureDetector(
-            onTap: () => ref
-                .read(marketProvider.notifier)
-                .fetchMarketData(tf),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Text(
-                tf,
-                style: TextStyle(
-                  color: isSelected ? Colors.black : Colors.white54,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildStats(MarketState state, Color trendColor) {
-    final highPrice = state.candles.isNotEmpty
-        ? state.candles.map((c) => c.high).reduce((a, b) => a > b ? a : b)
-        : 0.0;
-    final lowPrice = state.candles.isNotEmpty
-        ? state.candles.map((c) => c.low).reduce((a, b) => a < b ? a : b)
-        : 0.0;
-
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.5,
-      children: [
-        _buildStatCard(
-          "High (24h)",
-          "\$${highPrice.toStringAsFixed(0)}",
-          Icons.arrow_upward_rounded,
-          const Color(0xFF00FF94),
-        ),
-        _buildStatCard(
-          "Low (24h)",
-          "\$${lowPrice.toStringAsFixed(0)}",
-          Icons.arrow_downward_rounded,
-          const Color(0xFFFF0055),
-        ),
-        _buildStatCard(
-          "Change",
-          "${state.priceChange24h.toStringAsFixed(2)}%",
-          Icons.ssid_chart_rounded,
-          trendColor,
-        ),
-        _buildStatCard("Volume", "High", Icons.bar_chart_rounded, Colors.white),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return GlassContainer(
-      opacity: 0.05,
-      blur: 10,
-      borderRadius: BorderRadius.circular(20),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Icon(icon, color: color.withValues(alpha: 0.8), size: 18),
-            ],
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper methods for formatting
-  String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '\$${(price / 1000000).toStringAsFixed(2)}M';
-    } else if (price >= 1000) {
-      return '\$${(price / 1000).toStringAsFixed(2)}K';
-    }
-    return '\$${price.toStringAsFixed(2)}';
-  }
-
-  String _formatLargeNumber(double number) {
-    if (number >= 1000000000) {
-      return '${(number / 1000000000).toStringAsFixed(2)}B';
-    } else if (number >= 1000000) {
-      return '${(number / 1000000).toStringAsFixed(2)}M';
-    } else if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(2)}K';
-    }
-    return number.toStringAsFixed(0);
-  }
-
-  String _formatTimeLabel(DateTime time, String timeframe) {
-    switch (timeframe) {
-      case "1H":
-        return DateFormat('HH:mm').format(time);
-      case "1D":
-        return DateFormat('MMM dd').format(time);
-      case "1W":
-        return DateFormat('MMM dd').format(time);
-      case "1M":
-        return DateFormat('MMM dd').format(time);
-      case "3M":
-        return DateFormat('MMM').format(time);
-      case "1Y":
-        return DateFormat('MMM').format(time);
-      default:
-        return DateFormat('dd/MM').format(time);
-    }
-  }
-
-  String _formatDateTime(DateTime time, String timeframe) {
-    switch (timeframe) {
-      case "1H":
-        return DateFormat('dd/MM HH:mm').format(time);
-      case "1D":
-        return DateFormat('dd/MM/yyyy').format(time);
-      case "1W":
-        return DateFormat('dd/MM/yyyy').format(time);
-      case "1M":
-        return DateFormat('dd/MM/yyyy').format(time);
-      case "3M":
-        return DateFormat('dd/MM/yyyy').format(time);
-      case "1Y":
-        return DateFormat('dd/MM/yyyy').format(time);
-      default:
-        return DateFormat('dd/MM/yyyy HH:mm').format(time);
-    }
   }
 }

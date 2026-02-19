@@ -5,15 +5,14 @@ class AppTheme {
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.background, // Use new signature color
-    fontFamily: 'Inter', // Modern, clean font
+    fontFamily: 'HubotSans', // Modern, clean font
     useMaterial3: true,
 
     // Color Scheme
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primary, // Teal/Cyan
       secondary: AppColors.secondary1, // Blue
-      surface: AppColors.darkSurface, // Dark Background from Image 2
-      background: AppColors.background,
+      surface: AppColors.darkSurface,
       error: AppColors.error,
     ),
 
@@ -29,7 +28,8 @@ class AppTheme {
     textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontSize: 32,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w800, // ExtraBold
+        fontFamily: 'HubotSansExpanded',
         color: Colors.white,
         letterSpacing: -1.0,
       ),
@@ -96,8 +96,28 @@ class AppTheme {
     // Card Theme
     cardTheme: CardThemeData(
       color: const Color(0xFF1E1E1E),
+      surfaceTintColor: Colors.transparent, // Disable M3 tint
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+
+    // Dialog Theme
+    dialogTheme: const DialogThemeData(
+      backgroundColor: Color(0xFF1A1A24),
+      surfaceTintColor: Colors.transparent,
+    ),
+
+    // Bottom Sheet Theme
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF1A1A24),
+      surfaceTintColor: Colors.transparent,
+      modalBackgroundColor: Color(0xFF1A1A24),
+    ),
+
+    // Popup Menu Theme
+    popupMenuTheme: const PopupMenuThemeData(
+      color: Color(0xFF1E1E1E),
+      surfaceTintColor: Colors.transparent,
     ),
   );
 

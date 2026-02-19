@@ -16,18 +16,14 @@ import '../state/auth_state.dart';
 /// Provider do ApiClient
 final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient(baseUrl: AppConfig.apiUrl);
-  return client;
-});
-
-// Criamos um provider separado para "inicializar" o client com interceptors
-// Isso evita circularidade caso o interceptor precise de outros providers que usem o apiClient
-final apiClientInitializerProvider = Provider<void>((ref) {
-  final client = ref.watch(apiClientProvider);
   final localDataSource = ref.watch(authLocalDataSourceProvider);
 
+  // Anexar o interceptor imediatamente para evitar condições de corrida
   client.addInterceptor(
     TokenInterceptor(localDataSource: localDataSource, apiClient: client),
   );
+
+  return client;
 });
 
 /// Provider do AuthRemoteDataSource
@@ -81,8 +77,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.authRepository,
     required Ref ref,
   }) : super(const AuthInitial()) {
-    // Inicializar ApiClient com interceptors
-    ref.read(apiClientInitializerProvider);
     _checkAuthStatus();
   }
 
@@ -108,7 +102,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) async {
     state = const AuthLoading();
 
-    final result = await loginUseCase(username: username, password: password);
+    final result = await loginUseCase(
+      LoginParams(username: username, passphrase: password),
+    );
 
     result.fold((failure) {
       if (failure.message == 'REQ_LOGIN_2FA') {
@@ -126,7 +122,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) async {
     state = const AuthLoading();
 
-    final result = await signupUseCase(username: username, password: password);
+    final result = await signupUseCase(
+      SignupParams(username: username, passphrase: password),
+    );
 
     result.fold(
       (failure) => state = AuthError(failure.message),
@@ -196,6 +194,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (state is AuthError) {
       state = const AuthUnauthenticated();
     }
+  }
+
+  /// Validar passphrase (retorna true/false sem alterar estado principal)
+  Future<bool> validatePassphrase(String passphrase) async {
+    final result = await authRepository.validatePassphrase(passphrase);
+    return result.fold((failure) => false, (isValid) => isValid);
   }
 }
 

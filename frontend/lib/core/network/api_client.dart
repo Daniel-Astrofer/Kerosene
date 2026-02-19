@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:path_provider/path_provider.dart';
 import '../errors/exceptions.dart';
 
 /// Cliente HTTP configurado com Dio
@@ -26,6 +31,15 @@ class ApiClient {
     // Adicionar interceptors
     _dio.interceptors.add(_LogInterceptor());
     _dio.interceptors.add(_ErrorInterceptor());
+    _initCookieManager();
+  }
+
+  Future<void> _initCookieManager() async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final cookieJar = PersistCookieJar(
+      storage: FileStorage("${appDocDir.path}/.cookies/"),
+    );
+    _dio.interceptors.add(CookieManager(cookieJar));
   }
 
   /// Adicionar um interceptor customizado
@@ -128,15 +142,7 @@ class ApiClient {
     return (options ?? Options()).copyWith(headers: currentHeaders);
   }
 
-  /// Adicionar token de autenticação
-  void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
-  }
-
-  /// Remover token de autenticação
-  void removeAuthToken() {
-    _dio.options.headers.remove('Authorization');
-  }
+  // Headers are now managed exclusively by TokenInterceptor
 
   /// Tratamento de erros
   AppException _handleError(dynamic error) {
@@ -159,13 +165,15 @@ class ApiClient {
             message = data['message'];
           } else if (data is String) {
             try {
-              // Tenta parsear caso seja um JSON válido em string
-              // import 'dart:convert'; (precisamos garantir esse import)
-              // Mas como não temos import fácil aqui, vamos assumir que se for string, é a mensagem
-              // ou tentar parsear de forma simples se possível.
-              // Melhor: se for string, usa ela (truncada se necessário)
+              final json = jsonDecode(data);
+              if (json is Map && json.containsKey('message')) {
+                message = json['message'];
+              } else {
+                message = data.length > 100 ? data.substring(0, 100) : data;
+              }
+            } catch (_) {
               message = data.length > 100 ? data.substring(0, 100) : data;
-            } catch (_) {}
+            }
           }
 
           if (statusCode == 401 || statusCode == 403) {
@@ -179,7 +187,11 @@ class ApiClient {
           return ValidationException(message: message, statusCode: statusCode);
 
         default:
-          return AppException(message: error.message ?? 'Erro desconhecido');
+          final statusCode = error.response?.statusCode;
+          return AppException(
+            message: error.message ?? 'Erro desconhecido',
+            statusCode: statusCode,
+          );
       }
     }
 
@@ -191,15 +203,15 @@ class ApiClient {
 class _LogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    print('🌐 REQUEST[${options.method}] => PATH: ${options.path}');
-    print('📨 HEADERS: ${options.headers}');
-    print('📦 BODY: ${options.data}');
+    debugPrint('🌐 REQUEST[${options.method}] => PATH: ${options.path}');
+    debugPrint('📨 HEADERS: ${options.headers}');
+    debugPrint('📦 BODY: ${options.data}');
     super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    print(
+    debugPrint(
       '✅ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
     );
     super.onResponse(response, handler);
@@ -207,16 +219,16 @@ class _LogInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    print(
+    debugPrint(
       '❌ ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
     );
-    print('📝 MESSAGE: ${err.message}');
-    print('📌 TYPE: ${err.type}');
+    debugPrint('📝 MESSAGE: ${err.message}');
+    debugPrint('📌 TYPE: ${err.type}');
     if (err.response?.data != null) {
-      print('📦 DATA: ${err.response?.data}');
+      debugPrint('📦 DATA: ${err.response?.data}');
     }
     if (err.error != null) {
-      print('⚠️ ERR: ${err.error}');
+      debugPrint('⚠️ ERR: ${err.error}');
     }
     super.onError(err, handler);
   }

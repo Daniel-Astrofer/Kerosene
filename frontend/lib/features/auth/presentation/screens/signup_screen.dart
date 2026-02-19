@@ -159,8 +159,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   ),
                                 ),
                                 validator: (value) {
-                                  if (value == null || value.isEmpty)
+                                  if (value == null || value.isEmpty) {
                                     return 'Required';
+                                  }
                                   if (value.length < 3) return 'Min 3 chars';
                                   if (!RegExp(
                                     r'^[a-z0-9_]+$',

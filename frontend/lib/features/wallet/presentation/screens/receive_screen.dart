@@ -11,6 +11,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../domain/entities/wallet.dart';
 import '../../domain/entities/payment_request.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Tela de recebimento: dados da carteira + valor em BTC, com opção QR Code ou NFC.
 class ReceiveScreen extends ConsumerStatefulWidget {
@@ -89,9 +90,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                           ),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        const Text(
-                          "Receber",
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.receive,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -175,7 +176,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "Seu Endereço Bitcoin",
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.yourBitcoinAddress,
                                       style: TextStyle(
                                         color: Colors.white.withValues(
                                           alpha: 0.5,
@@ -187,7 +190,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                                     const SizedBox(height: 8),
                                     SelectableText(
                                       widget.wallet.address.isEmpty
-                                          ? "Endereço não disponível"
+                                          ? AppLocalizations.of(
+                                              context,
+                                            )!.addressNotAvailable
                                           : widget.wallet.address,
                                       textAlign: TextAlign.start,
                                       style: const TextStyle(
@@ -215,8 +220,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                                         context,
                                       ).showSnackBar(
                                         SnackBar(
-                                          content: const Text(
-                                            "Endereço copiado!",
+                                          content: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.addressCopied,
                                           ),
                                           backgroundColor: const Color(
                                             0xFFF7931A,
@@ -235,8 +242,8 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                                       size: 16,
                                       color: Color(0xFFF7931A),
                                     ),
-                                    label: const Text(
-                                      "Copiar Endereço",
+                                    label: Text(
+                                      AppLocalizations.of(context)!.copyAddress,
                                       style: TextStyle(
                                         color: Color(0xFFF7931A),
                                         fontSize: 14,
@@ -267,7 +274,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Quanto você quer receber?",
+                              AppLocalizations.of(context)!.howMuchToReceive,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 14,
@@ -329,9 +336,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
                       const SizedBox(height: 32),
 
-                      const Text(
-                        "Método de Recebimento",
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.receiveMethod,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -343,8 +350,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                       // QR Code Option
                       _ReceiveOptionCard(
                         icon: Icons.qr_code_2_rounded,
-                        title: "QR Code",
-                        subtitle: "Gere um código para ser escaneado",
+                        title: AppLocalizations.of(context)!.qrCode,
+                        subtitle: AppLocalizations.of(
+                          context,
+                        )!.generateQrCodeDescription,
                         color: const Color(0xFFF7931A),
                         onTap: () => _showQrReceive(context),
                       ),
@@ -353,8 +362,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                       // NFC Option
                       _ReceiveOptionCard(
                         icon: Icons.nfc_rounded,
-                        title: "NFC Beam",
-                        subtitle: "Grave o pedido em uma tag NFC",
+                        title: AppLocalizations.of(context)!.nfcBeam,
+                        subtitle: AppLocalizations.of(
+                          context,
+                        )!.nfcTagDescription,
                         color: const Color(0xFF00D4FF),
                         onTap: () => _showNfcWrite(context),
                       ),
@@ -414,9 +425,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                   size: 24,
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  "Escanear para Pagar",
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.scanToPay,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -495,9 +506,12 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  "Fechar",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  AppLocalizations.of(context)!.close,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -622,6 +636,15 @@ class _NfcWriteDialogState extends State<_NfcWriteDialog> {
   @override
   void initState() {
     super.initState();
+    // Defer localized string initialization to allow context access or use didChangeDependencies
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _status = AppLocalizations.of(context)!.approachPhoneToNfc;
+        });
+      }
+    });
+
     _startWriteSession();
   }
 
@@ -645,14 +668,14 @@ class _NfcWriteDialogState extends State<_NfcWriteDialog> {
         final ndef = Ndef.from(tag); // from nfc_manager_ndef (has write)
         if (ndef == null) {
           setState(() {
-            _error = "Tag não suporta NDEF";
+            _error = AppLocalizations.of(context)!.nfcTagNotSupported;
             _writing = false;
           });
           return;
         }
         if (!ndef.isWritable) {
           setState(() {
-            _error = "Tag não pode ser gravada";
+            _error = AppLocalizations.of(context)!.nfcTagNotWritable;
             _writing = false;
           });
           return;
@@ -671,7 +694,7 @@ class _NfcWriteDialogState extends State<_NfcWriteDialog> {
 
         if (message.byteLength > ndef.maxSize) {
           setState(() {
-            _error = "Pedido maior que a capacidade da tag";
+            _error = AppLocalizations.of(context)!.nfcTagCapacityError;
             _writing = false;
           });
           return;
@@ -681,7 +704,7 @@ class _NfcWriteDialogState extends State<_NfcWriteDialog> {
           await ndef.write(message: message);
           if (!mounted) return;
           setState(() {
-            _status = "Tag gravada com sucesso!";
+            _status = AppLocalizations.of(context)!.nfcTagWrittenSuccess;
             _success = true;
             _writing = false;
           });
@@ -691,7 +714,7 @@ class _NfcWriteDialogState extends State<_NfcWriteDialog> {
         } catch (e) {
           if (!mounted) return;
           setState(() {
-            _error = "Erro ao gravar: $e";
+            _error = AppLocalizations.of(context)!.errorWriting(e.toString());
             _writing = false;
           });
         }
@@ -727,9 +750,9 @@ class _NfcWriteDialogState extends State<_NfcWriteDialog> {
                   size: 24,
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  "Gravar Tag NFC",
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.writeNfcTag,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

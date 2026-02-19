@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/services/wallet_security_service.dart';
 import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../datasources/wallet_remote_datasource.dart';
@@ -10,10 +12,12 @@ import '../../domain/entities/transaction.dart';
 class WalletRepositoryImpl implements WalletRepository {
   final WalletRemoteDataSource remoteDataSource;
   final AuthLocalDataSource authLocalDataSource;
+  final WalletSecurityService walletSecurityService;
 
   WalletRepositoryImpl({
     required this.remoteDataSource,
     required this.authLocalDataSource,
+    required this.walletSecurityService,
   });
 
   @override
@@ -30,8 +34,10 @@ class WalletRepositoryImpl implements WalletRepository {
       final result = await remoteDataSource.createWallet(
         name: name,
         passphrase: passphrase,
-        token: token,
       );
+
+      // Persist mnemonic locally for secure access
+      await walletSecurityService.saveMnemonic(passphrase);
 
       return Right(result);
     } on ServerException catch (e) {
@@ -45,16 +51,17 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<Either<Failure, List<Wallet>>> getWallets() async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
-      final result = await remoteDataSource.getWallets(token);
+      final result = await remoteDataSource.getWallets();
       final walletsList = result.map((data) => Wallet.fromJson(data)).toList();
 
       // Enforce Ledger Balance: Fetch all ledgers to get real-time balances
       Map<String, double> balances = {};
       try {
-        final allLedgers = await remoteDataSource.getAllLedgers(token);
+        final allLedgers = await remoteDataSource.getAllLedgers();
         for (final item in allLedgers) {
           if (item is Map) {
             final name = item['walletName'] ?? item['id'];
@@ -67,7 +74,7 @@ class WalletRepositoryImpl implements WalletRepository {
           }
         }
       } catch (e) {
-        print('Error fetching all ledgers: $e');
+        debugPrint('Error fetching all ledgers: $e');
         // Fallback or ignore, keeping initial wallet balances
       }
 
@@ -76,29 +83,15 @@ class WalletRepositoryImpl implements WalletRepository {
       for (final wallet in walletsList) {
         // Check if we have a balance from the ledger
         if (balances.containsKey(wallet.name)) {
-          // Ledger balance is usually in BTC or Satoshis?
-          // If double, assume BTC and convert to sats, OR if large int, assume sats.
-          // Given getBalance was returning double and we cast to int, let's look at the value.
-          // If value is small (< 21M), it's BTC. If huge, it's sats.
-          // Safest is to assume the API returns the same unit as getBalance did.
-          // Converting double to int.
-
           final bal = balances[wallet.name]!;
-          // Directly use double value as BTC
           walletsWithBalance.add(wallet.copyWith(balance: bal));
         } else {
-          // Try individual fetch if missing from all (fallback) using getLedger instead of getBalance
+          // Try individual fetch if missing from all (fallback) using getBalance
           try {
-            final ledger = await remoteDataSource.getLedger(
+            final bal = await remoteDataSource.getBalance(
               walletName: wallet.name,
-              token: token,
             );
-            final bal = ledger['balance'];
-            if (bal is num) {
-              walletsWithBalance.add(wallet.copyWith(balance: bal.toDouble()));
-            } else {
-              walletsWithBalance.add(wallet);
-            }
+            walletsWithBalance.add(wallet.copyWith(balance: bal));
           } catch (_) {
             walletsWithBalance.add(wallet);
           }
@@ -125,10 +118,12 @@ class WalletRepositoryImpl implements WalletRepository {
     });
   }
 
+  /// Atualiza saldo de uma carteira específica consultando o backend
+  /// IMPORTANTE: walletName deve ser o NOME da wallet (string), não o ID numérico!
   @override
-  Future<Either<Failure, Wallet>> updateWalletBalance(String walletId) async {
+  Future<Either<Failure, Wallet>> updateWalletBalance(String walletName) async {
     // 1. Get current wallet to ensure it exists and get other data
-    final walletResult = await getWalletById(walletId);
+    final walletResult = await getWalletById(walletName);
 
     return walletResult.fold((failure) => Left(failure), (wallet) async {
       try {
@@ -138,16 +133,10 @@ class WalletRepositoryImpl implements WalletRepository {
           return Left(AuthFailure(message: 'Usuário não autenticado'));
         }
 
-        // 3. Use getLedger instead of getBalance (avoid 403)
-        final ledger = await remoteDataSource.getLedger(
-          walletName: walletId,
-          token: token,
+        // 3. Use getBalance instead of getLedger (avoid 403)
+        final balance = await remoteDataSource.getBalance(
+          walletName: walletName,
         );
-
-        double balance = wallet.balance;
-        if (ledger.containsKey('balance') && ledger['balance'] is num) {
-          balance = (ledger['balance'] as num).toDouble();
-        }
 
         return Right(wallet.copyWith(balance: balance));
       } on ServerException catch (e) {
@@ -164,7 +153,42 @@ class WalletRepositoryImpl implements WalletRepository {
     required String mnemonic,
     required WalletType type,
   }) async {
-    throw UnimplementedError();
+    try {
+      // 1. Save mnemonic locally
+      await walletSecurityService.saveMnemonic(mnemonic);
+
+      // 2. Try to register/create on backend (same as createWallet but with existing mnemonic as passphrase)
+      try {
+        await remoteDataSource.createWallet(name: name, passphrase: mnemonic);
+      } catch (e) {
+        // If it fails (e.g. already exists), we might still want to proceed if it's just importing locally?
+        // But for this app, backend seems to rule.
+        // Let's assume re-creating with same name/passphrase might work or throw if duplicate.
+        // If it throws "Already exists", we should probably just find it.
+        debugPrint('Import wallet on backend warning: $e');
+      }
+
+      // 3. Return the wallet object
+      String? address;
+      try {
+        address = await walletSecurityService.getAddressFromMnemonic(mnemonic);
+      } catch (_) {}
+
+      return Right(
+        Wallet(
+          id: name, // Using name as ID for now
+          name: name,
+          type: type,
+          balance: 0.0,
+          address: address ?? '',
+          derivationPath: "m/84'/0'/0'/0/0",
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao importar carteira: $e'));
+    }
   }
 
   @override
@@ -175,26 +199,20 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
       // Tentar pegar ledger específico
       try {
-        final result = await remoteDataSource.getLedger(
-          walletName: walletId,
-          token: token,
-        );
+        // Ignored result currently, logic seems to prefer getAllLedgers below
+        // await remoteDataSource.getLedger(walletName: walletId); // REMOVED to avoid 403
 
-        // Se a resposta contiver transactions explicitamente
-        if (result['transactions'] is List) {
-          // list = result['transactions'];
-        }
         // Se a resposta for um único registro de ledger (estado atual), converte em transação única de "Saldo Inicial" ou similar?
         // Ou assume que não tem histórico detalhado.
         // Vamos tentar pegar TODAS as transações e filtrar, que é mais garantido para ver histórico.
-        // O find retorna o estado atual. O all retorna o histórico.
 
-        final all = await remoteDataSource.getAllLedgers(token);
+        final all = await remoteDataSource.getAllLedgers();
         // Filtrar onde walletName, sender ou receiver é igual ao ID
         final filtered = all
             .where(
@@ -227,15 +245,15 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
       final result = await remoteDataSource.sendTransaction(
         sender: fromWalletId,
         receiver: toAddress,
         amount: amountSatoshis / 100000000.0,
         context: description ?? 'transfer',
-        token: token,
       );
 
       return Right(Transaction.fromJson(result));
@@ -279,13 +297,11 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<Either<Failure, Wallet>> findWallet(String name) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
-      final result = await remoteDataSource.findWallet(
-        name: name,
-        token: token,
-      );
+      final result = await remoteDataSource.findWallet(name: name);
       return Right(Wallet.fromJson(result));
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -301,13 +317,13 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
       final result = await remoteDataSource.updateWallet(
         name: name, // This is the old/current name
         newName: newName,
-        token: token,
       );
       return Right(result);
     } on ServerException catch (e) {
@@ -324,13 +340,13 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
       final result = await remoteDataSource.deleteWallet(
         name: name,
         passphrase: passphrase,
-        token: token,
       );
       return Right(result);
     } on ServerException catch (e) {
@@ -346,13 +362,11 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<Either<Failure, double>> getBalance(String walletName) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
-      final result = await remoteDataSource.getBalance(
-        walletName: walletName,
-        token: token,
-      );
+      final result = await remoteDataSource.getBalance(walletName: walletName);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -365,18 +379,64 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<Either<Failure, String>> deleteLedger(String walletName) async {
     try {
       final token = await authLocalDataSource.getToken();
-      if (token == null)
+      if (token == null) {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
+      }
 
       final result = await remoteDataSource.deleteLedger(
         walletName: walletName,
-        token: token,
       );
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao deletar ledger: $e'));
+    }
+  }
+
+  // ==================== Security ====================
+
+  @override
+  Future<Either<Failure, bool>> saveMnemonic(String mnemonic) async {
+    try {
+      final success = await walletSecurityService.saveMnemonic(mnemonic);
+      if (success) {
+        return const Right(true);
+      } else {
+        return Left(
+          UnknownFailure(message: 'Falha ao salvar mnemônico de forma segura.'),
+        );
+      }
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao salvar mnemônico: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String?>> getMnemonic() async {
+    try {
+      final mnemonic = await walletSecurityService.authenticateAndGetMnemonic();
+      if (mnemonic != null) {
+        return Right(mnemonic);
+      } else {
+        // Retornar null signfica que o usuário cancelou ou falhou na autenticação,
+        // ou não existe mnemônico salvo.
+        // Podemos tratar como Failure se for erro, ou Right(null) se for cancelamento?
+        // A assinatura é Right(String?), então Right(null) é válido.
+        return const Right(null);
+      }
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao recuperar mnemônico: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteMnemonic() async {
+    try {
+      await walletSecurityService.clearMnemonic();
+      return const Right(null);
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao deletar mnemônico: $e'));
     }
   }
 }

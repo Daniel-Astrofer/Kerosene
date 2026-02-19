@@ -1,7 +1,10 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/errors/failures.dart';
 import '../entities/fee_estimate.dart';
 import '../entities/tx_status.dart';
 import '../entities/deposit.dart';
 import '../entities/payment_link.dart';
+import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
 /// Interface abstrata do TransactionRepository
 abstract class TransactionRepository {
@@ -11,15 +14,24 @@ abstract class TransactionRepository {
 
   // Send & Broadcast
   Future<TxStatus> sendTransaction({
+    required String toAddress,
+    required double amount,
+    required int feeSatoshis,
+    String? fromWalletId,
+    String? fromAddress,
+  });
+  Future<Either<Failure, TxStatus>> broadcastTransaction(String rawTxHex);
+
+  // Create Unsigned
+  Future<Either<Failure, UnsignedTransaction>> createUnsignedTransaction({
     required String fromAddress,
     required String toAddress,
     required double amount,
     required int feeSatoshis,
   });
-  Future<TxStatus> broadcastTransaction(String rawTxHex);
 
   // Deposits
-  Future<String> getDepositAddress();
+  Future<Either<Failure, String>> getDepositAddress();
   Future<Deposit> confirmDeposit({
     required String txid,
     required String fromAddress,

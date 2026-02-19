@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:equatable/equatable.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
@@ -12,27 +13,24 @@ class LoginUseCase {
 
   /// Executa o caso de uso de login
   /// Parâmetros:
-  /// - username: nome de usuário
-  /// - password: passphrase
-  Future<Either<Failure, User>> call({
-    required String username,
-    required String password,
-  }) async {
-    // Validações de negócio
-    if (username.isEmpty) {
-      return const Left(
-        ValidationFailure(message: 'Username não pode estar vazio'),
-      );
-    }
-
-    if (password.isEmpty) {
-      return const Left(
-        ValidationFailure(message: 'Passphrase não pode estar vazia'),
-      );
-    }
-
+  /// - params: Objeto contendo username e passphrase
+  Future<Either<Failure, User>> call(LoginParams params) async {
     // Delega para o repositório
     // Passa username como email para compatibilidade
-    return await repository.login(email: username, password: password);
+    return await repository.login(
+      username: params.username,
+      passphrase: params.passphrase,
+    );
   }
+}
+
+// Parâmetros para o login
+class LoginParams extends Equatable {
+  final String username;
+  final String passphrase;
+
+  const LoginParams({required this.username, required this.passphrase});
+
+  @override
+  List<Object> get props => [username, passphrase];
 }

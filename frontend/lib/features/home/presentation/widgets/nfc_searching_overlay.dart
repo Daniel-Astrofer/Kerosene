@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'nfc_scan_animation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
@@ -131,14 +131,8 @@ class _NfcSearchingOverlayState extends State<NfcSearchingOverlay> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Animação NFC
-                  SizedBox(
-                    height: 200,
-                    child: Lottie.asset(
-                      'assets/lottie/credit_card.json',
-                      repeat: _isScanning,
-                    ),
-                  ),
+                  // Animação NFC (Programática - Melhor Performance)
+                  const NfcScanAnimation(size: 200),
                   const SizedBox(height: 24),
 
                   // Status

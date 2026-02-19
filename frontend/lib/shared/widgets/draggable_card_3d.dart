@@ -31,12 +31,8 @@ class DraggableCard3D extends StatefulWidget {
 
 class _DraggableCard3DState extends State<DraggableCard3D>
     with TickerProviderStateMixin {
-  // ValueNotifiers para máxima eficiência (zero rebuilds)
-  late ValueNotifier<double> _dragProgress;
-  late ValueNotifier<bool> _isAnimatingRelease;
-
-  // Controllers para animação de release
-  late AnimationController _releaseController;
+  // Controller principal único (substitui ValueNotifier e _releaseController)
+  late AnimationController _controller;
 
   // Variáveis de tracking do gesto
   double _dragStartY = 0;
@@ -50,28 +46,21 @@ class _DraggableCard3DState extends State<DraggableCard3D>
     // Força 120fps se disponível
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Otimização: Solicita ao scheduler prioridade máxima
         SchedulerBinding.instance.ensureVisualUpdate();
       }
     });
 
-    _dragProgress = ValueNotifier<double>(0);
-    _isAnimatingRelease = ValueNotifier<bool>(false);
-
-    _releaseController = AnimationController(
+    // 1. Singleton Controller para toda a animação
+    _controller = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
-      animationBehavior: AnimationBehavior.preserve, // Mantém 120fps mesmo em baixa energia
-    )..addListener(() {
-      _dragProgress.value = _releaseController.value;
-    });
+      animationBehavior: AnimationBehavior.preserve,
+    );
   }
 
   @override
   void dispose() {
-    _dragProgress.dispose();
-    _isAnimatingRelease.dispose();
-    _releaseController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -85,8 +74,7 @@ class _DraggableCard3DState extends State<DraggableCard3D>
     _calculateMaxDragDistance();
     _dragStartY = details.globalPosition.dy;
     _isDragging = true;
-    _releaseController.stop();
-    _isAnimatingRelease.value = false;
+    _controller.stop(); // Para qualquer animação em andamento
   }
 
   /// Callback: User is dragging
@@ -97,8 +85,8 @@ class _DraggableCard3DState extends State<DraggableCard3D>
     final dragDistance = _dragStartY - currentY; // Positivo = cima
     final progress = (dragDistance / _maxDragDistance).clamp(0.0, 1.0);
 
-    // Update direto no ValueNotifier (sem rebuild via setState)
-    _dragProgress.value = progress;
+    // Update direto no controller (ValueNotifier interno)
+    _controller.value = progress;
   }
 
   /// Callback: User stopped dragging
@@ -106,32 +94,30 @@ class _DraggableCard3DState extends State<DraggableCard3D>
     if (!_isDragging) return;
     _isDragging = false;
 
-    final currentProgress = _dragProgress.value;
+    final currentProgress = _controller.value;
 
     if (currentProgress < 0.5) {
       // Volta ao estado inicial
-      _isAnimatingRelease.value = true;
-      _releaseController.value = currentProgress;
-      _releaseController.animateBack(
-        0, 
-        duration: const Duration(milliseconds: 400),
-        curve: widget.releaseCurve,
-      ).then((_) {
-        _isAnimatingRelease.value = false;
-        widget.onDragCancel?.call();
-      });
+      _controller
+          .animateBack(
+            0,
+            duration: const Duration(milliseconds: 400),
+            curve: widget.releaseCurve,
+          )
+          .then((_) {
+            widget.onDragCancel?.call();
+          });
     } else {
       // Completa a animação (vai para trás)
-      _isAnimatingRelease.value = true;
-      _releaseController.value = currentProgress;
-      _releaseController.animateTo(
-        1.0, 
-        duration: const Duration(milliseconds: 500),
-        curve: widget.releaseCurve,
-      ).then((_) {
-        _isAnimatingRelease.value = false;
-        widget.onDragComplete?.call();
-      });
+      _controller
+          .animateTo(
+            1.0,
+            duration: const Duration(milliseconds: 500),
+            curve: widget.releaseCurve,
+          )
+          .then((_) {
+            widget.onDragComplete?.call();
+          });
     }
   }
 
@@ -142,9 +128,10 @@ class _DraggableCard3DState extends State<DraggableCard3D>
       onVerticalDragDown: _onVerticalDragDown,
       onVerticalDragUpdate: _onVerticalDragUpdate,
       onVerticalDragEnd: _onVerticalDragEnd,
-      child: ValueListenableBuilder<double>(
-        valueListenable: _dragProgress,
-        builder: (context, progress, child) {
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final progress = _controller.value;
           final background = widget.backgroundCards ?? [];
 
           return Stack(
@@ -166,16 +153,10 @@ class _DraggableCard3DState extends State<DraggableCard3D>
                 }),
 
                 // Cartão principal sendo arrastado (renderizado por cima)
-                _Card3DTransform(
-                  progress: progress,
-                  child: child!,
-                ),
+                _Card3DTransform(progress: progress, child: child!),
               ] else ...[
                 // Cartão principal vai para trás primeiro
-                _Card3DTransform(
-                  progress: progress,
-                  child: child!,
-                ),
+                _Card3DTransform(progress: progress, child: child!),
 
                 // Depois os cartões de fundo por cima
                 ...List.generate(background.length, (index) {
@@ -213,19 +194,23 @@ class _BackgroundCardTransform extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Estado inicial (progress = 0)
+    // Estado inicial (progress = 0)
     // Google Pay style: cards are stacked with a small vertical offset (top edges visible)
-    final double sScale = 1.0 - (logicalIndex * 0.03);
-    final double sTranslateY = logicalIndex * 20.0;
+    // FIXED: Reduced offset from 20.0 to 12.0 so cards don't appear "too low"
+    final double sScale =
+        1.0 - (logicalIndex * 0.05); // Increased from 0.03 for more depth
+    final double sTranslateY = logicalIndex * 12.0;
     final double sOpacity = (1.0 - (logicalIndex * 0.15)).clamp(0.0, 1.0);
 
     // Estado final (progress = 1) - cada card assume a posição do card à sua frente
-    final double eScale = 1.0 - ((logicalIndex - 1) * 0.03);
-    final double eTranslateY = (logicalIndex - 1) * 20.0;
+    final double eScale = 1.0 - ((logicalIndex - 1) * 0.05);
+    final double eTranslateY = (logicalIndex - 1) * 12.0;
     final double eOpacity = (1.0 - ((logicalIndex - 1) * 0.15)).clamp(0.0, 1.0);
 
     // Interpolação linear simples
     final double scale = sScale + (eScale - sScale) * progress;
-    final double translateY = sTranslateY + (eTranslateY - sTranslateY) * progress;
+    final double translateY =
+        sTranslateY + (eTranslateY - sTranslateY) * progress;
     final double opacity = sOpacity + (eOpacity - sOpacity) * progress;
 
     return RepaintBoundary(
@@ -234,7 +219,7 @@ class _BackgroundCardTransform extends StatelessWidget {
         transformHitTests: false, // Otimização para 120fps
         transform: Matrix4.identity()
           ..setTranslationRaw(0.0, translateY, 0.0)
-          ..scale(scale, scale, 1.0),
+          ..multiply(Matrix4.diagonal3Values(scale, scale, 1.0)),
         child: Opacity(
           opacity: opacity,
           alwaysIncludeSemantics: false, // Otimização para 120fps
@@ -250,15 +235,20 @@ class _Card3DTransform extends StatelessWidget {
   final double progress; // 0 = início, 1 = final
   final Widget child;
 
-  const _Card3DTransform({
-    required this.progress,
-    required this.child,
-  });
+  // Sombra estática otimizada - Constante para evitar realocação a cada frame
+  static final BoxShadow _kOptimizedShadow = BoxShadow(
+    color: Colors.black.withValues(alpha: 0.2), // Slightly darker
+    blurRadius: 8, // Reduced from 12
+    spreadRadius: 0, // Reduced from -2 to 0 (simpler calculation)
+    offset: const Offset(0, 4),
+  );
+
+  const _Card3DTransform({required this.progress, required this.child});
 
   @override
   Widget build(BuildContext context) {
     // Animação refinada: Sobe, inclina para a direita e desce para o fundo
-    
+
     // Pré-calculando valores comuns
     final double piProgress = progress * math.pi;
     final double sinProgress = math.sin(piProgress);
@@ -267,32 +257,28 @@ class _Card3DTransform extends StatelessWidget {
     // O movimento de "subir" acontece nos primeiros 50% do progresso
     double translateY;
     if (progress < 0.5) {
-      translateY = -200.0 * (progress / 0.5);
+      translateY = -220.0 * (progress / 0.5);
     } else {
-      translateY = -200.0 + (220.0 * (progress - 0.5) / 0.5);
+      translateY =
+          -220.0 +
+          (232.0 *
+              (progress - 0.5) /
+              0.5); // Ends slightly lower to match new stack top
     }
 
     // Movimento horizontal: Leve desvio para a direita (30px)
-    final double translateX = 40.0 * sinProgress;
+    final double translateX = 30.0 * sinProgress;
 
     // Escala: Diminui suavemente até 0.85 (para não ficar pequeno demais)
     final double scale = 1.0 - (0.15 * progress);
 
     // Rotação: Inclina para a direita no eixo Y e Z
-    final double rotationX = -0.2 * sinProgress; 
-    final double rotationY = 0.3 * sinProgress;  // Inclina para a direita
-    final double rotationZ = 0.1 * sinProgress;  // Leve giro lateral
+    final double rotationX = -0.2 * sinProgress;
+    final double rotationY = 0.2 * sinProgress; // Inclina para a direita
+    final double rotationZ = 0.05 * sinProgress; // Leve giro lateral
 
     // Opacidade: Mantém opaco no início, e quando vai para trás (progress > 0.7) fica completamente opaco
-    final double opacity = progress > 0.7 ? 1.0 : 1.0;
-
-    // Sombra estática otimizada
-    final BoxShadow optimizedShadow = BoxShadow(
-      color: Colors.black.withValues(alpha: 0.15),
-      blurRadius: 12,
-      spreadRadius: -2,
-      offset: const Offset(0, 8),
-    );
+    final double opacity = progress > 0.8 ? 1.0 : 1.0;
 
     return RepaintBoundary(
       child: Transform(
@@ -300,8 +286,12 @@ class _Card3DTransform extends StatelessWidget {
         transformHitTests: false, // Otimização para 120fps
         transform: Matrix4.identity()
           ..setEntry(3, 2, 0.001)
-          ..setTranslationRaw(translateX, translateY, progress * -100) // Adiciona profundidade Z real
-          ..scale(scale, scale, 1.0)
+          ..setTranslationRaw(
+            translateX,
+            translateY,
+            progress * -100,
+          ) // Adiciona profundidade Z real
+          ..multiply(Matrix4.diagonal3Values(scale, scale, 1.0))
           ..rotateX(rotationX)
           ..rotateY(rotationY)
           ..rotateZ(rotationZ),
@@ -309,9 +299,7 @@ class _Card3DTransform extends StatelessWidget {
           opacity: opacity,
           alwaysIncludeSemantics: false, // Otimização para 120fps
           child: Container(
-            decoration: BoxDecoration(
-              boxShadow: [optimizedShadow],
-            ),
+            decoration: BoxDecoration(boxShadow: [_kOptimizedShadow]),
             child: child,
           ),
         ),

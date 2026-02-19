@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
-import 'login_totp_screen.dart';
+import 'unknown_device_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -39,7 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => LoginTotpScreen(
+            builder: (context) => UnknownDeviceScreen(
               username: next.username,
               passphrase: next.passphrase,
             ),
@@ -85,9 +86,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const Center(child: KeroseneLogo(size: 80)),
                         const SizedBox(height: 32),
 
-                        const Text(
-                          'Welcome Back',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)!.welcomeBack,
+                          style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -95,9 +96,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Sign in to access your wallet',
-                          style: TextStyle(fontSize: 16, color: Colors.white54),
+                        Text(
+                          AppLocalizations.of(context)!.signInToAccess,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white54,
+                          ),
                           textAlign: TextAlign.center,
                         ),
 
@@ -108,7 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           controller: _usernameController,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: 'Username',
+                            labelText: AppLocalizations.of(context)!.username,
                             labelStyle: const TextStyle(color: Colors.white70),
                             filled: true,
                             fillColor: Colors.white.withValues(alpha: 0.05),
@@ -122,7 +126,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                           validator: (value) => (value == null || value.isEmpty)
-                              ? 'Required'
+                              ? AppLocalizations.of(context)!.required
                               : null,
                         ),
 
@@ -134,7 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           obscureText: _obscurePassword,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: 'Passphrase',
+                            labelText: AppLocalizations.of(context)!.passphrase,
                             labelStyle: const TextStyle(color: Colors.white70),
                             filled: true,
                             fillColor: Colors.white.withValues(alpha: 0.05),
@@ -159,7 +163,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                           validator: (value) => (value == null || value.isEmpty)
-                              ? 'Required'
+                              ? AppLocalizations.of(context)!.required
                               : null,
                         ),
 
@@ -180,9 +184,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ? const CircularProgressIndicator(
                                     color: Colors.white,
                                   )
-                                : const Text(
-                                    'Sign In',
-                                    style: TextStyle(
+                                : Text(
+                                    AppLocalizations.of(context)!.signIn,
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,

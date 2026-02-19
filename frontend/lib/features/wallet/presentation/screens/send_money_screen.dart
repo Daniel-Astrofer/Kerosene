@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/presentation/widgets/pin_dialog.dart';
+import '../../../../core/security/app_pin_service.dart';
+import '../../../../core/security/biometric_service.dart';
 import '../providers/wallet_provider.dart';
 import '../state/wallet_state.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/utils/currency_input_formatter.dart';
+import '../../../../core/utils/currency_logic.dart';
+import '../../../../core/providers/price_provider.dart';
 import '../../../../core/services/contact_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class SendMoneyScreen extends ConsumerStatefulWidget {
   final String? walletId;
@@ -26,7 +34,8 @@ class SendMoneyScreen extends ConsumerStatefulWidget {
 }
 
 class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
-  String _amount = '0';
+  final _amountController = TextEditingController();
+  Currency _selectedCurrency = Currency.btc;
   late TextEditingController _receiverController;
   final _contactService = ContactService();
   List<Contact> _recentContacts = [];
@@ -39,7 +48,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       text: widget.initialAddress ?? '',
     );
     if (widget.initialAmountBtc != null && widget.initialAmountBtc! > 0) {
-      _amount = widget.initialAmountBtc!.toStringAsFixed(8);
+      _amountController.text = CurrencyLogic.formatAmount(
+        widget.initialAmountBtc!,
+        Currency.btc,
+      );
     }
     _loadContacts();
   }
@@ -68,6 +80,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   @override
   void dispose() {
     _receiverController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -75,16 +88,14 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   Widget build(BuildContext context) {
     ref.listen<AsyncActionState>(sendTransactionProvider, (previous, next) {
       if (next.result != null) {
-        _contactService.saveContact(_receiverController.text, name: _selectedContact?.name);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Transação enviada com sucesso!"),
-            backgroundColor: Color(0xFF00FF94),
-            behavior: SnackBarBehavior.floating,
-          ),
+        _contactService.saveContact(
+          _receiverController.text,
+          name: _selectedContact?.name,
         );
+        // Success handled by HomeScreen with a dialog
+        // ref.read(sendTransactionProvider.notifier).reset(); // Reset is good but we can do it after pop if needed, or before.
         ref.read(sendTransactionProvider.notifier).reset();
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else if (next.error != null) {
         showCustomErrorDialog(context, next.error!);
         ref.read(sendTransactionProvider.notifier).reset();
@@ -93,7 +104,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     final walletState = ref.watch(walletProvider);
     final sendState = ref.watch(sendTransactionProvider);
-    final selectedWallet = walletState is WalletLoaded ? walletState.selectedWallet : null;
+    final selectedWallet = walletState is WalletLoaded
+        ? walletState.selectedWallet
+        : null;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -111,7 +124,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             children: [
               // Header minimalista
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -122,12 +138,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                           color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                     const Spacer(),
                     Text(
-                      "Send",
+                      AppLocalizations.of(context)!.send,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 16,
@@ -143,31 +163,128 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
               const SizedBox(height: 16),
 
-              // Valor principal (centralizado)
+              // Value Input with Currency Selector
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    Text(
-                      _amount == '0' ? '0.00000000' : _amount.padRight(10, '0').substring(0, 10),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -1.2,
-                        fontFamily: 'monospace',
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.amount,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _amountController,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    CurrencyInputFormatter(
+                                      maxDigits: 20,
+                                      symbol: '',
+                                      decimals:
+                                          _selectedCurrency == Currency.btc
+                                          ? 8
+                                          : 2,
+                                    ),
+                                  ],
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: EdgeInsets.zero,
+                                    hintText: _selectedCurrency == Currency.btc
+                                        ? "0.00000000"
+                                        : "0.00",
+                                    hintStyle: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      fontSize: 28,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                  ),
+                                ),
+                              ),
+                              _buildCurrencySelector(),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "BTC",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 2,
+                    // Conversion Hint
+                    if (_amountController.text.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final btcUsd = ref.watch(latestBtcPriceProvider);
+                            final btcEur = ref.watch(btcEurPriceProvider);
+                            final btcBrl = ref.watch(btcBrlPriceProvider);
+
+                            final amount = CurrencyLogic.parseAmount(
+                              _amountController.text,
+                            );
+                            if (amount <= 0) return const SizedBox.shrink();
+
+                            double converted = 0;
+                            String targetUnit = '';
+
+                            if (_selectedCurrency == Currency.btc) {
+                              converted = amount * (btcUsd ?? 0);
+                              targetUnit = 'USD';
+                            } else {
+                              converted = CurrencyLogic.convertToBtc(
+                                amount: amount,
+                                fromCurrency: _selectedCurrency,
+                                btcUsdPrice: btcUsd,
+                                btcEurPrice: btcEur,
+                                btcBrlPrice: btcBrl,
+                              );
+                              targetUnit = 'BTC';
+                            }
+
+                            return Text(
+                              "≈ ${converted.toStringAsFixed(targetUnit == 'BTC' ? 8 : 2)} $targetUnit",
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                fontSize: 14,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -180,7 +297,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 child: GestureDetector(
                   onTap: () => _showContactSelector(context),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(16),
@@ -200,8 +320,14 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              _selectedContact?.name?.substring(0, 1).toUpperCase() ??
-                              (_receiverController.text.isNotEmpty ? _receiverController.text.substring(0, 1).toUpperCase() : "?"),
+                              _selectedContact?.name
+                                      ?.substring(0, 1)
+                                      .toUpperCase() ??
+                                  (_receiverController.text.isNotEmpty
+                                      ? _receiverController.text
+                                            .substring(0, 1)
+                                            .toUpperCase()
+                                      : "?"),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 14,
@@ -216,7 +342,14 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _selectedContact?.name ?? (_receiverController.text.isNotEmpty ? "Recipient" : "Select recipient"),
+                                _selectedContact?.name ??
+                                    (_receiverController.text.isNotEmpty
+                                        ? AppLocalizations.of(
+                                            context,
+                                          )!.recipient
+                                        : AppLocalizations.of(
+                                            context,
+                                          )!.selectRecipient),
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 13,
@@ -226,7 +359,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                               if (_receiverController.text.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  _shortenAddress(_receiverController.text, length: 8),
+                                  _shortenAddress(
+                                    _receiverController.text,
+                                    length: 8,
+                                  ),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.3),
                                     fontSize: 10,
@@ -237,7 +373,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             ],
                           ),
                         ),
-                        Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.2), size: 16),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white.withValues(alpha: 0.2),
+                          size: 16,
+                        ),
                       ],
                     ),
                   ),
@@ -251,9 +391,14 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: GestureDetector(
-                    onTap: () => walletState is WalletLoaded ? _showWalletSelector(context, walletState) : null,
+                    onTap: () => walletState is WalletLoaded
+                        ? _showWalletSelector(context, walletState)
+                        : null,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.02),
                         borderRadius: BorderRadius.circular(12),
@@ -262,7 +407,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            "From: ${selectedWallet.name}",
+                            AppLocalizations.of(
+                              context,
+                            )!.fromWallet(selectedWallet.name),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 11,
@@ -280,7 +427,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.2), size: 14),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.white.withValues(alpha: 0.2),
+                                size: 14,
+                              ),
                             ],
                           ),
                         ],
@@ -290,9 +441,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 ),
 
               const Spacer(),
-
-              // Keypad minimalista
-              _buildMinimalKeypad(),
 
               const SizedBox(height: 12),
 
@@ -321,9 +469,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
-                            "Send",
-                            style: TextStyle(
+                        : Text(
+                            AppLocalizations.of(context)!.send,
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.5,
@@ -370,7 +518,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                "Select Recipient",
+                AppLocalizations.of(context)!.selectRecipient,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 20,
@@ -386,9 +534,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 onChanged: (val) => setState(() {}),
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: "Search or paste address",
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
-                  prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.4), size: 20),
+                  hintText: AppLocalizations.of(context)!.searchAddress,
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 20,
+                  ),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.04),
                   contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -404,7 +559,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               Expanded(
                 child: Center(
                   child: Text(
-                    "No recent contacts",
+                    AppLocalizations.of(context)!.noRecentContacts,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.3),
                       fontSize: 14,
@@ -447,9 +602,14 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    contact.name?.substring(0, 1).toUpperCase() ?? "?",
+                                    contact.name
+                                            ?.substring(0, 1)
+                                            .toUpperCase() ??
+                                        "?",
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.8),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -462,18 +622,26 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      contact.name ?? "Unknown",
+                                      contact.name ??
+                                          AppLocalizations.of(context)!.unknown,
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      _shortenAddress(contact.address, length: 10),
+                                      _shortenAddress(
+                                        contact.address,
+                                        length: 10,
+                                      ),
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.3),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         fontSize: 12,
                                         fontFamily: 'monospace',
                                       ),
@@ -495,108 +663,202 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     );
   }
 
-  Widget _buildGlassCircleButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    double size = 40,
-    double iconSize = 20,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassContainer(
-        width: size,
-        height: size,
-        blur: 20,
-        opacity: 0.1,
-        borderRadius: BorderRadius.circular(size / 2),
-        padding: EdgeInsets.zero,
-        child: Icon(icon, color: Colors.white, size: iconSize),
+  Widget _buildCurrencySelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-
-  Widget _buildMinimalKeypad() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          _buildKeypadRow(["1", "2", "3"]),
-          const SizedBox(height: 8),
-          _buildKeypadRow(["4", "5", "6"]),
-          const SizedBox(height: 8),
-          _buildKeypadRow(["7", "8", "9"]),
-          const SizedBox(height: 8),
-          _buildKeypadRow([".", "0", "⌫"]),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKeypadRow(List<String> keys) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: keys.map((key) {
-        return _buildMinimalKey(
-          label: key,
-          onTap: key == "⌫" ? _handleBackspace : () => _handleKeyInput(key),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildMinimalKey({required String label, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 68,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.02),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: label == "⌫" ? 22 : 26,
-              fontWeight: FontWeight.w300,
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<Currency>(
+          value: _selectedCurrency,
+          dropdownColor: const Color(0xFF1E1E24),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.white,
+            size: 16,
           ),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          onChanged: (Currency? newCurrency) {
+            if (newCurrency != null && newCurrency != _selectedCurrency) {
+              _updateCurrency(newCurrency);
+            }
+          },
+          items: Currency.values.map((Currency currency) {
+            return DropdownMenuItem<Currency>(
+              value: currency,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (currency == Currency.btc)
+                    const Icon(
+                      Icons.currency_bitcoin,
+                      color: Color(0xFFF7931A),
+                      size: 16,
+                    )
+                  else if (currency == Currency.usd)
+                    const Icon(
+                      Icons.attach_money,
+                      color: Colors.greenAccent,
+                      size: 16,
+                    )
+                  else if (currency == Currency.eur)
+                    const Icon(Icons.euro, color: Colors.blueAccent, size: 16)
+                  else if (currency == Currency.brl)
+                    const Text(
+                      'R\$',
+                      style: TextStyle(
+                        color: Colors.lightGreenAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  const SizedBox(width: 6),
+                  Text(currency.code),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
   }
 
-  void _handleKeyInput(String key) {
-    setState(() {
-      if (key == '.' && _amount.contains('.')) return;
-      if (_amount == '0' && key != '.') _amount = '';
-      if (_amount.isEmpty && key == '.') _amount = '0';
-      _amount += key;
-    });
-  }
+  void _updateCurrency(Currency newCurrency) {
+    final currentText = _amountController.text;
+    final startCurrency = _selectedCurrency;
 
-  void _handleBackspace() {
     setState(() {
-      if (_amount.isNotEmpty) {
-        _amount = _amount.substring(0, _amount.length - 1);
-        if (_amount.isEmpty) _amount = '0';
-      }
+      _selectedCurrency = newCurrency;
     });
+
+    if (currentText.isEmpty) {
+      _amountController.clear();
+      return;
+    }
+
+    final btcUsd = ref.read(latestBtcPriceProvider);
+    final btcEur = ref.read(btcEurPriceProvider);
+    final btcBrl = ref.read(btcBrlPriceProvider);
+
+    try {
+      double amount = CurrencyLogic.parseAmount(currentText);
+      if (amount <= 0) return;
+
+      // 1. Convert to BTC
+      double amountInBtc = CurrencyLogic.convertToBtc(
+        amount: amount,
+        fromCurrency: startCurrency,
+        btcUsdPrice: btcUsd,
+        btcEurPrice: btcEur,
+        btcBrlPrice: btcBrl,
+      );
+
+      // 2. Convert BTC to new currency
+      double finalAmount = 0;
+      switch (newCurrency) {
+        case Currency.btc:
+          finalAmount = amountInBtc;
+          break;
+        case Currency.usd:
+          finalAmount = amountInBtc * (btcUsd ?? 0);
+          break;
+        case Currency.eur:
+          finalAmount = amountInBtc * (btcEur ?? 0);
+          break;
+        case Currency.brl:
+          finalAmount = amountInBtc * (btcBrl ?? 0);
+          break;
+      }
+
+      _amountController.text = CurrencyLogic.formatAmount(
+        finalAmount,
+        newCurrency,
+      );
+    } catch (e) {
+      // ignore
+    }
   }
 
   void _handleContinue() async {
     final walletState = ref.read(walletProvider);
     if (_receiverController.text.isEmpty ||
-        _amount == '0' ||
+        _amountController.text.isEmpty ||
         walletState is! WalletLoaded) {
-      showCustomErrorDialog(context, "Por favor, preencha todos os campos.");
+      showCustomErrorDialog(
+        context,
+        AppLocalizations.of(context)!.pleaseCompleteFields,
+      );
       return;
     }
 
-    final btcAmount = double.tryParse(_amount) ?? 0.0;
+    // Biometric / PIN confirmation before sending
+    final biometricService = BiometricService();
+    final canAuth = await biometricService.canAuthenticate();
+    final isEnrolled = await biometricService.isBiometricEnrolled();
+
+    if (canAuth && isEnrolled) {
+      final authenticated = await biometricService.authenticate(
+        localizedReason: 'Confirm Bitcoin transaction',
+      );
+      if (!mounted) return;
+      if (!authenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Authentication failed. Transaction cancelled.',
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        return;
+      }
+    } else {
+      // No system biometrics/PIN or not enrolled — use in-app PIN
+      final pinService = AppPinService();
+      final hasPinSet = await pinService.hasPinSet();
+      if (!mounted) return;
+      final authenticated = await PinDialog.show(context, isSetup: !hasPinSet);
+      if (!mounted) return;
+      if (!authenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Authentication failed. Transaction cancelled.',
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Parse amount using CurrencyLogic
+    final rawAmount = CurrencyLogic.parseAmount(_amountController.text);
+    final btcUsd = ref.read(latestBtcPriceProvider);
+    final btcEur = ref.read(btcEurPriceProvider);
+    final btcBrl = ref.read(btcBrlPriceProvider);
+
+    final btcAmount = CurrencyLogic.convertToBtc(
+      amount: rawAmount,
+      fromCurrency: _selectedCurrency,
+      btcUsdPrice: btcUsd,
+      btcEurPrice: btcEur,
+      btcBrlPrice: btcBrl,
+    );
 
     showDialog(
       context: context,
@@ -618,6 +880,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       btcAmount,
       feeBtc,
       totalBtc,
+      walletState.selectedWallet!.id,
       walletState.selectedWallet!.address,
       _receiverController.text,
     );
@@ -628,6 +891,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     double amount,
     double fee,
     double total,
+    String fromWalletId,
     String fromAddress,
     String toAddress,
   ) {
@@ -708,6 +972,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                               ref
                                   .read(sendTransactionProvider.notifier)
                                   .send(
+                                    fromWalletId: fromWalletId,
                                     fromAddress: fromAddress,
                                     toAddress: toAddress,
                                     amount: amount,
@@ -812,7 +1077,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: InkWell(
                         onTap: () {
-                          ref.read(walletProvider.notifier).selectWallet(wallet);
+                          ref
+                              .read(walletProvider.notifier)
+                              .selectWallet(wallet);
                           Navigator.pop(context);
                         },
                         borderRadius: BorderRadius.circular(16),
@@ -853,7 +1120,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                     Text(
                                       wallet.name,
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
                                         fontWeight: FontWeight.w500,
                                         fontSize: 15,
                                       ),
@@ -862,7 +1131,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                     Text(
                                       "${wallet.balance.toStringAsFixed(8)} BTC",
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.4),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.4,
+                                        ),
                                         fontSize: 13,
                                         fontFamily: 'monospace',
                                       ),

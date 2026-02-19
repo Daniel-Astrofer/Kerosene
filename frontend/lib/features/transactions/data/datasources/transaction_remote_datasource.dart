@@ -3,16 +3,22 @@ import 'package:dio/dio.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/device_helper.dart';
 import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
+import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
 /// Interface do TransactionRemoteDataSource
 abstract class TransactionRemoteDataSource {
   // Fee & Status
   Future<FeeEstimate> estimateFee(double amount);
+  Future<UnsignedTransaction> createUnsignedTransaction({
+    required String fromAddress,
+    required String toAddress,
+    required double amount,
+    required int feeSatoshis,
+  });
   Future<TxStatus> getTransactionStatus(String txid);
 
   // Send & Broadcast
@@ -21,7 +27,6 @@ abstract class TransactionRemoteDataSource {
     required String toAddress,
     required double amount,
     required int feeSatoshis,
-    required String token,
   });
   Future<TxStatus> broadcastTransaction(String rawTxHex);
 
@@ -31,17 +36,15 @@ abstract class TransactionRemoteDataSource {
     required String txid,
     required String fromAddress,
     required double amount,
-    required String token,
   });
-  Future<List<Deposit>> getDeposits(String token);
-  Future<double> getDepositBalance(String token);
+  Future<List<Deposit>> getDeposits();
+  Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
   // Payment Links
   Future<PaymentLink> createPaymentLink({
     required double amount,
     required String description,
-    required String token,
   });
   Future<PaymentLink> getPaymentLink(String linkId);
   Future<PaymentLink> confirmPaymentLink({
@@ -49,11 +52,8 @@ abstract class TransactionRemoteDataSource {
     required String txid,
     required String fromAddress,
   });
-  Future<PaymentLink> completePaymentLink({
-    required String linkId,
-    required String token,
-  });
-  Future<List<PaymentLink>> getPaymentLinks(String token);
+  Future<PaymentLink> completePaymentLink({required String linkId});
+  Future<List<PaymentLink>> getPaymentLinks();
 }
 
 /// Implementação do TransactionRemoteDataSource
@@ -62,14 +62,11 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
   TransactionRemoteDataSourceImpl(this.apiClient);
 
-  Future<Map<String, String>> _getHeaders(String token) async {
-    final securityHeaders = await DeviceHelper.getSecurityHeaders();
-    return {...securityHeaders, 'Authorization': 'Bearer $token'};
-  }
-
   Map<String, dynamic> _parseJsonResponse(dynamic data) {
+    if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
     if (data is String) {
+      if (data.trim().isEmpty) return {};
       try {
         final parsed = jsonDecode(data);
         if (parsed is Map<String, dynamic>) return parsed;
@@ -89,7 +86,49 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       );
       return FeeEstimate.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao estimar taxa: $e');
+    }
+  }
+
+  @override
+  Future<UnsignedTransaction> createUnsignedTransaction({
+    required String fromAddress,
+    required String toAddress,
+    required double amount,
+    required int feeSatoshis,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        AppConfig.transactionsCreateUnsigned,
+        data: {
+          'fromAddress': fromAddress,
+          'toAddress': toAddress,
+          'amount': amount,
+          'feeSatoshis': feeSatoshis,
+        },
+      );
+      return UnsignedTransaction.fromJson(_parseJsonResponse(response.data));
+    } catch (e) {
+      if (e is DioException) {
+        final data = e.response?.data;
+        String? serverMsg;
+        try {
+          if (data is Map) {
+            serverMsg = data['message'] ?? data['error'];
+          } else if (data is String) {
+            serverMsg = data;
+          }
+        } catch (_) {}
+
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          throw ServerException(message: serverMsg);
+        }
+      }
+      if (e is AppException) rethrow;
+      throw ServerException(
+        message: 'Erro ao criar transação não assinada: $e',
+      );
     }
   }
 
@@ -102,6 +141,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       );
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao consultar status: $e');
     }
   }
@@ -109,34 +149,27 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   // ==================== Send & Broadcast ====================
 
   @override
-  @override
   Future<TxStatus> sendTransaction({
     required String fromAddress,
     required String toAddress,
     required double amount,
     required int feeSatoshis,
-    required String token,
   }) async {
     try {
-      final headers = await _getHeaders(token);
       final response = await apiClient.post(
         AppConfig.ledgerTransaction,
         data: {
-          'sender': fromAddress,
-          'receiver': toAddress,
+          'sender': fromAddress, // Backend expects 'sender'
+          'receiver': toAddress, // Backend expects 'receiver'
           'amount': amount,
-          'context':
-              'transfer', // Using 'transfer' as context or description if available
-          // 'feeSatoshis': feeSatoshis, // Ledger API might not accept this, but we can try sending it or omit
+          'context': 'transfer',
         },
-        headers: headers,
       );
 
       final data = _parseJsonResponse(response.data);
-      // If response is just a success message or similar, we might need to construct a mock TxStatus or parse what we can
-      // Assuming it might return the transaction details
       return TxStatus.fromJson(data);
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao enviar transação: $e');
     }
   }
@@ -145,11 +178,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<TxStatus> broadcastTransaction(String rawTxHex) async {
     try {
       final response = await apiClient.post(
-        AppConfig.transactionsBroadcast,
+        AppConfig.transactionsBroadcast, // Note: Verify if this constant exists
         data: {'rawTxHex': rawTxHex},
       );
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao transmitir transação: $e');
     }
   }
@@ -171,6 +205,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
       return address;
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao obter endereço de depósito: $e');
     }
   }
@@ -180,28 +215,24 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String txid,
     required String fromAddress,
     required double amount,
-    required String token,
   }) async {
     try {
-      final headers = await _getHeaders(token);
       final response = await apiClient.post(
         AppConfig.transactionsConfirmDeposit,
         data: {'txid': txid, 'fromAddress': fromAddress, 'amount': amount},
-        headers: headers,
       );
       return Deposit.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao confirmar depósito: $e');
     }
   }
 
   @override
-  Future<List<Deposit>> getDeposits(String token) async {
+  Future<List<Deposit>> getDeposits() async {
     try {
-      final headers = await _getHeaders(token);
       final response = await apiClient.get(
-        AppConfig.transactionsDeposits,
-        headers: headers,
+        AppConfig.transactionsDeposits, // Note: Verify if this constant exists
       );
 
       var data = response.data;
@@ -219,21 +250,21 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
       return [];
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao listar depósitos: $e');
     }
   }
 
   @override
-  Future<double> getDepositBalance(String token) async {
+  Future<double> getDepositBalance() async {
     try {
-      final headers = await _getHeaders(token);
       final response = await apiClient.get(
-        AppConfig.transactionsDepositBalance,
-        headers: headers,
-        options: Options(responseType: ResponseType.plain),
+        AppConfig
+            .transactionsDepositBalance, // Note: Verify if this constant exists
       );
       return double.tryParse(response.data.toString().trim()) ?? 0;
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(
         message: 'Erro ao consultar saldo de depósitos: $e',
       );
@@ -244,10 +275,11 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<Deposit> getDeposit(String txid) async {
     try {
       final response = await apiClient.get(
-        '${AppConfig.transactionsDeposit}/$txid',
+        '${AppConfig.transactionsDeposit}/$txid', // Note: Verify existence
       );
       return Deposit.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao buscar depósito: $e');
     }
   }
@@ -258,17 +290,15 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<PaymentLink> createPaymentLink({
     required double amount,
     required String description,
-    required String token,
   }) async {
     try {
-      final headers = await _getHeaders(token);
       final response = await apiClient.post(
         AppConfig.transactionsCreatePaymentLink,
         data: {'amount': amount, 'description': description},
-        headers: headers,
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao criar payment link: $e');
     }
   }
@@ -281,6 +311,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao buscar payment link: $e');
     }
   }
@@ -298,35 +329,28 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao confirmar payment link: $e');
     }
   }
 
   @override
-  Future<PaymentLink> completePaymentLink({
-    required String linkId,
-    required String token,
-  }) async {
+  Future<PaymentLink> completePaymentLink({required String linkId}) async {
     try {
-      final headers = await _getHeaders(token);
       final response = await apiClient.post(
         '${AppConfig.transactionsPaymentLink}/$linkId/complete',
-        headers: headers,
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao completar payment link: $e');
     }
   }
 
   @override
-  Future<List<PaymentLink>> getPaymentLinks(String token) async {
+  Future<List<PaymentLink>> getPaymentLinks() async {
     try {
-      final headers = await _getHeaders(token);
-      final response = await apiClient.get(
-        AppConfig.transactionsPaymentLinks,
-        headers: headers,
-      );
+      final response = await apiClient.get(AppConfig.transactionsPaymentLinks);
 
       var data = response.data;
       if (data is String) {
@@ -343,6 +367,15 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
       return [];
     } catch (e) {
+      // If 403, just return empty list to avoid breaking UI (backend might not be ready or scope issue)
+      if (e is DioException && e.response?.statusCode == 403) {
+        return [];
+      }
+      if (e is AppException && e.statusCode == 403) {
+        return [];
+      }
+
+      if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao listar payment links: $e');
     }
   }

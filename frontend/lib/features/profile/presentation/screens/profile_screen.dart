@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/state/auth_state.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -74,9 +76,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Perfil",
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.profile,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -197,7 +199,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     children: [
                       Expanded(
                         child: _buildStatCard(
-                          "Carteiras",
+                          AppLocalizations.of(context)!.wallets,
                           walletCount.toString(),
                           Icons.account_balance_wallet_rounded,
                           Theme.of(context).primaryColor,
@@ -206,7 +208,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       const SizedBox(width: 16),
                       Expanded(
                         child: _buildStatCard(
-                          "Volume Total",
+                          AppLocalizations.of(context)!.totalVolume,
                           "\$32.5k",
                           Icons.bar_chart_rounded,
                           const Color(0xFF00FF94),
@@ -222,21 +224,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     children: [
                       _buildMenuItem(
                         Icons.person_outline_rounded,
-                        "Dados Pessoais",
+                        AppLocalizations.of(context)!.personalData,
                       ),
-                      _buildMenuItem(Icons.security_rounded, "Segurança"),
+                      _buildMenuItem(
+                        Icons.security_rounded,
+                        AppLocalizations.of(context)!.security,
+                      ),
                       _buildMenuItem(
                         Icons.notifications_none_rounded,
-                        "Notificações",
+                        AppLocalizations.of(context)!.notifications,
                       ),
                       _buildMenuItem(
                         Icons.help_outline_rounded,
-                        "Ajuda & Suporte",
+                        AppLocalizations.of(context)!.helpSupport,
+                      ),
+                      _buildMenuItem(
+                        Icons.settings_rounded,
+                        AppLocalizations.of(context)!.settingsTitle,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
                       _buildMenuItem(
                         Icons.logout_rounded,
-                        "Sair da Conta",
+                        AppLocalizations.of(context)!.logout,
                         isDestructive: true,
                         onTap: () {
                           ref.read(authProvider.notifier).logout();
