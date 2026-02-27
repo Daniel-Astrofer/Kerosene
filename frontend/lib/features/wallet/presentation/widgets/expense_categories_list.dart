@@ -33,18 +33,11 @@ class ExpenseCategoriesList extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(
-              category.icon,
-              color: category.color,
-              size: 28,
-            ),
+            Icon(category.icon, color: category.color, size: 28),
             const SizedBox(height: 12),
             Text(
               category.name,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
             const SizedBox(height: 4),
             Text(

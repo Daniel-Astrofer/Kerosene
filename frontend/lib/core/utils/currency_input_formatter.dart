@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 class CurrencyInputFormatter extends TextInputFormatter {
   final int maxDigits;
@@ -17,41 +16,42 @@ class CurrencyInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    if (newValue.selection.baseOffset == 0) {
+    if (newValue.text.isEmpty) {
       return newValue;
     }
 
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
+    // Allow digits and only ONE decimal separator (point or comma)
+    String text = newValue.text.replaceAll(',', '.');
+
+    // Count dots
+    int dotCount = '.'.allMatches(text).length;
+    if (dotCount > 1) {
+      return oldValue;
     }
 
-    // Remove non-digits
-    String newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-
-    // Parse value
-    double value = double.tryParse(newText) ?? 0.0;
-
-    // Calculate divisor based on decimals (e.g. 2 -> 100, 8 -> 100,000,000)
-    int divisor = 1;
-    for (int i = 0; i < decimals; i++) {
-      divisor *= 10;
+    // Regex to allow digits and one dot
+    final regExp = RegExp(r'^\d*\.?\d*$');
+    if (!regExp.hasMatch(text)) {
+      return oldValue;
     }
 
-    // Format
-    final formatter = NumberFormat.currency(
-      locale:
-          'pt_BR', // Using pt_BR for comma separator as requested ("0.000,00")
-      customPattern: decimals == 8 ? '#,##0.00000000' : '#,##0.00',
-      symbol: symbol,
-      decimalDigits: decimals,
-    );
+    // Restrict decimal places
+    if (text.contains('.')) {
+      String decimalsPart = text.split('.')[1];
+      if (decimalsPart.length > decimals) {
+        return oldValue;
+      }
+    }
 
-    double val = value / divisor;
-    String newString = formatter.format(val).trim();
+    // Optional: add thousands separator but it might be annoying while typing
+    // For now, let's keep it simple and just allow standard decimal typing
+    // to match user expectation of "not ATM style"
 
     return newValue.copyWith(
-      text: newString,
-      selection: TextSelection.collapsed(offset: newString.length),
+      text: newValue.text
+          .replaceAll('.', '.')
+          .replaceAll(',', ','), // keep original separator visually
+      selection: newValue.selection,
     );
   }
 }

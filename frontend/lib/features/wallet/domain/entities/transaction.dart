@@ -39,6 +39,9 @@ final class Transaction extends Equatable {
   /// Descrição/nota da transação
   final String? description;
 
+  /// Indica se é uma transação interna (entre usuários da plataforma)
+  final bool isInternal;
+
   const Transaction({
     required this.id,
     required this.fromAddress,
@@ -52,6 +55,7 @@ final class Transaction extends Equatable {
     this.blockHash,
     this.blockHeight,
     this.description,
+    this.isInternal = false,
   });
 
   /// Valor total (amount + fee)
@@ -83,6 +87,7 @@ final class Transaction extends Equatable {
       'blockHash': blockHash,
       'blockHeight': blockHeight,
       'description': description,
+      'isInternal': isInternal,
     };
   }
 
@@ -108,24 +113,79 @@ final class Transaction extends Equatable {
         blockHash: json['blockHash'],
         blockHeight: json['blockHeight'],
         description: json['description'],
+        isInternal: json['isInternal'] ?? false,
       );
     }
 
-    // Original Ledger API format
-    final amountVal = json['amount'] as num? ?? 0;
-    final isNegative = amountVal < 0;
+    // Original Ledger API format (New structure)
+    final amountVal = (json['amount'] as num?)?.toDouble() ?? 0.0;
+
+    final senderField =
+        [
+              json['senderIdentifier'],
+              json['sender'],
+              json['from'],
+              json['fromAddress'],
+            ]
+            .map((e) => e?.toString())
+            .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+
+    final receiverField =
+        [
+              json['receiverIdentifier'],
+              json['receiver'],
+              json['to'],
+              json['toAddress'],
+            ]
+            .map((e) => e?.toString())
+            .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+
+    final typeField = (json['transactionType'] ?? json['type'])
+        ?.toString()
+        .toUpperCase();
+    bool isSend = false;
+
+    if (typeField == 'SEND' ||
+        typeField == 'DEBIT' ||
+        typeField == 'WITHDRAWAL' ||
+        typeField == 'TRANSACTION_SEND') {
+      isSend = true;
+    } else if (amountVal < 0) {
+      isSend = true;
+    }
+
+    TransactionType txType = isSend
+        ? TransactionType.send
+        : TransactionType.receive;
+    if (typeField == 'WITHDRAWAL') {
+      txType = TransactionType.withdrawal;
+    } else if (typeField == 'DEPOSIT') {
+      txType = TransactionType.deposit;
+    } else if (typeField == 'TRANSACTION_SEND') {
+      txType = TransactionType.send;
+    } else if (typeField == 'TRANSACTION_RECEIVE') {
+      txType = TransactionType.receive;
+    }
 
     return Transaction(
       id: (json['id'] ?? '').toString(),
-      fromAddress: json['sender'] ?? (isNegative ? 'Me' : 'External'),
-      toAddress: json['receiver'] ?? (isNegative ? 'External' : 'Me'),
-      amountSatoshis: amountVal.abs().toInt(),
+      fromAddress: senderField ?? (isSend ? 'Me' : 'External'),
+      toAddress: receiverField ?? (isSend ? 'External' : 'Me'),
+      amountSatoshis: (amountVal.abs() * 100000000).round(),
       feeSatoshis: 0,
       status: TransactionStatus.confirmed,
-      type: isNegative ? TransactionType.send : TransactionType.receive,
+      type: txType,
       confirmations: (json['nonce'] ?? 6) as int,
       timestamp: DateTime.now(),
-      description: json['context'] ?? json['walletName'],
+      description:
+          json['context']?.toString() ?? json['description']?.toString(),
+      isInternal:
+          typeField == 'TRANSFER' ||
+          typeField == 'TRANSACTION_SEND' ||
+          typeField == 'TRANSACTION_RECEIVE' ||
+          json['context'] == 'transfer' ||
+          (json['description']?.toString().toLowerCase().contains('transfer') ??
+              false),
     );
   }
 
@@ -143,6 +203,7 @@ final class Transaction extends Equatable {
     blockHash,
     blockHeight,
     description,
+    isInternal,
   ];
 }
 
@@ -178,7 +239,13 @@ enum TransactionType {
   swap('Swap', 'Token swap'),
 
   /// Taxa de rede
-  fee('Fee', 'Network fee');
+  fee('Fee', 'Network fee'),
+
+  /// Saque (Withdrawal)
+  withdrawal('Withdrawal', 'Sent Bitcoin to external address'),
+
+  /// Depósito (Deposit)
+  deposit('Deposit', 'Received Bitcoin from external address');
 
   const TransactionType(this.displayName, this.description);
 

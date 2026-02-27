@@ -4,6 +4,7 @@ import '../../../../core/providers/price_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart'
     show authLocalDataSourceProvider, apiClientProvider;
 import '../../../../core/services/wallet_security_service.dart';
+import '../../../../core/providers/network_status_provider.dart'; // [NEW]
 import '../../../../core/utils/transaction_signer.dart';
 import '../../data/datasources/wallet_remote_datasource.dart';
 import '../../data/repositories/wallet_repository_impl.dart';
@@ -155,10 +156,12 @@ final createWalletProvider =
 class WalletNotifier extends StateNotifier<WalletState> {
   final GetWalletsUseCase getWalletsUseCase;
   final WalletRepository walletRepository;
+  final Ref ref; // Add ref
 
   WalletNotifier({
     required this.getWalletsUseCase,
     required this.walletRepository,
+    required this.ref,
   }) : super(const WalletInitial()) {
     _loadWallets();
   }
@@ -171,27 +174,32 @@ class WalletNotifier extends StateNotifier<WalletState> {
     final walletsResult = await getWalletsUseCase();
     final rateResult = await walletRepository.getBTCtoUSDRate();
 
-    walletsResult.fold((failure) => state = WalletError(failure.message), (
-      wallets,
-    ) {
-      final btcToUsdRate = rateResult.fold(
-        (failure) => 0.0, // Fallback se falhar
-        (rate) => rate,
-      );
+    walletsResult.fold(
+      (failure) {
+        // Trigger V Mode (Offline Overlay) on critical wallet load failure
+        ref.read(networkStatusProvider.notifier).forceOffline();
+        state = WalletError(failure.message);
+      },
+      (wallets) {
+        final btcToUsdRate = rateResult.fold(
+          (failure) => 0.0, // Fallback se falhar
+          (rate) => rate,
+        );
 
-      state = WalletLoaded(
-        wallets: wallets,
-        selectedWallet: wallets.isNotEmpty ? wallets.first : null,
-        btcToUsdRate: btcToUsdRate,
-      );
+        state = WalletLoaded(
+          wallets: wallets,
+          selectedWallet: wallets.isNotEmpty ? wallets.first : null,
+          btcToUsdRate: btcToUsdRate,
+        );
 
-      // **OTIMIZAÇÃO**: Removido loop que disparava N requisições paralelas
-      // O saldo será atualizado sob demanda quando o usuário selecionar um wallet
-      // ou quando explicitamente solicitar refresh
-      // for (final wallet in wallets) {
-      //   updateWalletBalance(wallet.name); // Agora usa wallet.name!
-      // }
-    });
+        // **OTIMIZAÇÃO**: Removido loop que disparava N requisições paralelas
+        // O saldo será atualizado sob demanda quando o usuário selecionar um wallet
+        // ou quando explicitamente solicitar refresh
+        // for (final wallet in wallets) {
+        //   updateWalletBalance(wallet.name); // Agora usa wallet.name!
+        // }
+      },
+    );
   }
 
   /// Recarrega carteiras
@@ -261,6 +269,7 @@ final walletProvider = StateNotifierProvider<WalletNotifier, WalletState>((
   return WalletNotifier(
     getWalletsUseCase: getWalletsUseCase,
     walletRepository: walletRepository,
+    ref: ref,
   );
 });
 
@@ -418,11 +427,16 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
                     amountSatoshis: amountSatoshis,
                     feeSatoshis: feeSatoshis,
                     timestamp: DateTime.now(),
-                    fromAddress: fromAddress,
-                    toAddress: toAddress,
+                    fromAddress: txStatus.sender.isNotEmpty
+                        ? txStatus.sender
+                        : fromAddress,
+                    toAddress: txStatus.receiver.isNotEmpty
+                        ? txStatus.receiver
+                        : toAddress,
                     status: TransactionStatus.pending,
                     type: TransactionType.send,
                     confirmations: 0,
+                    description: txStatus.context ?? description,
                   ),
                 );
 

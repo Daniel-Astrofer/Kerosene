@@ -4,6 +4,13 @@ backup.sql
 *.env.*
 *.secret
 *.key
+google-services.json
+service-account.json
+
+# Bancos de dados temporários e dumps
+*.sql
+*.sqlite
+*.db
 
 # System Files
 .DS_Store
@@ -20,8 +27,16 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+backend/kerosene/logs/*.json
 
 # Temporary
 tmp/
 dist/
 node_modules/
+
+# Frontend Builds e Cache
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+service-account.json

@@ -4,19 +4,19 @@ import 'app_colors.dart';
 class AppTheme {
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.background, // Use new signature color
-    fontFamily: 'HubotSans', // Modern, clean font
+    scaffoldBackgroundColor: AppColors.background,
+    fontFamily: 'HubotSans',
     useMaterial3: true,
 
-    // Color Scheme
+    // ─── Color Scheme ────────────────────────────
     colorScheme: const ColorScheme.dark(
-      primary: AppColors.primary, // Teal/Cyan
-      secondary: AppColors.secondary1, // Blue
+      primary: AppColors.primary,
+      secondary: AppColors.secondary1,
       surface: AppColors.darkSurface,
       error: AppColors.error,
     ),
 
-    // Page Transitions (Smooth Slide/Zoom)
+    // ─── Page Transitions ────────────────────────
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: ZoomPageTransitionsBuilder(),
@@ -24,11 +24,11 @@ class AppTheme {
       },
     ),
 
-    // Text Theme (Premium)
+    // ─── Text Theme ──────────────────────────────
     textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontSize: 32,
-        fontWeight: FontWeight.w800, // ExtraBold
+        fontWeight: FontWeight.w800,
         fontFamily: 'HubotSansExpanded',
         color: Colors.white,
         letterSpacing: -1.0,
@@ -42,88 +42,93 @@ class AppTheme {
       bodyMedium: TextStyle(fontSize: 14, color: Colors.white70, height: 1.5),
     ),
 
-    // Input Decoration (Glassmorphism)
+    // ─── Input Decoration (Cybercore) ────────────
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.05),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      fillColor: const Color(0xFF12121C),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF1E1E30), width: 1),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF1E1E30), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
-      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.error, width: 1),
+      ),
+      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25)),
+      labelStyle: const TextStyle(color: Color(0xFF8A8A9C)),
     ),
 
-    // Button Theme (Neon Glow)
+    // ─── Button Theme (Neon Glow) ────────────────
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 8,
-        shadowColor: AppColors.primary.withValues(alpha: 0.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+        foregroundColor: AppColors.background,
+        elevation: 0,
+        shadowColor: AppColors.primary.withValues(alpha: 0.4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
         textStyle: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
           letterSpacing: 0.5,
         ),
       ),
     ),
 
-    // AppBar Theme
+    // ─── AppBar Theme ────────────────────────────
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
         color: Colors.white,
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.5,
       ),
       iconTheme: IconThemeData(color: Colors.white),
     ),
 
-    // Card Theme
+    // ─── Card Theme ──────────────────────────────
     cardTheme: CardThemeData(
-      color: const Color(0xFF1E1E1E),
-      surfaceTintColor: Colors.transparent, // Disable M3 tint
+      color: const Color(0xFF0E0E16),
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
 
-    // Dialog Theme
+    // ─── Dialog Theme ────────────────────────────
     dialogTheme: const DialogThemeData(
-      backgroundColor: Color(0xFF1A1A24),
+      backgroundColor: Color(0xFF0E0E16),
       surfaceTintColor: Colors.transparent,
     ),
 
-    // Bottom Sheet Theme
+    // ─── Bottom Sheet Theme ──────────────────────
     bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Color(0xFF1A1A24),
+      backgroundColor: Color(0xFF0E0E16),
       surfaceTintColor: Colors.transparent,
-      modalBackgroundColor: Color(0xFF1A1A24),
+      modalBackgroundColor: Color(0xFF0E0E16),
     ),
 
-    // Popup Menu Theme
+    // ─── Popup Menu Theme ────────────────────────
     popupMenuTheme: const PopupMenuThemeData(
-      color: Color(0xFF1E1E1E),
+      color: Color(0xFF0E0E16),
       surfaceTintColor: Colors.transparent,
     ),
   );
 
-  // Gradients
+  // ─── Gradients ─────────────────────────────────
   static const LinearGradient metallicGradient = LinearGradient(
-    colors: [Color(0xFF2B3033), Color(0xFF101018)],
+    colors: [Color(0xFF0F1018), Color(0xFF050508)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

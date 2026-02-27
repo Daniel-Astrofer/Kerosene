@@ -33,8 +33,8 @@ class TokenInterceptor extends Interceptor {
       final deviceHash = await DeviceHelper.getDeviceHash();
       options.headers[AppConfig.deviceHashHeader] = deviceHash;
 
-      // 3. Header para ignorar aviso do ngrok
-      options.headers['ngrok-skip-browser-warning'] = 'true';
+      // 3. Mask the Host header to trick Spring Boot into accepting the relayed TCP HTTP request
+      options.headers['Host'] = Uri.parse(AppConfig.onionBaseUrl).host;
 
       // 4. Log Crítico para Depuração do 403
       final authHeader = options.headers['Authorization'];
@@ -57,11 +57,29 @@ class TokenInterceptor extends Interceptor {
     if (newToken != null && newToken.isNotEmpty) {
       debugPrint('🔄 JWT Renewal: Novo token recebido no header');
 
+      var cleanToken = newToken.trim();
+      if (cleanToken.startsWith('Bearer ')) {
+        cleanToken = cleanToken.substring(7).trim();
+      }
+
       // Salvar localmente
-      await localDataSource.saveToken(newToken);
+      await localDataSource.saveToken(cleanToken);
       // O ApiClient buscará o novo token via interceptor na próxima chamada
     }
 
     return handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // 401 = invalid/expired token. Wipe it so it's never sent again.
+    if (err.response?.statusCode == 401) {
+      debugPrint('🔑 TokenInterceptor: 401 received — clearing invalid token.');
+      try {
+        await localDataSource.removeToken();
+        await localDataSource.removeUser();
+      } catch (_) {}
+    }
+    return handler.next(err);
   }
 }

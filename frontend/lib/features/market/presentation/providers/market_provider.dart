@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert';
-import 'dart:math' as math;
+import 'package:flutter/foundation.dart'; // For debugPrint
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/datasources/binance_socket_service.dart';
 
@@ -36,7 +35,7 @@ class MarketState {
     this.spots = const [],
     this.isLoading = false,
     this.error,
-    this.timeframe = "1D",
+    this.timeframe = "LIVE",
     this.fearAndGreed,
     this.bids = const [],
     this.asks = const [],
@@ -77,14 +76,16 @@ class MarketState {
 
 final binanceSocketProvider = Provider((ref) => BinanceSocketService());
 
-final marketProvider = StateNotifierProvider<MarketNotifier, MarketState>((ref) {
+final marketProvider = StateNotifierProvider<MarketNotifier, MarketState>((
+  ref,
+) {
   final socketService = ref.watch(binanceSocketProvider);
   return MarketNotifier(socketService);
 });
 
 class MarketNotifier extends StateNotifier<MarketState> {
   final BinanceSocketService _socketService;
-  
+
   MarketNotifier(this._socketService) : super(MarketState()) {
     _socketService.connect();
     _listenToSocket();
@@ -131,14 +132,31 @@ class MarketNotifier extends StateNotifier<MarketState> {
     final closePrice = double.tryParse(k['c']?.toString() ?? '') ?? 0.0;
     final isFinal = k['x'] == true;
 
+    // Safety check: ensure we have spots to update
     if (state.spots.isEmpty) return;
 
     final newSpots = List<FlSpot>.from(state.spots);
-    newSpots[newSpots.length - 1] = FlSpot(newSpots.last.x, closePrice);
-    
+
+    // Update the last spot with the latest close price (Real-time tick)
+    final lastSpot = newSpots.last;
+    if (lastSpot.y != closePrice) {
+      debugPrint('Chart Update: ${lastSpot.y} -> $closePrice');
+    }
+    newSpots[newSpots.length - 1] = FlSpot(lastSpot.x, closePrice);
+
+    // If candle is closed, append a new spot for the NEXT candle
     if (isFinal) {
-      newSpots.add(FlSpot(newSpots.length.toDouble(), closePrice));
-      if (newSpots.length > 1000) newSpots.removeAt(0);
+      debugPrint('Candle Closed. Adding new spot.');
+      // The x-axis index simply increments
+      newSpots.add(FlSpot(lastSpot.x + 1, closePrice));
+
+      // Keep list size manageable
+      if (newSpots.length > 500) {
+        newSpots.removeAt(0);
+        // Re-index x-axis to avoid huge numbers?
+        // Or just let it grow. For detailed charts, re-indexing might be smoother but
+        // fl_chart handles large X values fine.
+      }
     }
 
     state = state.copyWith(spots: newSpots, currentPrice: closePrice);
@@ -148,37 +166,80 @@ class MarketNotifier extends StateNotifier<MarketState> {
     final rawBids = data['bids'] as List? ?? [];
     final rawAsks = data['asks'] as List? ?? [];
 
-    final bids = rawBids.take(10).map((e) => OrderBookEntry(
-      price: double.tryParse(e[0].toString()) ?? 0.0,
-      amount: double.tryParse(e[1].toString()) ?? 0.0,
-    )).toList();
+    final bids = rawBids
+        .take(10)
+        .map(
+          (e) => OrderBookEntry(
+            price: double.tryParse(e[0].toString()) ?? 0.0,
+            amount: double.tryParse(e[1].toString()) ?? 0.0,
+          ),
+        )
+        .toList();
 
-    final asks = rawAsks.take(10).map((e) => OrderBookEntry(
-      price: double.tryParse(e[0].toString()) ?? 0.0,
-      amount: double.tryParse(e[1].toString()) ?? 0.0,
-    )).toList();
+    final asks = rawAsks
+        .take(10)
+        .map(
+          (e) => OrderBookEntry(
+            price: double.tryParse(e[0].toString()) ?? 0.0,
+            amount: double.tryParse(e[1].toString()) ?? 0.0,
+          ),
+        )
+        .toList();
 
     state = state.copyWith(bids: bids, asks: asks);
   }
 
   Future<void> fetchMarketData(String timeframe) async {
-    state = state.copyWith(isLoading: state.spots.isEmpty, timeframe: timeframe, error: null);
+    state = state.copyWith(
+      isLoading: state.spots.isEmpty,
+      timeframe: timeframe,
+      error: null,
+    );
 
     try {
       String interval = '1h';
       int limit = 200;
-      
+
       switch (timeframe) {
-        case "1H": interval = '1m'; limit = 60; break;
-        case "1D": interval = '15m'; limit = 96; break;
-        case "1W": interval = '1h'; limit = 168; break;
-        case "1M": interval = '4h'; limit = 180; break;
-        case "1Y": interval = '1d'; limit = 365; break;
-        case "ALL": interval = '1w'; limit = 500; break;
+        case "LIVE": // Real-time view
+          interval = '1m';
+          limit = 30; // Focus on immediate action
+          break;
+        case "1H":
+          interval = '1m';
+          limit = 60;
+          break;
+        case "1D":
+          interval = '15m';
+          limit = 96;
+          break;
+        case "1W":
+          interval = '1h';
+          limit = 168;
+          break;
+        case "1M":
+          interval = '4h';
+          limit = 180;
+          break;
+        case "1Y":
+          interval = '1d';
+          limit = 365;
+          break;
+        case "ALL":
+          interval = '1w';
+          limit = 500;
+          break;
       }
 
-      final candles = await _socketService.fetchHistoricalCandles('BTCUSDT', interval, limit: limit);
-      
+      // Reconnect WebSocket with new interval
+      _socketService.connect(interval: interval);
+
+      final candles = await _socketService.fetchHistoricalCandles(
+        'BTCUSDT',
+        interval,
+        limit: limit,
+      );
+
       if (candles.isEmpty) {
         state = state.copyWith(isLoading: false);
         return;
@@ -190,10 +251,7 @@ class MarketNotifier extends StateNotifier<MarketState> {
         spots.add(FlSpot(i.toDouble(), closePrice));
       }
 
-      state = state.copyWith(
-        isLoading: false,
-        spots: spots,
-      );
+      state = state.copyWith(isLoading: false, spots: spots);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

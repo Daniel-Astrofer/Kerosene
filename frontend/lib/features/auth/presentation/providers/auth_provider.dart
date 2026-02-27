@@ -9,13 +9,24 @@ import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/signup_usecase.dart';
+import '../../../../features/notifications/data/datasources/notification_remote_datasource.dart'; // Import
+import '../../../../features/notifications/data/repositories/notification_repository_impl.dart'; // Import
+import '../../../../features/notifications/domain/repositories/notification_repository.dart'; // Import
+import '../../../../features/notifications/application/notification_service.dart'; // Import
+
+import '../../../../core/services/audio_service.dart';
+import '../../../../core/services/background_service.dart';
 import '../state/auth_state.dart';
 
 // ==================== Providers de Dependências ====================
 
 /// Provider do ApiClient
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final client = ApiClient(baseUrl: AppConfig.apiUrl);
+  // Unified Tor Routing (apiUrl already contains the relay port)
+  final baseUrl = AppConfig.apiUrl;
+
+  final client = ApiClient(baseUrl: baseUrl, ref: ref);
+
   final localDataSource = ref.watch(authLocalDataSourceProvider);
 
   // Anexar o interceptor imediatamente para evitar condições de corrida
@@ -63,6 +74,27 @@ final signupUseCaseProvider = Provider<SignupUseCase>((ref) {
   return SignupUseCase(repository);
 });
 
+// ==================== Providers de Notifications ====================
+
+/// Provider do NotificationRemoteDataSource
+final notificationRemoteDataSourceProvider =
+    Provider<NotificationRemoteDataSource>((ref) {
+      final apiClient = ref.watch(apiClientProvider);
+      return NotificationRemoteDataSourceImpl(apiClient);
+    });
+
+/// Provider do NotificationRepository
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  final remote = ref.watch(notificationRemoteDataSourceProvider);
+  return NotificationRepositoryImpl(remote);
+});
+
+/// Provider do NotificationService
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  final repository = ref.watch(notificationRepositoryProvider);
+  return NotificationService(repository);
+});
+
 // ==================== Provider de Estado ====================
 
 /// StateNotifier para gerenciar o estado de autenticação
@@ -70,11 +102,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final LoginUseCase loginUseCase;
   final SignupUseCase signupUseCase;
   final AuthRepository authRepository;
+  final NotificationService notificationService; // Inject Service
 
   AuthNotifier({
     required this.loginUseCase,
     required this.signupUseCase,
     required this.authRepository,
+    required this.notificationService,
     required Ref ref,
   }) : super(const AuthInitial()) {
     _checkAuthStatus();
@@ -87,8 +121,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (isAuth) {
       final result = await authRepository.getCurrentUser();
       result.fold(
-        (failure) => state = const AuthUnauthenticated(),
-        (user) => state = AuthAuthenticated(user),
+        (failure) async {
+          // Token exists but user data is missing or invalid — wipe it
+          // This clears stale/mismatched tokens so the user re-authenticates cleanly.
+          await authRepository.clearInvalidSession();
+          state = const AuthUnauthenticated();
+        },
+        (user) {
+          state = AuthAuthenticated(user);
+          notificationService.initializeAndRegister();
+          startBackgroundService();
+        },
       );
     } else {
       state = const AuthUnauthenticated();
@@ -106,32 +149,46 @@ class AuthNotifier extends StateNotifier<AuthState> {
       LoginParams(username: username, passphrase: password),
     );
 
-    result.fold((failure) {
-      if (failure.message == 'REQ_LOGIN_2FA') {
-        state = AuthRequiresLoginTotp(username: username, passphrase: password);
-      } else {
+    result.fold(
+      (failure) async {
+        AudioService.instance.playError();
+        // Clear any stale/mismatched token so it's never sent again
+        await authRepository.clearInvalidSession();
         state = AuthError(failure.message);
-      }
-    }, (user) => state = AuthAuthenticated(user));
+      },
+      (authId) {
+        // Login initial phase success. Move to TOTP state.
+        state = AuthRequiresLoginTotp(username: username, passphrase: password);
+      },
+    );
   }
 
   /// Fazer cadastro
   Future<void> signup({
     required String username,
     required String password,
+    required String accountSecurity,
   }) async {
     state = const AuthLoading();
 
     final result = await signupUseCase(
-      SignupParams(username: username, passphrase: password),
+      SignupParams(
+        username: username,
+        passphrase: password,
+        accountSecurity: accountSecurity,
+      ),
     );
 
     result.fold(
-      (failure) => state = AuthError(failure.message),
-      (totpSecret) => state = AuthRequiresTotpSetup(
+      (failure) {
+        AudioService.instance.playError();
+        state = AuthError(failure.message);
+      },
+      (signupResult) => state = AuthRequiresTotpSetup(
         username: username,
         passphrase: password,
-        totpSecret: totpSecret,
+        totpSecret: signupResult.totpSecret,
+        qrCodeUri: signupResult.qrCodeUri,
       ),
     );
   }
@@ -149,11 +206,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       username: username,
       passphrase: passphrase,
       totpCode: totpCode,
+      totpSecret: totpSecret,
     );
 
     result.fold(
       (failure) => state = AuthError(failure.message),
-      (user) => state = AuthAuthenticated(user),
+      (sessionId) => state = AuthTotpVerified(sessionId),
     );
   }
 
@@ -171,10 +229,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       totpCode: totpCode,
     );
 
-    result.fold(
-      (failure) => state = AuthError(failure.message),
-      (user) => state = AuthAuthenticated(user),
-    );
+    result.fold((failure) => state = AuthError(failure.message), (user) {
+      state = AuthAuthenticated(user);
+      notificationService.initializeAndRegister();
+      startBackgroundService();
+    });
   }
 
   /// Fazer logout
@@ -183,10 +242,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     final result = await authRepository.logout();
 
-    result.fold(
-      (failure) => state = AuthError(failure.message),
-      (_) => state = const AuthUnauthenticated(),
-    );
+    result.fold((failure) => state = AuthError(failure.message), (_) {
+      state = const AuthUnauthenticated();
+      stopBackgroundService();
+    });
   }
 
   /// Limpar erro
@@ -208,11 +267,15 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final loginUseCase = ref.watch(loginUseCaseProvider);
   final signupUseCase = ref.watch(signupUseCaseProvider);
   final authRepository = ref.watch(authRepositoryProvider);
+  final notificationService = ref.watch(
+    notificationServiceProvider,
+  ); // Watch service
 
   return AuthNotifier(
     loginUseCase: loginUseCase,
     signupUseCase: signupUseCase,
     authRepository: authRepository,
+    notificationService: notificationService, // Pass to notifier
     ref: ref,
   );
 });

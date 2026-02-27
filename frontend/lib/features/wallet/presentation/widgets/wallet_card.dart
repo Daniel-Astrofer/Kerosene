@@ -176,6 +176,20 @@ class _WalletCardState extends State<WalletCard>
               Positioned.fill(
                 child: AnimatedBuilder(
                   animation: _rotationController,
+                  child: Container(
+                    width: width * 0.8,
+                    height: height * 0.8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: neonColor.withValues(alpha: 0.4),
+                          blurRadius: 60,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                  ),
                   builder: (context, child) {
                     final alignX =
                         (0.5 *
@@ -183,22 +197,12 @@ class _WalletCardState extends State<WalletCard>
                     final alignY =
                         (0.5 *
                         math.sin(_rotationController.value * 2 * math.pi));
-                    return Align(
-                      alignment: Alignment(alignX, alignY),
-                      child: Container(
-                        width: width * 0.8,
-                        height: height * 0.8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: neonColor.withValues(alpha: 0.4),
-                              blurRadius: 60,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                      ),
+                    return FractionalTranslation(
+                      translation: Offset(
+                        alignX * 0.125,
+                        alignY * 0.125,
+                      ), // Adjusted for size diff
+                      child: Center(child: child),
                     );
                   },
                 ),
@@ -264,9 +268,11 @@ class _WalletCardState extends State<WalletCard>
                     children: [
                       // Pattern
                       Positioned.fill(
-                        child: CustomPaint(
-                          painter: _BitcoinPatternPainter(
-                            color: Colors.black.withValues(alpha: 0.05),
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            painter: _BitcoinPatternPainter(
+                              color: Colors.black.withValues(alpha: 0.05),
+                            ),
                           ),
                         ),
                       ),

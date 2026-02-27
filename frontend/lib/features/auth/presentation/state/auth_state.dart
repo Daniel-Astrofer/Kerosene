@@ -31,6 +31,21 @@ class AuthAuthenticated extends AuthState {
   int get hashCode => user.hashCode;
 }
 
+class AuthTotpVerified extends AuthState {
+  final String sessionId;
+
+  const AuthTotpVerified(this.sessionId);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is AuthTotpVerified && other.sessionId == sessionId;
+  }
+
+  @override
+  int get hashCode => sessionId.hashCode;
+}
+
 /// Estado não autenticado
 class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
@@ -57,11 +72,13 @@ class AuthRequiresTotpSetup extends AuthState {
   final String username;
   final String passphrase;
   final String totpSecret;
+  final String qrCodeUri;
 
   const AuthRequiresTotpSetup({
     required this.username,
     required this.passphrase,
     required this.totpSecret,
+    required this.qrCodeUri,
   });
 }
 

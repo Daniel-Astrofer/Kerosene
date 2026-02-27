@@ -13,11 +13,13 @@ import '../../../home/presentation/screens/home_screen.dart';
 class UnknownDeviceScreen extends ConsumerStatefulWidget {
   final String username;
   final String passphrase;
+  final bool rememberMe;
 
   const UnknownDeviceScreen({
     super.key,
     required this.username,
     required this.passphrase,
+    this.rememberMe = false,
   });
 
   @override
@@ -57,12 +59,21 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading;
 
-    ref.listen<AuthState>(authProvider, (previous, next) {
+    ref.listen<AuthState>(authProvider, (previous, next) async {
       if (next is AuthAuthenticated) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
-        );
+        if (widget.rememberMe) {
+          final localDataSource = ref.read(authLocalDataSourceProvider);
+          await localDataSource.saveCredentials(
+            widget.username,
+            widget.passphrase,
+          );
+        }
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (route) => false,
+          );
+        }
       } else if (next is AuthError) {
         showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
       }

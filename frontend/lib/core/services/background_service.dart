@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'balance_websocket_service.dart';
 import '../config/app_config.dart';
 import 'notification_service.dart';
+import 'tor_service.dart';
 
 Future<void> initializeBackgroundService() async {
   final service = FlutterBackgroundService();
@@ -35,19 +36,18 @@ Future<void> initializeBackgroundService() async {
       onStart: onStart,
 
       // auto start service
-      autoStart: true,
-      isForegroundMode: true,
+      autoStart: false,
+      isForegroundMode: false,
 
       notificationChannelId: 'kerosene_foreground',
       initialNotificationTitle: 'Kerosene',
       initialNotificationContent: 'Monitoring transactions...',
       foregroundServiceNotificationId: 888,
-      // Removido foregroundServiceTypes para evitar erros de compilação com enums ausentes.
-      // O tipo padrão será definido pelo manifesto do Android.
+      foregroundServiceTypes: [AndroidForegroundType.dataSync],
     ),
     iosConfiguration: IosConfiguration(
       // auto start service
-      autoStart: true,
+      autoStart: false,
 
       // this will be executed when app is in foreground in separated isolate
       onForeground: onStart,
@@ -56,6 +56,20 @@ Future<void> initializeBackgroundService() async {
       onBackground: onIosBackground,
     ),
   );
+}
+
+Future<void> startBackgroundService() async {
+  final service = FlutterBackgroundService();
+  if (!(await service.isRunning())) {
+    await service.startService();
+  }
+}
+
+Future<void> stopBackgroundService() async {
+  final service = FlutterBackgroundService();
+  if (await service.isRunning()) {
+    service.invoke("stopService");
+  }
 }
 
 @pragma('vm:entry-point')
@@ -92,9 +106,35 @@ void onStart(ServiceInstance service) async {
     return;
   }
 
+  // 🧅 MANDATORY: Start Tor network in this isolate
+  bool torReady = false;
+  try {
+    debugPrint('BackgroundService: Starting Tor...');
+    await TorService.instance.start();
+
+    // Start local relay to the .onion backend for the background isolate
+    final host = Uri.parse(AppConfig.onionBaseUrl).host;
+    final int relayPort = await TorService.instance.startRelay(host, 80);
+    AppConfig.apiUrl = 'http://127.0.0.1:$relayPort';
+    torReady = true;
+    debugPrint(
+      'BackgroundService: Unified Tor Relay Active: ${AppConfig.apiUrl} -> $host',
+    );
+  } catch (e) {
+    debugPrint('BackgroundService: Tor start failed: $e');
+  }
+
+  // Do not start the WebSocket if the relay is not ready —
+  // it would connect to the raw .onion address and fail in an infinite loop.
+  if (!torReady) {
+    debugPrint('BackgroundService: Tor relay unavailable. Stopping service.');
+    service.stopSelf();
+    return;
+  }
+
   // Store last known balance to detect changes
   final wsService = BalanceWebSocketService(
-    baseUrl: AppConfig.apiBaseUrl,
+    baseUrl: AppConfig.apiUrl,
     userId: userId,
     authToken: token,
     onBalanceUpdate: (update) async {
@@ -108,15 +148,15 @@ void onStart(ServiceInstance service) async {
 
       // Check if balance INCREASED (Received money)
       if (update.newBalance > lastBalance + 0.00000001) {
-        final delta = update.newBalance - lastBalance;
+        // final delta = update.newBalance - lastBalance;
 
-        // Trigger Notification
-        NotificationService().showSubtleNotification(
-          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          title: 'Payment Received',
-          body:
-              'You received ${delta.toStringAsFixed(8)} BTC in ${update.walletName}',
-        );
+        // Trigger Notification - DISABLED: User wants backend notifications only
+        // NotificationService().showSubtleNotification(
+        //   id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        //   title: 'Payment Received',
+        //   body:
+        //       'You received ${delta.toStringAsFixed(8)} BTC in ${update.walletName}',
+        // );
       }
 
       // Update stored balance regardless of increase/decrease
@@ -124,10 +164,11 @@ void onStart(ServiceInstance service) async {
     },
   );
 
-  wsService.connect();
+  await wsService.connect();
 
   // Listen for stop events
   service.on('stopService').listen((event) {
+    wsService.disconnect(); // Terminate hanging sockets
     service.stopSelf();
   });
 }

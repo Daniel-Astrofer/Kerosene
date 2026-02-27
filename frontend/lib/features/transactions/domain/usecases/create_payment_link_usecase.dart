@@ -10,16 +10,18 @@ class CreatePaymentLinkUseCase {
 
   Future<Either<Failure, PaymentLink>> call({
     required double amount,
-    required String description,
+    required String receiverWalletName,
   }) async {
     try {
-      final result = await repository.createPaymentLink(
+      final result = await repository.createPaymentRequest(
         amount: amount,
-        description: description,
+        receiverWalletName: receiverWalletName,
       );
       return Right(result);
     } catch (e) {
-      return Left(UnknownFailure(message: 'Failed to create payment link: $e'));
+      return Left(
+        UnknownFailure(message: 'Failed to create payment request: $e'),
+      );
     }
   }
 }

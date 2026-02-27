@@ -167,13 +167,13 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
             _formatTimestamp(deposit.createdAt ?? DateTime.now()),
           ),
           ...[
-          const SizedBox(height: 8),
-          _buildInfoRow(
-            Icons.check_circle_outline,
-            'Confirmations',
-            '${deposit.confirmations}/6',
-          ),
-        ],
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              Icons.check_circle_outline,
+              'Confirmations',
+              '${deposit.confirmations}/6',
+            ),
+          ],
         ],
       ),
     );

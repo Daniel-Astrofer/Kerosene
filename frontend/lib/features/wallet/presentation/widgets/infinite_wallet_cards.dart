@@ -1,9 +1,7 @@
-import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sensors_plus/sensors_plus.dart';
 import '../../domain/entities/wallet.dart';
 import 'wallet_credit_card.dart';
 
@@ -52,18 +50,6 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
   /// true = pull UP (bring-to-front), false = pull DOWN (send-to-back)
   bool _isDragUp = true;
 
-  // ── PARALLAX STATE ──────────────────────────────────────────
-  StreamSubscription<AccelerometerEvent>? _accelSub;
-  double _tiltX = 0.0; // Rotation around X-axis (up/down tilt)
-  double _tiltY = 0.0; // Rotation around Y-axis (left/right tilt)
-  static const double _maxTilt = 0.25; // Max tilt in radians (~14 degrees)
-  static const double _smoothing = 0.15; // Smoothing factor for motion
-
-  // DRAG CONSTANTS
-  static const double _cardHeight = 170.0;
-  static const double _peekOffset = 15.0;
-  static const double _totalTravel = 350.0;
-
   @override
   void initState() {
     super.initState();
@@ -73,36 +59,10 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-
-    _initAccelerometer();
-  }
-
-  void _initAccelerometer() {
-    _accelSub = accelerometerEventStream().listen((AccelerometerEvent event) {
-      if (mounted) {
-        setState(() {
-          // Accelerometer gives absolute orientation relative to gravity (~9.8 m/s^2)
-          // X: sideways tilt, Y: forward/backward tilt
-          // We normalize and apply a target tilt factor
-          double targetTiltX =
-              (event.y / 9.8) * 0.35; // Map Y to X-axis rotation
-          double targetTiltY =
-              (-event.x / 9.8) * 0.35; // Map X to Y-axis rotation
-
-          _tiltX = _tiltX * (1.0 - _smoothing) + targetTiltX * _smoothing;
-          _tiltY = _tiltY * (1.0 - _smoothing) + targetTiltY * _smoothing;
-
-          // Clamp for safety
-          _tiltX = _tiltX.clamp(-_maxTilt, _maxTilt);
-          _tiltY = _tiltY.clamp(-_maxTilt, _maxTilt);
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _accelSub?.cancel();
     _animController.dispose();
     super.dispose();
   }
@@ -181,9 +141,15 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
       _initializeIndices();
     }
 
+    final double screenHeight = MediaQuery.of(context).size.height;
+    // Calculate relative dimensions
+    final double cardHeight = screenHeight * 0.22; // ~170 on typical screens
+    final double peekOffset = cardHeight * 0.088; // ~15 on typical screens
+    final double totalTravel = cardHeight * 2.05; // ~350 on typical screens
+
     final int n = _visualIndices.length;
-    final double frontCardY = max(0, n - 1) * _peekOffset;
-    final double stackHeight = frontCardY + _cardHeight + 100;
+    final double frontCardY = max(0, n - 1) * peekOffset;
+    final double stackHeight = frontCardY + cardHeight + (screenHeight * 0.12);
 
     return SizedBox(
       height: stackHeight,
@@ -193,14 +159,18 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
           return Stack(
             alignment: Alignment.topCenter,
             clipBehavior: Clip.none,
-            children: _buildCards(),
+            children: _buildCards(cardHeight, peekOffset, totalTravel),
           );
         },
       ),
     );
   }
 
-  List<Widget> _buildCards() {
+  List<Widget> _buildCards(
+    double cardHeight,
+    double peekOffset,
+    double totalTravel,
+  ) {
     final List<Widget> cards = [];
     final double t = _animController.value;
     final int n = _visualIndices.length;
@@ -230,7 +200,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
       final wallet = widget.wallets[walletIdx];
 
       double startScale = 1.0 - (rank * 0.05);
-      double startY = (n - 1 - rank) * _peekOffset;
+      double startY = (n - 1 - rank) * peekOffset;
 
       double scale = startScale;
       double y = startY;
@@ -249,15 +219,15 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
             // Phase 1: 0.0 - 0.45 (Lift Vertical - Behind Stack)
             if (t <= 0.45) {
               double progress = t / 0.45;
-              y = lerpDouble(startY, startY - 220, progress)!;
+              y = lerpDouble(startY, startY - (cardHeight + 50), progress)!;
               rotationX = 0.0;
               scale = lerpDouble(startScale, 1.05, progress)!;
             }
             // Phase 2: 0.45 - 0.7 (Switch Layer, Tilt Back & Fly Over)
             else if (t <= 0.7) {
               double progress = (t - 0.45) / 0.25;
-              double liftedY = startY - 220;
-              double targetY = (n - 1) * _peekOffset;
+              double liftedY = startY - (cardHeight + 50);
+              double targetY = (n - 1) * peekOffset;
               y = lerpDouble(liftedY, targetY - 60, progress)!;
               rotationX = lerpDouble(0.0, -1.5, progress)!;
               scale = 1.05;
@@ -265,7 +235,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
             // Phase 3: 0.7 - 1.0 (Forward Landing)
             else {
               double progress = (t - 0.7) / 0.3;
-              double targetY = (n - 1) * _peekOffset;
+              double targetY = (n - 1) * peekOffset;
               y = lerpDouble(targetY - 60, targetY, progress)!;
               rotationX = lerpDouble(-1.5, 0.0, progress)!;
               scale = lerpDouble(1.05, 1.0, progress)!;
@@ -274,7 +244,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
             // Cards being pushed down
             if (t > 0.6) {
               double progress = (t - 0.6) / 0.4;
-              double endY = (n - 1 - (rank + 1)) * _peekOffset;
+              double endY = (n - 1 - (rank + 1)) * peekOffset;
               double endScale = 1.0 - ((rank + 1) * 0.05);
               y = lerpDouble(startY, endY, progress)!;
               scale = lerpDouble(startScale, endScale, progress)!;
@@ -287,21 +257,21 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
 
           if (rank == 0) {
             // Front card being sent to back
-            double frontY = (n - 1) * _peekOffset; // Current front position
+            double frontY = (n - 1) * peekOffset; // Current front position
             double backY = 0.0; // Back position (top of stack)
             double backScale = 1.0 - ((n - 1) * 0.05);
 
             // Phase 1: 0.0 - 0.45 (Drop Down - Still in Front)
             if (t <= 0.45) {
               double progress = t / 0.45;
-              y = lerpDouble(frontY, frontY + 220, progress)!;
+              y = lerpDouble(frontY, frontY + (cardHeight + 50), progress)!;
               rotationX = 0.0;
               scale = lerpDouble(1.0, 0.95, progress)!;
             }
             // Phase 2: 0.45 - 0.7 (Tilt Forward & Fly Behind)
             else if (t <= 0.7) {
               double progress = (t - 0.45) / 0.25;
-              double droppedY = frontY + 220;
+              double droppedY = frontY + (cardHeight + 50);
               y = lerpDouble(droppedY, backY + 60, progress)!;
               rotationX = lerpDouble(
                 0.0,
@@ -322,7 +292,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
             if (t > 0.6) {
               double progress = (t - 0.6) / 0.4;
               double newRank = rank - 1;
-              double endY = (n - 1 - newRank) * _peekOffset;
+              double endY = (n - 1 - newRank) * peekOffset;
               double endScale = 1.0 - (newRank * 0.05);
               y = lerpDouble(startY, endY, progress)!;
               scale = lerpDouble(startScale, endScale, progress)!;
@@ -351,15 +321,14 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
           right: 0,
           child: GestureDetector(
             onVerticalDragStart: (d) => _onDragStart(d, rank),
-            onVerticalDragUpdate: (d) => _onDragUpdate(d, rank),
+            onVerticalDragUpdate: (d) => _onDragUpdate(d, rank, totalTravel),
             onVerticalDragEnd: (d) => _onDragEnd(d, rank),
             onTap: () => _onTap(rank, wallet),
             child: Transform(
               alignment: Alignment.center,
               transform: Matrix4.identity()
                 ..setEntry(3, 2, 0.0015)
-                ..rotateX(rotationX + _tiltX)
-                ..rotateY(_tiltY)
+                ..rotateX(rotationX)
                 ..multiply(Matrix4.diagonal3Values(scale, scale, 1.0)),
               child: RepaintBoundary(
                 child: _wrapWithDepth(
@@ -369,14 +338,17 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
                       rank == _draggedVisualRank || (!_isDragUp && rank == 0),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
-                    child: WalletCreditCard(
-                      wallet: wallet,
-                      colorIndex: walletIdx,
-                      isSelected:
-                          rank == 0 &&
-                          !(!_isDragUp && _draggedVisualRank != null),
-                      elevation: elevation,
-                      showDetails: showDetails,
+                    child: SizedBox(
+                      height: cardHeight,
+                      child: WalletCreditCard(
+                        wallet: wallet,
+                        colorIndex: walletIdx,
+                        isSelected:
+                            rank == 0 &&
+                            !(!_isDragUp && _draggedVisualRank != null),
+                        elevation: elevation,
+                        showDetails: showDetails,
+                      ),
                     ),
                   ),
                 ),
@@ -442,7 +414,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     }
   }
 
-  void _onDragUpdate(DragUpdateDetails d, int rank) {
+  void _onDragUpdate(DragUpdateDetails d, int rank, double totalTravel) {
     if (_draggedVisualRank == null) return;
 
     double oldProgress = _animController.value;
@@ -458,7 +430,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
       double progress;
       if (_isDragUp) {
         // Pull UP: negative delta = progress
-        progress = (_rawDragAccumulator / -_totalTravel).clamp(0.0, 1.0);
+        progress = (_rawDragAccumulator / -totalTravel).clamp(0.0, 1.0);
 
         // If front card is being dragged UP, proxy to rank 1
         if (_draggedVisualRank == 0 && _visualIndices.length > 1) {
@@ -466,7 +438,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
         }
       } else {
         // Pull DOWN: positive delta = progress
-        progress = (_rawDragAccumulator / _totalTravel).clamp(0.0, 1.0);
+        progress = (_rawDragAccumulator / totalTravel).clamp(0.0, 1.0);
       }
 
       _animController.value = progress;

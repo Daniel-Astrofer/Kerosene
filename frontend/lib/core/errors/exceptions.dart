@@ -1,18 +1,29 @@
+import 'dart:convert';
+
 /// Exceção base para a aplicação
 class AppException implements Exception {
   final String message;
   final int? statusCode;
+  final String? errorCode;
 
-  const AppException({required this.message, this.statusCode});
+  const AppException({required this.message, this.statusCode, this.errorCode});
 
   @override
-  String toString() =>
-      'AppException(message: $message, statusCode: $statusCode)';
+  String toString() => jsonEncode({
+    'type': 'AppException',
+    'message': message,
+    'statusCode': statusCode,
+    'errorCode': errorCode,
+  });
 }
 
 /// Exceção de servidor
 class ServerException extends AppException {
-  const ServerException({required super.message, super.statusCode});
+  const ServerException({
+    required super.message,
+    super.statusCode,
+    super.errorCode,
+  });
 }
 
 /// Exceção de rede
@@ -22,12 +33,20 @@ class NetworkException extends AppException {
 
 /// Exceção de autenticação
 class AuthException extends AppException {
-  const AuthException({required super.message, super.statusCode});
+  const AuthException({
+    required super.message,
+    super.statusCode,
+    super.errorCode,
+  });
 }
 
 /// Exceção de validação
 class ValidationException extends AppException {
-  const ValidationException({required super.message, super.statusCode = 400});
+  const ValidationException({
+    required super.message,
+    super.statusCode = 400,
+    super.errorCode,
+  });
 }
 
 /// Exceção de cache

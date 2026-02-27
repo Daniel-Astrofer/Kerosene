@@ -2,9 +2,12 @@
 class AppConfig {
   // ==================== API Configuration ====================
 
-  /// URL base da API Kerosene
-  static const String apiBaseUrl =
-      'https://disingenuously-undelightful-lino.ngrok-free.dev';
+  /// Endereço .onion da API no Tor (Modo Seguro Obrigatório)
+  static const String onionBaseUrl =
+      'http://sc3mol7ughlcsazgt2najfhgbjmwq74gmy4jclnkcjrwc4kc7shmzjad.onion';
+
+  /// URL ativa — Exclusiva para a Onion Network. (Mutável pelo relay)
+  static String apiUrl = onionBaseUrl;
 
   /// Timeout para requisições HTTP (em milissegundos)
   static const int connectionTimeout = 30000;
@@ -24,6 +27,16 @@ class AppConfig {
   static const String authLoginVerify = '/auth/login/totp/verify';
   static const String authRefresh = '/auth/refresh';
   static const String authLogout = '/auth/logout';
+  static const String authPowChallenge = '/auth/pow/challenge';
+  static const String authPasskeyOnboardingStart =
+      '/auth/passkey/register/onboarding/start';
+  static const String authPasskeyOnboardingFinish =
+      '/auth/passkey/register/onboarding/finish';
+  static const String voucherOnboardingLink = '/voucher/onboarding-link';
+
+  // Notifications
+  static const String notificationRegisterToken =
+      '/notifications/register-token';
 
   // Wallet
   static const String walletCreate = '/wallet/create';
@@ -34,11 +47,11 @@ class AppConfig {
 
   // Ledger
   static const String ledgerTransaction = '/ledger/transaction';
-  // static const String ledgerFind = '/ledger/find'; // REMOVED: Not in API v1.1
+  static const String ledgerFind = '/ledger/find';
   static const String ledgerBalance = '/ledger/balance';
   static const String ledgerAll = '/ledger/all';
-  static const String ledgerDelete =
-      '/ledger/delete-entry'; // Note: Verify actual backend path if possible, usually it follows a pattern.
+  static const String ledgerDelete = '/ledger/delete';
+  static const String ledgerHistory = '/ledger/history';
 
   // Transactions - Fee & Status
   static const String transactionsEstimateFee = '/transactions/estimate-fee';
@@ -48,6 +61,15 @@ class AppConfig {
   static const String transactionsCreateUnsigned =
       '/transactions/create-unsigned';
   static const String transactionsBroadcast = '/transactions/broadcast';
+  static const String transactionsWithdraw = '/transactions/withdraw';
+
+  // Transactions - On-Chain Payment Links
+  static const String transactionsCreatePaymentLink =
+      '/transactions/create-payment-link';
+  static const String transactionsPaymentLink =
+      '/transactions/payment-link'; // + /{linkId}, /confirm, /complete
+  static const String transactionsPaymentLinksList =
+      '/transactions/payment-links';
 
   // Transactions - Deposits
   static const String transactionsDepositAddress =
@@ -59,14 +81,10 @@ class AppConfig {
       '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
 
-  // Transactions - Payment Links
-  static const String transactionsCreatePaymentLink =
-      '/transactions/create-payment-link';
-  static const String transactionsPaymentLink =
-      '/transactions/payment-link'; // + /{linkId}
-  static const String transactionsCompletePaymentLink =
-      '/transactions/payment-link'; // + /{linkId}/complete
-  static const String transactionsPaymentLinks = '/transactions/payment-links';
+  // Ledger - Payment Requests
+  static const String ledgerPaymentRequest = '/ledger/payment-request';
+  static const String ledgerPaymentRequestPay =
+      '/ledger/payment-request'; // + /{linkId}/pay
 
   // ==================== Storage Keys ====================
 
@@ -102,7 +120,7 @@ class AppConfig {
   // ==================== Environment ====================
 
   /// Ambiente atual (development, staging, production)
-  static const String environment = 'development';
+  static const String environment = 'production';
 
   /// Verificar se está em produção
   static bool get isProduction => environment == 'production';
@@ -120,9 +138,4 @@ class AppConfig {
 
   /// Versão da aplicação
   static const String appVersion = '1.0.0';
-
-  // ==================== URLs ====================
-
-  /// URL completa da API
-  static String get apiUrl => apiBaseUrl;
 }

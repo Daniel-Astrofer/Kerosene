@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../wallet/domain/entities/transaction.dart';
 import '../entities/fee_estimate.dart';
 import '../entities/tx_status.dart';
 import '../entities/deposit.dart';
@@ -19,6 +20,7 @@ abstract class TransactionRepository {
     required int feeSatoshis,
     String? fromWalletId,
     String? fromAddress,
+    String? context,
   });
   Future<Either<Failure, TxStatus>> broadcastTransaction(String rawTxHex);
 
@@ -41,17 +43,27 @@ abstract class TransactionRepository {
   Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
-  // Payment Links
-  Future<PaymentLink> createPaymentLink({
+  // Payment Requests
+  Future<PaymentLink> createPaymentRequest({
     required double amount,
-    required String description,
+    required String receiverWalletName,
+    int? expiresIn,
   });
-  Future<PaymentLink> getPaymentLink(String linkId);
-  Future<PaymentLink> confirmPaymentLink({
+  Future<PaymentLink> getPaymentRequest(String linkId);
+  Future<PaymentLink> payPaymentRequest({
     required String linkId,
-    required String txid,
-    required String fromAddress,
+    required String payerWalletName,
   });
-  Future<PaymentLink> completePaymentLink(String linkId);
   Future<List<PaymentLink>> getPaymentLinks();
+
+  // Withdrawals
+  Future<TxStatus> withdraw({
+    required String fromWalletName,
+    required String toAddress,
+    required double amount,
+    String? description,
+  });
+
+  // Local Persistence
+  Future<List<Transaction>> getTransactionHistory();
 }

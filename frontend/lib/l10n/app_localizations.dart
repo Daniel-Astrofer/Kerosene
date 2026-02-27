@@ -951,6 +951,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error writing: {error}'**
   String errorWriting(Object error);
+
+  /// No description provided for @typeWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawal'**
+  String get typeWithdrawal;
+
+  /// No description provided for @typeDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit'**
+  String get typeDeposit;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember Me'**
+  String get rememberMe;
+
+  /// No description provided for @torOnionActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Onion Protocol Active (Kerosene Core)'**
+  String get torOnionActive;
+
+  /// No description provided for @signupFeeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation Fee'**
+  String get signupFeeTitle;
+
+  /// No description provided for @signupFeeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A one-time fee of 0.003 BTC is required to activate your account and prevent spam.'**
+  String get signupFeeSubtitle;
+
+  /// No description provided for @signupFeeWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why a fee?'**
+  String get signupFeeWhyTitle;
+
+  /// No description provided for @signupFeeWhyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene has no registration form or email. The fee is a Proof-of-Work that protects the network from bots and fake accounts.'**
+  String get signupFeeWhyBody;
+
+  /// No description provided for @signupFeeNotRefundable.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-refundable'**
+  String get signupFeeNotRefundable;
+
+  /// No description provided for @signupFeeNotRefundableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Once broadcasted, the fee cannot be recovered. Ensure you are ready before proceeding.'**
+  String get signupFeeNotRefundableBody;
+
+  /// No description provided for @signupFeeContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Understood, Continue'**
+  String get signupFeeContinue;
+
+  /// No description provided for @seedSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed Security'**
+  String get seedSecurityTitle;
+
+  /// No description provided for @seedSecuritySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to protect your wallet recovery phrase.'**
+  String get seedSecuritySubtitle;
+
+  /// No description provided for @seedStandardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get seedStandardTitle;
+
+  /// No description provided for @seedStandardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A single 12, 18, or 24-word recovery phrase. Ideal for general use and simplicity.'**
+  String get seedStandardDesc;
+
+  /// No description provided for @seedSlip39Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Shamir SLIP-39 (Multi-part)'**
+  String get seedSlip39Title;
+
+  /// No description provided for @seedSlip39Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Split your seed into multiple parts. Require a minimum to recover (e.g., 3-of-5). Ideal for distributed physical storage.'**
+  String get seedSlip39Desc;
+
+  /// No description provided for @seedMultisigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'2FA Multisig Vault'**
+  String get seedMultisigTitle;
+
+  /// No description provided for @seedMultisigDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A 2-of-3 Multisig wallet. Kerosene co-signs transactions via TOTP. Protects against device theft.'**
+  String get seedMultisigDesc;
+
+  /// No description provided for @seedSlip39ConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SLIP-39 Configuration'**
+  String get seedSlip39ConfigTitle;
+
+  /// No description provided for @seedSlip39TotalShares.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Shares (Pieces)'**
+  String get seedSlip39TotalShares;
+
+  /// No description provided for @seedSlip39Threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Required Threshold'**
+  String get seedSlip39Threshold;
+
+  /// No description provided for @seedSlip39Summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires {threshold} of {total} parts to restore the wallet.'**
+  String seedSlip39Summary(Object threshold, Object total);
+
+  /// No description provided for @passphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Secret Phrase'**
+  String get passphraseTitle;
+
+  /// No description provided for @passphraseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write down these 18 words on physical paper. Never save them digitally.'**
+  String get passphraseSubtitle;
+
+  /// No description provided for @passphraseWrittenDown.
+  ///
+  /// In en, this message translates to:
+  /// **'I Have Written It Down'**
+  String get passphraseWrittenDown;
+
+  /// No description provided for @passphraseWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'If you lose these words, you will permanently lose access to your account and funds.'**
+  String get passphraseWarning;
+
+  /// No description provided for @passphraseVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Phrase'**
+  String get passphraseVerifyTitle;
+
+  /// No description provided for @passphraseVerifySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your secret phrase to confirm you have a correct backup.'**
+  String get passphraseVerifySubtitle;
+
+  /// No description provided for @passphraseVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'word1 word2 word3...'**
+  String get passphraseVerifyHint;
+
+  /// No description provided for @passphraseVerifyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect phrase. Please try again.'**
+  String get passphraseVerifyError;
+
+  /// No description provided for @passphraseVerifyContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Continue'**
+  String get passphraseVerifyContinue;
+
+  /// No description provided for @passphraseGoBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to see phrase'**
+  String get passphraseGoBack;
+
+  /// No description provided for @passphraseEnterWords.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your 18 words'**
+  String get passphraseEnterWords;
+
+  /// No description provided for @slip39SharesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your SLIP-39 Shares'**
+  String get slip39SharesTitle;
+
+  /// No description provided for @slip39SharesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your seed is divided into {total} pieces. You need {threshold} of them to recover your wallet.'**
+  String slip39SharesSubtitle(Object total, Object threshold);
+
+  /// No description provided for @slip39ShareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share {index} of {total}'**
+  String slip39ShareLabel(Object index, Object total);
+
+  /// No description provided for @slip39ShareCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Share {index} copied'**
+  String slip39ShareCopied(Object index);
+
+  /// No description provided for @slip39VerifyShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Share'**
+  String get slip39VerifyShareTitle;
+
+  /// No description provided for @slip39VerifyShareSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the words for Share {index} exactly as you wrote them down.'**
+  String slip39VerifyShareSubtitle(Object index);
+
+  /// No description provided for @slip39ConfirmShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Share {index}'**
+  String slip39ConfirmShare(Object index);
+
+  /// No description provided for @slip39AllConfirmedContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'All Shares Confirmed — Continue'**
+  String get slip39AllConfirmedContinue;
+
+  /// No description provided for @slip39ConfirmAllPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm all {total} shares to continue'**
+  String slip39ConfirmAllPending(Object total);
+
+  /// No description provided for @slip39Warning.
+  ///
+  /// In en, this message translates to:
+  /// **'DO NOT store all shares in the same place. If an attacker finds enough pieces, they can recover your wallet.'**
+  String get slip39Warning;
+
+  /// No description provided for @twoFaPrimaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Primary Seed'**
+  String get twoFaPrimaryTitle;
+
+  /// No description provided for @twoFaPrimaryBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Key 1 of 3 — Lives only on your device'**
+  String get twoFaPrimaryBadge;
+
+  /// No description provided for @twoFaPrimarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This 18-word phrase is your main private key. Alone, it is NOT enough to sign transactions — a Kerosene TOTP authorization is always required.'**
+  String get twoFaPrimarySubtitle;
+
+  /// No description provided for @twoFaPrimaryWritten.
+  ///
+  /// In en, this message translates to:
+  /// **'I Have Written It Down'**
+  String get twoFaPrimaryWritten;
+
+  /// No description provided for @twoFaBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Recovery Seed'**
+  String get twoFaBackupTitle;
+
+  /// No description provided for @twoFaBackupBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Key 3 of 3 — Emergency / Sovereignty Bypass'**
+  String get twoFaBackupBadge;
+
+  /// No description provided for @twoFaBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'If Kerosene ever shuts down, use this 12-word seed with your primary seed to recover funds without server involvement.'**
+  String get twoFaBackupSubtitle;
+
+  /// No description provided for @twoFaCoSignerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Key 2 of 3 is encrypted at Kerosene and used only to co-sign transactions when you provide a valid TOTP code.'**
+  String get twoFaCoSignerNote;
+
+  /// No description provided for @twoFaBothStored.
+  ///
+  /// In en, this message translates to:
+  /// **'I Saved Both Seeds'**
+  String get twoFaBothStored;
+
+  /// No description provided for @twoFaBackToPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Primary Seed'**
+  String get twoFaBackToPrimary;
+
+  /// No description provided for @twoFaVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Primary Seed'**
+  String get twoFaVerifyTitle;
+
+  /// No description provided for @twoFaVerifySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your Primary Key (18 words) to prove it is securely backed up.'**
+  String get twoFaVerifySubtitle;
+
+  /// No description provided for @twoFaVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'word1 word2 word3...'**
+  String get twoFaVerifyHint;
+
+  /// No description provided for @twoFaVerifyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect. Please check your Primary Seed.'**
+  String get twoFaVerifyError;
+
+  /// No description provided for @twoFaVerifyActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Activate 2FA Vault'**
+  String get twoFaVerifyActivate;
+
+  /// No description provided for @twoFaBackToBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Recovery Seed'**
+  String get twoFaBackToBackup;
+
+  /// No description provided for @totpSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup Authenticator'**
+  String get totpSetupTitle;
+
+  /// No description provided for @totpSetupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the QR code with your authenticator app, then enter the 6-digit code to verify.'**
+  String get totpSetupSubtitle;
+
+  /// No description provided for @totpCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 6-digit code'**
+  String get totpCodeLabel;
+
+  /// No description provided for @totpVerifyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Continue'**
+  String get totpVerifyButton;
+
+  /// No description provided for @totpErrorInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid code. Please try again.'**
+  String get totpErrorInvalid;
+
+  /// No description provided for @passkeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register Passkey'**
+  String get passkeyTitle;
+
+  /// No description provided for @passkeySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a biometric passkey to enable fast, passwordless login on this device.'**
+  String get passkeySubtitle;
+
+  /// No description provided for @passkeyRegisterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Register Passkey (Biometrics)'**
+  String get passkeyRegisterButton;
+
+  /// No description provided for @passkeySuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkey registered successfully!'**
+  String get passkeySuccessMessage;
+
+  /// No description provided for @passkeySkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get passkeySkip;
+
+  /// No description provided for @usernameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Your Handle'**
+  String get usernameTitle;
+
+  /// No description provided for @usernameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a unique username. This is your public identity on Kerosene.'**
+  String get usernameSubtitle;
+
+  /// No description provided for @usernameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameFieldLabel;
+
+  /// No description provided for @usernameFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'@your_handle'**
+  String get usernameFieldHint;
+
+  /// No description provided for @usernameCheckButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Availability'**
+  String get usernameCheckButton;
+
+  /// No description provided for @usernameAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Username available!'**
+  String get usernameAvailable;
+
+  /// No description provided for @usernameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Username already in use.'**
+  String get usernameTaken;
+
+  /// No description provided for @usernameContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserve Handle & Continue'**
+  String get usernameContinue;
+
+  /// No description provided for @paymentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation Payment'**
+  String get paymentTitle;
+
+  /// No description provided for @paymentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send exactly the amount shown below to activate your account.'**
+  String get paymentSubtitle;
+
+  /// No description provided for @paymentTimeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Time left'**
+  String get paymentTimeLeft;
+
+  /// No description provided for @paymentExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment window expired'**
+  String get paymentExpired;
+
+  /// No description provided for @paymentWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for payment...'**
+  String get paymentWaiting;
+
+  /// No description provided for @paymentAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get paymentAmountLabel;
+
+  /// No description provided for @paymentAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit Address'**
+  String get paymentAddressLabel;
+
+  /// No description provided for @paymentCopyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Address'**
+  String get paymentCopyAddress;
+
+  /// No description provided for @paymentAddressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied!'**
+  String get paymentAddressCopied;
+
+  /// No description provided for @confirmationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Confirmations'**
+  String get confirmationsTitle;
+
+  /// No description provided for @confirmationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment was detected. Waiting for 3 bitcoin network confirmations to finalize your account.'**
+  String get confirmationsSubtitle;
+
+  /// No description provided for @confirmationsProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total} confirmations'**
+  String confirmationsProgress(Object current, Object total);
+
+  /// No description provided for @confirmationsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Activated!'**
+  String get confirmationsDone;
 }
 
 class _AppLocalizationsDelegate

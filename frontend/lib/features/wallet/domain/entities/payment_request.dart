@@ -6,10 +6,7 @@ class PaymentRequest {
   final String address;
   final double? amountBtc;
 
-  const PaymentRequest({
-    required this.address,
-    this.amountBtc,
-  });
+  const PaymentRequest({required this.address, this.amountBtc});
 
   /// Parse from raw string (QR or NFC payload).
   /// Supports:

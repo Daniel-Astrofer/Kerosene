@@ -12,12 +12,21 @@ import '../../domain/entities/wallet.dart';
 import '../../domain/entities/payment_request.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/cyber_icons.dart';
+import '../../../transactions/presentation/providers/transaction_provider.dart';
+
+import '../../../../core/providers/price_provider.dart';
+import '../../../../core/providers/currency_provider.dart';
+import '../../presentation/providers/wallet_provider.dart';
+import '../../../../core/utils/currency_logic.dart';
+import '../../../../core/utils/currency_input_formatter.dart';
+import '../../presentation/state/wallet_state.dart';
 
 /// Tela de recebimento: dados da carteira + valor em BTC, com opção QR Code ou NFC.
 class ReceiveScreen extends ConsumerStatefulWidget {
-  final Wallet wallet;
+  final Wallet? initialWallet;
 
-  const ReceiveScreen({super.key, required this.wallet});
+  const ReceiveScreen({super.key, this.initialWallet});
 
   @override
   ConsumerState<ReceiveScreen> createState() => _ReceiveScreenState();
@@ -25,12 +34,33 @@ class ReceiveScreen extends ConsumerStatefulWidget {
 
 class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
   final _amountController = TextEditingController();
-  static const _defaultAmount = '';
+  Wallet? _selectedWallet;
+  Currency _selectedCurrency = Currency.btc;
+  String? _localPaymentUri;
+  bool _isNfcActive = false;
+  int? _expiresInMinutes;
+  bool _isGenerating = false;
 
   @override
   void initState() {
     super.initState();
-    _amountController.text = _defaultAmount;
+    _selectedWallet = widget.initialWallet;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final globalCurrency = ref.read(currencyProvider);
+      setState(() {
+        _selectedCurrency = globalCurrency;
+      });
+
+      if (_selectedWallet == null) {
+        final walletState = ref.read(walletProvider);
+        if (walletState is WalletLoaded && walletState.wallets.isNotEmpty) {
+          setState(() {
+            _selectedWallet = walletState.wallets.first;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -39,342 +69,123 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     super.dispose();
   }
 
-  double? get _amountBtc {
-    final s = _amountController.text.trim().replaceAll(',', '.');
-    if (s.isEmpty) return null;
-    return double.tryParse(s);
-  }
-
   PaymentRequest get _paymentRequest {
+    double? amount;
+    if (_amountController.text.isNotEmpty) {
+      double inputAmount = CurrencyLogic.parseAmount(_amountController.text);
+      if (_selectedCurrency != Currency.btc) {
+        final btcUsd = ref.read(latestBtcPriceProvider);
+        final btcEur = ref.read(btcEurPriceProvider);
+        final btcBrl = ref.read(btcBrlPriceProvider);
+        amount = CurrencyLogic.convertToBtc(
+          amount: inputAmount,
+          fromCurrency: _selectedCurrency,
+          btcUsdPrice: btcUsd,
+          btcEurPrice: btcEur,
+          btcBrlPrice: btcBrl,
+        );
+      } else {
+        amount = inputAmount;
+      }
+    }
+
     return PaymentRequest(
-      address: widget.wallet.address,
-      amountBtc: _amountBtc != null && _amountBtc! > 0 ? _amountBtc : null,
+      address: _selectedWallet?.address ?? '',
+      amountBtc: amount != null && amount > 0 ? amount : null,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final walletState = ref.watch(walletProvider);
+    final btcUsdPrice = ref.watch(latestBtcPriceProvider);
+    final btcEurPrice = ref.watch(btcEurPriceProvider);
+    final btcBrlPrice = ref.watch(btcBrlPriceProvider);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
-      body: Stack(
-        children: [
-          // Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF000000), Color(0xFF101018)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+      backgroundColor: Colors.black,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF000000), Color(0xFF0A0A0F)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-
-          SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                // Premium Styled App Bar
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        Text(
-                          AppLocalizations.of(context)!.receive,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'SFProDisplay',
-                          ),
-                        ),
-                        const SizedBox(width: 48), // Spacer to balance leading
-                      ],
-                    ),
-                  ),
-                ),
-
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      const SizedBox(height: 10),
-
-                      // Wallet & Address Card
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 600),
-                        builder: (context, value, child) => Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
-                            child: child,
-                          ),
-                        ),
-                        child: GlassContainer(
-                          blur: 30,
-                          opacity: 0.08,
-                          borderRadius: BorderRadius.circular(20),
-                          padding: const EdgeInsets.all(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            width: 1,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFFF7931A,
-                                      ).withValues(alpha: 0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.account_balance_wallet_rounded,
-                                      color: Color(0xFFF7931A),
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    widget.wallet.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'SFProDisplay',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.05),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.yourBitcoinAddress,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    SelectableText(
-                                      widget.wallet.address.isEmpty
-                                          ? AppLocalizations.of(
-                                              context,
-                                            )!.addressNotAvailable
-                                          : widget.wallet.address,
-                                      textAlign: TextAlign.start,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontFamily: 'monospace',
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              if (widget.wallet.address.isNotEmpty)
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    onPressed: () {
-                                      Clipboard.setData(
-                                        ClipboardData(
-                                          text: widget.wallet.address,
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.addressCopied,
-                                          ),
-                                          backgroundColor: const Color(
-                                            0xFFF7931A,
-                                          ),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.copy_rounded,
-                                      size: 16,
-                                      color: Color(0xFFF7931A),
-                                    ),
-                                    label: Text(
-                                      AppLocalizations.of(context)!.copyAddress,
-                                      style: TextStyle(
-                                        color: Color(0xFFF7931A),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Wallet Selector
+                      if (walletState is WalletLoaded)
+                        _buildWalletSelector(context, walletState),
 
                       const SizedBox(height: 24),
 
-                      // Amount Section
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 600),
-                        builder: (context, value, child) => Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 30 * (1 - value)),
-                            child: child,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.howMuchToReceive,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            GlassContainer(
-                              blur: 30,
-                              opacity: 0.08,
-                              borderRadius: BorderRadius.circular(20),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Text(
-                                    '₿',
-                                    style: TextStyle(
-                                      color: Color(0xFFF7931A),
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _amountController,
-                                      onChanged: (_) => setState(() {}),
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      textAlign: TextAlign.start,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'monospace',
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: "0.00000000",
-                                        hintStyle: TextStyle(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.15,
-                                          ),
-                                        ),
-                                        border: InputBorder.none,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      // 2. Amount Input Card
+                      _buildAmountInputCard(
+                        btcUsdPrice,
+                        btcEurPrice,
+                        btcBrlPrice,
                       ),
 
                       const SizedBox(height: 32),
 
-                      Text(
-                        AppLocalizations.of(context)!.receiveMethod,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'SFProDisplay',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      // 3. Expiration & Generate Action
+                      _buildPaymentLinkGenerator(),
 
-                      // QR Code Option
-                      _ReceiveOptionCard(
-                        icon: Icons.qr_code_2_rounded,
-                        title: AppLocalizations.of(context)!.qrCode,
-                        subtitle: AppLocalizations.of(
-                          context,
-                        )!.generateQrCodeDescription,
-                        color: const Color(0xFFF7931A),
-                        onTap: () => _showQrReceive(context),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // NFC Option
-                      _ReceiveOptionCard(
-                        icon: Icons.nfc_rounded,
-                        title: AppLocalizations.of(context)!.nfcBeam,
-                        subtitle: AppLocalizations.of(
-                          context,
-                        )!.nfcTagDescription,
-                        color: const Color(0xFF00D4FF),
-                        onTap: () => _showNfcWrite(context),
-                      ),
-
-                      const SizedBox(height: 40),
-                    ]),
+                      if (_localPaymentUri != null) ...[
+                        const SizedBox(height: 32),
+                        // 4. Method Selection (QR/NFC)
+                        _buildMethodSelectionToggle(),
+                        const SizedBox(height: 24),
+                        // 5. Display Area (QR Code or NFC Prompt)
+                        _buildDisplayArea(),
+                      ],
+                    ],
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            AppLocalizations.of(context)!.receive,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -382,137 +193,472 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     );
   }
 
-  void _showQrReceive(BuildContext context) {
-    final request = _paymentRequest;
-    final qrData = request.toBitcoinUri();
+  Widget _buildWalletSelector(BuildContext context, WalletLoaded state) {
+    final wallet =
+        _selectedWallet ??
+        (state.wallets.isNotEmpty ? state.wallets.first : null);
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => GlassContainer(
-        blur: 40,
-        opacity: 0.15,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return GestureDetector(
+      onTap: () => _showWalletSelectorModal(context, state),
+      child: GlassContainer(
+        blur: 20,
+        opacity: 0.05,
+        borderRadius: BorderRadius.circular(20),
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
             Container(
-              width: 40,
-              height: 4,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Color(0xFFF7931A),
+                size: 22,
               ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Color(0xFFF7931A),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.scanToPay,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'SFProDisplay',
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Receiving Wallet",
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 12,
+                    ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    wallet?.name ?? "Select Wallet",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmountInputCard(double? btcUsd, double? btcEur, double? btcBrl) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.amount,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _amountController,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace',
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            CurrencyInputFormatter(
+              maxDigits: 20,
+              symbol: '',
+              decimals: _selectedCurrency == Currency.btc ? 8 : 2,
+            ),
+          ],
+          onChanged: (_) => setState(() {
+            _localPaymentUri = null;
+          }),
+          decoration: InputDecoration(
+            hintText: _selectedCurrency == Currency.btc ? "0.00000000" : "0.00",
+            hintStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.1),
+              fontSize: 32,
+            ),
+            suffixIcon: _buildCurrencySelector(),
+            border: InputBorder.none,
+          ),
+        ),
+        if (_amountController.text.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _buildConversionHint(btcUsd, btcEur, btcBrl),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCurrencySelector() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          // Cycle through currencies
+          final values = Currency.values;
+          final nextIndex = (_selectedCurrency.index + 1) % values.length;
+          _selectedCurrency = values[nextIndex];
+          _localPaymentUri = null;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7931A).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _selectedCurrency.name.toUpperCase(),
+              style: const TextStyle(
+                color: Color(0xFFF7931A),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.swap_vert_rounded,
+              color: Color(0xFFF7931A),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConversionHint(double? btcUsd, double? btcEur, double? btcBrl) {
+    double inputAmount = CurrencyLogic.parseAmount(_amountController.text);
+    String hint = "";
+
+    if (_selectedCurrency == Currency.btc) {
+      // Show USD value
+      double usd = inputAmount * (btcUsd ?? 0);
+      hint = "≈ $usd USD";
+    } else {
+      // Show BTC value
+      double btc = CurrencyLogic.convertToBtc(
+        amount: inputAmount,
+        fromCurrency: _selectedCurrency,
+        btcUsdPrice: btcUsd,
+        btcEurPrice: btcEur,
+        btcBrlPrice: btcBrl,
+      );
+      hint = "≈ ${btc.toStringAsFixed(8)} BTC";
+    }
+
+    return Text(
+      hint,
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.4),
+        fontSize: 13,
+        fontFamily: 'monospace',
+      ),
+    );
+  }
+
+  Widget _buildPaymentLinkGenerator() {
+    if (_amountController.text.isEmpty) return const SizedBox.shrink();
+
+    return GlassContainer(
+      blur: 20,
+      opacity: 0.05,
+      borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Payment Link Expiration",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                value: _expiresInMinutes,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF1E1E28),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white54,
+                ),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text("No Expiration")),
+                  DropdownMenuItem(value: 15, child: Text("15 Minutes")),
+                  DropdownMenuItem(value: 60, child: Text("1 Hour")),
+                  DropdownMenuItem(value: 1440, child: Text("24 Hours")),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _expiresInMinutes = val;
+                    _localPaymentUri = null;
+                  });
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _generateTrackedLink,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF7931A).withValues(alpha: 0.1),
+                foregroundColor: const Color(0xFFF7931A),
+                side: const BorderSide(color: Color(0xFFF7931A)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isGenerating
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFF7931A),
+                      ),
+                    )
+                  : const Text(
+                      "Generate Payment Link",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMethodSelectionToggle() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildToggleItem(
+            label: "QR Code",
+            isActive: !_isNfcActive,
+            onTap: () => setState(() => _isNfcActive = false),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildToggleItem(
+            label: "NFC Beam",
+            isActive: _isNfcActive,
+            onTap: () => setState(() => _isNfcActive = true),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleItem({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? const Color(0xFFF7931A) : Colors.white12,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white54,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDisplayArea() {
+    if (_isNfcActive) {
+      return _buildNfcBeamArea();
+    } else {
+      return _buildQrCodeArea();
+    }
+  }
+
+  Widget _buildQrCodeArea() {
+    final qrData = _localPaymentUri ?? _paymentRequest.toBitcoinUri();
+
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF7931A).withValues(alpha: 0.2),
+                  blurRadius: 30,
+                  spreadRadius: 5,
                 ),
               ],
             ),
-            const SizedBox(height: 32),
-            if (widget.wallet.address.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFF7931A).withValues(alpha: 0.2),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: QrImageView(
-                  data: qrData,
-                  version: QrVersions.auto,
-                  size: 240,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: Color(0xFF000000),
-                  ),
-                  dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.square,
-                    color: Color(0xFF000000),
-                  ),
-                ),
-              )
-            else
-              const Icon(Icons.qr_code_2, size: 240, color: Colors.white24),
-            const SizedBox(height: 24),
-            Text(
-              widget.wallet.name,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 200,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Color(0xFF000000),
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Color(0xFF000000),
               ),
             ),
-            if (request.amountBtc != null && request.amountBtc! > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  "${request.amountBtc!.toStringAsFixed(8)} BTC",
-                  style: const TextStyle(
-                    color: Color(0xFFF7931A),
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
-                ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Scan to Pay",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _selectedWallet?.address ?? "",
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 10,
+              fontFamily: 'monospace',
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNfcBeamArea() {
+    return Center(
+      child: Column(
+        children: [
+          const CyberNfcIcon(isActive: true, size: 80),
+          const SizedBox(height: 24),
+          const Text(
+            "Ready to Beam",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => _showNfcWrite(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF7931A),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.05),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
+            ),
+            child: const Text("Write to NFC Tag"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWalletSelectorModal(BuildContext context, WalletLoaded state) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => GlassContainer(
+        blur: 30,
+        opacity: 0.1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Select Receiving Wallet",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: state.wallets.length,
+                itemBuilder: (context, index) {
+                  final w = state.wallets[index];
+                  return ListTile(
+                    title: Text(
+                      w.name,
+                      style: const TextStyle(color: Colors.white),
                     ),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.close,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                    subtitle: Text(
+                      "${w.balance.toStringAsFixed(8)} BTC",
+                      style: const TextStyle(color: Colors.white54),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _selectedWallet = w;
+                        _localPaymentUri = null;
+                      });
+                      Navigator.pop(context);
+                    },
+                  );
+                },
               ),
             ),
           ],
@@ -523,91 +669,77 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   void _showNfcWrite(BuildContext context) {
     final request = _paymentRequest;
-    final uri = request.toBitcoinUri();
+    final uri = _localPaymentUri ?? request.toBitcoinUri();
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => _NfcWriteDialog(
         paymentRequestUri: uri,
-        walletName: widget.wallet.name,
+        walletName: _selectedWallet?.name ?? "",
         amountBtc: request.amountBtc,
       ),
     );
   }
-}
 
-class _ReceiveOptionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ReceiveOptionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: GlassContainer(
-          blur: 20,
-          opacity: 0.1,
-          borderRadius: BorderRadius.circular(16),
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.white.withValues(alpha: 0.5),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Future<void> _generateTrackedLink() async {
+    final double inputAmount = CurrencyLogic.parseAmount(
+      _amountController.text,
     );
+    if (inputAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid amount")),
+      );
+      return;
+    }
+
+    final String address = _selectedWallet?.address ?? '';
+    final double amountBtc = _paymentRequest.amountBtc ?? 0;
+
+    // 1. Construct LOCAL payment URI immediately (Architectural Alignment)
+    // Format: kerosene:pay?address=...&amount=...&expiresIn=...&label=...
+    final queryParams = <String, String>{
+      'address': address,
+      'amount': amountBtc.toStringAsFixed(8),
+    };
+    if (_expiresInMinutes != null) {
+      queryParams['expiresIn'] = _expiresInMinutes.toString();
+    }
+    if (_selectedWallet != null) {
+      queryParams['label'] = _selectedWallet!.name;
+    }
+
+    final localUri = Uri(
+      scheme: 'kerosene',
+      path: 'pay',
+      queryParameters: queryParams,
+    ).toString();
+
+    setState(() {
+      _localPaymentUri = localUri;
+      _isGenerating = true;
+    });
+
+    // 2. BACKGROUND Sync with API (fire-and-forget or handled gracefully)
+    try {
+      ref
+          .read(paymentLinkNotifierProvider.notifier)
+          .create(
+            amount: amountBtc,
+            receiverWalletName: _selectedWallet?.name ?? 'main',
+            expiresIn: _expiresInMinutes,
+          )
+          .then((result) {
+            // Background sync complete
+          });
+    } catch (e) {
+      debugPrint("API background sync failed: $e");
+    } finally {
+      // We stop the spinner because the QR is already visible via localUri
+      if (mounted) {
+        setState(() => _isGenerating = false);
+      }
+    }
   }
 }
 

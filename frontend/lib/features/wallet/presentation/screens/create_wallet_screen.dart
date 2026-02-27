@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bip39/bip39.dart' as bip39;
+import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../providers/wallet_provider.dart';
@@ -23,9 +23,14 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
   int _mnemonicLength = 18;
 
   void _generatePassphrase() {
-    int strength = _mnemonicLength == 18 ? 192 : 256;
+    final length = _mnemonicLength == 18
+        ? MnemonicLength.words18
+        : MnemonicLength.words24;
     setState(() {
-      _generatedMnemonic = bip39.generateMnemonic(strength: strength);
+      _generatedMnemonic = Mnemonic.generate(
+        Language.portuguese,
+        length: length,
+      ).sentence;
     });
   }
 
@@ -34,7 +39,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
       ref
           .read(createWalletProvider.notifier)
           .createWallet(
-            name: _nameController.text,
+            name: _nameController.text.trim(),
             passphrase: _generatedMnemonic,
           );
     } else if (_generatedMnemonic.isEmpty) {
@@ -158,10 +163,17 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                                   vertical: 18,
                                 ),
                               ),
-                              validator: (value) =>
-                                  value == null || value.isEmpty
-                                  ? 'Nome obrigatório'
-                                  : null,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Nome obrigatório';
+                                }
+                                if (!RegExp(
+                                  r'^[a-zA-Z0-9\s]+$',
+                                ).hasMatch(value)) {
+                                  return 'Apenas letras e números são permitidos';
+                                }
+                                return null;
+                              },
                             ),
 
                             const SizedBox(height: 32),

@@ -6,23 +6,30 @@ import '../../../../main.dart' show sharedPreferencesProvider;
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/state/auth_state.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
-import '../../../wallet/domain/entities/transaction.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
+import '../../../../core/utils/device_helper.dart';
 import 'wallet_provider.dart';
-import '../../../../core/services/notification_service.dart';
 
 class ReceivedTxEvent {
   final double amount;
   final String walletName;
-  ReceivedTxEvent({required this.amount, required this.walletName});
+  final String? sender;
+  final String? receiver;
+
+  ReceivedTxEvent({
+    required this.amount,
+    required this.walletName,
+    this.sender,
+    this.receiver,
+  });
 }
 
 final receivedTxEventProvider = StateProvider<ReceivedTxEvent?>((ref) => null);
 
 /// Provider do serviço WebSocket para atualizações de saldo em tempo real
-final balanceWebSocketServiceProvider = Provider.autoDispose<BalanceWebSocketService?>((
+final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSocketService?>((
   ref,
-) {
+) async {
   final authState = ref.watch(authProvider);
 
   // Só conecta se usuário está autenticado
@@ -37,17 +44,38 @@ final balanceWebSocketServiceProvider = Provider.autoDispose<BalanceWebSocketSer
   // Obter token JWT de forma síncrona do SharedPreferences
   String? token;
   try {
-    final sharedPrefs = ref.read(sharedPreferencesProvider);
+    final sharedPrefs = ref.watch(sharedPreferencesProvider);
     token = sharedPrefs.getString('auth_token');
-    debugPrint('🔑 Token JWT obtido: ${token != null ? "✅ sim" : "❌ não"}');
+    debugPrint(
+      '🔑 Token JWT obtido: ${token != null ? "✅ sim (len: ${token.length})" : "❌ não"}',
+    );
+    if (token != null) {
+      if (token.startsWith('"') && token.endsWith('"')) {
+        token = token.substring(1, token.length - 1).trim();
+      }
+      if (token.startsWith('Bearer ')) {
+        token = token.substring(7).trim();
+      }
+      // Garante que o Token comece exclusivamente com 'eyJ' (Assinatura JWT Padrão)
+      // Isso limpa qualquer prefixo corrompido no SharedPreferences local do cache antigo
+      if (token.contains('eyJ')) {
+        token = token.substring(token.indexOf('eyJ'));
+      }
+    }
+    if (token != null && token.length < 10) {
+      debugPrint('⚠️ Token JWT parece inválido/curto demais');
+    }
   } catch (e) {
-    debugPrint('⚠️ Erro ao obter token: $e');
+    debugPrint('⚠️ Erro ao obter token do SharedPreferences: $e');
   }
 
+  final deviceHash = await DeviceHelper.getDeviceHash();
+
   final service = BalanceWebSocketService(
-    baseUrl: AppConfig.apiBaseUrl,
+    baseUrl: AppConfig.apiUrl,
     userId: userId.toString(),
     authToken: token,
+    deviceHash: deviceHash,
     onBalanceUpdate: (update) {
       debugPrint(
         '📨 WebSocket: Recebendo atualização para ${update.walletName}',
@@ -65,44 +93,47 @@ final balanceWebSocketServiceProvider = Provider.autoDispose<BalanceWebSocketSer
         final newBalance = update.newBalance;
         final delta = newBalance - oldBalance;
 
-        if (delta > 0.000000001) {
-          // Balance increased — record as unknown incoming transfer
-          final amountSatoshis = (delta * 100000000).round();
-          final syntheticTx = Transaction(
-            // Unique ID: timestamp + wallet address suffix
-            id: 'ws_${DateTime.now().millisecondsSinceEpoch}_${wallet.address.substring(wallet.address.length > 8 ? wallet.address.length - 8 : 0)}',
-            fromAddress: 'Carteira desconhecida',
-            toAddress: wallet.address,
-            amountSatoshis: amountSatoshis,
-            feeSatoshis: 0,
-            status: TransactionStatus.confirmed,
-            type: TransactionType.receive,
-            confirmations: 6,
-            timestamp: DateTime.now(),
-            description:
-                'Recebimento de carteira desconhecida — ${update.walletName}',
-          );
+        // Use the amount from the update if available, otherwise use delta
+        final receivedAmount = update.amount > 0 ? update.amount : delta;
 
-          ref
-              .read(transactionHistoryProvider.notifier)
-              .addTransaction(syntheticTx);
+        if (receivedAmount > 0.000000001) {
+          // Heuristic to find address in context if sender is missing
+          String? extractedSender =
+              (update.sender != null && update.sender!.isNotEmpty)
+              ? update.sender
+              : null;
 
-          debugPrint(
-            '📥 Transação sintética registrada: +$delta BTC em ${update.walletName}',
-          );
+          if (extractedSender == null && update.context.isNotEmpty) {
+            final words = update.context.split(' ');
+            for (final word in words) {
+              final clean = word.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+              if (clean.length >= 26 &&
+                  (clean.startsWith('1') ||
+                      clean.startsWith('3') ||
+                      clean.startsWith('bc1'))) {
+                extractedSender = clean;
+                break;
+              }
+            }
+          }
+
+          // Balance increased — trigger history refresh from server
+          ref.invalidate(transactionHistoryProvider);
 
           // ── NOTIFICATIONS & FEEDBACK ──
-          // 1. Local Notification (Background/Foreground)
-          NotificationService().showSubtleNotification(
-            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            title: 'Payment Received',
-            body: 'You received ${delta.toStringAsFixed(8)} BTC',
-          );
+          // 1. Local Notification - DISABLED to avoid confusion with Backend Pushes
+          // NotificationService().showSubtleNotification(
+          //   id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          //   title: 'Payment Received',
+          //   body: 'You received ${receivedAmount.toStringAsFixed(8)} BTC',
+          // );
 
-          // 2. In-App Dialog Trigger (via Provider)
+          // 2. In-App Dialog Trigger
           ref.read(receivedTxEventProvider.notifier).state = ReceivedTxEvent(
-            amount: delta,
+            amount: receivedAmount,
             walletName: update.walletName,
+            sender: extractedSender,
+            receiver: update.receiver,
           );
         }
       }
@@ -115,7 +146,7 @@ final balanceWebSocketServiceProvider = Provider.autoDispose<BalanceWebSocketSer
   );
 
   // Conectar ao WebSocket
-  service.connect();
+  await service.connect();
 
   // Desconectar quando o provider for descartado
   ref.onDispose(() {

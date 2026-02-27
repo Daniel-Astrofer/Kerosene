@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../wallet/domain/entities/transaction.dart';
 
 /// Entidade PaymentLink — link de pagamento Bitcoin
 class PaymentLink extends Equatable {
@@ -71,4 +72,24 @@ class PaymentLink extends Equatable {
     paidAt,
     completedAt,
   ];
+
+  /// Converte PaymentLink para Transaction para exibição no histórico unificado
+  Transaction toTransaction() {
+    final bool isCompleted = status == 'completed' || status == 'paid';
+    return Transaction(
+      id: "pl_$id",
+      fromAddress: 'Rede Bitcoin',
+      toAddress: depositAddress,
+      amountSatoshis: (amountBtc * 100000000).round(),
+      feeSatoshis: 0,
+      status: isCompleted
+          ? TransactionStatus.confirmed
+          : TransactionStatus.pending,
+      type: TransactionType.receive,
+      confirmations: isCompleted ? 6 : 0,
+      timestamp: createdAt ?? DateTime.now(),
+      description: description.isNotEmpty ? description : "Link de Pagamento",
+      isInternal: false,
+    );
+  }
 }

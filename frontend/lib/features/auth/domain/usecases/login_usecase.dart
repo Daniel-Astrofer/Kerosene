@@ -1,22 +1,16 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/errors/failures.dart';
-import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
 
 /// Caso de uso para login
-/// API Kerosene: POST /auth/login {username, passphrase}
+/// POST /auth/login → retorna authId (não JWT)
 class LoginUseCase {
   final AuthRepository repository;
 
   const LoginUseCase(this.repository);
 
-  /// Executa o caso de uso de login
-  /// Parâmetros:
-  /// - params: Objeto contendo username e passphrase
-  Future<Either<Failure, User>> call(LoginParams params) async {
-    // Delega para o repositório
-    // Passa username como email para compatibilidade
+  Future<Either<Failure, String>> call(LoginParams params) async {
     return await repository.login(
       username: params.username,
       passphrase: params.passphrase,
@@ -24,7 +18,6 @@ class LoginUseCase {
   }
 }
 
-// Parâmetros para o login
 class LoginParams extends Equatable {
   final String username;
   final String passphrase;

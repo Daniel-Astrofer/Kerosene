@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:dio/dio.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
@@ -53,7 +51,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final response = await apiClient.post(
         AppConfig.walletCreate,
         data: {'name': name, 'passphrase': passphrase},
-        options: Options(responseType: ResponseType.plain),
       );
       return response.data.toString();
     } catch (e) {
@@ -66,41 +63,10 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   Future<List<dynamic>> getWallets() async {
     try {
       final response = await apiClient.get(AppConfig.walletAll);
-
-      var data = response.data;
-
-      // Se for string, tenta parsear como JSON
-      if (data is String) {
-        try {
-          data = jsonDecode(data);
-        } catch (_) {}
-      }
-
+      final data = response.data;
       if (data is List) {
         return data;
       }
-
-      if (data is Map<String, dynamic>) {
-        bool isSingleWallet =
-            data.containsKey('name') ||
-            data.containsKey('passphrase') ||
-            data.containsKey('walletName');
-
-        if (isSingleWallet) {
-          return [data];
-        }
-
-        // Tenta retornar os valores se forem objetos (Map de Wallets)
-        final values = data.values;
-        if (values.isNotEmpty && values.first is Map) {
-          return values.toList();
-        }
-
-        if (data.isEmpty) return [];
-
-        return [data];
-      }
-
       return [];
     } catch (e) {
       if (e is AppException) rethrow;
@@ -111,20 +77,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   @override
   Future<Map<String, dynamic>> getLedger({required String walletName}) async {
     try {
-      // Fallback: Use getAllLedgers and filter locally since /ledger/find is removed
-      final all = await getAllLedgers();
-      final entry = all.firstWhere(
-        (e) =>
-            e is Map &&
-            (e['walletName'] == walletName || e['name'] == walletName),
-        orElse: () => null,
-      );
-
-      if (entry != null && entry is Map<String, dynamic>) {
-        return entry;
-      }
-      return {};
-      /*
       final response = await apiClient.get(
         AppConfig.ledgerFind,
         queryParameters: {'walletName': walletName},
@@ -132,7 +84,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       return response.data is Map<String, dynamic>
           ? response.data
           : {'data': response.data};
-      */
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao buscar ledger: $e');
@@ -205,7 +156,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final response = await apiClient.put(
         AppConfig.walletUpdate,
         data: {'name': name, 'newName': newName},
-        options: Options(responseType: ResponseType.plain),
       );
       return response.data.toString();
     } catch (e) {
@@ -223,7 +173,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final response = await apiClient.delete(
         AppConfig.walletDelete,
         data: {'name': name, 'passphrase': passphrase},
-        options: Options(responseType: ResponseType.plain),
       );
       return response.data.toString();
     } catch (e) {
@@ -240,7 +189,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final response = await apiClient.get(
         AppConfig.ledgerBalance,
         queryParameters: {'walletName': walletName},
-        options: Options(responseType: ResponseType.plain),
       );
       return double.tryParse(response.data.toString().trim()) ?? 0;
     } catch (e) {
@@ -255,7 +203,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final response = await apiClient.delete(
         AppConfig.ledgerDelete,
         queryParameters: {'walletName': walletName},
-        options: Options(responseType: ResponseType.plain),
       );
       return response.data.toString();
     } catch (e) {

@@ -23,109 +23,151 @@ class PendingPaymentLinkItem extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(16),
+        width: 280, // Fixed width for horizontal scroll
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isCompleted
                 ? const Color(0xFF00FF94).withValues(alpha: 0.2)
-                : Colors.white.withValues(alpha: 0.05),
+                : const Color(0xFFFFB800).withValues(alpha: 0.1),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  (isCompleted
+                          ? const Color(0xFF00FF94)
+                          : const Color(0xFFFFB800))
+                      .withValues(alpha: 0.02),
+              blurRadius: 10,
+              spreadRadius: 0,
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isCompleted
-                    ? const Color(0xFF00FF94).withValues(alpha: 0.1)
-                    : const Color(0xFFF7931A).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isCompleted ? Icons.check_rounded : Icons.hourglass_top_rounded,
-                color: isCompleted
-                    ? const Color(0xFF00FF94)
-                    : const Color(0xFFF7931A),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isCompleted ? 'Deposit Received' : 'Pending Deposit',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    paymentLink.description.isNotEmpty
-                        ? paymentLink.description
-                        : 'Awaiting payment...',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-            // Amount & Time
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Row(
               children: [
-                Text(
-                  '+${paymentLink.amountBtc.toStringAsFixed(8)} BTC',
-                  style: const TextStyle(
-                    color: Color(0xFF00FF94),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? const Color(0xFF00FF94).withValues(alpha: 0.1)
+                        : const Color(0xFFFFB800).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check_circle_rounded
+                        : Icons.hourglass_top_rounded,
+                    color: isCompleted
+                        ? const Color(0xFF00FF94)
+                        : const Color(0xFFFFB800),
+                    size: 18,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (!isCompleted) ...[
-                      Icon(
-                        Icons.timer_outlined,
-                        color: isExpired
-                            ? Colors.red
-                            : Colors.white.withValues(alpha: 0.5),
-                        size: 12,
+                const SizedBox(width: 12),
+
+                // Status & Time
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isCompleted
+                            ? 'RECEBIDO'
+                            : (isExpired ? 'EXPIRADO' : 'PENDENTE'),
+                        style: TextStyle(
+                          color: isCompleted
+                              ? const Color(0xFF00FF94)
+                              : (isExpired
+                                    ? Colors.redAccent
+                                    : const Color(0xFFFFB800)),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
                       ),
-                      const SizedBox(width: 4),
+                      if (!isCompleted && !isExpired)
+                        Text(
+                          _formatDuration(timeLeft),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                     ],
-                    Text(
-                      isCompleted
-                          ? 'Completed'
-                          : (isExpired ? 'Expired' : _formatDuration(timeLeft)),
+                  ),
+                ),
+
+                // BTC Value
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'VALOR',
                       style: TextStyle(
-                        color: isCompleted
-                            ? const Color(0xFF00FF94)
-                            : (isExpired
-                                  ? Colors.red
-                                  : Colors.white.withValues(alpha: 0.5)),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.white24,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      paymentLink.amountBtc.toStringAsFixed(8),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'monospace',
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Description
+            Text(
+              paymentLink.description.isNotEmpty
+                  ? paymentLink.description
+                  : 'Aguardando pagamento via rede Bitcoin...',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 13,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Footer Info
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isCompleted ? 'Confirmado' : 'Link de Pagamento',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 12,
+                  color: Colors.white.withValues(alpha: 0.2),
                 ),
               ],
             ),

@@ -50,6 +50,15 @@ abstract class AuthLocalDataSource {
 
   /// Verificar se biometria está habilitada
   Future<bool> getBiometricEnabled();
+
+  /// Salvar credenciais de login (Remember Me)
+  Future<void> saveCredentials(String username, String passphrase);
+
+  /// Obter credenciais de login salvas
+  Future<Map<String, String>?> getCredentials();
+
+  /// Remover credenciais de login salvas
+  Future<void> removeCredentials();
 }
 
 /// Implementação do AuthLocalDataSource
@@ -202,6 +211,43 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     } catch (e) {
       // Default info false if error
       return false;
+    }
+  }
+
+  @override
+  Future<void> saveCredentials(String username, String passphrase) async {
+    try {
+      await sharedPreferences.setString('saved_username', username);
+      // NOTE: storing passphrase in plaintext is not secure for production.
+      // TODO: Move to flutter_secure_storage
+      await sharedPreferences.setString('saved_passphrase', passphrase);
+    } catch (e) {
+      throw CacheException(message: 'Erro ao salvar credenciais: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, String>?> getCredentials() async {
+    try {
+      final username = sharedPreferences.getString('saved_username');
+      final passphrase = sharedPreferences.getString('saved_passphrase');
+
+      if (username != null && passphrase != null) {
+        return {'username': username, 'passphrase': passphrase};
+      }
+      return null;
+    } catch (e) {
+      throw CacheException(message: 'Erro ao obter credenciais: $e');
+    }
+  }
+
+  @override
+  Future<void> removeCredentials() async {
+    try {
+      await sharedPreferences.remove('saved_username');
+      await sharedPreferences.remove('saved_passphrase');
+    } catch (e) {
+      throw CacheException(message: 'Erro ao remover credenciais: $e');
     }
   }
 }

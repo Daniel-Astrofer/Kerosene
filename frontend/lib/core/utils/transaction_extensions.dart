@@ -28,6 +28,10 @@ extension TransactionTypeExtension on TransactionType {
         return AppLocalizations.of(context)!.typeSwap;
       case TransactionType.fee:
         return AppLocalizations.of(context)!.typeFee;
+      case TransactionType.withdrawal:
+        return 'Withdrawal';
+      case TransactionType.deposit:
+        return 'Deposit';
     }
   }
 }

@@ -1,17 +1,23 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../providers/network_status_provider.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import '../errors/exceptions.dart';
+import 'api_response_interceptor.dart';
 
 /// Cliente HTTP configurado com Dio
 class ApiClient {
   late final Dio _dio;
+  final Ref ref; // Add Ref to access providers
 
   ApiClient({
     required String baseUrl,
+    required this.ref,
     int connectTimeout = 30000,
     int receiveTimeout = 30000,
   }) {
@@ -23,14 +29,47 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
         },
       ),
     );
 
     // Adicionar interceptors
     _dio.interceptors.add(_LogInterceptor());
-    _dio.interceptors.add(_ErrorInterceptor());
+    _dio.interceptors.add(ApiResponseInterceptor());
+
+    // Retry Interceptor for Network Resilience (Phase 5)
+    _dio.interceptors.add(
+      RetryInterceptor(
+        dio: _dio,
+        logPrint: debugPrint,
+        retries: 3,
+        retryDelays: const [
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+          Duration(seconds: 3),
+        ],
+        retryEvaluator: DefaultRetryEvaluator({
+          408, // RequestTimeout
+          500, // InternalServerError
+          502, // BadGateway
+          503, // ServiceUnavailable
+          504, // GatewayTimeout
+          440, // LoginTimeout
+          460, // ClientClosedRequest
+          499, // ClientClosedRequest
+          520, // WebServerError
+          521, // WebServerIsDown
+          522, // ConnectionTimedOut
+          523, // OriginIsUnreachable
+          524, // ATimeoutOccurred
+          525, // SSLHandshakeFailed
+          527, // RailgunError
+          598, // NetworkReadTimeoutError
+          599, // NetworkConnectTimeoutError
+        }).evaluate,
+      ),
+    );
+
     _initCookieManager();
   }
 
@@ -151,45 +190,80 @@ class ApiClient {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
+          ref.read(networkStatusProvider.notifier).reportError(error);
           return const NetworkException(message: 'Tempo de conexão esgotado');
 
         case DioExceptionType.connectionError:
+          ref.read(networkStatusProvider.notifier).reportError(error);
           return const NetworkException();
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
           var message = 'Erro no servidor';
+          String? errorCode;
 
           final data = error.response?.data;
-          if (data is Map && data.containsKey('message')) {
-            message = data['message'];
+          if (data is Map) {
+            if (data.containsKey('message')) message = data['message'];
+            if (data.containsKey('errorCode')) errorCode = data['errorCode'];
           } else if (data is String) {
             try {
               final json = jsonDecode(data);
-              if (json is Map && json.containsKey('message')) {
-                message = json['message'];
+              if (json is Map) {
+                if (json.containsKey('message')) message = json['message'];
+                if (json.containsKey('errorCode')) {
+                  errorCode = json['errorCode'];
+                }
               } else {
                 message = data.length > 100 ? data.substring(0, 100) : data;
               }
             } catch (_) {
               message = data.length > 100 ? data.substring(0, 100) : data;
             }
+          } else if (error.error != null) {
+            if (error.error is String) {
+              message = error.error as String;
+            } else if (error.error is Map) {
+              final errMap = error.error as Map;
+              if (errMap.containsKey('message')) {
+                message = errMap['message'];
+              }
+              if (errMap.containsKey('errorCode')) {
+                errorCode = errMap['errorCode'];
+              }
+            }
           }
 
           if (statusCode == 401 || statusCode == 403) {
-            return AuthException(message: message, statusCode: statusCode);
+            return AuthException(
+              message: message,
+              statusCode: statusCode,
+              errorCode: errorCode,
+            );
           }
 
           if (statusCode != null && statusCode >= 500) {
-            return ServerException(message: message, statusCode: statusCode);
+            return ServerException(
+              message: message,
+              statusCode: statusCode,
+              errorCode: errorCode,
+            );
           }
 
-          return ValidationException(message: message, statusCode: statusCode);
+          return ValidationException(
+            message: message,
+            statusCode: statusCode,
+            errorCode: errorCode,
+          );
 
         default:
           final statusCode = error.response?.statusCode;
+          final errorStr = error.error?.toString();
           return AppException(
-            message: error.message ?? 'Erro desconhecido',
+            message:
+                error.message ??
+                errorStr ??
+                'Erro desconhecido (HTTP $statusCode)',
             statusCode: statusCode,
           );
       }
@@ -230,16 +304,6 @@ class _LogInterceptor extends Interceptor {
     if (err.error != null) {
       debugPrint('⚠️ ERR: ${err.error}');
     }
-    super.onError(err, handler);
-  }
-}
-
-/// Interceptor para tratamento de erros
-class _ErrorInterceptor extends Interceptor {
-  @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Aqui você pode adicionar lógica customizada de tratamento de erros
-    // Por exemplo: refresh token, retry logic, etc.
     super.onError(err, handler);
   }
 }

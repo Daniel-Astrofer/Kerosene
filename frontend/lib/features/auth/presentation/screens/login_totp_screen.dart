@@ -91,7 +91,9 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                           border: Border.all(color: Colors.white10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00D4FF).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFF00D4FF,
+                              ).withValues(alpha: 0.2),
                               blurRadius: 40,
                               spreadRadius: -10,
                             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -7,6 +8,10 @@ import '../../../auth/presentation/state/auth_state.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import 'personal_data_screen.dart';
+import 'security_settings_screen.dart';
+import 'notification_settings_screen.dart';
+import 'support_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -15,36 +20,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -59,18 +35,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         : 0;
 
     return Scaffold(
-      backgroundColor:
-          Colors.transparent, // Background handled by parent/AppTheme
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: AnimationLimiter(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: AnimationConfiguration.toStaggeredList(
+                duration: const Duration(milliseconds: 375),
+                childAnimationBuilder: (widget) => SlideAnimation(
+                  verticalOffset: 50.0,
+                  child: FadeInAnimation(child: widget),
+                ),
                 children: [
                   // App Bar / Header
                   Row(
@@ -85,88 +63,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           letterSpacing: -0.5,
                         ),
                       ),
-                      GlassContainer(
-                        blur: 10,
-                        opacity: 0.1,
-                        borderRadius: BorderRadius.circular(12),
-                        padding: const EdgeInsets.all(8),
-                        child: const Icon(
-                          Icons.settings_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Avatar Section
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
                             context,
-                          ).primaryColor.withValues(alpha: 0.1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              spreadRadius: 5,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
                             ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        height: 110,
-                        width: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).primaryColor,
-                            width: 2,
-                          ),
-                          image: const DecorationImage(
-                            image: NetworkImage(
-                              "https://i.pravatar.cc/300?u=a",
-                            ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
+                          );
+                        },
                         child: GlassContainer(
                           blur: 10,
-                          opacity: 0.2,
-                          color: Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(20),
+                          opacity: 0.1,
+                          borderRadius: BorderRadius.circular(12),
                           padding: const EdgeInsets.all(8),
                           child: const Icon(
-                            Icons.edit_rounded,
+                            Icons.settings_rounded,
                             color: Colors.white,
-                            size: 16,
+                            size: 20,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
+                  // Welcome/User Section (No Avatar)
+                  Text(
+                    "Hello,",
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 16,
+                    ),
+                  ),
                   Text(
                     username,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -1.0,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -176,16 +112,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: const Color(0xFF00FF94).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: const Color(0xFF00FF94).withValues(alpha: 0.2),
                       ),
                     ),
                     child: Text(
                       "@${username.toLowerCase().replaceAll(' ', '')}",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                      style: const TextStyle(
+                        color: Color(0xFF00FF94),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -225,18 +161,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       _buildMenuItem(
                         Icons.person_outline_rounded,
                         AppLocalizations.of(context)!.personalData,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PersonalDataScreen(),
+                          ),
+                        ),
                       ),
                       _buildMenuItem(
                         Icons.security_rounded,
                         AppLocalizations.of(context)!.security,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SecuritySettingsScreen(),
+                          ),
+                        ),
                       ),
                       _buildMenuItem(
                         Icons.notifications_none_rounded,
                         AppLocalizations.of(context)!.notifications,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationSettingsScreen(),
+                          ),
+                        ),
                       ),
                       _buildMenuItem(
                         Icons.help_outline_rounded,
                         AppLocalizations.of(context)!.helpSupport,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SupportScreen(),
+                          ),
+                        ),
                       ),
                       _buildMenuItem(
                         Icons.settings_rounded,
@@ -331,6 +291,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: GlassContainer(
+        enableBlur: false, // Performance optimization for list items
         blur: 10,
         opacity: 0.03,
         borderRadius: BorderRadius.circular(20),

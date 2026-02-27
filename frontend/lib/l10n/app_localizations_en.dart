@@ -446,4 +446,313 @@ class AppLocalizationsEn extends AppLocalizations {
   String errorWriting(Object error) {
     return 'Error writing: $error';
   }
+
+  @override
+  String get typeWithdrawal => 'Withdrawal';
+
+  @override
+  String get typeDeposit => 'Deposit';
+
+  @override
+  String get rememberMe => 'Remember Me';
+
+  @override
+  String get torOnionActive => 'Onion Protocol Active (Kerosene Core)';
+
+  @override
+  String get signupFeeTitle => 'Activation Fee';
+
+  @override
+  String get signupFeeSubtitle =>
+      'A one-time fee of 0.003 BTC is required to activate your account and prevent spam.';
+
+  @override
+  String get signupFeeWhyTitle => 'Why a fee?';
+
+  @override
+  String get signupFeeWhyBody =>
+      'Kerosene has no registration form or email. The fee is a Proof-of-Work that protects the network from bots and fake accounts.';
+
+  @override
+  String get signupFeeNotRefundable => 'Non-refundable';
+
+  @override
+  String get signupFeeNotRefundableBody =>
+      'Once broadcasted, the fee cannot be recovered. Ensure you are ready before proceeding.';
+
+  @override
+  String get signupFeeContinue => 'Understood, Continue';
+
+  @override
+  String get seedSecurityTitle => 'Seed Security';
+
+  @override
+  String get seedSecuritySubtitle =>
+      'Choose how to protect your wallet recovery phrase.';
+
+  @override
+  String get seedStandardTitle => 'Standard';
+
+  @override
+  String get seedStandardDesc =>
+      'A single 12, 18, or 24-word recovery phrase. Ideal for general use and simplicity.';
+
+  @override
+  String get seedSlip39Title => 'Shamir SLIP-39 (Multi-part)';
+
+  @override
+  String get seedSlip39Desc =>
+      'Split your seed into multiple parts. Require a minimum to recover (e.g., 3-of-5). Ideal for distributed physical storage.';
+
+  @override
+  String get seedMultisigTitle => '2FA Multisig Vault';
+
+  @override
+  String get seedMultisigDesc =>
+      'A 2-of-3 Multisig wallet. Kerosene co-signs transactions via TOTP. Protects against device theft.';
+
+  @override
+  String get seedSlip39ConfigTitle => 'SLIP-39 Configuration';
+
+  @override
+  String get seedSlip39TotalShares => 'Total Shares (Pieces)';
+
+  @override
+  String get seedSlip39Threshold => 'Required Threshold';
+
+  @override
+  String seedSlip39Summary(Object threshold, Object total) {
+    return 'Requires $threshold of $total parts to restore the wallet.';
+  }
+
+  @override
+  String get passphraseTitle => 'Your Secret Phrase';
+
+  @override
+  String get passphraseSubtitle =>
+      'Write down these 18 words on physical paper. Never save them digitally.';
+
+  @override
+  String get passphraseWrittenDown => 'I Have Written It Down';
+
+  @override
+  String get passphraseWarning =>
+      'If you lose these words, you will permanently lose access to your account and funds.';
+
+  @override
+  String get passphraseVerifyTitle => 'Verify Phrase';
+
+  @override
+  String get passphraseVerifySubtitle =>
+      'Type your secret phrase to confirm you have a correct backup.';
+
+  @override
+  String get passphraseVerifyHint => 'word1 word2 word3...';
+
+  @override
+  String get passphraseVerifyError => 'Incorrect phrase. Please try again.';
+
+  @override
+  String get passphraseVerifyContinue => 'Verify & Continue';
+
+  @override
+  String get passphraseGoBack => 'Go back to see phrase';
+
+  @override
+  String get passphraseEnterWords => 'Enter your 18 words';
+
+  @override
+  String get slip39SharesTitle => 'Your SLIP-39 Shares';
+
+  @override
+  String slip39SharesSubtitle(Object total, Object threshold) {
+    return 'Your seed is divided into $total pieces. You need $threshold of them to recover your wallet.';
+  }
+
+  @override
+  String slip39ShareLabel(Object index, Object total) {
+    return 'Share $index of $total';
+  }
+
+  @override
+  String slip39ShareCopied(Object index) {
+    return 'Share $index copied';
+  }
+
+  @override
+  String get slip39VerifyShareTitle => 'Verify Share';
+
+  @override
+  String slip39VerifyShareSubtitle(Object index) {
+    return 'Type the words for Share $index exactly as you wrote them down.';
+  }
+
+  @override
+  String slip39ConfirmShare(Object index) {
+    return 'Confirm Share $index';
+  }
+
+  @override
+  String get slip39AllConfirmedContinue => 'All Shares Confirmed — Continue';
+
+  @override
+  String slip39ConfirmAllPending(Object total) {
+    return 'Confirm all $total shares to continue';
+  }
+
+  @override
+  String get slip39Warning =>
+      'DO NOT store all shares in the same place. If an attacker finds enough pieces, they can recover your wallet.';
+
+  @override
+  String get twoFaPrimaryTitle => 'Your Primary Seed';
+
+  @override
+  String get twoFaPrimaryBadge => 'Key 1 of 3 — Lives only on your device';
+
+  @override
+  String get twoFaPrimarySubtitle =>
+      'This 18-word phrase is your main private key. Alone, it is NOT enough to sign transactions — a Kerosene TOTP authorization is always required.';
+
+  @override
+  String get twoFaPrimaryWritten => 'I Have Written It Down';
+
+  @override
+  String get twoFaBackupTitle => 'Your Recovery Seed';
+
+  @override
+  String get twoFaBackupBadge => 'Key 3 of 3 — Emergency / Sovereignty Bypass';
+
+  @override
+  String get twoFaBackupSubtitle =>
+      'If Kerosene ever shuts down, use this 12-word seed with your primary seed to recover funds without server involvement.';
+
+  @override
+  String get twoFaCoSignerNote =>
+      'Key 2 of 3 is encrypted at Kerosene and used only to co-sign transactions when you provide a valid TOTP code.';
+
+  @override
+  String get twoFaBothStored => 'I Saved Both Seeds';
+
+  @override
+  String get twoFaBackToPrimary => 'Back to Primary Seed';
+
+  @override
+  String get twoFaVerifyTitle => 'Verify Primary Seed';
+
+  @override
+  String get twoFaVerifySubtitle =>
+      'Confirm your Primary Key (18 words) to prove it is securely backed up.';
+
+  @override
+  String get twoFaVerifyHint => 'word1 word2 word3...';
+
+  @override
+  String get twoFaVerifyError => 'Incorrect. Please check your Primary Seed.';
+
+  @override
+  String get twoFaVerifyActivate => 'Verify & Activate 2FA Vault';
+
+  @override
+  String get twoFaBackToBackup => 'Back to Recovery Seed';
+
+  @override
+  String get totpSetupTitle => 'Setup Authenticator';
+
+  @override
+  String get totpSetupSubtitle =>
+      'Scan the QR code with your authenticator app, then enter the 6-digit code to verify.';
+
+  @override
+  String get totpCodeLabel => 'Enter 6-digit code';
+
+  @override
+  String get totpVerifyButton => 'Verify & Continue';
+
+  @override
+  String get totpErrorInvalid => 'Invalid code. Please try again.';
+
+  @override
+  String get passkeyTitle => 'Register Passkey';
+
+  @override
+  String get passkeySubtitle =>
+      'Register a biometric passkey to enable fast, passwordless login on this device.';
+
+  @override
+  String get passkeyRegisterButton => 'Register Passkey (Biometrics)';
+
+  @override
+  String get passkeySuccessMessage => 'Passkey registered successfully!';
+
+  @override
+  String get passkeySkip => 'Skip for now';
+
+  @override
+  String get usernameTitle => 'Choose Your Handle';
+
+  @override
+  String get usernameSubtitle =>
+      'Pick a unique username. This is your public identity on Kerosene.';
+
+  @override
+  String get usernameFieldLabel => 'Username';
+
+  @override
+  String get usernameFieldHint => '@your_handle';
+
+  @override
+  String get usernameCheckButton => 'Check Availability';
+
+  @override
+  String get usernameAvailable => 'Username available!';
+
+  @override
+  String get usernameTaken => 'Username already in use.';
+
+  @override
+  String get usernameContinue => 'Reserve Handle & Continue';
+
+  @override
+  String get paymentTitle => 'Activation Payment';
+
+  @override
+  String get paymentSubtitle =>
+      'Send exactly the amount shown below to activate your account.';
+
+  @override
+  String get paymentTimeLeft => 'Time left';
+
+  @override
+  String get paymentExpired => 'Payment window expired';
+
+  @override
+  String get paymentWaiting => 'Waiting for payment...';
+
+  @override
+  String get paymentAmountLabel => 'Amount';
+
+  @override
+  String get paymentAddressLabel => 'Deposit Address';
+
+  @override
+  String get paymentCopyAddress => 'Copy Address';
+
+  @override
+  String get paymentAddressCopied => 'Address copied!';
+
+  @override
+  String get confirmationsTitle => 'Waiting for Confirmations';
+
+  @override
+  String get confirmationsSubtitle =>
+      'Your payment was detected. Waiting for 3 bitcoin network confirmations to finalize your account.';
+
+  @override
+  String confirmationsProgress(Object current, Object total) {
+    return '$current / $total confirmations';
+  }
+
+  @override
+  String get confirmationsDone => 'Account Activated!';
 }

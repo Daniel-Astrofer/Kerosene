@@ -448,4 +448,318 @@ class AppLocalizationsEs extends AppLocalizations {
   String errorWriting(Object error) {
     return 'Error al grabar: $error';
   }
+
+  @override
+  String get typeWithdrawal => 'Retiro';
+
+  @override
+  String get typeDeposit => 'Depósito';
+
+  @override
+  String get rememberMe => 'Recordarme';
+
+  @override
+  String get torOnionActive => 'Protocolo Onion Activo (Kerosene Core)';
+
+  @override
+  String get signupFeeTitle => 'Tarifa de Activación';
+
+  @override
+  String get signupFeeSubtitle =>
+      'Se requiere una tarifa única de 0,003 BTC para activar tu cuenta y prevenir el spam.';
+
+  @override
+  String get signupFeeWhyTitle => '¿Por qué una tarifa?';
+
+  @override
+  String get signupFeeWhyBody =>
+      'Kerosene no tiene formulario de registro ni correo electrónico. La tarifa es una Prueba de Trabajo que protege la red de bots y cuentas falsas.';
+
+  @override
+  String get signupFeeNotRefundable => 'No reembolsable';
+
+  @override
+  String get signupFeeNotRefundableBody =>
+      'Una vez transmitida, la tarifa no puede recuperarse. Asegúrate de estar listo antes de continuar.';
+
+  @override
+  String get signupFeeContinue => 'Entendido, Continuar';
+
+  @override
+  String get seedSecurityTitle => 'Seguridad de la Semilla';
+
+  @override
+  String get seedSecuritySubtitle =>
+      'Elige cómo proteger tu frase de recuperación de la billetera.';
+
+  @override
+  String get seedStandardTitle => 'Estándar';
+
+  @override
+  String get seedStandardDesc =>
+      'Una frase de recuperación de 12, 18 o 24 palabras. Ideal para uso general y simplicidad.';
+
+  @override
+  String get seedSlip39Title => 'Shamir SLIP-39 (Multi-parte)';
+
+  @override
+  String get seedSlip39Desc =>
+      'Divide tu semilla en múltiples partes. Requiere un mínimo para recuperar (ej: 3-de-5). Ideal para almacenamiento físico distribuido.';
+
+  @override
+  String get seedMultisigTitle => 'Bóveda Multisig 2FA';
+
+  @override
+  String get seedMultisigDesc =>
+      'Una billetera Multisig 2-de-3. Kerosene co-firma transacciones vía TOTP. Protege contra el robo del dispositivo.';
+
+  @override
+  String get seedSlip39ConfigTitle => 'Configuración SLIP-39';
+
+  @override
+  String get seedSlip39TotalShares => 'Total de Partes (Piezas)';
+
+  @override
+  String get seedSlip39Threshold => 'Umbral Requerido';
+
+  @override
+  String seedSlip39Summary(Object threshold, Object total) {
+    return 'Requiere $threshold de $total partes para restaurar la billetera.';
+  }
+
+  @override
+  String get passphraseTitle => 'Tu Frase Secreta';
+
+  @override
+  String get passphraseSubtitle =>
+      'Anota estas 18 palabras en un papel físico. Nunca las guardes digitalmente.';
+
+  @override
+  String get passphraseWrittenDown => 'Ya Lo Anoté';
+
+  @override
+  String get passphraseWarning =>
+      'Si pierdes estas palabras, perderás permanentemente el acceso a tu cuenta y fondos.';
+
+  @override
+  String get passphraseVerifyTitle => 'Verificar Frase';
+
+  @override
+  String get passphraseVerifySubtitle =>
+      'Escribe tu frase secreta para confirmar que tienes una copia de seguridad correcta.';
+
+  @override
+  String get passphraseVerifyHint => 'palabra1 palabra2 palabra3...';
+
+  @override
+  String get passphraseVerifyError =>
+      'Frase incorrecta. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get passphraseVerifyContinue => 'Verificar y Continuar';
+
+  @override
+  String get passphraseGoBack => 'Volver para ver la frase';
+
+  @override
+  String get passphraseEnterWords => 'Ingresa tus 18 palabras';
+
+  @override
+  String get slip39SharesTitle => 'Tus Partes SLIP-39';
+
+  @override
+  String slip39SharesSubtitle(Object total, Object threshold) {
+    return 'Tu semilla está dividida en $total piezas. Necesitas $threshold de ellas para recuperar tu billetera.';
+  }
+
+  @override
+  String slip39ShareLabel(Object index, Object total) {
+    return 'Parte $index de $total';
+  }
+
+  @override
+  String slip39ShareCopied(Object index) {
+    return 'Parte $index copiada';
+  }
+
+  @override
+  String get slip39VerifyShareTitle => 'Verificar Parte';
+
+  @override
+  String slip39VerifyShareSubtitle(Object index) {
+    return 'Escribe las palabras de la Parte $index exactamente como las anotaste.';
+  }
+
+  @override
+  String slip39ConfirmShare(Object index) {
+    return 'Confirmar Parte $index';
+  }
+
+  @override
+  String get slip39AllConfirmedContinue =>
+      'Todas las Partes Confirmadas — Continuar';
+
+  @override
+  String slip39ConfirmAllPending(Object total) {
+    return 'Confirma las $total partes para continuar';
+  }
+
+  @override
+  String get slip39Warning =>
+      'NO almacenes todas las partes en el mismo lugar. Si un atacante encuentra suficientes piezas, puede recuperar tu billetera.';
+
+  @override
+  String get twoFaPrimaryTitle => 'Tu Semilla Principal';
+
+  @override
+  String get twoFaPrimaryBadge => 'Clave 1 de 3 — Solo en tu dispositivo';
+
+  @override
+  String get twoFaPrimarySubtitle =>
+      'Esta frase de 18 palabras es tu clave privada principal. Sola, NO es suficiente para firmar transacciones — siempre se requiere una autorización TOTP de Kerosene.';
+
+  @override
+  String get twoFaPrimaryWritten => 'Ya Lo Anoté';
+
+  @override
+  String get twoFaBackupTitle => 'Tu Semilla de Recuperación';
+
+  @override
+  String get twoFaBackupBadge =>
+      'Clave 3 de 3 — Emergencia / Bypass de Soberanía';
+
+  @override
+  String get twoFaBackupSubtitle =>
+      'Si Kerosene cierra, usa esta semilla de 12 palabras junto con tu semilla principal para recuperar fondos sin intervención de servidor.';
+
+  @override
+  String get twoFaCoSignerNote =>
+      'La Clave 2 de 3 está cifrada en Kerosene y se usa solo para co-firmar transacciones cuando proporcionas un código TOTP válido.';
+
+  @override
+  String get twoFaBothStored => 'Guardé Ambas Semillas';
+
+  @override
+  String get twoFaBackToPrimary => 'Volver a Semilla Principal';
+
+  @override
+  String get twoFaVerifyTitle => 'Verificar Semilla Principal';
+
+  @override
+  String get twoFaVerifySubtitle =>
+      'Confirma tu Clave Principal (18 palabras) para demostrar que está guardada de forma segura.';
+
+  @override
+  String get twoFaVerifyHint => 'palabra1 palabra2 palabra3...';
+
+  @override
+  String get twoFaVerifyError =>
+      'Incorrecto. Por favor, revisa tu Semilla Principal.';
+
+  @override
+  String get twoFaVerifyActivate => 'Verificar y Activar Bóveda 2FA';
+
+  @override
+  String get twoFaBackToBackup => 'Volver a Semilla de Recuperación';
+
+  @override
+  String get totpSetupTitle => 'Configurar Autenticador';
+
+  @override
+  String get totpSetupSubtitle =>
+      'Escanea el código QR con tu app autenticadora, luego ingresa el código de 6 dígitos para verificar.';
+
+  @override
+  String get totpCodeLabel => 'Ingresa el código de 6 dígitos';
+
+  @override
+  String get totpVerifyButton => 'Verificar y Continuar';
+
+  @override
+  String get totpErrorInvalid =>
+      'Código inválido. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get passkeyTitle => 'Registrar Passkey';
+
+  @override
+  String get passkeySubtitle =>
+      'Registra una passkey biométrica para habilitar el inicio de sesión rápido sin contraseña en este dispositivo.';
+
+  @override
+  String get passkeyRegisterButton => 'Registrar Passkey (Biometría)';
+
+  @override
+  String get passkeySuccessMessage => '¡Passkey registrada con éxito!';
+
+  @override
+  String get passkeySkip => 'Omitir por ahora';
+
+  @override
+  String get usernameTitle => 'Elige tu Apodo';
+
+  @override
+  String get usernameSubtitle =>
+      'Elige un nombre de usuario único. Esta es tu identidad pública en Kerosene.';
+
+  @override
+  String get usernameFieldLabel => 'Usuario';
+
+  @override
+  String get usernameFieldHint => '@tu_usuario';
+
+  @override
+  String get usernameCheckButton => 'Verificar Disponibilidad';
+
+  @override
+  String get usernameAvailable => '¡Usuario disponible!';
+
+  @override
+  String get usernameTaken => 'El usuario ya está en uso.';
+
+  @override
+  String get usernameContinue => 'Reservar Usuario y Continuar';
+
+  @override
+  String get paymentTitle => 'Pago de Activación';
+
+  @override
+  String get paymentSubtitle =>
+      'Envía exactamente la cantidad que se muestra a continuación para activar tu cuenta.';
+
+  @override
+  String get paymentTimeLeft => 'Tiempo restante';
+
+  @override
+  String get paymentExpired => 'La ventana de pago expiró';
+
+  @override
+  String get paymentWaiting => 'Esperando pago...';
+
+  @override
+  String get paymentAmountLabel => 'Cantidad';
+
+  @override
+  String get paymentAddressLabel => 'Dirección de Depósito';
+
+  @override
+  String get paymentCopyAddress => 'Copiar Dirección';
+
+  @override
+  String get paymentAddressCopied => '¡Dirección copiada!';
+
+  @override
+  String get confirmationsTitle => 'Esperando Confirmaciones';
+
+  @override
+  String get confirmationsSubtitle =>
+      'Tu pago fue detectado. Esperando 3 confirmaciones de la red Bitcoin para finalizar tu cuenta.';
+
+  @override
+  String confirmationsProgress(Object current, Object total) {
+    return '$current / $total confirmaciones';
+  }
+
+  @override
+  String get confirmationsDone => '¡Cuenta Activada!';
 }

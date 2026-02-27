@@ -250,7 +250,7 @@ await apiClient.get(
 
 ```dart
 // URL Base
-static const String apiBaseUrl = 'http://18.117.96.94:8080';
+static const String apiBaseUrl = 'http://<ONION_ADDRESS_OR_LOCALHOST>:8080';
 
 // Timeouts
 static const int connectionTimeout = 30000;
@@ -396,4 +396,4 @@ a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0...
 
 **Data**: 10/12/2025  
 **Status**: ✅ **AUTH COMPLETO - WALLET E LEDGER PENDENTES**  
-**API**: `http://18.117.96.94:8080`
+**API**: `http://<ONION_ADDRESS_OR_LOCALHOST>:8080`

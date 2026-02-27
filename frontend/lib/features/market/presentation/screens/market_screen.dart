@@ -13,6 +13,7 @@ import '../providers/market_provider.dart';
 import '../widgets/fear_and_greed_widget.dart';
 import '../widgets/order_book_widget.dart';
 import '../../../home/presentation/widgets/animated_balance_display.dart';
+import '../../../../core/presentation/widgets/animated_number_display.dart';
 
 // ─── Price Alert Model ─────────────────────────────────────────────────────────
 class PriceAlert {
@@ -172,9 +173,30 @@ class MarketScreen extends ConsumerStatefulWidget {
   ConsumerState<MarketScreen> createState() => _MarketScreenState();
 }
 
-class _MarketScreenState extends ConsumerState<MarketScreen> {
+class _MarketScreenState extends ConsumerState<MarketScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _livePulseController;
+  late Animation<double> _livePulseAnimation;
   bool _showMA = false;
   bool _showRSI = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _livePulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+    _livePulseAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _livePulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _livePulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +224,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      "Bitcoin Trading",
+                      "Bitcoin",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 28,
@@ -255,15 +277,17 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: ["1H", "1D", "1W", "1M", "1Y", "ALL"].map((tf) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: _buildTimeframeButton(
-                          tf,
-                          marketState.timeframe == tf,
-                        ),
-                      );
-                    }).toList(),
+                    children: ["LIVE", "1H", "1D", "1W", "1M", "1Y", "ALL"].map(
+                      (tf) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: _buildTimeframeButton(
+                            tf,
+                            marketState.timeframe == tf,
+                          ),
+                        );
+                      },
+                    ).toList(),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -444,6 +468,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: GlassContainer(
+              enableBlur: false, // Performance optimization for list items
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               borderRadius: BorderRadius.circular(12),
               opacity: 0.05,
@@ -840,6 +865,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
 
   // ─── Timeframe Button ──────────────────────────────────────────────────────
   Widget _buildTimeframeButton(String label, bool isActive) {
+    final isLive = label == 'LIVE';
     return GestureDetector(
       onTap: () {
         ref.read(marketProvider.notifier).fetchMarketData(label);
@@ -848,19 +874,58 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? Colors.white.withValues(alpha: 0.1)
+              ? (isLive
+                    ? const Color(0xFFFF0055).withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.1))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
+          border: isLive && isActive
+              ? Border.all(
+                  color: const Color(0xFFFF0055).withValues(alpha: 0.5),
+                )
+              : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.4),
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isLive) ...[
+              AnimatedBuilder(
+                animation: _livePulseAnimation,
+                builder: (context, child) {
+                  return Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: const Color(
+                        0xFFFF0055,
+                      ).withValues(alpha: _livePulseAnimation.value),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFFFF0055,
+                          ).withValues(alpha: _livePulseAnimation.value * 0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive
+                    ? (isLive ? const Color(0xFFFF0055) : Colors.white)
+                    : Colors.white.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -888,14 +953,19 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
+          AnimatedNumberDisplay(
+            value:
+                double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ??
+                0.0,
+            prefix: value.contains(r'$') ? r'$' : '',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
               fontFamily: 'monospace',
             ),
+            decimalPlaces: 2,
+            enableFlash: false, // Less distraction for stats
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
@@ -980,7 +1050,78 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                     ),
                   ),
                 ],
-                lineTouchData: const LineTouchData(enabled: false),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  getTouchedSpotIndicator:
+                      (LineChartBarData barData, List<int> spotIndexes) {
+                        return spotIndexes.map((index) {
+                          return TouchedSpotIndicatorData(
+                            FlLine(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              strokeWidth: 1,
+                              dashArray: [5, 5],
+                            ),
+                            FlDotData(
+                              show: true,
+                              getDotPainter: (spot, percent, barData, index) =>
+                                  FlDotCirclePainter(
+                                    radius: 4,
+                                    color: const Color(0xFF00D4FF),
+                                    strokeWidth: 2,
+                                    strokeColor: Colors.white,
+                                  ),
+                            ),
+                          );
+                        }).toList();
+                      },
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    getTooltipColor: (touchedSpot) =>
+                        const Color(0xFF1A1A24).withValues(alpha: 0.9),
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        final date = DateTime.fromMillisecondsSinceEpoch(
+                          barSpot.x.toInt(),
+                        );
+                        final formattedDate =
+                            state.timeframe == 'LIVE' || state.timeframe == '1H'
+                            ? DateFormat('HH:mm:ss').format(date)
+                            : DateFormat('MMM dd, HH:mm').format(date);
+
+                        final currency = ref.read(currencyProvider);
+                        final factor = _getConversionFactor(ref);
+                        final price = _formatPrice(
+                          context,
+                          barSpot.y * factor,
+                          currency,
+                        );
+
+                        return LineTooltipItem(
+                          '$formattedDate\n',
+                          const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: price,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -1009,7 +1150,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
             )
           : LineChart(
               LineChartData(
-                minY: state.spots.isNotEmpty 
+                minY: state.spots.isNotEmpty
                     ? state.spots.map((e) => e.y).reduce(math.min) * 0.999
                     : 0,
                 maxY: state.spots.isNotEmpty

@@ -48,10 +48,7 @@ class WalletCardCarousel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF7B61FF),
-            const Color(0xFF00D4FF),
-          ],
+          colors: [const Color(0xFF7B61FF), const Color(0xFF00D4FF)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -82,11 +79,7 @@ class WalletCardCarousel extends StatelessWidget {
                   size: 24,
                 ),
               ),
-              const Icon(
-                Icons.contactless,
-                color: Colors.white,
-                size: 32,
-              ),
+              const Icon(Icons.contactless, color: Colors.white, size: 32),
             ],
           ),
 

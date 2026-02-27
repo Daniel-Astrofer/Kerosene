@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/services/local_transaction_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart'
     show authLocalDataSourceProvider, apiClientProvider;
 import '../../../wallet/domain/entities/transaction.dart';
@@ -12,6 +11,21 @@ import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
+
+// ==================== Filter Logic ====================
+
+enum TransactionFilter {
+  all('Tudo'),
+  send('Enviadas'),
+  receive('Recebidas');
+
+  final String label;
+  const TransactionFilter(this.label);
+}
+
+final transactionFilterProvider = StateProvider<TransactionFilter>((ref) {
+  return TransactionFilter.all;
+});
 
 // ==================== Core Providers ====================
 
@@ -28,6 +42,47 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
     remoteDataSource: remoteDataSource,
     authLocalDataSource: authLocalDataSource,
   );
+});
+
+// ==================== Transaction History (API) ====================
+
+/// Busca o histórico de transações do endpoint GET /ledger/history
+final transactionHistoryProvider = FutureProvider<List<Transaction>>((
+  ref,
+) async {
+  final repo = ref.watch(transactionRepositoryProvider);
+  return repo.getTransactionHistory();
+});
+
+/// Histórico filtrado por tipo
+final filteredTransactionsProvider = Provider<AsyncValue<List<Transaction>>>((
+  ref,
+) {
+  final historyAsync = ref.watch(transactionHistoryProvider);
+  final filter = ref.watch(transactionFilterProvider);
+
+  return historyAsync.whenData((txs) {
+    switch (filter) {
+      case TransactionFilter.all:
+        return txs;
+      case TransactionFilter.send:
+        return txs
+            .where(
+              (tx) =>
+                  tx.type == TransactionType.send ||
+                  tx.type == TransactionType.withdrawal,
+            )
+            .toList();
+      case TransactionFilter.receive:
+        return txs
+            .where(
+              (tx) =>
+                  tx.type == TransactionType.receive ||
+                  tx.type == TransactionType.deposit,
+            )
+            .toList();
+    }
+  });
 });
 
 // ==================== Fee Estimation ====================
@@ -93,7 +148,7 @@ final paymentLinkDetailProvider = FutureProvider.family<PaymentLink, String>((
   linkId,
 ) async {
   final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getPaymentLink(linkId);
+  return repo.getPaymentRequest(linkId);
 });
 
 // ==================== Action Notifiers ====================
@@ -129,6 +184,7 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
     required int feeSatoshis,
     String? fromWalletId,
     String? fromAddress,
+    String? context,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
@@ -138,27 +194,13 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
         feeSatoshis: feeSatoshis,
         fromWalletId: fromWalletId,
         fromAddress: fromAddress,
+        context: context,
       );
 
       debugPrint('>>> Notifier: Transaction sent successfully: ${result.txid}');
 
-      // Save locally
-      final transaction = Transaction(
-        id: result.txid,
-        fromAddress: fromAddress ?? fromWalletId ?? 'Unknown',
-        toAddress: toAddress,
-        amountSatoshis: (amount * 100000000).toInt(),
-        feeSatoshis: feeSatoshis,
-        status: TransactionStatus.confirmed,
-        type: TransactionType.send,
-        confirmations: 6,
-        timestamp: DateTime.now(),
-        description: "Sent Bitcoin",
-      );
-
-      await ref
-          .read(transactionHistoryProvider.notifier)
-          .addTransaction(transaction);
+      // Refresh history from API after successful transaction
+      ref.invalidate(transactionHistoryProvider);
 
       state = AsyncActionState(result: result);
       return result;
@@ -237,13 +279,15 @@ class PaymentLinkNotifier extends StateNotifier<AsyncActionState> {
 
   Future<PaymentLink?> create({
     required double amount,
-    required String description,
+    required String receiverWalletName,
+    int? expiresIn,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
-      final result = await _repository.createPaymentLink(
+      final result = await _repository.createPaymentRequest(
         amount: amount,
-        description: description,
+        receiverWalletName: receiverWalletName,
+        expiresIn: expiresIn,
       );
       state = AsyncActionState(result: result);
       return result;
@@ -253,30 +297,16 @@ class PaymentLinkNotifier extends StateNotifier<AsyncActionState> {
     }
   }
 
-  Future<PaymentLink?> confirmPayment({
+  Future<PaymentLink?> pay({
     required String linkId,
-    required String txid,
-    required String fromAddress,
+    required String payerWalletName,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
-      final result = await _repository.confirmPaymentLink(
+      final result = await _repository.payPaymentRequest(
         linkId: linkId,
-        txid: txid,
-        fromAddress: fromAddress,
+        payerWalletName: payerWalletName,
       );
-      state = AsyncActionState(result: result);
-      return result;
-    } catch (e) {
-      state = AsyncActionState(error: e.toString());
-      return null;
-    }
-  }
-
-  Future<PaymentLink?> complete(String linkId) async {
-    state = const AsyncActionState(isLoading: true);
-    try {
-      final result = await _repository.completePaymentLink(linkId);
       state = AsyncActionState(result: result);
       return result;
     } catch (e) {
@@ -294,60 +324,45 @@ final paymentLinkNotifierProvider =
       return PaymentLinkNotifier(repo);
     });
 
-// ==================== Local Persistence ====================
+/// Notifier para Saques Externos
+class WithdrawNotifier extends StateNotifier<AsyncActionState> {
+  final TransactionRepository _repository;
+  final Ref ref;
 
-final localTransactionServiceProvider = Provider(
-  (ref) => LocalTransactionService(),
-);
+  WithdrawNotifier(this._repository, this.ref)
+    : super(const AsyncActionState());
 
-class TransactionHistoryNotifier extends StateNotifier<List<Transaction>> {
-  final LocalTransactionService _service;
-  TransactionHistoryNotifier(this._service) : super([]) {
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
+  Future<TxStatus?> withdraw({
+    required String fromWalletName,
+    required String toAddress,
+    required double amount,
+    String? description,
+  }) async {
+    state = const AsyncActionState(isLoading: true);
     try {
-      debugPrint('>>> TransactionHistoryNotifier: Starting initialization');
-      final transactions = await _service.getTransactions();
-      debugPrint(
-        '>>> TransactionHistoryNotifier: Loaded ${transactions.length} transactions',
+      final result = await _repository.withdraw(
+        fromWalletName: fromWalletName,
+        toAddress: toAddress,
+        amount: amount,
+        description: description,
       );
-      state = transactions;
+
+      // Refresh history from API after withdrawal
+      ref.invalidate(transactionHistoryProvider);
+
+      state = AsyncActionState(result: result);
+      return result;
     } catch (e) {
-      debugPrint(
-        '>>> TransactionHistoryNotifier: Error during initialization: $e',
-      );
+      state = AsyncActionState(error: e.toString());
+      return null;
     }
   }
 
-  Future<void> loadTransactions() async {
-    try {
-      debugPrint('>>> TransactionHistoryNotifier: Loading transactions');
-      state = await _service.getTransactions();
-      debugPrint(
-        '>>> TransactionHistoryNotifier: Loaded ${state.length} transactions',
-      );
-    } catch (e) {
-      debugPrint(
-        '>>> TransactionHistoryNotifier: Error loading transactions: $e',
-      );
-    }
-  }
-
-  Future<void> addTransaction(Transaction transaction) async {
-    await _service.saveTransaction(transaction);
-    state = [transaction, ...state];
-  }
-
-  Future<void> removeTransaction(String id) async {
-    await _service.removeTransaction(id);
-    state = state.where((t) => t.id != id).toList();
-  }
+  void reset() => state = const AsyncActionState();
 }
 
-final transactionHistoryProvider =
-    StateNotifierProvider<TransactionHistoryNotifier, List<Transaction>>((ref) {
-      final service = ref.watch(localTransactionServiceProvider);
-      return TransactionHistoryNotifier(service);
+final withdrawProvider =
+    StateNotifierProvider<WithdrawNotifier, AsyncActionState>((ref) {
+      final repo = ref.watch(transactionRepositoryProvider);
+      return WithdrawNotifier(repo, ref);
     });

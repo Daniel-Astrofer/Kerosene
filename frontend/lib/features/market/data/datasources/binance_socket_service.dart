@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
+import '../../../../core/services/tor_service.dart';
 
 class BinanceSocketService {
   WebSocketChannel? _channel;
@@ -10,20 +11,38 @@ class BinanceSocketService {
 
   Stream<Map<String, dynamic>> get dataStream => _streamController.stream;
 
-  void connect() {
-    // Connect to combined streams for real-time klines and ticker info
-    // streams: btcusdt@ticker (for 24h stats), btcusdt@kline_1m (for real-time chart tip)
+  String _currentInterval = '1m';
+
+  void connect({String interval = '1m'}) {
+    _currentInterval = interval;
+    _internalConnect();
+  }
+
+  void _internalConnect() async {
+    _channel?.sink.close();
+
+    // Valid Binance stream intervals: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
+    debugPrint('Connecting to Binance Socket via Tor...');
+
+    final relayPort = await TorService.instance.startRelay(
+      'stream.binance.com',
+      9443,
+    );
     final url = Uri.parse(
-      'wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/btcusdt@kline_1m',
+      'wss://127.0.0.1:$relayPort/stream?streams=btcusdt@ticker/btcusdt@kline_$_currentInterval',
     );
 
     _channel = WebSocketChannel.connect(url);
 
     _channel!.stream.listen(
-      (message) {
-        final decoded = jsonDecode(message);
-        if (decoded is Map<String, dynamic> && decoded.containsKey('data')) {
-          _streamController.add(decoded);
+      (message) async {
+        try {
+          final decoded = await compute(jsonDecode, message as String);
+          if (decoded is Map<String, dynamic> && decoded.containsKey('data')) {
+            _streamController.add(decoded);
+          }
+        } catch (e) {
+          debugPrint('Binance Socket Parse Error: $e');
         }
       },
       onError: (error) {
@@ -39,7 +58,7 @@ class BinanceSocketService {
 
   void _reconnect() {
     disconnect();
-    Future.delayed(const Duration(seconds: 3), () => connect());
+    Future.delayed(const Duration(seconds: 3), () => _internalConnect());
   }
 
   // Fetch historical klines (candles) via REST API
@@ -56,8 +75,8 @@ class BinanceSocketService {
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<List<dynamic>>();
+        final data = await compute(jsonDecode, response.body);
+        return (data as List<dynamic>).cast<List<dynamic>>();
       } else {
         debugPrint('Binance REST Error: ${response.statusCode}');
         return [];

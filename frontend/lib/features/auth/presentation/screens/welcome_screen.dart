@@ -1,23 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
+import '../providers/auth_provider.dart';
+import '../state/auth_state.dart';
 
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // If already authenticated, skip auth screens entirely
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = ref.read(authProvider);
+      if (authState is AuthAuthenticated && mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    });
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Images removed - using solid gradients now
+    // Pre-carregar imagens pesadas para evitar "Jank" ao navegar para as telas
+    precacheImage(const AssetImage('assets/presentationimage.png'), context);
+    precacheImage(const AssetImage('assets/kerosenelogo.png'), context);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Handles the case where _checkAuthStatus resolves after first frame
+    ref.listen<AuthState>(authProvider, (_, next) {
+      if (next is AuthAuthenticated && mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    });
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(

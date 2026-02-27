@@ -8,6 +8,7 @@ import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
+import '../../../wallet/domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../datasources/transaction_remote_datasource.dart';
 
@@ -50,29 +51,27 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required int feeSatoshis,
     String? fromWalletId,
     String? fromAddress,
+    String? context,
   }) async {
     debugPrint('>>> REPO: sendTransaction called');
-    debugPrint('>>> To: $toAddress, Amount: $amount, Fee: $feeSatoshis');
-    debugPrint('>>> FromWallet: $fromWalletId, FromAddress: $fromAddress');
+    debugPrint('>>> Amount: $amount, Fee: $feeSatoshis');
+    debugPrint('>>> FromWallet: $fromWalletId');
 
     await _checkAuth();
 
     debugPrint(
       '>>> Repo: Always routing to Ledger (Off-chain/Internal/Withdrawal via Backend)...',
     );
-    debugPrint('>>> Sender: ${fromWalletId ?? fromAddress}');
-    debugPrint('>>> Receiver: $toAddress');
+    debugPrint('>>> Sender: [REDACTED]');
+    debugPrint('>>> Receiver: [REDACTED]');
 
-    // Sempre usar /ledger/transaction
-    // O backend deve decidir se á interna ou saáda para rede (withdrawal)
-    // Preference: fromAddress (BTC Address) > fromWalletId (UUID)
-    // Reason: Backend likely looks up wallet by address if 'sender' parameter is used.
     try {
       final result = await remoteDataSource.sendTransaction(
         fromAddress: fromAddress ?? fromWalletId ?? '',
         toAddress: toAddress,
         amount: amount,
         feeSatoshis: feeSatoshis,
+        context: context,
       );
       debugPrint('>>> Ledger Transaction Success: ${result.txid}');
       return result;
@@ -166,66 +165,64 @@ class TransactionRepositoryImpl implements TransactionRepository {
     return remoteDataSource.getDeposit(txid);
   }
 
-  // ==================== Payment Links ====================
+  // ==================== Payment Requests ====================
 
   @override
-  Future<PaymentLink> createPaymentLink({
+  Future<PaymentLink> createPaymentRequest({
     required double amount,
-    required String description,
+    required String receiverWalletName,
+    int? expiresIn,
   }) async {
     await _checkAuth();
-    return remoteDataSource.createPaymentLink(
+    return remoteDataSource.createPaymentRequest(
       amount: amount,
-      description: description,
+      receiverWalletName: receiverWalletName,
+      expiresIn: expiresIn,
     );
   }
 
   @override
-  Future<PaymentLink> getPaymentLink(String linkId) async {
-    // Payment links might be public? Assuming auth required for now based on previous code relying on token
-    // But previous code didn't use `token` in getPaymentLink method (Step 935: `getPaymentLink` method lines 318-328 did NOT use `token` param in signature or body).
-    // Wait, step 935 `getPaymentLink(String linkId)` implementation:
-    /*
-      @override
-      Future<PaymentLink> getPaymentLink(String linkId) async {
-        try {
-          final response = await apiClient.get(
-            '${AppConfig.transactionsPaymentLink}/$linkId',
-          );
-          return PaymentLink.fromJson(_parseJsonResponse(response.data));
-        } catch (e) {
-          throw ServerException(message: 'Erro ao buscar payment link: $e');
-        }
-      }
-    */
-    // It did NOT use token. So I don't need `_checkAuth()` here.
-    return remoteDataSource.getPaymentLink(linkId);
+  Future<PaymentLink> getPaymentRequest(String linkId) async {
+    // Payment requests might be public for scanning, but we follow datasource
+    return remoteDataSource.getPaymentRequest(linkId);
   }
 
   @override
-  Future<PaymentLink> confirmPaymentLink({
+  Future<PaymentLink> payPaymentRequest({
     required String linkId,
-    required String txid,
-    required String fromAddress,
+    required String payerWalletName,
   }) async {
-    // Previous implementation also didn't use token?
-    // Step 935: `confirmPaymentLink` (331-345) did NOT use token.
-    return remoteDataSource.confirmPaymentLink(
-      linkId: linkId,
-      txid: txid,
-      fromAddress: fromAddress,
-    );
-  }
-
-  @override
-  Future<PaymentLink> completePaymentLink(String linkId) async {
     await _checkAuth();
-    return remoteDataSource.completePaymentLink(linkId: linkId);
+    return remoteDataSource.payPaymentRequest(
+      linkId: linkId,
+      payerWalletName: payerWalletName,
+    );
   }
 
   @override
   Future<List<PaymentLink>> getPaymentLinks() async {
     await _checkAuth();
     return remoteDataSource.getPaymentLinks();
+  }
+
+  @override
+  Future<TxStatus> withdraw({
+    required String fromWalletName,
+    required String toAddress,
+    required double amount,
+    String? description,
+  }) async {
+    await _checkAuth();
+    return remoteDataSource.withdraw(
+      fromWalletName: fromWalletName,
+      toAddress: toAddress,
+      amount: amount,
+      description: description,
+    );
+  }
+
+  @override
+  Future<List<Transaction>> getTransactionHistory() async {
+    return remoteDataSource.getTransactionHistory();
   }
 }

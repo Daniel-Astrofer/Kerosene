@@ -5,11 +5,13 @@ import '../../../wallet/domain/entities/transaction.dart';
 class TransactionSuccessDialog extends StatefulWidget {
   final TransactionType type;
   final double? amount;
+  final String? counterparty;
 
   const TransactionSuccessDialog({
     super.key,
     this.type = TransactionType.send,
     this.amount,
+    this.counterparty,
   });
 
   @override
@@ -142,10 +144,15 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                       const SizedBox(height: 4),
                     ],
                     Text(
-                      "Transaction Completed",
+                      widget.counterparty != null
+                          ? (_isReceived
+                                ? "From: ${widget.counterparty}"
+                                : "To: ${widget.counterparty}")
+                          : "Transaction Completed",
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 14,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],

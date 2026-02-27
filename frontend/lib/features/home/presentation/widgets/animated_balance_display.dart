@@ -222,19 +222,21 @@ class _RollingDigitState extends State<_RollingDigit>
 
             final totalSteps = (_rotations * 10) + diff;
 
-            return Stack(
-              children: [
-                for (int i = 0; i <= totalSteps; i++)
-                  Transform.translate(
-                    offset: Offset(0, (i - (t * totalSteps)) * height),
-                    child: Center(
-                      child: Text(
-                        ((_previousDigit + i) % 10).toString(),
-                        style: widget.style,
+            return RepaintBoundary(
+              child: Stack(
+                children: [
+                  for (int i = 0; i <= totalSteps; i++)
+                    Transform.translate(
+                      offset: Offset(0, (i - (t * totalSteps)) * height),
+                      child: Center(
+                        child: Text(
+                          ((_previousDigit + i) % 10).toString(),
+                          style: widget.style,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             );
           },
         ),

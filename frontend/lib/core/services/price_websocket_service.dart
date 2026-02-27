@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'tor_service.dart';
 
 /// Service for real-time BTC price updates via WebSocket
 /// Primary: Binance, Backup: Coinbase
@@ -27,10 +28,16 @@ class PriceWebSocketService {
     _connectPrimary();
   }
 
-  void _connectPrimary() {
+  void _connectPrimary() async {
     try {
-      debugPrint('>>> PriceWebSocket: Connecting to Binance...');
-      _primaryChannel = WebSocketChannel.connect(Uri.parse(_binanceUrl));
+      debugPrint('>>> PriceWebSocket: Connecting to Binance via Tor...');
+      final relayPort = await TorService.instance.startRelay(
+        'stream.binance.com',
+        9443,
+      );
+      _primaryChannel = WebSocketChannel.connect(
+        Uri.parse('wss://127.0.0.1:$relayPort/ws/btcusdt@ticker'),
+      );
 
       _primaryChannel!.stream.listen(
         (data) {
@@ -63,14 +70,20 @@ class PriceWebSocketService {
     }
   }
 
-  void _connectBackup() {
+  void _connectBackup() async {
     if (_usingBackup || _isDisposed) return;
 
     try {
-      debugPrint('>>> PriceWebSocket: Switching to Coinbase backup...');
+      debugPrint('>>> PriceWebSocket: Switching to Coinbase backup via Tor...');
       _usingBackup = true;
 
-      _backupChannel = WebSocketChannel.connect(Uri.parse(_coinbaseUrl));
+      final relayPort = await TorService.instance.startRelay(
+        'ws-feed.exchange.coinbase.com',
+        443,
+      );
+      _backupChannel = WebSocketChannel.connect(
+        Uri.parse('wss://127.0.0.1:$relayPort'),
+      );
 
       // Subscribe to BTC-USD ticker
       final subscribeMessage = jsonEncode({

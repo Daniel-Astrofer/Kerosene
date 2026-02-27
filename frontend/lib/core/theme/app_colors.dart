@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 
+/// Kerosene — Core Color Tokens
+/// Aligned with the Cybercore Design System (see cyber_theme.dart)
 class AppColors {
-  // Dark Background from Image 2
-  static const Color background = Color(0xFF263238); // Steel / Blue Grey 900
-  static const Color darkSurface = Color(0xFF1B1F22);
+  // ─── Deep Background ───────────────────────────
+  static const Color background = Color(0xFF050508);
+  static const Color darkSurface = Color(0xFF0A0A0F);
 
-  // Primary Blue / Teal from Image 2 (Accent)
-  static const Color primary = Color(0xFF009CA3);
+  // ─── Primary Accent (Neon Cyan) ────────────────
+  static const Color primary = Color(0xFF00FFC2);
 
-  // Secondary Blues from Image 2
-  static const Color secondary1 = Color(0xFF228CCA);
+  // ─── Secondary Blues ───────────────────────────
+  static const Color secondary1 = Color(0xFF00B4FF);
   static const Color secondary2 = Color(0xFF3579A0);
   static const Color secondary3 = Color(0xFF386075);
   static const Color secondary4 = Color(0xFF22424B);
 
-  // Neutral Colors
-  static const Color grey = Color(0xFF8E8E93);
+  // ─── Neutral Colors ────────────────────────────
+  static const Color grey = Color(0xFF5A5A6E);
   static const Color white = Colors.white;
   static const Color black = Colors.black;
 
-  // Semantic Colors
-  static const Color success = Color(0xFF00FF94);
-  static const Color error = Color(0xFFFF0055);
-  static const Color warning = Color(0xFFFFCC00);
+  // ─── Semantic Colors ───────────────────────────
+  static const Color success = Color(0xFF00FFC2);
+  static const Color error = Color(0xFFFF003C);
+  static const Color warning = Color(0xFFFFC371);
 }

@@ -98,24 +98,24 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
             final message = await ndef.read();
             if (message != null) {
               for (final record in message.records) {
-              final payload = record.payload;
-              if (payload.isEmpty) continue;
-              final full = utf8.decode(payload, allowMalformed: true);
-              if (_looksLikePaymentRequest(full)) {
-                paymentRequestString = full;
-                break;
-              }
-              if (payload.length > 1) {
-                final withoutFirst = utf8.decode(
-                  payload.sublist(1),
-                  allowMalformed: true,
-                );
-                if (_looksLikePaymentRequest(withoutFirst)) {
-                  paymentRequestString = withoutFirst;
+                final payload = record.payload;
+                if (payload.isEmpty) continue;
+                final full = utf8.decode(payload, allowMalformed: true);
+                if (_looksLikePaymentRequest(full)) {
+                  paymentRequestString = full;
                   break;
                 }
+                if (payload.length > 1) {
+                  final withoutFirst = utf8.decode(
+                    payload.sublist(1),
+                    allowMalformed: true,
+                  );
+                  if (_looksLikePaymentRequest(withoutFirst)) {
+                    paymentRequestString = withoutFirst;
+                    break;
+                  }
+                }
               }
-            }
             }
           } catch (_) {}
         }

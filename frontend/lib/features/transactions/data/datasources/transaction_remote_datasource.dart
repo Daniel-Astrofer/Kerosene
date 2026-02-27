@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
+import '../../../wallet/domain/entities/transaction.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
@@ -8,6 +11,9 @@ import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
+
+/// Top-level function for isolates
+dynamic decodeJsonData(String source) => jsonDecode(source);
 
 /// Interface do TransactionRemoteDataSource
 abstract class TransactionRemoteDataSource {
@@ -27,6 +33,7 @@ abstract class TransactionRemoteDataSource {
     required String toAddress,
     required double amount,
     required int feeSatoshis,
+    String? context,
   });
   Future<TxStatus> broadcastTransaction(String rawTxHex);
 
@@ -41,19 +48,29 @@ abstract class TransactionRemoteDataSource {
   Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
-  // Payment Links
-  Future<PaymentLink> createPaymentLink({
+  // Payment Requests
+  Future<PaymentLink> createPaymentRequest({
     required double amount,
-    required String description,
+    required String receiverWalletName,
+    int? expiresIn,
   });
-  Future<PaymentLink> getPaymentLink(String linkId);
-  Future<PaymentLink> confirmPaymentLink({
+  Future<PaymentLink> getPaymentRequest(String linkId);
+  Future<PaymentLink> payPaymentRequest({
     required String linkId,
-    required String txid,
-    required String fromAddress,
+    required String payerWalletName,
   });
-  Future<PaymentLink> completePaymentLink({required String linkId});
   Future<List<PaymentLink>> getPaymentLinks();
+
+  // Withdrawals
+  Future<TxStatus> withdraw({
+    required String fromWalletName,
+    required String toAddress,
+    required double amount,
+    String? description,
+  });
+
+  // Transaction History
+  Future<List<Transaction>> getTransactionHistory();
 }
 
 /// Implementação do TransactionRemoteDataSource
@@ -65,13 +82,6 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Map<String, dynamic> _parseJsonResponse(dynamic data) {
     if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
-    if (data is String) {
-      if (data.trim().isEmpty) return {};
-      try {
-        final parsed = jsonDecode(data);
-        if (parsed is Map<String, dynamic>) return parsed;
-      } catch (_) {}
-    }
     return {};
   }
 
@@ -154,21 +164,43 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String toAddress,
     required double amount,
     required int feeSatoshis,
+    String? context,
   }) async {
     try {
+      final idempotencyKey = const Uuid().v4();
+      final requestTimestamp = DateTime.now().millisecondsSinceEpoch;
+
       final response = await apiClient.post(
         AppConfig.ledgerTransaction,
         data: {
-          'sender': fromAddress, // Backend expects 'sender'
-          'receiver': toAddress, // Backend expects 'receiver'
+          'sender': fromAddress,
+          'receiver': toAddress,
           'amount': amount,
-          'context': 'transfer',
+          'context': context ?? 'transfer',
+          'idempotencyKey': idempotencyKey,
+          'requestTimestamp': requestTimestamp,
         },
       );
 
       final data = _parseJsonResponse(response.data);
       return TxStatus.fromJson(data);
     } catch (e) {
+      if (e is DioException) {
+        final respData = e.response?.data;
+        String? serverMsg;
+        try {
+          if (respData is Map) {
+            serverMsg =
+                respData['message']?.toString() ??
+                respData['error']?.toString();
+          } else if (respData is String) {
+            serverMsg = respData;
+          }
+        } catch (_) {}
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          throw ServerException(message: serverMsg);
+        }
+      }
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao enviar transação: $e');
     }
@@ -195,7 +227,6 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     try {
       final response = await apiClient.get(
         AppConfig.transactionsDepositAddress,
-        options: Options(responseType: ResponseType.plain),
       );
       // Response is a plain string (the address)
       String address = response.data.toString().trim();
@@ -238,7 +269,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       var data = response.data;
       if (data is String) {
         try {
-          data = jsonDecode(data);
+          data = await compute<String, dynamic>(decodeJsonData, data);
         } catch (_) {}
       }
 
@@ -287,78 +318,69 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   // ==================== Payment Links ====================
 
   @override
-  Future<PaymentLink> createPaymentLink({
+  Future<PaymentLink> createPaymentRequest({
     required double amount,
-    required String description,
+    required String receiverWalletName,
+    int? expiresIn,
   }) async {
     try {
+      final dataParams = <String, dynamic>{
+        'amount': amount,
+        'receiverWalletName': receiverWalletName,
+      };
+      if (expiresIn != null) {
+        dataParams['expiresIn'] = expiresIn;
+      }
+
       final response = await apiClient.post(
-        AppConfig.transactionsCreatePaymentLink,
-        data: {'amount': amount, 'description': description},
+        AppConfig.ledgerPaymentRequest,
+        data: dataParams,
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao criar payment link: $e');
+      throw ServerException(message: 'Erro ao criar payment request: $e');
     }
   }
 
   @override
-  Future<PaymentLink> getPaymentLink(String linkId) async {
+  Future<PaymentLink> getPaymentRequest(String linkId) async {
     try {
       final response = await apiClient.get(
-        '${AppConfig.transactionsPaymentLink}/$linkId',
+        '${AppConfig.ledgerPaymentRequest}/$linkId',
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar payment link: $e');
+      throw ServerException(message: 'Erro ao buscar payment request: $e');
     }
   }
 
   @override
-  Future<PaymentLink> confirmPaymentLink({
+  Future<PaymentLink> payPaymentRequest({
     required String linkId,
-    required String txid,
-    required String fromAddress,
+    required String payerWalletName,
   }) async {
     try {
       final response = await apiClient.post(
-        '${AppConfig.transactionsPaymentLink}/$linkId/confirm',
-        data: {'txid': txid, 'fromAddress': fromAddress},
+        '${AppConfig.ledgerPaymentRequestPay}/$linkId/pay',
+        data: {'payerWalletName': payerWalletName},
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao confirmar payment link: $e');
-    }
-  }
-
-  @override
-  Future<PaymentLink> completePaymentLink({required String linkId}) async {
-    try {
-      final response = await apiClient.post(
-        '${AppConfig.transactionsPaymentLink}/$linkId/complete',
-      );
-      return PaymentLink.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao completar payment link: $e');
+      throw ServerException(message: 'Erro ao pagar payment request: $e');
     }
   }
 
   @override
   Future<List<PaymentLink>> getPaymentLinks() async {
     try {
-      final response = await apiClient.get(AppConfig.transactionsPaymentLinks);
+      final response = await apiClient.get(
+        AppConfig.transactionsPaymentLinksList,
+      );
 
       var data = response.data;
-      if (data is String) {
-        try {
-          data = jsonDecode(data);
-        } catch (_) {}
-      }
-
       if (data is List) {
         return data
             .whereType<Map<String, dynamic>>()
@@ -367,7 +389,6 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
       return [];
     } catch (e) {
-      // If 403, just return empty list to avoid breaking UI (backend might not be ready or scope issue)
       if (e is DioException && e.response?.statusCode == 403) {
         return [];
       }
@@ -376,7 +397,147 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao listar payment links: $e');
+      throw ServerException(message: 'Erro ao listar payment requests: $e');
+    }
+  }
+
+  // ==================== Withdrawals ====================
+
+  @override
+  Future<TxStatus> withdraw({
+    required String fromWalletName,
+    required String toAddress,
+    required double amount,
+    String? description,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        AppConfig.transactionsWithdraw,
+        data: {
+          'fromWalletName': fromWalletName,
+          'toAddress': toAddress,
+          'amount': amount,
+          if (description != null) 'description': description,
+        },
+      );
+      return TxStatus.fromJson(_parseJsonResponse(response.data));
+    } catch (e) {
+      if (e is DioException) {
+        final data = e.response?.data;
+        String? serverMsg;
+        try {
+          if (data is Map) {
+            serverMsg = data['message'] ?? data['error'];
+          } else if (data is String) {
+            serverMsg = data;
+          }
+        } catch (_) {}
+
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          throw ServerException(message: serverMsg);
+        }
+      }
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao realizar saque: $e');
+    }
+  }
+
+  @override
+  Future<List<Transaction>> getTransactionHistory() async {
+    try {
+      final response = await apiClient.get(AppConfig.ledgerHistory);
+      final dynamic raw = response.data is String
+          ? jsonDecode(response.data as String)
+          : response.data;
+
+      // Accept { "data": [...] } or [...] directly
+      List<dynamic> list;
+      if (raw is List) {
+        list = raw;
+      } else if (raw is Map && raw['data'] is List) {
+        list = raw['data'] as List<dynamic>;
+      } else {
+        return [];
+      }
+
+      return list.map((item) {
+        final m = item as Map<String, dynamic>;
+        final typeStr = (m['type'] as String? ?? '').toUpperCase();
+        TransactionType txType;
+        switch (typeStr) {
+          case 'TRANSACTION_SEND':
+          case 'SEND':
+          case 'WITHDRAWAL':
+            txType = TransactionType.send;
+            break;
+          case 'TRANSACTION_RECEIVE':
+          case 'RECEIVE':
+          case 'DEPOSIT':
+            txType = TransactionType.receive;
+            break;
+          default:
+            txType = TransactionType.send;
+        }
+
+        final statusStr = (m['status'] as String? ?? '').toLowerCase();
+        TransactionStatus txStatus;
+        switch (statusStr) {
+          case 'pending':
+          case 'processing':
+            txStatus = TransactionStatus.pending;
+            break;
+          case 'failed':
+          case 'error':
+            txStatus = TransactionStatus.failed;
+            break;
+          default:
+            txStatus = TransactionStatus.confirmed;
+        }
+
+        final double amount = (m['amount'] as num?)?.toDouble() ?? 0.0;
+        final int amountSatoshis =
+            (m['amountSatoshis'] as num?)?.toInt() ??
+            (amount * 100000000).round();
+
+        DateTime timestamp;
+        try {
+          timestamp = DateTime.parse(
+            m['createdAt']?.toString() ??
+                m['timestamp']?.toString() ??
+                DateTime.now().toIso8601String(),
+          );
+        } catch (_) {
+          timestamp = DateTime.now();
+        }
+
+        return Transaction(
+          id: m['id']?.toString() ?? m['txid']?.toString() ?? '',
+          fromAddress:
+              m['senderUsername']?.toString() ??
+              m['sender']?.toString() ??
+              m['fromAddress']?.toString() ??
+              '',
+          toAddress:
+              m['receiverUsername']?.toString() ??
+              m['receiver']?.toString() ??
+              m['toAddress']?.toString() ??
+              '',
+          amountSatoshis: amountSatoshis,
+          feeSatoshis: (m['feeSatoshis'] as num?)?.toInt() ?? 0,
+          status: txStatus,
+          type: txType,
+          confirmations: txStatus == TransactionStatus.confirmed ? 6 : 0,
+          timestamp: timestamp,
+          description:
+              m['context']?.toString() ??
+              m['description']?.toString() ??
+              typeStr,
+          isInternal: m['isInternal'] as bool? ?? true,
+        );
+      }).toList();
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao buscar histórico: $e');
     }
   }
 }

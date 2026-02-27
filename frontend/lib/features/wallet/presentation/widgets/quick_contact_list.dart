@@ -49,10 +49,7 @@ class QuickContactList extends StatelessWidget {
                   : const Color(0xFF1A1F3A),
               shape: BoxShape.circle,
               border: icon != null
-                  ? Border.all(
-                      color: const Color(0xFF7B61FF),
-                      width: 2,
-                    )
+                  ? Border.all(color: const Color(0xFF7B61FF), width: 2)
                   : null,
             ),
             child: Center(
@@ -71,10 +68,7 @@ class QuickContactList extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             name ?? label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
       ),

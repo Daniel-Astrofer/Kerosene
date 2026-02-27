@@ -4,6 +4,10 @@ import '../../domain/entities/wallet.dart';
 import '../providers/wallet_provider.dart';
 import '../widgets/wallet_card.dart';
 import 'send_money_screen.dart';
+import 'withdraw_screen.dart';
+import '../../domain/entities/transaction.dart';
+import '../widgets/recent_transactions_list.dart';
+import '../../../transactions/presentation/providers/transaction_provider.dart';
 
 class WalletDetailsScreen extends ConsumerStatefulWidget {
   final Wallet wallet;
@@ -17,6 +21,7 @@ class WalletDetailsScreen extends ConsumerStatefulWidget {
 
 class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
   bool _isBlocked = false;
+  String _selectedFilter = 'Transações';
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +54,32 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
                   child: WalletCard(wallet: widget.wallet, isSelected: true),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+              const Text(
+                "HISTÓRICO",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1,
+                  ),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: _buildFilterChips(),
+              ),
+              const SizedBox(height: 16),
+              _buildTransactionHistory(),
+              const SizedBox(height: 32),
 
               // Management Menu
               _buildMenuItem(
@@ -79,6 +109,31 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
                   );
                 },
                 isDestructive: !_isBlocked,
+              ),
+              _buildMenuItem(
+                icon: Icons.account_balance_wallet_rounded,
+                label: "Saque On-chain",
+                onTap: () {
+                  if (_isBlocked) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "Desbloqueie o cartão para realizar saques",
+                        ),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          WithdrawScreen(walletId: widget.wallet.name),
+                    ),
+                  );
+                },
               ),
               _buildMenuItem(
                 icon: Icons.send_rounded,
@@ -321,6 +376,94 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildChip('Transações'),
+          const SizedBox(width: 8),
+          _buildChip('Depósitos'),
+          const SizedBox(width: 8),
+          _buildChip('Saques'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String label) {
+    final isSelected = _selectedFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFF7931A)
+                : Colors.white.withValues(alpha: 0.5),
+            width: isSelected ? 2 : 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white70,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionHistory() {
+    final historyAsync = ref.watch(transactionHistoryProvider);
+
+    return historyAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(
+            color: Color(0xFFF7931A),
+            strokeWidth: 2,
+          ),
+        ),
+      ),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Erro ao carregar histórico',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+          ),
+        ),
+      ),
+      data: (allTransactions) {
+        final filteredList = allTransactions.where((tx) {
+          if (_selectedFilter == 'Depósitos') {
+            return tx.type == TransactionType.receive;
+          } else if (_selectedFilter == 'Saques') {
+            return tx.type == TransactionType.send;
+          }
+          return true; // Transações (All)
+        }).toList();
+
+        return RecentTransactionsList(transactions: filteredList);
+      },
     );
   }
 }

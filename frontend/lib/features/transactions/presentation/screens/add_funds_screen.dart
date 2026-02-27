@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
@@ -30,6 +31,7 @@ class _AddFundsScreenState extends ConsumerState<AddFundsScreen> {
   double? _estimatedFee;
   double? _finalAmount;
   Currency _selectedCurrency = Currency.usd; // Default, will be updated
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -50,8 +52,16 @@ class _AddFundsScreenState extends ConsumerState<AddFundsScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _amountController.dispose();
     super.dispose();
+  }
+
+  void _onAmountChanged(String val) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _estimateFee();
+    });
   }
 
   Future<void> _estimateFee() async {
@@ -331,7 +341,7 @@ class _AddFundsScreenState extends ConsumerState<AddFundsScreen> {
               decimals: _selectedCurrency == Currency.btc ? 8 : 2,
             ),
           ],
-          onChanged: (_) => _estimateFee(),
+          onChanged: _onAmountChanged,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.transparent,
@@ -533,7 +543,7 @@ class _AddFundsScreenState extends ConsumerState<AddFundsScreen> {
         .read(addFundsProvider.notifier)
         .createPaymentLink(
           amount: amountInBtc,
-          depositAddress: _depositAddress!,
+          receiverWalletName: _selectedSourceWallet?.name ?? 'main',
         );
   }
 

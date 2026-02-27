@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/theme/cyber_theme.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/currency_provider.dart';
 import '../../../../core/providers/price_provider.dart';
@@ -16,20 +17,14 @@ class SettingsScreen extends ConsumerWidget {
     final currentCurrency = ref.watch(currencyProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: CyberTheme.bgDeep,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF000000), Color(0xFF101018)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // ─── Header ─────────────────────────
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -37,33 +32,32 @@ class SettingsScreen extends ConsumerWidget {
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: CyberTheme.bgCard,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: CyberTheme.border,
+                            width: 1,
+                          ),
                         ),
                         child: const Icon(
                           Icons.arrow_back_rounded,
-                          color: Colors.white,
-                          size: 20,
+                          color: CyberTheme.textPrimary,
+                          size: 18,
                         ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Text(
                       AppLocalizations.of(context)!.settingsTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
+                      style: CyberTheme.heading(size: 22),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -71,78 +65,73 @@ class SettingsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Language Section
-                      _buildSectionTitle(
-                        context,
-                        AppLocalizations.of(context)!.selectLanguage,
+                      // ─── Language ──────────────────
+                      _SectionTitle(
+                        title: AppLocalizations.of(context)!.selectLanguage,
                       ),
-                      const SizedBox(height: 16),
-                      _buildLanguageOption(
-                        context,
-                        ref,
-                        'en',
-                        'English',
-                        '🇺🇸',
-                        currentLocale.languageCode == 'en',
+                      const SizedBox(height: 14),
+                      _SettingsOptionTile(
+                        label: 'English',
+                        leading: '🇺🇸',
+                        isSelected: currentLocale.languageCode == 'en',
+                        accentColor: CyberTheme.neonCyan,
+                        onTap: () => ref
+                            .read(localeProvider.notifier)
+                            .setLocale(const Locale('en')),
                       ),
-                      _buildLanguageOption(
-                        context,
-                        ref,
-                        'pt',
-                        'Português',
-                        '🇧🇷',
-                        currentLocale.languageCode == 'pt',
+                      _SettingsOptionTile(
+                        label: 'Português',
+                        leading: '🇧🇷',
+                        isSelected: currentLocale.languageCode == 'pt',
+                        accentColor: CyberTheme.neonCyan,
+                        onTap: () => ref
+                            .read(localeProvider.notifier)
+                            .setLocale(const Locale('pt')),
                       ),
-                      _buildLanguageOption(
-                        context,
-                        ref,
-                        'es',
-                        'Español',
-                        '🇪🇸',
-                        currentLocale.languageCode == 'es',
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Currency Section
-                      _buildSectionTitle(
-                        context,
-                        AppLocalizations.of(context)!.selectCurrency,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCurrencyOption(
-                        context,
-                        ref,
-                        Currency.usd,
-                        'USD - Dollar',
-                        '\$',
-                        currentCurrency == Currency.usd,
-                      ),
-                      _buildCurrencyOption(
-                        context,
-                        ref,
-                        Currency.brl,
-                        'BRL - Real',
-                        'R\$',
-                        currentCurrency == Currency.brl,
-                      ),
-                      _buildCurrencyOption(
-                        context,
-                        ref,
-                        Currency.eur,
-                        'EUR - Euro',
-                        '€',
-                        currentCurrency == Currency.eur,
+                      _SettingsOptionTile(
+                        label: 'Español',
+                        leading: '🇪🇸',
+                        isSelected: currentLocale.languageCode == 'es',
+                        accentColor: CyberTheme.neonCyan,
+                        onTap: () => ref
+                            .read(localeProvider.notifier)
+                            .setLocale(const Locale('es')),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 30),
 
-                      // Security Section
-                      _buildSectionTitle(
-                        context,
-                        "SECURITY", // TODO: Add to l10n
+                      // ─── Currency ──────────────────
+                      _SectionTitle(
+                        title: AppLocalizations.of(context)!.selectCurrency,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
+                      _CurrencyOptionTile(
+                        ref: ref,
+                        currency: Currency.usd,
+                        label: 'USD — Dollar',
+                        symbol: '\$',
+                        isSelected: currentCurrency == Currency.usd,
+                      ),
+                      _CurrencyOptionTile(
+                        ref: ref,
+                        currency: Currency.brl,
+                        label: 'BRL — Real',
+                        symbol: 'R\$',
+                        isSelected: currentCurrency == Currency.brl,
+                      ),
+                      _CurrencyOptionTile(
+                        ref: ref,
+                        currency: Currency.eur,
+                        label: 'EUR — Euro',
+                        symbol: '€',
+                        isSelected: currentCurrency == Currency.eur,
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // ─── Security ──────────────────
+                      const _SectionTitle(title: 'SECURITY'),
+                      const SizedBox(height: 14),
                       Consumer(
                         builder: (context, ref, child) {
                           final bioState = ref.watch(biometricProvider);
@@ -151,11 +140,10 @@ class SettingsScreen extends ConsumerWidget {
                             return const SizedBox.shrink();
                           }
 
-                          return _buildSwitchOption(
-                            context,
-                            "Biometric Authentication", // TODO: Add to l10n
-                            bioState.isEnabled,
-                            (value) {
+                          return _CyberSwitchTile(
+                            title: 'Biometric Authentication',
+                            value: bioState.isEnabled,
+                            onChanged: (value) {
                               ref
                                   .read(biometricProvider.notifier)
                                   .toggleBiometric(value);
@@ -175,198 +163,239 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
+// ═══════════════════════════════════════════════
+// Section Title
+// ═══════════════════════════════════════════════
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
     return Text(
       title,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.7),
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.0,
+      style: GoogleFonts.jetBrainsMono(
+        color: CyberTheme.textMuted,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 2.0,
       ),
     );
   }
+}
 
-  Widget _buildLanguageOption(
-    BuildContext context,
-    WidgetRef ref,
-    String code,
-    String name,
-    String flag,
-    bool isSelected,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: GlassContainer(
-        blur: 10,
-        opacity: isSelected ? 0.1 : 0.03,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected
-            ? Border.all(color: const Color(0xFF00FF94), width: 2)
-            : null,
-        padding: EdgeInsets.zero,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              ref.read(localeProvider.notifier).setLocale(Locale(code));
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Text(flag, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFF00FF94)
-                            : Colors.white,
-                        fontSize: 16,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                      ),
+// ═══════════════════════════════════════════════
+// Language Option Tile
+// ═══════════════════════════════════════════════
+class _SettingsOptionTile extends StatelessWidget {
+  final String label;
+  final String leading;
+  final bool isSelected;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _SettingsOptionTile({
+    required this.label,
+    required this.leading,
+    required this.isSelected,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? accentColor.withValues(alpha: 0.06)
+                  : CyberTheme.bgCard,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? accentColor.withValues(alpha: 0.5)
+                    : CyberTheme.border,
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(leading, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? accentColor : CyberTheme.textPrimary,
+                      fontSize: 15,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                     ),
                   ),
-                  if (isSelected)
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: Color(0xFF00FF94),
-                      size: 20,
-                    ),
-                ],
-              ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: accentColor,
+                    size: 20,
+                  ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildCurrencyOption(
-    BuildContext context,
-    WidgetRef ref,
-    Currency currency,
-    String name,
-    String symbol,
-    bool isSelected,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: GlassContainer(
-        blur: 10,
-        opacity: isSelected ? 0.1 : 0.03,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected
-            ? Border.all(
-                color: const Color(
-                  0xFFF7931A,
-                ), // Orange for currency/bitcoin vibe
-                width: 2,
-              )
-            : null,
-        padding: EdgeInsets.zero,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              ref.read(currencyProvider.notifier).setCurrency(currency);
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFFF7931A).withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      symbol,
-                      style: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFFF7931A)
-                            : Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFFF7931A)
-                            : Colors.white,
-                        fontSize: 16,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  if (isSelected)
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: Color(0xFFF7931A),
-                      size: 20,
-                    ),
-                ],
+// ═══════════════════════════════════════════════
+// Currency Option Tile
+// ═══════════════════════════════════════════════
+class _CurrencyOptionTile extends StatelessWidget {
+  final WidgetRef ref;
+  final Currency currency;
+  final String label;
+  final String symbol;
+  final bool isSelected;
+
+  static const _btcOrange = Color(0xFFF7931A);
+
+  const _CurrencyOptionTile({
+    required this.ref,
+    required this.currency,
+    required this.label,
+    required this.symbol,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () =>
+              ref.read(currencyProvider.notifier).setCurrency(currency),
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? _btcOrange.withValues(alpha: 0.06)
+                  : CyberTheme.bgCard,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? _btcOrange.withValues(alpha: 0.5)
+                    : CyberTheme.border,
+                width: isSelected ? 1.5 : 1,
               ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? _btcOrange.withValues(alpha: 0.15)
+                        : CyberTheme.bgInput,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    symbol,
+                    style: GoogleFonts.jetBrainsMono(
+                      color: isSelected ? _btcOrange : CyberTheme.textSecondary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? _btcOrange : CyberTheme.textPrimary,
+                      fontSize: 15,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: _btcOrange,
+                    size: 20,
+                  ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildSwitchOption(
-    BuildContext context,
-    String title,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
+// ═══════════════════════════════════════════════
+// Switch Tile (Biometric)
+// ═══════════════════════════════════════════════
+class _CyberSwitchTile extends StatelessWidget {
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _CyberSwitchTile({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: GlassContainer(
-        blur: 10,
-        opacity: 0.03,
-        borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: BoxDecoration(
+        color: CyberTheme.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CyberTheme.border, width: 1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: CyberTheme.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
             ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: const Color(0xFF00FF94),
-              activeTrackColor: const Color(0xFF00FF94).withValues(alpha: 0.3),
-              inactiveThumbColor: Colors.grey,
-              inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
-            ),
-          ],
-        ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: CyberTheme.neonCyan,
+            activeTrackColor: CyberTheme.neonCyan.withValues(alpha: 0.3),
+            inactiveThumbColor: CyberTheme.textMuted,
+            inactiveTrackColor: CyberTheme.border,
+          ),
+        ],
       ),
     );
   }

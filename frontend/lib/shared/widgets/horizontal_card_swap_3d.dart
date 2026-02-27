@@ -30,7 +30,7 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
   late ValueNotifier<double> _dragOffset;
   late AnimationController _swapController;
   late int _currentIndex;
-  
+
   // Variáveis para controle de gesto
   double _startX = 0;
   bool _isDragging = false;
@@ -41,7 +41,7 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
     super.initState();
     _currentIndex = widget.initialIndex % widget.cards.length;
     _dragOffset = ValueNotifier<double>(0.0);
-    
+
     _swapController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -63,10 +63,10 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
-    
+
     final currentX = details.globalPosition.dx;
     final delta = currentX - _startX;
-    
+
     // Normaliza o offset (de -1.0 a 1.0 relativo à largura do card)
     _dragOffset.value = (delta / widget.cardWidth).clamp(-1.2, 1.2);
   }
@@ -90,14 +90,11 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
   void _performSwap(int direction) {
     // direction: 1 = swipe para a direita (anterior), -1 = swipe para a esquerda (próximo)
     final targetOffset = direction.toDouble();
-    
+
     final animation = Tween<double>(
       begin: _dragOffset.value,
       end: targetOffset,
-    ).animate(CurvedAnimation(
-      parent: _swapController,
-      curve: _defaultEasing,
-    ));
+    ).animate(CurvedAnimation(parent: _swapController, curve: _defaultEasing));
 
     void listener() {
       _dragOffset.value = animation.value;
@@ -107,28 +104,25 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
     _swapController.forward(from: 0).then((_) {
       animation.removeListener(listener);
       _swapController.reset();
-      
+
       setState(() {
         if (direction > 0) {
-          _currentIndex = (_currentIndex - 1 + widget.cards.length) % widget.cards.length;
+          _currentIndex =
+              (_currentIndex - 1 + widget.cards.length) % widget.cards.length;
         } else {
           _currentIndex = (_currentIndex + 1) % widget.cards.length;
         }
       });
-      
+
       _dragOffset.value = 0;
       widget.onIndexChanged?.call(_currentIndex);
     });
   }
 
   void _resetPosition() {
-    final animation = Tween<double>(
-      begin: _dragOffset.value,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _swapController,
-      curve: ElasticOutCurve(0.8),
-    ));
+    final animation = Tween<double>(begin: _dragOffset.value, end: 0.0).animate(
+      CurvedAnimation(parent: _swapController, curve: ElasticOutCurve(0.8)),
+    );
 
     void listener() {
       _dragOffset.value = animation.value;
@@ -158,7 +152,8 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
           builder: (context, _) {
             final offset = _dragOffset.value;
             final nextIndex = (_currentIndex + 1) % widget.cards.length;
-            final prevIndex = (_currentIndex - 1 + widget.cards.length) % widget.cards.length;
+            final prevIndex =
+                (_currentIndex - 1 + widget.cards.length) % widget.cards.length;
 
             return Stack(
               clipBehavior: Clip.none,
@@ -201,11 +196,11 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
     int direction = 1,
   }) {
     final double absProgress = progress.abs();
-    
+
     // Unificação de transformações em uma única Matrix4
     // setEntry(3, 2, 0.001) é a perspectiva
     final Matrix4 matrix = Matrix4.identity()..setEntry(3, 2, 0.001);
-    
+
     double opacity;
     double scale;
     double translateX;

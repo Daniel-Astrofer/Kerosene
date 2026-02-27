@@ -21,19 +21,19 @@ class Validators {
   /// Valida senha forte (com requisitos)
   static bool isStrongPassword(String password) {
     if (password.length < 8) return false;
-    
+
     // Pelo menos uma letra maiúscula
     if (!password.contains(RegExp(r'[A-Z]'))) return false;
-    
+
     // Pelo menos uma letra minúscula
     if (!password.contains(RegExp(r'[a-z]'))) return false;
-    
+
     // Pelo menos um número
     if (!password.contains(RegExp(r'[0-9]'))) return false;
-    
+
     // Pelo menos um caractere especial
     if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) return false;
-    
+
     return true;
   }
 
@@ -54,12 +54,12 @@ class Validators {
   /// Valida CPF (Brasil)
   static bool isValidCPF(String cpf) {
     cpf = cpf.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     if (cpf.length != 11) return false;
-    
+
     // Verifica se todos os dígitos são iguais
     if (RegExp(r'^(\d)\1*$').hasMatch(cpf)) return false;
-    
+
     // Validação do primeiro dígito verificador
     int sum = 0;
     for (int i = 0; i < 9; i++) {
@@ -67,9 +67,9 @@ class Validators {
     }
     int digit1 = 11 - (sum % 11);
     if (digit1 >= 10) digit1 = 0;
-    
+
     if (digit1 != int.parse(cpf[9])) return false;
-    
+
     // Validação do segundo dígito verificador
     sum = 0;
     for (int i = 0; i < 10; i++) {
@@ -77,7 +77,7 @@ class Validators {
     }
     int digit2 = 11 - (sum % 11);
     if (digit2 >= 10) digit2 = 0;
-    
+
     return digit2 == int.parse(cpf[10]);
   }
 
@@ -96,13 +96,13 @@ class Validators {
   static bool isValidBirthDate(DateTime birthDate) {
     final now = DateTime.now();
     final age = now.year - birthDate.year;
-    
+
     if (age < 18) return false;
     if (age == 18) {
       if (now.month < birthDate.month) return false;
       if (now.month == birthDate.month && now.day < birthDate.day) return false;
     }
-    
+
     return true;
   }
 }

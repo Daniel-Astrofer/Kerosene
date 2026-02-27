@@ -4,12 +4,10 @@ import '../../../wallet/domain/usecases/broadcast_transaction_usecase.dart';
 import '../../../wallet/domain/usecases/get_deposit_address_usecase.dart';
 import '../../domain/usecases/create_payment_link_usecase.dart';
 import '../../domain/providers/payment_link_providers.dart';
-import '../../../wallet/presentation/providers/wallet_provider.dart'; // For UseCases providers
+import '../../../wallet/presentation/providers/wallet_provider.dart'
+    hide transactionRepositoryProvider;
 import '../../../../core/utils/transaction_signer.dart';
 import '../state/add_funds_state.dart';
-import '../../../wallet/domain/entities/transaction.dart'
-    as tx_entity; // Alias to avoid conflict if any, though Transaction is unique here
-import '../providers/transaction_provider.dart'; // To access transactionHistoryProvider
 
 class AddFundsNotifier extends StateNotifier<AddFundsState> {
   final CreateUnsignedTransactionUseCase createUnsignedTransactionUseCase;
@@ -87,48 +85,20 @@ class AddFundsNotifier extends StateNotifier<AddFundsState> {
 
   Future<void> createPaymentLink({
     required double amount,
-    required String depositAddress,
+    required String receiverWalletName,
   }) async {
-    state = const AddFundsLoading(message: 'Creating payment link...');
+    state = const AddFundsLoading(message: 'Creating payment request...');
 
     final result = await createPaymentLinkUseCase(
       amount: amount,
-      description: 'Deposit to $depositAddress',
+      receiverWalletName: receiverWalletName,
     );
 
     result.fold((failure) => state = AddFundsError(failure.message), (
       paymentLink,
     ) {
       state = AddFundsPaymentLinkCreated(paymentLink);
-      _persistDepositRequest(paymentLink, amount, depositAddress);
     });
-  }
-
-  Future<void> _persistDepositRequest(
-    dynamic paymentLink,
-    double amount,
-    String depositAddress,
-  ) async {
-    try {
-      final transaction = tx_entity.Transaction(
-        id: paymentLink.id,
-        fromAddress: 'External',
-        toAddress: depositAddress,
-        amountSatoshis: (amount * 100000000).toInt(),
-        feeSatoshis: 0,
-        status: tx_entity.TransactionStatus.pending,
-        type: tx_entity.TransactionType.receive,
-        confirmations: 0,
-        timestamp: DateTime.now(),
-        description: "Deposit Request",
-      );
-
-      await ref
-          .read(transactionHistoryProvider.notifier)
-          .addTransaction(transaction);
-    } catch (e) {
-      // Ignore error
-    }
   }
 
   void reset() {

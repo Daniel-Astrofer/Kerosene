@@ -8,6 +8,7 @@ class BalanceWebSocketService {
   final String baseUrl;
   final String userId;
   final String? authToken;
+  final String? deviceHash;
   final Function(BalanceUpdate) onBalanceUpdate;
   bool _isConnected = false;
 
@@ -15,31 +16,40 @@ class BalanceWebSocketService {
     required this.baseUrl,
     required this.userId,
     this.authToken,
+    this.deviceHash,
     required this.onBalanceUpdate,
   });
 
   bool get isConnected => _isConnected;
 
-  /// Conecta ao WebSocket do backend
-  void connect() {
+  /// Conecta ao WebSocket do backend via ponte local SOCKS5 (Tor)
+  Future<void> connect() async {
     if (_stompClient != null && _isConnected) {
       debugPrint('⚠️ WebSocket já está conectado');
       return;
     }
 
-    // Converter HTTP/HTTPS para WS/WSS
-    var wsUrl = baseUrl
-        .replaceFirst('http://', 'ws://')
-        .replaceFirst('https://', 'wss://');
+    // baseUrl already points to the local Tor relay (e.g. http://127.0.0.1:55432),
+    // set by main.dart / background_service.dart after the relay is started.
+    final wsUrl = baseUrl.replaceFirst('http', 'ws');
 
-    // Remove trailing slash se houver
-    if (wsUrl.endsWith('/')) {
-      wsUrl = wsUrl.substring(0, wsUrl.length - 1);
+    // Use the raw WebSocket endpoint (no SockJS negotiation needed by stomp_dart_client).
+    var fullUrl = '$wsUrl/ws/raw-balance';
+
+    // Pass auth credentials as query params — more reliable across the relay tunnel.
+    final queryParams = <String>[];
+    if (authToken != null && authToken!.isNotEmpty) {
+      queryParams.add('token=${Uri.encodeComponent(authToken!)}');
+    }
+    if (deviceHash != null && deviceHash!.isNotEmpty) {
+      queryParams.add('X-Device-Hash=${Uri.encodeComponent(deviceHash!)}');
     }
 
-    // SockJS do Spring Boot requer /websocket no final
-    final fullUrl = '$wsUrl/ws/balance/websocket';
-    debugPrint('🔌 Conectando WebSocket: $fullUrl');
+    if (queryParams.isNotEmpty) {
+      fullUrl += '?${queryParams.join('&')}';
+    }
+
+    debugPrint('🔌 Conectando STOMP via Tor Relay: $fullUrl');
 
     _stompClient = StompClient(
       config: StompConfig(
@@ -59,13 +69,27 @@ class BalanceWebSocketService {
         },
         beforeConnect: () async {
           debugPrint('🔄 Iniciando conexão WebSocket...');
+          if (authToken == null) {
+            debugPrint(
+              '⚠️ AuthToken is null. Authorization header will not be sent.',
+            );
+          } else {
+            debugPrint(
+              '✅ AuthToken is present. Authorization header will be sent.',
+            );
+          }
         },
         onWebSocketDone: () {
           debugPrint('✅ WebSocket done');
         },
-        // Headers com autenticação JWT
+        // Native WS headers — do NOT override Host, let the HTTP stack set
+        // it automatically from the URL (overriding it causes ngrok rejection).
         webSocketConnectHeaders: {
-          'ngrok-skip-browser-warning': 'true',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
+          if (deviceHash != null) 'X-Device-Hash': deviceHash!,
+        },
+        // Headers especificos do frame STOMP CONNECT
+        stompConnectHeaders: {
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
         // Reconectar automaticamente se cair
@@ -83,10 +107,10 @@ class BalanceWebSocketService {
     _isConnected = true;
     debugPrint('✅ WebSocket conectado com sucesso!');
     debugPrint('📡 Frame: ${frame.headers}');
-    debugPrint('📡 Inscrevendo-se em: /topic/balance/$userId');
+    debugPrint('📡 Inscrevendo-se em: /user/queue/balance');
 
     _stompClient?.subscribe(
-      destination: '/topic/balance/$userId',
+      destination: '/user/queue/balance',
       callback: (StompFrame frame) {
         if (frame.body != null) {
           try {
@@ -130,6 +154,9 @@ class BalanceUpdate {
   final String context;
   final String timestamp;
 
+  final String? sender;
+  final String? receiver;
+
   BalanceUpdate({
     required this.walletId,
     required this.walletName,
@@ -138,17 +165,31 @@ class BalanceUpdate {
     required this.amount,
     required this.context,
     required this.timestamp,
+    this.sender,
+    this.receiver,
   });
 
   factory BalanceUpdate.fromJson(Map<String, dynamic> json) {
+    final senderField = [json['sender'], json['from'], json['fromAddress']]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+
+    final receiverField = [json['receiver'], json['to'], json['toAddress']]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+
     return BalanceUpdate(
-      walletId: json['walletId'] as int,
-      walletName: json['walletName'] as String,
-      userId: json['userId'] as int,
-      newBalance: (json['newBalance'] as num).toDouble(),
-      amount: (json['amount'] as num).toDouble(),
-      context: json['context'] as String,
-      timestamp: json['timestamp'] as String,
+      walletId: (json['walletId'] as num?)?.toInt() ?? 0,
+      walletName: json['walletName']?.toString() ?? '',
+      userId: (json['userId'] as num?)?.toInt() ?? 0,
+      newBalance: (json['newBalance'] as num?)?.toDouble() ?? 0.0,
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      context:
+          json['context']?.toString() ?? json['description']?.toString() ?? '',
+      timestamp:
+          json['timestamp']?.toString() ?? DateTime.now().toIso8601String(),
+      sender: senderField,
+      receiver: receiverField,
     );
   }
 
