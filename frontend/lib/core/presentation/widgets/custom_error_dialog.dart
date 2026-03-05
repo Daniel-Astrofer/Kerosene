@@ -34,7 +34,17 @@ String _getFriendlyMessage(String message) {
   return message;
 }
 
-void showCustomErrorDialog(BuildContext context, String message) {
+void showCustomErrorDialog(
+  BuildContext context,
+  String message, {
+  VoidCallback? onRetry,
+  VoidCallback? onGoBack,
+}) {
   final friendlyMessage = _getFriendlyMessage(message);
-  AnimatedErrorPopup.show(context, message: friendlyMessage);
+  AnimatedErrorPopup.show(
+    context,
+    message: friendlyMessage,
+    onRetry: onRetry,
+    onGoBack: onGoBack,
+  );
 }

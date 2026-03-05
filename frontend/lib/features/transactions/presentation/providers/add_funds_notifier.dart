@@ -45,10 +45,10 @@ class AddFundsNotifier extends StateNotifier<AddFundsState> {
 
     // 1. Create Unsigned Transaction
     final result = await createUnsignedTransactionUseCase(
-      fromAddress: fromAddress,
       toAddress: toAddress,
       amountBTC: amountBTC,
-      feeSatoshis: feeSatoshis,
+      feeLevel:
+          'standard', // Users can pass this or derive from feeSatoshis tier
     );
 
     result.fold((failure) => state = AddFundsError(failure.message), (
@@ -66,7 +66,11 @@ class AddFundsNotifier extends StateNotifier<AddFundsState> {
         state = const AddFundsLoading(message: 'Broadcasting...');
 
         // 3. Broadcast
-        final broadcastResult = await broadcastTransactionUseCase(signedTxHex);
+        final broadcastResult = await broadcastTransactionUseCase(
+          rawTxHex: signedTxHex,
+          toAddress: toAddress,
+          amount: amountBTC,
+        );
 
         broadcastResult.fold(
           (failure) => state = AddFundsError(failure.message),

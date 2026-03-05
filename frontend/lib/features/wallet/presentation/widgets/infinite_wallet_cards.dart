@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../domain/entities/wallet.dart';
+import '../screens/create_wallet_screen.dart';
 import 'wallet_credit_card.dart';
 
 class InfiniteCardsController {
@@ -76,15 +77,18 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
   }
 
   void _initializeIndices() {
-    if (widget.wallets.isEmpty) {
-      _visualIndices = [];
-    } else {
-      _visualIndices = List.generate(widget.wallets.length, (i) => i);
-      if (widget.initialIndex > 0 &&
-          widget.initialIndex < widget.wallets.length) {
+    // We add +1 for the virtual "Add card" card
+    final int count = widget.wallets.length + 1;
+    _visualIndices = List.generate(count, (i) => i);
+
+    if (widget.initialIndex >= 0 &&
+        widget.initialIndex < widget.wallets.length) {
+      // Find where the initial index is and swap it to front
+      final currentPos = _visualIndices.indexOf(widget.initialIndex);
+      if (currentPos != -1) {
         final temp = _visualIndices[0];
-        _visualIndices[0] = _visualIndices[widget.initialIndex];
-        _visualIndices[widget.initialIndex] = temp;
+        _visualIndices[0] = _visualIndices[currentPos];
+        _visualIndices[currentPos] = temp;
       }
     }
   }
@@ -196,8 +200,9 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     }
 
     for (int rank in drawOrder) {
-      final int walletIdx = _visualIndices[rank];
-      final wallet = widget.wallets[walletIdx];
+      final int vIdx = _visualIndices[rank];
+      final bool isAddCard = vIdx == widget.wallets.length;
+      final wallet = isAddCard ? null : widget.wallets[vIdx];
 
       double startScale = 1.0 - (rank * 0.05);
       double startY = (n - 1 - rank) * peekOffset;
@@ -342,7 +347,8 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
                       height: cardHeight,
                       child: WalletCreditCard(
                         wallet: wallet,
-                        colorIndex: walletIdx,
+                        isAddCard: isAddCard,
+                        colorIndex: isAddCard ? 0 : vIdx,
                         isSelected:
                             rank == 0 &&
                             !(!_isDragUp && _draggedVisualRank != null),
@@ -479,9 +485,17 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     }
   }
 
-  void _onTap(int rank, Wallet wallet) {
+  void _onTap(int rank, Wallet? wallet) {
     if (rank == 0) {
-      widget.onCardTap(wallet);
+      if (wallet == null) {
+        // This is the Add Card
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreateWalletScreen()),
+        );
+      } else {
+        widget.onCardTap(wallet);
+      }
     } else if (rank > 0) {
       _draggedVisualRank = rank;
       _isDragUp = true;

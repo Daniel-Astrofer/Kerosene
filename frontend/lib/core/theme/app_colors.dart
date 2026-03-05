@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 /// Aligned with the Cybercore Design System (see cyber_theme.dart)
 class AppColors {
   // ─── Deep Background ───────────────────────────
-  static const Color background = Color(0xFF050508);
-  static const Color darkSurface = Color(0xFF0A0A0F);
+  static const Color background = Color(0xFF000000); // Preto AMOLED puro
+  static const Color darkSurface = Color(
+    0xFF0A0A0A,
+  ); // Superfície levemente elevada
 
   // ─── Primary Accent (Neon Cyan) ────────────────
   static const Color primary = Color(0xFF00FFC2);

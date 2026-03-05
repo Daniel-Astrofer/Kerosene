@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../../../../core/theme/cyber_theme.dart';
 import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
 import 'unknown_device_screen.dart';
+import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import '../../../../core/providers/ghost_mode_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -69,6 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         }
 
         if (context.mounted) {
+          HomeScreen.skipNextAuth = true;
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else if (next is AuthRequiresLoginTotp) {
@@ -83,12 +86,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         );
       } else if (next is AuthError) {
-        showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
+        if (context.mounted) {
+          showCustomErrorDialog(
+            context,
+            ErrorTranslator.translate(context.l10n, next.message),
+            onRetry: () {
+              ref.read(authProvider.notifier).clearError();
+              if (_usernameController.text.isNotEmpty &&
+                  _passwordController.text.isNotEmpty) {
+                _handleLogin();
+              }
+            },
+            onGoBack: () {
+              ref.read(authProvider.notifier).clearError();
+              Navigator.pop(context);
+            },
+          );
+        }
       }
     });
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         automaticallyImplyLeading: false, // no back arrow from login
         actions: const [_GhostModeButton()],
@@ -96,7 +116,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.black.withValues(alpha: 0.1),
+              Colors.black.withValues(alpha: 0.6),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28),

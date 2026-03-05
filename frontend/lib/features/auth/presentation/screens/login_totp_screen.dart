@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../providers/auth_provider.dart';
@@ -44,7 +45,10 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
           (route) => false,
         );
       } else if (next is AuthError) {
-        showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
+        showCustomErrorDialog(
+          context,
+          ErrorTranslator.translate(context.l10n, next.message),
+        );
       }
     });
 
@@ -108,10 +112,10 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
 
                       const SizedBox(height: 32),
 
-                      const Text(
-                        'Device Verification',
+                      Text(
+                        context.l10n.loginTotpTitle,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -122,7 +126,7 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                       const SizedBox(height: 12),
 
                       Text(
-                        'This device is new. Please enter the 6-digit code from your authenticator app to authorize it.',
+                        context.l10n.loginTotpDesc,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -153,7 +157,7 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                               ],
                               decoration: InputDecoration(
                                 counterText: "",
-                                hintText: "000000",
+                                hintText: context.l10n.totpEnterCodeHint,
                                 hintStyle: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.1),
                                   fontSize: 24,
@@ -178,10 +182,10 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Required';
+                                  return context.l10n.required;
                                 }
                                 if (value.length != 6) {
-                                  return 'Enter 6 digits';
+                                  return context.l10n.totpEnter6Digits;
                                 }
                                 return null;
                               },
@@ -209,9 +213,9 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Text(
-                                        "VERIFY & LOGIN",
-                                        style: TextStyle(
+                                    : Text(
+                                        context.l10n.loginTotpAction,
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.0,

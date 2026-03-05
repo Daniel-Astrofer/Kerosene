@@ -50,8 +50,34 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
 final transactionHistoryProvider = FutureProvider<List<Transaction>>((
   ref,
 ) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getTransactionHistory();
+  // DEV MODE: Mocking Transactions
+  await Future.delayed(const Duration(milliseconds: 500));
+  return [
+    Transaction(
+      id: "tx-xyz-1234",
+      fromAddress: "Me",
+      toAddress: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
+      amountSatoshis: 150000000, // 1.5 BTC
+      feeSatoshis: 500,
+      status: TransactionStatus.confirmed,
+      type: TransactionType.send,
+      confirmations: 110,
+      timestamp: DateTime.now().subtract(const Duration(days: 2)),
+      description: "Transfer to Savings",
+    ),
+    Transaction(
+      id: "tx-abc-987",
+      fromAddress: "External",
+      toAddress: "1A1zP1e...",
+      amountSatoshis: 17500000, // 0.175 BTC
+      feeSatoshis: 0,
+      status: TransactionStatus.confirming,
+      type: TransactionType.deposit,
+      confirmations: 2,
+      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+      description: "Client payment",
+    ),
+  ];
 });
 
 /// Histórico filtrado por tipo
@@ -139,8 +165,19 @@ final depositDetailProvider = FutureProvider.family<Deposit, String>((
 // ==================== Payment Links ====================
 
 final paymentLinksProvider = FutureProvider<List<PaymentLink>>((ref) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getPaymentLinks();
+  // DEV MODE: Mocking Payment Links
+  await Future.delayed(const Duration(milliseconds: 500));
+  return [
+    PaymentLink(
+      id: "link-001",
+      userId: 1,
+      amountBtc: 0.05,
+      description: "Freelance Design Work",
+      depositAddress: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+      status: "pending",
+      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+    ),
+  ];
 });
 
 final paymentLinkDetailProvider = FutureProvider.family<PaymentLink, String>((
@@ -212,9 +249,19 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
     }
   }
 
-  Future<TxStatus?> broadcast(String rawTxHex) async {
+  Future<TxStatus?> broadcast({
+    required String rawTxHex,
+    required String toAddress,
+    required double amount,
+    String? message,
+  }) async {
     state = const AsyncActionState(isLoading: true);
-    final result = await _repository.broadcastTransaction(rawTxHex);
+    final result = await _repository.broadcastTransaction(
+      rawTxHex: rawTxHex,
+      toAddress: toAddress,
+      amount: amount,
+      message: message,
+    );
     return result.fold(
       (failure) {
         state = AsyncActionState(error: failure.message);
@@ -336,7 +383,10 @@ class WithdrawNotifier extends StateNotifier<AsyncActionState> {
     required String fromWalletName,
     required String toAddress,
     required double amount,
+    required String totpCode,
     String? description,
+    String? passkeyAssertionResponseJSON,
+    String? passkeyAssertionRequestJSON,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
@@ -344,7 +394,10 @@ class WithdrawNotifier extends StateNotifier<AsyncActionState> {
         fromWalletName: fromWalletName,
         toAddress: toAddress,
         amount: amount,
+        totpCode: totpCode,
         description: description,
+        passkeyAssertionResponseJSON: passkeyAssertionResponseJSON,
+        passkeyAssertionRequestJSON: passkeyAssertionRequestJSON,
       );
 
       // Refresh history from API after withdrawal

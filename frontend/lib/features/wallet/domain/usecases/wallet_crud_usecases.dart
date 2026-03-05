@@ -21,8 +21,13 @@ class UpdateWalletUseCase {
   Future<Either<Failure, String>> call({
     required String name,
     required String newName,
+    required String passphrase,
   }) async {
-    return repository.updateWallet(name: name, newName: newName);
+    return repository.updateWallet(
+      name: name,
+      newName: newName,
+      passphrase: passphrase,
+    );
   }
 }
 

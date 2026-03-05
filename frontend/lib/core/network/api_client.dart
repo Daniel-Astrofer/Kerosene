@@ -18,8 +18,8 @@ class ApiClient {
   ApiClient({
     required String baseUrl,
     required this.ref,
-    int connectTimeout = 30000,
-    int receiveTimeout = 30000,
+    int connectTimeout = 60000,
+    int receiveTimeout = 60000,
   }) {
     _dio = Dio(
       BaseOptions(
@@ -41,7 +41,11 @@ class ApiClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
-        logPrint: debugPrint,
+        logPrint: (msg) {
+          // Print only the first line of retry messages to avoid multi-line noise
+          final firstLine = msg.split('\n').first;
+          debugPrint('[Retry] $firstLine');
+        },
         retries: 3,
         retryDelays: const [
           Duration(seconds: 1),
@@ -50,20 +54,13 @@ class ApiClient {
         ],
         retryEvaluator: DefaultRetryEvaluator({
           408, // RequestTimeout
-          500, // InternalServerError
+          // 500 removido — server 500 não se recupera com retry
           502, // BadGateway
           503, // ServiceUnavailable
           504, // GatewayTimeout
           440, // LoginTimeout
-          460, // ClientClosedRequest
-          499, // ClientClosedRequest
-          520, // WebServerError
-          521, // WebServerIsDown
           522, // ConnectionTimedOut
-          523, // OriginIsUnreachable
           524, // ATimeoutOccurred
-          525, // SSLHandshakeFailed
-          527, // RailgunError
           598, // NetworkReadTimeoutError
           599, // NetworkConnectTimeoutError
         }).evaluate,
@@ -273,37 +270,30 @@ class ApiClient {
   }
 }
 
-/// Interceptor para logging
+/// Interceptor para logging — conciso e sem dados sensíveis
 class _LogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    debugPrint('🌐 REQUEST[${options.method}] => PATH: ${options.path}');
-    debugPrint('📨 HEADERS: ${options.headers}');
-    debugPrint('📦 BODY: ${options.data}');
+    debugPrint('🌐 [${options.method}] ${options.path}');
     super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     debugPrint(
-      '✅ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
+      '✅ [${response.statusCode}] ${response.requestOptions.path}',
     );
     super.onResponse(response, handler);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    debugPrint(
-      '❌ ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
-    );
-    debugPrint('📝 MESSAGE: ${err.message}');
-    debugPrint('📌 TYPE: ${err.type}');
-    if (err.response?.data != null) {
-      debugPrint('📦 DATA: ${err.response?.data}');
-    }
-    if (err.error != null) {
-      debugPrint('⚠️ ERR: ${err.error}');
-    }
+    final code = err.response?.statusCode ?? '?';
+    final path = err.requestOptions.path;
+    final errCode = err.response?.data is Map
+        ? (err.response!.data['errorCode'] ?? '')
+        : '';
+    debugPrint('❌ [$code] $path${errCode.isNotEmpty ? ' ($errCode)' : ''}');
     super.onError(err, handler);
   }
 }

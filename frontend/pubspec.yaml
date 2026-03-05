@@ -74,6 +74,7 @@ flutter:
 
   assets:
     - 'assets/kerosenelogo.png'
+    - 'assets/K.jpg'
     - 'assets/dollar.png'
     - 'assets/mining.png'
     - 'assets/receive.png'
@@ -173,3 +174,9 @@ flutter:
         - asset: "assets/fonts/HubotSans_SemiCondensed-Regular.ttf"
         - asset: "assets/fonts/HubotSans_SemiCondensed-SemiBold.ttf"
         - asset: "assets/fonts/HubotSans_SemiCondensed-SemiBoldItalic.ttf"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/K.jpg"
+  min_sdk_android: 21

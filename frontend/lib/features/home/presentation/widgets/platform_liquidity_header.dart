@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../l10n/l10n_extension.dart';
 import 'animated_balance_display.dart';
 
 class PlatformLiquidityHeader extends StatefulWidget {
@@ -107,11 +108,10 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Left: Deposits (Green) - Hide on very narrow screens or simplify
-                // Left: Deposits (Green)
                 Expanded(
                   flex: isSmall ? 1 : 2,
                   child: _buildAddressList(
-                    title: 'DEPOSITS',
+                    title: context.l10n.homeDeposits,
                     addresses: _deposits,
                     color: const Color(0xFF00FF94),
                     alignRight: false,
@@ -130,7 +130,7 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'PLATFORM LIQUIDITY',
+                            context.l10n.homePlatformLiquidity,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.4),
                               fontSize: 10,
@@ -185,11 +185,10 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
                 ),
 
                 // Right: Withdrawals (Red)
-                // Right: Withdrawals (Red)
                 Expanded(
                   flex: isSmall ? 1 : 2,
                   child: _buildAddressList(
-                    title: 'WITHDRAWALS',
+                    title: context.l10n.homeWithdrawals,
                     addresses: _withdrawals,
                     color: const Color(0xFFFF0055),
                     alignRight: true,

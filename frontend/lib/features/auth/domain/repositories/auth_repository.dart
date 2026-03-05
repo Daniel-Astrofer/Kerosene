@@ -2,12 +2,12 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user.dart';
 import '../../data/datasources/auth_remote_datasource.dart'
-    show SignupInitResult, OnboardingPaymentLinkDto;
+    show SignupInitResult, OnboardingPaymentLinkDto, LoginResult;
 
 /// Interface do repositório de autenticação
 abstract class AuthRepository {
-  /// Login — retorna authId temporário (não JWT)
-  Future<Either<Failure, String>> login({
+  /// Login — returns LoginResult with userId and JWT
+  Future<Either<Failure, LoginResult>> login({
     required String username,
     required String passphrase,
   });

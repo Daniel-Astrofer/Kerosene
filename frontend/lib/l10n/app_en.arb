@@ -81,6 +81,7 @@
   "loading": "Loading",
   "retry": "Retry",
   "cancel": "Cancel",
+  "goBack": "Go Back",
   "done": "Done",
   "save": "Save",
   
@@ -292,6 +293,7 @@
   "paymentSubtitle": "Send exactly the amount shown below to activate your account.",
   "paymentTimeLeft": "Time left",
   "paymentExpired": "Payment window expired",
+  "paymentExpiredMessage": "You did not complete the payment within the 15-minute window. Your temporary data will be cleared and you must start over.",
   "paymentWaiting": "Waiting for payment...",
   "paymentAmountLabel": "Amount",
   "paymentAddressLabel": "Deposit Address",
@@ -307,5 +309,340 @@
       "total": { "type": "Object" }
     }
   },
-  "confirmationsDone": "Account Activated!"
+  "confirmationsDone": "Account Activated!",
+
+  "presentationSlide1Title": "Secure Infrastructure from the First Access",
+  "presentationSlide1Body": "Kerosene operates with advanced technological architecture in a protected environment via the onion network. This structure reinforces privacy, resilience, and protection against external interference.\n\nSecurity is not an add-on.\nIt is the foundation of the system.",
+  "presentationSlide2Title": "Account Creation with Structural Protection Mechanism",
+  "presentationSlide2Body": "To preserve infrastructure integrity, account creation requires sending 0.003 BTC.\nThis amount remains entirely in your account.\nDuring registration, only the network transaction fee necessary for operation confirmation is deducted.\nThis technical requirement exists to:\n\n• Prevent automated account creation\n• Reduce distributed attack vectors\n• Maintain operational stability\n• Protect all platform users\n\nIt is not a monthly fee.\nIt is not a recurring charge.\nIt is a structural protection mechanism.",
+  "presentationSlide3Title": "Clear and Objective Fee Structure",
+  "presentationSlide3Body": "Our policy is simple:\n\n• 0.9% on deposits\n• 0.9% on withdrawals\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.\nNo unexpected variations.",
+  "presentationSlide4Title": "Commitment to Predictability",
+  "presentationSlide4Body": "Kerosene was designed to operate with:\n\n• Technical stability\n• Operational transparency\n• Structural security\n• Cost predictability\n\nOur priority is to maintain a solid, protected, and long-term sustainable infrastructure.",
+  "presentationSkip": "Skip",
+  "presentationNext": "Next",
+  "presentationStart": "Access Kerosene",
+
+  "signupScreenTitle": "Create Wallet",
+  "signupScreenSubtitle": "Setup your username and secure key.",
+  "signupUsernameHelper": "Only a-z, 0-9 and _",
+  "signupUsernameHint": "lower case letters, numbers and _",
+  "signupUsernameMinChars": "Min 3 chars",
+  "signupUsernameInvalid": "Invalid characters",
+  "signupMnemonicLabel": "YOUR SECRET PHRASE (BIP39)",
+  "signupMnemonicWarning": "Save this phrase securely. It is the ONLY way to recover your account.",
+  "signupMnemonicCopySuccess": "Phrase copied securely!",
+  "signupMnemonicCopy": "Copy",
+  "signupMnemonicGenerateNew": "Generate New",
+  "signupMnemonicError": "Error generating phrase, try again",
+
+  "feeExplanationTitle": "Secure Network Fee",
+  "feeExplanationSubtitle": "To prevent spam and ensure the robustness of the Kerosene network, account creation requires a small anti-spam fee of 0.003 BTC.",
+  "feeExplanationWhereGoesTitle": "Where does it go?",
+  "feeExplanationWhereGoesSubtitle": "The full 0.003 BTC goes directly into your wallet balance once the account is created.",
+  "feeExplanationContinue": "I Understand, Continue",
+
+  "seedSecurityTitle": "Seed Security",
+  "seedSecuritySubtitle": "Choose how you want to protect your wallet recovery phrase. Kerosene offers advanced security options for high-net-worth setups.",
+  "seedStandardTitle": "Standard",
+  "seedStandardDesc": "A single 12, 18, or 24-word recovery phrase. Best for general use and simplicity.",
+  "seedSlip39Title": "Shamir SLIP-39 (Multi-part)",
+  "seedSlip39Desc": "Split your seed into multiple pieces. Requires a minimum threshold of pieces to recover (e.g., 3-of-5). Best for distributed physical storage.",
+  "seedMultisigTitle": "2FA Multisig Vault",
+  "seedMultisigDesc": "A 2-of-3 Multisig wallet. Kerosene acts as a co-signer and requires TOTP authorization for withdrawals. Protects against local device theft.",
+  "seedSlip39ConfigTitle": "SLIP-39 Configuration",
+  "seedSlip39TotalShares": "Total Shares (Pieces)",
+  "seedSlip39Threshold": "Required Threshold",
+  "seedSlip39Summary": "Requires {threshold} out of {total} shares to restore the wallet.",
+  "@seedSlip39Summary": {
+    "placeholders": {
+      "threshold": { "type": "Object" },
+      "total": { "type": "Object" }
+    }
+  },
+  "seedSecurityContinue": "Continue",
+
+  "passphraseTitle": "Your Secret Phrase",
+  "passphraseSubtitle": "Write down these 18 words on a physical piece of paper. Never save this digitally.",
+  "passphraseWrittenDown": "I Have Written It Down",
+  "passphraseWarning": "If you lose these words, you will permanently lose access to your account and funds.",
+  "passphraseVerifyTitle": "Verify Phrase",
+  "passphraseVerifySubtitle": "Type your secret phrase to confirm you have backed it up correctly.",
+  "passphraseVerifyHint": "word1 word2 word3...",
+  "passphraseVerifyError": "Incorrect passphrase. Please try again.",
+  "passphraseVerifyContinue": "Verify & Continue",
+  "passphraseGoBack": "Go back to view phrase again",
+  "passphraseEnterWords": "Enter your 18 words",
+
+  "slip39SharesTitle": "Your SLIP-39 Shares",
+  "slip39SharesSubtitle": "Your seed is split into {total} pieces. You need {threshold} of them to recover your wallet. Write each share on a separate piece of paper and store them in different locations.",
+  "@slip39SharesSubtitle": {
+    "placeholders": {
+      "threshold": { "type": "Object" },
+      "total": { "type": "Object" }
+    }
+  },
+  "slip39ShareLabel": "Share {index} of {total}",
+  "@slip39ShareLabel": {
+    "placeholders": {
+      "index": { "type": "Object" },
+      "total": { "type": "Object" }
+    }
+  },
+  "slip39ShareCopied": "Share {index} copied",
+  "@slip39ShareCopied": {
+    "placeholders": {
+      "index": { "type": "Object" }
+    }
+  },
+  "slip39VerifyShareTitle": "Verify Share {index}",
+  "@slip39VerifyShareTitle": {
+    "placeholders": {
+      "index": { "type": "Object" }
+    }
+  },
+  "slip39VerifyShareSubtitle": "Type the words for Share {index} exactly as you wrote them down.",
+  "@slip39VerifyShareSubtitle": {
+    "placeholders": {
+      "index": { "type": "Object" }
+    }
+  },
+  "slip39ConfirmShare": "Confirm Share {index}",
+  "@slip39ConfirmShare": {
+    "placeholders": {
+      "index": { "type": "Object" }
+    }
+  },
+  "slip39AllConfirmedContinue": "All Shares Confirmed — Continue",
+  "slip39ConfirmAllPending": "Confirm all {total} shares to continue",
+  "@slip39ConfirmAllPending": {
+    "placeholders": {
+      "total": { "type": "Object" }
+    }
+  },
+  "slip39Warning": "Do NOT store all shares in the same place. If an attacker finds {threshold} pieces they can recover your wallet.",
+  "@slip39Warning": {
+    "placeholders": {
+      "threshold": { "type": "Object" }
+    }
+  },
+
+  "twoFaPrimaryTitle": "Your Primary Seed",
+  "twoFaPrimaryBadge": "Key 1 of 3 — Stays on your device only",
+  "twoFaPrimarySubtitle": "This 18-word phrase is your primary private key. It alone is NOT enough to sign transactions — a secondary TOTP authorization is always required from Kerosene. Write these words on paper and store them securely.",
+  "twoFaPrimaryWritten": "I Have Written It Down",
+  "twoFaBackupTitle": "Your Recovery Seed",
+  "twoFaBackupBadge": "Key 3 of 3 — Emergency / Sovereignty Bypass",
+  "twoFaBackupSubtitle": "This is your sovereignty guarantee. If Kerosene ever shuts down, use this 12-word backup seed together with your primary seed to recover your funds without any server involvement. Store this SEPARATELY from your primary seed.",
+  "twoFaCoSignerNote": "Key 2 of 3 is held encrypted by Kerosene and is only used to co-sign trasactions when you provide a valid TOTP code.",
+  "twoFaBothStored": "I Have Stored Both Seeds",
+  "twoFaBackToPrimary": "Back to Primary Seed",
+  "twoFaVerifyTitle": "Verify Primary Seed",
+  "twoFaVerifySubtitle": "Confirm your Primary Key (18 words) to prove you have it safely stored.",
+  "twoFaVerifyHint": "word1 word2 word3...",
+  "twoFaVerifyError": "Incorrect. Please re-check your Primary Seed.",
+  "twoFaVerifyActivate": "Verify & Activate 2FA Vault",
+  "twoFaBackToBackup": "Back to Recovery Seed",
+
+  "totpTitle": "Two-Factor Authentication",
+  "totpSubtitle": "Scan this QR code with your authenticator app (e.g. Google Authenticator, Authy).",
+  "totpSecretCopied": "Secret copied to clipboard",
+  "totpEnterCodeHint": "000000",
+  "totpEnter6Digits": "Enter 6 digits",
+  "totpInvalidCode": "Invalid code. Try again.",
+  "totpVerifyContinue": "Verify & Continue",
+  "totpVerifying": "Verifying code...",
+  "totpAuthenticating": "Authenticating...",
+  "totpEstablishingSession": "Establishing Session...",
+
+  "passkeySessionNotFound": "Session not found. Please restart the process.",
+  "passkeyNoBiometrics": "No biometric hardware available on this device.",
+  "passkeyErrorStarting": "Error starting registration: {message}",
+  "@passkeyErrorStarting": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "passkeyBiometricReason": "Create a Passkey to secure your Kerosene wallet",
+  "passkeyErrorFinishing": "Error finishing registration: {message}",
+  "@passkeyErrorFinishing": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "passkeyAuthFailed": "Authentication cancelled or failed.",
+  "passkeyUnexpectedError": "Unexpected error: {error}",
+  "@passkeyUnexpectedError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "passkeyLoadingInitBiom": "Initializing Biometrics...",
+  "passkeyLoadingSecuring": "Securing Device...",
+  "passkeyLoadingRegistering": "Registering Passkey...",
+
+  "usernameHintChars": "a-z, 0-9 and _",
+  "usernameHelperLength": "Must be between 3 and 15 characters",
+  "usernameErrorMin": "Min 3 chars",
+  "usernameErrorMax": "Max 15 chars",
+  "usernameErrorInvalidChars": "Invalid characters",
+  "usernameLoadingPow": "Calculating Proof of Work...",
+  "usernameLoadingKeys": "Securing Keys...",
+  "usernameLoadingInvoice": "Generating Invoice...",
+  "usernameLoadingNetwork": "Connecting to Network...",
+
+  "paymentExpiredLabel": "EXPIRED",
+
+  "confNetworkError": "Network Error",
+  "confNetworkVerified": "Network Verified!",
+  "confConfirming": "Confirming on Blockchain",
+  "confErrorMsg": "An error occurred while finalizing your account creation on the server. Please safely restart the configuration process.",
+  "confVerifiedMsg": "Your account has been officially created and your fee added to your balance. Entering gateway...",
+  "confWaitingMsg": "Waiting for 3 Bitcoin network confirmations. This can take roughly 30 minutes, but you can safely leave the app; we will notify you when it is ready.",
+  "confRestartSignup": "Restart Signup",
+  "confNotificationNotice": "You will receive a push notification once the 3rd confirmation lands.",
+
+  "homePlatformLiquidity": "PLATFORM LIQUIDITY",
+  "homeDeposits": "DEPOSITS",
+  "homeWithdrawals": "WITHDRAWALS",
+
+  "authRequired": "Authentication required",
+  "unlock": "Unlock",
+  "pendingDeposits": "Pending Deposits",
+  "errorLoadingWallets": "Error loading wallets",
+  "noTransactions": "No transactions found",
+  "tryAgain": "Try Again",
+  "saqueAction": "Withdraw",
+  "detailsTransaction": "Transaction Details",
+  "detailsClose": "Close",
+  "noWalletsFound": "No wallets found",
+  "createWalletPrompt": "Create a wallet to start monitoring transactions",
+  "createWalletAction": "Create Wallet",
+  "withdrawExternalBtc": "External BTC Withdrawal",
+  "withdrawExternalBtcDesc": "Move funds from your Kerosene wallet to an external Bitcoin address.",
+  "withdrawAddressLabel": "Bitcoin Address (toAddress)",
+  "withdrawAmountLabel": "Amount in BTC",
+  "withdrawDescLabel": "Description (Optional)",
+  "withdrawDescHint": "Ex: Transfer to Hardware Wallet",
+  "withdrawCancel": "CANCEL",
+  "withdrawAction": "WITHDRAW NOW",
+  "errorAddressRequired": "Address is required",
+  "errorAmountRequired": "Amount is required",
+  "errorAmountInvalid": "Invalid amount",
+
+  "txSent": "Transfer Sent",
+  "txReceived": "Transfer Received",
+
+  "loginTotpTitle": "Device Verification",
+  "loginTotpDesc": "This device is new. Please enter the 6-digit code from your authenticator app to authorize it.",
+  "loginTotpAction": "VERIFY & LOGIN",
+
+  "createWalletNameRequired": "Name is required",
+  "createWalletNameChars": "Only letters and numbers are allowed",
+
+  "sendDescriptionLabel": "Description (optional, e.g. Pizza payment)",
+  "sendInsufficientBalance": "Insufficient balance. Missing {amount} BTC to complete this send.",
+  "@sendInsufficientBalance": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "sendSelectWallet": "Select Wallet",
+  "sendReviewTitle": "Review Transaction",
+  "sendTrackedReviewTitle": "Confirm Tracked Payment",
+  "sendRecipientLabel": "Recipient",
+  "sendNetworkFeeLabel": "Network Fee",
+  "sendTotalLabel": "Total",
+  "sendConfirmAction": "Confirm",
+  "sendPayNowAction": "Pay Now",
+  "sendEnterAddressError": "Please enter a valid recipient username or address",
+  "sendEnterAmountError": "Please enter a valid amount",
+  "sendPaymentSuccess": "Payment successful!",
+
+  "receiveReceivingWallet": "Receiving Wallet",
+  "receiveExpirationLabel": "Payment Link Expiration",
+  "receiveNoExpiration": "No Expiration",
+  "receive15Min": "15 Minutes",
+  "receive1Hour": "1 Hour",
+  "receive24Hours": "24 Hours",
+  "receiveGenAction": "Generate Payment Link",
+  "receiveQrMethod": "QR Code",
+  "receiveNfcMethod": "NFC Beam",
+  "receiveScanToPay": "Scan to Pay",
+  "receiveReadyToBeam": "Ready to Beam",
+  "receiveWriteNfc": "Write to NFC Tag",
+
+  "unknownDeviceTitle": "Authorize New Device",
+  "unknownDeviceDesc": "This device has not been linked to your account.\nEnter the 6-digit code from your authenticator app to authorize it.",
+  "unknownDeviceBanner": "New device detected",
+  "unknownDeviceInputHint": "000000",
+  "unknownDeviceInputErrorEmpty": "Enter the 6-digit code",
+  "unknownDeviceInputErrorLength": "Code must be 6 digits",
+  "unknownDeviceHelper": "Open your authenticator app and enter the current code.",
+  "unknownDeviceAction": "AUTHORIZE & SIGN IN",
+  "unknownDeviceSecurityNote": "If you did not attempt to log in, your credentials may be compromised. Change your passphrase immediately.",
+
+  "createWalletTitle": "New Wallet",
+  "createWalletSuccess": "Wallet created successfully!",
+  "createWalletErrorGenFirst": "Please generate a passphrase first.",
+  "createWalletIdentity": "WALLET IDENTITY",
+  "createWalletNameHint": "Savings, Daily, etc.",
+  "createWalletSecurity": "PASSPHRASE SECURITY",
+  "createWalletWords": "{count} Words",
+  "@createWalletWords": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createWalletActionGen": "Generate Security Key",
+  "createWalletActionCreate": "CREATE WALLET",
+  "createWalletCopyAction": "Copy",
+  "createWalletCopySuccess": "Copied!",
+  "createWalletNewAction": "New",
+  "createWalletWarning": "Keep these words safe. Without them, your funds will be lost.",
+
+  "errUnexpected": "An unexpected error occurred.",
+  "errAuthUserAlreadyExists": "This username is already in use.",
+  "errAuthUsernameMissing": "Username is required.",
+  "errAuthPassphraseMissing": "Passphrase is required.",
+  "errAuthInvalidUsernameFormat": "Invalid username format.",
+  "errAuthCharLimitExceeded": "Character limit exceeded.",
+  "errAuthUserNotFound": "User not found. Please check your spelling.",
+  "errAuthInvalidPassphraseFormat": "Passphrase does not meet requirements.",
+  "errAuthIncorrectTotp": "The TOTP code is incorrect or has expired.",
+  "errAuthInvalidCredentials": "Incorrect username or passphrase.",
+  "errAuthUnrecognizedDevice": "Unrecognized device. Please authorize it.",
+  "errAuthTotpTimeout": "The time to enter the code has expired.",
+  "errLedgerNotFound": "Financial account not found. Please ensure your registration is complete.",
+  "errLedgerAlreadyExists": "Account already has financial records.",
+  "errLedgerInsufficientBalance": "You do not have enough balance to perform this transaction.",
+  "errLedgerInvalidOperation": "Invalid operation attempt.",
+  "errLedgerReceiverNotFound": "Transaction recipient not found.",
+  "errLedgerGeneric": "Internal error in financial account.",
+  "errLedgerPaymentRequestNotFound": "Payment link not found.",
+  "errLedgerPaymentRequestExpired": "This payment link has expired.",
+  "errLedgerPaymentRequestAlreadyPaid": "This payment link has already been paid.",
+  "errLedgerPaymentRequestSelfPay": "You cannot pay a link created by yourself.",
+  "errWalletAlreadyExists": "A wallet with this name already exists.",
+  "errWalletNotFound": "The specified wallet was not found.",
+  "errWalletGeneric": "Wallet validation error.",
+  "errNotifMissingToken": "Notification token missing.",
+  "errNotifMissingFields": "Required notification fields missing.",
+  "errInternalServer": "Our servers are temporarily unavailable.",
+  "errSessionExpired": "Your session has expired. Please log in again.",
+  "errForbidden": "Access denied or unrecognized device.",
+  "errTooManySignupAttempts": "Too many signup attempts. Please try again later.",
+  "errNoInternet": "No internet connection or server is down.",
+  "errTimeout": "The connection timed out. Check your internet and try again.",
+  "errCommFailure": "Failed to communicate with Kerosene server.",
+  "errInvalidBtcAddress": "The provided Bitcoin address is invalid.",
+  "withdrawInvalidFields": "Please enter a valid address and amount.",
+  "withdrawAuthReason": "Authenticate to confirm withdrawal.",
+  "withdrawAuthCancelled": "Authentication cancelled.",
+  "withdrawSuccess": "Withdrawal successfully sent to the Bitcoin network!",
+  "withdrawFeeSection": "NETWORK DIFFICULTY (FEE)",
+  "withdrawFeeFast": "Fast",
+  "withdrawFeeMedium": "Medium",
+  "withdrawFeeSlow": "Slow",
+  "withdrawErrorFee": "Error estimating network fees."
 }

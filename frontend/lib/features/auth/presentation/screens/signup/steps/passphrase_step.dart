@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:slip39/slip39.dart';
 
 import '../../../../../../core/theme/cyber_theme.dart';
+import '../../../../../../l10n/l10n_extension.dart';
 import '../../../providers/signup_flow_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,7 +82,8 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
       });
     } catch (e) {
       setState(() {
-        _generatedMnemonic = 'Erro ao gerar frase';
+        _generatedMnemonic =
+            'Error generating phrase'; // This text is generated outside of build context, best effort since the UI won't translate this well without a context refactor
       });
     }
   }
@@ -222,28 +224,26 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your Secret Phrase',
+            context.l10n.passphraseTitle,
             style: CyberTheme.heading(size: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Write down these 18 words on a physical piece of paper. Never save this digitally.',
+            context.l10n.passphraseSubtitle,
             style: CyberTheme.label(size: 14, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           _mnemonicCard(_generatedMnemonic, CyberTheme.neonCyan),
           const SizedBox(height: 24),
-          _warningRow(
-            'If you lose these words, you will permanently lose access to your account and funds.',
-          ),
+          _warningRow(context.l10n.passphraseWarning),
           const SizedBox(height: 48),
           ElevatedButton(
             onPressed: () =>
                 setState(() => _phase = PassphrasePhase.verification),
             style: CyberTheme.neonButton(CyberTheme.neonCyan),
-            child: const Text('I Have Written It Down'),
+            child: Text(context.l10n.passphraseWrittenDown),
           ),
         ],
       ),
@@ -265,13 +265,13 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Verify Phrase',
+              context.l10n.passphraseVerifyTitle,
               style: CyberTheme.heading(size: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Type your secret phrase to confirm you have backed it up correctly.',
+              context.l10n.passphraseVerifySubtitle,
               style: CyberTheme.label(
                 size: 14,
                 color: CyberTheme.textSecondary,
@@ -287,8 +287,8 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 fontSize: 14,
               ),
               decoration: CyberTheme.cyberInput(
-                label: 'Enter your 18 words',
-                hint: 'word1 word2 word3...',
+                label: context.l10n.passphraseEnterWords,
+                hint: context.l10n.passphraseVerifyHint,
                 icon: Icons.keyboard_rounded,
               ),
               validator: (value) {
@@ -297,7 +297,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 }
                 final cleaned = value.trim().replaceAll(RegExp(r'\s+'), ' ');
                 if (cleaned != _generatedMnemonic) {
-                  return 'Incorrect passphrase. Please try again.';
+                  return context.l10n.passphraseVerifyError;
                 }
                 return null;
               },
@@ -313,7 +313,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 }
               },
               style: CyberTheme.neonButton(CyberTheme.neonPurple),
-              child: const Text('Verify & Continue'),
+              child: Text(context.l10n.passphraseVerifyContinue),
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -322,7 +322,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
               style: TextButton.styleFrom(
                 foregroundColor: CyberTheme.textSecondary,
               ),
-              child: const Text('Go back to view phrase again'),
+              child: Text(context.l10n.passphraseGoBack),
             ),
           ],
         ),
@@ -354,13 +354,13 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
           const Icon(Icons.hub_rounded, size: 56, color: CyberTheme.neonCyan),
           const SizedBox(height: 16),
           Text(
-            'Your SLIP-39 Shares',
+            context.l10n.slip39SharesTitle,
             style: CyberTheme.heading(size: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Your seed is split into $total pieces. You need $threshold of them to recover your wallet. Write each share on a separate piece of paper and store them in different locations.',
+            context.l10n.slip39SharesSubtitle(threshold, total),
             style: CyberTheme.label(size: 14, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -451,7 +451,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Share ${i + 1} of $total',
+                                  context.l10n.slip39ShareLabel(i + 1, total),
                                   style: const TextStyle(
                                     color: CyberTheme.neonCyan,
                                     fontWeight: FontWeight.bold,
@@ -464,7 +464,9 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                                     );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Share ${i + 1} copied'),
+                                        content: Text(
+                                          context.l10n.slip39ShareCopied(i + 1),
+                                        ),
                                         backgroundColor: CyberTheme.neonCyan
                                             .withValues(alpha: 0.8),
                                       ),
@@ -501,21 +503,25 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                             foregroundColor: CyberTheme.neonAmber,
                           ),
                           icon: const Icon(Icons.edit_rounded, size: 16),
-                          label: Text('I wrote down Share ${i + 1} — Verify'),
+                          label: Text(
+                            context.l10n.slip39VerifyShareTitle(i + 1),
+                          ),
                         )
                       else
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.check_circle_rounded,
                               color: CyberTheme.neonCyan,
                               size: 18,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'Share confirmed!',
-                              style: TextStyle(color: CyberTheme.neonCyan),
+                              context.l10n.success,
+                              style: const TextStyle(
+                                color: CyberTheme.neonCyan,
+                              ),
                             ),
                           ],
                         ),
@@ -533,9 +539,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          _warningRow(
-            'Do NOT store all shares in the same place. If an attacker finds $threshold pieces they can recover your wallet.',
-          ),
+          _warningRow(context.l10n.slip39Warning(threshold)),
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: allConfirmed
@@ -544,8 +548,8 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
             style: CyberTheme.neonButton(CyberTheme.neonCyan),
             child: Text(
               allConfirmed
-                  ? 'All Shares Confirmed — Continue'
-                  : 'Confirm all $total shares to continue',
+                  ? context.l10n.slip39AllConfirmedContinue
+                  : context.l10n.slip39ConfirmAllPending(total),
             ),
           ),
         ],
@@ -570,13 +574,13 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Verify Share ${i + 1}',
+              context.l10n.slip39VerifyShareTitle(i + 1),
               style: CyberTheme.heading(size: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Type the words for Share ${i + 1} exactly as you wrote them down.',
+              context.l10n.slip39VerifyShareSubtitle(i + 1),
               style: CyberTheme.label(
                 size: 14,
                 color: CyberTheme.textSecondary,
@@ -592,8 +596,8 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 fontSize: 13,
               ),
               decoration: CyberTheme.cyberInput(
-                label: 'Enter the words',
-                hint: 'word1 word2 word3...',
+                label: context.l10n.passphraseVerifyHint,
+                hint: context.l10n.passphraseVerifyHint,
                 icon: Icons.keyboard_rounded,
               ),
               validator: (value) {
@@ -602,7 +606,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 }
                 final cleaned = value.trim().replaceAll(RegExp(r'\s+'), ' ');
                 if (cleaned != expectedWords.join(' ')) {
-                  return 'Incorrect. Please re-check what you wrote.';
+                  return context.l10n.passphraseVerifyError;
                 }
                 return null;
               },
@@ -619,7 +623,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 }
               },
               style: CyberTheme.neonButton(CyberTheme.neonAmber),
-              child: Text('Confirm Share ${i + 1}'),
+              child: Text(context.l10n.slip39ConfirmShare(i + 1)),
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -627,7 +631,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
               style: TextButton.styleFrom(
                 foregroundColor: CyberTheme.textSecondary,
               ),
-              child: const Text('Go back to view shares'),
+              child: Text(context.l10n.goBack),
             ),
           ],
         ),
@@ -662,33 +666,31 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your Primary Seed',
+            context.l10n.twoFaPrimaryTitle,
             style: CyberTheme.heading(size: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           _badgeRow(
             icon: Icons.lock_person_rounded,
-            label: 'Key 1 of 3 — Stays on your device only',
+            label: context.l10n.twoFaPrimaryBadge,
             color: CyberTheme.neonPurple,
           ),
           const SizedBox(height: 16),
           Text(
-            'This 18-word phrase is your primary private key. It alone is NOT enough to sign transactions — a secondary TOTP authorization is always required from Kerosene. Write these words on paper and store them securely.',
+            context.l10n.twoFaPrimarySubtitle,
             style: CyberTheme.label(size: 14, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           _mnemonicCard(_primarySeed, CyberTheme.neonPurple),
           const SizedBox(height: 24),
-          _warningRow(
-            'Never share this phrase with anyone, not even Kerosene support.',
-          ),
+          _warningRow(context.l10n.passphraseWarning),
           const SizedBox(height: 48),
           ElevatedButton(
             onPressed: () => setState(() => twoFaPhase = 1),
             style: CyberTheme.neonButton(CyberTheme.neonPurple),
-            child: const Text('I Have Written It Down'),
+            child: Text(context.l10n.twoFaPrimaryWritten),
           ),
         ],
       ),
@@ -708,19 +710,19 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your Recovery Seed',
+            context.l10n.twoFaBackupTitle,
             style: CyberTheme.heading(size: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           _badgeRow(
             icon: Icons.safety_divider_rounded,
-            label: 'Key 3 of 3 — Emergency / Sovereignty Bypass',
+            label: context.l10n.twoFaBackupBadge,
             color: CyberTheme.neonAmber,
           ),
           const SizedBox(height: 16),
           Text(
-            'This is your sovereignty guarantee. If Kerosene ever shuts down, use this 12-word backup seed together with your primary seed to recover your funds without any server involvement. Store this SEPARATELY from your primary seed.',
+            context.l10n.twoFaBackupSubtitle,
             style: CyberTheme.label(size: 14, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -734,17 +736,17 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
               borderRadius: BorderRadius.circular(8),
               color: CyberTheme.neonAmber.withValues(alpha: 0.05),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.account_balance_rounded,
                   color: CyberTheme.neonAmber,
                   size: 20,
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Key 2 of 3 is held encrypted by Kerosene and is only used to co-sign trasactions when you provide a valid TOTP code.',
+                    context.l10n.twoFaCoSignerNote,
                     style: TextStyle(color: CyberTheme.neonAmber, fontSize: 12),
                   ),
                 ),
@@ -755,7 +757,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
           ElevatedButton(
             onPressed: () => setState(() => twoFaPhase = 2),
             style: CyberTheme.neonButton(CyberTheme.neonAmber),
-            child: const Text('I Have Stored Both Seeds'),
+            child: Text(context.l10n.twoFaBothStored),
           ),
           const SizedBox(height: 12),
           TextButton(
@@ -763,7 +765,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
             style: TextButton.styleFrom(
               foregroundColor: CyberTheme.textSecondary,
             ),
-            child: const Text('Back to Primary Seed'),
+            child: Text(context.l10n.twoFaBackToPrimary),
           ),
         ],
       ),
@@ -785,13 +787,13 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Verify Primary Seed',
+              context.l10n.twoFaVerifyTitle,
               style: CyberTheme.heading(size: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Confirm your Primary Key (18 words) to prove you have it safely stored.',
+              context.l10n.twoFaVerifySubtitle,
               style: CyberTheme.label(
                 size: 14,
                 color: CyberTheme.textSecondary,
@@ -807,8 +809,8 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 fontSize: 14,
               ),
               decoration: CyberTheme.cyberInput(
-                label: 'Enter your 18-word Primary Seed',
-                hint: 'word1 word2 word3...',
+                label: context.l10n.passphraseVerifyHint,
+                hint: context.l10n.passphraseVerifyHint,
                 icon: Icons.keyboard_rounded,
               ),
               validator: (value) {
@@ -817,7 +819,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 }
                 final cleaned = value.trim().replaceAll(RegExp(r'\s+'), ' ');
                 if (cleaned != _primarySeed) {
-                  return 'Incorrect. Please re-check your Primary Seed.';
+                  return context.l10n.twoFaVerifyError;
                 }
                 return null;
               },
@@ -833,7 +835,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
                 }
               },
               style: CyberTheme.neonButton(CyberTheme.neonPurple),
-              child: const Text('Verify & Activate 2FA Vault'),
+              child: Text(context.l10n.twoFaVerifyActivate),
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -841,7 +843,7 @@ class _PassphraseStepState extends ConsumerState<PassphraseStep> {
               style: TextButton.styleFrom(
                 foregroundColor: CyberTheme.textSecondary,
               ),
-              child: const Text('Back to Recovery Seed'),
+              child: Text(context.l10n.twoFaBackToBackup),
             ),
           ],
         ),

@@ -26,7 +26,7 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -237,28 +237,45 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
   }
 
   void _showEditDialog(BuildContext context) {
-    final controller = TextEditingController(text: widget.wallet.name);
+    final nameController = TextEditingController(text: widget.wallet.name);
+    final passphraseController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF161B22),
-        shape: RoundedRectanglePlatform.isIOS
-            ? null
-            : RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           "Alterar nome",
           style: TextStyle(color: Colors.white),
         ),
-        content: TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            labelText: "Novo nome",
-            labelStyle: TextStyle(color: Colors.white70),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.white24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: "Novo nome",
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: passphraseController,
+              obscureText: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: "Senha da carteira",
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -270,12 +287,14 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
+              final newName = nameController.text.trim();
+              final passphrase = passphraseController.text.trim();
+              if (newName.isNotEmpty && passphrase.isNotEmpty) {
                 final useCase = ref.read(updateWalletUseCaseProvider);
                 final result = await useCase(
                   name: widget.wallet.name,
                   newName: newName,
+                  passphrase: passphrase,
                 );
                 result.fold(
                   (l) => ScaffoldMessenger.of(

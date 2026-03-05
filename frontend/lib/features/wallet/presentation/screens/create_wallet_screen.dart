@@ -7,6 +7,7 @@ import '../../../../core/utils/error_translator.dart';
 import '../providers/wallet_provider.dart';
 import '../state/create_wallet_state.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class CreateWalletScreen extends ConsumerStatefulWidget {
   const CreateWalletScreen({super.key});
@@ -44,7 +45,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           );
     } else if (_generatedMnemonic.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please generate a passphrase first.')),
+        SnackBar(content: Text(context.l10n.createWalletErrorGenFirst)),
       );
     }
   }
@@ -54,15 +55,18 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     ref.listen<CreateWalletState>(createWalletProvider, (previous, next) {
       if (next is CreateWalletSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Wallet created successfully!'),
+          SnackBar(
+            content: Text(context.l10n.createWalletSuccess),
             backgroundColor: Colors.green,
           ),
         );
         Navigator.pop(context);
         ref.read(walletProvider.notifier).refresh();
       } else if (next is CreateWalletError) {
-        showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
+        showCustomErrorDialog(
+          context,
+          ErrorTranslator.translate(context.l10n, next.message),
+        );
       }
     });
 
@@ -72,9 +76,12 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(
-          'New Wallet',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.createWalletTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -131,9 +138,9 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
-                              "WALLET IDENTITY",
-                              style: TextStyle(
+                            Text(
+                              context.l10n.createWalletIdentity,
+                              style: const TextStyle(
                                 color: Colors.white38,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -148,7 +155,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                                 fontSize: 18,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Savings, Daily, etc.',
+                                hintText: context.l10n.createWalletNameHint,
                                 hintStyle: const TextStyle(
                                   color: Colors.white24,
                                 ),
@@ -178,9 +185,9 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
 
                             const SizedBox(height: 32),
 
-                            const Text(
-                              "PASSPHRASE SECURITY",
-                              style: TextStyle(
+                            Text(
+                              context.l10n.createWalletSecurity,
+                              style: const TextStyle(
                                 color: Colors.white38,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -215,14 +222,17 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                                     vertical: 20,
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.auto_awesome_rounded, size: 20),
-                                    SizedBox(width: 12),
+                                    const Icon(
+                                      Icons.auto_awesome_rounded,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
                                     Text(
-                                      "Gerar Chave de Segurança",
-                                      style: TextStyle(
+                                      context.l10n.createWalletActionGen,
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -259,9 +269,9 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                                           color: Colors.black,
                                         ),
                                       )
-                                    : const Text(
-                                        "CRIAR CARTEIRA",
-                                        style: TextStyle(
+                                    : Text(
+                                        context.l10n.createWalletActionCreate,
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 1,
@@ -303,7 +313,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         ),
         child: Center(
           child: Text(
-            "$value Palavras",
+            context.l10n.createWalletWords(value),
             style: TextStyle(
               color: isSelected ? const Color(0xFF7B61FF) : Colors.white60,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -341,16 +351,24 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildTinyButton(Icons.copy_rounded, "Copiar", () {
-                    Clipboard.setData(ClipboardData(text: _generatedMnemonic));
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text("Copiado!")));
-                  }),
+                  _buildTinyButton(
+                    Icons.copy_rounded,
+                    context.l10n.createWalletCopyAction,
+                    () {
+                      Clipboard.setData(
+                        ClipboardData(text: _generatedMnemonic),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(context.l10n.createWalletCopySuccess),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(width: 16),
                   _buildTinyButton(
                     Icons.refresh_rounded,
-                    "Novo",
+                    context.l10n.createWalletNewAction,
                     _generatePassphrase,
                   ),
                 ],
@@ -365,18 +383,21 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
             color: const Color(0xFFFF9D00).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.warning_amber_rounded,
                 color: Color(0xFFFF9D00),
                 size: 20,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "Guarde bem estas palavras. Sem elas, seus fundos serão perdidos.",
-                  style: TextStyle(color: Color(0xFFFF9D00), fontSize: 11),
+                  context.l10n.createWalletWarning,
+                  style: const TextStyle(
+                    color: Color(0xFFFF9D00),
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ],

@@ -314,6 +314,7 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<Either<Failure, String>> updateWallet({
     required String name,
     required String newName,
+    required String passphrase,
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
@@ -322,8 +323,9 @@ class WalletRepositoryImpl implements WalletRepository {
       }
 
       final result = await remoteDataSource.updateWallet(
-        name: name, // This is the old/current name
+        name: name,
         newName: newName,
+        passphrase: passphrase,
       );
       return Right(result);
     } on ServerException catch (e) {

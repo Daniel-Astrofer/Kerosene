@@ -1,43 +1,58 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import 'tor_service.dart';
 
 /// Service for real-time BTC price updates via WebSocket
 /// Primary: Binance, Backup: Coinbase
 class PriceWebSocketService {
-  WebSocketChannel? _primaryChannel;
-  WebSocketChannel? _backupChannel;
+  IOWebSocketChannel? _primaryChannel;
+  IOWebSocketChannel? _backupChannel;
   final _priceController = StreamController<double>.broadcast();
   Timer? _reconnectTimer;
   bool _isDisposed = false;
   bool _usingBackup = false;
-
-  // Binance WebSocket URL
-  static const String _binanceUrl =
-      'wss://stream.binance.com:9443/ws/btcusdt@ticker';
-
-  // Coinbase WebSocket URL
-  static const String _coinbaseUrl = 'wss://ws-feed.exchange.coinbase.com';
+  bool _isConnecting = false;
+  int _retryCount = 0;
+  static const int _maxRetries = 5;
 
   Stream<double> get priceStream => _priceController.stream;
 
   void connect() {
     if (_isDisposed) return;
+    _retryCount = 0;
     _connectPrimary();
   }
 
-  void _connectPrimary() async {
+  /// Creates an HttpClient that accepts certs for the local Tor relay
+  HttpClient _createRelayHttpClient() {
+    return HttpClient()
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        return host == '127.0.0.1' || host == 'localhost';
+      };
+  }
+
+  Future<void> _connectPrimary() async {
+    if (_isConnecting || _isDisposed) return;
+    _isConnecting = true;
+
     try {
       debugPrint('>>> PriceWebSocket: Connecting to Binance via Tor...');
       final relayPort = await TorService.instance.startRelay(
         'stream.binance.com',
         9443,
       );
-      _primaryChannel = WebSocketChannel.connect(
+
+      _primaryChannel = IOWebSocketChannel.connect(
         Uri.parse('wss://127.0.0.1:$relayPort/ws/btcusdt@ticker'),
+        customClient: _createRelayHttpClient(),
       );
+
+      await _primaryChannel!.ready;
+      debugPrint('>>> PriceWebSocket: Binance connected.');
+      _retryCount = 0;
 
       _primaryChannel!.stream.listen(
         (data) {
@@ -67,10 +82,12 @@ class PriceWebSocketService {
     } catch (e) {
       debugPrint('>>> PriceWebSocket: Failed to connect to Binance: $e');
       _connectBackup();
+    } finally {
+      _isConnecting = false;
     }
   }
 
-  void _connectBackup() async {
+  Future<void> _connectBackup() async {
     if (_usingBackup || _isDisposed) return;
 
     try {
@@ -81,9 +98,14 @@ class PriceWebSocketService {
         'ws-feed.exchange.coinbase.com',
         443,
       );
-      _backupChannel = WebSocketChannel.connect(
+
+      _backupChannel = IOWebSocketChannel.connect(
         Uri.parse('wss://127.0.0.1:$relayPort'),
+        customClient: _createRelayHttpClient(),
       );
+
+      await _backupChannel!.ready;
+      debugPrint('>>> PriceWebSocket: Coinbase connected.');
 
       // Subscribe to BTC-USD ticker
       final subscribeMessage = jsonEncode({
@@ -126,11 +148,26 @@ class PriceWebSocketService {
   }
 
   void _scheduleReconnect() {
+    if (_isDisposed) return;
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+
+    if (_retryCount >= _maxRetries) {
+      debugPrint(
+        '>>> PriceWebSocket: Max retries ($_maxRetries) reached. Stopping.',
+      );
+      return;
+    }
+
+    final delay = Duration(seconds: 5 * (1 << _retryCount));
+    _retryCount++;
+    debugPrint(
+      '>>> PriceWebSocket: Reconnecting in ${delay.inSeconds}s (attempt $_retryCount/$_maxRetries)...',
+    );
+
+    _reconnectTimer = Timer(delay, () {
       if (!_isDisposed) {
-        debugPrint('>>> PriceWebSocket: Attempting reconnect...');
         _usingBackup = false;
+        _isConnecting = false;
         _connectPrimary();
       }
     });

@@ -14,9 +14,9 @@ class AppConfig {
   static const int receiveTimeout = 30000;
 
   // ==================== API Headers ====================
-  // ==================== API Headers ====================
+  /// Header enviado pelo servidor quando o JWT está próximo de expirar.
   static const String newTokenHeader = 'X-New-Token';
-  static const String deviceHashHeader = 'X-Device-Hash';
+  // NOTE: x-device-hash foi REMOVIDO do backend. Não enviar esse header.
 
   // ==================== API Endpoints ====================
 
@@ -25,8 +25,10 @@ class AppConfig {
   static const String authSignupVerify = '/auth/signup/totp/verify';
   static const String authLogin = '/auth/login';
   static const String authLoginVerify = '/auth/login/totp/verify';
-  static const String authRefresh = '/auth/refresh';
-  static const String authLogout = '/auth/logout';
+  // NOTE: /auth/refresh e /auth/logout não estão na documentação atual do backend.
+  // Mantidos como comentários para compatibilidade futura.
+  // static const String authRefresh = '/auth/refresh';
+  // static const String authLogout = '/auth/logout';
   static const String authPowChallenge = '/auth/pow/challenge';
   static const String authPasskeyOnboardingStart =
       '/auth/passkey/register/onboarding/start';
@@ -50,7 +52,7 @@ class AppConfig {
   static const String ledgerFind = '/ledger/find';
   static const String ledgerBalance = '/ledger/balance';
   static const String ledgerAll = '/ledger/all';
-  static const String ledgerDelete = '/ledger/delete';
+  // NOTE: DELETE /ledger/delete NÃO EXISTE no servidor atual (doc seção 3.6).
   static const String ledgerHistory = '/ledger/history';
 
   // Transactions - Fee & Status
@@ -93,9 +95,6 @@ class AppConfig {
 
   /// Chave para armazenar dados do usuário
   static const String userDataKey = 'user_data';
-
-  /// Chave para armazenar device hash
-  static const String deviceHashKey = 'device_hash';
 
   /// Chave para armazenar TOTP secret
   static const String totpSecretKey = 'totp_secret';

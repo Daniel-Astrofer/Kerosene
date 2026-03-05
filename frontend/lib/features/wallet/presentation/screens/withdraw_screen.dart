@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../../../../core/utils/snackbar_helper.dart';
@@ -24,6 +25,7 @@ class WithdrawScreen extends ConsumerStatefulWidget {
 class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   final _addressController = TextEditingController();
   final _amountController = TextEditingController();
+  final _totpController = TextEditingController();
 
   // Timer for debouncing amount input
   Timer? _debounce;
@@ -36,6 +38,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   void dispose() {
     _addressController.dispose();
     _amountController.dispose();
+    _totpController.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -54,8 +57,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   Future<void> _handleWithdraw(BuildContext context, dynamic feeData) async {
     final address = _addressController.text.trim();
+    final totpCode = _totpController.text.trim();
     if (address.isEmpty || _currentAmount <= 0) {
-      SnackbarHelper.showError('Preencha um endereço e um valor válido.');
+      SnackbarHelper.showError(context.l10n.withdrawInvalidFields);
+      return;
+    }
+    if (totpCode.length != 6) {
+      SnackbarHelper.showError('Código TOTP inválido. Insira os 6 dígitos.');
       return;
     }
 
@@ -66,8 +74,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
     bool authenticated = false;
     if (canAuth && iEnrolled) {
+      if (!context.mounted) return;
       authenticated = await biometricService.authenticate(
-        localizedReason: 'Autentique para confirmar o saque.',
+        localizedReason: context.l10n.withdrawAuthReason,
       );
     } else {
       if (!context.mounted) return;
@@ -79,7 +88,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
     if (!context.mounted) return;
     if (!authenticated) {
-      SnackbarHelper.showError("Autenticação cancelada.");
+      SnackbarHelper.showError(context.l10n.withdrawAuthCancelled);
       return;
     }
 
@@ -90,12 +99,12 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           toAddress: address,
           amount: _currentAmount,
           fromWalletName: widget.walletId,
+          totpCode: totpCode,
         );
 
+    if (!context.mounted) return;
     if (result != null) {
-      SnackbarHelper.showSuccess(
-        "Saque enviado com sucesso para a rede Bitcoin!",
-      );
+      SnackbarHelper.showSuccess(context.l10n.withdrawSuccess);
       if (context.mounted) {
         ref.read(walletProvider.notifier).refresh();
         Navigator.pop(context);
@@ -105,7 +114,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       if (errorState.error != null && context.mounted) {
         showCustomErrorDialog(
           context,
-          ErrorTranslator.translate(errorState.error!),
+          ErrorTranslator.translate(context.l10n, errorState.error!),
         );
       }
     }
@@ -118,135 +127,142 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text(
-          'Saque On-chain',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.saqueAction,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Stack(
-        children: [
-          // Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF000000), Color(0xFF0A0A15)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Address Input
+              Text(
+                context.l10n.withdrawAddressLabel,
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
               ),
-            ),
-          ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Address Input
-                  const Text(
-                    "ENDEREÇO BITCOIN DE DESTINO",
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInputBox(
-                    controller: _addressController,
-                    hint: 'Colar endereço bc1...',
-                    icon: Icons.qr_code_scanner_rounded,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Amount Input
-                  const Text(
-                    "VALOR (BTC)",
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInputBox(
-                    controller: _amountController,
-                    hint: '0.00',
-                    icon: Icons.currency_bitcoin_rounded,
-                    isNumeric: true,
-                    onChanged: _onAmountChanged,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Network Fee section
-                  if (_currentAmount > 0)
-                    feeAsyncValue.when(
-                      data: (feeData) => _buildFeeSection(feeData),
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFD0F288),
-                        ),
-                      ),
-                      error: (err, _) => Center(
-                        child: Text(
-                          "Erro ao estimar taxas da rede.",
-                          style: TextStyle(color: Colors.red[300]),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 48),
-
-                  // Send Action
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed:
-                          (_currentAmount > 0 &&
-                              sendState.isLoading == false &&
-                              feeAsyncValue.value != null)
-                          ? () => _handleWithdraw(context, feeAsyncValue.value)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD0F288),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: sendState.isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.black,
-                              ),
-                            )
-                          : const Text(
-                              "CONFIRMAR SAQUE",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              _buildInputBox(
+                controller: _addressController,
+                hint: context.l10n.withdrawAddressLabel,
+                icon: Icons.qr_code_scanner_rounded,
               ),
-            ),
+
+              const SizedBox(height: 32),
+
+              // Amount Input
+              Text(
+                context.l10n.withdrawAmountLabel,
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildInputBox(
+                controller: _amountController,
+                hint: '0.00',
+                icon: Icons.currency_bitcoin_rounded,
+                isNumeric: true,
+                onChanged: _onAmountChanged,
+              ),
+
+              const SizedBox(height: 32),
+
+              // TOTP code
+              Text(
+                'Código TOTP (6 dígitos)',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildInputBox(
+                controller: _totpController,
+                hint: '000000',
+                icon: Icons.lock_clock_rounded,
+                isNumeric: true,
+              ),
+
+              const SizedBox(height: 32),
+
+              // Network Fee section
+              if (_currentAmount > 0)
+                feeAsyncValue.when(
+                  data: (feeData) => _buildFeeSection(feeData),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFD0F288)),
+                  ),
+                  error: (err, _) => Center(
+                    child: Text(
+                      context.l10n.withdrawErrorFee,
+                      style: TextStyle(color: Colors.red[300]),
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 48),
+
+              // Send Action
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed:
+                      (_currentAmount > 0 &&
+                          sendState.isLoading == false &&
+                          feeAsyncValue.value != null)
+                      ? () => _handleWithdraw(context, feeAsyncValue.value)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD0F288),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: sendState.isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : Text(
+                          context.l10n.withdrawAction,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -292,9 +308,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          "DIFICULDADE DA REDE (TAXA)",
-          style: TextStyle(
+        Text(
+          context.l10n.withdrawFeeSection,
+          style: const TextStyle(
             color: Colors.white38,
             fontSize: 10,
             fontWeight: FontWeight.bold,
@@ -308,7 +324,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             Expanded(
               child: _buildFeeOption(
                 0,
-                "Rápido",
+                context.l10n.withdrawFeeFast,
                 feeData.estimatedFastBtc,
                 Colors.greenAccent,
               ),
@@ -317,7 +333,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             Expanded(
               child: _buildFeeOption(
                 1,
-                "Médio",
+                context.l10n.withdrawFeeMedium,
                 feeData.estimatedStandardBtc,
                 Colors.orangeAccent,
               ),
@@ -326,7 +342,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             Expanded(
               child: _buildFeeOption(
                 2,
-                "Demorado",
+                context.l10n.withdrawFeeSlow,
                 feeData.estimatedSlowBtc,
                 Colors.redAccent,
               ),

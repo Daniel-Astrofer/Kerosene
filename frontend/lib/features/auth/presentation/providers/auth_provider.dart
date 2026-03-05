@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
@@ -114,27 +115,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkAuthStatus();
   }
 
+  /// Tracks when the async auth check completes
+  final _authCheckCompleter = Completer<void>();
+
+  /// Returns a Future that resolves when _checkAuthStatus is done.
+  Future<void> get authCheckCompleted => _authCheckCompleter.future;
+
   /// Verificar status de autenticação ao iniciar
   Future<void> _checkAuthStatus() async {
-    final isAuth = await authRepository.isAuthenticated();
+    try {
+      final isAuth = await authRepository.isAuthenticated();
 
-    if (isAuth) {
-      final result = await authRepository.getCurrentUser();
-      result.fold(
-        (failure) async {
-          // Token exists but user data is missing or invalid — wipe it
-          // This clears stale/mismatched tokens so the user re-authenticates cleanly.
-          await authRepository.clearInvalidSession();
-          state = const AuthUnauthenticated();
-        },
-        (user) {
-          state = AuthAuthenticated(user);
-          notificationService.initializeAndRegister();
-          startBackgroundService();
-        },
-      );
-    } else {
+      if (isAuth) {
+        final result = await authRepository.getCurrentUser();
+        result.fold(
+          (failure) {
+            // No local user cache found — could be mid-TOTP flow.
+            // Do NOT wipe the token. Just go to unauthenticated so user logs in again.
+            state = const AuthUnauthenticated();
+          },
+          (user) {
+            state = AuthAuthenticated(user);
+            notificationService.initializeAndRegister();
+            startBackgroundService();
+          },
+        );
+      } else {
+        state = const AuthUnauthenticated();
+      }
+    } catch (e) {
       state = const AuthUnauthenticated();
+    } finally {
+      _authCheckCompleter.complete();
     }
   }
 
@@ -156,8 +168,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await authRepository.clearInvalidSession();
         state = AuthError(failure.message);
       },
-      (authId) {
-        // Login initial phase success. Move to TOTP state.
+      (loginResult) {
+        // Login initial phase success. JWT already saved in repository.
+        // Move to TOTP state.
         state = AuthRequiresLoginTotp(username: username, passphrase: password);
       },
     );

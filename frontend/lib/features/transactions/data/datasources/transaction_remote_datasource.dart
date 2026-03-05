@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import 'package:uuid/uuid.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -20,10 +19,9 @@ abstract class TransactionRemoteDataSource {
   // Fee & Status
   Future<FeeEstimate> estimateFee(double amount);
   Future<UnsignedTransaction> createUnsignedTransaction({
-    required String fromAddress,
     required String toAddress,
     required double amount,
-    required int feeSatoshis,
+    required String feeLevel,
   });
   Future<TxStatus> getTransactionStatus(String txid);
 
@@ -35,7 +33,12 @@ abstract class TransactionRemoteDataSource {
     required int feeSatoshis,
     String? context,
   });
-  Future<TxStatus> broadcastTransaction(String rawTxHex);
+  Future<TxStatus> broadcastTransaction({
+    required String rawTxHex,
+    required String toAddress,
+    required double amount,
+    String? message,
+  });
 
   // Deposits
   Future<String> getDepositAddress();
@@ -66,7 +69,10 @@ abstract class TransactionRemoteDataSource {
     required String fromWalletName,
     required String toAddress,
     required double amount,
+    required String totpCode,
     String? description,
+    String? passkeyAssertionResponseJSON,
+    String? passkeyAssertionRequestJSON,
   });
 
   // Transaction History
@@ -103,20 +109,14 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
   @override
   Future<UnsignedTransaction> createUnsignedTransaction({
-    required String fromAddress,
     required String toAddress,
     required double amount,
-    required int feeSatoshis,
+    required String feeLevel,
   }) async {
     try {
       final response = await apiClient.post(
         AppConfig.transactionsCreateUnsigned,
-        data: {
-          'fromAddress': fromAddress,
-          'toAddress': toAddress,
-          'amount': amount,
-          'feeSatoshis': feeSatoshis,
-        },
+        data: {'toAddress': toAddress, 'amount': amount, 'feeLevel': feeLevel},
       );
       return UnsignedTransaction.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
@@ -167,9 +167,6 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     String? context,
   }) async {
     try {
-      final idempotencyKey = const Uuid().v4();
-      final requestTimestamp = DateTime.now().millisecondsSinceEpoch;
-
       final response = await apiClient.post(
         AppConfig.ledgerTransaction,
         data: {
@@ -177,8 +174,6 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           'receiver': toAddress,
           'amount': amount,
           'context': context ?? 'transfer',
-          'idempotencyKey': idempotencyKey,
-          'requestTimestamp': requestTimestamp,
         },
       );
 
@@ -207,11 +202,21 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   }
 
   @override
-  Future<TxStatus> broadcastTransaction(String rawTxHex) async {
+  Future<TxStatus> broadcastTransaction({
+    required String rawTxHex,
+    required String toAddress,
+    required double amount,
+    String? message,
+  }) async {
     try {
       final response = await apiClient.post(
-        AppConfig.transactionsBroadcast, // Note: Verify if this constant exists
-        data: {'rawTxHex': rawTxHex},
+        AppConfig.transactionsBroadcast,
+        data: {
+          'rawTxHex': rawTxHex,
+          'toAddress': toAddress,
+          'amount': amount,
+          if (message != null) 'message': message,
+        },
       );
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
@@ -408,7 +413,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String fromWalletName,
     required String toAddress,
     required double amount,
+    required String totpCode,
     String? description,
+    String? passkeyAssertionResponseJSON,
+    String? passkeyAssertionRequestJSON,
   }) async {
     try {
       final response = await apiClient.post(
@@ -417,7 +425,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           'fromWalletName': fromWalletName,
           'toAddress': toAddress,
           'amount': amount,
+          'totpCode': totpCode,
           if (description != null) 'description': description,
+          if (passkeyAssertionResponseJSON != null)
+            'passkeyAssertionResponseJSON': passkeyAssertionResponseJSON,
+          if (passkeyAssertionRequestJSON != null)
+            'passkeyAssertionRequestJSON': passkeyAssertionRequestJSON,
         },
       );
       return TxStatus.fromJson(_parseJsonResponse(response.data));
@@ -446,28 +459,28 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<List<Transaction>> getTransactionHistory() async {
     try {
       final response = await apiClient.get(AppConfig.ledgerHistory);
-      final dynamic raw = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
+      // ApiResponseInterceptor already unwraps the envelope, so response.data is the list.
+      final dynamic raw = response.data;
 
-      // Accept { "data": [...] } or [...] directly
       List<dynamic> list;
       if (raw is List) {
         list = raw;
-      } else if (raw is Map && raw['data'] is List) {
-        list = raw['data'] as List<dynamic>;
       } else {
         return [];
       }
 
       return list.map((item) {
         final m = item as Map<String, dynamic>;
-        final typeStr = (m['type'] as String? ?? '').toUpperCase();
+        // API returns 'transactionType' (e.g. 'INTERNAL'), not 'type'
+        final typeStr = (m['transactionType'] as String? ?? '').toUpperCase();
         TransactionType txType;
         switch (typeStr) {
+          case 'INTERNAL':
           case 'TRANSACTION_SEND':
           case 'SEND':
           case 'WITHDRAWAL':
+            // Determine send vs receive based on whose context we are in.
+            // For INTERNAL, we default to send; UI may override based on direction.
             txType = TransactionType.send;
             break;
           case 'TRANSACTION_RECEIVE':
@@ -491,6 +504,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
             txStatus = TransactionStatus.failed;
             break;
           default:
+            // 'concluded' or 'confirmed' -> confirmed
             txStatus = TransactionStatus.confirmed;
         }
 
@@ -512,18 +526,22 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
         return Transaction(
           id: m['id']?.toString() ?? m['txid']?.toString() ?? '',
+          // API returns senderIdentifier / receiverIdentifier
           fromAddress:
-              m['senderUsername']?.toString() ??
+              m['senderIdentifier']?.toString() ??
               m['sender']?.toString() ??
               m['fromAddress']?.toString() ??
               '',
           toAddress:
-              m['receiverUsername']?.toString() ??
+              m['receiverIdentifier']?.toString() ??
               m['receiver']?.toString() ??
               m['toAddress']?.toString() ??
               '',
           amountSatoshis: amountSatoshis,
-          feeSatoshis: (m['feeSatoshis'] as num?)?.toInt() ?? 0,
+          feeSatoshis:
+              (m['networkFee'] as num?)?.toInt() ??
+              (m['feeSatoshis'] as num?)?.toInt() ??
+              0,
           status: txStatus,
           type: txType,
           confirmations: txStatus == TransactionStatus.confirmed ? 6 : 0,
@@ -532,7 +550,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
               m['context']?.toString() ??
               m['description']?.toString() ??
               typeStr,
-          isInternal: m['isInternal'] as bool? ?? true,
+          isInternal:
+              typeStr == 'INTERNAL' || (m['isInternal'] as bool? ?? true),
         );
       }).toList();
     } catch (e) {

@@ -21,6 +21,7 @@ import '../../../../core/providers/currency_provider.dart';
 import '../../../../core/utils/currency_logic.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 import '../../../../core/services/audio_service.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class SendMoneyScreen extends ConsumerStatefulWidget {
   final String? walletId;
@@ -100,10 +101,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             errorMsg =
                 'Saldo insuficiente. Faltam ${missingCount.toStringAsFixed(8)} BTC para completar este envio.';
           } else {
-            errorMsg = ErrorTranslator.translate(errorMsg);
+            errorMsg = ErrorTranslator.translate(context.l10n, errorMsg);
           }
         } else {
-          errorMsg = ErrorTranslator.translate(errorMsg);
+          errorMsg = ErrorTranslator.translate(context.l10n, errorMsg);
         }
 
         SnackbarHelper.showError(errorMsg);

@@ -3,18 +3,18 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/app_config.dart';
 
 /// Helper para gerenciar device hash e headers de segurança
 class DeviceHelper {
   static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  static const String _deviceHashKey = 'device_hash_key'; // Hardcoded key
 
   /// Gera ou recupera o device hash
   static Future<String> getDeviceHash() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Verificar se já existe um hash salvo
-    String? savedHash = prefs.getString(AppConfig.deviceHashKey);
+    String? savedHash = prefs.getString(_deviceHashKey);
     if (savedHash != null && savedHash.isNotEmpty) {
       return savedHash;
     }
@@ -24,7 +24,7 @@ class DeviceHelper {
     String hash = _generateHash(deviceId);
 
     // Salvar para uso futuro
-    await prefs.setString(AppConfig.deviceHashKey, hash);
+    await prefs.setString(_deviceHashKey, hash);
 
     return hash;
   }
@@ -73,16 +73,9 @@ class DeviceHelper {
     }
   }
 
-  /// Cria headers de segurança para requisições
-  static Future<Map<String, String>> getSecurityHeaders() async {
-    final deviceHash = await getDeviceHash();
-
-    return {'X-Device-Hash': deviceHash};
-  }
-
   /// Limpa o device hash salvo (útil para logout)
   static Future<void> clearDeviceHash() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConfig.deviceHashKey);
+    await prefs.remove(_deviceHashKey);
   }
 }

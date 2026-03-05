@@ -22,14 +22,18 @@ abstract class TransactionRepository {
     String? fromAddress,
     String? context,
   });
-  Future<Either<Failure, TxStatus>> broadcastTransaction(String rawTxHex);
+  Future<Either<Failure, TxStatus>> broadcastTransaction({
+    required String rawTxHex,
+    required String toAddress,
+    required double amount,
+    String? message,
+  });
 
   // Create Unsigned
   Future<Either<Failure, UnsignedTransaction>> createUnsignedTransaction({
-    required String fromAddress,
     required String toAddress,
     required double amount,
-    required int feeSatoshis,
+    required String feeLevel,
   });
 
   // Deposits
@@ -61,7 +65,10 @@ abstract class TransactionRepository {
     required String fromWalletName,
     required String toAddress,
     required double amount,
+    required String totpCode,
     String? description,
+    String? passkeyAssertionResponseJSON,
+    String? passkeyAssertionRequestJSON,
   });
 
   // Local Persistence

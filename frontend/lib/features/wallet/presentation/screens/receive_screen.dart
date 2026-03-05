@@ -21,6 +21,7 @@ import '../../presentation/providers/wallet_provider.dart';
 import '../../../../core/utils/currency_logic.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 import '../../presentation/state/wallet_state.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 /// Tela de recebimento: dados da carteira + valor em BTC, com opção QR Code ou NFC.
 class ReceiveScreen extends ConsumerStatefulWidget {
@@ -226,7 +227,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Receiving Wallet",
+                    context.l10n.receiveReceivingWallet,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 12,
@@ -234,7 +235,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    wallet?.name ?? "Select Wallet",
+                    wallet?.name ?? context.l10n.sendSelectWallet,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -387,9 +388,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Payment Link Expiration",
-            style: TextStyle(
+          Text(
+            context.l10n.receiveExpirationLabel,
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -413,11 +414,23 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                   color: Colors.white54,
                 ),
                 style: const TextStyle(color: Colors.white, fontSize: 14),
-                items: const [
-                  DropdownMenuItem(value: null, child: Text("No Expiration")),
-                  DropdownMenuItem(value: 15, child: Text("15 Minutes")),
-                  DropdownMenuItem(value: 60, child: Text("1 Hour")),
-                  DropdownMenuItem(value: 1440, child: Text("24 Hours")),
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(context.l10n.receiveNoExpiration),
+                  ),
+                  DropdownMenuItem(
+                    value: 15,
+                    child: Text(context.l10n.receive15Min),
+                  ),
+                  DropdownMenuItem(
+                    value: 60,
+                    child: Text(context.l10n.receive1Hour),
+                  ),
+                  DropdownMenuItem(
+                    value: 1440,
+                    child: Text(context.l10n.receive24Hours),
+                  ),
                 ],
                 onChanged: (val) {
                   setState(() {
@@ -451,9 +464,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         color: Color(0xFFF7931A),
                       ),
                     )
-                  : const Text(
-                      "Generate Payment Link",
-                      style: TextStyle(
+                  : Text(
+                      context.l10n.receiveGenAction,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
@@ -470,7 +483,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
       children: [
         Expanded(
           child: _buildToggleItem(
-            label: "QR Code",
+            label: context.l10n.receiveQrMethod,
             isActive: !_isNfcActive,
             onTap: () => setState(() => _isNfcActive = false),
           ),
@@ -478,7 +491,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         const SizedBox(width: 16),
         Expanded(
           child: _buildToggleItem(
-            label: "NFC Beam",
+            label: context.l10n.receiveNfcMethod,
             isActive: _isNfcActive,
             onTap: () => setState(() => _isNfcActive = true),
           ),
@@ -560,9 +573,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            "Scan to Pay",
-            style: TextStyle(
+          Text(
+            context.l10n.receiveScanToPay,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -589,9 +602,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         children: [
           const CyberNfcIcon(isActive: true, size: 80),
           const SizedBox(height: 24),
-          const Text(
-            "Ready to Beam",
-            style: TextStyle(
+          Text(
+            context.l10n.receiveReadyToBeam,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -607,7 +620,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text("Write to NFC Tag"),
+            child: Text(context.l10n.receiveWriteNfc),
           ),
         ],
       ),
@@ -626,9 +639,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "Select Receiving Wallet",
-              style: TextStyle(
+            Text(
+              context.l10n.receiveReceivingWallet,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -688,7 +701,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     );
     if (inputAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid amount")),
+        SnackBar(content: Text(context.l10n.sendEnterAmountError)),
       );
       return;
     }

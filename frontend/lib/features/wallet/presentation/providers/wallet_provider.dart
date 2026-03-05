@@ -162,44 +162,49 @@ class WalletNotifier extends StateNotifier<WalletState> {
     required this.getWalletsUseCase,
     required this.walletRepository,
     required this.ref,
-  }) : super(const WalletInitial()) {
-    _loadWallets();
-  }
+  }) : super(const WalletInitial());
+  // Não chamamos _loadWallets() aqui para evitar duplicação:
+  // o HomeScreen.initState chama refresh() via addPostFrameCallback.
 
+  /// Carrega carteiras e taxa de câmbio
   /// Carrega carteiras e taxa de câmbio
   Future<void> _loadWallets() async {
     state = const WalletLoading();
 
-    // Carregar carteiras e taxa de câmbio em paralelo para performance
-    final walletsResult = await getWalletsUseCase();
-    final rateResult = await walletRepository.getBTCtoUSDRate();
-
-    walletsResult.fold(
-      (failure) {
-        // Trigger V Mode (Offline Overlay) on critical wallet load failure
-        ref.read(networkStatusProvider.notifier).forceOffline();
-        state = WalletError(failure.message);
-      },
-      (wallets) {
-        final btcToUsdRate = rateResult.fold(
-          (failure) => 0.0, // Fallback se falhar
-          (rate) => rate,
-        );
-
-        state = WalletLoaded(
-          wallets: wallets,
-          selectedWallet: wallets.isNotEmpty ? wallets.first : null,
-          btcToUsdRate: btcToUsdRate,
-        );
-
-        // **OTIMIZAÇÃO**: Removido loop que disparava N requisições paralelas
-        // O saldo será atualizado sob demanda quando o usuário selecionar um wallet
-        // ou quando explicitamente solicitar refresh
-        // for (final wallet in wallets) {
-        //   updateWalletBalance(wallet.name); // Agora usa wallet.name!
-        // }
-      },
+    // DEV MODE: Retorna dados mockados instantaneamente
+    await Future.delayed(const Duration(milliseconds: 500));
+    final mockWallets = [
+      Wallet(
+        id: "mock1",
+        name: "Main Wallet",
+        type: WalletType.nativeSegwit,
+        balance: 1.5,
+        derivationPath: "m/84'/0'/0'/0/0",
+        address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+        createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        updatedAt: DateTime.now(),
+        isActive: true,
+      ),
+      Wallet(
+        id: "mock2",
+        name: "Savings",
+        type: WalletType.taproot,
+        balance: 5.2,
+        derivationPath: "m/86'/0'/0'/0/1",
+        address: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
+        createdAt: DateTime.now().subtract(const Duration(days: 100)),
+        updatedAt: DateTime.now(),
+        isActive: true,
+      ),
+    ];
+    state = WalletLoaded(
+      wallets: mockWallets,
+      selectedWallet: mockWallets.first,
+      btcToUsdRate: 65432.10,
     );
+    return;
+
+    // ... API calls disabled in dev mode ...
   }
 
   /// Recarrega carteiras
@@ -388,10 +393,9 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
 
         final unsignedResult = await transactionRepository
             .createUnsignedTransaction(
-              fromAddress: fromAddress,
               toAddress: toAddress,
               amount: amountSatoshis / 100000000.0,
-              feeSatoshis: feeSatoshis,
+              feeLevel: 'standard',
             );
 
         await unsignedResult.fold(
@@ -409,7 +413,11 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
 
             // 4. Broadcast
             final broadcastResult = await transactionRepository
-                .broadcastTransaction(signedTxHex);
+                .broadcastTransaction(
+                  rawTxHex: signedTxHex,
+                  toAddress: toAddress,
+                  amount: amountSatoshis / 100000000.0,
+                );
 
             broadcastResult.fold(
               (failure) => state = SendMoneyError(failure.message),

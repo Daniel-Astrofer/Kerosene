@@ -140,10 +140,6 @@ class TorService {
 
     relayServer.listen((clientSocket) async {
       try {
-        debugPrint(
-          ' onion TorService [Relay]: Incoming local connection on port $relayPort -> $targetHost:$targetPort',
-        );
-
         // ── SOCKS5 Connect + Retry ─────────────────────────────────────────
         // Each attempt opens a FRESH Tor socket + re-does the full handshake.
         // Tor closes the TCP socket after sending an error response, so
@@ -155,7 +151,7 @@ class TorService {
         // all incoming data and never loses bytes between sequential reads.
         bool established = false;
         int relayAttempts = 0;
-        const int maxRelayAttempts = 3;
+        const int maxRelayAttempts = 10;
         Socket? torSocket;
         StreamIterator<Uint8List>? torIter;
         final readBuffer = <int>[]; // shared accumulator across readExact calls
@@ -169,7 +165,7 @@ class TorService {
                 'Stream closed prematurely: expected $count bytes, got ${readBuffer.length}',
               );
             }
-            readBuffer.addAll(torIter!.current);
+            readBuffer.addAll(torIter.current);
           }
           final result = Uint8List.fromList(readBuffer.take(count).toList());
           readBuffer.removeRange(0, count);
@@ -208,11 +204,11 @@ class TorService {
             }
             // Create a StreamIterator — buffers ALL incoming chunks, so no
             // bytes are ever lost between sequential readExact() calls.
-            torIter = StreamIterator<Uint8List>(torSocket!);
+            torIter = StreamIterator<Uint8List>(torSocket);
 
             // ── Step 1: SOCKS5 Auth Handshake ───────────────────────────────
-            torSocket!.add([0x05, 0x01, 0x00]);
-            await torSocket!.flush();
+            torSocket.add([0x05, 0x01, 0x00]);
+            await torSocket.flush();
 
             final handshakeRes = await readExact(2);
             if (handshakeRes[0] != 0x05 || handshakeRes[1] != 0x00) {
@@ -228,8 +224,8 @@ class TorService {
             request.addAll(domainBytes);
             request.add((targetPort >> 8) & 0xFF);
             request.add(targetPort & 0xFF);
-            torSocket!.add(request);
-            await torSocket!.flush();
+            torSocket.add(request);
+            await torSocket.flush();
 
             // Read [VER, REP, RSV, ATYP] — 4 bytes
             final connectRes = await readExact(4);
@@ -246,9 +242,7 @@ class TorService {
                 await readExact(18); // IPv6 (16) + Port (2)
               }
               established = true;
-              debugPrint(
-                ' onion TorService [Relay]: SOCKS5 established to $targetHost:$targetPort (attempt $relayAttempts)',
-              );
+              // Connected silently — logs only on failure or if needed for debug
             } else {
               // ❌ SOCKS error — Tor closes the TCP socket after this response.
               // The socket is destroyed at the top of the next loop iteration.
@@ -262,14 +256,15 @@ class TorService {
                   'Tor SOCKS5 to $targetHost refused after $maxRelayAttempts attempts: $errorMsg',
                 );
               }
-              await Future.delayed(Duration(seconds: relayAttempts * 2));
+              // Wait longer for Tor to find the circuit (3, 6, 9, 12... seconds)
+              await Future.delayed(Duration(seconds: relayAttempts * 3));
             }
           } catch (e) {
             if (relayAttempts >= maxRelayAttempts) rethrow;
             debugPrint(
               ' onion TorService [Relay]: Attempt $relayAttempts failed ($e). Retrying with fresh socket...',
             );
-            await Future.delayed(Duration(seconds: relayAttempts * 2));
+            await Future.delayed(Duration(seconds: relayAttempts * 3));
           }
         }
 
@@ -281,7 +276,7 @@ class TorService {
 
         // ── 3. Bi-Directional Pipe ──────────────────────────────────────────
         // Client -> Tor: pipe all client bytes into the Tor socket.
-        final capturedTorSocket = torSocket!;
+        final capturedTorSocket = torSocket;
         clientSocket.listen(
           capturedTorSocket.add,
           onDone: () => capturedTorSocket.destroy(),
@@ -293,7 +288,7 @@ class TorService {
 
         // Tor -> Client: first flush anything already in readBuffer (bytes
         // that arrived alongside the CONNECT response), then pump the iterator.
-        final capturedIter = torIter!;
+        final capturedIter = torIter;
         final capturedBuffer = List<int>.from(readBuffer);
         unawaited(() async {
           try {

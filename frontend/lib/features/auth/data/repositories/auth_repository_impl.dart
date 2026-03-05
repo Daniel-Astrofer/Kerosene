@@ -17,20 +17,22 @@ class AuthRepositoryImpl implements AuthRepository {
     required this.localDataSource,
   });
 
-  // ─── Login — retorna authId para uso no TOTP posterior ───────────────────────
+  // ─── Login — returns LoginResult with userId + JWT ────────────────────────────
   @override
-  Future<Either<Failure, String>> login({
+  Future<Either<Failure, LoginResult>> login({
     required String username,
     required String passphrase,
   }) async {
     try {
-      final authId = await remoteDataSource.login(
+      final loginResult = await remoteDataSource.login(
         username: username,
         passphrase: passphrase,
       );
+      // Save the JWT from the login response immediately
+      await localDataSource.saveToken(loginResult.jwt);
       // Save the passphrase locally so it can be used for signing later
       await localDataSource.saveMnemonic(passphrase);
-      return Right(authId);
+      return Right(loginResult);
     } on AuthException catch (e) {
       return Left(AuthFailure(message: e.message, statusCode: e.statusCode));
     } on AppException catch (e) {

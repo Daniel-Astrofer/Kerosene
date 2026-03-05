@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../domain/entities/transaction.dart';
@@ -110,140 +109,137 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget>
             ),
           ),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.fastOutSlowIn,
-            decoration: BoxDecoration(
-              color: const Color(
-                0xFF0A0A0A,
-              ).withValues(alpha: 0.8), // Deep Black
-              border: Border.all(
-                color: primaryColor.withValues(alpha: _isExpanded ? 0.6 : 0.2),
-                width: 1,
-              ),
-              boxShadow: [
-                if (_isExpanded)
-                  BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.15),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                  ),
-              ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.fastOutSlowIn,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A0A0A).withValues(
+              alpha: 0.92,
+            ), // Aumentado de 0.8 para 0.92 para compensar a falta do blur
+            border: Border.all(
+              color: primaryColor.withValues(alpha: _isExpanded ? 0.6 : 0.2),
+              width: 1,
             ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      // Hard-surface Icon
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: ShapeDecoration(
-                          color: primaryColor.withValues(alpha: 0.1),
-                          shape: const BeveledRectangleBorder(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
-                            ),
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            isSent ? Icons.north_east : Icons.south_west,
-                            color: primaryColor,
-                            size: 20,
+            boxShadow: [
+              if (_isExpanded)
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: 0.15),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    // Hard-surface Icon
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: ShapeDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        shape: const BeveledRectangleBorder(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            bottomRight: Radius.circular(8),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-
-                      // Informações
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t.description ??
-                                  "TX_${t.id.substring(0, 6).toUpperCase()}",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              timeago.format(t.timestamp),
-                              style: GoogleFonts.jetBrainsMono(
-                                color: Colors.white54,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                      child: Center(
+                        child: Icon(
+                          isSent ? Icons.north_east : Icons.south_west,
+                          color: primaryColor,
+                          size: 20,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 16),
 
-                      // Valor Monospace
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                    // Informações
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildBtcAmount(
-                            t.amountBTC.abs(),
-                            isSent,
-                            primaryColor,
+                          Text(
+                            t.description ??
+                                "TX_${t.id.substring(0, 6).toUpperCase()}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
-                          _buildCyberStatusBadge(t.status, primaryColor),
+                          const SizedBox(height: 4),
+                          Text(
+                            timeago.format(t.timestamp),
+                            style: GoogleFonts.jetBrainsMono(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
+                          ),
                         ],
+                      ),
+                    ),
+
+                    // Valor Monospace
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _buildBtcAmount(
+                          t.amountBTC.abs(),
+                          isSent,
+                          primaryColor,
+                        ),
+                        const SizedBox(height: 6),
+                        _buildCyberStatusBadge(t.status, primaryColor),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Expansão (Detalhes da Transação)
+              AnimatedCrossFade(
+                firstChild: const SizedBox(width: double.infinity, height: 0),
+                secondChild: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Divider(color: primaryColor.withValues(alpha: 0.2)),
+                      const SizedBox(height: 8),
+                      _buildDetailRow('TXID', t.id, primaryColor),
+                      const SizedBox(height: 4),
+                      _buildDetailRow(
+                        'DATE',
+                        t.timestamp.toString(),
+                        primaryColor,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _buildDetailRow(
+                          'FEE',
+                          '${t.feeSatoshis} SATS',
+                          primaryColor,
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                // Expansão (Detalhes da Transação)
-                AnimatedCrossFade(
-                  firstChild: const SizedBox(width: double.infinity, height: 0),
-                  secondChild: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Divider(color: primaryColor.withValues(alpha: 0.2)),
-                        const SizedBox(height: 8),
-                        _buildDetailRow('TXID', t.id, primaryColor),
-                        const SizedBox(height: 4),
-                        _buildDetailRow(
-                          'DATE',
-                          t.timestamp.toString(),
-                          primaryColor,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: _buildDetailRow(
-                            'FEE',
-                            '${t.feeSatoshis} SATS',
-                            primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  crossFadeState: _isExpanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  duration: const Duration(milliseconds: 300),
-                  sizeCurve: Curves.easeOutCubic,
-                ),
-              ],
-            ),
+                crossFadeState: _isExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 300),
+                sizeCurve: Curves.easeOutCubic,
+              ),
+            ],
           ),
         ),
       ),

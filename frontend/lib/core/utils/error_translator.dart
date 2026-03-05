@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'package:teste/l10n/app_localizations.dart';
 
 class ErrorTranslator {
-  static String translate(String codeOrMessage) {
-    if (codeOrMessage.isEmpty) return 'Ocorreu um erro inesperado.';
+  static String translate(AppLocalizations l10n, String codeOrMessage) {
+    if (codeOrMessage.isEmpty) return l10n.errUnexpected;
 
     String codeToTest = codeOrMessage;
     String? extractedMessage;
@@ -37,133 +38,129 @@ class ErrorTranslator {
     switch (codeToTest) {
       // Auth Errors
       case 'ERR_AUTH_USER_ALREADY_EXISTS':
-        return 'Este nome de usuário já está em uso.';
+        return l10n.errAuthUserAlreadyExists;
       case 'ERR_AUTH_USERNAME_MISSING':
-        return 'O nome de usuário é obrigatório.';
+        return l10n.errAuthUsernameMissing;
       case 'ERR_AUTH_PASSPHRASE_MISSING':
-        return 'A senha é obrigatória.';
+        return l10n.errAuthPassphraseMissing;
       case 'ERR_AUTH_INVALID_USERNAME_FORMAT':
-        return 'O formato do nome de usuário é inválido.';
+        return l10n.errAuthInvalidUsernameFormat;
       case 'ERR_AUTH_CHARACTER_LIMIT_EXCEEDED':
-        return 'O limite de caracteres foi excedido.';
+        return l10n.errAuthCharLimitExceeded;
       case 'ERR_AUTH_USER_NOT_FOUND':
-        return 'Usuário não encontrado. Verifique se digitou corretamente.';
+        return l10n.errAuthUserNotFound;
       case 'ERR_AUTH_INVALID_PASSPHRASE_FORMAT':
-        return 'A senha não atende aos requisitos.';
+        return l10n.errAuthInvalidPassphraseFormat;
       case 'ERR_AUTH_INCORRECT_TOTP':
-        return 'O código TOTP está incorreto ou expirou.';
+        return l10n.errAuthIncorrectTotp;
       case 'ERR_AUTH_INVALID_CREDENTIALS':
-        return 'Usuário ou senha incorretos.';
+        return l10n.errAuthInvalidCredentials;
       case 'ERR_AUTH_UNRECOGNIZED_DEVICE':
-        return 'Dispositivo não reconhecido. Por favor, autorize-o.';
+        return l10n.errAuthUnrecognizedDevice;
       case 'ERR_AUTH_TOTP_TIMEOUT':
-        return 'O tempo para inserir o código expirou.';
+        return l10n.errAuthTotpTimeout;
 
       // Ledger / Balance Errors
       case 'ERR_LEDGER_NOT_FOUND':
-        // This might happen if trying to fetch balance for a user that hasn't initialized their ledger yet.
-        return 'Conta financeira não encontrada. Verifique se seu cadastro foi concluído.';
+        return l10n.errLedgerNotFound;
       case 'ERR_LEDGER_ALREADY_EXISTS':
-        return 'A conta já possui registros financeiros.';
+        return l10n.errLedgerAlreadyExists;
       case 'ERR_LEDGER_INSUFFICIENT_BALANCE':
-        return 'Você não possui saldo suficiente para realizar esta transação.';
+        return l10n.errLedgerInsufficientBalance;
       case 'ERR_LEDGER_INVALID_OPERATION':
-        return 'Tentativa de operação inválida.';
+        return l10n.errLedgerInvalidOperation;
       case 'ERR_LEDGER_RECEIVER_NOT_FOUND':
-        return 'O destinatário da transação não foi encontrado.';
+        return l10n.errLedgerReceiverNotFound;
       case 'ERR_LEDGER_GENERIC':
-        return 'Erro interno na conta financeira.';
+        return l10n.errLedgerGeneric;
       case 'ERR_LEDGER_PAYMENT_REQUEST_NOT_FOUND':
-        return 'Link de pagamento não encontrado.';
+        return l10n.errLedgerPaymentRequestNotFound;
       case 'ERR_LEDGER_PAYMENT_REQUEST_EXPIRED':
-        return 'Este link de pagamento expirou.';
+        return l10n.errLedgerPaymentRequestExpired;
       case 'ERR_LEDGER_PAYMENT_REQUEST_ALREADY_PAID':
-        return 'Este link de pagamento já foi pago.';
+        return l10n.errLedgerPaymentRequestAlreadyPaid;
       case 'ERR_LEDGER_PAYMENT_REQUEST_SELF_PAY':
-        return 'Você não pode pagar um link criado por você mesmo.';
+        return l10n.errLedgerPaymentRequestSelfPay;
 
       // Wallet Errors
       case 'ERR_WALLET_ALREADY_EXISTS':
-        return 'Você já possui uma carteira com este nome.';
+        return l10n.errWalletAlreadyExists;
       case 'ERR_WALLET_NOT_FOUND':
-        return 'A carteira informada não foi encontrada.';
+        return l10n.errWalletNotFound;
       case 'ERR_WALLET_GENERIC':
-        return 'Erro de validação na carteira.';
+        return l10n.errWalletGeneric;
 
       // Notifications & System Errors
       case 'ERR_NOTIF_MISSING_TOKEN':
-        return 'Token de notificação ausente.';
+        return l10n.errNotifMissingToken;
       case 'ERR_NOTIF_MISSING_FIELDS':
-        return 'Campos obrigatórios ausentes na notificação.';
+        return l10n.errNotifMissingFields;
       case 'ERR_INTERNAL_SERVER':
-        return 'Nossos servidores estão temporariamente indisponíveis.';
+        return l10n.errInternalServer;
     }
 
-    // Se extraiu uma mensagem amigável do backend, vamos tentar traduzi-la se estiver em inglês
+    // Fallback translations based on message content
     String messageToReturn = extractedMessage ?? codeOrMessage;
     final lower = messageToReturn.toLowerCase();
 
-    // English Fallback Translations
     if (lower.contains('invalid credentials') ||
         lower.contains('wrong password')) {
-      return 'Usuário ou senha incorretos.';
+      return l10n.errAuthInvalidCredentials;
     }
     if (lower.contains('totp') &&
         (lower.contains('expired') ||
             lower.contains('incorrect') ||
             lower.contains('invalid'))) {
-      return 'O código TOTP está incorreto ou expirou.';
+      return l10n.errAuthIncorrectTotp;
     }
     if (lower.contains('already exists')) {
-      return 'Este registro já existe no sistema.';
+      return l10n.errAuthUserAlreadyExists;
     }
     if (lower.contains('not found')) {
-      return 'O registro não foi encontrado.';
+      return l10n.errLedgerNotFound;
     }
     if (lower.contains('insufficient balance') ||
         lower.contains('not enough funds')) {
-      return 'Você não possui saldo suficiente para realizar esta transação.';
+      return l10n.errLedgerInsufficientBalance;
     }
     if (lower.contains('unauthorized') ||
         lower.contains('token expired') ||
         lower.contains('invalid token')) {
-      return 'Sua sessão expirou. Por favor, faça login novamente.';
+      return l10n.errSessionExpired;
     }
     if (lower.contains('forbidden') || lower.contains('access denied')) {
-      return 'Acesso negado ou dispositivo não reconhecido.';
+      return l10n.errForbidden;
     }
     if (lower.contains('too many signup attempts')) {
-      return 'Muitas tentativas de cadastro seguidas. Tente novamente mais tarde.';
+      return l10n.errTooManySignupAttempts;
     }
     if (lower.contains('connection refused') ||
         lower.contains('network is unreachable')) {
-      return 'Sem conexão com a internet ou servidor fora do ar.';
+      return l10n.errNoInternet;
     }
     if (lower.contains('timeout') || lower.contains('deadline exceeded')) {
-      return 'A conexão demorou muito. Verifique sua internet e tente novamente.';
+      return l10n.errTimeout;
     }
     if (lower.contains('format exception') ||
         lower.contains('unexpected character')) {
-      return 'Falha na comunicação com o servidor Kerosene.';
+      return l10n.errCommFailure;
     }
     if (lower.contains('invalid address') ||
         lower.contains('bitcoin address')) {
-      return 'O endereço Bitcoin informado é inválido.';
+      return l10n.errInvalidBtcAddress;
     }
 
     if (extractedMessage != null &&
         extractedMessage.isNotEmpty &&
         extractedMessage != 'null') {
-      // Prioritize the backend message if it's not a technical string
       if (extractedMessage.contains(' ') || extractedMessage.length < 40) {
         return extractedMessage;
       }
     }
 
     if (codeOrMessage.length > 80 && !codeOrMessage.contains(' ')) {
-      return 'Ocorreu um erro técnico inesperado. Tente novamente mais tarde.';
+      return l10n.errUnexpected;
     }
-
     return codeOrMessage
         .replaceFirst('ServerException:', '')
         .replaceFirst('Exception:', '')

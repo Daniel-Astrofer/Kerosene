@@ -82,11 +82,19 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<Either<Failure, TxStatus>> broadcastTransaction(
-    String rawTxHex,
-  ) async {
+  Future<Either<Failure, TxStatus>> broadcastTransaction({
+    required String rawTxHex,
+    required String toAddress,
+    required double amount,
+    String? message,
+  }) async {
     try {
-      final result = await remoteDataSource.broadcastTransaction(rawTxHex);
+      final result = await remoteDataSource.broadcastTransaction(
+        rawTxHex: rawTxHex,
+        toAddress: toAddress,
+        amount: amount,
+        message: message,
+      );
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -97,18 +105,16 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
   @override
   Future<Either<Failure, UnsignedTransaction>> createUnsignedTransaction({
-    required String fromAddress,
     required String toAddress,
     required double amount,
-    required int feeSatoshis,
+    required String feeLevel,
   }) async {
     try {
       await _checkAuth();
       final result = await remoteDataSource.createUnsignedTransaction(
-        fromAddress: fromAddress,
         toAddress: toAddress,
         amount: amount,
-        feeSatoshis: feeSatoshis,
+        feeLevel: feeLevel,
       );
       return Right(result);
     } on ServerException catch (e) {
@@ -210,14 +216,20 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required String fromWalletName,
     required String toAddress,
     required double amount,
+    required String totpCode,
     String? description,
+    String? passkeyAssertionResponseJSON,
+    String? passkeyAssertionRequestJSON,
   }) async {
     await _checkAuth();
     return remoteDataSource.withdraw(
       fromWalletName: fromWalletName,
       toAddress: toAddress,
       amount: amount,
+      totpCode: totpCode,
       description: description,
+      passkeyAssertionResponseJSON: passkeyAssertionResponseJSON,
+      passkeyAssertionRequestJSON: passkeyAssertionRequestJSON,
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'fingerprint_scanner.dart';
 import '../../security/app_pin_service.dart';
 
 enum _PinMode { setup, confirm, enter }
@@ -132,155 +133,178 @@ class _PinDialogState extends State<PinDialog> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Center(
-        child: Container(
-          width: double.infinity,
-          color: Colors.black,
-          child: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Lock icon
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    widget.isSetup
-                        ? Icons.lock_open_rounded
-                        : Icons.lock_outline_rounded,
-                    color: const Color(0xFFF7931A),
-                    size: 36,
-                  ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.85)),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              // App Logo - Using centered circular image for premium feel
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 1000),
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.scale(
+                      scale: 0.8 + (0.2 * value),
+                      child: const CyberFingerprintScanner(size: 120),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 32),
+
+              Text(
+                _title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                  fontFamily: 'HubotSansExpanded',
                 ),
-
-                const SizedBox(height: 28),
-
-                Text(
-                  _title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 14,
+                  letterSpacing: 0.5,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _subtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 13,
-                  ),
-                ),
+              ),
 
-                const SizedBox(height: 36),
+              const Spacer(),
 
-                // PIN dots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_pinLength, (i) {
-                    final filled = i < _entered.length;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: filled
-                            ? const Color(0xFFF7931A)
-                            : Colors.white.withValues(alpha: 0.15),
-                      ),
-                    );
-                  }),
-                ),
+              // PIN dots with subtle glow
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_pinLength, (i) {
+                  final filled = i < _entered.length;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: filled
+                          ? const Color(0xFF00F0FF)
+                          : Colors.white.withValues(alpha: 0.1),
+                    ),
+                  );
+                }),
+              ),
 
-                // Error message
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
+              // Error message
+              SizedBox(
+                height: 40,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
                   child: _error != null
                       ? Padding(
                           key: ValueKey(_error),
-                          padding: const EdgeInsets.only(top: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
                             _error!,
                             style: const TextStyle(
                               color: Colors.redAccent,
-                              fontSize: 13,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         )
-                      : const SizedBox(height: 32),
+                      : const SizedBox.shrink(),
                 ),
+              ),
 
-                const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
-                // Keypad
-                _buildKeypad(),
+              // Keypad - Futuristic Grid
+              _buildModernKeypad(),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 40),
 
-                // Cancel
+              // Cancel Action
+              if (!widget.isSetup)
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                    'Cancel',
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white.withValues(alpha: 0.4),
+                  ),
+                  child: const Text(
+                    'CANCEL AUTHENTICATION',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 14,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
                     ),
                   ),
                 ),
-              ],
-            ),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildKeypad() {
-    final digits = [
+  Widget _buildModernKeypad() {
+    final List<List<String>> keys = [
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['', '0', '⌫'],
+      ['C', '0', '⌫'],
     ];
 
     return Column(
-      children: digits.map((row) {
+      children: keys.map((row) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: row.map((label) {
-            if (label.isEmpty) return const SizedBox(width: 80, height: 64);
-            return Material(
-              color: Colors.transparent,
+          children: row.map((key) {
+            final isAction = key == '⌫' || key == 'C';
+            return Padding(
+              padding: const EdgeInsets.all(10.0),
               child: InkWell(
                 onTap: () {
-                  HapticFeedback.lightImpact();
-                  if (label == '⌫') {
+                  HapticFeedback.mediumImpact();
+                  if (key == '⌫') {
                     _onDelete();
+                  } else if (key == 'C') {
+                    setState(() {
+                      _entered = '';
+                      _error = null;
+                    });
                   } else {
-                    _onDigit(label);
+                    _onDigit(key);
                   }
                 },
                 borderRadius: BorderRadius.circular(40),
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: 75,
+                  height: 75,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.03),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      width: 1,
+                    ),
+                  ),
                   alignment: Alignment.center,
                   child: Text(
-                    label,
+                    key,
                     style: TextStyle(
-                      color: label == '⌫'
-                          ? Colors.white.withValues(alpha: 0.5)
+                      color: isAction
+                          ? const Color(0xFF00F0FF).withValues(alpha: 0.8)
                           : Colors.white,
-                      fontSize: label == '⌫' ? 24 : 32,
-                      fontWeight: FontWeight.w400,
+                      fontSize: key == '⌫' ? 24 : 28,
+                      fontWeight: FontWeight.w300,
                     ),
                   ),
                 ),

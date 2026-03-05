@@ -18,19 +18,16 @@ import '../../../nft/presentation/screens/nft_marketplace_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import '../../../wallet/domain/entities/wallet.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 
-import '../../../transactions/presentation/screens/add_funds_screen.dart';
 import '../../../transactions/domain/entities/tx_status.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../wallet/presentation/providers/balance_websocket_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import '../../../wallet/presentation/widgets/infinite_wallet_cards.dart';
-// import '../../../wallet/presentation/screens/wallet_config_screen.dart'; // Unused
 import '../../../wallet/presentation/screens/create_wallet_screen.dart';
 import '../../../wallet/presentation/screens/send_money_screen.dart';
-import '../../../wallet/presentation/screens/receive_screen.dart';
+import '../../../wallet/presentation/screens/unified_transaction_screen.dart';
 
 import '../widgets/animated_balance_display.dart';
 import '../widgets/pending_payment_link_item.dart';
@@ -44,6 +41,7 @@ import '../../../../shared/widgets/cyber_icons.dart';
 import '../widgets/platform_liquidity_header.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
+  static bool skipNextAuth = false;
   const HomeScreen({super.key});
 
   @override
@@ -845,113 +843,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Flexible(
-                            child: CircularActionItem(
-                              icon: const Icon(
-                                Icons.download_rounded,
-                                color: Colors.white,
-                              ),
-                              label: AppLocalizations.of(context)!.deposit,
+                          Expanded(
+                            child: _buildPrimaryActionButton(
+                              context,
+                              icon: Icons.call_made_rounded,
+                              label: 'Enviar', // Send
                               color: const Color(0xFF00FF94),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const AddFundsScreen(),
-                                  ),
-                                );
-                              },
+                              isSend: true,
                             ),
                           ),
-                          Flexible(
-                            child: CircularActionItem(
-                              icon: const CyberReceiveIcon(isActive: true),
-                              label: AppLocalizations.of(context)!.receive,
-                              color: Colors.grey[700]!,
-                              onTap: () {
-                                if (state.selectedWallet != null) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ReceiveScreen(
-                                        initialWallet: state.selectedWallet!,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                          Flexible(
-                            child: CircularActionItem(
-                              icon: const CyberPlusIcon(isActive: true),
-                              label: AppLocalizations.of(context)!.add,
-                              color: const Color(0xFFF7931A),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const CreateWalletScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          Flexible(
-                            child: CircularActionItem(
-                              icon: const CyberSendIcon(isActive: true),
-                              label: AppLocalizations.of(context)!.send,
-                              color: Colors.grey[700]!,
-                              onTap: () async {
-                                if (state.selectedWallet != null) {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SendMoneyScreen(
-                                        walletId: state.selectedWallet!.id,
-                                      ),
-                                    ),
-                                  );
-
-                                  if (result is TxStatus && context.mounted) {
-                                    showDialog(
-                                      context: context,
-                                      barrierColor: Colors.black.withValues(
-                                        alpha: 0.8,
-                                      ),
-                                      builder: (_) => TransactionSuccessDialog(
-                                        type: TransactionType.send,
-                                        amount: result.amountReceived,
-                                        counterparty: result.receiver.isNotEmpty
-                                            ? result.receiver
-                                            : null,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                            ),
-                          ),
-                          Flexible(
-                            child: CircularActionItem(
-                              icon: const Icon(
-                                Icons.upload_rounded,
-                                color: Colors.white,
-                              ),
-                              label: "Saque",
-                              color: const Color(0xFF00FF94),
-                              onTap: () async {
-                                if (state.selectedWallet != null) {
-                                  // Reuse or create a flow for withdrawal
-                                  // For now, navigating to SendMoney with a withdraw flag if applicable
-                                  // or just show an alert/bottom sheet for simple withdraw
-                                  await _showWithdrawDialog(
-                                    state.selectedWallet!,
-                                  );
-                                }
-                              },
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildPrimaryActionButton(
+                              context,
+                              icon: Icons.call_received_rounded,
+                              label: 'Receber', // Receive
+                              color: const Color(0xFF00D4FF),
+                              isSend: false,
                             ),
                           ),
                         ],
@@ -972,6 +882,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // FALLBACK
     return const SliverToBoxAdapter(child: SizedBox.shrink());
+  }
+
+  Widget _buildPrimaryActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isSend,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                UnifiedTransactionScreen(isInitialSend: isSend),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(0.0, 1.0); // Slide up from bottom
+                  const end = Offset.zero;
+                  const curve = Curves.easeOutQuart;
+
+                  var tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: curve));
+
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      },
+      child: GlassContainer(
+        blur: 15,
+        opacity: 0.05,
+        borderRadius: BorderRadius.circular(24),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showTransactionDetails(Transaction tx) {
@@ -1222,248 +1198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Future<void> _showWithdrawDialog(Wallet wallet) async {
-    final addressController = TextEditingController();
-    final amountController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    return showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.8),
-      builder: (context) => Consumer(
-        builder: (context, ref, child) {
-          final withdrawState = ref.watch(withdrawProvider);
-          final isLoading = withdrawState.isLoading;
-
-          return AlertDialog(
-            backgroundColor: const Color(0xFF1A1A1A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFB800).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.upload_rounded,
-                    color: Color(0xFFFFB800),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  "Saque Externo BTC",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ],
-            ),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "Mova fundos da sua carteira Kerosene para um endereço Bitcoin externo.",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildWithdrawField(
-                      controller: addressController,
-                      label: "Endereço Bitcoin (toAddress)",
-                      hint: "bc1q...",
-                      icon: Icons.account_balance_wallet_rounded,
-                      validator: (v) => v == null || v.isEmpty
-                          ? "Endereço é obrigatório"
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildWithdrawField(
-                      controller: amountController,
-                      label: "Valor em BTC",
-                      hint: "0.001",
-                      icon: Icons.currency_bitcoin_rounded,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) {
-                          return "Valor é obrigatório";
-                        }
-                        final val = double.tryParse(v);
-                        if (val == null || val <= 0) return "Valor inválido";
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildWithdrawField(
-                      controller: descriptionController,
-                      label: "Descrição (Opcional)",
-                      hint: "Ex: Transferência para Hardware Wallet",
-                      icon: Icons.description_rounded,
-                    ),
-                    if (withdrawState.error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Text(
-                          withdrawState.error!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isLoading ? null : () => Navigator.pop(context),
-                child: Text(
-                  "CANCELAR",
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (formKey.currentState?.validate() ?? false) {
-                          final result = await ref
-                              .read(withdrawProvider.notifier)
-                              .withdraw(
-                                fromWalletName: wallet.name,
-                                toAddress: addressController.text.trim(),
-                                amount: double.parse(amountController.text),
-                                description: descriptionController.text.trim(),
-                              );
-
-                          if (!context.mounted) return;
-
-                          if (result != null) {
-                            Navigator.pop(context); // Close dialog
-
-                            // Show success screen
-                            showDialog(
-                              context: context,
-                              barrierColor: Colors.black.withValues(alpha: 0.8),
-                              builder: (_) => TransactionSuccessDialog(
-                                type: TransactionType.send,
-                                amount: result.amountReceived,
-                                counterparty: result.receiver,
-                              ),
-                            );
-
-                            // Refresh transaction list
-                            ref.invalidate(transactionHistoryProvider);
-                          }
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFB800),
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.black,
-                        ),
-                      )
-                    : const Text(
-                        "SACAR AGORA",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildWithdrawField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.3),
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.1)),
-            prefixIcon: Icon(
-              icon,
-              color: Colors.white.withValues(alpha: 0.2),
-              size: 18,
-            ),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.03),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFFFB800), width: 1),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // Removed _showWithdrawDialog and _buildWithdrawField
 }
 
 class TotalBalanceDisplay extends ConsumerWidget {

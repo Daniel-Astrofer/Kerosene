@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'dart:ui' show PlatformDispatcher;
 
 class LocaleState {
   final Locale locale;
@@ -15,7 +16,7 @@ class LocaleState {
 class LocaleNotifier extends StateNotifier<LocaleState> {
   static const String _localeKey = 'app_locale';
 
-  LocaleNotifier() : super(LocaleState(const Locale('pt', 'BR'))) {
+  LocaleNotifier() : super(LocaleState(PlatformDispatcher.instance.locale)) {
     _loadLocale();
   }
 

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
@@ -24,7 +25,11 @@ abstract class WalletRemoteDataSource {
   // Wallet CRUD
   Future<Map<String, dynamic>> findWallet({required String name});
 
-  Future<String> updateWallet({required String name, required String newName});
+  Future<String> updateWallet({
+    required String name,
+    required String newName,
+    required String passphrase,
+  });
 
   Future<String> deleteWallet({
     required String name,
@@ -51,6 +56,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final response = await apiClient.post(
         AppConfig.walletCreate,
         data: {'name': name, 'passphrase': passphrase},
+        options: Options(contentType: 'application/json'),
       );
       return response.data.toString();
     } catch (e) {
@@ -151,11 +157,12 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   Future<String> updateWallet({
     required String name,
     required String newName,
+    required String passphrase,
   }) async {
     try {
       final response = await apiClient.put(
         AppConfig.walletUpdate,
-        data: {'name': name, 'newName': newName},
+        data: {'name': name, 'newName': newName, 'passphrase': passphrase},
       );
       return response.data.toString();
     } catch (e) {
@@ -199,15 +206,10 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
 
   @override
   Future<String> deleteLedger({required String walletName}) async {
-    try {
-      final response = await apiClient.delete(
-        AppConfig.ledgerDelete,
-        queryParameters: {'walletName': walletName},
-      );
-      return response.data.toString();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao deletar ledger: $e');
-    }
+    // NOTE: DELETE /ledger/delete NÃO EXISTE no servidor (doc seção 3.6).
+    // Esta operação não é suportada pela API atual.
+    throw UnsupportedError(
+      'deleteLedger: endpoint DELETE /ledger/delete não existe no servidor.',
+    );
   }
 }

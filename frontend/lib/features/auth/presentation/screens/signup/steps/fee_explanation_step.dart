@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../core/theme/cyber_theme.dart';
+import '../../../../../../l10n/l10n_extension.dart';
 import '../../../providers/signup_flow_provider.dart';
 
 class FeeExplanationStep extends ConsumerWidget {
@@ -20,13 +21,13 @@ class FeeExplanationStep extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Secure Network Fee',
+            context.l10n.feeExplanationTitle,
             style: CyberTheme.heading(size: 28),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
-            'To prevent spam and ensure the robustness of the Kerosene network, account creation requires a small anti-spam fee of 0.003 BTC.',
+            context.l10n.feeExplanationSubtitle,
             style: CyberTheme.label(size: 15, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -51,12 +52,12 @@ class FeeExplanationStep extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Where does it go?',
+                        context.l10n.feeExplanationWhereGoesTitle,
                         style: CyberTheme.heading(size: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'The full 0.003 BTC goes directly into your wallet balance once the account is created.',
+                        context.l10n.feeExplanationWhereGoesSubtitle,
                         style: CyberTheme.label(
                           size: 13,
                           color: CyberTheme.textSecondary,
@@ -74,7 +75,7 @@ class FeeExplanationStep extends ConsumerWidget {
               ref.read(signupFlowProvider.notifier).nextStep();
             },
             style: CyberTheme.neonButton(CyberTheme.neonCyan),
-            child: const Text('I Understand, Continue'),
+            child: Text(context.l10n.feeExplanationContinue),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teste/l10n/app_localizations.dart';
 import 'glass_container.dart';
 
 class AnimatedErrorPopup extends StatefulWidget {
@@ -11,12 +12,19 @@ class AnimatedErrorPopup extends StatefulWidget {
     required this.title,
     required this.message,
     this.isSuccess = false,
+    this.onRetry,
+    this.onGoBack,
   });
+
+  final VoidCallback? onRetry;
+  final VoidCallback? onGoBack;
 
   static void show(
     BuildContext context, {
     required String message,
     bool isSuccess = false,
+    VoidCallback? onRetry,
+    VoidCallback? onGoBack,
   }) {
     // Basic translation matching for titles
     String title = isSuccess ? 'Sucesso' : 'Erro na Transação';
@@ -47,6 +55,8 @@ class AnimatedErrorPopup extends StatefulWidget {
               title: title,
               message: message,
               isSuccess: isSuccess,
+              onRetry: onRetry,
+              onGoBack: onGoBack,
             ),
           ),
         );
@@ -216,29 +226,90 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
 
             const SizedBox(height: 32),
 
-            // Action Button
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.05),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
+            // Action Buttons
+            if (widget.onRetry != null || widget.onGoBack != null) ...[
+              if (widget.onRetry != null)
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      widget.onRetry!();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: baseColor,
+                      foregroundColor: Colors.black,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)?.tryAgain ?? 'Try Again',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-                child: const Text(
-                  'Entendi',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              if (widget.onRetry != null && widget.onGoBack != null)
+                const SizedBox(height: 12),
+              if (widget.onGoBack != null)
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      widget.onGoBack!();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)?.goBack ?? 'Go Back',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.05),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)?.done ?? 'Done',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

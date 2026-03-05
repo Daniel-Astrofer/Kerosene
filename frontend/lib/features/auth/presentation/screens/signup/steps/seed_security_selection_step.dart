@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../core/theme/cyber_theme.dart';
+import '../../../../../../l10n/l10n_extension.dart';
 import '../../../providers/signup_flow_provider.dart';
 
 class SeedSecuritySelectionStep extends ConsumerStatefulWidget {
@@ -34,41 +35,38 @@ class _SeedSecuritySelectionStepState
           ),
           const SizedBox(height: 16),
           Text(
-            'Seed Security',
+            context.l10n.seedSecurityTitle,
             style: CyberTheme.heading(size: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose how you want to protect your wallet recovery phrase. Kerosene offers advanced security options for high-net-worth setups.',
+            context.l10n.seedSecuritySubtitle,
             style: CyberTheme.label(size: 14, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
 
           _buildOptionCard(
-            title: 'Standard',
-            description:
-                'A single 12, 18, or 24-word recovery phrase. Best for general use and simplicity.',
+            title: context.l10n.seedStandardTitle,
+            description: context.l10n.seedStandardDesc,
             icon: Icons.article_rounded,
             value: SeedSecurityOption.standard,
           ),
           const SizedBox(height: 16),
           _buildOptionCard(
-            title: 'Shamir SLIP-39 (Multi-part)',
-            description:
-                'Split your seed into multiple pieces. Requires a minimum threshold of pieces to recover (e.g., 3-of-5). Best for distributed physical storage.',
+            title: context.l10n.seedSlip39Title,
+            description: context.l10n.seedSlip39Desc,
             icon: Icons.hub_rounded,
             value: SeedSecurityOption.slip39,
           ),
           if (_selectedOption == SeedSecurityOption.slip39)
-            _buildSlip39Config(),
+            _buildSlip39Config(context),
 
           const SizedBox(height: 16),
           _buildOptionCard(
-            title: '2FA Multisig Vault',
-            description:
-                'A 2-of-3 Multisig wallet. Kerosene acts as a co-signer and requires TOTP authorization for withdrawals. Protects against local device theft.',
+            title: context.l10n.seedMultisigTitle,
+            description: context.l10n.seedMultisigDesc,
             icon: Icons.security_rounded,
             value: SeedSecurityOption.multisig2fa,
             borderColor: CyberTheme.neonPurple, // Highlight this as premium
@@ -88,7 +86,7 @@ class _SeedSecuritySelectionStepState
               ref.read(signupFlowProvider.notifier).nextStep();
             },
             style: CyberTheme.neonButton(CyberTheme.neonCyan),
-            child: const Text('Continue'),
+            child: Text(context.l10n.seedSecurityContinue),
           ),
         ],
       ),
@@ -171,7 +169,7 @@ class _SeedSecuritySelectionStepState
     );
   }
 
-  Widget _buildSlip39Config() {
+  Widget _buildSlip39Config(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(16),
@@ -183,9 +181,9 @@ class _SeedSecuritySelectionStepState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'SLIP-39 Configuration',
-            style: TextStyle(
+          Text(
+            context.l10n.seedSlip39ConfigTitle,
+            style: const TextStyle(
               color: CyberTheme.neonCyan,
               fontWeight: FontWeight.bold,
             ),
@@ -195,8 +193,8 @@ class _SeedSecuritySelectionStepState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total Shares (Pieces)',
-                style: TextStyle(color: CyberTheme.textPrimary),
+                context.l10n.seedSlip39TotalShares,
+                style: const TextStyle(color: CyberTheme.textPrimary),
               ),
               Row(
                 children: [
@@ -239,8 +237,8 @@ class _SeedSecuritySelectionStepState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Required Threshold',
-                style: TextStyle(color: CyberTheme.textPrimary),
+                context.l10n.seedSlip39Threshold,
+                style: const TextStyle(color: CyberTheme.textPrimary),
               ),
               Row(
                 children: [
@@ -275,7 +273,10 @@ class _SeedSecuritySelectionStepState
           ),
           const SizedBox(height: 12),
           Text(
-            'Requires $_slip39Threshold out of $_slip39TotalShares shares to restore the wallet.',
+            context.l10n.seedSlip39Summary(
+              _slip39Threshold,
+              _slip39TotalShares,
+            ),
             style: const TextStyle(
               color: CyberTheme.textSecondary,
               fontSize: 12,

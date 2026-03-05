@@ -39,7 +39,12 @@ final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSoc
   }
 
   final userId = authState.user.id;
-  debugPrint('🔌 Iniciando WebSocket para userId: $userId');
+  debugPrint(
+    '🔌 Iniciando WebSocket para userId: $userId (DEV MODE: BYPASSED)',
+  );
+
+  // DEV MODE: Don't connect
+  return null;
 
   // Obter token JWT de forma síncrona do SharedPreferences
   String? token;

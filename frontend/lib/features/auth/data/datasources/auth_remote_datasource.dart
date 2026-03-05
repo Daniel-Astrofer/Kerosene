@@ -16,6 +16,31 @@ class SignupInitResult {
   const SignupInitResult({required this.totpSecret, required this.qrCodeUri});
 }
 
+// ─── DTO returned from login ("userId jwt_token" space-separated) ────────────
+class LoginResult {
+  final String userId;
+  final String jwt;
+
+  const LoginResult({required this.userId, required this.jwt});
+
+  /// Parses the backend response format: "userId jwt_token" (space-separated)
+  factory LoginResult.fromResponseData(dynamic data) {
+    final raw = data.toString().trim();
+    final spaceIdx = raw.indexOf(' ');
+    if (spaceIdx <= 0) {
+      throw AuthException(
+        message: 'Login: formato de resposta inválido',
+        statusCode: 200,
+        errorCode: 'ERR_AUTH_PARSE',
+      );
+    }
+    return LoginResult(
+      userId: raw.substring(0, spaceIdx),
+      jwt: raw.substring(spaceIdx + 1).trim(),
+    );
+  }
+}
+
 // ─── DTO returned from voucher/onboarding-link ───────────────────────────────
 class OnboardingPaymentLinkDto {
   final String id;
@@ -61,8 +86,11 @@ abstract class AuthRemoteDataSource {
     required String totpCode,
   });
 
-  /// Login — retorna authId temporário
-  Future<String> login({required String username, required String passphrase});
+  /// Login — returns LoginResult with userId and JWT
+  Future<LoginResult> login({
+    required String username,
+    required String passphrase,
+  });
 
   /// Verifica TOTP de login — retorna JWT
   Future<String> verifyLoginTotp({
@@ -225,10 +253,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // ─── Login — returns authId ───────────────────────────────────────────────────
+  // ─── Login — returns "userId jwt_token" ───────────────────────────────────────
 
   @override
-  Future<String> login({
+  Future<LoginResult> login({
     required String username,
     required String passphrase,
   }) async {
@@ -238,22 +266,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {'username': username, 'passphrase': passphrase},
       );
       // ApiResponseInterceptor unwraps the envelope.
-      // Backend returns { data: { authId: "..." } } → after unwrap: { authId: "..." }
-      final body = response.data;
-      String? authId;
-      if (body is Map) {
-        authId = body['authId']?.toString();
-      } else if (body is String) {
-        authId = body.trim();
-      }
-      if (authId == null || authId.isEmpty) {
-        throw AuthException(
-          message: 'Login: authId não retornado',
-          statusCode: 200,
-          errorCode: 'ERR_AUTH_NO_AUTH_ID',
-        );
-      }
-      return authId;
+      // Backend returns data: "<userId> <jwt_token>" space-separated
+      return LoginResult.fromResponseData(response.data);
     } on AuthException {
       rethrow;
     } catch (e) {
@@ -262,7 +276,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // ─── Login TOTP verify — returns JWT ─────────────────────────────────────────
+  // ─── Login TOTP verify — returns "userId jwt_token" ──────────────────────────
 
   @override
   Future<String> verifyLoginTotp({
@@ -274,21 +288,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         AppConfig.authLoginVerify,
         data: {'username': username, 'totpCode': totpCode},
       );
-      // ApiResponseInterceptor unwraps the envelope — body is the raw JWT string.
-      final body = response.data;
-      String? jwt;
-      if (body is String && body.startsWith('eyJ')) {
-        jwt = body.trim();
-      } else {
-        // Fallback: scan the string representation for a JWT token
-        final raw = body.toString();
-        final idx = raw.indexOf('eyJ');
-        if (idx >= 0) jwt = raw.substring(idx).split('"').first.trim();
-      }
-      if (jwt == null || jwt.isEmpty) {
-        throw ServerException(message: 'Login TOTP verify: JWT não retornado');
-      }
-      return jwt;
+      // ApiResponseInterceptor unwraps the envelope.
+      // Backend returns data: "<userId> <jwt_token>" space-separated
+      final result = LoginResult.fromResponseData(response.data);
+      return result.jwt;
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao verificar 2FA de login: $e');
@@ -344,9 +347,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         '${AppConfig.voucherOnboardingLink}?sessionId=$sessionId',
       );
       final body = response.data;
-      final data = (body is Map && body['data'] is Map)
-          ? Map<String, dynamic>.from(body['data'] as Map)
-          : <String, dynamic>{};
+      final Map<String, dynamic> data;
+      if (body is Map) {
+        data = Map<String, dynamic>.from(body);
+      } else {
+        data = <String, dynamic>{};
+      }
       return OnboardingPaymentLinkDto.fromJson(data);
     } catch (e) {
       if (e is AppException) rethrow;
@@ -358,22 +364,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<String> refreshToken() async {
-    try {
-      final response = await apiClient.post(AppConfig.authRefresh);
-      final body = response.data;
-      if (body is Map && body['data'] is String) return body['data'];
-      return '';
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao renovar sessão: $e');
-    }
+    // NOTE: /auth/refresh endpoint não está na documentação atual do backend.
+    // Token renewal é feito automaticamente via header X-New-Token (TokenInterceptor).
+    return '';
   }
 
   @override
   Future<void> logout() async {
-    try {
-      await apiClient.post(AppConfig.authLogout);
-    } catch (_) {}
+    // NOTE: /auth/logout endpoint não está na documentação atual do backend.
+    // O logout é realizado localmente limpando o token armazenado.
   }
 
   @override

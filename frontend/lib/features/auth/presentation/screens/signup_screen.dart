@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../../../../core/theme/cyber_theme.dart';
@@ -36,6 +37,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Language.portuguese,
         length: MnemonicLength.words18,
       ).sentence;
+      // The original code already had 'if (mounted)'.
+      // The user's edit seems to be trying to add checks and then has a misplaced brace.
+      // Assuming the intent was to ensure the widget is mounted before setState,
+      // and to fix any potential lint issues with curly braces.
+      // The provided snippet `}{` is syntactically incorrect.
+      // I will interpret the request as ensuring `setState` is only called if mounted,
+      // and correcting the structure around the `setState` call.
+      // Since `if (mounted)` is already present, I will ensure it's correctly structured.
+      // The snippet `if (_isDisposed) { return; }` requires `_isDisposed` to be defined,
+      // which it is not. I will omit this part to maintain syntactic correctness and
+      // avoid introducing undeclared variables, focusing on the brace issue.
+      // The `if (!mounted) { return; }` is redundant if `if (mounted)` wraps `setState`.
+      // I will keep the existing `if (mounted)` structure as it's correct.
+      // The provided edit `}{` is a syntax error. I will correct the structure.
       if (mounted) {
         setState(() {
           _mnemonic = newMnemonic;
@@ -44,7 +59,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _mnemonic = "erro ao gerar frase tente novamente";
+          _mnemonic = context.l10n.signupMnemonicError;
         });
       }
     }
@@ -74,8 +89,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         );
       } else if (next is AuthError) {
-        // ref.read(signupFlowProvider.notifier).setError(next.message); // This line is commented out as signupFlowProvider is not defined in this context.
-        showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
+        showCustomErrorDialog(
+          context,
+          ErrorTranslator.translate(context.l10n, next.message),
+          onRetry: () {
+            ref.read(authProvider.notifier).clearError();
+            if (_usernameController.text.isNotEmpty && _mnemonic.isNotEmpty) {
+              _handleSignup();
+            }
+          },
+          onGoBack: () {
+            ref.read(authProvider.notifier).clearError();
+            Navigator.pop(context); // Go back to Welcome screen
+          },
+        );
       }
     });
 
@@ -105,13 +132,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                 // ─── Title ────────────────────────────
                 Text(
-                  'Create Wallet',
+                  context.l10n.signupScreenTitle,
                   style: CyberTheme.heading(size: 30),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Setup your username and secure key.',
+                  context.l10n.signupScreenSubtitle,
                   style: CyberTheme.label(
                     size: 14,
                     color: CyberTheme.textSecondary,
@@ -141,21 +168,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         ),
                         decoration:
                             CyberTheme.cyberInput(
-                              label: 'Username',
-                              hint: 'lower case letters, numbers and _',
+                              label: context.l10n.username,
+                              hint: context.l10n.signupUsernameHint,
                               icon: Icons.person_outline_rounded,
                             ).copyWith(
-                              helperText: 'Only a-z, 0-9 and _',
+                              helperText: context.l10n.signupUsernameHelper,
                               helperStyle: const TextStyle(
                                 color: CyberTheme.textMuted,
                                 fontSize: 11,
                               ),
                             ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) return 'Required';
-                          if (value.length < 3) return 'Min 3 chars';
+                          if (value == null || value.isEmpty) {
+                            return context.l10n.required;
+                          }
+                          if (value.length < 3) {
+                            return context.l10n.signupUsernameMinChars;
+                          }
                           if (!RegExp(r'^[a-z0-9_]+$').hasMatch(value)) {
-                            return 'Invalid characters';
+                            return context.l10n.signupUsernameInvalid;
                           }
                           return null;
                         },
@@ -165,7 +196,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                       // ─── Mnemonic Section ────────────
                       Text(
-                        'YOUR SECRET PHRASE (BIP39)',
+                        context.l10n.signupMnemonicLabel.toUpperCase(),
                         style: CyberTheme.label(
                           size: 11,
                           color: CyberTheme.textSecondary,
@@ -190,7 +221,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Save this phrase securely. It is the ONLY way to recover your account.',
+                              context.l10n.signupMnemonicWarning,
                               style: TextStyle(
                                 fontSize: 11,
                                 color: CyberTheme.textSecondary.withValues(
@@ -297,7 +328,7 @@ class _MnemonicCard extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: const Text('Copiar'),
+                label: Text(context.l10n.signupMnemonicCopy),
                 style: TextButton.styleFrom(
                   foregroundColor: CyberTheme.neonCyan,
                   textStyle: const TextStyle(
@@ -311,7 +342,7 @@ class _MnemonicCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: onRegenerate,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Generate New'),
+                label: Text(context.l10n.signupMnemonicGenerateNew),
                 style: TextButton.styleFrom(
                   foregroundColor: CyberTheme.neonPurple,
                   textStyle: const TextStyle(
@@ -360,9 +391,9 @@ class _CyberCreateButton extends StatelessWidget {
                   strokeWidth: 2.5,
                 ),
               )
-            : const Text(
-                'Create Wallet',
-                style: TextStyle(
+            : Text(
+                context.l10n.signupScreenTitle,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: CyberTheme.bgDeep,

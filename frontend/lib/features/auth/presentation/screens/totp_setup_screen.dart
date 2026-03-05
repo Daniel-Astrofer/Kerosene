@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
-import '../providers/auth_provider.dart';
-import '../state/auth_state.dart';
+import 'package:teste/features/auth/presentation/providers/auth_provider.dart';
+import 'package:teste/features/auth/presentation/state/auth_state.dart';
+import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 
 class TotpSetupScreen extends ConsumerStatefulWidget {
   final String username;
@@ -47,7 +48,22 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
           context,
         ).pushNamedAndRemoveUntil('/home', (route) => false);
       } else if (next is AuthError) {
-        showCustomErrorDialog(context, next.message);
+        showCustomErrorDialog(
+          context,
+          next.message,
+          onRetry: () {
+            ref.read(authProvider.notifier).clearError();
+            if (_codeController.text.length == 6) {
+              _verifyCode();
+            } else {
+              _codeController.clear();
+            }
+          },
+          onGoBack: () {
+            ref.read(authProvider.notifier).clearError();
+            Navigator.pop(context);
+          },
+        );
       }
     });
 
@@ -290,25 +306,5 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
             totpCode: _codeController.text,
           );
     }
-  }
-
-  void showCustomErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F3C),
-        title: const Text("Error", style: TextStyle(color: Colors.white)),
-        content: Text(
-          message,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK", style: TextStyle(color: Color(0xFF00D4FF))),
-          ),
-        ],
-      ),
-    );
   }
 }

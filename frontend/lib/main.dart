@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:teste/core/theme/app_theme.dart';
 
-// Temporarily commented - uncomment after flutter gen-l10n runs successfully
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:teste/l10n/app_localizations.dart';
 import 'core/providers/locale_provider.dart';
 import 'features/auth/presentation/screens/welcome_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
@@ -14,6 +12,7 @@ import 'features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'features/wallet/presentation/screens/send_money_screen.dart';
+import 'core/presentation/screens/splash_screen.dart';
 import 'core/services/background_service.dart';
 import 'core/services/notification_service.dart'
     as local_notifications; // Alias for local notification service
@@ -22,10 +21,9 @@ import 'core/services/audio_service.dart';
 import 'core/services/tor_service.dart';
 import 'core/config/app_config.dart';
 
-import 'l10n/app_localizations.dart';
 import 'shared/widgets/offline_overlay.dart';
-import 'features/auth/presentation/providers/auth_provider.dart';
 import 'core/utils/snackbar_helper.dart';
+import 'dev_menu.dart'; // DEV MENU IMPORT
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +42,7 @@ void main() async {
   // Initialize Local Notifications (for foreground handling)
   await local_notifications.NotificationService().init();
 
+  /* DEV MODE: SERVER CONNECTION DISABLED TEMPORARILY
   // Initialize Background Service (WebSocket/Balance Monitor)
   await initializeBackgroundService();
 
@@ -67,6 +66,7 @@ void main() async {
     // We could show a critical error screen here if needed,
     // but TorService fallback should handle system Tor.
   }
+  */
 
   // Aumentar o limite do cachê de imagens para acomodar texturas premium
   // 500MB de cache e 300 imagens simultâneas
@@ -92,8 +92,8 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Force initialization of AuthProvider to trigger auth check and FCM registration
-    ref.watch(authProvider);
+    // DEV MODE: Force initialization of AuthProvider is disabled
+    // ref.watch(authProvider);
     final locale = ref.watch(localeProvider).locale;
 
     return MaterialApp(
@@ -104,23 +104,22 @@ class MyApp extends ConsumerWidget {
       scrollBehavior: const KeroseneScrollBehavior(),
       theme: AppTheme.darkTheme,
       locale: locale,
-      localizationsDelegates: const [
-        // Temporarily commented - uncomment after flutter gen-l10n runs successfully
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en', ''),
-        Locale('pt', ''),
-        Locale('es', ''),
-      ],
-      builder: (context, child) {
-        return OfflineOverlay(child: child!);
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale != null) {
+          for (var supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == locale.languageCode) {
+              return supportedLocale;
+            }
+          }
+        }
+        return supportedLocales.first; // Retorna EN por padrão se não suportado
       },
-      home: const WelcomeScreen(),
+      builder: (context, child) => OfflineOverlay(child: child!),
+      home: const DevScreenMenu(), // TEMPORARY CHECKUP DE TELAS
       routes: {
+        '/splash': (context) => const SplashScreen(),
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupFlowScreen(),

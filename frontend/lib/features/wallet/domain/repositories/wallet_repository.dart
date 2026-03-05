@@ -68,6 +68,7 @@ abstract class WalletRepository {
   Future<Either<Failure, String>> updateWallet({
     required String name,
     required String newName,
+    required String passphrase,
   });
 
   /// Deletar carteira

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
 import '../providers/auth_provider.dart';
@@ -75,7 +76,22 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
           );
         }
       } else if (next is AuthError) {
-        showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
+        showCustomErrorDialog(
+          context,
+          ErrorTranslator.translate(context.l10n, next.message),
+          onRetry: () {
+            ref.read(authProvider.notifier).clearError();
+            if (_codeController.text.length == 6) {
+              _handleVerify();
+            } else {
+              _codeController.clear();
+            }
+          },
+          onGoBack: () {
+            ref.read(authProvider.notifier).clearError();
+            Navigator.pop(context);
+          },
+        );
       }
     });
 
@@ -130,7 +146,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'New device detected',
+                          context.l10n.unknownDeviceBanner,
                           style: TextStyle(
                             color: const Color(
                               0xFFFFA500,
@@ -184,10 +200,10 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                 const SizedBox(height: 32),
 
                 // ── Title ───────────────────────────────────────────────
-                const Text(
-                  'Authorize New Device',
+                Text(
+                  context.l10n.unknownDeviceTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -198,8 +214,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                 const SizedBox(height: 12),
 
                 Text(
-                  'This device has not been linked to your account.\n'
-                  'Enter the 6-digit code from your authenticator app to authorize it.',
+                  context.l10n.unknownDeviceDesc,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -274,7 +289,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                         },
                         decoration: InputDecoration(
                           counterText: "",
-                          hintText: "000000",
+                          hintText: context.l10n.unknownDeviceInputHint,
                           hintStyle: TextStyle(
                             color: Colors.white.withValues(alpha: 0.08),
                             fontSize: 28,
@@ -306,10 +321,10 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Enter the 6-digit code';
+                            return context.l10n.unknownDeviceInputErrorEmpty;
                           }
                           if (value.length != 6) {
-                            return 'Code must be 6 digits';
+                            return context.l10n.unknownDeviceInputErrorLength;
                           }
                           return null;
                         },
@@ -318,7 +333,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                       const SizedBox(height: 12),
 
                       Text(
-                        'Open your authenticator app and enter the current code.',
+                        context.l10n.unknownDeviceHelper,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
@@ -354,7 +369,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Row(
+                              : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
@@ -362,10 +377,10 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                                       size: 20,
                                       color: Colors.black,
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      'AUTHORIZE & SIGN IN',
-                                      style: TextStyle(
+                                      context.l10n.unknownDeviceAction,
+                                      style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 0.8,
@@ -403,7 +418,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'If you did not attempt to log in, your credentials may be compromised. Change your passphrase immediately.',
+                          context.l10n.unknownDeviceSecurityNote,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white.withValues(alpha: 0.3),

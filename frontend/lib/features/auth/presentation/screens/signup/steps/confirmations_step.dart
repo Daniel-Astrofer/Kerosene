@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../core/theme/cyber_theme.dart';
+import '../../../../../../l10n/l10n_extension.dart';
 import '../../../providers/signup_flow_provider.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -61,8 +62,11 @@ class _ConfirmationsStepState extends ConsumerState<ConfirmationsStep> {
 
   @override
   Widget build(BuildContext context) {
-    final confirmations = ref.watch(signupFlowProvider).confirmations;
+    // Read the full state to dynamically rebuild if an error is present
+    final state = ref.watch(signupFlowProvider);
+    final confirmations = state.confirmations;
     final progress = confirmations / 3;
+    final hasError = state.error != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -83,11 +87,17 @@ class _ConfirmationsStepState extends ConsumerState<ConfirmationsStep> {
                     value: value,
                     strokeWidth: 8,
                     backgroundColor: CyberTheme.border,
-                    color: CyberTheme.neonCyan,
+                    color: hasError ? CyberTheme.neonRed : CyberTheme.neonCyan,
                   ),
                 ),
               ),
-              if (confirmations >= 3)
+              if (hasError)
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: CyberTheme.neonRed,
+                  size: 80,
+                )
+              else if (confirmations >= 3)
                 const Icon(
                   Icons.check_circle_rounded,
                   color: CyberTheme.neonCyan,
@@ -114,22 +124,51 @@ class _ConfirmationsStepState extends ConsumerState<ConfirmationsStep> {
           ),
           const SizedBox(height: 48),
           Text(
-            confirmations >= 3
-                ? 'Network Verified!'
-                : 'Confirming on Blockchain',
+            hasError
+                ? context.l10n.confNetworkError
+                : (confirmations >= 3
+                      ? context.l10n.confNetworkVerified
+                      : context.l10n.confConfirming),
             style: CyberTheme.heading(size: 24),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
-            confirmations >= 3
-                ? 'Your account has been officially created and your fee added to your balance. Entering gateway...'
-                : 'Waiting for 3 Bitcoin network confirmations. This can take roughly 30 minutes, but you can safely leave the app; we will notify you when it is ready.',
+            hasError
+                ? context.l10n.confErrorMsg
+                : (confirmations >= 3
+                      ? context.l10n.confVerifiedMsg
+                      : context.l10n.confWaitingMsg),
             style: CyberTheme.label(size: 14, color: CyberTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 64),
-          if (confirmations < 3)
+          if (hasError)
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  ref.read(authProvider.notifier).clearError();
+                  ref.read(signupFlowProvider.notifier).reset();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CyberTheme.neonRed,
+                  foregroundColor: const Color(0xFF0A0A0A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  context.l10n.confRestartSignup,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            )
+          else if (confirmations < 3)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -139,14 +178,17 @@ class _ConfirmationsStepState extends ConsumerState<ConfirmationsStep> {
                   color: CyberTheme.neonCyan.withValues(alpha: 0.3),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, color: CyberTheme.neonCyan),
-                  SizedBox(width: 12),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: CyberTheme.neonCyan,
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'You will receive a push notification once the 3rd confirmation lands.',
-                      style: TextStyle(
+                      context.l10n.confNotificationNotice,
+                      style: const TextStyle(
                         color: CyberTheme.neonCyan,
                         fontSize: 13,
                       ),

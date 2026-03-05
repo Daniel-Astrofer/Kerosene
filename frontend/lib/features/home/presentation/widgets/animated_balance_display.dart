@@ -94,6 +94,11 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
   }
 
   Widget _buildRow(String fullString, TextStyle style) {
+    // Encontrar o ponto decimal
+    final dotIndex = fullString.indexOf('.');
+    final commaIndex = fullString.indexOf(',');
+    final separatorIndex = dotIndex != -1 ? dotIndex : commaIndex;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -101,23 +106,36 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
         final char = fullString[index];
         final isDigit = RegExp(r'[0-9]').hasMatch(char);
 
+        // Se estivermos após o separador decimal, diminuímos a escala
+        final bool isDecimalPart =
+            separatorIndex != -1 && index > separatorIndex;
+        final currentStyle = isDecimalPart
+            ? style.copyWith(
+                fontSize: (style.fontSize ?? 40) * 0.5,
+                color: style.color?.withValues(alpha: 0.8),
+              )
+            : style;
+
         if (!isDigit) {
           return Text(
             char,
             style: char == '.' || char == ','
-                ? style.copyWith(color: style.color?.withValues(alpha: 0.5))
-                : style,
+                ? style.copyWith(
+                    fontSize: (style.fontSize ?? 40) * 0.7,
+                    color: style.color?.withValues(alpha: 0.5),
+                  )
+                : currentStyle,
             key: ValueKey('static_$index'),
           );
         }
 
         // Staggered delay: 30ms per digit
-        final delay = Duration(milliseconds: index * 30);
+        final delay = Duration(milliseconds: index * 50);
 
         return _RollingDigit(
           key: ValueKey('rolling_${fullString.length - index}'),
           digit: char,
-          style: style,
+          style: currentStyle,
           delay: delay,
         );
       }),
@@ -158,7 +176,7 @@ class _RollingDigitState extends State<_RollingDigit>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(
-        milliseconds: 2000,
+        milliseconds: 3000,
       ), // Slightly longer for the multi-spin
     );
 
@@ -172,7 +190,7 @@ class _RollingDigitState extends State<_RollingDigit>
       if (mounted) {
         setState(() {
           // Determine rotations only ONCE at start
-          _rotations = 2;
+          _rotations = 1;
           _previousDigit = (_targetDigit + 7) % 10;
         });
         _controller.forward(from: 0.0);

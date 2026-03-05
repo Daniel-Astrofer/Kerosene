@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../../../../core/theme/cyber_theme.dart';
 import '../../../../../../core/presentation/widgets/animated_loading_button.dart';
 import '../../../../../../core/utils/totp_util.dart';
+import '../../../../../../l10n/l10n_extension.dart';
 import '../../../providers/signup_flow_provider.dart';
 import 'package:teste/features/auth/presentation/providers/auth_provider.dart';
 
@@ -54,13 +55,13 @@ class _TotpStepState extends ConsumerState<TotpStep> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Two-Factor Authentication',
+              context.l10n.totpTitle,
               style: CyberTheme.heading(size: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Scan this QR code with your authenticator app (e.g. Google Authenticator, Authy).',
+              context.l10n.totpSubtitle,
               style: CyberTheme.label(
                 size: 14,
                 color: CyberTheme.textSecondary,
@@ -114,7 +115,7 @@ class _TotpStepState extends ConsumerState<TotpStep> {
                     Clipboard.setData(ClipboardData(text: _secret));
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Secret copied to clipboard'),
+                        content: Text(context.l10n.totpSecretCopied),
                         backgroundColor: CyberTheme.neonCyan.withValues(
                           alpha: 0.8,
                         ),
@@ -137,7 +138,7 @@ class _TotpStepState extends ConsumerState<TotpStep> {
                 color: CyberTheme.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: '000000',
+                hintText: context.l10n.totpEnterCodeHint,
                 hintStyle: TextStyle(
                   color: CyberTheme.textPrimary.withValues(alpha: 0.1),
                   letterSpacing: 12,
@@ -160,10 +161,10 @@ class _TotpStepState extends ConsumerState<TotpStep> {
               ),
               validator: (value) {
                 if (value == null || value.length != 6) {
-                  return 'Enter 6 digits';
+                  return context.l10n.totpEnter6Digits;
                 }
                 if (!TotpUtil.verify(_secret, value)) {
-                  return 'Invalid code. Try again.';
+                  return context.l10n.totpInvalidCode;
                 }
                 return null;
               },
@@ -183,14 +184,13 @@ class _TotpStepState extends ConsumerState<TotpStep> {
                           totpSecret: _secret,
                           totpCode: _codeController.text,
                         );
-                    ref.read(signupFlowProvider.notifier).nextStep();
                   }
                 },
-                text: 'Verify & Continue',
-                loadingTexts: const [
-                  'Verifying code...',
-                  'Authenticating...',
-                  'Establishing Session...',
+                text: context.l10n.totpVerifyContinue,
+                loadingTexts: [
+                  context.l10n.totpVerifying,
+                  context.l10n.totpAuthenticating,
+                  context.l10n.totpEstablishingSession,
                 ],
                 baseColor: CyberTheme.neonCyan,
               ),

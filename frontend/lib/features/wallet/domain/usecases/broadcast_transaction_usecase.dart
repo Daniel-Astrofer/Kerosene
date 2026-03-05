@@ -8,7 +8,17 @@ class BroadcastTransactionUseCase {
 
   BroadcastTransactionUseCase(this.repository);
 
-  Future<Either<Failure, TxStatus>> call(String rawTxHex) async {
-    return await repository.broadcastTransaction(rawTxHex);
+  Future<Either<Failure, TxStatus>> call({
+    required String rawTxHex,
+    required String toAddress,
+    required double amount,
+    String? message,
+  }) async {
+    return await repository.broadcastTransaction(
+      rawTxHex: rawTxHex,
+      toAddress: toAddress,
+      amount: amount,
+      message: message,
+    );
   }
 }

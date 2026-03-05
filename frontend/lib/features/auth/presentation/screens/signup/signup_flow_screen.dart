@@ -4,6 +4,11 @@ import '../../../../../core/theme/cyber_theme.dart';
 import '../../providers/signup_flow_provider.dart';
 import 'package:teste/features/auth/presentation/providers/auth_provider.dart';
 import 'package:teste/features/auth/presentation/state/auth_state.dart';
+import 'package:teste/features/home/presentation/screens/home_screen.dart';
+import '../../../../../core/presentation/widgets/custom_error_dialog.dart';
+import '../../../../../core/utils/error_translator.dart';
+import 'package:teste/l10n/l10n_extension.dart';
+import '../unknown_device_screen.dart';
 
 import 'steps/fee_explanation_step.dart';
 import 'steps/seed_security_selection_step.dart';
@@ -37,8 +42,41 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         // TOTP verified. Update session and move to Passkey step.
         ref.read(signupFlowProvider.notifier).setSessionId(next.sessionId);
         ref.read(signupFlowProvider.notifier).goToStep(SignupStep.passkey);
+      } else if (next is AuthRequiresLoginTotp) {
+        // Post-signup login succeeded — now requires TOTP verification.
+        // Pop out of signup and navigate to the TOTP verification screen.
+        ref.read(signupFlowProvider.notifier).reset();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => UnknownDeviceScreen(
+              username: next.username,
+              passphrase: next.passphrase,
+              rememberMe: false,
+            ),
+          ),
+          (route) => route.isFirst,
+        );
+      } else if (next is AuthAuthenticated) {
+        // Fully authenticated (e.g. backend auto-logged in after payment).
+        ref.read(signupFlowProvider.notifier).reset();
+        HomeScreen.skipNextAuth = true;
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/home', (route) => false);
       } else if (next is AuthError) {
         ref.read(signupFlowProvider.notifier).setError(next.message);
+        showCustomErrorDialog(
+          context,
+          ErrorTranslator.translate(context.l10n, next.message),
+          onGoBack: () {
+            ref.read(authProvider.notifier).clearError();
+            ref.read(signupFlowProvider.notifier).clearError();
+            // Reset the entire flow to start over
+            ref.read(signupFlowProvider.notifier).reset();
+            // Navigate strictly back to login screen
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        );
       }
     });
 

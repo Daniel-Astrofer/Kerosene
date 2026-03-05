@@ -48,7 +48,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get viewAll => 'Ver Todas';
 
   @override
-  String get noTransactions => 'No hay transacciones aún';
+  String get noTransactions => 'No se encontraron transacciones';
 
   @override
   String get bitcoinTrading => 'Comercio Bitcoin';
@@ -212,6 +212,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get cancel => 'Cancelar';
 
   @override
+  String get goBack => 'Volver';
+
+  @override
   String get done => 'Hecho';
 
   @override
@@ -240,7 +243,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorLoadingData => 'Error al cargar datos';
 
   @override
-  String get tryAgain => 'Intentar de Nuevo';
+  String get tryAgain => 'Intentar de nuevo';
 
   @override
   String get noChartData => 'Sin datos del gráfico';
@@ -333,7 +336,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectWalletToSend => 'Seleccione una billetera para enviar.';
 
   @override
-  String get errorLoadingWallets => 'Error al cargar billeteras';
+  String get errorLoadingWallets => 'Error al cargar carteras';
 
   @override
   String get add => 'Añadir';
@@ -504,7 +507,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get seedSlip39Desc =>
-      'Divide tu semilla en múltiples partes. Requiere un mínimo para recuperar (ej: 3-de-5). Ideal para almacenamiento físico distribuido.';
+      'Divide tu semilla en múltiples partes. Requiere un mínimo para recuperar (ej: 3-de-5). Ideal para almacenamiento físico distribuído.';
 
   @override
   String get seedMultisigTitle => 'Bóveda Multisig 2FA';
@@ -568,7 +571,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get slip39SharesTitle => 'Tus Partes SLIP-39';
 
   @override
-  String slip39SharesSubtitle(Object total, Object threshold) {
+  String slip39SharesSubtitle(Object threshold, Object total) {
     return 'Tu semilla está dividida en $total piezas. Necesitas $threshold de ellas para recuperar tu billetera.';
   }
 
@@ -583,7 +586,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get slip39VerifyShareTitle => 'Verificar Parte';
+  String slip39VerifyShareTitle(Object index) {
+    return 'Verificar Parte';
+  }
 
   @override
   String slip39VerifyShareSubtitle(Object index) {
@@ -605,8 +610,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get slip39Warning =>
-      'NO almacenes todas las partes en el mismo lugar. Si un atacante encuentra suficientes piezas, puede recuperar tu billetera.';
+  String slip39Warning(Object threshold) {
+    return 'NO almacenes todas las partes en el mismo lugar. Si un atacante encuentra suficientes piezas, puede recuperar tu billetera.';
+  }
 
   @override
   String get twoFaPrimaryTitle => 'Tu Semilla Principal';
@@ -731,7 +737,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get paymentTimeLeft => 'Tiempo restante';
 
   @override
-  String get paymentExpired => 'La ventana de pago expiró';
+  String get paymentExpired => 'La ventana de pago expirou';
+
+  @override
+  String get paymentExpiredMessage =>
+      'No completaste el pago en la ventana de 15 minutos. Tus datos temporales serán borrados y debes empezar de nuevo.';
 
   @override
   String get paymentWaiting => 'Esperando pago...';
@@ -762,4 +772,631 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get confirmationsDone => '¡Cuenta Activada!';
+
+  @override
+  String get presentationSlide1Title =>
+      'Infraestructura Segura desde el Primer Acceso';
+
+  @override
+  String get presentationSlide1Body =>
+      'Kerosene opera con arquitectura tecnológica avanzada en un entorno protegido a través de la red onion. Esta estructura refuerza la privacidad, la resiliencia y la protección contra interferencias externas.\n\nLa seguridad no es una característica adicional.\nEs la base del sistema.';
+
+  @override
+  String get presentationSlide2Title =>
+      'Creación de Cuenta con Mecanismo de Protección Estructural';
+
+  @override
+  String get presentationSlide2Body =>
+      'Para preservar la integridad de la infraestructura, la creación de cuenta requiere enviar 0.003 BTC.\nEste monto permanece íntegramente en tu cuenta.\nDurante el registro, solo se deduce la tarifa de transacción de red necesaria para confirmar la operación.\nEste requisito técnico existe para:\n\n• Evitar la creación automatizada de cuentas\n• Reducir los vectores de ataque distribuidos\n• Mantener la estabilidad operativa\n• Proteger a todos los usuarios de la plataforma\n\nNo es una tarifa mensual.\nNo es un cargo recurrente.\nEs un mecanismo de protección estructural.';
+
+  @override
+  String get presentationSlide3Title =>
+      'Estructura de Tarifas Clara y Objetiva';
+
+  @override
+  String get presentationSlide3Body =>
+      'Nuestra política es simple:\n\n• 0.9% en depósitos\n• 0.9% en retiros\n• 0% para transferencias internas\n\nLas transferencias entre usuarios de Kerosene son instantáneas y gratuitas.\n\nSin tarifas ocultas.\nSin variaciones inesperadas.';
+
+  @override
+  String get presentationSlide4Title => 'Compromiso con la Previsibilidad';
+
+  @override
+  String get presentationSlide4Body =>
+      'Kerosene fue diseñado para operar con:\n\n• Estabilidad técnica\n• Transparencia operativa\n• Seguridad estructural\n• Previsibilidad de costos\n\nNuestra prioridad es mantener una infraestructura sólida, protegida y sostenible a largo plazo.';
+
+  @override
+  String get presentationSkip => 'Omitir';
+
+  @override
+  String get presentationNext => 'Siguiente';
+
+  @override
+  String get presentationStart => 'Acceder a Kerosene';
+
+  @override
+  String get signupScreenTitle => 'Crear Billetera';
+
+  @override
+  String get signupScreenSubtitle =>
+      'Configura tu usuario y clave de seguridad.';
+
+  @override
+  String get signupUsernameHelper => 'Solo a-z, 0-9 y _';
+
+  @override
+  String get signupUsernameHint => 'letras minúsculas, números y _';
+
+  @override
+  String get signupUsernameMinChars => 'Mín. 3 caracteres';
+
+  @override
+  String get signupUsernameInvalid => 'Caracteres inválidos';
+
+  @override
+  String get signupMnemonicLabel => 'TU FRASE SECRETA (BIP39)';
+
+  @override
+  String get signupMnemonicWarning =>
+      'Guarda esta frase de forma segura. Es la ÚNICA forma de recuperar tu cuenta.';
+
+  @override
+  String get signupMnemonicCopySuccess => '¡Frase copiada de forma segura!';
+
+  @override
+  String get signupMnemonicCopy => 'Copiar';
+
+  @override
+  String get signupMnemonicGenerateNew => 'Generar Nueva';
+
+  @override
+  String get signupMnemonicError =>
+      'Error al generar la frase, intenta de nuevo';
+
+  @override
+  String get feeExplanationTitle => 'Tarifa de Red Segura';
+
+  @override
+  String get feeExplanationSubtitle =>
+      'Para evitar el spam y garantizar la solidez de la red Kerosene, la creación de cuenta requiere una pequeña tarifa anti-spam de 0.003 BTC.';
+
+  @override
+  String get feeExplanationWhereGoesTitle => '¿A dónde va?';
+
+  @override
+  String get feeExplanationWhereGoesSubtitle =>
+      'El monto total de 0.003 BTC va directamente a tu billetera una vez que se crea la cuenta.';
+
+  @override
+  String get feeExplanationContinue => 'Entiendo, Continuar';
+
+  @override
+  String get seedSecurityContinue => 'Continuar';
+
+  @override
+  String get totpTitle => 'Autenticación de Dos Factores';
+
+  @override
+  String get totpSubtitle =>
+      'Escanea este código QR con tu aplicación de autenticación (ej: Google Authenticator, Authy).';
+
+  @override
+  String get totpSecretCopied => 'Secreto copiado al portapapeles';
+
+  @override
+  String get totpEnterCodeHint => '000000';
+
+  @override
+  String get totpEnter6Digits => 'Ingresa 6 dígitos';
+
+  @override
+  String get totpInvalidCode => 'Código inválido. Intenta de nuevo.';
+
+  @override
+  String get totpVerifyContinue => 'Verificar y Continuar';
+
+  @override
+  String get totpVerifying => 'Verificando código...';
+
+  @override
+  String get totpAuthenticating => 'Autenticando...';
+
+  @override
+  String get totpEstablishingSession => 'Estableciendo Sesión...';
+
+  @override
+  String get passkeySessionNotFound =>
+      'Sesión no encontrada. Por favor, reinicia el proceso.';
+
+  @override
+  String get passkeyNoBiometrics =>
+      'No hay hardware biométrico disponible en este dispositivo.';
+
+  @override
+  String passkeyErrorStarting(String message) {
+    return 'Error al iniciar el registro: $message';
+  }
+
+  @override
+  String get passkeyBiometricReason =>
+      'Crea una Passkey para proteger tu billetera Kerosene';
+
+  @override
+  String passkeyErrorFinishing(String message) {
+    return 'Error al finalizar el registro: $message';
+  }
+
+  @override
+  String get passkeyAuthFailed => 'Autenticación cancelada o fallida.';
+
+  @override
+  String passkeyUnexpectedError(String error) {
+    return 'Error inesperado: $error';
+  }
+
+  @override
+  String get passkeyLoadingInitBiom => 'Inicializando Biometría...';
+
+  @override
+  String get passkeyLoadingSecuring => 'Asegurando Dispositivo...';
+
+  @override
+  String get passkeyLoadingRegistering => 'Registrando Passkey...';
+
+  @override
+  String get usernameHintChars => 'a-z, 0-9 y _';
+
+  @override
+  String get usernameHelperLength => 'Debe tener entre 3 y 15 caracteres';
+
+  @override
+  String get usernameErrorMin => 'Mínimo 3 caracteres';
+
+  @override
+  String get usernameErrorMax => 'Máximo 15 caracteres';
+
+  @override
+  String get usernameErrorInvalidChars => 'Caracteres inválidos';
+
+  @override
+  String get usernameLoadingPow => 'Calculando Prueba de Trabajo...';
+
+  @override
+  String get usernameLoadingKeys => 'Asegurando Llaves...';
+
+  @override
+  String get usernameLoadingInvoice => 'Generando Factura...';
+
+  @override
+  String get usernameLoadingNetwork => 'Conectando a la Red...';
+
+  @override
+  String get paymentExpiredLabel => 'EXPIRADO';
+
+  @override
+  String get confNetworkError => 'Error de Red';
+
+  @override
+  String get confNetworkVerified => '¡Red Verificada!';
+
+  @override
+  String get confConfirming => 'Confirmando en Blockchain';
+
+  @override
+  String get confErrorMsg =>
+      'Ocurrió un error al finalizar la creación de tu cuenta en el servidor. Por favor, reinicia el proceso de configuración de forma segura.';
+
+  @override
+  String get confVerifiedMsg =>
+      'Tu cuenta ha sido creada oficialmente y tu tarifa añadida a tu saldo. Entrando a la pasarela...';
+
+  @override
+  String get confWaitingMsg =>
+      'Esperando 3 confirmaciones de la red Bitcoin. Esto puede tomar alrededor de 30 minutos, pero puedes salir de la aplicación de forma segura; te notificaremos cuando esté listo.';
+
+  @override
+  String get confRestartSignup => 'Reiniciar Registro';
+
+  @override
+  String get confNotificationNotice =>
+      'Recibirás una notificación push cuando llegue la 3ª confirmación.';
+
+  @override
+  String get homePlatformLiquidity => 'LIQUIDEZ DE LA PLATAFORMA';
+
+  @override
+  String get homeDeposits => 'DEPÓSITOS';
+
+  @override
+  String get homeWithdrawals => 'RETIROS';
+
+  @override
+  String get authRequired => 'Autenticación requerida';
+
+  @override
+  String get unlock => 'Desbloquear';
+
+  @override
+  String get pendingDeposits => 'Depósitos Pendientes';
+
+  @override
+  String get saqueAction => 'Retirar';
+
+  @override
+  String get detailsTransaction => 'Detalles de la Transacción';
+
+  @override
+  String get detailsClose => 'Cerrar';
+
+  @override
+  String get noWalletsFound => 'No se encontraron carteras';
+
+  @override
+  String get createWalletPrompt =>
+      'Crea una cartera para comenzar a monitorear transacciones';
+
+  @override
+  String get createWalletAction => 'Crear Cartera';
+
+  @override
+  String get withdrawExternalBtc => 'Retiro Externo de BTC';
+
+  @override
+  String get withdrawExternalBtcDesc =>
+      'Mueve fondos de tu cartera Kerosene a una dirección Bitcoin externa.';
+
+  @override
+  String get withdrawAddressLabel => 'Dirección Bitcoin (toAddress)';
+
+  @override
+  String get withdrawAmountLabel => 'Cantidad en BTC';
+
+  @override
+  String get withdrawDescLabel => 'Descripción (Opcional)';
+
+  @override
+  String get withdrawDescHint => 'Ej: Transferencia a Hardware Wallet';
+
+  @override
+  String get withdrawCancel => 'CANCELAR';
+
+  @override
+  String get withdrawAction => 'RETIRAR AHORA';
+
+  @override
+  String get errorAddressRequired => 'La dirección es obligatoria';
+
+  @override
+  String get errorAmountRequired => 'La cantidad es obligatoria';
+
+  @override
+  String get errorAmountInvalid => 'Cantidad inválida';
+
+  @override
+  String get txSent => 'Transferencia Enviada';
+
+  @override
+  String get txReceived => 'Transferencia Recibida';
+
+  @override
+  String get loginTotpTitle => 'Verificación de Dispositivo';
+
+  @override
+  String get loginTotpDesc =>
+      'Este dispositivo es nuevo. Por favor ingresa el código de 6 dígitos de tu aplicación de autenticación para autorizarlo.';
+
+  @override
+  String get loginTotpAction => 'VERIFICAR E INICIAR SESIÓN';
+
+  @override
+  String get createWalletNameRequired => 'Nombre obligatorio';
+
+  @override
+  String get createWalletNameChars => 'Solo se permiten letras y números';
+
+  @override
+  String get sendDescriptionLabel =>
+      'Descripción (opcional, ej: Pago de pizza)';
+
+  @override
+  String sendInsufficientBalance(String amount) {
+    return 'Saldo insuficiente. Faltan $amount BTC para completar este envío.';
+  }
+
+  @override
+  String get sendSelectWallet => 'Seleccionar Cartera';
+
+  @override
+  String get sendReviewTitle => 'Revisar Transacción';
+
+  @override
+  String get sendTrackedReviewTitle => 'Confirmar Pago Rastreado';
+
+  @override
+  String get sendRecipientLabel => 'Destinatario';
+
+  @override
+  String get sendNetworkFeeLabel => 'Tarifa de Red';
+
+  @override
+  String get sendTotalLabel => 'Total';
+
+  @override
+  String get sendConfirmAction => 'Confirmar';
+
+  @override
+  String get sendPayNowAction => 'Pagar Ahora';
+
+  @override
+  String get sendEnterAddressError =>
+      'Por favor, ingresa un nombre de usuario o dirección de destino válido';
+
+  @override
+  String get sendEnterAmountError => 'Por favor, ingresa una cantidad válida';
+
+  @override
+  String get sendPaymentSuccess => '¡Pago realizado con éxito!';
+
+  @override
+  String get receiveReceivingWallet => 'Cartera de Recepción';
+
+  @override
+  String get receiveExpirationLabel => 'Expiración del Enlace de Pago';
+
+  @override
+  String get receiveNoExpiration => 'Sin Expiración';
+
+  @override
+  String get receive15Min => '15 Minutos';
+
+  @override
+  String get receive1Hour => '1 Hora';
+
+  @override
+  String get receive24Hours => '24 Horas';
+
+  @override
+  String get receiveGenAction => 'Generar Enlace de Pago';
+
+  @override
+  String get receiveQrMethod => 'QR Code';
+
+  @override
+  String get receiveNfcMethod => 'NFC Beam';
+
+  @override
+  String get receiveScanToPay => 'Escanea para Pagar';
+
+  @override
+  String get receiveReadyToBeam => 'Listo para Transmitir';
+
+  @override
+  String get receiveWriteNfc => 'Grabar en Tag NFC';
+
+  @override
+  String get unknownDeviceTitle => 'Autorizar Nuevo Dispositivo';
+
+  @override
+  String get unknownDeviceDesc =>
+      'Este dispositivo no ha sido vinculado a tu cuenta.\nIngresa el código de 6 dígitos de tu aplicación de autenticación para autorizarlo.';
+
+  @override
+  String get unknownDeviceBanner => 'Nuevo dispositivo detectado';
+
+  @override
+  String get unknownDeviceInputHint => '000000';
+
+  @override
+  String get unknownDeviceInputErrorEmpty => 'Ingresa el código de 6 dígitos';
+
+  @override
+  String get unknownDeviceInputErrorLength => 'El código debe tener 6 dígitos';
+
+  @override
+  String get unknownDeviceHelper =>
+      'Abre tu aplicación de autenticación e ingresa el código actual.';
+
+  @override
+  String get unknownDeviceAction => 'AUTORIZAR INICIAR SESIÓN';
+
+  @override
+  String get unknownDeviceSecurityNote =>
+      'Si no intentaste iniciar sesión, tus credenciales pueden estar comprometidas. Cambia tu passphrase de inmediato.';
+
+  @override
+  String get createWalletTitle => 'Nueva Cartera';
+
+  @override
+  String get createWalletSuccess => '¡Cartera creada exitosamente!';
+
+  @override
+  String get createWalletErrorGenFirst =>
+      'Por favor genera una contraseña primero.';
+
+  @override
+  String get createWalletIdentity => 'IDENTIDAD DE LA CARTERA';
+
+  @override
+  String get createWalletNameHint => 'Ahorros, Diario, etc.';
+
+  @override
+  String get createWalletSecurity => 'SEGURIDAD DE PASSPHRASE';
+
+  @override
+  String createWalletWords(int count) {
+    return '$count Palabras';
+  }
+
+  @override
+  String get createWalletActionGen => 'Generar Llave de Seguridad';
+
+  @override
+  String get createWalletActionCreate => 'CREAR CARTERA';
+
+  @override
+  String get createWalletCopyAction => 'Copiar';
+
+  @override
+  String get createWalletCopySuccess => '¡Copiado!';
+
+  @override
+  String get createWalletNewAction => 'Nueva';
+
+  @override
+  String get createWalletWarning =>
+      'Guarda bien estas palabras. Sin ellas, tus fondos se perderán.';
+
+  @override
+  String get errUnexpected => 'Ha ocurrido un error inesperado.';
+
+  @override
+  String get errAuthUserAlreadyExists =>
+      'Este nombre de usuario ya está em uso.';
+
+  @override
+  String get errAuthUsernameMissing => 'El nombre de usuario es obligatorio.';
+
+  @override
+  String get errAuthPassphraseMissing => 'La contraseña es obligatoria.';
+
+  @override
+  String get errAuthInvalidUsernameFormat =>
+      'Formato de nombre de usuario no válido.';
+
+  @override
+  String get errAuthCharLimitExceeded => 'Límite de caracteres excedido.';
+
+  @override
+  String get errAuthUserNotFound =>
+      'Usuario no encontrado. Por favor, verifica tu spelling.';
+
+  @override
+  String get errAuthInvalidPassphraseFormat =>
+      'La contraseña no cumple con los requisitos.';
+
+  @override
+  String get errAuthIncorrectTotp =>
+      'El código TOTP es incorrecto o ha expirado.';
+
+  @override
+  String get errAuthInvalidCredentials =>
+      'Nombre de usuario o contraseña incorrectos.';
+
+  @override
+  String get errAuthUnrecognizedDevice =>
+      'Dispositivo no reconocido. Por favor, autorízalo.';
+
+  @override
+  String get errAuthTotpTimeout =>
+      'El tiempo para ingresar el código ha expirado.';
+
+  @override
+  String get errLedgerNotFound =>
+      'Cuenta financiera no encontrada. Asegúrate de que tu registro esté completo.';
+
+  @override
+  String get errLedgerAlreadyExists =>
+      'La cuenta ya tiene registros financieros.';
+
+  @override
+  String get errLedgerInsufficientBalance =>
+      'No tienes suficiente saldo para realizar esta transacción.';
+
+  @override
+  String get errLedgerInvalidOperation => 'Intento de operación no válido.';
+
+  @override
+  String get errLedgerReceiverNotFound =>
+      'Destinatario de la transacción no encontrado.';
+
+  @override
+  String get errLedgerGeneric => 'Error interno en la cuenta financiera.';
+
+  @override
+  String get errLedgerPaymentRequestNotFound => 'Enlace de pago no encontrado.';
+
+  @override
+  String get errLedgerPaymentRequestExpired =>
+      'Este enlace de pago ha expirado.';
+
+  @override
+  String get errLedgerPaymentRequestAlreadyPaid =>
+      'Este enlace de pago ya ha sido pagado.';
+
+  @override
+  String get errLedgerPaymentRequestSelfPay =>
+      'No puedes pagar un enlace creado por ti mismo.';
+
+  @override
+  String get errWalletAlreadyExists => 'Ya existe una cartera con este nombre.';
+
+  @override
+  String get errWalletNotFound => 'No se encontró la cartera especificada.';
+
+  @override
+  String get errWalletGeneric => 'Error de validación de la cartera.';
+
+  @override
+  String get errNotifMissingToken => 'Falta el token de notificación.';
+
+  @override
+  String get errNotifMissingFields =>
+      'Faltan campos obligatorios en la notificación.';
+
+  @override
+  String get errInternalServer =>
+      'Nuestros servidores no están disponibles temporalmente.';
+
+  @override
+  String get errSessionExpired =>
+      'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.';
+
+  @override
+  String get errForbidden => 'Acceso denegado o dispositivo no reconocido.';
+
+  @override
+  String get errTooManySignupAttempts =>
+      'Demasiados intentos de registro. Por favor, inténtalo más tarde.';
+
+  @override
+  String get errNoInternet =>
+      'Sin conexión a internet o el servidor está caído.';
+
+  @override
+  String get errTimeout =>
+      'La conexión expiró. Verifica tu internet e inténtalo de nuevo.';
+
+  @override
+  String get errCommFailure => 'Error al comunicarse con el servidor Kerosene.';
+
+  @override
+  String get errInvalidBtcAddress =>
+      'La dirección Bitcoin proporcionada no es válida.';
+
+  @override
+  String get withdrawInvalidFields =>
+      'Por favor, ingresa una dirección y monto válidos.';
+
+  @override
+  String get withdrawAuthReason => 'Autentícate para confirmar el retiro.';
+
+  @override
+  String get withdrawAuthCancelled => 'Autenticación cancelada.';
+
+  @override
+  String get withdrawSuccess => '¡Retiro enviado con éxito a la red Bitcoin!';
+
+  @override
+  String get withdrawFeeSection => 'DIFICULTAD DE LA RED (TASA)';
+
+  @override
+  String get withdrawFeeFast => 'Rápido';
+
+  @override
+  String get withdrawFeeMedium => 'Medio';
+
+  @override
+  String get withdrawFeeSlow => 'Lento';
+
+  @override
+  String get withdrawErrorFee => 'Error al estimar las tasas de la red.';
 }

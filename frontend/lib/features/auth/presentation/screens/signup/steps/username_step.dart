@@ -6,6 +6,7 @@ import '../../../../../../core/theme/cyber_theme.dart';
 import '../../../../../../core/presentation/widgets/animated_loading_button.dart';
 import '../../../providers/signup_flow_provider.dart';
 import 'package:teste/features/auth/presentation/providers/auth_provider.dart';
+import 'package:teste/l10n/app_localizations.dart';
 
 class UsernameStep extends ConsumerStatefulWidget {
   const UsernameStep({super.key});
@@ -57,6 +58,7 @@ class _UsernameStepState extends ConsumerState<UsernameStep> {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(signupFlowProvider).isLoading;
+    final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -72,13 +74,13 @@ class _UsernameStepState extends ConsumerState<UsernameStep> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Choose Username',
+              l10n.usernameTitle,
               style: CyberTheme.heading(size: 24),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'This is your public identity on Kerosene. It must be unique.',
+              l10n.usernameSubtitle,
               style: CyberTheme.label(
                 size: 14,
                 color: CyberTheme.textSecondary,
@@ -98,22 +100,22 @@ class _UsernameStepState extends ConsumerState<UsernameStep> {
               ),
               decoration:
                   CyberTheme.cyberInput(
-                    label: 'Enter username',
-                    hint: 'a-z, 0-9 and _',
+                    label: l10n.usernameFieldLabel,
+                    hint: l10n.usernameHintChars,
                     icon: Icons.alternate_email_rounded,
                   ).copyWith(
-                    helperText: 'Must be between 3 and 15 characters',
+                    helperText: l10n.usernameHelperLength,
                     helperStyle: const TextStyle(
                       color: CyberTheme.textMuted,
                       fontSize: 11,
                     ),
                   ),
               validator: (value) {
-                if (value == null || value.isEmpty) return 'Required';
-                if (value.length < 3) return 'Min 3 chars';
-                if (value.length > 15) return 'Max 15 chars';
+                if (value == null || value.isEmpty) return l10n.required;
+                if (value.length < 3) return l10n.usernameErrorMin;
+                if (value.length > 15) return l10n.usernameErrorMax;
                 if (!RegExp(r'^[a-z0-9_]+$').hasMatch(value)) {
-                  return 'Invalid characters';
+                  return l10n.usernameErrorInvalidChars;
                 }
                 return null;
               },
@@ -121,12 +123,13 @@ class _UsernameStepState extends ConsumerState<UsernameStep> {
             const SizedBox(height: 64),
             AnimatedLoadingButton(
               onPressed: isLoading ? null : _submitAndGeneratePayment,
-              text: 'Generate Payment Invoice',
-              loadingTexts: const [
-                'Calculating Proof of Work...',
-                'Securing Keys...',
-                'Generating Invoice...',
-                'Connecting to Network...',
+              text: l10n
+                  .paymentTitle, // Or usernameContinue which is "Reserve Handle & Continue"
+              loadingTexts: [
+                l10n.usernameLoadingPow,
+                l10n.usernameLoadingKeys,
+                l10n.usernameLoadingInvoice,
+                l10n.usernameLoadingNetwork,
               ],
               baseColor: CyberTheme.neonCyan,
             ),

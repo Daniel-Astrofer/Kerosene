@@ -9,16 +9,14 @@ class CreateUnsignedTransactionUseCase {
   CreateUnsignedTransactionUseCase(this.repository);
 
   Future<Either<Failure, UnsignedTransaction>> call({
-    required String fromAddress,
     required String toAddress,
     required double amountBTC,
-    required int feeSatoshis,
+    required String feeLevel,
   }) async {
     return await repository.createUnsignedTransaction(
-      fromAddress: fromAddress,
       toAddress: toAddress,
       amount: amountBTC,
-      feeSatoshis: feeSatoshis,
+      feeLevel: feeLevel,
     );
   }
 }
