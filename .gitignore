@@ -19,13 +19,18 @@ panic.sh
 
 # [INFRA] Non-Core Folders
 # (Keeping only backend logic)
-vault/
-frontend/
-mpc-sidecar/
-kerosene-infrastructure/
-assets/
-screenshots/
-scripts/
+# vault/
+# frontend/
+# mpc-sidecar/
+# kerosene-infrastructure/
+# assets/
+# screenshots/
+# scripts/
+
+# Allow vault, mpc-sidecar and frontend folders as requested
+!vault/**
+!mpc-sidecar/**
+!frontend/**
 
 # Tor Services & Configs
 **/tor/
@@ -46,17 +51,32 @@ yarn-debug.log*
 *.sqlite
 *.db
 
-<<<<<<< HEAD
 # [PROJECT] Kerosene Folder Exception
-# Allow all files in kerosene folder as requested
+# Allow all major project folders as requested
 !backend/kerosene/**
+!vault/**
+!mpc-sidecar/**
+!frontend/**
+!kerosene-infrastructure/**
+!scripts/**
+!assets/**
+!screenshots/**
+
+# Documentation & Important Files
+!README.md
+!README.html
+!DAYLY_LOG.md
+!"Api Reference"
+!arm-vault.*
+!cert-generator.sh
+!panic.sh
+!projeto_completo_kerosene.txt
+
 # Re-ignore critical secrets within the folder
 backend/kerosene/tor/kerosene_service/
 backend/kerosene/service-account.json
 backend/kerosene/.env
 
-=======
->>>>>>> 3a8a1036ee381033034025d61a8da7a96268dd8d
 # Build Artifacts & IDEs
 .gradle/
 .idea/
@@ -73,7 +93,6 @@ Thumbs.db
 # Analysis & Large Files
 analyze_output.txt
 analyze_output2.txt
-projeto_completo_kerosene.txt
 K.jpg
 kerosene-logo.png
 kerosenelogoicon.jpg

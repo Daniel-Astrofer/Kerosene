@@ -1,0 +1,49 @@
+Resolving dependencies...
+flutter : Because 
+passkeys >=2.14.0 
+depends on 
+passkeys_doctor ^1.2.0 
+which depends on 
+device_info_plus 
+^11.2.0, passkeys 
+>=2.14.0 requires 
+device_info_plus 
+^11.2.0.
+No linha:1 caractere:1
++ flutter pub get > 
+pub_get_force.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Because passk   
+ ey...o_plus ^11.2.    
+0.:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+So, because teste 
+depends on both 
+device_info_plus 
+^9.1.1 and passkeys 
+2.17.4, version 
+solving failed.
+
+
+You can try one of the 
+following suggestions 
+to make the pubspec 
+resolve:
+* Try upgrading your 
+constraint on 
+device_info_plus: 
+flutter pub add device_
+info_plus:^11.5.0
+* Consider downgrading 
+your constraint on 
+passkeys: flutter pub 
+add passkeys:^2.8.2
+Failed to update 
+packages.

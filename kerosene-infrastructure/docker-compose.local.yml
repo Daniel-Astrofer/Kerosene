@@ -1,0 +1,344 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# docker-compose.local.yml — Kerosene Full-Cluster Local Simulation
+# ─────────────────────────────────────────────────────────────────────────────
+# Simulates the full Hydra (IS + CH + SG + Vault) on a single machine.
+# Uses production images (Debian Bookworm builder + Distroless runtime).
+#
+# BEFORE RUNNING:
+#   1. Run: ./kerosene-infrastructure/scripts/init-local.sh
+#   2. Ensure backend/kerosene/.env is populated (no default fallbacks allowed)
+#
+# USAGE:
+#   docker compose -f kerosene-infrastructure/docker-compose.local.yml up --build
+#
+# ⚠️  LOCAL ONLY — Not identical to production topology (multi-host).
+#     In production each region runs on a dedicated bare-metal machine.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VAULT (Hardware Attestation + Key Provisioning)
+  # Reachable ONLY via kerosene-tor-vault onion — no host port binding.
+  # ════════════════════════════════════════════════════════════════════════════
+  kerosene-vault:
+    build:
+      context: ../vault
+      dockerfile: ../kerosene-infrastructure/images/vault/Dockerfile
+    container_name: kerosene-vault-local
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [IPC_LOCK]
+    security_opt:
+      - no-new-privileges:true
+      # - seccomp:../backend/kerosene/seccomp-profile.json
+    tmpfs:
+      - /tmp:rw,size=64m,mode=1777
+    env_file: ../backend/kerosene/.env
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    environment:
+      - FOUNDER_TOTP_SECRET=${FOUNDER_TOTP_SECRET}
+    networks: [net_vault]
+
+  kerosene-tor-vault:
+    build:
+      context: ../backend/kerosene/tor
+      dockerfile: Dockerfile
+    container_name: kerosene-tor-vault-local
+    volumes:
+      - ../backend/kerosene/tor/torrc-vault:/etc/tor/torrc:ro
+      - ../backend/kerosene/tor/entrypoint.sh:/entrypoint.sh:ro
+      - tor_keys_vault:/var/lib/tor/kerosene_service
+    # Removed authorized_clients mount from inside HiddenServiceDir to fix Read-only FS error
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    networks: [net_vault, tor_egress]
+    depends_on: [kerosene-vault]
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ICELAND shard (IS)
+  # ════════════════════════════════════════════════════════════════════════════
+  db-is:
+    image: postgres:17-alpine
+    container_name: kerosene_db_is_local
+    env_file: ../backend/kerosene/.env
+    environment:
+      - POSTGRES_DB=kerosene
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REQUIRE_MTLS=false
+    volumes:
+      - pg_data_is:/var/lib/postgresql/data
+      - ../backend/kerosene/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks: [net_db_is]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d kerosene"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-is:
+    image: redis:7-alpine
+    container_name: kerosene_redis_is_local
+    env_file: ../backend/kerosene/.env
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes: [redis_data_is:/data]
+    networks: [net_db_is]
+
+  kerosene-tor-is:
+    build:
+      context: ../backend/kerosene/tor
+      dockerfile: Dockerfile
+    container_name: kerosene-tor-is-local
+    volumes:
+      - ../backend/kerosene/tor/torrc-is:/etc/tor/torrc:ro
+      - ../backend/kerosene/tor/entrypoint.sh:/entrypoint.sh:ro
+      - tor_keys_is:/var/lib/tor/kerosene_service
+      - tor_socks_is:/var/run/tor/socks
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    networks: [net_db_is, tor_egress]
+    depends_on: [kerosene-app-is]
+
+  kerosene-app-is:
+    build:
+      context: ../backend/kerosene
+      dockerfile: ../../kerosene-infrastructure/images/app/Dockerfile
+    container_name: kerosene-app-is-local
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [IPC_LOCK]
+    security_opt:
+      - no-new-privileges:true
+      # - seccomp:../backend/kerosene/seccomp-profile.json
+    tmpfs:
+      - /tmp:rw,size=64m,mode=1777
+      - /opt/kerosene:rw,noexec,nosuid,size=10m
+    volumes:
+      - ../panic.sh:/opt/kerosene/panic.sh:ro
+      - ../backend/kerosene/certs:/certs:ro
+      - tor_socks_is:/var/run/tor/socks
+      - tor_keys_vault:/vault-onion:ro
+    env_file: ../backend/kerosene/.env
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_is_local:5432/kerosene?ssl=false
+      - REGION=IS
+      - MPC_SIDECAR_HOST=mpc-sidecar-is
+      - SPRING_DATA_REDIS_HOST=kerosene_redis_is_local
+      - vault.enabled=true
+      - vault.onion.file=/vault-onion/hostname
+      - vault.proxy.path=/var/run/tor/socks/tor.sock
+    networks: [net_db_is, net_mpc, net_tor]
+    depends_on:
+      db-is: { condition: service_healthy }
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SWITZERLAND shard (CH)
+  # ════════════════════════════════════════════════════════════════════════════
+  db-ch:
+    image: postgres:17-alpine
+    container_name: kerosene_db_ch_local
+    env_file: ../backend/kerosene/.env
+    environment:
+      - POSTGRES_DB=kerosene
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REQUIRE_MTLS=false
+    volumes:
+      - pg_data_ch:/var/lib/postgresql/data
+      - ../backend/kerosene/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks: [net_db_ch]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d kerosene"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-ch:
+    image: redis:7-alpine
+    container_name: kerosene_redis_ch_local
+    env_file: ../backend/kerosene/.env
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes: [redis_data_ch:/data]
+    networks: [net_db_ch]
+
+  kerosene-tor-ch:
+    build:
+      context: ../backend/kerosene/tor
+      dockerfile: Dockerfile
+    container_name: kerosene-tor-ch-local
+    volumes:
+      - ../backend/kerosene/tor/torrc-ch:/etc/tor/torrc:ro
+      - ../backend/kerosene/tor/entrypoint.sh:/entrypoint.sh:ro
+      - tor_keys_ch:/var/lib/tor/kerosene_service
+      - tor_socks_ch:/var/run/tor/socks
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    networks: [net_db_ch, tor_egress]
+    depends_on: [kerosene-app-ch]
+
+  kerosene-app-ch:
+    build:
+      context: ../backend/kerosene
+      dockerfile: ../../kerosene-infrastructure/images/app/Dockerfile
+    container_name: kerosene-app-ch-local
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [IPC_LOCK]
+    security_opt:
+      - no-new-privileges:true
+      # - seccomp:../backend/kerosene/seccomp-profile.json
+    tmpfs:
+      - /tmp:rw,size=64m,mode=1777
+      - /opt/kerosene:rw,noexec,nosuid,size=10m
+    volumes:
+      - ../panic.sh:/opt/kerosene/panic.sh:ro
+      - ../backend/kerosene/certs:/certs:ro
+      - tor_socks_ch:/var/run/tor/socks
+      - tor_keys_vault:/vault-onion:ro
+    env_file: ../backend/kerosene/.env
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_ch_local:5432/kerosene?ssl=false
+      - REGION=CH
+      - MPC_SIDECAR_HOST=mpc-sidecar-ch
+      - SPRING_DATA_REDIS_HOST=kerosene_redis_ch_local
+      - vault.enabled=true
+      - vault.onion.file=/vault-onion/hostname
+      - vault.proxy.path=/var/run/tor/socks/tor.sock
+    networks: [net_db_ch, net_mpc, net_tor]
+    depends_on:
+      db-ch: { condition: service_healthy }
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SINGAPORE shard (SG)
+  # ════════════════════════════════════════════════════════════════════════════
+  db-sg:
+    image: postgres:17-alpine
+    container_name: kerosene_db_sg_local
+    env_file: ../backend/kerosene/.env
+    environment:
+      - POSTGRES_DB=kerosene
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REQUIRE_MTLS=false
+    volumes:
+      - pg_data_sg:/var/lib/postgresql/data
+      - ../backend/kerosene/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks: [net_db_sg]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d kerosene"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-sg:
+    image: redis:7-alpine
+    container_name: kerosene_redis_sg_local
+    env_file: ../backend/kerosene/.env
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes: [redis_data_sg:/data]
+    networks: [net_db_sg]
+
+  kerosene-tor-sg:
+    build:
+      context: ../backend/kerosene/tor
+      dockerfile: Dockerfile
+    container_name: kerosene-tor-sg-local
+    volumes:
+      - ../backend/kerosene/tor/torrc-sg:/etc/tor/torrc:ro
+      - ../backend/kerosene/tor/entrypoint.sh:/entrypoint.sh:ro
+      - tor_keys_sg:/var/lib/tor/kerosene_service
+      - tor_socks_sg:/var/run/tor/socks
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    networks: [net_db_sg, tor_egress]
+    depends_on: [kerosene-app-sg]
+
+  kerosene-app-sg:
+    build:
+      context: ../backend/kerosene
+      dockerfile: ../../kerosene-infrastructure/images/app/Dockerfile
+    container_name: kerosene-app-sg-local
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [IPC_LOCK]
+    security_opt:
+      - no-new-privileges:true
+      # - seccomp:../backend/kerosene/seccomp-profile.json
+    tmpfs:
+      - /tmp:rw,size=64m,mode=1777
+      - /opt/kerosene:rw,noexec,nosuid,size=10m
+    volumes:
+      - ../panic.sh:/opt/kerosene/panic.sh:ro
+      - ../backend/kerosene/certs:/certs:ro
+      - tor_socks_sg:/var/run/tor/socks
+      - tor_keys_vault:/vault-onion:ro
+    env_file: ../backend/kerosene/.env
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_sg_local:5432/kerosene?ssl=false
+      - REGION=SG
+      - MPC_SIDECAR_HOST=mpc-sidecar-sg
+      - SPRING_DATA_REDIS_HOST=kerosene_redis_sg_local
+      - vault.enabled=true
+      - vault.onion.file=/vault-onion/hostname
+      - vault.proxy.path=/var/run/tor/socks/tor.sock
+    networks: [net_db_sg, net_mpc, net_tor]
+    depends_on:
+      db-sg: { condition: service_healthy }
+
+# ════════════════════════════════════════════════════════════════════════════
+# Volumes
+# ════════════════════════════════════════════════════════════════════════════
+volumes:
+  pg_data_is:
+  pg_data_ch:
+  pg_data_sg:
+  redis_data_is:
+  redis_data_ch:
+  redis_data_sg:
+  tor_keys_vault:
+  tor_keys_is:
+  tor_keys_ch:
+  tor_keys_sg:
+  tor_socks_is:
+  tor_socks_ch:
+  tor_socks_sg:
+
+# ════════════════════════════════════════════════════════════════════════════
+# Networks — each shard is isolated; only net_tor and net_mpc are shared
+# ════════════════════════════════════════════════════════════════════════════
+networks:
+  net_vault:
+    driver: bridge
+    internal: true    # Vault net has NO internet egress — only tor_egress for Tor
+  net_db_is:
+    driver: bridge
+    internal: true
+  net_db_ch:
+    driver: bridge
+    internal: true
+  net_db_sg:
+    driver: bridge
+    internal: true
+  net_mpc:
+    driver: bridge
+    internal: true    # MPC sidecar coordination — air-gapped from internet
+  net_tor:
+    driver: bridge
+    internal: true    # App↔Tor UDS volume bridge — no direct internet
+  tor_egress:
+    driver: bridge    # Only Tor daemons have internet access via this network
