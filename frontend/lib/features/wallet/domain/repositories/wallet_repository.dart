@@ -58,6 +58,43 @@ abstract class WalletRepository {
 
   /// Obter taxa de câmbio BTC/USD
   Future<Either<Failure, double>> getBTCtoUSDRate();
+
+  // ==================== Wallet CRUD ====================
+
+  /// Buscar carteira por nome
+  Future<Either<Failure, Wallet>> findWallet(String name);
+
+  /// Atualizar nome da carteira
+  Future<Either<Failure, String>> updateWallet({
+    required String name,
+    required String newName,
+    required String passphrase,
+  });
+
+  /// Deletar carteira
+  Future<Either<Failure, String>> deleteWallet({
+    required String name,
+    required String passphrase,
+  });
+
+  // ==================== Ledger ====================
+
+  /// Consultar saldo de uma carteira
+  Future<Either<Failure, double>> getBalance(String walletName);
+
+  /// Deletar ledger de uma carteira
+  Future<Either<Failure, String>> deleteLedger(String walletName);
+
+  // ==================== Security ====================
+
+  /// Salvar Mnemonic de forma segura
+  Future<Either<Failure, bool>> saveMnemonic(String mnemonic);
+
+  /// Obter Mnemonic de forma segura (pode requerer autenticação na implementação)
+  Future<Either<Failure, String?>> getMnemonic();
+
+  /// Remover Mnemonic de forma segura
+  Future<Either<Failure, void>> deleteMnemonic();
 }
 
 /// Estimativa de taxa de mineração

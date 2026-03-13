@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../../../../core/presentation/widgets/kerosene_logo.dart';
-import '../providers/auth_provider.dart';
-import '../state/auth_state.dart';
+import 'package:teste/core/theme/cyber_theme.dart';
+import 'package:teste/features/auth/presentation/providers/auth_provider.dart';
+import 'package:teste/features/auth/presentation/providers/signup_flow_provider.dart';
+import 'package:teste/features/auth/presentation/state/auth_state.dart';
+import '../../../../core/presentation/widgets/custom_error_dialog.dart';
+import 'signup/signup_passkey_screen.dart';
 
 class TotpSetupScreen extends ConsumerStatefulWidget {
-  final String username;
-  final String passphrase;
-  final String totpSecret; // URL otpauth ou secret raw
+  final String? username;
+  final String? passphrase;
+  final String? totpSecret;
+  final String? qrCodeUri;
 
   const TotpSetupScreen({
     super.key,
-    required this.username,
-    required this.passphrase,
-    required this.totpSecret,
+    this.username,
+    this.passphrase,
+    this.totpSecret,
+    this.qrCodeUri,
   });
 
   @override
@@ -33,271 +38,341 @@ class _TotpSetupScreenState extends ConsumerState<TotpSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Se recebeu apenas o secret, montar a URL otpauth
-    String qrData = widget.totpSecret;
-    if (!widget.totpSecret.startsWith('otpauth://')) {
+    final flowState = ref.watch(signupFlowProvider);
+
+    final username = widget.username ?? flowState.username ?? '';
+    final passphrase = widget.passphrase ?? flowState.passphrase ?? '';
+    final totpSecret = widget.totpSecret ?? flowState.totpSecret ?? '';
+    final qrCodeUri = widget.qrCodeUri ?? flowState.qrCodeUri ?? totpSecret;
+
+    debugPrint('🛠️ [TOTP Screen] username: $username, secret: ${totpSecret.isNotEmpty}, qr: ${qrCodeUri.isNotEmpty}');
+
+    String qrData = qrCodeUri;
+    if (qrData.isNotEmpty && !qrData.startsWith('otpauth://')) {
       qrData =
-          'otpauth://totp/Kerosene:${widget.username}?secret=${widget.totpSecret}&issuer=Kerosene';
+          'otpauth://totp/Kerosene:$username?secret=$qrData&issuer=Kerosene';
     }
 
     // Listener para redirecionar após sucesso
     ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthAuthenticated) {
+      if (next is AuthTotpVerified) {
+        // Save sessionId to flow provider
+        ref.read(signupFlowProvider.notifier).setSessionId(next.sessionId);
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SignupPasskeyScreen()),
+          (route) => false,
+        );
+      } else if (next is AuthAuthenticated) {
         Navigator.of(
           context,
         ).pushNamedAndRemoveUntil('/home', (route) => false);
       } else if (next is AuthError) {
-        showCustomErrorDialog(context, next.message);
+        showCustomErrorDialog(
+          context,
+          next.message,
+          onRetry: () {
+            ref.read(authProvider.notifier).clearError();
+            if (_codeController.text.length == 6) {
+              _verifyCode(username, passphrase, totpSecret);
+            } else {
+              _codeController.clear();
+            }
+          },
+          onGoBack: () {
+            ref.read(authProvider.notifier).clearError();
+            Navigator.pop(context);
+          },
+        );
       }
     });
 
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading;
 
+    String cleanSecret = totpSecret.replaceAll('"', '');
+    if (cleanSecret.contains('otpauth://')) {
+      final uri = Uri.tryParse(cleanSecret);
+      cleanSecret = uri?.queryParameters['secret'] ?? cleanSecret;
+    } else if (cleanSecret.contains('secret=')) {
+      try {
+        final uri = Uri.parse(cleanSecret);
+        cleanSecret = uri.queryParameters['secret'] ?? cleanSecret;
+      } catch (_) {}
+    }
+
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('2FA Setup', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: CyberTheme.bgDeep,
       body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF050511), Color(0xFF1A1F3C), Color(0xFF2D2F4E)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: SafeArea(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  const KeroseneLogo(size: 80),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Secure Your Account',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
+        decoration: BoxDecoration(gradient: CyberTheme.bgGradient),
+        child: SafeArea(
+          child: Column(
+              children: [
+                // Top Progress Bar
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 10,
+                      child: Container(
+                        height: 2,
+                        color: const Color(0xFF2962FF), // Deep blue
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Scan the QR code with your authenticator app (Google Auth, Authy, etc).',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
+                  ],
+                ),
 
-                  // QR Code Container
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00D4FF).withOpacity(0.2),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
+                // App Bar equivalent
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: 16.0,
+                      left: 8.0,
+                      bottom: 8.0,
                     ),
-                    child: QrImageView(
-                      data: qrData,
-                      version: QrVersions.auto,
-                      size: 220.0,
-                      foregroundColor: const Color(0xFF050511),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false),
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 40),
-
-                  // Secret Display
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'OR ENTER MANUAL CODE',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Conecte seu\nAuthenticator',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                            textAlign: TextAlign.left,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          // Se for URL, tenta extrair o secret para mostrar clean
-                          widget.totpSecret.startsWith('otpauth')
-                              ? Uri.tryParse(
-                                      widget.totpSecret,
-                                    )?.queryParameters['secret'] ??
-                                    widget.totpSecret
-                              : widget.totpSecret,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF00D4FF),
-                            fontSize: 16,
-                            letterSpacing: 1.5,
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Abra o Google Authenticator ou Authy e escaneie o código QR abaixo.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF8E8E93),
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.left,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+                          const SizedBox(height: 48),
 
-                  const SizedBox(height: 40),
-
-                  // Verification Input
-                  TextFormField(
-                    controller: _codeController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 6,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      letterSpacing: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '000000',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.1),
-                        letterSpacing: 12,
-                      ),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF00D4FF),
-                          width: 1.5,
-                        ),
-                      ),
-                      counterText: '',
-                      contentPadding: const EdgeInsets.symmetric(vertical: 24),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.length != 6) {
-                        return 'Enter 6 digits';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Verify Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _verifyCode,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00D4FF),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 8,
-                        shadowColor: const Color(0xFF00D4FF).withOpacity(0.4),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
+                          // QR Code Container
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
                                 color: Colors.white,
-                                strokeWidth: 2,
+                                borderRadius: BorderRadius.circular(24),
                               ),
-                            )
-                          : const Text(
-                              'VERIFY & CONTINUE',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
+                              child: qrData.isEmpty
+                                  ? const SizedBox(
+                                      width: 200,
+                                      height: 200,
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    )
+                                  : QrImageView(
+                                      data: qrData,
+                                      version: QrVersions.auto,
+                                      size: 200.0,
+                                      gapless: false,
+                                      eyeStyle: const QrEyeStyle(
+                                        eyeShape: QrEyeShape.square,
+                                        color: Colors.black,
+                                      ),
+                                      dataModuleStyle: const QrDataModuleStyle(
+                                        dataModuleShape:
+                                            QrDataModuleShape.square,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          // Secret Display (Manual insertion)
+                          Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                // Copy to clipboard logic could go here
+                              },
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'OU INSIRA O CÓDIGO MANUALMENTE',
+                                    style: TextStyle(
+                                      color: Color(0xFF8E8E93),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    cleanSecret,
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF3D7CFF),
+                                      fontSize: 16,
+                                      letterSpacing: 1.5,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
+                          ),
+
+                          const SizedBox(height: 60),
+
+                          // Verification Input boxes
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: List.generate(6, (index) {
+                              String text = '';
+                              if (_codeController.text.length > index) {
+                                text = _codeController.text[index];
+                              }
+                              return Container(
+                                width:
+                                    (MediaQuery.of(context).size.width -
+                                        64 -
+                                        50) /
+                                    6,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF101012),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _codeController.text.length == index
+                                        ? const Color(0xFF3D7CFF)
+                                        : const Color(0xFF1E1E24),
+                                    width: _codeController.text.length == index
+                                        ? 1.5
+                                        : 1.0,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    text,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+
+                          // Hidden TextFormField for input
+                          Opacity(
+                            opacity: 0,
+                            child: TextFormField(
+                              controller: _codeController,
+                              keyboardType: TextInputType.number,
+                              autofocus: true,
+                              maxLength: 6,
+                              onChanged: (val) {
+                                setState(
+                                  () {},
+                                ); // Rebuild to show characters in boxes
+                                if (val.length == 6 && !isLoading) {
+                                  _verifyCode(username, passphrase, totpSecret);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+
+                // Continuous Button at bottom
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(32, 16, 32, 40),
+                  child: Container(
+                    width: double.infinity,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F7), // Off-white
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(30),
+                        onTap: (isLoading || _codeController.text.length < 6)
+                            ? null
+                            : () =>
+                                  _verifyCode(username, passphrase, totpSecret),
+                        child: Center(
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.black,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Ativar 2FA e Continuar',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
     );
   }
 
-  void _verifyCode() {
-    if (_formKey.currentState!.validate()) {
+  void _verifyCode(String username, String passphrase, String secret) {
+    if (_codeController.text.length == 6) {
       // Extrair apenas o secret se for uma URL completa
-      String secret = widget.totpSecret;
-      if (widget.totpSecret.startsWith('otpauth://')) {
-        secret = Uri.parse(widget.totpSecret).queryParameters['secret'] ?? '';
+      String cleanSecret = secret;
+      if (secret.startsWith('otpauth://')) {
+        cleanSecret = Uri.parse(secret).queryParameters['secret'] ?? '';
       }
 
       ref
           .read(authProvider.notifier)
           .verifyTotp(
-            username: widget.username,
-            passphrase: widget.passphrase,
-            totpSecret: secret,
+            username: username,
+            passphrase: passphrase,
+            totpSecret: cleanSecret,
             totpCode: _codeController.text,
           );
     }
-  }
-
-  void showCustomErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F3C),
-        title: const Text("Error", style: TextStyle(color: Colors.white)),
-        content: Text(
-          message,
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK", style: TextStyle(color: Color(0xFF00D4FF))),
-          ),
-        ],
-      ),
-    );
   }
 }

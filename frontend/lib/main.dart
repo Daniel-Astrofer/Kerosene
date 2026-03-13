@@ -1,15 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'package:teste/core/theme/app_theme.dart';
+
+import 'package:teste/l10n/app_localizations.dart';
+import 'core/providers/locale_provider.dart';
 import 'features/auth/presentation/screens/welcome_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/auth/presentation/screens/signup_screen.dart';
-import 'features/wallet/presentation/screens/wallet_home_screen.dart';
+import 'features/auth/presentation/screens/signup/signup_start_screen.dart';
+import 'features/home/presentation/screens/home_screen.dart';
 import 'features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'features/wallet/presentation/screens/send_money_screen.dart';
+import 'core/services/background_service.dart';
+import 'core/services/notification_service.dart'
+    as local_notifications; // Alias for local notification service
+import 'features/transactions/presentation/screens/deposits_screen.dart';
+import 'core/services/audio_service.dart';
+import 'core/services/tor_service.dart';
+import 'core/config/app_config.dart';
+import 'features/debug/presentation/screens/screen_gallery_screen.dart';
+
+
+import 'shared/widgets/offline_overlay.dart';
+import 'core/utils/snackbar_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 0. GLobal Error Handling (Production Crash Defenders)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('🚨 GLOBAL FLUTTER ERROR CAUGHT: ${details.exception}');
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('🚨 ASYNC PLATFORM ERROR CAUGHT: $error');
+    return true; // Prevent default crash behavior
+  };
+
+  // Initialize Local Notifications (for foreground handling)
+  await local_notifications.NotificationService().init();
+
+  // Initialize Background Service (WebSocket/Balance Monitor)
+  await initializeBackgroundService();
+
+  // Initialize Audio Service (Pre-cache synth sounds)
+  await AudioService.instance.init();
+
+  // 🧅 INITIALIZE TOR MANDATORY (Only Network Layer)
+  try {
+    debugPrint('🚀 Starting Tor Network Bootstrap...');
+    await TorService.instance.start();
+    debugPrint('✅ Tor Network Ready.');
+
+    // Start local relay to the .onion backend
+    // By tunneling our API through a raw TCP socket, we completely bypass Dart's limits
+    final host = Uri.parse(AppConfig.onionBaseUrl).host;
+    final int relayPort = await TorService.instance.startRelay(host, 80);
+    AppConfig.apiUrl = 'http://127.0.0.1:$relayPort';
+    debugPrint('🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> $host');
+  } catch (e) {
+    debugPrint('❌ CRITICAL ERROR: Tor or Relay failed to start: $e');
+  }
+
+  // Aumentar o limite do cachê de imagens para acomodar texturas premium
+  // 500MB de cache e 300 imagens simultâneas
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 300;
 
   // Inicializar SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
@@ -25,124 +83,67 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider).locale;
+
     return MaterialApp(
       title: 'Kerosene',
+      navigatorKey: SnackbarHelper.navigatorKey,
+      scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF050511),
-        fontFamily:
-            'Inter', // Ensuring a clean modern font if available, fallback to default
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF7B61FF), // Vibrant Purple
-          secondary: Color(0xFF00D4FF), // Electric Cyan
-          surface: Color(0xFF1A1F3C), // Glassy Dark Blue
-          background: Color(0xFF050511),
-          error: Color(0xFFFF5F6D),
-        ),
-        useMaterial3: true,
-
-        // Premium Text Theme
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: -1.0,
-          ),
-          titleLarge: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-          bodyLarge: TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            color: Colors.white70,
-            height: 1.5,
-          ),
-        ),
-
-        // Glassmorphism Input Style
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF1A1F3C),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 20,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: const BorderSide(color: Color(0xFF7B61FF), width: 1.5),
-          ),
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-        ),
-
-        // Modern Button Style
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF7B61FF),
-            foregroundColor: Colors.white,
-            elevation: 8,
-            shadowColor: const Color(0xFF7B61FF).withOpacity(0.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-
-        // Clean AppBar
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: false,
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
-        ),
-
-        // Card Theme
-        cardTheme: CardThemeData(
-          color: const Color(0xFF1A1F3C),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
-      ),
+      scrollBehavior: const KeroseneScrollBehavior(),
+      theme: AppTheme.darkTheme,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale != null) {
+          for (var supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == locale.languageCode) {
+              return supportedLocale;
+            }
+          }
+        }
+        return supportedLocales.first; // Retorna EN por padrão se não suportado
+      },
+      builder: (context, child) => OfflineOverlay(child: child!),
       home: const WelcomeScreen(),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignupScreen(),
-        '/home': (context) => const WalletHomeScreen(),
+        '/signup': (context) => const SignupStartScreen(),
+        '/home': (context) => const HomeScreen(),
         '/create_wallet': (context) => const CreateWalletScreen(),
         '/send-money': (context) => const SendMoneyScreen(),
+        '/deposits': (context) => const DepositsScreen(),
+        '/gallery': (context) => const ScreenGalleryScreen(),
       },
     );
+  }
+}
+
+// Comportamento de scroll suavizado global
+class KeroseneScrollBehavior extends ScrollBehavior {
+  const KeroseneScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    // Retorna BouncingScrollPhysics em todas as plataformas para um feeling mais elástico e fluido
+    return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+  }
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // Podemos customizar o scrollbar se necessário, mas o padrão do Material 3 já é bom
+    return super.buildScrollbar(context, child, details);
   }
 }
 

@@ -26,10 +26,13 @@ class AppConstants {
 
   // Error Messages
   static const String networkErrorMessage = 'Sem conexão com a internet';
-  static const String serverErrorMessage = 'Erro no servidor. Tente novamente mais tarde';
-  static const String unknownErrorMessage = 'Erro desconhecido. Tente novamente';
+  static const String serverErrorMessage =
+      'Erro no servidor. Tente novamente mais tarde';
+  static const String unknownErrorMessage =
+      'Erro desconhecido. Tente novamente';
   static const String authErrorMessage = 'Credenciais inválidas';
-  static const String sessionExpiredMessage = 'Sessão expirada. Faça login novamente';
+  static const String sessionExpiredMessage =
+      'Sessão expirada. Faça login novamente';
 
   // Success Messages
   static const String loginSuccessMessage = 'Login realizado com sucesso';
@@ -37,9 +40,10 @@ class AppConstants {
   static const String logoutSuccessMessage = 'Logout realizado com sucesso';
 
   // Regex Patterns
-  static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String emailPattern =
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
   static const String phonePattern = r'^\+?[1-9]\d{1,14}$';
-  
+
   // Date Formats
   static const String dateFormat = 'dd/MM/yyyy';
   static const String dateTimeFormat = 'dd/MM/yyyy HH:mm';

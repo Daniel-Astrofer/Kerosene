@@ -1,14 +1,25 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../providers/network_status_provider.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import '../errors/exceptions.dart';
+import 'api_response_interceptor.dart';
 
 /// Cliente HTTP configurado com Dio
 class ApiClient {
   late final Dio _dio;
+  final Ref ref; // Add Ref to access providers
 
   ApiClient({
     required String baseUrl,
-    int connectTimeout = 30000,
-    int receiveTimeout = 30000,
+    required this.ref,
+    int connectTimeout = 60000,
+    int receiveTimeout = 60000,
   }) {
     _dio = Dio(
       BaseOptions(
@@ -24,7 +35,55 @@ class ApiClient {
 
     // Adicionar interceptors
     _dio.interceptors.add(_LogInterceptor());
-    _dio.interceptors.add(_ErrorInterceptor());
+    _dio.interceptors.add(ApiResponseInterceptor());
+
+    // Retry Interceptor for Network Resilience (Phase 5)
+    _dio.interceptors.add(
+      RetryInterceptor(
+        dio: _dio,
+        logPrint: (msg) {
+          // Print only the first line of retry messages to avoid multi-line noise
+          final firstLine = msg.split('\n').first;
+          debugPrint('[Retry] $firstLine');
+        },
+        retries: 3,
+        retryDelays: const [
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+          Duration(seconds: 3),
+        ],
+        retryEvaluator: DefaultRetryEvaluator({
+          408, // RequestTimeout
+          // 500 removido — server 500 não se recupera com retry
+          502, // BadGateway
+          503, // ServiceUnavailable
+          504, // GatewayTimeout
+          440, // LoginTimeout
+          522, // ConnectionTimedOut
+          524, // ATimeoutOccurred
+          598, // NetworkReadTimeoutError
+          599, // NetworkConnectTimeoutError
+        }).evaluate,
+      ),
+    );
+
+    _initCookieManager();
+  }
+
+  Future<void> _initCookieManager() async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final cookieJar = PersistCookieJar(
+      storage: FileStorage("${appDocDir.path}/.cookies/"),
+    );
+    _dio.interceptors.add(CookieManager(cookieJar));
+  }
+
+  /// Adicionar um interceptor customizado
+  void addInterceptor(Interceptor interceptor) {
+    _dio.interceptors.insert(
+      0,
+      interceptor,
+    ); // Insert at beginning to run before others
   }
 
   /// GET request
@@ -119,15 +178,7 @@ class ApiClient {
     return (options ?? Options()).copyWith(headers: currentHeaders);
   }
 
-  /// Adicionar token de autenticação
-  void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
-  }
-
-  /// Remover token de autenticação
-  void removeAuthToken() {
-    _dio.options.headers.remove('Authorization');
-  }
+  // Headers are now managed exclusively by TokenInterceptor
 
   /// Tratamento de erros
   AppException _handleError(dynamic error) {
@@ -136,27 +187,82 @@ class ApiClient {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
+          ref.read(networkStatusProvider.notifier).reportError(error);
           return const NetworkException(message: 'Tempo de conexão esgotado');
 
         case DioExceptionType.connectionError:
+          ref.read(networkStatusProvider.notifier).reportError(error);
           return const NetworkException();
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
-          final message = error.response?.data['message'] ?? 'Erro no servidor';
+          var message = 'Erro no servidor';
+          String? errorCode;
+
+          final data = error.response?.data;
+          if (data is Map) {
+            if (data.containsKey('message')) message = data['message'];
+            if (data.containsKey('errorCode')) errorCode = data['errorCode'];
+          } else if (data is String) {
+            try {
+              final json = jsonDecode(data);
+              if (json is Map) {
+                if (json.containsKey('message')) message = json['message'];
+                if (json.containsKey('errorCode')) {
+                  errorCode = json['errorCode'];
+                }
+              } else {
+                message = data.length > 100 ? data.substring(0, 100) : data;
+              }
+            } catch (_) {
+              message = data.length > 100 ? data.substring(0, 100) : data;
+            }
+          } else if (error.error != null) {
+            if (error.error is String) {
+              message = error.error as String;
+            } else if (error.error is Map) {
+              final errMap = error.error as Map;
+              if (errMap.containsKey('message')) {
+                message = errMap['message'];
+              }
+              if (errMap.containsKey('errorCode')) {
+                errorCode = errMap['errorCode'];
+              }
+            }
+          }
 
           if (statusCode == 401 || statusCode == 403) {
-            return AuthException(message: message, statusCode: statusCode);
+            return AuthException(
+              message: message,
+              statusCode: statusCode,
+              errorCode: errorCode,
+            );
           }
 
           if (statusCode != null && statusCode >= 500) {
-            return ServerException(message: message, statusCode: statusCode);
+            return ServerException(
+              message: message,
+              statusCode: statusCode,
+              errorCode: errorCode,
+            );
           }
 
-          return ValidationException(message: message, statusCode: statusCode);
+          return ValidationException(
+            message: message,
+            statusCode: statusCode,
+            errorCode: errorCode,
+          );
 
         default:
-          return AppException(message: error.message ?? 'Erro desconhecido');
+          final statusCode = error.response?.statusCode;
+          final errorStr = error.error?.toString();
+          return AppException(
+            message:
+                error.message ??
+                errorStr ??
+                'Erro desconhecido (HTTP $statusCode)',
+            statusCode: statusCode,
+          );
       }
     }
 
@@ -164,47 +270,28 @@ class ApiClient {
   }
 }
 
-/// Interceptor para logging
+/// Interceptor para logging — conciso e sem dados sensíveis
 class _LogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    print('🌐 REQUEST[${options.method}] => PATH: ${options.path}');
-    print('📨 HEADERS: ${options.headers}');
-    print('📦 BODY: ${options.data}');
+    debugPrint('🌐 [${options.method}] ${options.path}');
     super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    print(
-      '✅ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
-    );
+    debugPrint('✅ [${response.statusCode}] ${response.requestOptions.path}');
     super.onResponse(response, handler);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    print(
-      '❌ ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
-    );
-    print('📝 MESSAGE: ${err.message}');
-    print('📌 TYPE: ${err.type}');
-    if (err.response?.data != null) {
-      print('📦 DATA: ${err.response?.data}');
-    }
-    if (err.error != null) {
-      print('⚠️ ERR: ${err.error}');
-    }
-    super.onError(err, handler);
-  }
-}
-
-/// Interceptor para tratamento de erros
-class _ErrorInterceptor extends Interceptor {
-  @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Aqui você pode adicionar lógica customizada de tratamento de erros
-    // Por exemplo: refresh token, retry logic, etc.
+    final code = err.response?.statusCode ?? '?';
+    final path = err.requestOptions.path;
+    final errCode = err.response?.data is Map
+        ? (err.response!.data['errorCode'] ?? '')
+        : '';
+    debugPrint('❌ [$code] $path${errCode.isNotEmpty ? ' ($errCode)' : ''}');
     super.onError(err, handler);
   }
 }

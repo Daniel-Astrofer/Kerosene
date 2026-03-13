@@ -1,0 +1,68 @@
+# Kerosene - Core-Only Ignore Rules
+# ──────────────────────────────────────────
+
+# [CRITICAL] Secrets & Assets
+*.env
+*.env.*
+*.secret
+*.key
+*.pem
+*.pub
+*.jks
+*.p12
+*.pfx
+google-services.json
+service-account.json
+certs/
+cert-generator.sh
+panic.sh
+
+# [INFRA] Non-Core Folders
+# (Keeping only backend logic)
+vault/
+frontend/
+mpc-sidecar/
+kerosene-infrastructure/
+assets/
+screenshots/
+scripts/
+
+# Tor Services & Configs
+**/tor/
+**/torrc*
+**/hostname
+**/hs_ed25519_*
+
+# Documentation & Logs
+*.md
+*.html
+*.txt
+backend/kerosene/logs/
+npm-debug.log*
+yarn-debug.log*
+
+# Databases & Dumps
+*.sql
+*.sqlite
+*.db
+
+# Build Artifacts & IDEs
+.gradle/
+.idea/
+.vscode/
+**/build/
+**/target/
+**/out/
+**/bin/
+.DS_Store
+Thumbs.db
+*.swp
+*.iml
+
+# Analysis & Large Files
+analyze_output.txt
+analyze_output2.txt
+projeto_completo_kerosene.txt
+K.jpg
+kerosene-logo.png
+kerosenelogoicon.jpg

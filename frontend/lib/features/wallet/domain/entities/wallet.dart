@@ -12,9 +12,8 @@ final class Wallet extends Equatable {
   /// Endereço Bitcoin principal (derivado do HD path)
   final String address;
 
-  /// Saldo em satoshis (1 BTC = 100,000,000 satoshis)
-  /// Usar int64 para evitar problemas de precisão com double
-  final int balanceSatoshis;
+  /// Saldo em BTC (exatamente como vem da API)
+  final double balance;
 
   /// Path de derivação HD (ex: "m/84'/0'/0'/0/0" para Native SegWit)
   final String derivationPath;
@@ -35,7 +34,7 @@ final class Wallet extends Equatable {
     required this.id,
     required this.name,
     required this.address,
-    required this.balanceSatoshis,
+    required this.balance,
     required this.derivationPath,
     required this.type,
     required this.createdAt,
@@ -43,21 +42,12 @@ final class Wallet extends Equatable {
     this.isActive = true,
   });
 
-  /// Saldo em BTC (conversão de satoshis)
-  double get balanceBTC => balanceSatoshis / 100000000.0;
-
-  /// Saldo formatado em USD (requer taxa de câmbio)
-  String balanceInUSD(double btcToUsdRate) {
-    final usdValue = balanceBTC * btcToUsdRate;
-    return '\$${usdValue.toStringAsFixed(2)}';
-  }
-
   /// Cria cópia com modificações
   Wallet copyWith({
     String? id,
     String? name,
     String? address,
-    int? balanceSatoshis,
+    double? balance,
     String? derivationPath,
     WalletType? type,
     DateTime? createdAt,
@@ -68,7 +58,7 @@ final class Wallet extends Equatable {
       id: id ?? this.id,
       name: name ?? this.name,
       address: address ?? this.address,
-      balanceSatoshis: balanceSatoshis ?? this.balanceSatoshis,
+      balance: balance ?? this.balance,
       derivationPath: derivationPath ?? this.derivationPath,
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
@@ -79,7 +69,7 @@ final class Wallet extends Equatable {
 
   factory Wallet.fromJson(Map<String, dynamic> json) {
     final balanceVal = json['balance'];
-    final satoshis = (balanceVal is num) ? balanceVal.toInt() : 0;
+    final btcValue = (balanceVal is num) ? balanceVal.toDouble() : 0.0;
 
     return Wallet(
       id:
@@ -88,9 +78,8 @@ final class Wallet extends Equatable {
                   DateTime.now().millisecondsSinceEpoch)
               .toString(),
       name: json['name'] ?? json['walletName'] ?? 'Wallet',
-      address:
-          json['address'] ?? json['walletName'] ?? '', // Fallback para nome
-      balanceSatoshis: satoshis,
+      address: json['address'] ?? '',
+      balance: btcValue,
       derivationPath: "m/84'/0'/0'",
       type: WalletType.nativeSegwit,
       createdAt: DateTime.now(),
@@ -103,7 +92,7 @@ final class Wallet extends Equatable {
     id,
     name,
     address,
-    balanceSatoshis,
+    balance,
     derivationPath,
     type,
     createdAt,

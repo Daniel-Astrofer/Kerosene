@@ -17,178 +17,398 @@ class AuthRepositoryImpl implements AuthRepository {
     required this.localDataSource,
   });
 
+  // ─── Login — returns LoginResult with userId + JWT ────────────────────────────
   @override
-  Future<Either<Failure, User>> login({
-    required String email,
-    required String password,
+  Future<Either<Failure, LoginResult>> login({
+    required String username,
+    required String passphrase,
   }) async {
     try {
-      // Fazer login e obter JWT
-      final tokenResponse = await remoteDataSource.login(
-        username: email,
-        passphrase: password,
+      final loginResult = await remoteDataSource.login(
+        username: username,
+        passphrase: passphrase,
       );
-
-      // Salvar token localmente
-      // Parsear resposta: Pode vir "ID JWT"
-      final parts = tokenResponse.trim().split(' ');
-      String token;
-      String userId;
-
-      if (parts.length >= 2) {
-        userId = parts[0];
-        token = parts.sublist(1).join(' ');
-      } else {
-        token = tokenResponse;
-        userId = email; // Fallback se não vier ID
+      // Save the JWT (or preAuthToken) from the login response immediately 
+      // so it can be used for the TOTP verification step.
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
       }
-
-      await localDataSource.saveToken(token);
-
-      // Criar modelo de usuário
-      final user = UserModel(
-        id: userId,
-        email: '$email@kerosene.app',
-        name: email, // ou userId se preferir
-        createdAt: DateTime.now(),
-      );
-
-      // Salvar usuário localmente
-      await localDataSource.saveUser(user);
-
-      return Right(user);
-    } on ServerException catch (e) {
-      if (e.message == 'REQ_LOGIN_2FA') {
-        // Retorna um erro específico que o Notifier vai capturar para mudar de tela
-        return Left(AuthFailure(message: 'REQ_LOGIN_2FA'));
-      }
-      return Left(ServerFailure(message: e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+      
+      // Save the passphrase locally so it can be used for signing later
+      await localDataSource.saveMnemonic(passphrase);
+      return Right(loginResult);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(message: e.message, statusCode: e.statusCode));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao fazer login: $e'));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
+  // ─── Verify Login TOTP — retorna User com JWT ────────────────────────────────
   @override
   Future<Either<Failure, User>> verifyLoginTotp({
     required String username,
     required String passphrase,
     required String totpCode,
+    String? preAuthToken,
   }) async {
     try {
-      // 1. Verificar TOTP na API (Retorna "ID TOKEN")
-      final responseString = await remoteDataSource.verifyLoginTotp(
+      final token = preAuthToken ?? await localDataSource.getToken() ?? '';
+      
+      final jwt = await remoteDataSource.verifyLoginTotp(
         username: username,
-        passphrase: passphrase,
         totpCode: totpCode,
+        preAuthToken: token,
       );
 
-      // 2. Parsear resposta: Esperado "USER_ID JWT_TOKEN"
-      // Reutilizando lógica existente, idealmente refatorar em um helper
-      final parts = responseString.trim().split(' ');
-      String token;
-      String userId;
-
-      if (parts.length >= 2) {
-        userId = parts[0];
-        token = parts.sublist(1).join(' ');
-      } else {
-        token = responseString;
-        userId = username;
-      }
-
-      // 3. Salvar Token e User
-      await localDataSource.saveToken(token);
+      await localDataSource.saveToken(jwt);
+      // passphrase was already saved during login(); ensure it's current
+      await localDataSource.saveMnemonic(passphrase);
 
       final user = UserModel(
-        id: userId,
+        id: '0',
         email: '$username@kerosene.app',
         name: username,
         createdAt: DateTime.now(),
       );
+      await localDataSource.saveUser(user);
+      return Right(user);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 
+  // ─── Signup — resolve PoW e retorna {totpSecret, qrCodeUri} ─────────────────
+  @override
+  Future<Either<Failure, SignupInitResult>> signup({
+    required String username,
+    required String passphrase,
+    String accountSecurity = 'STANDARD',
+  }) async {
+    try {
+      final result = await remoteDataSource.signup(
+        username: username,
+        passphrase: passphrase,
+        accountSecurity: accountSecurity,
+      );
+      return Right(result);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Verify Signup TOTP — retorna sessionId (Redis, temporário) ──────────────
+  @override
+  Future<Either<Failure, String>> verifyTotp({
+    required String username,
+    required String passphrase,
+    required String totpCode,
+    String? totpSecret,
+  }) async {
+    try {
+      final sessionId = await remoteDataSource.verifySignupTotp(
+        username: username,
+        totpCode: totpCode, // passphrase NOT sent in new API
+      );
+
+      // Store totp secret locally if provided
+      if (totpSecret != null && totpSecret.isNotEmpty) {
+        await localDataSource.saveTotpSecret(totpSecret);
+      }
+
+      // According to API_REFERENCE.md Section 1.1: "Returns JWT"
+      // WRONG: Actual server log shows it returns a sessionId (hex), not a JWT.
+      // Saving it as a token causes the interceptor to send invalid Bearer headers.
+      // We do NOT save it as a token here.
+
+      return Right(sessionId);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao verificar TOTP: $e'));
+    }
+  }
+
+  // ─── Passkey onboarding ───────────────────────────────────────────────────────
+  @override
+  Future<Either<Failure, String>> registerPasskeyOnboardingStart(
+    String sessionId,
+  ) async {
+    try {
+      final opts = await remoteDataSource.registerPasskeyOnboardingStart(
+        sessionId,
+      );
+      return Right(opts);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registerPasskeyOnboardingFinish(
+    String sessionId,
+    Map<String, dynamic> credential,
+  ) async {
+    try {
+      await remoteDataSource.registerPasskeyOnboardingFinish(
+        sessionId,
+        credential,
+      );
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Real Passkey Login/Register ──────────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, String>> passkeyLoginStart(String username) async {
+    try {
+      final opts = await remoteDataSource.passkeyLoginStart(username);
+      return Right(opts);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> passkeyLoginFinish({
+    required String username,
+    required Map<String, dynamic> credential,
+  }) async {
+    try {
+      final loginResult = await remoteDataSource.passkeyLoginFinish(
+        username,
+        credential,
+      );
+
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
+      }
+
+      final user = UserModel(
+        id: loginResult.userId.isNotEmpty ? loginResult.userId : '0',
+        email: '$username@kerosene.app',
+        name: username,
+        createdAt: DateTime.now(),
+      );
       await localDataSource.saveUser(user);
 
       return Right(user);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao verificar 2FA: $e'));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, String>> signup({
-    required String email,
-    required String password,
-    required String name,
-  }) async {
+  Future<Either<Failure, String>> passkeyRegisterStart() async {
     try {
-      // Passo 1: Criar usuário e obter TOTP secret
-      final signupResult = await remoteDataSource.signup(
-        username: name,
-        passphrase: password,
-      );
-
-      // Salvar TOTP secret para uso posterior
-      final totpSecret = signupResult['totpSecret'] as String;
-      // Salvar localmente também por segurança
-      await localDataSource.saveTotpSecret(totpSecret);
-
-      return Right(totpSecret);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(message: e.message));
+      final opts = await remoteDataSource.passkeyRegisterStart();
+      return Right(opts);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao criar conta: $e'));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
+  @override
+  Future<Either<Failure, void>> passkeyRegisterFinish(
+    Map<String, dynamic> credential,
+  ) async {
+    try {
+      await remoteDataSource.passkeyRegisterFinish(credential);
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Sovereign Auth (Hardware Ed25519) ──────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, String>> registerHardwareOnboardingStart(
+    String sessionId,
+  ) async {
+    try {
+      final challenge = await remoteDataSource.hardwareRegisterStart(sessionId);
+      return Right(challenge);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registerHardwareOnboardingFinish({
+    required String sessionId,
+    required String publicKey,
+    required String deviceName,
+    required String signature,
+  }) async {
+    try {
+      await remoteDataSource.hardwareRegisterFinish(
+        sessionId: sessionId,
+        publicKey: publicKey,
+        deviceName: deviceName,
+        signature: signature,
+      );
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> registerHardwareForAccountStart() async {
+    try {
+      final challenge = await remoteDataSource.hardwareRegisterForAccountStart();
+      return Right(challenge);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registerHardwareForAccountFinish({
+    required String publicKey,
+    required String deviceName,
+  }) async {
+    try {
+      await remoteDataSource.hardwareRegisterForAccountFinish(
+        publicKey: publicKey,
+        deviceName: deviceName,
+      );
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> hardwareLoginStart(String username) async {
+    try {
+      final challenge = await remoteDataSource.getHardwareChallenge(username);
+      return Right(challenge);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> hardwareLoginFinish({
+    required String username,
+    required String signature,
+  }) async {
+    try {
+      final loginResult = await remoteDataSource.verifyHardwareSignature(
+        username: username,
+        signature: signature,
+      );
+
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
+      }
+
+      final user = UserModel(
+        id: loginResult.userId.isNotEmpty ? loginResult.userId : '0',
+        email: '$username@kerosene.app',
+        name: username,
+        createdAt: DateTime.now(),
+      );
+      await localDataSource.saveUser(user);
+
+      return Right(user);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Voucher onboarding link ──────────────────────────────────────────────────
+  @override
+  Future<Either<Failure, OnboardingPaymentLinkDto>> generateOnboardingLink(
+    String sessionId,
+  ) async {
+    try {
+      final dto = await remoteDataSource.generateOnboardingLink(sessionId);
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId) async {
+    try {
+      await remoteDataSource.mockConfirmOnboarding(sessionId);
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> confirmVoucher({
+    required String voucherId,
+    required String txid,
+  }) async {
+    try {
+      await remoteDataSource.confirmVoucher(voucherId: voucherId, txid: txid);
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Logout ───────────────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      // Fazer logout no servidor (se houver endpoint)
       await remoteDataSource.logout();
-
-      // Limpar dados locais
       await localDataSource.clearAll();
-
       return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao fazer logout: $e'));
     }
   }
 
-  @override
-  Future<Either<Failure, User>> getCurrentUser() async {
-    try {
-      // Tentar obter usuário do cache local
-      final cachedUser = await localDataSource.getUser();
-
-      if (cachedUser != null) {
-        return Right(cachedUser);
-      }
-
-      // Se não houver cache, tentar obter do servidor
-      try {
-        final user = await remoteDataSource.getCurrentUser();
-        await localDataSource.saveUser(user);
-        return Right(user);
-      } catch (e) {
-        // Se falhar, retornar erro
-        return Left(CacheFailure(message: 'Usuário não encontrado'));
-      }
-    } on CacheException catch (e) {
-      return Left(CacheFailure(message: e.message));
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
-    }
-  }
-
+  // ─── isAuthenticated ──────────────────────────────────────────────────────────
   @override
   Future<bool> isAuthenticated() async {
     try {
@@ -198,83 +418,71 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  // ─── clearInvalidSession ──────────────────────────────────────────────────────
+  // Removes the token and cached user locally without calling the backend.
+  // Called when the stored token is mismatched/stale so the user must re-login.
+  @override
+  Future<void> clearInvalidSession() async {
+    try {
+      await localDataSource.removeToken();
+      await localDataSource.removeUser();
+    } catch (_) {}
+  }
+
+  // ─── getCurrentUser ───────────────────────────────────────────────────────────
+  @override
+  Future<Either<Failure, User>> getCurrentUser() async {
+    try {
+      final cachedUser = await localDataSource.getUser();
+      if (cachedUser != null) return Right(cachedUser);
+      return const Left(CacheFailure(message: 'Usuário não encontrado'));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(message: e.message));
+    } catch (e) {
+      return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
+    }
+  }
+
+  // ─── refreshToken ─────────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, User>> refreshToken() async {
     try {
-      final currentToken = await localDataSource.getToken();
-
-      if (currentToken == null) {
-        return Left(AuthFailure(message: 'Token não encontrado'));
+      final newToken = await remoteDataSource.refreshToken();
+      if (newToken.isNotEmpty) {
+        await localDataSource.saveToken(newToken);
+        final currentUser = await localDataSource.getUser();
+        final user =
+            currentUser ??
+            UserModel(
+              id: '0',
+              email: 'user@kerosene.app',
+              name: 'User',
+              createdAt: DateTime.now(),
+            );
+        await localDataSource.saveUser(user);
+        return Right(user);
       }
-
-      final newToken = await remoteDataSource.refreshToken(currentToken);
-      await localDataSource.saveToken(newToken);
-
-      // Obter usuário atual
-      final user = await getCurrentUser();
-      return user;
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return const Left(AuthFailure(message: 'Falha ao renovar token'));
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao renovar token: $e'));
     }
   }
 
+  // ─── validatePassphrase ───────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, User>> verifyTotp({
-    required String username,
-    required String passphrase,
-    required String totpCode,
-  }) async {
+  Future<Either<Failure, bool>> validatePassphrase(String passphrase) async {
     try {
-      // Obter TOTP secret salvo
-      final totpSecret = await localDataSource.getTotpSecret();
-
-      if (totpSecret == null) {
-        return Left(ValidationFailure(message: 'TOTP secret não encontrado'));
+      final storedMnemonic = await localDataSource.getMnemonic();
+      if (storedMnemonic == null) {
+        return const Left(
+          CacheFailure(message: 'Nenhuma passphrase salva encontrada.'),
+        );
       }
-
-      // 1. Verificar TOTP na API (Retorna "ID TOKEN")
-      final responseString = await remoteDataSource.verifyTotp(
-        username: username,
-        passphrase: passphrase,
-        totpSecret: totpSecret,
-        totpCode: totpCode,
-      );
-
-      // 2. Parsear resposta: Esperado "USER_ID JWT_TOKEN"
-      final parts = responseString.trim().split(' ');
-      String token;
-      String userId;
-
-      if (parts.length >= 2) {
-        // Formato ID TOKEN
-        userId = parts[0];
-        token = parts.sublist(1).join(' '); // O resto é o token
-      } else {
-        // Fallback se vier só token
-        token = responseString;
-        userId = username;
-      }
-
-      // 3. Salvar Token e User
-      await localDataSource.saveToken(token);
-
-      final user = UserModel(
-        id: userId,
-        email: '$username@kerosene.app',
-        name: username,
-        createdAt: DateTime.now(),
-      );
-
-      await localDataSource.saveUser(user);
-
-      // 4. Retornar User autenticado
-      return Right(user);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Right(storedMnemonic == passphrase);
     } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao verificar TOTP: $e'));
+      return Left(CacheFailure(message: 'Erro ao validar passphrase: $e'));
     }
   }
 }

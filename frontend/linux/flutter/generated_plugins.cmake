@@ -3,9 +3,13 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  audioplayers_linux
+  flutter_secure_storage_linux
+  rive_native
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  tor
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

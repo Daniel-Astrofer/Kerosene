@@ -30,15 +30,12 @@ class GetTransactionsUseCase {
       offset: offset,
     );
 
-    return result.fold(
-      (failure) => Left(failure),
-      (transactions) {
-        // Ordenar por timestamp (mais recente primeiro)
-        final sortedTransactions = List<Transaction>.from(transactions)
-          ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return result.fold((failure) => Left(failure), (transactions) {
+      // Ordenar por timestamp (mais recente primeiro)
+      final sortedTransactions = List<Transaction>.from(transactions)
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-        return Right(sortedTransactions);
-      },
-    );
+      return Right(sortedTransactions);
+    });
   }
 }

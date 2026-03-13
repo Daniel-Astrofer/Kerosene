@@ -21,18 +21,14 @@ class SendBitcoinUseCase {
     // Validação 1: Valor mínimo (dust limit = 546 satoshis)
     if (amountSatoshis < 546) {
       return const Left(
-        ValidationFailure(
-          message: 'Valor mínimo é 546 satoshis (dust limit)',
-        ),
+        ValidationFailure(message: 'Valor mínimo é 546 satoshis (dust limit)'),
       );
     }
 
     // Validação 2: Valor máximo razoável (21 milhões de BTC)
     if (amountSatoshis > 2100000000000000) {
       return const Left(
-        ValidationFailure(
-          message: 'Valor excede limite máximo de Bitcoin',
-        ),
+        ValidationFailure(message: 'Valor excede limite máximo de Bitcoin'),
       );
     }
 
@@ -56,38 +52,35 @@ class SendBitcoinUseCase {
 
     if (!isValidAddress) {
       return const Left(
-        ValidationFailure(
-          message: 'Endereço Bitcoin inválido',
-        ),
+        ValidationFailure(message: 'Endereço Bitcoin inválido'),
       );
     }
 
     // Validação 5: Verificar saldo suficiente
     final walletResult = await repository.getWalletById(fromWalletId);
 
-    return await walletResult.fold(
-      (failure) => Left(failure),
-      (wallet) async {
-        final totalRequired = amountSatoshis + feeSatoshis;
+    return await walletResult.fold((failure) => Left(failure), (wallet) async {
+      final totalRequired = amountSatoshis + feeSatoshis;
 
-        if (wallet.balanceSatoshis < totalRequired) {
-          return Left(
-            ValidationFailure(
-              message:
-                  'Saldo insuficiente. Necessário: ${totalRequired / 100000000} BTC',
-            ),
-          );
-        }
+      // Convert total required to BTC for comparison
+      final totalRequiredBTC = totalRequired / 100000000.0;
 
-        // Todas as validações passaram, executar transação
-        return await repository.sendBitcoin(
-          fromWalletId: fromWalletId,
-          toAddress: toAddress,
-          amountSatoshis: amountSatoshis,
-          feeSatoshis: feeSatoshis,
-          description: description,
+      if (wallet.balance < totalRequiredBTC) {
+        return Left(
+          ValidationFailure(
+            message: 'Saldo insuficiente. Necessário: $totalRequiredBTC BTC',
+          ),
         );
-      },
-    );
+      }
+
+      // Todas as validações passaram, executar transação
+      return await repository.sendBitcoin(
+        fromWalletId: fromWalletId,
+        toAddress: toAddress,
+        amountSatoshis: amountSatoshis,
+        feeSatoshis: feeSatoshis,
+        description: description,
+      );
+    });
   }
 }

@@ -48,15 +48,12 @@ class WalletCardCarousel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF7B61FF),
-            const Color(0xFF00D4FF),
-          ],
+          colors: [const Color(0xFF7B61FF), const Color(0xFF00D4FF)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7B61FF).withOpacity(0.3),
+            color: const Color(0xFF7B61FF).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -73,7 +70,7 @@ class WalletCardCarousel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -82,11 +79,7 @@ class WalletCardCarousel extends StatelessWidget {
                   size: 24,
                 ),
               ),
-              const Icon(
-                Icons.contactless,
-                color: Colors.white,
-                size: 32,
-              ),
+              const Icon(Icons.contactless, color: Colors.white, size: 32),
             ],
           ),
 

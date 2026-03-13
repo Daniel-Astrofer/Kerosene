@@ -28,12 +28,9 @@ final class WalletLoaded extends WalletState {
     required this.btcToUsdRate,
   });
 
-  /// Saldo total em satoshis
-  int get totalBalanceSatoshis =>
-      wallets.fold(0, (sum, wallet) => sum + wallet.balanceSatoshis);
-
   /// Saldo total em BTC
-  double get totalBalanceBTC => totalBalanceSatoshis / 100000000.0;
+  double get totalBalanceBTC =>
+      wallets.fold(0.0, (sum, wallet) => sum + wallet.balance);
 
   /// Saldo total em USD
   double get totalBalanceUSD => totalBalanceBTC * btcToUsdRate;
@@ -80,10 +77,7 @@ final class TransactionLoaded extends TransactionState {
   final List<Transaction> transactions;
   final bool hasMore;
 
-  const TransactionLoaded({
-    required this.transactions,
-    this.hasMore = false,
-  });
+  const TransactionLoaded({required this.transactions, this.hasMore = false});
 
   /// Transações pendentes
   List<Transaction> get pendingTransactions =>
@@ -93,10 +87,7 @@ final class TransactionLoaded extends TransactionState {
   List<Transaction> get confirmedTransactions =>
       transactions.where((tx) => tx.isConfirmed).toList();
 
-  TransactionLoaded copyWith({
-    List<Transaction>? transactions,
-    bool? hasMore,
-  }) {
+  TransactionLoaded copyWith({List<Transaction>? transactions, bool? hasMore}) {
     return TransactionLoaded(
       transactions: transactions ?? this.transactions,
       hasMore: hasMore ?? this.hasMore,

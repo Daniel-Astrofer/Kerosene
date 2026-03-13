@@ -1,56 +1,55 @@
 import 'package:dartz/dartz.dart';
+import 'package:equatable/equatable.dart';
 import '../../../../core/errors/failures.dart';
-// import '../entities/user.dart';
+import '../../data/datasources/auth_remote_datasource.dart'
+    show SignupInitResult;
 import '../repositories/auth_repository.dart';
 
-/// Caso de uso para cadastro (Signup)
-/// API Kerosene: POST /auth/signup {username, passphrase}
+// ─── Params ──────────────────────────────────────────────────────────────────
+
+class SignupParams extends Equatable {
+  final String username;
+  final String passphrase;
+  final String accountSecurity;
+
+  const SignupParams({
+    required this.username,
+    required this.passphrase,
+    this.accountSecurity = 'STANDARD',
+  });
+
+  @override
+  List<Object> get props => [username, passphrase, accountSecurity];
+}
+
+// ─── UseCase ─────────────────────────────────────────────────────────────────
+
 class SignupUseCase {
   final AuthRepository repository;
 
   const SignupUseCase(this.repository);
 
-  /// Executa o caso de uso de cadastro
-  /// Parâmetros:
-  /// - username: nome de usuário (mínimo 3 caracteres)
-  /// - password: passphrase (mínimo 8 caracteres)
-  Future<Either<Failure, String>> call({
-    required String username,
-    required String password,
-  }) async {
-    // Validações de negócio
-    if (username.isEmpty) {
+  Future<Either<Failure, SignupInitResult>> call(SignupParams params) async {
+    if (params.username.isEmpty) {
       return const Left(
         ValidationFailure(message: 'Username não pode estar vazio'),
       );
     }
-
-    if (username.length < 3) {
+    if (params.username.length < 3) {
       return const Left(
         ValidationFailure(message: 'Username deve ter no mínimo 3 caracteres'),
       );
     }
-
-    if (password.isEmpty) {
+    if (params.passphrase.isEmpty) {
       return const Left(
         ValidationFailure(message: 'Passphrase não pode estar vazia'),
       );
     }
 
-    if (password.length < 8) {
-      return const Left(
-        ValidationFailure(
-          message: 'Passphrase deve ter no mínimo 8 caracteres',
-        ),
-      );
-    }
-
-    // Delega para o repositório
-    // Passa username como email e name para compatibilidade
     return await repository.signup(
-      email: username,
-      password: password,
-      name: username,
+      username: params.username,
+      passphrase: params.passphrase,
+      accountSecurity: params.accountSecurity,
     );
   }
 }

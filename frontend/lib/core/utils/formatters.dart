@@ -11,7 +11,10 @@ class Formatters {
   }
 
   /// Formata data e hora
-  static String formatDateTime(DateTime dateTime, {String pattern = 'dd/MM/yyyy HH:mm'}) {
+  static String formatDateTime(
+    DateTime dateTime, {
+    String pattern = 'dd/MM/yyyy HH:mm',
+  }) {
     return DateFormat(pattern).format(dateTime);
   }
 
@@ -21,7 +24,11 @@ class Formatters {
   }
 
   /// Formata moeda (BRL)
-  static String formatCurrency(double value, {String locale = 'pt_BR', String symbol = 'R\$'}) {
+  static String formatCurrency(
+    double value, {
+    String locale = 'pt_BR',
+    String symbol = 'R\$',
+  }) {
     final formatter = NumberFormat.currency(
       locale: locale,
       symbol: symbol,
@@ -49,7 +56,7 @@ class Formatters {
   /// Formata telefone (Brasil)
   static String formatPhone(String phone) {
     phone = phone.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     if (phone.length == 11) {
       // Celular: (XX) XXXXX-XXXX
       return '(${phone.substring(0, 2)}) ${phone.substring(2, 7)}-${phone.substring(7)}';
@@ -57,7 +64,7 @@ class Formatters {
       // Fixo: (XX) XXXX-XXXX
       return '(${phone.substring(0, 2)}) ${phone.substring(2, 6)}-${phone.substring(6)}';
     }
-    
+
     return phone;
   }
 
@@ -72,7 +79,9 @@ class Formatters {
   static String formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 

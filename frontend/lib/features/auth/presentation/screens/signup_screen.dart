@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:bip39/bip39.dart' as bip39;
-import '../../../../core/presentation/widgets/kerosene_logo.dart';
-import '../../../../core/presentation/widgets/custom_error_dialog.dart';
-import '../../../../core/utils/error_translator.dart';
+import 'package:teste/core/theme/cyber_theme.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
-import 'totp_setup_screen.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -19,8 +18,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
-
-  String _mnemonic = '';
+  late String _mnemonic;
 
   @override
   void initState() {
@@ -29,15 +27,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   void _generateMnemonic() {
-    try {
-      setState(() {
-        _mnemonic = bip39.generateMnemonic(strength: 192);
-      });
-    } catch (e) {
-      setState(() {
-        _mnemonic = "error generating mnemonic try again";
-      });
-    }
+    setState(() {
+      _mnemonic = bip39.generateMnemonic();
+    });
   }
 
   @override
@@ -48,242 +40,147 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthLoading;
-
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthRequiresTotpSetup) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TotpSetupScreen(
-              username: next.username,
-              passphrase: next.passphrase,
-              totpSecret: next.totpSecret,
-            ),
-          ),
-        );
-      } else if (next is AuthError) {
-        showCustomErrorDialog(context, ErrorTranslator.translate(next.message));
-      }
-    });
+    final isLoading = ref.watch(authProvider) is AuthLoading;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF050511), Color(0xFF1A1F3C)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+      backgroundColor: CyberTheme.bgDeep,
+      body: Container(
+        decoration: BoxDecoration(gradient: CyberTheme.bgGradient),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                // Custom Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.05),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Text(
+                        context.l10n.signupScreenTitle,
+                        style: CyberTheme.heading(size: 24),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                // Form Content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Form(
+                    key: _formKey,
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 60),
-                        const KeroseneLogo(size: 80),
+                        Text(
+                          "ESCOLHA SEU HANDLE",
+                          style: CyberTheme.label(
+                            size: 11,
+                            color: CyberTheme.textSecondary,
+                          ).copyWith(letterSpacing: 2),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _usernameController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: CyberTheme.cyberInput(
+                            label: 'Username',
+                            hint: 'ex: Satoshi_99',
+                            icon: Icons.alternate_email_rounded,
+                            suffix: Text(
+                              '@kerosene',
+                              style: TextStyle(
+                                color: CyberTheme.neonCyan.withValues(alpha: 0.8),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return context.l10n.required;
+                            }
+                            if (value.length < 3) {
+                              return context.l10n.signupUsernameMinChars;
+                            }
+                            if (!RegExp(r'^[a-z0-9_]+$').hasMatch(value)) {
+                              return context.l10n.signupUsernameInvalid;
+                            }
+                            return null;
+                          },
+                        ),
+
                         const SizedBox(height: 32),
 
-                        const Text(
-                          'Create Wallet',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        // ─── Mnemonic Section ────────────
+                        Text(
+                          context.l10n.signupMnemonicLabel.toUpperCase(),
+                          style: CyberTheme.label(
+                            size: 11,
+                            color: CyberTheme.textSecondary,
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Setup your username and secure key.',
-                          style: TextStyle(fontSize: 16, color: Colors.white54),
-                          textAlign: TextAlign.center,
+                        const SizedBox(height: 12),
+                        _MnemonicCard(
+                          mnemonic: _mnemonic,
+                          onRegenerate: _generateMnemonic,
                         ),
 
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 14),
 
-                        Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Username
-                              TextFormField(
-                                controller: _usernameController,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[a-z0-9_]'),
-                                  ),
-                                ],
-                                style: const TextStyle(color: Colors.white),
-                                decoration: InputDecoration(
-                                  labelText: 'Username',
-                                  hintText: 'lower case letters, numbers and _',
-                                  hintStyle: const TextStyle(
-                                    color: Colors.white30,
-                                  ),
-                                  labelStyle: const TextStyle(
-                                    color: Colors.white70,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white.withOpacity(0.05),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.person_outline,
-                                    color: Colors.white70,
-                                  ),
-                                  helperText: 'Only a-z, 0-9 and _',
-                                  helperStyle: const TextStyle(
-                                    color: Colors.white38,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty)
-                                    return 'Required';
-                                  if (value.length < 3) return 'Min 3 chars';
-                                  if (!RegExp(
-                                    r'^[a-z0-9_]+$',
-                                  ).hasMatch(value)) {
-                                    return 'Invalid characters';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              const SizedBox(height: 32),
-
-                              // Mnemonic Area
-                              const Text(
-                                'Your Secret Phrase (BIP39)',
+                        // Warning
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: CyberTheme.neonAmber,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                context.l10n.signupMnemonicWarning,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF252A40),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white10),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      _mnemonic,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        height: 1.5,
-                                        fontFamily: 'monospace',
-                                        color: Color(0xFF00D4FF),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        TextButton.icon(
-                                          onPressed: _generateMnemonic,
-                                          icon: const Icon(
-                                            Icons.refresh,
-                                            size: 18,
-                                          ),
-                                          label: const Text('Generate New'),
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: const Color(
-                                              0xFF7B61FF,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.warning_amber_rounded,
-                                    color: Color(0xFFFFC371),
-                                    size: 20,
+                                  fontSize: 11,
+                                  color: CyberTheme.textSecondary.withValues(
+                                    alpha: 0.8,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Save this phrase securely. It is the ONLY way to recover your account.',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white.withOpacity(0.6),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 48),
-
-                              // Button
-                              SizedBox(
-                                height: 56,
-                                child: ElevatedButton(
-                                  onPressed: isLoading ? null : _handleSignup,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF00D4FF),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                  child: isLoading
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.white,
-                                        )
-                                      : const Text(
-                                          'Create Wallet',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
+                                  height: 1.4,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 40), // Bottom padding
+
+                        const SizedBox(height: 44),
+
+                        // ─── Create Button ───────────────
+                        _CyberCreateButton(
+                          isLoading: isLoading,
+                          onPressed: _handleSignup,
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 40),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -292,7 +189,141 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (_formKey.currentState!.validate()) {
       ref
           .read(authProvider.notifier)
-          .signup(username: _usernameController.text, password: _mnemonic);
+          .signup(
+            username: _usernameController.text,
+            password: _mnemonic,
+            accountSecurity: 'STANDARD',
+          );
     }
+  }
+}
+
+class _MnemonicCard extends StatelessWidget {
+  final String mnemonic;
+  final VoidCallback onRegenerate;
+
+  const _MnemonicCard({required this.mnemonic, required this.onRegenerate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CyberTheme.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CyberTheme.border, width: 1),
+        boxShadow: CyberTheme.subtleGlow(CyberTheme.neonCyan),
+      ),
+      child: Column(
+        children: [
+          Text(
+            mnemonic,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 15,
+              height: 1.8,
+              color: CyberTheme.neonCyan,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: mnemonic));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          SizedBox(width: 10),
+                          Text('Frase copiada com segurança!'),
+                        ],
+                      ),
+                      backgroundColor: CyberTheme.neonCyan.withValues(
+                        alpha: 0.85,
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy_rounded, size: 16),
+                label: Text(context.l10n.signupMnemonicCopy),
+                style: TextButton.styleFrom(
+                  foregroundColor: CyberTheme.neonCyan,
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              TextButton.icon(
+                onPressed: onRegenerate,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: Text(context.l10n.signupMnemonicGenerateNew),
+                style: TextButton.styleFrom(
+                  foregroundColor: CyberTheme.neonPurple,
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CyberCreateButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  const _CyberCreateButton({required this.isLoading, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: isLoading
+            ? []
+            : CyberTheme.glow(CyberTheme.neonCyan, blur: 16),
+      ),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: CyberTheme.neonButton(CyberTheme.neonCyan),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: CyberTheme.bgDeep,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Text(
+                context.l10n.signupScreenTitle,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: CyberTheme.bgDeep,
+                  letterSpacing: 0.5,
+                ),
+              ),
+      ),
+    );
   }
 }

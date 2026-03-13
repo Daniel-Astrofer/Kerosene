@@ -1,0 +1,464 @@
+{
+    "info": {
+        "title": "Kerosene API Documentation",
+        "description": "Documentação completa do servidor Kerosene, incluindo headers, body requests e responses.",
+        "version": "1.0.0"
+    },
+    "global_headers": {
+        "Authorization": "Bearer <JWT_TOKEN> (Obrigatório para rotas autenticadas)",
+        "Content-Type": "application/json"
+    },
+    "default_response_format": {
+        "success": "boolean",
+        "message": "string (Mensagem descritiva do resultado)",
+        "data": "object | array | string | null (Payload da resposta)"
+    },
+    "endpoints": {
+        "Authentication": [
+            {
+                "path": "/auth/login",
+                "method": "POST",
+                "description": "Inicia o processo de login usando as credenciais.",
+                "headers": {},
+                "body": {
+                    "username": "string",
+                    "passphrase": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Login request received. Please proceed with TOTP verification.",
+                    "data": "string (ID temporário para a próxima etapa)"
+                }
+            },
+            {
+                "path": "/auth/signup",
+                "method": "POST",
+                "description": "Inicia o processo de registro de um novo usuário.",
+                "headers": {},
+                "body": {
+                    "username": "string",
+                    "passphrase": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Account credentials validated. Please configure your authenticator app using the provided setup key.",
+                    "data": "string (Setup key do TOTP)"
+                }
+            },
+            {
+                "path": "/auth/signup/totp/verify",
+                "method": "POST",
+                "description": "Verifica o código TOTP para finalizar o cadastro.",
+                "headers": {
+                    "X-Device-Hash": "string (Hash único do dispositivo)"
+                },
+                "body": {
+                    "username": "string",
+                    "totpCode": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Device verified and account successfully created. You are now fully authenticated.",
+                    "data": "string (JWT Token final)"
+                }
+            },
+            {
+                "path": "/auth/login/totp/verify",
+                "method": "POST",
+                "description": "Verifica o código TOTP para finalizar o login.",
+                "headers": {
+                    "X-Device-Hash": "string (Hash único do dispositivo)"
+                },
+                "body": {
+                    "username": "string",
+                    "totpCode": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "TOTP verification successful. You have logged in.",
+                    "data": "string (JWT Token final)"
+                }
+            }
+        ],
+        "Wallet Management": [
+            {
+                "path": "/wallet/create",
+                "method": "POST",
+                "description": "Cria uma nova carteira para o usuário autenticado.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "name": "string (Nome da carteira)",
+                    "passphrase": "string (Senha da carteira)"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Awesome! Your wallet was successfully created and is ready to store funds.",
+                    "data": null
+                }
+            },
+            {
+                "path": "/wallet/all",
+                "method": "GET",
+                "description": "Retorna todas as carteiras do usuário.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Successfully retrieved all your wallets.",
+                    "data": [
+                        {
+                            "id": "number",
+                            "name": "string",
+                            "balance": "number"
+                        }
+                    ]
+                }
+            },
+            {
+                "path": "/wallet/find?name={name}",
+                "method": "GET",
+                "description": "Busca os detalhes de uma carteira específica.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Wallet successfully located.",
+                    "data": {
+                        "id": "number",
+                        "name": "string"
+                    }
+                }
+            },
+            {
+                "path": "/wallet/update",
+                "method": "PUT",
+                "description": "Atualiza o nome da carteira.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "name": "string (Nome atual)",
+                    "newName": "string (Novo nome)"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Your wallet details have been successfully updated.",
+                    "data": null
+                }
+            },
+            {
+                "path": "/wallet/delete",
+                "method": "DELETE",
+                "description": "Exclui uma carteira.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "name": "string (Nome da carteira)",
+                    "passphrase": "string (Senha da carteira)"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Wallet successfully permanently deleted.",
+                    "data": null
+                }
+            }
+        ],
+        "Ledger & Balances (Internal)": [
+            {
+                "path": "/ledger/transaction",
+                "method": "POST",
+                "description": "Processa uma transação interna.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "sender": "string (Username, Wallet ID ou Address)",
+                    "receiver": "string (Username, Wallet ID ou Address)",
+                    "amount": "number",
+                    "context": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Transaction successfully processed and ledger has been updated.",
+                    "data": {
+                        "sender": "string",
+                        "receiver": "string",
+                        "amount": "number",
+                        "context": "string"
+                    }
+                }
+            },
+            {
+                "path": "/ledger/history",
+                "method": "GET",
+                "description": "Busca o histórico de transações das últimas 24h.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Transaction history (last 24h) retrieved successfully.",
+                    "data": [
+                        {
+                            "id": "number",
+                            "senderUsername": "string",
+                            "receiverUsername": "string",
+                            "amount": "number",
+                            "timestamp": "string"
+                        }
+                    ]
+                }
+            },
+            {
+                "path": "/ledger/all",
+                "method": "GET",
+                "description": "Retorna todos os balanços (ledgers) do usuário.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Successfully retrieved all ledgers associated with your account.",
+                    "data": [
+                        {
+                            "walletId": "number",
+                            "balance": "number"
+                        }
+                    ]
+                }
+            },
+            {
+                "path": "/ledger/balance?walletName={walletName}",
+                "method": "GET",
+                "description": "Obtém o balanço atual de uma carteira específica.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Current balance successfully retrieved.",
+                    "data": "number (Balanço atual)"
+                }
+            },
+            {
+                "path": "/ledger/payment-request",
+                "method": "POST",
+                "description": "Cria um request de pagamento interno.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "amount": "number",
+                    "receiverWalletName": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Payment request link created successfully.",
+                    "data": {
+                        "id": "string",
+                        "amount": "number",
+                        "receiverWalletName": "string",
+                        "status": "string"
+                    }
+                }
+            },
+            {
+                "path": "/ledger/payment-request/{linkId}/pay",
+                "method": "POST",
+                "description": "Paga um request de pagamento interno.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "payerWalletName": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Payment successful.",
+                    "data": {
+                        "id": "string",
+                        "status": "string"
+                    }
+                }
+            }
+        ],
+        "Bitcoin Transactions (External)": [
+            {
+                "path": "/transactions/deposit-address",
+                "method": "GET",
+                "description": "Obtém o endereço mestre de depósito Bitcoin do sistema.",
+                "headers": {},
+                "response": {
+                    "success": true,
+                    "message": "System master deposit address retrieved successfully. Please send only Bitcoin (BTC) to this address.",
+                    "data": "string (Endereço Bitcoin)"
+                }
+            },
+            {
+                "path": "/transactions/estimate-fee?amount={amount}",
+                "method": "GET",
+                "description": "Estima as taxas de rede Bitcoin para um determinado valor.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Fee estimation calculated successfully based on current blockchain network conditions.",
+                    "data": {
+                        "fast": "number",
+                        "standard": "number",
+                        "slow": "number"
+                    }
+                }
+            },
+            {
+                "path": "/transactions/create-unsigned",
+                "method": "POST",
+                "description": "Cria uma transação não assinada baseada na origem e destino.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "fromAddress": "string",
+                    "toAddress": "string",
+                    "amount": "number",
+                    "feeSatoshis": "number"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Unsigned transaction successfully generated. Please use your secure wallet to sign it.",
+                    "data": {
+                        "rawTxHex": "string (Hex não assinado)",
+                        "txid": "string"
+                    }
+                }
+            },
+            {
+                "path": "/transactions/broadcast",
+                "method": "POST",
+                "description": "Faz o broadcast de uma transação assinada para a blockchain Bitcoin.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "rawTxHex": "string",
+                    "toAddress": "string",
+                    "amount": "number",
+                    "message": "string (Opcional)"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Your transaction has been securely broadcasted to the Bitcoin network.",
+                    "data": {
+                        "txid": "string",
+                        "status": "string"
+                    }
+                }
+            },
+            {
+                "path": "/transactions/status?txid={txid}",
+                "method": "GET",
+                "description": "Consulta o status atual de uma transação na blockchain.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Transaction status retrieved successfully from the blockchain.",
+                    "data": {
+                        "txid": "string",
+                        "confirmations": "number",
+                        "status": "string"
+                    }
+                }
+            }
+        ],
+        "Payment Links (External Bitcoin)": [
+            {
+                "path": "/transactions/create-payment-link",
+                "method": "POST",
+                "description": "Cria um link de pagamento Bitcoin externo.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "amount": "number",
+                    "description": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Your new payment link has been successfully generated and is ready to be shared.",
+                    "data": {
+                        "id": "string",
+                        "amount": "number",
+                        "description": "string",
+                        "bitcoinAddress": "string",
+                        "status": "string"
+                    }
+                }
+            },
+            {
+                "path": "/transactions/payment-link/{linkId}/confirm",
+                "method": "POST",
+                "description": "Confirma que o pagamento foi realizado na blockchain.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "txid": "string",
+                    "fromAddress": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Payment confirmed successfully. The transaction is now being monitored on the blockchain.",
+                    "data": {
+                        "id": "string",
+                        "status": "string"
+                    }
+                }
+            }
+        ],
+        "Notifications": [
+            {
+                "path": "/notifications/register-token",
+                "method": "POST",
+                "description": "Registra o token de notificação Push do dispositivo.",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>",
+                    "X-Device-Hash": "string (Hash único do dispositivo)"
+                },
+                "body": {
+                    "token": "string (Firebase Token)"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Device token has been successfully registered for push notifications.",
+                    "data": null
+                }
+            },
+            {
+                "path": "/notifications/send",
+                "method": "POST",
+                "description": "Envia uma notificação para um token (usado internamente/ou admin).",
+                "headers": {
+                    "Authorization": "Bearer <JWT_TOKEN>"
+                },
+                "body": {
+                    "token": "string",
+                    "title": "string",
+                    "body": "string"
+                },
+                "response": {
+                    "success": true,
+                    "message": "Push notification has been successfully dispatched to the target device.",
+                    "data": null
+                }
+            }
+        ]
+    }
+}
