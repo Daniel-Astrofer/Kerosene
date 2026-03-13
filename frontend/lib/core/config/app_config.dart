@@ -2,12 +2,32 @@
 class AppConfig {
   // ==================== API Configuration ====================
 
-  /// Endereço .onion da API no Tor (Modo Seguro Obrigatório)
-  static const String onionBaseUrl =
-      'http://sc3mol7ughlcsazgt2najfhgbjmwq74gmy4jclnkcjrwc4kc7shmzjad.onion';
+  // ==================== Node Configuration ====================
 
-  /// URL ativa — Exclusiva para a Onion Network. (Mutável pelo relay)
-  static String apiUrl = onionBaseUrl;
+  /// Endereços .onion dos nós remotos
+  static const String nodeIS = 'http://gi6catvghtt6n6ldjl2woyzw4lolevmhb6e46b74dxopytid5f2ovlad.onion';
+  static const String nodeCH = 'http://qo7t6dvhegbiejgva2oo72w2harfcjzcfxh53mo7igvy565jozdnd2ad.onion';
+  static const String nodeSG = 'http://j7lkbq37m2i4mqf7du3fnhiqc6uqizh2vkgtodm45pkbcfzt3fnuqdyd.onion';
+
+  /// Mapeamento de nós com nomes amigáveis
+  static const Map<String, String> nodes = {
+    'Node IS': nodeIS,
+    'Node CH': nodeCH,
+    'Node SG': nodeSG,
+  };
+
+  /// Nó ativo atualmente (URL .onion remota)
+  static String activeNodeUrl = nodeIS;
+
+  /// Nome do nó ativo
+  static String get activeNodeName => 
+      nodes.entries.firstWhere((e) => e.value == activeNodeUrl).key;
+
+  /// Endereço .onion base — Atualmente espelha o activeNodeUrl para compatibilidade
+  static String get onionBaseUrl => activeNodeUrl;
+
+  /// URL ativa da API — Aponta para o relay local (configurado no main.dart)
+  static String apiUrl = nodeIS; 
 
   /// Timeout para requisições HTTP (em milissegundos)
   static const int connectionTimeout = 30000;
@@ -34,7 +54,22 @@ class AppConfig {
       '/auth/passkey/register/onboarding/start';
   static const String authPasskeyOnboardingFinish =
       '/auth/passkey/register/onboarding/finish';
+  static const String authPasskeyLoginStart = '/auth/passkey/login/start';
+  static const String authPasskeyLoginFinish = '/auth/passkey/login/finish';
+   static const String authPasskeyRegisterStart = '/auth/passkey/register/start';
+  static const String authPasskeyRegisterFinish = '/auth/passkey/register/finish';
+  
+  // Sovereign Auth (Hardware Ed25519)
+  static const String authHardwareOnboardingStart = '/auth/hardware/register/onboarding/start';
+  static const String authHardwareOnboardingFinish = '/auth/hardware/register/onboarding/finish';
+  static const String authHardwareChallenge = '/auth/hardware/challenge';
+  static const String authHardwareVerify = '/auth/hardware/verify';
+  static const String authHardwareRegisterStart = '/auth/hardware/register/start';
+  static const String authHardwareRegisterFinish = '/auth/hardware/register/finish';
   static const String voucherOnboardingLink = '/voucher/onboarding-link';
+  static const String voucherOnboardingMockConfirm =
+      '/voucher/onboarding-mock-confirm';
+  static const String voucherConfirm = '/voucher/confirm';
 
   // Notifications
   static const String notificationRegisterToken =

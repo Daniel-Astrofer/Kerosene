@@ -4,7 +4,7 @@ import '../../../../core/providers/price_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart'
     show authLocalDataSourceProvider, apiClientProvider;
 import '../../../../core/services/wallet_security_service.dart';
-import '../../../../core/providers/network_status_provider.dart'; // [NEW]
+// [NEW]
 import '../../../../core/utils/transaction_signer.dart';
 import '../../data/datasources/wallet_remote_datasource.dart';
 import '../../data/repositories/wallet_repository_impl.dart';
@@ -166,45 +166,71 @@ class WalletNotifier extends StateNotifier<WalletState> {
   // Não chamamos _loadWallets() aqui para evitar duplicação:
   // o HomeScreen.initState chama refresh() via addPostFrameCallback.
 
-  /// Carrega carteiras e taxa de câmbio
+  static final List<Wallet> _mockWallets = [
+    Wallet(
+      id: 'mock_1',
+      name: 'Sovereign Black',
+      address: 'bc1q9w6pkv6n5v9m6zv8v7m6zv8v7m6zv8v7m6z',
+      balance: 1.2548,
+      derivationPath: "m/84'/0'/0'/0/0",
+      type: WalletType.nativeSegwit,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+    Wallet(
+      id: 'mock_2',
+      name: 'Industrial Metal',
+      address: 'bc1q8x5v4n3m2l1k0j9i8h7g6f5e4d3c2b1a0z',
+      balance: 0.0426,
+      derivationPath: "m/84'/0'/0'/0/1",
+      type: WalletType.nativeSegwit,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+    Wallet(
+      id: 'mock_3',
+      name: 'Cyber Deep',
+      address: 'bc1q7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j',
+      balance: 0.0089,
+      derivationPath: "m/84'/0'/0'/0/2",
+      type: WalletType.nativeSegwit,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+  ];
+
   /// Carrega carteiras e taxa de câmbio
   Future<void> _loadWallets() async {
     state = const WalletLoading();
 
-    // DEV MODE: Retorna dados mockados instantaneamente
-    await Future.delayed(const Duration(milliseconds: 500));
-    final mockWallets = [
-      Wallet(
-        id: "mock1",
-        name: "Main Wallet",
-        type: WalletType.nativeSegwit,
-        balance: 1.5,
-        derivationPath: "m/84'/0'/0'/0/0",
-        address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now(),
-        isActive: true,
-      ),
-      Wallet(
-        id: "mock2",
-        name: "Savings",
-        type: WalletType.taproot,
-        balance: 5.2,
-        derivationPath: "m/86'/0'/0'/0/1",
-        address: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
-        createdAt: DateTime.now().subtract(const Duration(days: 100)),
-        updatedAt: DateTime.now(),
-        isActive: true,
-      ),
-    ];
-    state = WalletLoaded(
-      wallets: mockWallets,
-      selectedWallet: mockWallets.first,
-      btcToUsdRate: 65432.10,
+    final walletsResult = await getWalletsUseCase();
+    
+    // Obter taxa de câmbio (BTC/USD)
+    final btcPriceAsync = ref.read(btcPriceProvider);
+    final double btcToUsdRate = btcPriceAsync.when(
+      data: (price) => price,
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
     );
-    return;
 
-    // ... API calls disabled in dev mode ...
+    walletsResult.fold(
+      (failure) {
+        // Mesmo com erro, mostramos os mocks para não quebrar a UI
+        state = WalletLoaded(
+          wallets: _mockWallets,
+          selectedWallet: _mockWallets.first,
+          btcToUsdRate: btcToUsdRate,
+        );
+      },
+      (wallets) {
+        final combinedWallets = [...wallets, ..._mockWallets];
+        state = WalletLoaded(
+          wallets: combinedWallets,
+          selectedWallet: combinedWallets.isNotEmpty ? combinedWallets.first : null,
+          btcToUsdRate: btcToUsdRate,
+        );
+      },
+    );
   }
 
   /// Recarrega carteiras

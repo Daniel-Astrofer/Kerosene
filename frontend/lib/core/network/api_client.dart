@@ -280,9 +280,7 @@ class _LogInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint(
-      '✅ [${response.statusCode}] ${response.requestOptions.path}',
-    );
+    debugPrint('✅ [${response.statusCode}] ${response.requestOptions.path}');
     super.onResponse(response, handler);
   }
 

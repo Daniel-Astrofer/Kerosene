@@ -31,7 +31,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     super.didChangeDependencies();
     // Pre-carregar imagens pesadas para evitar "Jank" ao navegar para as telas
     precacheImage(const AssetImage('assets/presentationimage.png'), context);
-    precacheImage(const AssetImage('assets/kerosenelogo.png'), context);
+    precacheImage(const AssetImage('assets/logo/kerosene-logo.png'), context);
   }
 
   @override
@@ -45,10 +45,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Column(
+      body: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/presentationimage.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
@@ -59,7 +68,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const KeroseneLogo(size: 80), // Increased size
+                    GestureDetector(
+                      onLongPress: () {
+                        // Secret shortcut for developers
+                        Navigator.pushNamed(context, '/gallery');
+                      },
+                      child: const KeroseneLogo(size: 80),
+                    ), // Increased size
                     const SizedBox(width: 16),
                     Text(
                       'Kerosene',
@@ -163,6 +178,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

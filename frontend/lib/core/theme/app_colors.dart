@@ -10,7 +10,7 @@ class AppColors {
   ); // Superfície levemente elevada
 
   // ─── Primary Accent (Neon Cyan) ────────────────
-  static const Color primary = Color(0xFF00FFC2);
+  static const Color primary = Color(0xFF00D4FF); // Neon Blue/Cyan instead of Green
 
   // ─── Secondary Blues ───────────────────────────
   static const Color secondary1 = Color(0xFF00B4FF);
@@ -24,7 +24,7 @@ class AppColors {
   static const Color black = Colors.black;
 
   // ─── Semantic Colors ───────────────────────────
-  static const Color success = Color(0xFF00FFC2);
+  static const Color success = Color(0xFF00D4FF);
   static const Color error = Color(0xFFFF003C);
   static const Color warning = Color(0xFFFFC371);
 }

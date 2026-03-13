@@ -20,8 +20,8 @@ class CyberTheme {
   static const Color bgElevated = Color(0xFF181824);
 
   // ─── Neon / Accent Palette ─────────────────────────────────
-  static const Color neonCyan = Color(0xFF00FFC2); // Primary positive
-  static const Color neonBlue = Color(0xFF00B4FF); // Links / Info
+  static const Color neonCyan = Color(0xFF00D4FF); // Was Cyan/Green, now Neon Blue
+  static const Color neonBlue = Color(0xFF4CC9F0); // A lighter blue
   static const Color neonRed = Color(0xFFFF003C); // Error / Destructive
   static const Color neonPurple = Color(0xFF7B61FF); // Accent / Branding
   static const Color neonAmber = Color(0xFFFFC371); // Warnings
@@ -37,7 +37,7 @@ class CyberTheme {
 
   // ─── Gradients ─────────────────────────────────────────────
   static const LinearGradient bgGradient = LinearGradient(
-    colors: [bgDeep, Color(0xFF0A0E1A)],
+    colors: [bgDeep, Color(0xFF080808)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

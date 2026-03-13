@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../domain/entities/wallet.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import '../../../../shared/widgets/brushed_metal_container.dart';
 
 class WalletCard extends StatefulWidget {
   final Wallet wallet;
@@ -34,11 +35,11 @@ class WalletCard extends StatefulWidget {
   List<Color> _getCardGradient() {
     // Distinct palettes for the stack fan-out effect
     final List<List<Color>> palettes = [
-      // 0: Kerosene Green (Primary)
+      // 0: Kerosene Sky Blue (Primary)
       [
-        const Color(0xFF00FF94),
-        const Color(0xFF00CC75),
-        const Color(0xFF00AA60),
+        const Color(0xFF00D4FF),
+        const Color(0xFF00AACC),
+        const Color(0xFF0088AA),
       ],
       // 1: Deep Purple
       [
@@ -266,6 +267,16 @@ class _WalletCardState extends State<WalletCard>
                   ),
                   child: Stack(
                     children: [
+                      // GPU Brushed Metal Texture
+                      Positioned.fill(
+                        child: BrushedMetalContainer(
+                          width: width,
+                          height: height,
+                          baseColor: colors.first.withValues(alpha: 0.85),
+                          borderRadius: 20,
+                        ),
+                      ),
+
                       // Pattern
                       Positioned.fill(
                         child: RepaintBoundary(
@@ -286,7 +297,7 @@ class _WalletCardState extends State<WalletCard>
                           child: Opacity(
                             opacity: 0.85,
                             child: Image.asset(
-                              'assets/kerosenelogo.png',
+                              'assets/logo/kerosene-logo.png',
                               height: 22,
                               fit: BoxFit.contain,
                               color: Colors.black,

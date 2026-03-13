@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../../../../core/config/app_config.dart';
@@ -24,14 +23,23 @@ class TokenInterceptor extends QueuedInterceptor {
   ) async {
     try {
       final path = options.path;
-      final isAuthRoute =
-          path.contains('/auth/login') || path.contains('/auth/signup');
+      // Exclude ALL onboarding-related paths from token injection. 
+      // These use sessionId as a query parameter, and sending a malformed 
+      // Bearer token (like the sessionId itself) causes 401 JWT errors.
+      final isOnboardingOrAuth =
+          path.contains('/auth/login') ||
+          path.contains('/auth/signup') ||
+          path.contains('/auth/passkey/register/onboarding') ||
+          path.contains('/voucher/');
 
-      // 1. Injetar Token se não for rota de Auth e se não estiver presente
-      if (!isAuthRoute && options.headers['Authorization'] == null) {
+      // 1. Injetar Token se não for rota de Auth/Onboarding e se não estiver presente
+      if (!isOnboardingOrAuth && options.headers['Authorization'] == null) {
         final token = await localDataSource.getToken();
         if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
+          // Double check it looks like a JWT (contains periods) to avoid "compact JWT string" errors
+          if (token.contains('.')) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
       }
 
@@ -84,13 +92,21 @@ class TokenInterceptor extends QueuedInterceptor {
         statusCode == 401 ||
         (statusCode == 403 &&
             (errorCode.startsWith('ERR_AUTH_') ||
-                errorCode == 'ERR_AUTH_UNRECOGNIZED_DEVICE'));
+                errorCode == 'ERR_AUTH_UNRECOGNIZED_DEVICE' ||
+                (err.response?.data?.toString().contains('JWT') ?? false)));
 
-    if (isInvalidSession && !_redirecting) {
+    final path = err.requestOptions.path;
+    final isAuthRoute =
+        path.contains('/auth/login') || path.contains('/auth/signup');
+
+    if (isInvalidSession && !isAuthRoute && !_redirecting) {
       _redirecting = true;
       debugPrint(
         '🔑 Sessão inválida [$statusCode/$errorCode] — limpando sessão e redirecionando para /welcome',
       );
+      if (err.response?.data != null) {
+        debugPrint('📄 Resposta do servidor: ${err.response?.data}');
+      }
 
       // 1. Limpar toda a sessão local
       try {
@@ -134,7 +150,9 @@ class TokenInterceptor extends QueuedInterceptor {
         });
       });
 
-      return; // Não propagar o erro — a navegação foi agendada
+      // IMPORTANTE: Devemos propagar o erro para que a fila do QueuedInterceptor não trave!
+      handler.next(err);
+      return;
     }
 
     handler.next(err);

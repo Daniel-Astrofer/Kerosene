@@ -12,6 +12,8 @@ import '../../../../core/security/app_pin_service.dart';
 import '../../../../core/security/biometric_service.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../providers/wallet_provider.dart';
+import '../../../../core/presentation/widgets/glass_container.dart';
+import '../widgets/amount_input_pad.dart';
 
 class WithdrawScreen extends ConsumerStatefulWidget {
   final String walletId;
@@ -124,164 +126,190 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   Widget build(BuildContext context) {
     final feeAsyncValue = ref.watch(feeEstimateProvider(_currentAmount));
     final sendState = ref.watch(withdrawProvider);
-
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(
-          context.l10n.saqueAction,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          AppBar(
+            title: Text(
+              context.l10n.saqueAction,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Address Input
-              Text(
-                context.l10n.withdrawAddressLabel,
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildInputBox(
-                controller: _addressController,
-                hint: context.l10n.withdrawAddressLabel,
-                icon: Icons.qr_code_scanner_rounded,
-              ),
-
-              const SizedBox(height: 32),
-
-              // Amount Input
-              Text(
-                context.l10n.withdrawAmountLabel,
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildInputBox(
-                controller: _amountController,
-                hint: '0.00',
-                icon: Icons.currency_bitcoin_rounded,
-                isNumeric: true,
-                onChanged: _onAmountChanged,
-              ),
-
-              const SizedBox(height: 32),
-
-              // TOTP code
-              Text(
-                'Código TOTP (6 dígitos)',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildInputBox(
-                controller: _totpController,
-                hint: '000000',
-                icon: Icons.lock_clock_rounded,
-                isNumeric: true,
-              ),
-
-              const SizedBox(height: 32),
-
-              // Network Fee section
-              if (_currentAmount > 0)
-                feeAsyncValue.when(
-                  data: (feeData) => _buildFeeSection(feeData),
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFD0F288)),
-                  ),
-                  error: (err, _) => Center(
-                    child: Text(
-                      context.l10n.withdrawErrorFee,
-                      style: TextStyle(color: Colors.red[300]),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Address Input
+                  Text(
+                    context.l10n.withdrawAddressLabel,
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  _buildInputBox(
+                    controller: _addressController,
+                    hint: context.l10n.withdrawAddressLabel,
+                    icon: Icons.qr_code_scanner_rounded,
+                  ),
 
-              const SizedBox(height: 48),
+                  const SizedBox(height: 32),
 
-              // Send Action
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed:
-                      (_currentAmount > 0 &&
-                          sendState.isLoading == false &&
-                          feeAsyncValue.value != null)
-                      ? () => _handleWithdraw(context, feeAsyncValue.value)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD0F288),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                  // Amount Input
+                  Text(
+                    context.l10n.withdrawAmountLabel,
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
                   ),
-                  child: sendState.isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : Text(
-                          context.l10n.withdrawAction,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
+                  const SizedBox(height: 12),
+                  _buildInputBox(
+                    controller: _amountController,
+                    hint: '0.00',
+                    icon: Icons.currency_bitcoin_rounded,
+                    isNumeric: true,
+                    readOnly: true,
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => AmountInputPad(
+                          onNumberPressed: (val) {
+                            final current = _amountController.text;
+                            _amountController.text = current + val;
+                            _onAmountChanged(_amountController.text);
+                          },
+                          onBackspace: () {
+                            final current = _amountController.text;
+                            if (current.isNotEmpty) {
+                              _amountController.text = current.substring(0, current.length - 1);
+                              _onAmountChanged(_amountController.text);
+                            }
+                          },
+                          onDecimal: () {
+                            final current = _amountController.text;
+                            if (!current.contains('.')) {
+                              _amountController.text = current.isEmpty ? '0.' : '$current.';
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // TOTP code
+                  Text(
+                    'Código TOTP (6 dígitos)',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInputBox(
+                    controller: _totpController,
+                    hint: '000000',
+                    icon: Icons.lock_clock_rounded,
+                    isNumeric: true,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Network Fee section
+                  if (_currentAmount > 0)
+                    feeAsyncValue.when(
+                      data: (feeData) => _buildFeeSection(feeData),
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(color: Color(0xFFD0F288)),
+                      ),
+                      error: (err, _) => Center(
+                        child: Text(
+                          context.l10n.withdrawErrorFee,
+                          style: TextStyle(color: Colors.red[300]),
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 48),
+
+                  // Send Action
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed:
+                          (_currentAmount > 0 &&
+                              sendState.isLoading == false &&
+                              feeAsyncValue.value != null)
+                          ? () => _handleWithdraw(context, feeAsyncValue.value)
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0033FF),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        disabledBackgroundColor: const Color(0xFF0033FF).withOpacity(0.2),
+                      ),
+                          : const Text(
+                              "CONTINUE",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   Widget _buildInputBox({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
     bool isNumeric = false,
+    bool readOnly = false,
+    VoidCallback? onTap,
     Function(String)? onChanged,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
+    return GlassContainer(
+      blur: 20,
+      opacity: 0.05,
+      borderRadius: BorderRadius.circular(20),
+      padding: EdgeInsets.zero,
       child: TextField(
         controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
         keyboardType: isNumeric
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
@@ -371,11 +399,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.02),
+              ? color.withOpacity(0.1)
+              : Colors.white.withOpacity(0.02),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withValues(alpha: 0.05),
+            color: isSelected ? color : Colors.white.withOpacity(0.05),
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -400,3 +428,4 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 }
+```

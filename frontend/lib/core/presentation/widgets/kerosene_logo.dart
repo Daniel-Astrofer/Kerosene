@@ -8,7 +8,7 @@ class KeroseneLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/kerosenelogo.png',
+      'assets/logo/kerosene-logo.png',
       width: size,
       height: size,
       fit: BoxFit.contain,

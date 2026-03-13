@@ -4,19 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:proximity_sensor/proximity_sensor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import '../../../../core/security/biometric_service.dart';
-import '../../../../core/security/app_pin_service.dart';
-import '../../../../core/presentation/widgets/pin_dialog.dart';
 import '../../../../l10n/app_localizations.dart';
 
 import '../../../../core/providers/price_provider.dart';
 import '../../../../core/providers/currency_provider.dart';
 import '../../../../core/presentation/widgets/glass_container.dart';
 
-import '../../../market/presentation/screens/market_screen.dart';
-import '../../../nft/presentation/screens/nft_marketplace_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
-
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 
@@ -27,10 +21,12 @@ import '../../../wallet/presentation/state/wallet_state.dart';
 import '../../../wallet/presentation/widgets/infinite_wallet_cards.dart';
 import '../../../wallet/presentation/screens/create_wallet_screen.dart';
 import '../../../wallet/presentation/screens/send_money_screen.dart';
+import '../../../wallet/presentation/screens/receive_screen.dart';
 import '../../../wallet/presentation/screens/unified_transaction_screen.dart';
 
 import '../widgets/animated_balance_display.dart';
-import '../widgets/pending_payment_link_item.dart';
+import '../widgets/tor_loading_overlay.dart';
+
 import '../widgets/nfc_searching_overlay.dart';
 
 import '../../../../shared/widgets/bitcoin_refresh_indicator.dart';
@@ -50,15 +46,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
-  int _activeTab = 0; // 0: Home, 1: Market, 2: Chat, 3: Profile
+  int _activeTab = 0; // 0: Home, 1: Profile
   bool _isNfcSearching = false;
   bool _showAllTransactions = false;
 
-  // App-lock state
-  bool _isLocked = true;
-  bool _isAuthenticating = false;
-  final _biometricService = BiometricService();
-  final _pinService = AppPinService();
+  bool _isTorLoading = false; // Overlay flag
 
   StreamSubscription<int>? _proximitySub;
   DateTime _lastProximityToggle = DateTime(2000);
@@ -70,56 +62,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Iniciar carregamento das wallets e transações
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(walletProvider.notifier).refresh();
-      _authenticate();
+      if (mounted) {
+        setState(() {
+          _isTorLoading = true;
+        });
+      }
     });
 
     // Proximity Sensor: Gesture detection for robust "wave" gesture
     _initProximitySensor();
   }
 
-  Future<void> _authenticate() async {
-    if (_isAuthenticating) return;
-    setState(() => _isAuthenticating = true);
-
-    final canAuth = await _biometricService.canAuthenticate();
-    final isEnrolled = await _biometricService.isBiometricEnrolled();
-
-    // If device doesn't support security at all, OR if it's supported but nothing is enrolled
-    if (!canAuth || !isEnrolled) {
-      // Device has no system biometric/PIN or it's not set up — use in-app PIN
-      setState(() => _isAuthenticating = false);
-      if (!mounted) return;
-      final hasPinSet = await _pinService.hasPinSet();
-      if (!mounted) return;
-      final success = await PinDialog.show(context, isSetup: !hasPinSet);
-
-      if (mounted) setState(() => _isLocked = !success);
-      return;
-    }
-
-    // Device supports system biometrics/PIN AND is enrolled — use it
-    final success = await _biometricService.authenticate(
-      localizedReason: 'Authenticate to access Kerosene',
-    );
-
-    if (mounted) {
-      setState(() {
-        _isLocked = !success;
-        _isAuthenticating = false;
-      });
-    }
-  }
-
   bool? _lastProximityValue;
 
-  void _togglePrivacy({required String reason}) {
-    final now = DateTime.now();
-    // Compact debounce of 2s shared across sensors
-    if (now.difference(_lastProximityToggle).inMilliseconds > 2000) {
-      _lastProximityToggle = now;
-      debugPrint('PRIVACY TOGGLE: $reason');
-
-      HapticFeedback.heavyImpact();
+    void _togglePrivacy({required String reason}) {
       Future.delayed(
         const Duration(milliseconds: 50),
         () => HapticFeedback.mediumImpact(),
@@ -128,7 +84,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final current = ref.read(balanceVisibilityProvider);
       ref.read(balanceVisibilityProvider.notifier).state = !current;
     }
-  }
 
   void _initProximitySensor() {
     _proximitySub = ProximitySensor.events.listen((dynamic event) {
@@ -247,10 +202,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final walletState = ref.watch(walletProvider);
 
-    debugPrint(
-      '>>> HOME BUILD - _activeTab: $_activeTab, WalletState: ${walletState.runtimeType}',
-    );
-
     return PopScope(
       canPop:
           false, // authenticated users cannot navigate back to login/welcome
@@ -263,22 +214,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF000000), Color(0xFF101018)],
+                  colors: [Color(0xFF000000), Color(0xFF0A0A0A)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
             ),
 
-            // Main Content (hidden while locked)
-            if (!_isLocked)
-              KeyedSubtree(
-                key: ValueKey('tab_$_activeTab'),
-                child: _buildBody(walletState),
-              ),
+            // Main Content (always visible)
+            KeyedSubtree(
+              key: ValueKey('tab_$_activeTab'),
+              child: _buildBody(walletState),
+            ),
 
             // Floating Bottom Navigation Dock
-            if (!_isLocked) _buildFloatingDock(),
+            if (walletState is WalletLoaded) _buildFloatingDock(),
 
             // NFC Searching Overlay
             if (_isNfcSearching)
@@ -296,84 +246,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
               ),
 
-            // Lock Overlay
-            if (_isLocked) _buildLockOverlay(),
+            // ── TOR SHADER LOADING OVERLAY ───────────────────
+            if (_isTorLoading)
+              TorLoadingOverlay(
+                onComplete: () async {
+                  if (mounted) {
+                    setState(() => _isTorLoading = false);
+                  }
+                },
+              ),
+
+            // Removed Lock Overlay per user request
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLockOverlay() {
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.lock_outline_rounded,
-                color: Colors.white,
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 28),
-            const Text(
-              'Kerosene',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Authentication required',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 40),
-            if (_isAuthenticating)
-              const CircularProgressIndicator(
-                color: Color(0xFFF7931A),
-                strokeWidth: 2,
-              )
-            else
-              GestureDetector(
-                onTap: _authenticate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Text(
-                    'Unlock',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Lock overlay removed per user request
 
   Widget _buildBody(WalletState walletState) {
     // Keep WebSocket connection alive
@@ -383,10 +273,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 0:
         return _buildHomeTab(walletState);
       case 1:
-        return const MarketScreen();
-      case 2:
-        return const NftMarketplaceScreen();
-      case 3:
         return const ProfileScreen();
       default:
         return const SizedBox.shrink();
@@ -421,58 +307,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Content
           _buildWalletContent(walletState),
 
-          // 4. Pending Payment Links (Horizontal Scroll)
-          Consumer(
-            builder: (context, ref, child) {
-              final linksAsync = ref.watch(paymentLinksProvider);
-
-              return linksAsync.when(
-                data: (links) {
-                  if (links.isEmpty) return const SliverToBoxAdapter();
-
-                  return SliverPadding(
-                    padding: const EdgeInsets.only(top: 24),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: const Text(
-                              "Pending Deposits",
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 150,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              itemCount: links.length,
-                              itemBuilder: (context, index) {
-                                return PendingPaymentLinkItem(
-                                  paymentLink: links[index],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(),
-                error: (e, _) => const SliverToBoxAdapter(),
-              );
-            },
-          ),
-
           // 5. Recent Transactions
           Consumer(
             builder: (context, ref, child) {
@@ -494,23 +328,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-                    // Filter chips
-                    SliverToBoxAdapter(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            width: 1,
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        child: _buildTxFilterControl(ref),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
                     // Transaction list driven by FutureProvider
                     ...historyAsync.when(
@@ -638,88 +455,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  ///vamos ver se esta fucnionando mesmo
   Widget _buildFloatingDock() {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Positioned(
-      bottom: 30 + bottomPadding,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: GlassContainer(
-          blur: 20,
-          opacity: 0.1,
-          borderRadius: BorderRadius.circular(40),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDockIcon(0),
-              const SizedBox(width: 25),
-              _buildDockIcon(1),
-              const SizedBox(width: 25),
-              _buildDockIcon(2),
-              const SizedBox(width: 25),
-              _buildDockIcon(3),
-            ],
-          ),
+      bottom: 24 + bottomPadding,
+      left: 24,
+      right: 24,
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: const Color(0xFF141416),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildDockIcon(0, Icons.home_filled),
+            _buildDockIcon(1, Icons.account_balance_wallet_rounded),
+            _buildDockIcon(2, Icons.bar_chart_rounded),
+            _buildDockIcon(3, Icons.person_outline_rounded),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDockIcon(int index) {
+  Widget _buildDockIcon(int index, IconData icon) {
     bool isActive = _activeTab == index;
-
-    Widget iconWidget;
-    switch (index) {
-      case 0:
-        iconWidget = CyberHomeIcon(isActive: isActive);
-        break;
-      case 1:
-        iconWidget = CyberMarketIcon(isActive: isActive);
-        break;
-      case 2:
-        iconWidget = CyberNftIcon(isActive: isActive);
-        break;
-      case 3:
-        iconWidget = CyberProfileIcon(isActive: isActive);
-        break;
-      default:
-        iconWidget = const SizedBox();
-    }
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _activeTab = index;
-        });
+        if (index == 0 || index == 3) { // Only home and profile are handled currently
+          setState(() {
+            _activeTab = index == 0 ? 0 : 1;
+          });
+        }
       },
-      child: Container(
-        padding: const EdgeInsets.all(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutQuart,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
-          color: isActive
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.transparent,
+          color: isActive ? const Color(0xFFFCFBE9) : Colors.transparent, // A pale yellow/white for active
           shape: BoxShape.circle,
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [],
         ),
-        child: iconWidget,
+        child: Icon(
+          icon,
+          color: isActive ? Colors.black : Colors.white.withValues(alpha: 0.4),
+          size: 24,
+        ),
       ),
     );
   }
 
   Widget _buildWalletContent(WalletState state) {
-    debugPrint('>>> _buildWalletContent - State type: ${state.runtimeType}');
-
     if (state is WalletLoading) {
       return const SliverToBoxAdapter(
         child: SizedBox(
@@ -810,13 +608,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onCardTap: (wallet) {
                         final index = state.wallets.indexOf(wallet);
                         _onIndexChanged(index);
-                        // Navigate to configuration - REMOVIDO para manter fluxo de seleção de cartão
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (_) => WalletConfigScreen(wallet: wallet),
-                        //   ),
-                        // );
                         ref.read(walletProvider.notifier).selectWallet(wallet);
                       },
                     ),
@@ -824,6 +615,105 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
             ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+          // --- NEW: LAST TRANSACTION HIGHLIGHT (CYBER STYLE) ---
+          Consumer(
+            builder: (context, ref, child) {
+              final historyAsync = ref.watch(transactionHistoryProvider);
+              final filteredAsync = ref.watch(filteredTransactionsProvider);
+              return SliverToBoxAdapter(
+                child: historyAsync.when(
+                  data: (_) {
+                    final txs = filteredAsync.valueOrNull ?? [];
+                    if (txs.isEmpty) return const SizedBox.shrink();
+                    final lastTx = txs.first;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: GestureDetector(
+                        onTap: () => _showTransactionDetails(lastTx),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF141416),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: (lastTx.type == TransactionType.send
+                                          ? const Color(0xFFFF5252)
+                                          : const Color(0xFF00FF94))
+                                      .withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  lastTx.type == TransactionType.send
+                                      ? Icons.north_east_rounded
+                                      : Icons.south_west_rounded,
+                                  color: lastTx.type == TransactionType.send
+                                      ? const Color(0xFFFF5252)
+                                      : const Color(0xFF00FF94),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      "ÚLTIMA TRANSAÇÃO",
+                                      style: TextStyle(
+                                        color: Color(0xFF00D4FF),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      lastTx.type == TransactionType.send
+                                          ? "Enviado para ${lastTx.toAddress.length > 8 ? lastTx.toAddress.substring(0, 8) : lastTx.toAddress}..."
+                                          : "Recebido de ${lastTx.fromAddress.length > 8 ? lastTx.fromAddress.substring(0, 8) : lastTx.fromAddress}...",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                "${lastTx.type == TransactionType.send ? '-' : '+'}${lastTx.amountBTC.toStringAsFixed(8)}",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, s) => const SizedBox.shrink(),
+                ),
+              );
+            },
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 20)),
@@ -840,31 +730,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   opacity: visibility,
                   child: Transform.scale(
                     scale: 0.8 + (0.2 * visibility),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: _buildPrimaryActionButton(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        height: 85,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141416),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildActionItem(
                               context,
-                              icon: Icons.call_made_rounded,
-                              label: 'Enviar', // Send
-                              color: const Color(0xFF00FF94),
+                              icon: Icons.north_east_rounded,
+                              label: 'Transfer',
                               isSend: true,
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildPrimaryActionButton(
+                            Container(width: 1, height: 40, color: Colors.white10),
+                            _buildActionItem(
                               context,
-                              icon: Icons.call_received_rounded,
-                              label: 'Receber', // Receive
-                              color: const Color(0xFF00D4FF),
+                              icon: Icons.south_west_rounded,
+                              label: 'Receive',
                               isSend: false,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -884,64 +775,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 
-  Widget _buildPrimaryActionButton(
+  Widget _buildActionItem(
     BuildContext context, {
     required IconData icon,
     required String label,
-    required Color color,
     required bool isSend,
   }) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                UnifiedTransactionScreen(isInitialSend: isSend),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(0.0, 1.0); // Slide up from bottom
-                  const end = Offset.zero;
-                  const curve = Curves.easeOutQuart;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final walletState = ref.read(walletProvider);
+          if (walletState is! WalletLoaded) return;
+          final selectedWallet = walletState.selectedWallet;
+          if (selectedWallet == null) return;
 
-                  var tween = Tween(
-                    begin: begin,
-                    end: end,
-                  ).chain(CurveTween(curve: curve));
-
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
-      },
-      child: GlassContainer(
-        blur: 15,
-        opacity: 0.05,
-        borderRadius: BorderRadius.circular(24),
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 32),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => isSend
+                  ? SendMoneyScreen(walletId: selectedWallet.id)
+                  : ReceiveScreen(initialWallet: selectedWallet),
             ),
-            const SizedBox(height: 16),
+          );
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 24),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                letterSpacing: -0.3,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -1103,100 +971,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildTxFilterControl(WidgetRef ref) {
-    final currentFilter = ref.watch(transactionFilterProvider);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: TransactionFilter.values.map((filter) {
-          return _buildModernFilterChip(
-            ref: ref,
-            filter: filter,
-            isSelected: currentFilter == filter,
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildModernFilterChip({
-    required WidgetRef ref,
-    required TransactionFilter filter,
-    required bool isSelected,
-  }) {
-    IconData icon;
-    Color activeColor;
-
-    switch (filter) {
-      case TransactionFilter.all:
-        icon = Icons.grid_view_rounded;
-        activeColor = const Color(0xFF7B61FF);
-        break;
-      case TransactionFilter.send:
-        icon = Icons.arrow_upward_rounded;
-        activeColor = const Color(0xFFFF5252);
-        break;
-      case TransactionFilter.receive:
-        icon = Icons.arrow_downward_rounded;
-        activeColor = const Color(0xFF00FF94);
-        break;
-    }
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        ref.read(transactionFilterProvider.notifier).state = filter;
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? activeColor.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? activeColor.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.08),
-            width: 1.5,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: activeColor.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? activeColor : Colors.white38,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              filter.label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // Removed _showWithdrawDialog and _buildWithdrawField
 }
@@ -1235,180 +1010,22 @@ class _TotalBalanceDisplayContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isBalanceVisible = ref.watch(balanceVisibilityProvider);
-    final isHighPrecision = ref.watch(decimalPrecisionProvider);
-
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.totalBalanceGeneric,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: () {
-                ref.read(balanceVisibilityProvider.notifier).state =
-                    !isBalanceVisible;
-              },
-              child: CyberEyeIcon(isVisible: isBalanceVisible, size: 18),
-            ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: () {
-                ref.read(decimalPrecisionProvider.notifier).state =
-                    !isHighPrecision;
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white24),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  isHighPrecision ? ".00000000" : ".000",
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: 20),
+        // Simple Huge Balance Display
+        AnimatedBalanceDisplay(
+          balance: totalBalanceBtc,
+          decimalPlaces: 2, // Like B 22,578.66
+          prefix: '₿ ', // Or simple 'B '
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 48,
+            fontWeight: FontWeight.w300,
+            letterSpacing: 0.5,
+          ),
         ),
-        const SizedBox(height: 8),
-        isBalanceVisible
-            ? Column(
-                children: [
-                  // 1. Primary: BTC Balance (Always)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      AnimatedBalanceDisplay(
-                        balance: totalBalanceBtc,
-                        decimalPlaces: isHighPrecision ? 8 : 3,
-                        enableFlash: true,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -1.0,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // BTC Label
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFF7931A,
-                          ).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          "BTC",
-                          style: TextStyle(
-                            color: Color(0xFFF7931A),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // 2. Secondary: Fiat Balance (Converted) with Toggle
-                  Consumer(
-                    builder: (context, ref, child) {
-                      return btcPriceAsync.when(
-                        data: (price) {
-                          // Determining currency and price
-                          final convertedAmount = convertFromBtc(
-                            totalBalanceBtc,
-                            currency,
-                            price,
-                            ref.watch(btcEurPriceProvider),
-                            ref.watch(btcBrlPriceProvider),
-                          );
-
-                          // Formatting based on App Locale for formatting, but Currency symbol from currency
-
-                          return GestureDetector(
-                            onTap: () {
-                              ref
-                                  .read(currencyProvider.notifier)
-                                  .toggleCurrency();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AnimatedBalanceDisplay(
-                                    balance: convertedAmount,
-                                    decimalPlaces: 2,
-                                    prefix: currency == Currency.brl
-                                        ? 'R\$ '
-                                        : currency == Currency.eur
-                                        ? '€ '
-                                        : '\$ ',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.swap_vert_rounded,
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    size: 14,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                        loading: () => const SizedBox(height: 20),
-                        error: (_, __) => const SizedBox(height: 20),
-                      );
-                    },
-                  ),
-                ],
-              )
-            : const Text(
-                "••••••••",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 44,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -1.5,
-                ),
-              ),
+        const SizedBox(height: 10),
       ],
     );
   }
@@ -1499,22 +1116,21 @@ class TransactionListHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          AppLocalizations.of(context)!.recentTransactions,
-          style: const TextStyle(color: Colors.white54, fontSize: 14),
-        ),
-        GestureDetector(
-          onTap: onSeeAll,
-          child: Text(
-            showAll
-                ? AppLocalizations.of(context)!.showLess
-                : AppLocalizations.of(context)!.viewAll,
-            style: const TextStyle(
-              color: Color(0xFF7B61FF),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+        const Text(
+          "Transactions",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
+        ),
+        Switch(
+          value: showAll,
+          onChanged: (val) => onSeeAll(),
+          activeColor: Colors.white,
+          activeTrackColor: const Color(0xFF00FF94),
+          inactiveThumbColor: Colors.white54,
+          inactiveTrackColor: Colors.white10,
         ),
       ],
     );
@@ -1576,101 +1192,77 @@ class TransactionListItem extends ConsumerWidget {
         ? "${isSent ? '-' : '+'}${transaction.amountBTC.toStringAsFixed(8)} BTC"
         : "•••••••• BTC";
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141416),
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          child: Row(
-            children: [
-              // Icon with stylized background
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: iconColor.withValues(alpha: 0.2),
-                    width: 1,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                // Clean white circular icon
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      isSent ? Icons.arrow_outward_rounded : Icons.arrow_downward_rounded,
+                      color: Colors.black,
+                      size: 20
+                    ),
                   ),
                 ),
-                child: Center(
-                  child: Icon(iconData, color: iconColor, size: 20),
-                ),
-              ),
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
 
-              // Labels
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        letterSpacing: 0.3,
+                // Labels
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 12,
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // Value & Status
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    amount,
-                    style: TextStyle(
-                      color: isPending
-                          ? Colors.orangeAccent
-                          : (!isSent ? const Color(0xFF00FF94) : Colors.white),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      fontFamily: 'monospace',
-                    ),
+                // Value
+                Text(
+                  amount,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isPending
-                          ? Colors.orange.withValues(alpha: 0.1)
-                          : Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      transaction.status.localized(context).toUpperCase(),
-                      style: TextStyle(
-                        color: isPending
-                            ? Colors.orangeAccent
-                            : Colors.white.withValues(alpha: 0.3),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

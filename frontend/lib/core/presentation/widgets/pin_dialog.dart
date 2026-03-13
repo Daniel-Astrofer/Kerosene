@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'fingerprint_scanner.dart';
 import '../../security/app_pin_service.dart';
 
-enum _PinMode { setup, confirm, enter }
+enum _PinMode { setup, enter }
 
 /// A full-screen PIN dialog.
 ///
-/// - [isSetup]: true → shows setup flow (enter + confirm), false → shows entry flow.
+/// - [isSetup]: true → shows setup flow, false → shows entry flow.
 /// - Returns `true` if authentication/setup succeeded, `false` if cancelled.
 class PinDialog extends StatefulWidget {
   final bool isSetup;
@@ -36,7 +36,6 @@ class _PinDialogState extends State<PinDialog> {
   final _pinService = AppPinService();
 
   String _entered = '';
-  String _firstPin = '';
   String? _error;
 
   static const _pinLength = 6;
@@ -55,7 +54,7 @@ class _PinDialogState extends State<PinDialog> {
     });
 
     if (_entered.length == _pinLength) {
-      Future.delayed(const Duration(milliseconds: 150), _handleComplete);
+      _handleComplete();
     }
   }
 
@@ -70,26 +69,8 @@ class _PinDialogState extends State<PinDialog> {
   Future<void> _handleComplete() async {
     switch (_mode) {
       case _PinMode.setup:
-        setState(() {
-          _firstPin = _entered;
-          _entered = '';
-          _mode = _PinMode.confirm;
-        });
-        break;
-
-      case _PinMode.confirm:
-        if (_entered == _firstPin) {
-          await _pinService.setPin(_entered);
-          if (mounted) Navigator.of(context).pop(true);
-        } else {
-          HapticFeedback.heavyImpact();
-          setState(() {
-            _error = 'PINs do not match. Try again.';
-            _entered = '';
-            _mode = _PinMode.setup;
-            _firstPin = '';
-          });
-        }
+        await _pinService.setPin(_entered);
+        if (mounted) Navigator.of(context).pop(true);
         break;
 
       case _PinMode.enter:
@@ -110,11 +91,9 @@ class _PinDialogState extends State<PinDialog> {
   String get _title {
     switch (_mode) {
       case _PinMode.setup:
-        return 'Create your PIN';
-      case _PinMode.confirm:
-        return 'Confirm your PIN';
+        return 'Create Security PIN';
       case _PinMode.enter:
-        return 'Enter your PIN';
+        return 'Enter Security PIN';
     }
   }
 
@@ -122,10 +101,8 @@ class _PinDialogState extends State<PinDialog> {
     switch (_mode) {
       case _PinMode.setup:
         return 'Choose a 6-digit PIN to secure the app';
-      case _PinMode.confirm:
-        return 'Enter the same PIN to confirm';
       case _PinMode.enter:
-        return 'Enter your 6-digit PIN';
+        return 'This local device PIN is the master backup\nthat seals the local trust framework.';
     }
   }
 
@@ -160,6 +137,7 @@ class _PinDialogState extends State<PinDialog> {
 
               Text(
                 _title,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 26,
@@ -270,8 +248,9 @@ class _PinDialogState extends State<PinDialog> {
             final isAction = key == '⌫' || key == 'C';
             return Padding(
               padding: const EdgeInsets.all(10.0),
-              child: InkWell(
-                onTap: () {
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (_) {
                   HapticFeedback.mediumImpact();
                   if (key == '⌫') {
                     _onDelete();
@@ -284,7 +263,6 @@ class _PinDialogState extends State<PinDialog> {
                     _onDigit(key);
                   }
                 },
-                borderRadius: BorderRadius.circular(40),
                 child: Container(
                   width: 75,
                   height: 75,

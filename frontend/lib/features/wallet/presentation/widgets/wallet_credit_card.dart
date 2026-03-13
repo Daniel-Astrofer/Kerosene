@@ -94,15 +94,16 @@ class _WalletCreditCardState extends ConsumerState<WalletCreditCard> {
                   secondaryColor: theme.secondaryColor,
                 ),
 
-              // 1. Texture (Optional/Subtle)
-              if (theme.isMetallic)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Opacity(
-                    opacity: 0.1,
-                    child: BrushedMetalContainer(width: width, height: 200),
-                  ),
+              // 1. Texture (GPU Shader)
+              // We now apply it to all cards by default for a premium feel
+              ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BrushedMetalContainer(
+                  width: width,
+                  height: 200,
+                  baseColor: theme.secondaryColor.withValues(alpha: 0.85),
                 ),
+              ),
 
               // 2. Card Content
               Padding(
@@ -173,7 +174,7 @@ class _WalletCreditCardState extends ConsumerState<WalletCreditCard> {
 
                               // Kerosene Logo (Right, Small)
                               Image.asset(
-                                'assets/kerosenelogo.png',
+                                'assets/logo/kerosene-logo.png',
                                 height: 18,
                                 fit: BoxFit.contain,
                               ),
@@ -301,27 +302,37 @@ class _WalletCreditCardState extends ConsumerState<WalletCreditCard> {
       _WalletTheme(
         primaryColor: const Color(0xFF0D1B2A),
         secondaryColor: const Color(0xFF4CC9F0), // Cyan
-        isMetallic: false,
+        isMetallic: true,
+      ),
+      _WalletTheme(
+        primaryColor: const Color(0xFF1A1A1A),
+        secondaryColor: const Color(0xFFE5E5E5), // Platinum / Silver
+        isMetallic: true,
+      ),
+      _WalletTheme(
+        primaryColor: const Color(0xFF2C1B10),
+        secondaryColor: const Color(0xFFCD7F32), // Bronze / Copper
+        isMetallic: true,
       ),
       _WalletTheme(
         primaryColor: const Color(0xFF1B4332),
         secondaryColor: const Color(0xFF74C69D), // Light Green
-        isMetallic: false,
+        isMetallic: true,
       ),
       _WalletTheme(
         primaryColor: const Color(0xFF480CA8),
         secondaryColor: const Color(0xFFB517AD), // Magenta
-        isMetallic: false,
+        isMetallic: true,
       ),
       _WalletTheme(
         primaryColor: const Color(0xFF370617),
         secondaryColor: const Color(0xFFD00000), // Red
-        isMetallic: false,
+        isMetallic: true,
       ),
       _WalletTheme(
         primaryColor: const Color(0xFF2D1E2F),
         secondaryColor: const Color(0xFFFF9E00), // Orange
-        isMetallic: false,
+        isMetallic: true,
       ),
     ];
     return themes[index % themes.length];

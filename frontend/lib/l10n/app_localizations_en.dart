@@ -680,17 +680,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get totpErrorInvalid => 'Invalid code. Please try again.';
 
   @override
-  String get passkeyTitle => 'Register Passkey';
+  String get passkeyTitle => 'Sovereign Key';
 
   @override
   String get passkeySubtitle =>
-      'Register a biometric passkey to enable fast, passwordless login on this device.';
+      'Secure your account with a biometric hardware key. No password required.';
 
   @override
-  String get passkeyRegisterButton => 'Register Passkey (Biometrics)';
+  String get passkeyRegisterButton => 'Activate Sovereign Key';
 
   @override
-  String get passkeySuccessMessage => 'Passkey registered successfully!';
+  String get passkeySuccessMessage => 'Sovereign Key activated!';
 
   @override
   String get passkeySkip => 'Skip for now';
@@ -909,7 +909,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passkeyBiometricReason =>
-      'Create a Passkey to secure your Kerosene wallet';
+      'Unlock Sovereign Key to secure your Kerosene wallet';
 
   @override
   String passkeyErrorFinishing(String message) {
@@ -931,7 +931,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passkeyLoadingSecuring => 'Securing Device...';
 
   @override
-  String get passkeyLoadingRegistering => 'Registering Passkey...';
+  String get passkeyLoadingRegistering => 'Activating Sovereign Key...';
 
   @override
   String get usernameHintChars => 'a-z, 0-9 and _';

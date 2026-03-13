@@ -15,12 +15,14 @@ class UnknownDeviceScreen extends ConsumerStatefulWidget {
   final String username;
   final String passphrase;
   final bool rememberMe;
+  final String? preAuthToken;
 
   const UnknownDeviceScreen({
     super.key,
     required this.username,
     required this.passphrase,
     this.rememberMe = false,
+    this.preAuthToken,
   });
 
   @override
@@ -448,6 +450,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
             username: widget.username,
             passphrase: widget.passphrase,
             totpCode: _codeController.text,
+            preAuthToken: widget.preAuthToken,
           );
     }
   }

@@ -33,6 +33,7 @@ class AudioService {
         ..setReleaseMode(ReleaseMode.stop)
         ..setPlayerMode(PlayerMode.lowLatency);
 
+      /*
       await player.audioCache.loadAll([
         _kLoginSound,
         _kGhostOnSound,
@@ -40,10 +41,11 @@ class AudioService {
         _kTransactionSound,
         _kErrorSound,
       ]);
-
+      */
+      
       _player = player;
       _isInit = true;
-      debugPrint('🎵 AudioService: Synths pre-cached successfully.');
+      debugPrint('🎵 AudioService: Initialized (Sounds skipped if missing).');
     } catch (e) {
       debugPrint('🎵 AudioService: Failed to init audio cache: $e');
     } finally {

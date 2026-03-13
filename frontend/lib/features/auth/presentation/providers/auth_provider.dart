@@ -10,27 +10,23 @@ import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/signup_usecase.dart';
-import '../../../../features/notifications/data/datasources/notification_remote_datasource.dart'; // Import
-import '../../../../features/notifications/data/repositories/notification_repository_impl.dart'; // Import
-import '../../../../features/notifications/domain/repositories/notification_repository.dart'; // Import
-import '../../../../features/notifications/application/notification_service.dart'; // Import
+import '../../../../features/notifications/data/datasources/notification_remote_datasource.dart';
+import '../../../../features/notifications/data/repositories/notification_repository_impl.dart';
+import '../../../../features/notifications/domain/repositories/notification_repository.dart';
+import '../../../../features/notifications/application/notification_service.dart';
 
 import '../../../../core/services/audio_service.dart';
 import '../../../../core/services/background_service.dart';
+import '../../../../core/services/sovereign_auth_service.dart';
 import '../state/auth_state.dart';
 
 // ==================== Providers de Dependências ====================
 
-/// Provider do ApiClient
 final apiClientProvider = Provider<ApiClient>((ref) {
-  // Unified Tor Routing (apiUrl already contains the relay port)
   final baseUrl = AppConfig.apiUrl;
-
   final client = ApiClient(baseUrl: baseUrl, ref: ref);
-
   final localDataSource = ref.watch(authLocalDataSourceProvider);
 
-  // Anexar o interceptor imediatamente para evitar condições de corrida
   client.addInterceptor(
     TokenInterceptor(localDataSource: localDataSource, apiClient: client),
   );
@@ -38,19 +34,16 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   return client;
 });
 
-/// Provider do AuthRemoteDataSource
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return AuthRemoteDataSourceImpl(apiClient);
 });
 
-/// Provider do AuthLocalDataSource
 final authLocalDataSourceProvider = Provider<AuthLocalDataSource>((ref) {
   final sharedPreferences = ref.watch(sharedPreferencesProvider);
   return AuthLocalDataSourceImpl(sharedPreferences);
 });
 
-/// Provider do AuthRepository
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final remoteDataSource = ref.watch(authRemoteDataSourceProvider);
   final localDataSource = ref.watch(authLocalDataSourceProvider);
@@ -63,13 +56,11 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 // ==================== Providers de UseCases ====================
 
-/// Provider do LoginUseCase
 final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return LoginUseCase(repository);
 });
 
-/// Provider do SignupUseCase
 final signupUseCaseProvider = Provider<SignupUseCase>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return SignupUseCase(repository);
@@ -77,33 +68,34 @@ final signupUseCaseProvider = Provider<SignupUseCase>((ref) {
 
 // ==================== Providers de Notifications ====================
 
-/// Provider do NotificationRemoteDataSource
 final notificationRemoteDataSourceProvider =
     Provider<NotificationRemoteDataSource>((ref) {
       final apiClient = ref.watch(apiClientProvider);
       return NotificationRemoteDataSourceImpl(apiClient);
     });
 
-/// Provider do NotificationRepository
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   final remote = ref.watch(notificationRemoteDataSourceProvider);
   return NotificationRepositoryImpl(remote);
 });
 
-/// Provider do NotificationService
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   return NotificationService(repository);
 });
 
+final sovereignAuthServiceProvider = Provider<SovereignAuthService>((ref) {
+  return SovereignAuthService.instance;
+});
+
 // ==================== Provider de Estado ====================
 
-/// StateNotifier para gerenciar o estado de autenticação
 class AuthNotifier extends StateNotifier<AuthState> {
   final LoginUseCase loginUseCase;
   final SignupUseCase signupUseCase;
   final AuthRepository authRepository;
-  final NotificationService notificationService; // Inject Service
+  final NotificationService notificationService;
+  final SovereignAuthService sovereignAuthService = SovereignAuthService.instance;
 
   AuthNotifier({
     required this.loginUseCase,
@@ -115,25 +107,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _checkAuthStatus();
   }
 
-  /// Tracks when the async auth check completes
   final _authCheckCompleter = Completer<void>();
-
-  /// Returns a Future that resolves when _checkAuthStatus is done.
   Future<void> get authCheckCompleted => _authCheckCompleter.future;
 
-  /// Verificar status de autenticação ao iniciar
   Future<void> _checkAuthStatus() async {
     try {
       final isAuth = await authRepository.isAuthenticated();
-
       if (isAuth) {
         final result = await authRepository.getCurrentUser();
         result.fold(
-          (failure) {
-            // No local user cache found — could be mid-TOTP flow.
-            // Do NOT wipe the token. Just go to unauthenticated so user logs in again.
-            state = const AuthUnauthenticated();
-          },
+          (failure) => state = const AuthUnauthenticated(),
           (user) {
             state = AuthAuthenticated(user);
             notificationService.initializeAndRegister();
@@ -146,17 +129,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = const AuthUnauthenticated();
     } finally {
-      _authCheckCompleter.complete();
+      if (!_authCheckCompleter.isCompleted) {
+        _authCheckCompleter.complete();
+      }
     }
   }
 
-  /// Fazer login
   Future<void> login({
     required String username,
     required String password,
   }) async {
     state = const AuthLoading();
-
     final result = await loginUseCase(
       LoginParams(username: username, passphrase: password),
     );
@@ -164,26 +147,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
     result.fold(
       (failure) async {
         AudioService.instance.playError();
-        // Clear any stale/mismatched token so it's never sent again
         await authRepository.clearInvalidSession();
         state = AuthError(failure.message);
       },
       (loginResult) {
-        // Login initial phase success. JWT already saved in repository.
-        // Move to TOTP state.
-        state = AuthRequiresLoginTotp(username: username, passphrase: password);
+        if (loginResult.requiresTotp) {
+          state = AuthRequiresLoginTotp(
+            username: username,
+            passphrase: password,
+            preAuthToken: loginResult.jwt,
+          );
+        } else {
+          _checkAuthStatus();
+        }
       },
     );
   }
 
-  /// Fazer cadastro
   Future<void> signup({
     required String username,
     required String password,
     required String accountSecurity,
   }) async {
     state = const AuthLoading();
-
     final result = await signupUseCase(
       SignupParams(
         username: username,
@@ -206,7 +192,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  /// Verificar TOTP e finalizar login
   Future<void> verifyTotp({
     required String username,
     required String passphrase,
@@ -214,7 +199,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String totpCode,
   }) async {
     state = const AuthLoading();
-
     final result = await authRepository.verifyTotp(
       username: username,
       passphrase: passphrase,
@@ -228,18 +212,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  /// Verificar TOTP de Login (2FA)
   Future<void> verifyLoginTotp({
     required String username,
     required String passphrase,
     required String totpCode,
+    String? preAuthToken,
   }) async {
     state = const AuthLoading();
-
     final result = await authRepository.verifyLoginTotp(
       username: username,
       passphrase: passphrase,
       totpCode: totpCode,
+      preAuthToken: preAuthToken,
     );
 
     result.fold((failure) => state = AuthError(failure.message), (user) {
@@ -249,46 +233,221 @@ class AuthNotifier extends StateNotifier<AuthState> {
     });
   }
 
-  /// Fazer logout
   Future<void> logout() async {
     state = const AuthLoading();
-
     final result = await authRepository.logout();
-
     result.fold((failure) => state = AuthError(failure.message), (_) {
       state = const AuthUnauthenticated();
       stopBackgroundService();
     });
   }
 
-  /// Limpar erro
   void clearError() {
     if (state is AuthError) {
       state = const AuthUnauthenticated();
     }
   }
 
-  /// Validar passphrase (retorna true/false sem alterar estado principal)
-  Future<bool> validatePassphrase(String passphrase) async {
-    final result = await authRepository.validatePassphrase(passphrase);
-    return result.fold((failure) => false, (isValid) => isValid);
+  Future<void> registerHardwareStart(String sessionId) async {
+    state = const AuthLoading();
+    final result = await authRepository.registerHardwareOnboardingStart(sessionId);
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (challengeHex) async {
+        try {
+          String? publicKey = await sovereignAuthService.getPublicKey();
+          publicKey ??= await sovereignAuthService.generateKeyPair();
+          final signature = await sovereignAuthService.signChallenge(challengeHex);
+          await registerHardwareFinish(
+            sessionId: sessionId,
+            publicKey: publicKey,
+            deviceName: 'Smartphone',
+            signature: signature,
+          );
+        } catch (e) {
+          state = AuthError('Erro no fluxo de segurança soberana: $e');
+        }
+      },
+    );
+  }
+
+  Future<void> registerPasskeyOnboardingStart(String sessionId) async {
+    state = const AuthLoading();
+    final result = await authRepository.registerPasskeyOnboardingStart(sessionId);
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (optionsJson) => state = AuthPasskeyChallengeReceived(optionsJson),
+    );
+  }
+
+  Future<void> registerPasskeyOnboardingFinish({
+    required String sessionId,
+    required Map<String, dynamic> credential,
+  }) async {
+    state = const AuthLoading();
+    final result = await authRepository.registerPasskeyOnboardingFinish(
+      sessionId,
+      credential,
+    );
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (_) => state = const AuthHardwareVerified(),
+    );
+  }
+
+  Future<void> registerHardwareFinish({
+    required String sessionId,
+    required String publicKey,
+    required String deviceName,
+    required String signature,
+  }) async {
+    state = const AuthLoading();
+    final result = await authRepository.registerHardwareOnboardingFinish(
+      sessionId: sessionId,
+      publicKey: publicKey,
+      deviceName: deviceName,
+      signature: signature,
+    );
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (_) => state = const AuthHardwareVerified(),
+    );
+  }
+
+  Future<void> loginWithHardware(String username) async {
+    if (username.isEmpty) {
+      state = const AuthError('Por favor, insira o usuário para entrar com Hardware Auth');
+      return;
+    }
+    state = const AuthLoading();
+    final result = await authRepository.hardwareLoginStart(username);
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (challengeHex) async {
+        try {
+          final signature = await sovereignAuthService.signChallenge(challengeHex);
+          final finishResult = await authRepository.hardwareLoginFinish(
+            username: username,
+            signature: signature,
+          );
+          finishResult.fold(
+            (failure) => state = AuthError(failure.message),
+            (user) {
+              state = AuthAuthenticated(user);
+              notificationService.initializeAndRegister();
+              startBackgroundService();
+            },
+          );
+        } catch (e) {
+          state = AuthError('Erro na autenticação de hardware: $e');
+        }
+      },
+    );
+  }
+
+  Future<void> registerHardwareForAccount() async {
+    state = const AuthLoading();
+    final result = await authRepository.registerHardwareForAccountStart();
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (challenge) async {
+        try {
+          final publicKey = await sovereignAuthService.generateKeyPair();
+          final finishResult = await authRepository.registerHardwareForAccountFinish(
+            publicKey: publicKey,
+            deviceName: 'Smartphone',
+          );
+          finishResult.fold(
+            (failure) => state = AuthError(failure.message),
+            (_) => _checkAuthStatus(),
+          );
+        } catch (e) {
+          state = AuthError('Erro ao registrar chave de hardware: $e');
+        }
+      },
+    );
+  }
+
+  Future<void> getOnboardingLink(String sessionId) async {
+    state = const AuthLoading();
+    final result = await authRepository.generateOnboardingLink(sessionId);
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (dto) => state = AuthPaymentRequired(
+        sessionId: sessionId,
+        amountBtc: dto.amountBtc,
+        depositAddress: dto.depositAddress,
+      ),
+    );
+  }
+
+  Future<void> mockConfirmOnboarding({
+    required String sessionId,
+    required String username,
+    required String password,
+  }) async {
+    state = const AuthLoading();
+    final result = await authRepository.mockConfirmOnboarding(sessionId);
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (_) async => await loginAfterSignup(username: username, password: password),
+    );
+  }
+
+  Future<void> confirmVoucher({
+    required String voucherId,
+    required String txid,
+  }) async {
+    state = const AuthLoading();
+    final result = await authRepository.confirmVoucher(
+      voucherId: voucherId,
+      txid: txid,
+    );
+    result.fold(
+      (failure) => state = AuthError(failure.message),
+      (_) => state = const AuthInitial(),
+    );
+  }
+
+  Future<void> loginAfterSignup({
+    required String username,
+    required String password,
+  }) async {
+    state = const AuthLoading();
+    final result = await loginUseCase(
+      LoginParams(username: username, passphrase: password),
+    );
+    result.fold(
+      (failure) {
+        AudioService.instance.playError();
+        state = AuthError(failure.message);
+      },
+      (loginResult) {
+        if (loginResult.requiresTotp) {
+          state = AuthRequiresLoginTotp(
+            username: username,
+            passphrase: password,
+            preAuthToken: loginResult.jwt,
+          );
+        } else {
+          _checkAuthStatus();
+        }
+      },
+    );
   }
 }
 
-/// Provider do AuthNotifier
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final loginUseCase = ref.watch(loginUseCaseProvider);
   final signupUseCase = ref.watch(signupUseCaseProvider);
   final authRepository = ref.watch(authRepositoryProvider);
-  final notificationService = ref.watch(
-    notificationServiceProvider,
-  ); // Watch service
+  final notificationService = ref.watch(notificationServiceProvider);
 
   return AuthNotifier(
     loginUseCase: loginUseCase,
     signupUseCase: signupUseCase,
     authRepository: authRepository,
-    notificationService: notificationService, // Pass to notifier
+    notificationService: notificationService,
     ref: ref,
   );
 });

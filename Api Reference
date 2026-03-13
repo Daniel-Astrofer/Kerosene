@@ -1,0 +1,933 @@
+# Kerosene Hydra v5.0 — API Reference
+
+> **Base URL**: `https://<node>.kerosene.internal:8443`  
+> **Protocol**: HTTPS (mTLS em produção) | HTTP em dev local  
+> **Content-Type**: `application/json`  
+> **Auth**: JWT Bearer Token via header `Authorization: Bearer <token>`
+
+---
+
+## Envelope Padrão
+
+Toda resposta segue o wrapper `ApiResponse<T>`:
+
+```json
+{
+  "success": true,
+  "message": "Human-readable status message",
+  "data": { ... },
+  "errorCode": null,
+  "timestamp": "2026-03-09T22:00:00"
+}
+```
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `success` | `boolean` | `true` em caso de sucesso |
+| `message` | `string` | Mensagem descritiva |
+| `data` | `T \| null` | Payload de resposta |
+| `errorCode` | `string \| null` | Código de erro (apenas em falhas) |
+| `timestamp` | `ISO-8601` | Hora do servidor |
+
+---
+
+## 1. Autenticação (`/auth`)
+
+### `GET /auth/pow/challenge`
+
+Gera um desafio Proof-of-Work para anti-bot.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<Map>` |
+
+```json
+{
+  "data": { "challenge": "a1b2c3d4e5f6..." }
+}
+```
+
+---
+
+### `POST /auth/signup`
+
+Inicia o cadastro. Valida credenciais e retorna URI do TOTP + backup codes.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<SignupResponseDTO>` |
+
+**Request Body:**
+```json
+{
+  "username": "satoshi",
+  "passphrase": "correct horse battery staple ...",
+  "challenge": "a1b2c3d4...",
+  "nonce": "000042",
+  "voucherCode": "KERO-XXXX-XXXX"
+}
+```
+
+**Response Data:**
+```json
+{
+  "otpUri": "otpauth://totp/Kerosene:satoshi?secret=JBSWY3DP&issuer=Kerosene",
+  "backupCodes": ["A1B2C3D4", "E5F6G7H8", "..."]
+}
+```
+
+---
+
+### `POST /auth/signup/totp/verify`
+
+Confirma o código TOTP para finalizar o cadastro. Retorna JWT.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<String>` (JWT token) |
+
+**Request Body:**
+```json
+{
+  "username": "satoshi",
+  "totpCode": "123456",
+  "preAuthToken": "<session-id>"
+}
+```
+
+---
+
+### `POST /auth/login`
+
+Inicia login. Valida password e retorna session ID para fase TOTP.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **HTTP Status** | `202 Accepted` |
+| **Response** | `ApiResponse<String>` (session ID) |
+
+**Request Body:**
+```json
+{
+  "username": "satoshi",
+  "passphrase": "correct horse battery staple ..."
+}
+```
+
+---
+
+### `POST /auth/login/totp/verify`
+
+Confirma TOTP no login. Retorna JWT definitivo.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<String>` (JWT token) |
+
+**Request Body:**
+```json
+{
+  "username": "satoshi",
+  "totpCode": "123456",
+  "preAuthToken": "<session-id>"
+}
+```
+
+---
+
+## 2. Passkeys / WebAuthn (`/auth/passkey`)
+
+### `POST /auth/passkey/register/start`
+
+Gera opções de registro FIDO2 para o usuário logado.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<String>` (WebAuthn JSON options) |
+
+---
+
+### `POST /auth/passkey/register/finish`
+
+Finaliza registro do passkey.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Request Body** | Raw WebAuthn response JSON |
+| **Response** | `ApiResponse<String>` ("OK") |
+
+---
+
+### `POST /auth/passkey/login/start?username={username}`
+
+Gera opções de assertion para login via passkey.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Query Param** | `username` — nome do usuário |
+| **Response** | `ApiResponse<String>` (assertion options JSON) |
+
+---
+
+### `POST /auth/passkey/login/finish?username={username}`
+
+Valida assertion do passkey. Retorna JWT (bypassa TOTP).
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Query Param** | `username` |
+| **Request Body** | Raw WebAuthn assertion JSON |
+| **Response** | `ApiResponse<String>` (JWT token) |
+
+---
+
+### `POST /auth/passkey/register/onboarding/start?sessionId={id}`
+
+Gera opções de registro de passkey durante o fluxo de onboarding (pré-DB).
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública (validado por `sessionId` no Redis) |
+| **Pré-requisito** | TOTP já verificado na sessão |
+
+---
+
+### `POST /auth/passkey/register/onboarding/finish?sessionId={id}`
+
+Finaliza registro do passkey e salva credencial no Redis temporariamente.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública (validado por `sessionId`) |
+| **Request Body** | Raw WebAuthn response JSON |
+
+---
+
+## 3. Carteiras (`/wallet`)
+
+### `POST /wallet/create`
+
+Cria uma nova carteira para o usuário autenticado.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `201 Created`, `ApiResponse<WalletResponseDTO>` |
+
+**Request Body:**
+```json
+{
+  "passphrase": "correct horse battery staple ...",
+  "name": "Minha Carteira Principal"
+}
+```
+
+**Response Data:**
+```json
+{
+  "id": 1,
+  "name": "Minha Carteira Principal",
+  "passphraseHash": "1A1z7ago...",
+  "createdAt": "2026-03-09T22:00:00",
+  "updatedAt": "2026-03-09T22:00:00",
+  "isActive": true,
+  "totpUri": "otpauth://totp/Kerosene:wallet1?..."
+}
+```
+
+> [!NOTE]
+> `passphraseHash` é o endereço Bitcoin derivado da passphrase (BIP39).
+
+---
+
+### `GET /wallet/all`
+
+Lista todas as carteiras do usuário autenticado.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<List<WalletResponseDTO>>` |
+
+---
+
+### `GET /wallet/find?name={name}`
+
+Busca uma carteira pelo nome (scoped ao usuário autenticado).
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Query Param** | `name` — nome da carteira |
+| **Response** | `ApiResponse<WalletResponseDTO>` |
+
+---
+
+### `PUT /wallet/update`
+
+Atualiza o nome de uma carteira existente.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+
+**Request Body:**
+```json
+{
+  "passphrase": "correct horse battery staple ...",
+  "name": "Nome Atual",
+  "newName": "Novo Nome"
+}
+```
+
+---
+
+### `DELETE /wallet/delete`
+
+Remove permanentemente uma carteira.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+
+**Request Body:**
+```json
+{
+  "passphrase": "correct horse battery staple ...",
+  "name": "Carteira a Deletar"
+}
+```
+
+---
+
+## 4. Ledger (`/ledger`)
+
+### `POST /ledger/transaction`
+
+Executa uma transação interna entre carteiras (off-chain).
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Rate Limit** | 10 operações/min por usuário |
+| **Response** | `ApiResponse<Void>` |
+
+**Request Body:**
+```json
+{
+  "sender": "Minha Carteira",
+  "receiver": "user_destino",
+  "amount": 0.0015,
+  "context": "Pagamento por serviço",
+  "idempotencyKey": "550e8400-e29b-41d4-a716-446655440000",
+  "requestTimestamp": 1709942400000,
+  "totpCode": "123456",
+  "passkeyAssertionJson": "{...}",
+  "confirmationPassphrase": "..."
+}
+```
+
+> [!IMPORTANT]
+> - `sender` aceita: username, wallet ID numério, ou endereço Bitcoin
+> - `receiver` aceita os mesmos formatos
+> - `idempotencyKey` previne double-spend (UUID gerado pelo client)
+> - `requestTimestamp` rejeita replays se > 2 minutos de atraso
+
+---
+
+### `GET /ledger/history?page=0&size=50`
+
+Retorna o histórico de transações paginado do usuário.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Params** | `page` (default 0), `size` (default 50, max 100) |
+| **Response** | `ApiResponse<List<LedgerTransactionHistory>>` |
+
+---
+
+### `GET /ledger/all`
+
+Retorna todos os ledgers das carteiras do usuário.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<List<LedgerDTO>>` |
+
+**LedgerDTO:**
+```json
+{
+  "id": 1,
+  "walletId": 1,
+  "walletName": "Minha Carteira",
+  "balance": 1.50000000,
+  "nonce": 42,
+  "lastHash": "a1b2c3d4...",
+  "context": "transfer_in: abc123"
+}
+```
+
+---
+
+### `GET /ledger/find?walletName={name}`
+
+Busca o ledger de uma carteira específica.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<LedgerDTO>` |
+
+---
+
+### `GET /ledger/balance?walletName={name}`
+
+Retorna apenas o saldo de uma carteira.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<BigDecimal>` |
+
+---
+
+### `POST /ledger/payment-request`
+
+Cria um link de pagamento para recebimento interno.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<InternalPaymentRequestDTO>` |
+
+**Request Body:**
+```json
+{
+  "amount": 0.005,
+  "receiverWalletName": "Minha Carteira"
+}
+```
+
+---
+
+### `GET /ledger/payment-request/{linkId}`
+
+Consulta um link de pagamento (visão pública, sem expor dados internos).
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<PaymentRequestPublicDTO>` |
+
+---
+
+### `POST /ledger/payment-request/{linkId}/pay`
+
+Paga um link de pagamento existente.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Rate Limit** | 10/min por usuário |
+
+**Request Body:**
+```json
+{
+  "payerWalletName": "Carteira do Pagador"
+}
+```
+
+---
+
+## 5. Transações On-Chain (`/transactions`)
+
+### `GET /transactions/deposit-address`
+
+Retorna o endereço mestre de depósito do sistema.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<String>` (endereço Bitcoin) |
+
+---
+
+### `GET /transactions/estimate-fee?amount={btc}`
+
+Estima taxas de rede para um valor de transação.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<EstimatedFeeDTO>` (taxas fast/standard/slow) |
+
+---
+
+### `POST /transactions/create-unsigned`
+
+Cria uma raw transaction não assinada para o client assinar.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<UnsignedTransactionDTO>` |
+
+**Request Body:**
+```json
+{
+  "fromAddress": "1A1z7ago...",
+  "toAddress": "bc1qxy2k...",
+  "amount": 0.001,
+  "feeSatoshis": 1500
+}
+```
+
+---
+
+### `POST /transactions/broadcast`
+
+Transmite uma transação assinada (hex) para a rede Bitcoin.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<TransactionResponseDTO>` |
+
+**Request Body:**
+```json
+{
+  "rawTxHex": "020000000001...",
+  "toAddress": "bc1qxy2k...",
+  "amount": 0.001,
+  "message": "Withdrawal"
+}
+```
+
+---
+
+### `GET /transactions/status?txid={txid}`
+
+Consulta o status de uma transação on-chain.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<TransactionResponseDTO>` |
+
+---
+
+### `POST /transactions/withdraw`
+
+Executa saque on-chain completo: debita ledger → cria tx → broadcast.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<TransactionResponseDTO>` |
+
+**Request Body:**
+```json
+{
+  "fromWalletName": "Carteira Principal",
+  "toAddress": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+  "amount": 0.05,
+  "description": "Cold Storage Transfer",
+  "totpCode": "123456",
+  "passkeyAssertionRequestJSON": "{...}",
+  "passkeyAssertionResponseJSON": "{...}",
+  "confirmationPassphrase": "..."
+}
+```
+
+> [!IMPORTANT]
+> `totpCode` é **obrigatório** para todos os saques. Passkey assertion é obrigatória se o usuário tiver passkey ativada.
+
+---
+
+## 6. Payment Links (`/transactions`)
+
+### `POST /transactions/create-payment-link`
+
+Cria um link de pagamento on-chain com expiração.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `201 Created`, `ApiResponse<PaymentLinkDTO>` |
+
+**Request Body:**
+```json
+{
+  "amount": 0.001,
+  "description": "Pagamento do freelancer"
+}
+```
+
+---
+
+### `GET /transactions/payment-link/{linkId}`
+
+Consulta dados de um payment link (público).
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<PaymentLinkDTO>` |
+
+---
+
+### `POST /transactions/payment-link/{linkId}/confirm`
+
+Confirma pagamento de um payment link informando o TXID.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+
+**Request Body:**
+```json
+{
+  "txid": "a1b2c3d4e5f6...",
+  "fromAddress": "1A1z7ago..."
+}
+```
+
+---
+
+### `POST /transactions/payment-link/{linkId}/complete`
+
+Marca um payment link como concluído (owner-only).
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT (dono do link) |
+
+---
+
+### `GET /transactions/payment-links`
+
+Lista todos os payment links do usuário.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+| **Response** | `ApiResponse<List<PaymentLinkDTO>>` |
+
+---
+
+## 7. Vouchers (`/voucher`)
+
+### `POST /voucher/request`
+
+Solicita um voucher de ativação. Retorna endereço + valor em satoshis.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<Map>` |
+
+```json
+{
+  "data": {
+    "depositAddress": "bc1qxy2k...",
+    "amountSats": 22000,
+    "pendingVoucherId": "uuid-xxx"
+  }
+}
+```
+
+---
+
+### `POST /voucher/confirm?pendingVoucherId={id}&txid={txid}`
+
+Confirma pagamento on-chain do voucher. Retorna código do voucher.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Response** | `ApiResponse<String>` (código do voucher) |
+
+---
+
+### `POST /voucher/onboarding-link?sessionId={id}`
+
+Cria link de depósito obrigatório para ativação de conta durante onboarding.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública (validado por `sessionId`) |
+| **Pré-requisito** | Passkey registrada na sessão |
+| **Response** | `ApiResponse<PaymentLinkDTO>` |
+
+---
+
+## 8. Auditoria & Proof-of-Reserves
+
+### Merkle Audit (`/audit`)
+
+#### `GET /audit/latest-root`
+
+Retorna o checkpoint Merkle Tree mais recente.
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+
+```json
+{
+  "merkleRoot": "a1b2c3d4e5f6...",
+  "ledgerCount": 42,
+  "createdAt": "2026-03-09T22:00:00",
+  "anchorTxid": ""
+}
+```
+
+---
+
+#### `GET /audit/history?limit=10`
+
+Histórico de checkpoints Merkle (máx 50).
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT |
+
+---
+
+#### `POST /audit/trigger`
+
+Força cálculo de um novo checkpoint (admin-only).
+
+| | |
+|---|---|
+| **Auth** | ✅ JWT + `ROLE_ADMIN` |
+
+---
+
+### Proof-of-Reserves (`/v1/audit`)
+
+#### `GET /v1/audit/stats`
+
+Retorna dados de solvência pública (Proof-of-Reserves).
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+
+```json
+{
+  "liability_to_users": 45.50000000,
+  "platform_profit_pending": 0.12340000,
+  "actual_onchain_balance": 50.00000000,
+  "is_solvent": true
+}
+```
+
+---
+
+#### `POST /v1/audit/siphon`
+
+Extrai lucros acumulados para a cold wallet do fundador.
+
+| | |
+|---|---|
+| **Auth** | `X-Owner-TOTP` header + `X-Hardware-Signature` header |
+
+**Headers obrigatórios:**
+```
+X-Owner-TOTP: 123456
+X-Hardware-Signature: Yubikey-sig-...
+```
+
+**Response:**
+```json
+{
+  "message": "Siphon Succeeded.",
+  "amount_withdrawn": "0.12340000",
+  "destination": "bc1qxy2kgdygjrsqtzq2n0yrf..."
+}
+```
+
+---
+
+## 9. Sovereignty & Ops (`/sovereignty`)
+
+### `GET /sovereignty/status`
+
+Relatório completo de soberania do nó (público).
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+
+```json
+{
+  "hardwareAttestation": {
+    "status": "VERIFIED",
+    "chip": "TPM 2.0",
+    "lastValidatedSecondsAgo": 30,
+    "totalChecks": 1500,
+    "quoteHash": "a1b2c3d4…e5f6g7h8",
+    "tmeEnabled": true,
+    "coldBootRisk": "MITIGATED"
+  },
+  "networkConsensus": {
+    "status": "ACTIVE",
+    "activeNodes": 3,
+    "failStopMode": false,
+    "transactionsAccepted": 4200,
+    "requiredNodes": 2,
+    "totalNodes": 3,
+    "jurisdictions": ["Iceland", "Singapore", "Switzerland"],
+    "consensusAlgorithm": "Raft-2PC"
+  },
+  "ledgerIntegrity": {
+    "status": "VALID",
+    "lastRootHash": "a1b2c3d4…e5f6g7h8",
+    "computedAt": "2026-03-09T22:00:00",
+    "ledgerCount": 42
+  },
+  "memoryProtection": {
+    "status": "LOCKED",
+    "mechanism": "mlock() via JVM native",
+    "shardLocation": "tmpfs (volatile RAM)",
+    "diskPersistence": false
+  },
+  "serverUptimeSeconds": 86400,
+  "serverTimestamp": "2026-03-09T22:00:00Z"
+}
+```
+
+---
+
+### `POST /sovereignty/reattest`
+
+Reseta baseline do TPM após atualização planejada (admin).
+
+| | |
+|---|---|
+| **Auth** | `X-Admin-Token` header (constant-time comparison) |
+| **Erro** | `403` se token inválido; `503` se não configurado |
+
+---
+
+### `GET /sovereignty/telemetry`
+
+Métricas internas em RAM (admin).
+
+| | |
+|---|---|
+| **Auth** | `X-Admin-Token` header |
+| **Response** | `Map<String, Object>` (contadores de telemetria) |
+
+---
+
+### `GET /sovereignty/ping`
+
+Health check visual (HTML). Retorna página com indicador de vida do nó.
+
+| | |
+|---|---|
+| **Auth** | ❌ Pública |
+| **Content-Type** | `text/html` |
+
+---
+
+## 10. Notificações (`/notifications`)
+
+### `POST /notifications/send`
+
+Envia notificação push para um usuário.
+
+| | |
+|---|---|
+| **Auth** | ❌ (interno, sem auth explícita no controller) |
+
+**Request Body:**
+```json
+{
+  "userId": "1",
+  "title": "Depósito Confirmado",
+  "body": "Seu depósito de 0.05 BTC foi confirmado."
+}
+```
+
+---
+
+## Códigos de Erro
+
+| Código | HTTP | Descrição |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | Token JWT ausente ou inválido |
+| `WEBAUTHN_ERROR` | 400 | Falha no fluxo WebAuthn |
+| `SESSION_NOT_FOUND` | 404 | Sessão Redis expirada |
+| `ERR_NOTIF_MISSING_FIELDS` | 400 | Campos obrigatórios ausentes |
+| `ERR_NOTIF_INVALID_USERID` | 400 | userId não numérico |
+| `ERR_PAYMENT_LINK_NOT_FOUND` | 404 | Link de pagamento inválido/expirado |
+| `ONBOARDING_MISSING_PASSKEY` | 400 | Passkey obrigatória não registrada |
+| `ONBOARDING_SERVER_ERROR` | 500 | Erro interno no onboarding |
+| `VOUCHER_ERROR` | 400 | Erro na operação de voucher |
+
+---
+
+## Fluxos de Autenticação
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    participant R as Redis
+
+    Note over C,S: Signup Flow
+    C->>S: GET /auth/pow/challenge
+    S-->>C: challenge string
+    C->>S: POST /auth/signup (username + passphrase + PoW)
+    S->>R: Salva SignupState
+    S-->>C: otpUri + backupCodes
+    C->>S: POST /auth/signup/totp/verify (totpCode)
+    S-->>C: JWT Token
+
+    Note over C,S: Login Flow
+    C->>S: POST /auth/login (username + passphrase)
+    S->>R: Salva LoginState
+    S-->>C: session ID (202)
+    C->>S: POST /auth/login/totp/verify (totpCode)
+    S-->>C: JWT Token
+
+    Note over C,S: Passkey Login (bypassa TOTP)
+    C->>S: POST /auth/passkey/login/start?username=X
+    S-->>C: assertion options
+    C->>S: POST /auth/passkey/login/finish (assertion)
+    S-->>C: JWT Token
+```
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    participant Q as Quorum Peers
+
+    Note over C,S: Internal Transaction
+    C->>S: POST /ledger/transaction (JWT + TransactionDTO)
+    S->>S: Rate limit check (Redis)
+    S->>S: Resolve wallets + verify ownership
+    S->>S: TOTP + Passkey verification
+    S->>S: Update balance (snapshot)
+    S->>Q: Phase 1 PREPARE
+    Q-->>S: ACKs (≥2/3)
+    S->>Q: Phase 2 COMMIT (await)
+    Q-->>S: Commit ACKs
+    S->>S: Persist to DB
+    S-->>C: 200 OK
+```

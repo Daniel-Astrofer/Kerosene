@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/presentation/widgets/kerosene_logo.dart';
+import 'package:bip39/bip39.dart' as bip39;
+import 'package:teste/core/theme/cyber_theme.dart';
 import 'package:teste/l10n/l10n_extension.dart';
-import '../../../../core/presentation/widgets/custom_error_dialog.dart';
-import '../../../../core/utils/error_translator.dart';
-import '../../../../core/theme/cyber_theme.dart';
 import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
-import 'totp_setup_screen.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -22,8 +18,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
-
-  String _mnemonic = '';
+  late String _mnemonic;
 
   @override
   void initState() {
@@ -32,37 +27,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   void _generateMnemonic() {
-    try {
-      final newMnemonic = Mnemonic.generate(
-        Language.portuguese,
-        length: MnemonicLength.words18,
-      ).sentence;
-      // The original code already had 'if (mounted)'.
-      // The user's edit seems to be trying to add checks and then has a misplaced brace.
-      // Assuming the intent was to ensure the widget is mounted before setState,
-      // and to fix any potential lint issues with curly braces.
-      // The provided snippet `}{` is syntactically incorrect.
-      // I will interpret the request as ensuring `setState` is only called if mounted,
-      // and correcting the structure around the `setState` call.
-      // Since `if (mounted)` is already present, I will ensure it's correctly structured.
-      // The snippet `if (_isDisposed) { return; }` requires `_isDisposed` to be defined,
-      // which it is not. I will omit this part to maintain syntactic correctness and
-      // avoid introducing undeclared variables, focusing on the brace issue.
-      // The `if (!mounted) { return; }` is redundant if `if (mounted)` wraps `setState`.
-      // I will keep the existing `if (mounted)` structure as it's correct.
-      // The provided edit `}{` is a syntax error. I will correct the structure.
-      if (mounted) {
-        setState(() {
-          _mnemonic = newMnemonic;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _mnemonic = context.l10n.signupMnemonicError;
-        });
-      }
-    }
+    setState(() {
+      _mnemonic = bip39.generateMnemonic();
+    });
   }
 
   @override
@@ -73,175 +40,139 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthLoading;
-
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthRequiresTotpSetup) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TotpSetupScreen(
-              username: next.username,
-              passphrase: next.passphrase,
-              totpSecret: next.totpSecret,
-            ),
-          ),
-        );
-      } else if (next is AuthError) {
-        showCustomErrorDialog(
-          context,
-          ErrorTranslator.translate(context.l10n, next.message),
-          onRetry: () {
-            ref.read(authProvider.notifier).clearError();
-            if (_usernameController.text.isNotEmpty && _mnemonic.isNotEmpty) {
-              _handleSignup();
-            }
-          },
-          onGoBack: () {
-            ref.read(authProvider.notifier).clearError();
-            Navigator.pop(context); // Go back to Welcome screen
-          },
-        );
-      }
-    });
+    final isLoading = ref.watch(authProvider) is AuthLoading;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: CyberTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: CyberTheme.bgDeep,
       body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
+        decoration: BoxDecoration(gradient: CyberTheme.bgGradient),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            physics: const ClampingScrollPhysics(),
             child: Column(
               children: [
-                const SizedBox(height: 24),
-
-                // ─── Logo ─────────────────────────────
-                const KeroseneLogo(size: 72),
-                const SizedBox(height: 32),
-
-                // ─── Title ────────────────────────────
-                Text(
-                  context.l10n.signupScreenTitle,
-                  style: CyberTheme.heading(size: 30),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.l10n.signupScreenSubtitle,
-                  style: CyberTheme.label(
-                    size: 14,
-                    color: CyberTheme.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 44),
-
-                // ─── Form ─────────────────────────────
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                const SizedBox(height: 40),
+                // Custom Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
                     children: [
-                      // Username Field
-                      TextFormField(
-                        controller: _usernameController,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[a-z0-9_]'),
-                          ),
-                        ],
-                        style: const TextStyle(
-                          color: CyberTheme.textPrimary,
-                          fontSize: 15,
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.05),
+                          padding: const EdgeInsets.all(12),
                         ),
-                        decoration:
-                            CyberTheme.cyberInput(
-                              label: context.l10n.username,
-                              hint: context.l10n.signupUsernameHint,
-                              icon: Icons.person_outline_rounded,
-                            ).copyWith(
-                              helperText: context.l10n.signupUsernameHelper,
-                              helperStyle: const TextStyle(
-                                color: CyberTheme.textMuted,
-                                fontSize: 11,
-                              ),
-                            ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return context.l10n.required;
-                          }
-                          if (value.length < 3) {
-                            return context.l10n.signupUsernameMinChars;
-                          }
-                          if (!RegExp(r'^[a-z0-9_]+$').hasMatch(value)) {
-                            return context.l10n.signupUsernameInvalid;
-                          }
-                          return null;
-                        },
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // ─── Mnemonic Section ────────────
+                      const SizedBox(width: 20),
                       Text(
-                        context.l10n.signupMnemonicLabel.toUpperCase(),
-                        style: CyberTheme.label(
-                          size: 11,
-                          color: CyberTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _MnemonicCard(
-                        mnemonic: _mnemonic,
-                        onRegenerate: _generateMnemonic,
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      // Warning
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: CyberTheme.neonAmber,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              context.l10n.signupMnemonicWarning,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: CyberTheme.textSecondary.withValues(
-                                  alpha: 0.8,
-                                ),
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 44),
-
-                      // ─── Create Button ───────────────
-                      _CyberCreateButton(
-                        isLoading: isLoading,
-                        onPressed: _handleSignup,
+                        context.l10n.signupScreenTitle,
+                        style: CyberTheme.heading(size: 24),
                       ),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                // Form Content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "ESCOLHA SEU HANDLE",
+                          style: CyberTheme.label(
+                            size: 11,
+                            color: CyberTheme.textSecondary,
+                          ).copyWith(letterSpacing: 2),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _usernameController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: CyberTheme.cyberInput(
+                            label: 'Username',
+                            hint: 'ex: Satoshi_99',
+                            icon: Icons.alternate_email_rounded,
+                            suffix: Text(
+                              '@kerosene',
+                              style: TextStyle(
+                                color: CyberTheme.neonCyan.withValues(alpha: 0.8),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return context.l10n.required;
+                            }
+                            if (value.length < 3) {
+                              return context.l10n.signupUsernameMinChars;
+                            }
+                            if (!RegExp(r'^[a-z0-9_]+$').hasMatch(value)) {
+                              return context.l10n.signupUsernameInvalid;
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // ─── Mnemonic Section ────────────
+                        Text(
+                          context.l10n.signupMnemonicLabel.toUpperCase(),
+                          style: CyberTheme.label(
+                            size: 11,
+                            color: CyberTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _MnemonicCard(
+                          mnemonic: _mnemonic,
+                          onRegenerate: _generateMnemonic,
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // Warning
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: CyberTheme.neonAmber,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                context.l10n.signupMnemonicWarning,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: CyberTheme.textSecondary.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 44),
+
+                        // ─── Create Button ───────────────
+                        _CyberCreateButton(
+                          isLoading: isLoading,
+                          onPressed: _handleSignup,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -267,9 +198,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════
-// Extracted: Mnemonic Display Card
-// ═══════════════════════════════════════════════
 class _MnemonicCard extends StatelessWidget {
   final String mnemonic;
   final VoidCallback onRegenerate;
@@ -302,7 +230,6 @@ class _MnemonicCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Copy button
               TextButton.icon(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: mnemonic));
@@ -338,7 +265,6 @@ class _MnemonicCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              // Generate new button
               TextButton.icon(
                 onPressed: onRegenerate,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
@@ -359,9 +285,6 @@ class _MnemonicCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════
-// Extracted: Create Wallet Button
-// ═══════════════════════════════════════════════
 class _CyberCreateButton extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onPressed;

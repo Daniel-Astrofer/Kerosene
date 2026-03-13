@@ -86,9 +86,40 @@ class AuthRequiresTotpSetup extends AuthState {
 class AuthRequiresLoginTotp extends AuthState {
   final String username;
   final String passphrase;
+  final String? preAuthToken;
 
   const AuthRequiresLoginTotp({
     required this.username,
     required this.passphrase,
+    this.preAuthToken,
+  });
+}
+/// Estado indicando que o desafio de hardware foi recebido e aguarda assinatura
+class AuthHardwareChallengeReceived extends AuthState {
+  final String challengeHex;
+  const AuthHardwareChallengeReceived(this.challengeHex);
+}
+
+/// Estado indicando que o desafio de passkey foi recebido (JSON options)
+class AuthPasskeyChallengeReceived extends AuthState {
+  final String optionsJson;
+  const AuthPasskeyChallengeReceived(this.optionsJson);
+}
+
+/// Estado indicando que a chave de hardware foi verificada com sucesso
+class AuthHardwareVerified extends AuthState {
+  const AuthHardwareVerified();
+}
+
+/// Estado indicando que o pagamento de onboarding é necessário
+class AuthPaymentRequired extends AuthState {
+  final String sessionId;
+  final double amountBtc;
+  final String depositAddress;
+
+  const AuthPaymentRequired({
+    required this.sessionId,
+    required this.amountBtc,
+    required this.depositAddress,
   });
 }

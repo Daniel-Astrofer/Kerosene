@@ -28,8 +28,12 @@ class AuthRepositoryImpl implements AuthRepository {
         username: username,
         passphrase: passphrase,
       );
-      // Save the JWT from the login response immediately
-      await localDataSource.saveToken(loginResult.jwt);
+      // Save the JWT (or preAuthToken) from the login response immediately 
+      // so it can be used for the TOTP verification step.
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
+      }
+      
       // Save the passphrase locally so it can be used for signing later
       await localDataSource.saveMnemonic(passphrase);
       return Right(loginResult);
@@ -48,11 +52,15 @@ class AuthRepositoryImpl implements AuthRepository {
     required String username,
     required String passphrase,
     required String totpCode,
+    String? preAuthToken,
   }) async {
     try {
+      final token = preAuthToken ?? await localDataSource.getToken() ?? '';
+      
       final jwt = await remoteDataSource.verifyLoginTotp(
         username: username,
-        totpCode: totpCode, // passphrase NOT sent — new API contract
+        totpCode: totpCode,
+        preAuthToken: token,
       );
 
       await localDataSource.saveToken(jwt);
@@ -114,8 +122,11 @@ class AuthRepositoryImpl implements AuthRepository {
         await localDataSource.saveTotpSecret(totpSecret);
       }
 
-      // ⚠️ No JWT is saved here. User is NOT authenticated yet.
-      // JWT is only issued after 3 Bitcoin confirmations.
+      // According to API_REFERENCE.md Section 1.1: "Returns JWT"
+      // WRONG: Actual server log shows it returns a sessionId (hex), not a JWT.
+      // Saving it as a token causes the interceptor to send invalid Bearer headers.
+      // We do NOT save it as a token here.
+
       return Right(sessionId);
     } on AppException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
@@ -144,14 +155,196 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> registerPasskeyOnboardingFinish(
     String sessionId,
-    String credentialJson,
+    Map<String, dynamic> credential,
   ) async {
     try {
       await remoteDataSource.registerPasskeyOnboardingFinish(
         sessionId,
-        credentialJson,
+        credential,
       );
       return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Real Passkey Login/Register ──────────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, String>> passkeyLoginStart(String username) async {
+    try {
+      final opts = await remoteDataSource.passkeyLoginStart(username);
+      return Right(opts);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> passkeyLoginFinish({
+    required String username,
+    required Map<String, dynamic> credential,
+  }) async {
+    try {
+      final loginResult = await remoteDataSource.passkeyLoginFinish(
+        username,
+        credential,
+      );
+
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
+      }
+
+      final user = UserModel(
+        id: loginResult.userId.isNotEmpty ? loginResult.userId : '0',
+        email: '$username@kerosene.app',
+        name: username,
+        createdAt: DateTime.now(),
+      );
+      await localDataSource.saveUser(user);
+
+      return Right(user);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> passkeyRegisterStart() async {
+    try {
+      final opts = await remoteDataSource.passkeyRegisterStart();
+      return Right(opts);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> passkeyRegisterFinish(
+    Map<String, dynamic> credential,
+  ) async {
+    try {
+      await remoteDataSource.passkeyRegisterFinish(credential);
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Sovereign Auth (Hardware Ed25519) ──────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, String>> registerHardwareOnboardingStart(
+    String sessionId,
+  ) async {
+    try {
+      final challenge = await remoteDataSource.hardwareRegisterStart(sessionId);
+      return Right(challenge);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registerHardwareOnboardingFinish({
+    required String sessionId,
+    required String publicKey,
+    required String deviceName,
+    required String signature,
+  }) async {
+    try {
+      await remoteDataSource.hardwareRegisterFinish(
+        sessionId: sessionId,
+        publicKey: publicKey,
+        deviceName: deviceName,
+        signature: signature,
+      );
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> registerHardwareForAccountStart() async {
+    try {
+      final challenge = await remoteDataSource.hardwareRegisterForAccountStart();
+      return Right(challenge);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registerHardwareForAccountFinish({
+    required String publicKey,
+    required String deviceName,
+  }) async {
+    try {
+      await remoteDataSource.hardwareRegisterForAccountFinish(
+        publicKey: publicKey,
+        deviceName: deviceName,
+      );
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> hardwareLoginStart(String username) async {
+    try {
+      final challenge = await remoteDataSource.getHardwareChallenge(username);
+      return Right(challenge);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> hardwareLoginFinish({
+    required String username,
+    required String signature,
+  }) async {
+    try {
+      final loginResult = await remoteDataSource.verifyHardwareSignature(
+        username: username,
+        signature: signature,
+      );
+
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
+      }
+
+      final user = UserModel(
+        id: loginResult.userId.isNotEmpty ? loginResult.userId : '0',
+        email: '$username@kerosene.app',
+        name: username,
+        createdAt: DateTime.now(),
+      );
+      await localDataSource.saveUser(user);
+
+      return Right(user);
     } on AppException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
@@ -167,6 +360,33 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final dto = await remoteDataSource.generateOnboardingLink(sessionId);
       return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId) async {
+    try {
+      await remoteDataSource.mockConfirmOnboarding(sessionId);
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> confirmVoucher({
+    required String voucherId,
+    required String txid,
+  }) async {
+    try {
+      await remoteDataSource.confirmVoucher(voucherId: voucherId, txid: txid);
+      return const Right(null);
     } on AppException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {

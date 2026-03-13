@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 class ApiResponseInterceptor extends Interceptor {
-  /// Endpoints that return raw objects without the ApiResponse<T> wrapper.
+  /// Endpoints that return raw objects without the ApiResponse&lt;T&gt; wrapper.
   static const _rawResponsePaths = ['/audit'];
 
   bool _isRawPath(String path) {

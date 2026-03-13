@@ -11,11 +11,13 @@ import '../../../home/presentation/screens/home_screen.dart';
 class LoginTotpScreen extends ConsumerStatefulWidget {
   final String username;
   final String passphrase;
+  final String? preAuthToken;
 
   const LoginTotpScreen({
     super.key,
     required this.username,
     required this.passphrase,
+    this.preAuthToken,
   });
 
   @override
@@ -246,6 +248,7 @@ class _LoginTotpScreenState extends ConsumerState<LoginTotpScreen> {
             username: widget.username,
             passphrase: widget.passphrase,
             totpCode: _codeController.text,
+            preAuthToken: widget.preAuthToken,
           );
     }
   }

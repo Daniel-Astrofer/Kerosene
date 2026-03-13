@@ -1351,25 +1351,25 @@ abstract class AppLocalizations {
   /// No description provided for @passkeyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Register Passkey'**
+  /// **'Sovereign Key'**
   String get passkeyTitle;
 
   /// No description provided for @passkeySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Register a biometric passkey to enable fast, passwordless login on this device.'**
+  /// **'Secure your account with a biometric hardware key. No password required.'**
   String get passkeySubtitle;
 
   /// No description provided for @passkeyRegisterButton.
   ///
   /// In en, this message translates to:
-  /// **'Register Passkey (Biometrics)'**
+  /// **'Activate Sovereign Key'**
   String get passkeyRegisterButton;
 
   /// No description provided for @passkeySuccessMessage.
   ///
   /// In en, this message translates to:
-  /// **'Passkey registered successfully!'**
+  /// **'Sovereign Key activated!'**
   String get passkeySuccessMessage;
 
   /// No description provided for @passkeySkip.
@@ -1765,7 +1765,7 @@ abstract class AppLocalizations {
   /// No description provided for @passkeyBiometricReason.
   ///
   /// In en, this message translates to:
-  /// **'Create a Passkey to secure your Kerosene wallet'**
+  /// **'Unlock Sovereign Key to secure your Kerosene wallet'**
   String get passkeyBiometricReason;
 
   /// No description provided for @passkeyErrorFinishing.
@@ -1801,7 +1801,7 @@ abstract class AppLocalizations {
   /// No description provided for @passkeyLoadingRegistering.
   ///
   /// In en, this message translates to:
-  /// **'Registering Passkey...'**
+  /// **'Activating Sovereign Key...'**
   String get passkeyLoadingRegistering;
 
   /// No description provided for @usernameHintChars.

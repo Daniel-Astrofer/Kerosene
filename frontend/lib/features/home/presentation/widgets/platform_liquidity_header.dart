@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../../l10n/l10n_extension.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'animated_balance_display.dart';
 
 class PlatformLiquidityHeader extends StatefulWidget {
@@ -93,11 +93,12 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: GlassContainer(
-        borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        opacity: 0.1,
-        blur: 15,
         child: LayoutBuilder(
           builder: (context, constraints) {
             // Ensure they always show up but scale down if needed
@@ -113,7 +114,7 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
                   child: _buildAddressList(
                     title: context.l10n.homeDeposits,
                     addresses: _deposits,
-                    color: const Color(0xFF00FF94),
+                    color: AppColors.primary,
                     alignRight: false,
                     isSmall: isSmall,
                   ),
@@ -145,8 +146,7 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
                           child: AnimatedBalanceDisplay(
                             balance: _totalLiquidity,
                             enableFlash: true,
-                            decimalPlaces:
-                                4, // Show 4 decimals for high frequency updates
+                            decimalPlaces: 4,
                             prefix: '₿',
                             style: const TextStyle(
                               color: Colors.white,
@@ -167,12 +167,8 @@ class _PlatformLiquidityHeaderState extends State<PlatformLiquidityHeader> {
                             ),
                             style: TextStyle(
                               color: _lastActionWasDeposit
-                                  ? const Color(
-                                      0xFF00FF94,
-                                    ).withValues(alpha: 0.8)
-                                  : const Color(
-                                      0xFFFF0055,
-                                    ).withValues(alpha: 0.8),
+                                  ? AppColors.primary.withValues(alpha: 0.8)
+                                  : const Color(0xFFFF0055).withValues(alpha: 0.8),
                               fontSize: 10,
                               fontFamily: 'monospace',
                               fontWeight: FontWeight.w600,

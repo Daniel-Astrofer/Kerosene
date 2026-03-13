@@ -22,7 +22,7 @@ dependencies:
   equatable: ^2.0.5
   timeago: ^3.5.0
   intl: ^0.20.2
-  device_info_plus: ^9.1.1
+  device_info_plus: ^11.2.0
   crypto: ^3.0.3
 
   cupertino_icons: '^1.0.8'
@@ -49,16 +49,17 @@ dependencies:
   flutter_jailbreak_detection: ^1.0.0
   flutter_local_notifications: ^20.1.0
   flutter_background_service: ^5.1.0
-  firebase_core: ^3.10.1
-  firebase_messaging: ^15.2.1
+
   flutter_staggered_animations: ^1.1.1
   audioplayers: ^6.5.1
   dio_smart_retry: ^7.0.1
   google_fonts: ^8.0.2
   slip39: ^0.3.0
   uuid: ^4.5.3
-  package_info_plus: ^9.0.0
+  package_info_plus: ^8.3.0
   tor: ^0.1.1
+  passkeys: ^2.17.4
+  cryptography: ^2.7.0
 
 dev_dependencies:
   flutter_test:
@@ -68,35 +69,25 @@ dev_dependencies:
   mockito: ^5.4.4
   build_runner: ^2.4.9
 
+  local_auth_android: any
+  local_auth_darwin: any
+  local_auth_windows: any
 flutter:
   uses-material-design: true
   generate: true
 
   assets:
-    - 'assets/kerosenelogo.png'
-    - 'assets/K.jpg'
-    - 'assets/dollar.png'
-    - 'assets/mining.png'
-    - 'assets/receive.png'
-    - 'assets/settings.png'
-    - 'assets/send.png'
-    - 'assets/dollarwhite.png'
-    - 'assets/settingswhite.png'
-    - 'assets/sendwhite.png'
-    - 'assets/miningwhite.png'
-    - 'assets/receivewhite.png'
-    - 'assets/bitcoin.png'
-    - 'assets/contactlesswhite.png'
-    - 'assets/exportwhite.png'
-    - 'assets/cadeadowhite.png'
-    - 'assets/userwhite.png'
-    - 'assets/voltarwhite.png'
-    - 'assets/seguirwhite.png'
-    - 'assets/cadeadoverify.png'
     - 'assets/presentationimage.png'
     - 'assets/images/'
     - 'assets/lottie/'
     - 'assets/rive/'
+    - 'assets/sounds/'
+    - 'assets/logo/'
+
+  shaders:
+    - 'assets/shaders/bitcoin_hodl.frag'
+    - 'assets/shaders/metallic_hologram.frag'
+
   fonts:
 
     - family: "HubotSans"
@@ -178,5 +169,5 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/K.jpg"
+  image_path: "assets/logo/app-icon.png"
   min_sdk_android: 21

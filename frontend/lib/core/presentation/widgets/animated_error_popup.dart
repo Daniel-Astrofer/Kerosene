@@ -129,8 +129,9 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
         opacity: 0.1,
         border: Border.all(color: baseColor.withValues(alpha: 0.3), width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
           children: [
             // Centered Animated Icon
             RepaintBoundary(
@@ -311,6 +312,7 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
               ),
             ],
           ],
+        ),
         ),
       ),
     );
