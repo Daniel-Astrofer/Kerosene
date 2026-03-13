@@ -46,6 +46,14 @@ yarn-debug.log*
 *.sqlite
 *.db
 
+# [PROJECT] Kerosene Folder Exception
+# Allow all files in kerosene folder as requested
+!backend/kerosene/**
+# Re-ignore critical secrets within the folder
+backend/kerosene/tor/kerosene_service/
+backend/kerosene/service-account.json
+backend/kerosene/.env
+
 # Build Artifacts & IDEs
 .gradle/
 .idea/
