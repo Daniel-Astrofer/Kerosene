@@ -4,6 +4,7 @@ class ApiResponse<T> {
   final T? data;
   final String? errorCode;
   final String? timestamp;
+  final String? requestId;
 
   ApiResponse({
     required this.success,
@@ -11,6 +12,7 @@ class ApiResponse<T> {
     this.data,
     this.errorCode,
     this.timestamp,
+    this.requestId,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class ApiResponse<T> {
       data: json['data'],
       errorCode: json['errorCode'],
       timestamp: json['timestamp'],
+      requestId: json['requestId'],
     );
   }
 
@@ -30,6 +33,7 @@ class ApiResponse<T> {
       if (data != null) 'data': data,
       if (errorCode != null) 'errorCode': errorCode,
       if (timestamp != null) 'timestamp': timestamp,
+      if (requestId != null) 'requestId': requestId,
     };
   }
 }

@@ -1,98 +1,173 @@
-# Kerosene - Core-Only Ignore Rules
-# ──────────────────────────────────────────
+# Kerosene repository policy
+# Track project source only under backend/ and frontend/.
 
-# [CRITICAL] Secrets & Assets
-*.env
-*.env.*
-*.secret
-*.key
-*.pem
-*.pub
-*.jks
-*.p12
-*.pfx
-google-services.json
-service-account.json
-certs/
-cert-generator.sh
-panic.sh
+*
+!/.gitignore
+!/.gitattributes
+!/backend/
+!/backend/**
+!/frontend/
+!/frontend/**
 
-# [INFRA] Non-Core Folders
-# (Keeping only backend logic)
-# vault/
-# frontend/
-# mpc-sidecar/
-# kerosene-infrastructure/
-# assets/
-# screenshots/
-# scripts/
+# Root-level material kept local only.
+/docs/
+/docs/**
+!/docs/
+!/docs/README.md
+!/docs/API_REFERENCE.md
+!/docs/ARCHITECTURE.md
+!/docs/INFRASTRUCTURE.md
+!/docs/APK.md
+/scripts/
+/scripts/**
+!/scripts/
+!/scripts/backend-common.sh
+!/scripts/init-local.sh
+!/scripts/start-local.sh
+!/scripts/stop-local.sh
+!/scripts/logs-local.sh
+!/scripts/arm-vault.sh
+/assets/
+/assets/**
+/screenshots/
+/screenshots/**
+/vault/
+/vault/**
+/mpc-sidecar/
+/mpc-sidecar/**
+/kerosene-infrastructure/
+/kerosene-infrastructure/**
+/gradle/
+/gradle/**
+/gradlew
+/gradlew.bat
+/README*
+!/README.md
+/DAYLY_LOG.md
+/*.html
+/projeto_completo_kerosene.txt
+/start-local.sh
+/arm-vault.*
+/cert-generator.sh
+/panic.sh
 
-# Allow vault, mpc-sidecar and frontend folders as requested
-!vault/**
-!mpc-sidecar/**
-!frontend/**
+# Agent and assistant tooling.
+/.agent/
+/.agent/**
+/.agents/
+/.agents/**
+/.codex
+/.codex/
+/.codex/**
+/.claude/
+/.claude/**
+/.opencode
+/.openclaude-profile.json
+**/.agent/
+**/.agent/**
+**/.agents/
+**/.agents/**
+**/.codex
+**/.codex/
+**/.codex/**
+**/.claude/
+**/.claude/**
+**/.continue/
+**/.continue/**
+**/.cursor/
+**/.cursor/**
+**/.opencode
+**/.remote-control/
+**/.remote-control/**
+**/.openclaude-profile.json
+**/AGENTS.md
+**/CLAUDE.md
+**/GEMINI.md
+**/mcp_config.json
+**/llms.txt
 
-# Tor Services & Configs
-**/tor/
-**/torrc*
+# Secrets and local credentials.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.secret
+**/*.key
+**/*.pem
+**/*.pub
+**/*.jks
+**/*.p12
+**/*.pfx
+**/*.keystore
+**/google-services.json
+**/service-account.json
+**/key.properties
+**/certs/
+**/certs/**
+**/identity/
+**/identity/**
+**/tor-keys/
+**/tor-keys/**
+**/tor/keys/
+**/tor/keys/**
 **/hostname
 **/hs_ed25519_*
+**/onion_auth_*/
+**/onion_auth_*/**
 
-# Documentation & Logs
-*.md
-*.html
-*.txt
-backend/kerosene/logs/
-npm-debug.log*
-yarn-debug.log*
-
-# Databases & Dumps
-*.sql
-*.sqlite
-*.db
-
-# [PROJECT] Kerosene Folder Exception
-# Allow all major project folders as requested
-!backend/kerosene/**
-!vault/**
-!mpc-sidecar/**
-!frontend/**
-!kerosene-infrastructure/**
-!scripts/**
-!assets/**
-!screenshots/**
-
-# Documentation & Important Files
-!README.md
-!README.html
-!DAYLY_LOG.md
-!"Api Reference"
-!arm-vault.*
-!cert-generator.sh
-!panic.sh
-!projeto_completo_kerosene.txt
-
-# Re-ignore critical secrets within the folder
-backend/kerosene/tor/kerosene_service/
-backend/kerosene/service-account.json
-backend/kerosene/.env
-
-# Build Artifacts & IDEs
-.gradle/
-.idea/
-.vscode/
+# Build output, caches and IDE state.
+**/.gradle/
+**/.gradle/**
+**/.dart_tool/
+**/.dart_tool/**
+**/.pub-cache/
+**/.pub-cache/**
+**/.pub/
+**/.pub/**
 **/build/
+**/build/**
 **/target/
+**/target/**
 **/out/
+**/out/**
 **/bin/
-.DS_Store
-Thumbs.db
-*.swp
-*.iml
+**/bin/**
+**/coverage/
+**/coverage/**
+**/.idea/
+**/.idea/**
+**/.vscode/
+**/.vscode/**
+**/.metadata
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/*.iml
+**/*.iws
+**/*.ipr
+**/*.class
+**/*.log
+**/*.pyc
+**/*.swp
+**/.DS_Store
+**/Thumbs.db
 
-# Analysis & Large Files
-analyze_output.txt
-analyze_output2.txt
-K.jpg
-kerosene-logo.png
-kerosenelogoicon.jpg
+# Platform-local generated files.
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/.last_build_id
+**/linux/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/windows/flutter/ephemeral/
+
+# Accidentally copied home/tooling directories.
+~/
+~/**
+**/~/
+**/~/**
+CachedExtensionVSIXs/
+CachedExtensionVSIXs/**
+.trash/
+.trash/**
+flutter_linux_*-stable.tar.xz

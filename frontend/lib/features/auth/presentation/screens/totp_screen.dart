@@ -1,214 +1,294 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../widgets/neon_button.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/widgets/bouncing_button.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import '../widgets/totp_input_container.dart';
+import '../../controller/auth_controller.dart';
+import '../../../../core/presentation/widgets/custom_error_dialog.dart';
+import '../../../../core/utils/error_translator.dart';
 
-class TotpScreen extends StatefulWidget {
-  final bool isSetup; // true = Signup/Ativação, false = Login
-  final String? secret;
-  final String? provisionUri;
-  final Function(String code) onVerify;
+/// Unified TOTP Screen for both Setup (Signup) and Challenge (Login) flows.
+/// Role: AI-Native Reactive UI for Two-Factor Authentication.
+class TotpScreen extends ConsumerStatefulWidget {
+  final String username;
+  final String passphrase;
+  final bool isSetup;
+  final String? totpSecret;
+  final String? qrCodeUri;
+  final String? preAuthToken;
 
   const TotpScreen({
     super.key,
+    required this.username,
+    required this.passphrase,
     required this.isSetup,
-    this.secret,
-    this.provisionUri,
-    required this.onVerify,
+    this.totpSecret,
+    this.qrCodeUri,
+    this.preAuthToken,
   });
 
   @override
-  State<TotpScreen> createState() => _TotpScreenState();
+  ConsumerState<TotpScreen> createState() => _TotpScreenState();
 }
 
-class _TotpScreenState extends State<TotpScreen> {
+class _TotpScreenState extends ConsumerState<TotpScreen> {
   String _currentCode = '';
 
   void _copySecret() {
-    if (widget.secret != null) {
-      Clipboard.setData(ClipboardData(text: widget.secret!));
+    if (widget.totpSecret != null) {
+      Clipboard.setData(ClipboardData(text: widget.totpSecret!));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Segredo copiado para a área de transferência!'),
-          backgroundColor: Color(0xFF00FFA3),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.totpSecretCopied),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
   }
 
+  void _handleVerify(String code) {
+    if (widget.isSetup) {
+      ref.read(authControllerProvider.notifier).verifyTotp(
+            username: widget.username,
+            passphrase: widget.passphrase,
+            totpSecret: widget.totpSecret ?? '',
+            totpCode: code,
+          );
+    } else {
+      ref.read(authControllerProvider.notifier).verifyLoginTotp(
+            username: widget.username,
+            passphrase: widget.passphrase,
+            totpCode: code,
+            preAuthToken: widget.preAuthToken,
+          );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final isLoading = authState is AuthLoading;
+
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (next is AuthAuthenticated) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/home_loading', (route) => false);
+      } else if (next is AuthTotpVerified) {
+         // After TOTP is verified, go to Onboarding Payment if it's signup
+         Navigator.of(context).pushReplacementNamed(
+           '/onboarding_payment',
+           arguments: {
+             'sessionId': next.sessionId,
+             'username': widget.username,
+             'password': widget.passphrase,
+           },
+         );
+      } else if (next is AuthError) {
+        showCustomErrorDialog(
+          context,
+          ErrorTranslator.translate(context.l10n, next.message),
+          onRetry: () {
+            ref.read(authControllerProvider.notifier).clearError();
+            if (_currentCode.length == 6) {
+              _handleVerify(_currentCode);
+            }
+          },
+        );
+      }
+    });
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+      body: CyberBackground(
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
-              const Text(
-                'Autenticação 2FA',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-
-              if (widget.isSetup) ...[
-                // QR Code Container
-                Center(
-                  child: Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
+              // Back Button
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.md,
+                    left: AppSpacing.sm,
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      LucideIcons.arrowLeft,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 20,
                     ),
-                    padding: const EdgeInsets.all(16),
-                    child: widget.provisionUri != null
-                        ? QrImageView(
-                            data: widget.provisionUri!,
-                            version: QrVersions.auto,
-                            size: 168.0,
-                          )
-                        : const Icon(
-                            Icons.qr_code_2_rounded,
-                            size: 100,
-                            color: Colors.black,
-                          ),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
-                const SizedBox(height: 24),
+              ),
 
-                Text(
-                  'Escaneie o código QR no seu aplicativo de\nautenticação.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-
-                // Secret Key
-                Text(
-                  'TOTP SECRET',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF141414),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const SizedBox(height: AppSpacing.md),
+                      
+                      // Heading
                       Text(
-                        widget.secret ?? 'XXXX - XXXX - XXXX - XXXX',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontFamily: 'monospace',
+                        widget.isSetup 
+                            ? context.l10n.totpSetupTitle 
+                            : context.l10n.totpTitle,
+                        style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                          fontSize: 28,
+                          height: 1.1,
+                          letterSpacing: -0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        widget.isSetup 
+                            ? context.l10n.totpSetupSubtitle 
+                            : context.l10n.totpSubtitle,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      
+                      const SizedBox(height: AppSpacing.xxl),
+
+                      if (widget.isSetup) ...[
+                        // QR Code Section
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              borderRadius: BorderRadius.circular(AppSpacing.md),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                  blurRadius: 30,
+                                ),
+                              ],
+                            ),
+                            child: widget.qrCodeUri != null
+                                ? QrImageView(
+                                    data: widget.qrCodeUri!,
+                                    version: QrVersions.auto,
+                                    size: 180.0,
+                                  )
+                                : Icon(
+                                    LucideIcons.qrCode,
+                                    size: 120,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+
+                        // Secret Key
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'TOTP SECRET',
+                              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                letterSpacing: 2.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.md,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(AppSpacing.md),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      widget.totpSecret ?? '•••• •••• •••• ••••',
+                                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                        color: Theme.of(context).colorScheme.onPrimary,
+                                        fontFamily: 'monospace',
+                                        letterSpacing: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: _copySecret,
+                                    child: Icon(
+                                      LucideIcons.copy,
+                                      color: AppColors.success,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                      ] else ...[
+                        // Login Mode Visual
+                        const SizedBox(height: AppSpacing.xl),
+                        Center(
+                          child: Icon(
+                            LucideIcons.shieldCheck,
+                            size: 80,
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl + AppSpacing.md),
+                      ],
+
+                      // 6-Digit input
+                      Text(
+                        context.l10n.totpEnter6Digits.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           letterSpacing: 2.0,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: _copySecret,
-                        child: const Icon(
-                          Icons.copy_rounded,
-                          color: Color(0xFF00FFA3),
-                          size: 20,
-                        ),
+                      const SizedBox(height: AppSpacing.md),
+                      TotpInputContainer(
+                        onCompleted: (code) {
+                          setState(() => _currentCode = code);
+                          _handleVerify(code);
+                        },
                       ),
+
+                      const SizedBox(height: 120),
+
+                      // Submit Button (Manual fallback)
+                      BouncingButton(
+                        text: widget.isSetup 
+                            ? context.l10n.totpVerifyButton 
+                            : context.l10n.totpVerifyContinue,
+                        isLoading: isLoading,
+                        onPressed: _currentCode.length == 6 
+                            ? () => _handleVerify(_currentCode) 
+                            : null,
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
                 ),
-                const SizedBox(height: 48),
-              ] else ...[
-                // Login Mode (Just code input)
-                const SizedBox(height: 60),
-                Text(
-                  'Digite o código do seu aplicativo\nde autenticação.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 60),
-              ],
-
-              // Verification Code Input
-              Text(
-                'CÓDIGO DE VERIFICAÇÃO',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
-                ),
               ),
-              const SizedBox(height: 16),
-              
-              TotpInputContainer(
-                onCompleted: (code) {
-                  setState(() {
-                    _currentCode = code;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 48),
-
-              // Action Button
-              NeonButton(
-                text: widget.isSetup ? 'Ativar 2FA' : 'Verificar e Entrar',
-                onPressed: () {
-                  if (_currentCode.length == 6) {
-                    widget.onVerify(_currentCode);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Por favor, insira o código de 6 dígitos.'),
-                        backgroundColor: Colors.redAccent,
-                      ),
-                    );
-                  }
-                },
-                baseColor: const Color(0xFF00FFA3),
-              ),
-              const SizedBox(height: 40),
             ],
           ),
         ),

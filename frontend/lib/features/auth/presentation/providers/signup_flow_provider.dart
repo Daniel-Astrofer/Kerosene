@@ -165,12 +165,15 @@ class SignupFlowState extends Equatable {
   ];
 }
 
-class SignupFlowNotifier extends StateNotifier<SignupFlowState> {
+class SignupFlowNotifier extends Notifier<SignupFlowState> {
   static const _prefsKey = 'kerasene_signup_flow_state';
-  final SharedPreferences _prefs;
+  late SharedPreferences _prefs;
 
-  SignupFlowNotifier(this._prefs) : super(const SignupFlowState()) {
+  @override
+  SignupFlowState build() {
+    _prefs = ref.watch(sharedPreferencesProvider);
     _loadFromPrefs();
+    return const SignupFlowState();
   }
 
   void _loadFromPrefs() {
@@ -193,68 +196,66 @@ class SignupFlowNotifier extends StateNotifier<SignupFlowState> {
     }
   }
 
-  @override
-  set state(SignupFlowState value) {
-    super.state = value;
-    _saveToPrefs(value);
+  void updateState(SignupFlowState newState) {
+    state = newState;
+    _saveToPrefs(newState);
   }
 
   void nextStep() {
     if (state.currentStep.index < SignupStep.values.length - 1) {
-      state = state.copyWith(
+      updateState(state.copyWith(
         currentStep: SignupStep.values[state.currentStep.index + 1],
         clearError: true,
-      );
+      ));
     }
   }
 
   void previousStep() {
     if (state.currentStep.index > 0) {
-      state = state.copyWith(
+      updateState(state.copyWith(
         currentStep: SignupStep.values[state.currentStep.index - 1],
         clearError: true,
-      );
+      ));
     }
   }
 
   void goToStep(SignupStep step) {
-    state = state.copyWith(currentStep: step, clearError: true);
+    updateState(state.copyWith(currentStep: step, clearError: true));
   }
 
   void setSeedSecurityOption(SeedSecurityOption option) {
-    state = state.copyWith(seedSecurityOption: option);
+    updateState(state.copyWith(seedSecurityOption: option));
   }
 
   void setSlip39Config(int total, int threshold) {
-    state = state.copyWith(
+    updateState(state.copyWith(
       slip39TotalShares: total,
       slip39Threshold: threshold,
-    );
+    ));
   }
 
   void setPassphrase(String passphrase) {
-    state = state.copyWith(passphrase: passphrase);
+    updateState(state.copyWith(passphrase: passphrase));
   }
 
   void setTotpSecret(String secret) {
-    state = state.copyWith(totpSecret: secret);
+    updateState(state.copyWith(totpSecret: secret));
   }
 
   void setQrCodeUri(String uri) {
-    state = state.copyWith(qrCodeUri: uri);
+    updateState(state.copyWith(qrCodeUri: uri));
   }
 
-  /// Called after signup TOTP verify returns the Redis sessionId.
   void setSessionId(String id) {
-    state = state.copyWith(sessionId: id);
+    updateState(state.copyWith(sessionId: id));
   }
 
   void setUsername(String username) {
-    state = state.copyWith(username: username);
+    updateState(state.copyWith(username: username));
   }
 
   void setPaymentUri(String uri) {
-    state = state.copyWith(paymentUri: uri);
+    updateState(state.copyWith(paymentUri: uri));
   }
 
   void setPaymentDetails({
@@ -262,11 +263,11 @@ class SignupFlowNotifier extends StateNotifier<SignupFlowState> {
     required double amountBtc,
     required String linkId,
   }) {
-    state = state.copyWith(
+    updateState(state.copyWith(
       paymentAddress: address,
       paymentAmountBtc: amountBtc,
       paymentLinkId: linkId,
-    );
+    ));
   }
 
   Future<void> fetchPaymentLink(AuthRepository repo) async {
@@ -279,41 +280,33 @@ class SignupFlowNotifier extends StateNotifier<SignupFlowState> {
       setPaymentDetails(
         address: dto.depositAddress,
         amountBtc: dto.amountBtc,
-        linkId: dto.id,
+        linkId: state.sessionId ?? '',
       );
-      state = state.copyWith(isLoading: false);
+      updateState(state.copyWith(isLoading: false));
     });
   }
 
   Future<void> checkPaymentStatus(AuthRepository repo) async {
     if (state.sessionId == null) return;
-
-    // IMPORTANT: generateOnboardingLink is NOT a polling endpoint — it finalizes
-    // the user account on first call. Calling it again with the same sessionId
-    // causes a race condition (duplicate key insert on the backend).
-    //
-    // The correct approach is to poll a dedicated status endpoint using paymentLinkId.
-    // For now (test bypass), if we already have a paymentLinkId set, the user was
-    // created successfully — just advance to the next step.
     if (state.paymentLinkId != null) {
       nextStep();
     }
   }
 
   void updateConfirmations(int confirmations) {
-    state = state.copyWith(confirmations: confirmations);
+    updateState(state.copyWith(confirmations: confirmations));
   }
 
   void setLoading(bool isLoading) {
-    state = state.copyWith(isLoading: isLoading);
+    updateState(state.copyWith(isLoading: isLoading));
   }
 
   void setError(String error) {
-    state = state.copyWith(error: error, isLoading: false);
+    updateState(state.copyWith(error: error, isLoading: false));
   }
 
   void clearError() {
-    state = state.copyWith(clearError: true);
+    updateState(state.copyWith(clearError: true));
   }
 
   void reset() {
@@ -322,9 +315,5 @@ class SignupFlowNotifier extends StateNotifier<SignupFlowState> {
   }
 }
 
-// Emits the globally persisted flow state instead of auto-disposing
 final signupFlowProvider =
-    StateNotifierProvider<SignupFlowNotifier, SignupFlowState>((ref) {
-      final prefs = ref.watch(sharedPreferencesProvider);
-      return SignupFlowNotifier(prefs);
-    });
+    NotifierProvider<SignupFlowNotifier, SignupFlowState>(SignupFlowNotifier.new);

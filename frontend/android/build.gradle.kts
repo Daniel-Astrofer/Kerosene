@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 allprojects {
     repositories {
         google()
@@ -16,46 +14,24 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
+
+    // Força todos os plugins (scanner, nfc, etc) a usarem o SDK 36
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            val android = project.extensions.getByName("android") as com.android.build.gradle.BaseExtension
+            android.compileSdkVersion(36)
+            android.buildToolsVersion("34.0.0")
+            android.defaultConfig {
+                targetSdkVersion(36)
+            }
+        }
+    }
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
 
-subprojects {
-    tasks.withType<KotlinCompile>().configureEach {
-        kotlinOptions {
-            allWarningsAsErrors = false
-            freeCompilerArgs += "-Xlint:-deprecation"
-        }
-    }
-}
-
-
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
-}
-
-
-subprojects {
-    if (project.name == "flutter_jailbreak_detection") {
-        fun setNamespace() {
-            val android = project.extensions.findByName("android")
-            if (android != null) {
-                try {
-                    val setNamespace = android.javaClass.getMethod("setNamespace", String::class.java)
-                    setNamespace.invoke(android, "appmire.be.flutterjailbreakdetection")
-                } catch (e: Exception) {
-                    println("Failed to set namespace for ${project.name}: $e")
-                }
-            }
-        }
-
-        if (project.state.executed) {
-            setNamespace()
-        } else {
-            project.afterEvaluate {
-                setNamespace()
-            }
-        }
-    }
 }

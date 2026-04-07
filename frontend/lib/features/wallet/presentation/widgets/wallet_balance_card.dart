@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
 import 'dart:math' as math;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/balance_settings_provider.dart';
 
 /// Widget do card de balanço com gráfico circular
-class WalletBalanceCard extends StatelessWidget {
+class WalletBalanceCard extends ConsumerWidget {
   final Wallet wallet;
 
   const WalletBalanceCard({super.key, required this.wallet});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balanceSettings = ref.watch(balanceSettingsProvider);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -21,7 +24,7 @@ class WalletBalanceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7B61FF).withValues(alpha: 0.1),
+            color: const Color(0xFF7B61FF).withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -51,9 +54,9 @@ class WalletBalanceCard extends StatelessWidget {
                     color: const Color(0xFF0F1229),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.bar_chart_rounded,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     size: 40,
                   ),
                 ),
@@ -63,24 +66,24 @@ class WalletBalanceCard extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Label "Balance"
-          const Text(
+          Text(
             'Balance',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), fontSize: 14),
           ),
           const SizedBox(height: 4),
 
           // Endereço da carteira (mascarado)
           Text(
             _maskAddress(wallet.address),
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.38), fontSize: 12),
           ),
           const SizedBox(height: 12),
 
           // Saldo em BTC
           Text(
-            '${wallet.balance.toStringAsFixed(8)} BTC',
-            style: const TextStyle(
-              color: Colors.white,
+            balanceSettings.formatBalance(wallet.balance),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 36,
               fontWeight: FontWeight.bold,
             ),
@@ -88,9 +91,9 @@ class WalletBalanceCard extends StatelessWidget {
           const SizedBox(height: 4),
 
           // Label "Total Portfolio"
-          const Text(
+          Text(
             'Total Portfolio Value',
-            style: TextStyle(color: Colors.white54, fontSize: 14),
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.54), fontSize: 14),
           ),
         ],
       ),

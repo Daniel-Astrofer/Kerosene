@@ -487,5 +487,8 @@
   "withdrawFeeFast": "Rápido",
   "withdrawFeeMedium": "Medio",
   "withdrawFeeSlow": "Lento",
-  "withdrawErrorFee": "Error al estimar las tasas de la red."
+  "withdrawErrorFee": "Error al estimar las tasas de la red.",
+  "verifyingDevice": "VERIFICANDO DISPOSITIVO",
+  "connectingToServer": "CONECTANDO AL SERVIDOR",
+  "sendingData": "ENVIANDO DATOS"
 }

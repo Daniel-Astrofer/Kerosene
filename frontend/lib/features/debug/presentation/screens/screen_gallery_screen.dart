@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
-
-// Auth Screens
-import 'package:teste/features/auth/presentation/screens/welcome_screen.dart';
-import 'package:teste/features/auth/presentation/screens/login_screen.dart';
-import 'package:teste/features/auth/presentation/screens/presentation_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_start_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_username_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_security_selection_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_seed_phrase_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_seed_verification_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_passkey_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/signup_payment_screen.dart';
-import 'package:teste/features/auth/presentation/screens/totp_setup_screen.dart';
 
 // Wallet & Home Screens
 import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import 'package:teste/features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'package:teste/features/wallet/presentation/screens/send_money_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/withdraw_screen.dart' as wallet_withdraw;
-import 'package:teste/features/transactions/presentation/screens/withdraw_screen.dart' as tx_withdraw;
+import 'package:teste/features/wallet/presentation/screens/withdraw_screen.dart';
 import 'package:teste/features/transactions/presentation/screens/deposits_screen.dart';
 import 'package:teste/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart';
 import 'package:teste/features/wallet/presentation/screens/deposit/deposit_method_screen.dart';
@@ -42,9 +31,6 @@ import 'package:teste/features/profile/presentation/screens/support_screen.dart'
 
 // Others
 import 'package:teste/features/security/presentation/screens/sovereignty_status_screen.dart';
-import 'package:teste/features/market/presentation/screens/market_screen.dart';
-import 'package:teste/features/nft/presentation/screens/nft_marketplace_screen.dart';
-import 'package:teste/features/p2p/presentation/screens/p2p_screen.dart';
 import 'package:teste/features/settings/presentation/screens/settings_screen.dart';
 
 final Wallet mockWallet = Wallet(
@@ -64,38 +50,27 @@ class ScreenGalleryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF090A0C),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'DEBUG GALLERY',
-          style: TextStyle(fontFamily: 'HubotSansExpanded', fontWeight: FontWeight.bold, fontSize: 16),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2.5,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        padding: EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.xl),
         children: [
-          _buildCategory(context, 'AUTHENTICATION', [
-            _buildScreenTile(context, 'Welcome Screen', const WelcomeScreen()),
-            _buildScreenTile(context, 'Login Screen', const LoginScreen()),
-            _buildScreenTile(context, 'Presentation Slides', const PresentationScreen()),
-            _buildScreenTile(context, 'Signup Start', const SignupStartScreen()),
-            _buildScreenTile(context, 'Signup Username', const SignupUsernameScreen()),
-            _buildScreenTile(context, 'Signup Security Selection', const SignupSecuritySelectionScreen()),
-            _buildScreenTile(context, 'Signup Seed Phrase', const SignupSeedPhraseScreen()),
-            _buildScreenTile(context, 'Signup Seed Verification', const SignupSeedVerificationScreen()),
-            _buildScreenTile(context, 'Signup Sovereign Key', const SignupPasskeyScreen()),
-            _buildScreenTile(context, 'Signup Payment', const SignupPaymentScreen()),
-            _buildScreenTile(context, 'TOTP Setup', const TotpSetupScreen()),
-          ]),
           _buildCategory(context, 'WALLET & TRANSACTIONS', [
             _buildScreenTile(context, 'Home Screen (Dashboard)', const HomeScreen()),
             _buildScreenTile(context, 'Create Wallet', const CreateWalletScreen()),
             _buildScreenTile(context, 'Send Money (Pix/Internal)', SendMoneyScreen(walletId: mockWallet.name)),
-            _buildScreenTile(context, 'Withdraw (Internal)', wallet_withdraw.WithdrawScreen(walletId: mockWallet.name)),
-            _buildScreenTile(context, 'Withdraw (External BTC)', tx_withdraw.WithdrawScreen(wallet: mockWallet)),
+            _buildScreenTile(context, 'Withdrawal (Premium)', WithdrawScreen(walletId: mockWallet.name)),
             _buildScreenTile(context, 'Deposits List', const DepositsScreen()),
             _buildScreenTile(context, 'Deposit Amount', DepositAmountScreen(wallet: mockWallet)),
             _buildScreenTile(context, 'Deposit Method', DepositMethodScreen(wallet: mockWallet, amountFiat: 1000.0)),
@@ -107,7 +82,7 @@ class ScreenGalleryScreen extends StatelessWidget {
             _buildScreenTile(context, 'Receive QR', const ReceiveQrScreen(amountDisplay: '0.002 BTC', paymentUri: 'bitcoin:bc1q...')),
             _buildScreenTile(context, 'Wallet Details', WalletDetailsScreen(wallet: mockWallet)),
             _buildScreenTile(context, 'Wallet Config', WalletConfigScreen(wallet: mockWallet)),
-            _buildScreenTile(context, 'Unified Transaction (History)', const UnifiedTransactionScreen()),
+            _buildScreenTile(context, 'Unified Transaction (History)', const UnifiedTransactionScreen(isSend: false)),
           ]),
           _buildCategory(context, 'PROFILE & SETTINGS', [
             _buildScreenTile(context, 'Profile Main', const ProfileScreen()),
@@ -118,9 +93,6 @@ class ScreenGalleryScreen extends StatelessWidget {
             _buildScreenTile(context, 'Global Settings', const SettingsScreen()),
           ]),
           _buildCategory(context, 'FEATURES', [
-            _buildScreenTile(context, 'Market / Trading', const MarketScreen()),
-            _buildScreenTile(context, 'NFT Marketplace', const NftMarketplaceScreen()),
-            _buildScreenTile(context, 'P2P Trading', const P2PScreen()),
             _buildScreenTile(context, 'Sovereignty Status', const SovereigntyStatusScreen()),
           ]),
         ],
@@ -133,12 +105,11 @@ class ScreenGalleryScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 24, bottom: 12, left: 8),
+          padding: EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm + AppSpacing.xs, left: AppSpacing.sm),
           child: Text(
             title,
-            style: TextStyle(
-              color: const Color(0xFF7B61FF).withValues(alpha: 0.8),
-              fontSize: 10,
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
               fontWeight: FontWeight.w800,
               letterSpacing: 2.5,
             ),
@@ -146,9 +117,9 @@ class ScreenGalleryScreen extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(AppSpacing.xl),
+            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
           ),
           child: Column(children: children.asMap().entries.map((entry) {
             final idx = entry.key;
@@ -157,7 +128,7 @@ class ScreenGalleryScreen extends StatelessWidget {
               children: [
                 widget,
                 if (idx < children.length - 1)
-                  Divider(height: 1, indent: 16, endIndent: 16, color: Colors.white.withValues(alpha: 0.05)),
+                  Divider(height: 1, indent: AppSpacing.md, endIndent: AppSpacing.md, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
               ],
             );
           }).toList()),
@@ -168,16 +139,15 @@ class ScreenGalleryScreen extends StatelessWidget {
 
   Widget _buildScreenTile(BuildContext context, String title, Widget screen) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xs),
       title: Text(
-        title, 
-        style: const TextStyle(
-          color: Colors.white, 
-          fontSize: 14, 
-          fontWeight: FontWeight.w500
-        )
+        title,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 12),
+      trailing: Icon(LucideIcons.chevronRight, color: AppColors.white20, size: 12),
       onTap: () {
         Navigator.push(
           context,

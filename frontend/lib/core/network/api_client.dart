@@ -2,17 +2,22 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import '../providers/network_status_provider.dart';
+import 'package:teste/core/providers/network_status_provider.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
-import '../errors/exceptions.dart';
-import 'api_response_interceptor.dart';
+import 'package:teste/core/errors/exceptions.dart';
+import 'dart:io';
+import 'package:dio/io.dart';
+import 'package:socks5_proxy/socks_client.dart';
+import 'package:teste/core/services/tor_service.dart';
+import 'package:teste/core/network/api_response_interceptor.dart';
 
 /// Cliente HTTP configurado com Dio
 class ApiClient {
   late final Dio _dio;
+  Dio get dio => _dio; // Added for TokenInterceptor retry logic
   final Ref ref; // Add Ref to access providers
 
   ApiClient({
@@ -32,6 +37,8 @@ class ApiClient {
         },
       ),
     );
+
+    _configureTorProxy();
 
     // Adicionar interceptors
     _dio.interceptors.add(_LogInterceptor());
@@ -274,7 +281,7 @@ class ApiClient {
 class _LogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    debugPrint('🌐 [${options.method}] ${options.path}');
+    debugPrint('🌐 [${options.method}] ${options.baseUrl}${options.path}');
     super.onRequest(options, handler);
   }
 
@@ -293,5 +300,33 @@ class _LogInterceptor extends Interceptor {
         : '';
     debugPrint('❌ [$code] $path${errCode.isNotEmpty ? ' ($errCode)' : ''}');
     super.onError(err, handler);
+  }
+}
+
+extension ApiClientProxy on ApiClient {
+  void _configureTorProxy() {
+    if (kIsWeb) return;
+
+    final torService = ref.read(torServiceProvider);
+    final isStaging = _dio.options.baseUrl.contains('127.0.0.1') || _dio.options.baseUrl.contains('localhost');
+    
+    // Only apply proxy if the base URL is an .onion address
+    if (_dio.options.baseUrl.contains('.onion') && !isStaging) {
+      final adapter = _dio.httpClientAdapter as IOHttpClientAdapter;
+      adapter.onHttpClientCreate = (client) {
+        final settings = [
+          ProxySettings(InternetAddress.loopbackIPv4, torService.socksPort),
+        ];
+        SocksTCPClient.assignToHttpClient(client, settings);
+        
+        // Tor often uses self-signed or specific certs in some configs, 
+        // but for .onion it's usually over HTTP anyway (Tor provides the security).
+        client.badCertificateCallback = (cert, host, port) => true;
+        
+        return client;
+      };
+      
+      debugPrint('🧅 ApiClient: Configured SOCKS5 proxy for .onion on port ${torService.socksPort}');
+    }
   }
 }

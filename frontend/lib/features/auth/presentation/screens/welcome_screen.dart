@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/widgets/bouncing_button.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/presentation/widgets/kerosene_logo.dart';
-import '../providers/auth_provider.dart';
-import '../state/auth_state.dart';
+import '../../controller/auth_controller.dart';
 import 'presentation_screen.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
@@ -17,13 +19,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    // If already authenticated, skip auth screens entirely
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authState = ref.read(authProvider);
-      if (authState is AuthAuthenticated && mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    });
   }
 
   @override
@@ -37,14 +32,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     // Handles the case where _checkAuthStatus resolves after first frame
-    ref.listen<AuthState>(authProvider, (_, next) {
+    ref.listen<AuthState>(authControllerProvider, (_, next) {
       if (next is AuthAuthenticated && mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/home_loading');
       }
     });
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background Image
@@ -56,12 +51,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(),
+              const SizedBox(height: 24),
 
+              // Logo and Platform Name side-by-side
               // Logo and Platform Name side-by-side
               FittedBox(
                 fit: BoxFit.scaleDown,
@@ -73,25 +69,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         // Secret shortcut for developers
                         Navigator.pushNamed(context, '/gallery');
                       },
-                      child: const KeroseneLogo(size: 80),
-                    ), // Increased size
+                      child: const KeroseneLogo(size: 60),
+                    ),
                     const SizedBox(width: 16),
                     Text(
                       'Kerosene',
-                      style: const TextStyle(
-                        fontFamily: 'HubotSansExpanded',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 46,
-                        color: Colors.white,
+                      style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
                         letterSpacing: 0,
                         height: 1.0,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 4),
-                            blurRadius: 12.0,
-                            color: Colors.black54,
-                          ),
-                        ],
                       ),
                     ),
                   ],
@@ -102,75 +88,34 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               Text(
                 AppLocalizations.of(context)!.welcomeSlogan,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.9),
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  color: AppColors.white,
                   height: 1.4,
-                  shadows: [
-                    const Shadow(
-                      offset: Offset(0, 2),
-                      blurRadius: 4.0,
-                      color: Colors.black87,
-                    ),
-                  ],
+
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
 
               Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/login'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFF7B61FF,
-                        ), // Electric Purple
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.signIn,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  BouncingButton(
+                    text: AppLocalizations.of(context)!.signIn,
+                    onPressed: () => Navigator.pushNamed(context, '/login'),
+                    variant: BouncingButtonVariant.solid,
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PresentationScreen(),
-                          ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white54, width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  BouncingButton(
+                    text: AppLocalizations.of(context)!.createAccount,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PresentationScreen(),
                         ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.createAccount,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                      );
+                    },
+                    variant: BouncingButtonVariant.outlined,
                   ),
                 ],
               ),

@@ -1,0 +1,5 @@
+Flutter is already up to date on channel stable
+Flutter 3.41.5 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision 2c9eb20739 (2 days ago) • 2026-03-17 16:14:01 -0700
+Engine • hash c1db59d880ca73dd86cec08a6663f287522d9f39 (revision 052f31d115) (45 hours ago) • 2026-03-17 20:29:11.000Z
+Tools • Dart 3.11.3 • DevTools 2.54.2

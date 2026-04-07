@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/entities/wallet.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'deposit_method_screen.dart';
-import '../../../../../core/utils/snackbar_helper.dart';
-import '../../../../../shared/widgets/brushed_metal_container.dart';
 
 class DepositAmountScreen extends ConsumerStatefulWidget {
   final Wallet wallet;
@@ -12,12 +16,11 @@ class DepositAmountScreen extends ConsumerStatefulWidget {
   const DepositAmountScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<DepositAmountScreen> createState() =>
-      _DepositAmountScreenState();
+  ConsumerState<DepositAmountScreen> createState() => _DepositAmountScreenState();
 }
 
 class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
-  String _amountRaw = '0'; // Stored as cents "250000" = R$ 2.500,00
+  String _amountRaw = '0';
 
   double get _parsedAmount {
     if (_amountRaw.isEmpty) return 0.0;
@@ -30,8 +33,6 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
     final n = int.tryParse(_amountRaw) ?? 0;
     final value = n / 100.0;
 
-    // Format to BRL manually to avoid external deps if not present
-    // or use a simple regex approach:
     final parts = value.toStringAsFixed(2).split('.');
     final integerPart = parts[0].replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -49,11 +50,8 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
         } else {
           _amountRaw = '0';
         }
-      } else if (key == '.') {
-        // Ignored for fiat cents entry pattern
       } else {
         if (_amountRaw.length < 10) {
-          // Limit to a reasonable amout
           _amountRaw = _amountRaw == '0' ? key : '$_amountRaw$key';
         }
       }
@@ -62,16 +60,16 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
 
   void _onContinue() {
     if (_parsedAmount <= 0) {
-      SnackbarHelper.showError("Please enter an amount greater than 0.");
+      SnackbarHelper.showError("Por favor, insira um valor maior que zero.");
       return;
     }
-
+    HapticFeedback.mediumImpact();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => DepositMethodScreen(
           wallet: widget.wallet,
-          amountFiat: _parsedAmount, // Passing Fiat amount
+          amountFiat: _parsedAmount,
         ),
       ),
     );
@@ -80,30 +78,34 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: BrushedMetalContainer(
-        baseColor: const Color(0xFF0A0A0A),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-                    _buildEnterAmountLabel(),
-                    const SizedBox(height: 16),
-                    _buildAmountDisplay(),
-                    const Spacer(flex: 3),
-                    _buildKeypad(),
-                    const SizedBox(height: 24),
-                    _buildContinueButton(),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: false,
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: Column(
+                children: [
+                  const Spacer(flex: 2),
+                  _buildEnterAmountLabel().animate().fade(),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildAmountDisplay().animate().fade().scale(begin: const Offset(0.9, 0.9)),
+                  const Spacer(flex: 3),
+                  _buildKeypad().animate(delay: 100.ms).fade().slideY(begin: 0.2, end: 0),
+                  const SizedBox(height: AppSpacing.xl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: CyberButton(
+                      text: 'CONTINUAR',
+                      onTap: _onContinue,
+                    ),
+                  ).animate(delay: 200.ms).fade().slideY(begin: 0.2, end: 0),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -111,70 +113,56 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 24,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
-          const Text(
-            'Add Funds',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Text(
+            'ADICIONAR SALDO',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
           ),
-          const SizedBox(width: 24), // Balance spacing
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildEnterAmountLabel() {
     return Text(
-      'ENTER AMOUNT',
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.3),
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
+      'VALOR DO DEPÓSITO',
+      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+        fontWeight: FontWeight.w900,
         letterSpacing: 2.0,
+        fontSize: 10,
       ),
     );
   }
 
   Widget _buildAmountDisplay() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
-          const Text(
+          Text(
             'R\$ ',
-            style: TextStyle(
-              color: Color(0xFF0033FF), // Branded blue
-              fontSize: 24,
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
           ),
           Flexible(
             child: Text(
               _displayAmount,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 56,
-                fontWeight: FontWeight.w300,
-                fontFamily: 'Inter',
-                letterSpacing: -1.0,
-              ),
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 64, fontFamily: 'JetBrainsMono', letterSpacing: -2),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -194,11 +182,11 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         children: keys.map((row) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: row.map((key) => _buildKey(key)).toList(),
@@ -210,9 +198,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
   }
 
   Widget _buildKey(String key) {
-    if (key.isEmpty) {
-      return const Expanded(child: SizedBox());
-    }
+    if (key.isEmpty) return const Expanded(child: SizedBox());
     
     final isBackspace = key == '←';
 
@@ -220,60 +206,20 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       child: GestureDetector(
         onTap: () => _onKeyTap(key),
         child: Container(
-          height: 56,
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          height: 64,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
           ),
           child: Center(
             child: isBackspace
-                ? const Icon(
-                    Icons.backspace_outlined,
-                    color: Colors.white,
-                    size: 20,
-                  )
+                ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 20)
                 : Text(
                     key,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w300,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(fontFamily: 'JetBrainsMono'),
                   ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContinueButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0033FF), // Branded blue
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-          onPressed: _onContinue,
-          child: const Text(
-            'CONTINUE',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
           ),
         ),
       ),

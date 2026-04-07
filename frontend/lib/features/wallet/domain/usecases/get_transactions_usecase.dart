@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/transaction.dart';
-import '../repositories/wallet_repository.dart';
+import '../repositories/ledger_repository.dart';
 
 /// Caso de uso: Obter transações de uma carteira
 /// Retorna histórico de transações ordenado por data (mais recente primeiro)
 class GetTransactionsUseCase {
-  final WalletRepository repository;
+  final LedgerRepository repository;
 
   const GetTransactionsUseCase(this.repository);
 
@@ -24,10 +24,9 @@ class GetTransactionsUseCase {
       );
     }
 
-    final result = await repository.getTransactions(
-      walletId: walletId,
-      limit: limit,
-      offset: offset,
+    final result = await repository.getHistory(
+      page: offset ~/ limit,
+      size: limit,
     );
 
     return result.fold((failure) => Left(failure), (transactions) {

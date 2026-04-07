@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/presentation/widgets/custom_error_dialog.dart';
 import '../../../../core/utils/error_translator.dart';
-import '../providers/auth_provider.dart';
-import '../state/auth_state.dart';
+import '../../controller/auth_controller.dart';
+import '../../controller/auth_local_provider.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 
 /// Screen shown when the API returns an "unknown device" error during login.
 /// The user must enter their TOTP code from their authenticator app to link
 /// the new device to their account.
+/// All styling uses AppColors, AppTypography, AppSpacing tokens strictly.
 class UnknownDeviceScreen extends ConsumerStatefulWidget {
   final String username;
   final String passphrase;
@@ -59,10 +63,10 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authControllerProvider);
     final isLoading = authState is AuthLoading;
 
-    ref.listen<AuthState>(authProvider, (previous, next) async {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) async {
       if (next is AuthAuthenticated) {
         if (widget.rememberMe) {
           final localDataSource = ref.read(authLocalDataSourceProvider);
@@ -82,7 +86,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
           context,
           ErrorTranslator.translate(context.l10n, next.message),
           onRetry: () {
-            ref.read(authProvider.notifier).clearError();
+            ref.read(authControllerProvider.notifier).clearError();
             if (_codeController.text.length == 6) {
               _handleVerify();
             } else {
@@ -90,7 +94,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
             }
           },
           onGoBack: () {
-            ref.read(authProvider.notifier).clearError();
+            ref.read(authControllerProvider.notifier).clearError();
             Navigator.pop(context);
           },
         );
@@ -98,343 +102,330 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
     });
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF050511), Color(0xFF1A1A2E)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: BoxDecoration(gradient: AppColors.bgGradient),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-
-                // ── Warning Banner ──────────────────────────────────────
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+          child: Column(
+            children: [
+              // Back button
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: AppSpacing.md,
+                    left: AppSpacing.sm,
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFA500).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFFFA500).withValues(alpha: 0.4),
+                  child: IconButton(
+                    icon: Icon(
+                      LucideIcons.arrowLeft,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 20,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Color(0xFFFFA500),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          context.l10n.unknownDeviceBanner,
-                          style: TextStyle(
-                            color: const Color(
-                              0xFFFFA500,
-                            ).withValues(alpha: 0.9),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 48),
-
-                // ── Pulsing Device Icon ─────────────────────────────────
-                AnimatedBuilder(
-                  animation: _pulseAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _pulseAnimation.value,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    width: 110,
-                    height: 110,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFFFFA500).withValues(alpha: 0.08),
-                      border: Border.all(
-                        color: const Color(0xFFFFA500).withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFA500).withValues(alpha: 0.2),
-                          blurRadius: 40,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.devices_other_rounded,
-                      size: 48,
-                      color: Color(0xFFFFA500),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── Title ───────────────────────────────────────────────
-                Text(
-                  context.l10n.unknownDeviceTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                Text(
-                  context.l10n.unknownDeviceDesc,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.55),
-                    height: 1.6,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // ── Username chip ───────────────────────────────────────
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 14,
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        widget.username,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 48),
-
-                // ── TOTP Input ──────────────────────────────────────────
-                Form(
-                  key: _formKey,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: Column(
                     children: [
-                      TextFormField(
-                        controller: _codeController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        autofocus: true,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          letterSpacing: 10,
-                          fontWeight: FontWeight.bold,
+                      SizedBox(height: AppSpacing.xl),
+
+                      // ── Warning Banner ──
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm + AppSpacing.xs,
                         ),
-                        maxLength: 6,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        onChanged: (value) {
-                          // Auto-submit when 6 digits entered
-                          if (value.length == 6 && !isLoading) {
-                            _handleVerify();
-                          }
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
+                          border: Border.all(
+                            color: AppColors.warning.withOpacity(0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.alertTriangle,
+                              color: AppColors.warning,
+                              size: 20,
+                            ),
+                            SizedBox(width: AppSpacing.sm + 2),
+                            Expanded(
+                              child: Text(
+                                context.l10n.unknownDeviceBanner,
+                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                                  color: AppColors.warning.withOpacity(0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: AppSpacing.xxl + AppSpacing.md),
+
+                      // ── Pulsing Device Icon ──
+                      AnimatedBuilder(
+                        animation: _pulseAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _pulseAnimation.value,
+                            child: child,
+                          );
                         },
-                        decoration: InputDecoration(
-                          counterText: "",
-                          hintText: context.l10n.unknownDeviceInputHint,
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            fontSize: 28,
-                            letterSpacing: 10,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.05),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFFFA500),
+                        child: Container(
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.warning.withOpacity(0.08),
+                            border: Border.all(
+                              color: AppColors.warning.withOpacity(0.3),
                               width: 1.5,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.warning.withOpacity(0.2),
+                                blurRadius: 40,
+                                spreadRadius: 5,
+                              ),
+                            ],
                           ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFFF0055),
-                              width: 1,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 24,
+                          child: Icon(
+                            LucideIcons.smartphone,
+                            size: 48,
+                            color: AppColors.warning,
                           ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return context.l10n.unknownDeviceInputErrorEmpty;
-                          }
-                          if (value.length != 6) {
-                            return context.l10n.unknownDeviceInputErrorLength;
-                          }
-                          return null;
-                        },
                       ),
 
-                      const SizedBox(height: 12),
+                      SizedBox(height: AppSpacing.xl),
+
+                      // ── Title ──
+                      Text(
+                        context.l10n.unknownDeviceTitle,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge!,
+                      ),
+
+                      SizedBox(height: AppSpacing.sm + AppSpacing.xs),
 
                       Text(
-                        context.l10n.unknownDeviceHelper,
+                        context.l10n.unknownDeviceDesc,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.35),
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.6,
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: AppSpacing.sm + AppSpacing.xs),
 
-                      // ── Verify Button ─────────────────────────────────
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _handleVerify,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFA500),
-                            foregroundColor: Colors.black,
-                            disabledBackgroundColor: const Color(
-                              0xFFFFA500,
-                            ).withValues(alpha: 0.4),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                      // ── Username chip ──
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md - 2,
+                          vertical: AppSpacing.sm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(AppSpacing.xl),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Icon(
+                              LucideIcons.user,
+                              size: 14,
+                              color: AppColors.white50,
                             ),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.black,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.link_rounded,
-                                      size: 20,
-                                      color: Colors.black,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      context.l10n.unknownDeviceAction,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.8,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ],
+                            SizedBox(width: AppSpacing.xs + 2),
+                            Text(
+                              widget.username,
+                              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                                color: AppColors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: AppSpacing.xxl + AppSpacing.md),
+
+                      // ── TOTP Input ──
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _codeController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              autofocus: true,
+                              style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                                letterSpacing: 10,
+                              ),
+                              maxLength: 6,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              onChanged: (value) {
+                                if (value.length == 6 && !isLoading) {
+                                  _handleVerify();
+                                }
+                              },
+                              decoration: InputDecoration(
+                                counterText: "",
+                                hintText: context.l10n.unknownDeviceInputHint,
+                                hintStyle: Theme.of(context).textTheme.titleLarge!.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.08),
+                                  letterSpacing: 10,
                                 ),
+                                filled: true,
+                                fillColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                                  borderSide: BorderSide(
+                                    color: AppColors.warning,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.error,
+                                    width: 1,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: AppSpacing.lg,
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return context.l10n.unknownDeviceInputErrorEmpty;
+                                }
+                                if (value.length != 6) {
+                                  return context.l10n.unknownDeviceInputErrorLength;
+                                }
+                                return null;
+                              },
+                            ),
+
+                            SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+
+                            Text(
+                              context.l10n.unknownDeviceHelper,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.35),
+                              ),
+                            ),
+
+                            SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
+
+                            // ── Verify Button ──
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: isLoading ? null : _handleVerify,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.warning,
+                                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                                  disabledBackgroundColor: AppColors.warning.withOpacity(0.4),
+                                ),
+                                child: isLoading
+                                    ? SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            LucideIcons.link,
+                                            size: 20,
+                                            color: Theme.of(context).colorScheme.onSurface,
+                                          ),
+                                          SizedBox(width: AppSpacing.sm),
+                                          Text(
+                                            context.l10n.unknownDeviceAction,
+                                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.8,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(height: 32),
+                      SizedBox(height: AppSpacing.xl),
 
-                // ── Security Note ───────────────────────────────────────
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: Colors.white.withValues(alpha: 0.3),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          context.l10n.unknownDeviceSecurityNote,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.3),
-                            height: 1.5,
+                      // ── Security Note ──
+                      Container(
+                        padding: EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+                          borderRadius: BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.06),
                           ),
                         ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              LucideIcons.info,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                            ),
+                            SizedBox(width: AppSpacing.sm + 2),
+                            Expanded(
+                              child: Text(
+                                context.l10n.unknownDeviceSecurityNote,
+                                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+
+                      SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -445,7 +436,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
     if (_formKey.currentState!.validate()) {
       HapticFeedback.lightImpact();
       ref
-          .read(authProvider.notifier)
+          .read(authControllerProvider.notifier)
           .verifyLoginTotp(
             username: widget.username,
             passphrase: widget.passphrase,

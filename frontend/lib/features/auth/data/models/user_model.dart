@@ -1,24 +1,36 @@
 import '../../domain/entities/user.dart';
 
 /// Model de User - DTO com serialização JSON
-/// Estende a entidade do domínio e adiciona funcionalidades de serialização
+/// Alinhado com GET /auth/me da API v5.8
 class UserModel extends User {
   const UserModel({
     required super.id,
-    required super.email,
-    required super.name,
+    required super.username,
+    super.testBalanceClaimed,
+    super.passkeyEnabledForTransactions,
+    super.lastLogin,
     super.photoUrl,
     required super.createdAt,
   });
 
-  /// Criar UserModel a partir de JSON
+  /// Criar UserModel a partir de JSON da API (/auth/me)
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
-      email: json['email'] as String,
-      name: json['name'] as String,
+      id: (json['id'] ?? json['userId'] ?? '0').toString(),
+      username: (json['username'] ?? json['name'] ?? '').toString(),
+      testBalanceClaimed: json['testBalanceClaimed'] == true,
+      passkeyEnabledForTransactions: json['passkeyEnabledForTransactions'] == true,
+      lastLogin: json['lastLogin'] != null
+          ? DateTime.tryParse(json['lastLogin'].toString())
+          : (json['last_login'] != null
+              ? DateTime.tryParse(json['last_login'].toString())
+              : null),
       photoUrl: json['photo_url'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : (json['createdAt'] != null
+              ? DateTime.parse(json['createdAt'].toString())
+              : DateTime.now()),
     );
   }
 
@@ -26,10 +38,12 @@ class UserModel extends User {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'email': email,
-      'name': name,
-      'photo_url': photoUrl,
-      'created_at': createdAt.toIso8601String(),
+      'username': username,
+      'testBalanceClaimed': testBalanceClaimed,
+      'passkeyEnabledForTransactions': passkeyEnabledForTransactions,
+      if (lastLogin != null) 'lastLogin': lastLogin!.toIso8601String(),
+      if (photoUrl != null) 'photo_url': photoUrl,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
@@ -37,8 +51,10 @@ class UserModel extends User {
   User toEntity() {
     return User(
       id: id,
-      email: email,
-      name: name,
+      username: username,
+      testBalanceClaimed: testBalanceClaimed,
+      passkeyEnabledForTransactions: passkeyEnabledForTransactions,
+      lastLogin: lastLogin,
       photoUrl: photoUrl,
       createdAt: createdAt,
     );
@@ -48,8 +64,10 @@ class UserModel extends User {
   factory UserModel.fromEntity(User user) {
     return UserModel(
       id: user.id,
-      email: user.email,
-      name: user.name,
+      username: user.username,
+      testBalanceClaimed: user.testBalanceClaimed,
+      passkeyEnabledForTransactions: user.passkeyEnabledForTransactions,
+      lastLogin: user.lastLogin,
       photoUrl: user.photoUrl,
       createdAt: user.createdAt,
     );
@@ -58,15 +76,19 @@ class UserModel extends User {
   /// Criar cópia com modificações
   UserModel copyWith({
     String? id,
-    String? email,
-    String? name,
+    String? username,
+    bool? testBalanceClaimed,
+    bool? passkeyEnabledForTransactions,
+    DateTime? lastLogin,
     String? photoUrl,
     DateTime? createdAt,
   }) {
     return UserModel(
       id: id ?? this.id,
-      email: email ?? this.email,
-      name: name ?? this.name,
+      username: username ?? this.username,
+      testBalanceClaimed: testBalanceClaimed ?? this.testBalanceClaimed,
+      passkeyEnabledForTransactions: passkeyEnabledForTransactions ?? this.passkeyEnabledForTransactions,
+      lastLogin: lastLogin ?? this.lastLogin,
       photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,
     );

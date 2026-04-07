@@ -4,12 +4,11 @@ import 'package:dio/dio.dart';
 
 /// Provider to expose the current network status
 final networkStatusProvider =
-    StateNotifierProvider<NetworkStatusNotifier, bool>((ref) {
-      return NetworkStatusNotifier();
-    });
+    NotifierProvider<NetworkStatusNotifier, bool>(NetworkStatusNotifier.new);
 
-class NetworkStatusNotifier extends StateNotifier<bool> {
-  NetworkStatusNotifier() : super(true);
+class NetworkStatusNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
 
   /// Called by ApiClient when a request fails due to connection issues
   void reportError(DioException error) {

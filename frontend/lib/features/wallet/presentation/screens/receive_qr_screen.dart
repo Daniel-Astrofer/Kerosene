@@ -1,95 +1,112 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter/services.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
+/// Premium Wallet Receive QR Screen - Refactored
 class ReceiveQrScreen extends ConsumerWidget {
   final String amountDisplay;
   final String paymentUri;
+  final String? label; 
 
   const ReceiveQrScreen({
     super.key,
     required this.amountDisplay,
     required this.paymentUri,
+    this.label,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF000000), Color(0xFF0A0A0F)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        amountDisplay,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 48,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withAlpha(20),
-                              blurRadius: 40,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: QrImageView(
-                          data: paymentUri,
-                          version: QrVersions.auto,
-                          size: 240,
-                          backgroundColor: Colors.white,
-                          eyeStyle: const QrEyeStyle(
-                            eyeShape: QrEyeShape.square,
-                            color: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xxl),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "₿ $amountDisplay",
+                    style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                      fontFamily: 'JetBrainsMono',
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 48,
+                      fontWeight: FontWeight.w200,
+                    ),
+                  ).animate().fade().slideY(begin: 0.1, end: 0),
+                  
+                  if (label != null) ...[
+                     const SizedBox(height: AppSpacing.xs),
+                     Text(
+                        label!,
+                        style: Theme.of(context).textTheme.labelLarge!.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
+                          letterSpacing: 2
+                        )
+                     ).animate(delay: 100.ms).fade(),
+                  ],
+
+                  const SizedBox(height: AppSpacing.xxl),
+                  
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        borderRadius: BorderRadius.circular(AppSpacing.xl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 40,
+                            spreadRadius: 5,
                           ),
-                          dataModuleStyle: const QrDataModuleStyle(
-                            dataModuleShape: QrDataModuleShape.square,
-                            color: Colors.black,
-                          ),
+                        ],
+                      ),
+                      child: QrImageView(
+                        data: paymentUri,
+                        version: QrVersions.auto,
+                        size: MediaQuery.of(context).orientation == Orientation.landscape ? 180 : 220,
+                        backgroundColor: Theme.of(context).colorScheme.onPrimary,
+                        eyeStyle: QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Theme.of(context).colorScheme.background, // QR Dark Color
+                        ),
+                        dataModuleStyle: QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Theme.of(context).colorScheme.background, // QR Dark Color
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      Text(
-                        "Scan QR Code to pay",
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(150),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ).animate(delay: 200.ms).scale(curve: Curves.easeOutBack),
+                  
+                  const SizedBox(height: AppSpacing.xxl),
+                  
+                  Text(
+                    context.l10n.receiveScanToPay.toUpperCase(),
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                      letterSpacing: 3,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ).animate(delay: 400.ms).fade(),
+                ],
               ),
-              _buildActions(context),
-            ],
-          ),
+            ),
+            const Spacer(),
+            _buildActions(context).animate(delay: 600.ms).fade().slideY(begin: 0.2, end: 0),
+            const SizedBox(height: AppSpacing.xl),
+          ],
         ),
       ),
     );
@@ -97,81 +114,98 @@ class ReceiveQrScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           const Spacer(),
           Text(
-            context.l10n.receive,
-            style: TextStyle(
-              color: Colors.white.withAlpha(230),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+            context.l10n.receive.toUpperCase(),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
           ),
           const Spacer(),
-          const SizedBox(width: 40),
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildActions(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         children: [
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
+            child: _ActionIconButton(
+              onTap: () {
+                HapticFeedback.mediumImpact();
                 Clipboard.setData(ClipboardData(text: paymentUri));
-                SnackbarHelper.showSuccess("QR Code data copied");
+                SnackbarHelper.showSuccess("Copiado para a área de transferência");
               },
-              icon: const Icon(Icons.copy_rounded, size: 20),
-              label: const Text("Copy Code"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withAlpha(20),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              icon: LucideIcons.copy,
+              label: context.l10n.copy.toUpperCase(),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // Future enhancement: share intent
+            child: _ActionIconButton(
+              onTap: () {
+                HapticFeedback.lightImpact();
               },
-              icon: const Icon(Icons.share_rounded, size: 20),
-              label: const Text("Share"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withAlpha(20),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              icon: LucideIcons.share2,
+              label: context.l10n.share.toUpperCase(),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionIconButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+
+  const _ActionIconButton({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(AppSpacing.md),
+          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05), width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 18),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,136 +1,14 @@
 import 'dart:async';
-import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/providers/auth_provider.dart'
-    show apiClientProvider;
 
-// ─── Model ───────────────────────────────────────────────────────────────────
-
-class SovereigntyStatus {
-  final TpmStatus tpm;
-  final QuorumStatus quorum;
-  final MerkleStatus merkle;
-  final MemoryStatus memory;
-  final int uptimeSeconds;
-
-  const SovereigntyStatus({
-    required this.tpm,
-    required this.quorum,
-    required this.merkle,
-    required this.memory,
-    required this.uptimeSeconds,
-  });
-}
-
-class TpmStatus {
-  final bool verified;
-  final String chip;
-  final int lastValidatedSecondsAgo;
-  final int totalChecks;
-  final String quoteHash;
-
-  const TpmStatus({
-    required this.verified,
-    required this.chip,
-    required this.lastValidatedSecondsAgo,
-    required this.totalChecks,
-    required this.quoteHash,
-  });
-}
-
-class QuorumStatus {
-  final bool active;
-  final int activeNodes;
-  final int totalNodes;
-  final List<String> jurisdictions;
-  final String algorithm;
-
-  const QuorumStatus({
-    required this.active,
-    required this.activeNodes,
-    required this.totalNodes,
-    required this.jurisdictions,
-    required this.algorithm,
-  });
-}
-
-class MerkleStatus {
-  final String status;
-  final String? lastRootHash;
-  final String? computedAt;
-  final int? ledgerCount;
-
-  const MerkleStatus({
-    required this.status,
-    this.lastRootHash,
-    this.computedAt,
-    this.ledgerCount,
-  });
-}
-
-class MemoryStatus {
-  final String status;
-  final String mechanism;
-  final String shardLocation;
-  final bool diskPersistence;
-
-  const MemoryStatus({
-    required this.status,
-    required this.mechanism,
-    required this.shardLocation,
-    required this.diskPersistence,
-  });
-}
-
-// ─── Provider ────────────────────────────────────────────────────────────────
-
-final sovereigntyProvider = FutureProvider.autoDispose<SovereigntyStatus>((
-  ref,
-) async {
-  final api = ref.watch(apiClientProvider);
-  final response = await api.get('/sovereignty/status');
-  final data = response.data as Map<String, dynamic>;
-
-  final tpmData = data['hardwareAttestation'] as Map<String, dynamic>;
-  final quorumData = data['networkConsensus'] as Map<String, dynamic>;
-  final merkleData = data['ledgerIntegrity'] as Map<String, dynamic>;
-  final memoryData = data['memoryProtection'] as Map<String, dynamic>;
-
-  return SovereigntyStatus(
-    tpm: TpmStatus(
-      verified: tpmData['status'] == 'VERIFIED',
-      chip: tpmData['chip'] as String,
-      lastValidatedSecondsAgo: tpmData['lastValidatedSecondsAgo'] as int,
-      totalChecks: (tpmData['totalChecks'] as num).toInt(),
-      quoteHash: tpmData['quoteHash'] as String,
-    ),
-    quorum: QuorumStatus(
-      active: quorumData['status'] == 'ACTIVE',
-      activeNodes: quorumData['activeNodes'] as int,
-      totalNodes: quorumData['totalNodes'] as int,
-      jurisdictions: (quorumData['jurisdictions'] as List<dynamic>)
-          .map((e) => e.toString())
-          .toList(),
-      algorithm: quorumData['consensusAlgorithm'] as String,
-    ),
-    merkle: MerkleStatus(
-      status: merkleData['status'] as String,
-      lastRootHash: merkleData['lastRootHash'] as String?,
-      computedAt: merkleData['computedAt'] as String?,
-      ledgerCount: (merkleData['ledgerCount'] as num?)?.toInt(),
-    ),
-    memory: MemoryStatus(
-      status: memoryData['status'] as String,
-      mechanism: memoryData['mechanism'] as String,
-      shardLocation: memoryData['shardLocation'] as String,
-      diskPersistence: memoryData['diskPersistence'] as bool,
-    ),
-    uptimeSeconds: (data['serverUptimeSeconds'] as num).toInt(),
-  );
-});
-
-// ─── Screen ──────────────────────────────────────────────────────────────────
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../l10n/l10n_extension.dart';
+import '../../domain/entities/security_status.dart';
+import '../providers/security_provider.dart';
 
 class SovereigntyStatusScreen extends ConsumerStatefulWidget {
   const SovereigntyStatusScreen({super.key});
@@ -141,154 +19,169 @@ class SovereigntyStatusScreen extends ConsumerStatefulWidget {
 }
 
 class _SovereigntyStatusScreenState
-    extends ConsumerState<SovereigntyStatusScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _pulseController;
-  late final AnimationController _scanController;
+    extends ConsumerState<SovereigntyStatusScreen> {
   Timer? _refreshTimer;
-
-  static const _green = Color(0xFF00FF94);
-  static const _red = Color(0xFFFF4444);
-  static const _bg = Color(0xFF050508);
-  static const _cardBg = Color(0xFF0D0D14);
-  static const _border = Color(0xFF1A1A2E);
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
-    _scanController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
-
-    // Auto-refresh every 12s to stay live
     _refreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
-      ref.invalidate(sovereigntyProvider);
+      ref.invalidate(sovereigntyStatusProvider);
     });
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _scanController.dispose();
     _refreshTimer?.cancel();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final statusAsync = ref.watch(sovereigntyProvider);
-
-    return Scaffold(
-      backgroundColor: _bg,
-      body: Stack(
-        children: [
-          _buildGridBackground(),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(context),
-                Expanded(
-                  child: statusAsync.when(
-                    data: (status) => _buildContent(status),
-                    loading: () => _buildLoadingState(),
-                    error: (e, _) => _buildErrorState(e.toString()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _copy({
+    required String pt,
+    required String en,
+    required String es,
+  }) {
+    switch (Localizations.localeOf(context).languageCode) {
+      case 'en':
+        return en;
+      case 'es':
+        return es;
+      default:
+        return pt;
+    }
   }
 
-  Widget _buildGridBackground() {
-    return AnimatedBuilder(
-      animation: _scanController,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: _GridScanPainter(_scanController.value),
-          size: Size.infinite,
-        );
-      },
+  Future<void> _refreshStatus() async {
+    HapticFeedback.selectionClick();
+    ref.invalidate(sovereigntyStatusProvider);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+
+  bool _allSignalsHealthy(SecurityStatus status) {
+    return status.hardwareAttestation['status'] == 'VERIFIED' &&
+        status.networkConsensus['status'] == 'ACTIVE' &&
+        status.ledgerIntegrity['status'] == 'VALID' &&
+        status.memoryProtection['status'] == 'LOCKED';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusAsync = ref.watch(sovereigntyStatusProvider);
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF06080D),
+              Color(0xFF0B1017),
+              Color(0xFF060709),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: statusAsync.when(
+                  data: _buildContent,
+                  loading: _buildLoadingState,
+                  error: (error, _) => _buildErrorState(error.toString()),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _border),
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 size: 16,
               ),
             ),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'SOVEREIGNTY STATUS',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 3,
-                ),
-              ),
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) => Text(
-                  'LIVE ATTESTATION REPORT',
-                  style: TextStyle(
-                    color: _green.withValues(
-                      alpha: 0.4 + 0.4 * _pulseController.value,
-                    ),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.sovereigntyStatusTitle,
+                  style: AppTypography.buttonText.copyWith(
+                    fontSize: 12,
+                    letterSpacing: 1.6,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  _copy(
+                    pt: 'Leitura operacional atualizada automaticamente a cada 12 segundos',
+                    en: 'Operational readout automatically refreshed every 12 seconds',
+                    es: 'Lectura operativa actualizada automaticamente cada 12 segundos',
+                  ),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.white70,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           GestureDetector(
-            onTap: () => ref.invalidate(sovereigntyProvider),
-            child: AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, child) => Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _green.withValues(
-                    alpha: 0.05 + 0.05 * _pulseController.value,
+            onTap: _refreshStatus,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh_rounded,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 16,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _green.withValues(
-                      alpha: 0.2 + 0.1 * _pulseController.value,
+                  const SizedBox(width: 8),
+                  Text(
+                    _copy(pt: 'Atualizar', en: 'Refresh', es: 'Actualizar'),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                child: Icon(Icons.refresh_rounded, color: _green, size: 18),
+                ],
               ),
             ),
           ),
@@ -297,210 +190,373 @@ class _SovereigntyStatusScreenState
     );
   }
 
-  Widget _buildContent(SovereigntyStatus status) {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        const SizedBox(height: 8),
-        _buildOverallBadge(status),
-        const SizedBox(height: 20),
-        _buildTpmCard(status.tpm),
-        const SizedBox(height: 12),
-        _buildQuorumCard(status.quorum),
-        const SizedBox(height: 12),
-        _buildMerkleCard(status.merkle),
-        const SizedBox(height: 12),
-        _buildMemoryCard(status.memory),
-        const SizedBox(height: 12),
-        _buildUptimeCard(status.uptimeSeconds),
-        const SizedBox(height: 24),
-        _buildFooter(),
-      ],
-    );
-  }
-
-  Widget _buildOverallBadge(SovereigntyStatus status) {
-    final allGood =
-        status.tpm.verified &&
-        status.quorum.active &&
-        status.merkle.status == 'VALID' &&
-        status.memory.status == 'LOCKED';
-
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: allGood
-                ? [
-                    _green.withValues(alpha: 0.08),
-                    _green.withValues(alpha: 0.03),
-                  ]
-                : [_red.withValues(alpha: 0.08), _red.withValues(alpha: 0.03)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: (allGood ? _green : _red).withValues(
-              alpha: 0.3 + 0.1 * _pulseController.value,
-            ),
-          ),
+  Widget _buildContent(SecurityStatus status) {
+    return RefreshIndicator(
+      onRefresh: _refreshStatus,
+      color: Theme.of(context).colorScheme.onPrimary,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: (allGood ? _green : _red).withValues(alpha: 0.15),
-                border: Border.all(
-                  color: (allGood ? _green : _red).withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-              ),
-              child: Icon(
-                allGood ? Icons.verified_rounded : Icons.warning_rounded,
-                color: allGood ? _green : _red,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    allGood ? 'SISTEMA SOBERANO' : 'ALERTA DE INTEGRIDADE',
-                    style: TextStyle(
-                      color: allGood ? _green : _red,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    allGood
-                        ? 'Todas as camadas de segurança operacionais.'
-                        : 'Verifique os indicadores abaixo.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        children: [
+          _buildExecutiveSummary(status),
+          const SizedBox(height: 16),
+          _buildSignalStrip(status),
+          const SizedBox(height: 24),
+          _buildTpmCard(status.hardwareAttestation),
+          const SizedBox(height: 16),
+          _buildQuorumCard(status.networkConsensus),
+          const SizedBox(height: 16),
+          _buildMerkleCard(status.ledgerIntegrity),
+          const SizedBox(height: 16),
+          _buildMemoryCard(status.memoryProtection),
+          const SizedBox(height: 16),
+          _buildUptimeCard(status.serverUptimeSeconds),
+          const SizedBox(height: 24),
+          _buildFooter(),
+        ],
       ),
     );
   }
 
-  Widget _buildTpmCard(TpmStatus tpm) {
+  Widget _buildExecutiveSummary(SecurityStatus status) {
+    final allGood = _allSignalsHealthy(status);
+    final primaryColor =
+        allGood ? AppColors.success : Theme.of(context).colorScheme.error;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: allGood ? 0.18 : 0.28),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  allGood
+                      ? Icons.verified_rounded
+                      : Icons.warning_amber_rounded,
+                  color: primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      allGood
+                          ? _copy(
+                              pt: 'Operação íntegra',
+                              en: 'Operational integrity confirmed',
+                              es: 'Integridad operativa confirmada',
+                            )
+                          : _copy(
+                              pt: 'Atenção operacional necessária',
+                              en: 'Operational attention required',
+                              es: 'Se requiere atención operativa',
+                            ),
+                      style: AppTypography.h3.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      allGood
+                          ? _copy(
+                              pt: 'Hardware, consenso, integridade do ledger e proteção de memória estão consistentes nesta leitura.',
+                              en: 'Hardware, consensus, ledger integrity, and memory protection are consistent in this readout.',
+                              es: 'Hardware, consenso, integridad del ledger y protección de memoria están consistentes en esta lectura.',
+                            )
+                          : _copy(
+                              pt: 'Um ou mais sinais não estão no estado ideal. Revise os blocos abaixo antes de tratar esta leitura como saudável.',
+                              en: 'One or more signals are not in the ideal state. Review the blocks below before treating this readout as healthy.',
+                              es: 'Una o más señales no están en el estado ideal. Revisa los bloques de abajo antes de tratar esta lectura como saludable.',
+                            ),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _SummaryPill(
+                label: context.l10n.hardwareAttestation,
+                value: status.hardwareAttestation['status'] ?? 'UNKNOWN',
+                ok: status.hardwareAttestation['status'] == 'VERIFIED',
+              ),
+              _SummaryPill(
+                label: context.l10n.networkConsensus,
+                value: status.networkConsensus['status'] ?? 'OFFLINE',
+                ok: status.networkConsensus['status'] == 'ACTIVE',
+              ),
+              _SummaryPill(
+                label: context.l10n.ledgerIntegrity,
+                value: status.ledgerIntegrity['status'] ?? 'INVALID',
+                ok: status.ledgerIntegrity['status'] == 'VALID',
+              ),
+              _SummaryPill(
+                label: context.l10n.memoryProtection,
+                value: status.memoryProtection['status'] ?? 'UNLOCKED',
+                ok: status.memoryProtection['status'] == 'LOCKED',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSignalStrip(SecurityStatus status) {
+    final tpmChecks = status.hardwareAttestation['totalChecks'] ?? 0;
+    final activeNodes = status.networkConsensus['activeNodes'] ?? 0;
+    final totalNodes = status.networkConsensus['totalNodes'] ?? 0;
+    final ledgerCount = status.ledgerIntegrity['ledgerCount'] ?? 0;
+    final diskPersistence = status.memoryProtection['diskPersistence'] == true;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - 12) / 2;
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: itemWidth,
+              child: _MetricCard(
+                label: _copy(
+                  pt: 'Verificações',
+                  en: 'Checks',
+                  es: 'Verificaciones',
+                ),
+                value: '$tpmChecks',
+                detail: _copy(
+                  pt: 'Total de atestações',
+                  en: 'Total attestations',
+                  es: 'Total de atestaciones',
+                ),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _MetricCard(
+                label: _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum'),
+                value: '$activeNodes/$totalNodes',
+                detail: _copy(
+                  pt: 'Nós ativos',
+                  en: 'Active nodes',
+                  es: 'Nodos activos',
+                ),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _MetricCard(
+                label: _copy(pt: 'Ledger', en: 'Ledger', es: 'Ledger'),
+                value: '$ledgerCount',
+                detail: _copy(
+                  pt: 'Carteiras auditadas',
+                  en: 'Wallets audited',
+                  es: 'Carteras auditadas',
+                ),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _MetricCard(
+                label: _copy(
+                  pt: 'Persistência',
+                  en: 'Persistence',
+                  es: 'Persistencia',
+                ),
+                value: diskPersistence
+                    ? _copy(pt: 'Disco', en: 'Disk', es: 'Disco')
+                    : _copy(pt: 'Memória', en: 'Memory', es: 'Memoria'),
+                detail: diskPersistence
+                    ? _copy(
+                        pt: 'Risco elevado',
+                        en: 'Higher risk',
+                        es: 'Riesgo mayor',
+                      )
+                    : _copy(
+                        pt: 'Sem gravação',
+                        en: 'No disk write',
+                        es: 'Sin escritura en disco',
+                      ),
+                accentColor: diskPersistence
+                    ? Theme.of(context).colorScheme.error
+                    : AppColors.success,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTpmCard(Map<String, dynamic> tpm) {
+    final verified = tpm['status'] == 'VERIFIED';
+
     return _SecurityCard(
       icon: Icons.memory_rounded,
-      title: 'HARDWARE ATTESTATION',
-      subtitle: tpm.chip,
-      statusOk: tpm.verified,
-      statusLabel: tpm.verified ? 'VERIFIED' : 'COMPROMISED',
-      pulseController: _pulseController,
+      title: context.l10n.hardwareAttestation,
+      subtitle: tpm['chip'] ?? 'Secure Element',
+      statusOk: verified,
+      statusLabel: tpm['status'] ?? 'UNKNOWN',
       rows: [
         _Row(
-          label: 'Última validação',
-          value: '${tpm.lastValidatedSecondsAgo}s atrás',
-          isHighlight: tpm.lastValidatedSecondsAgo < 12,
+          label: _copy(
+            pt: 'Última validação',
+            en: 'Last validation',
+            es: 'Última validación',
+          ),
+          value: '${tpm['lastValidatedSecondsAgo'] ?? 0}s',
+          isHighlight: (tpm['lastValidatedSecondsAgo'] ?? 99) < 12,
         ),
-        _Row(label: 'Verificações totais', value: '${tpm.totalChecks}'),
-        _Row(label: 'PCR Quote Hash', value: tpm.quoteHash, isMono: true),
-        _Row(label: 'Chip', value: tpm.chip),
+        _Row(
+          label: _copy(
+            pt: 'Verificações totais',
+            en: 'Total checks',
+            es: 'Verificaciones totales',
+          ),
+          value: '${tpm['totalChecks'] ?? 0}',
+        ),
+        _Row(
+          label: 'PCR Quote Hash',
+          value: tpm['quoteHash'] ?? '0x...',
+          isMono: true,
+        ),
+        _Row(
+          label: _copy(pt: 'Chip', en: 'Chip', es: 'Chip'),
+          value: tpm['chip'] ?? 'Generic TPM',
+        ),
       ],
     );
   }
 
-  Widget _buildQuorumCard(QuorumStatus quorum) {
+  Widget _buildQuorumCard(Map<String, dynamic> quorum) {
+    final active = quorum['status'] == 'ACTIVE';
+    final activeNodes = quorum['activeNodes'] ?? 0;
+    final totalNodes = quorum['totalNodes'] ?? 3;
+    final jurisdictions = (quorum['jurisdictions'] as List<dynamic>?)
+            ?.map((entry) => entry.toString())
+            .toList() ??
+        <String>[];
+
     return _SecurityCard(
       icon: Icons.hub_rounded,
-      title: 'CONSENSO DE REDE',
-      subtitle: '${quorum.activeNodes}/${quorum.totalNodes} nós ativos',
-      statusOk: quorum.active,
-      statusLabel: quorum.active ? 'ACTIVE' : 'OFFLINE',
-      pulseController: _pulseController,
+      title: context.l10n.networkConsensus,
+      subtitle:
+          '$activeNodes/$totalNodes ${_copy(pt: 'nós ativos', en: 'active nodes', es: 'nodos activos')}',
+      statusOk: active,
+      statusLabel: quorum['status'] ?? 'OFFLINE',
       rows: [
         _Row(
-          label: 'Quórum',
-          value: '${quorum.activeNodes}/${quorum.totalNodes} nós',
-          isHighlight: true,
+          label: _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum'),
+          value: '$activeNodes/$totalNodes',
+          isHighlight: activeNodes == totalNodes,
         ),
-        _Row(label: 'Algoritmo', value: quorum.algorithm),
-        for (int i = 0; i < quorum.jurisdictions.length; i++)
-          _Row(label: 'Jurisdição ${i + 1}', value: quorum.jurisdictions[i]),
+        _Row(
+          label: _copy(pt: 'Algoritmo', en: 'Algorithm', es: 'Algoritmo'),
+          value: quorum['consensusAlgorithm'] ?? 'BFT',
+        ),
+        for (int i = 0; i < jurisdictions.length; i++)
+          _Row(
+            label:
+                '${_copy(pt: 'Jurisdição', en: 'Jurisdiction', es: 'Jurisdicción')} ${i + 1}',
+            value: jurisdictions[i],
+          ),
       ],
-      extraWidget: _buildNodeDots(quorum),
+      extraWidget: _buildNodeDots(
+        jurisdictions: jurisdictions,
+        activeNodes: activeNodes,
+        totalNodes: totalNodes,
+      ),
     );
   }
 
-  Widget _buildNodeDots(QuorumStatus quorum) {
+  Widget _buildNodeDots({
+    required List<String> jurisdictions,
+    required int activeNodes,
+    required int totalNodes,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Row(
-        children: List.generate(quorum.totalNodes, (i) {
-          final active = i < quorum.activeNodes;
+        children: List.generate(totalNodes, (index) {
+          final active = index < activeNodes;
+          final label = jurisdictions.length > index
+              ? jurisdictions[index].substring(
+                  0,
+                  jurisdictions[index].length < 3
+                      ? jurisdictions[index].length
+                      : 3,
+                )
+              : 'N${index + 1}';
+
           return Expanded(
             child: Padding(
-              padding: EdgeInsets.only(
-                right: i < quorum.totalNodes - 1 ? 8 : 0,
-              ),
-              child: AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) => Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? _green.withValues(
-                            alpha: 0.08 + 0.04 * _pulseController.value,
-                          )
-                        : _red.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
+              padding: EdgeInsets.only(right: index == totalNodes - 1 ? 0 : 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: (active
+                          ? AppColors.success
+                          : Theme.of(context).colorScheme.error)
+                      .withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: (active
+                            ? AppColors.success
+                            : Theme.of(context).colorScheme.error)
+                        .withValues(alpha: 0.24),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      active
+                          ? Icons.check_circle_rounded
+                          : Icons.cancel_rounded,
                       color: active
-                          ? _green.withValues(
-                              alpha: 0.3 + 0.1 * _pulseController.value,
-                            )
-                          : _red.withValues(alpha: 0.3),
+                          ? AppColors.success
+                          : Theme.of(context).colorScheme.error,
+                      size: 14,
                     ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          active ? Icons.circle : Icons.cancel,
-                          color: active ? _green : _red,
-                          size: 10,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          quorum.jurisdictions.length > i
-                              ? quorum.jurisdictions[i]
-                                    .substring(0, 3)
-                                    .toUpperCase()
-                              : 'N${i + 1}',
-                          style: TextStyle(
-                            color: (active ? _green : _red).withValues(
-                              alpha: 0.8,
-                            ),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      label.toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -510,88 +566,141 @@ class _SovereigntyStatusScreenState
     );
   }
 
-  Widget _buildMerkleCard(MerkleStatus merkle) {
-    final ok = merkle.status == 'VALID';
+  Widget _buildMerkleCard(Map<String, dynamic> merkle) {
+    final status = merkle['status'] ?? 'INVALID';
+
     return _SecurityCard(
       icon: Icons.account_tree_rounded,
-      title: 'INTEGRIDADE DO LEDGER',
-      subtitle: 'Árvore de Merkle (SHA-256)',
-      statusOk: ok,
-      statusLabel: merkle.status,
-      pulseController: _pulseController,
+      title: context.l10n.ledgerIntegrity,
+      subtitle: 'Merkle Tree (SHA-256)',
+      statusOk: status == 'VALID',
+      statusLabel: status,
       rows: [
-        if (merkle.lastRootHash != null)
-          _Row(label: 'Raiz Merkle', value: merkle.lastRootHash!, isMono: true),
-        if (merkle.computedAt != null)
-          _Row(label: 'Computado em', value: _formatDate(merkle.computedAt!)),
-        if (merkle.ledgerCount != null)
+        if (merkle['lastRootHash'] != null)
           _Row(
-            label: 'Carteiras auditadas',
-            value: '${merkle.ledgerCount}',
+            label:
+                _copy(pt: 'Raiz Merkle', en: 'Merkle root', es: 'Raíz Merkle'),
+            value: merkle['lastRootHash'].toString(),
+            isMono: true,
+          ),
+        if (merkle['computedAt'] != null)
+          _Row(
+            label: _copy(
+                pt: 'Computado em', en: 'Computed at', es: 'Calculado en'),
+            value: _formatDate(merkle['computedAt'].toString()),
+          ),
+        if (merkle['ledgerCount'] != null)
+          _Row(
+            label: _copy(
+              pt: 'Carteiras auditadas',
+              en: 'Wallets audited',
+              es: 'Carteras auditadas',
+            ),
+            value: '${merkle['ledgerCount']}',
             isHighlight: true,
           ),
       ],
     );
   }
 
-  Widget _buildMemoryCard(MemoryStatus memory) {
+  Widget _buildMemoryCard(Map<String, dynamic> memory) {
+    final status = memory['status'] ?? 'UNLOCKED';
+
     return _SecurityCard(
       icon: Icons.lock_rounded,
-      title: 'PROTEÇÃO DE MEMÓRIA',
-      subtitle: memory.shardLocation,
-      statusOk: memory.status == 'LOCKED',
-      statusLabel: memory.status,
-      pulseController: _pulseController,
+      title: context.l10n.memoryProtection,
+      subtitle: memory['shardLocation'] ?? 'Unknown location',
+      statusOk: status == 'LOCKED',
+      statusLabel: status,
       rows: [
-        _Row(label: 'Mecanismo', value: memory.mechanism),
-        _Row(label: 'Shard location', value: memory.shardLocation),
         _Row(
-          label: 'Persistência em disco',
-          value: memory.diskPersistence ? 'SIM ⚠️' : 'NÃO ✓',
-          isHighlight: !memory.diskPersistence,
+          label: _copy(pt: 'Mecanismo', en: 'Mechanism', es: 'Mecanismo'),
+          value: memory['mechanism'] ?? 'None',
+        ),
+        _Row(
+          label: _copy(
+            pt: 'Local do shard',
+            en: 'Shard location',
+            es: 'Ubicación del shard',
+          ),
+          value: memory['shardLocation'] ?? 'Global Cluster',
+        ),
+        _Row(
+          label: _copy(
+            pt: 'Persistência em disco',
+            en: 'Disk persistence',
+            es: 'Persistencia en disco',
+          ),
+          value: memory['diskPersistence'] == true
+              ? _copy(pt: 'Ativa', en: 'Enabled', es: 'Activa')
+              : _copy(pt: 'Desativada', en: 'Disabled', es: 'Desactivada'),
+          isHighlight: memory['diskPersistence'] == false,
         ),
       ],
     );
   }
 
   Widget _buildUptimeCard(int uptimeSeconds) {
-    final h = uptimeSeconds ~/ 3600;
-    final m = (uptimeSeconds % 3600) ~/ 60;
-    final s = uptimeSeconds % 60;
-    final uptimeStr =
-        '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    final hours = uptimeSeconds ~/ 3600;
+    final minutes = (uptimeSeconds % 3600) ~/ 60;
+    final seconds = uptimeSeconds % 60;
+    final uptime =
+        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.timer_outlined,
-            color: Colors.white.withValues(alpha: 0.3),
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Uptime do servidor',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.timer_outlined,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 18,
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.serverUptime,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.white70,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _copy(
+                    pt: 'Disponibilidade acumulada do serviço',
+                    en: 'Accumulated service availability',
+                    es: 'Disponibilidad acumulada del servicio',
+                  ),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.white50,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Text(
-            uptimeStr,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'monospace',
-              letterSpacing: 1,
+            uptime,
+            style: AppTypography.number.copyWith(
+              fontFamily: 'JetBrainsMono',
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         ],
@@ -602,13 +711,16 @@ class _SovereigntyStatusScreenState
   Widget _buildFooter() {
     return Center(
       child: Text(
-        'Relatório gerado em tempo real · Atualização automática a cada 12s',
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.25),
-          fontSize: 10,
-          letterSpacing: 0.5,
+        _copy(
+          pt: 'Painel atualizado automaticamente. Puxe a tela para forçar uma nova leitura.',
+          en: 'Panel refreshes automatically. Pull the screen to force a new readout.',
+          es: 'El panel se actualiza automáticamente. Desliza para forzar una nueva lectura.',
         ),
         textAlign: TextAlign.center,
+        style: AppTypography.caption.copyWith(
+          color: AppColors.white50,
+          height: 1.5,
+        ),
       ),
     );
   }
@@ -618,33 +730,26 @@ class _SovereigntyStatusScreenState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AnimatedBuilder(
-            animation: _scanController,
-            builder: (context, child) => Transform.rotate(
-              angle: _scanController.value * 2 * pi,
-              child: child,
-            ),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _green.withValues(alpha: 0.5),
-                  width: 2,
-                ),
+          SizedBox(
+            width: 36,
+            height: 36,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.onPrimary,
               ),
-              child: Icon(Icons.radar_rounded, color: _green, size: 22),
             ),
           ),
           const SizedBox(height: 20),
           Text(
-            'ANALISANDO SOBERANIA…',
-            style: TextStyle(
-              color: _green.withValues(alpha: 0.7),
-              fontSize: 12,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w700,
+            _copy(
+              pt: 'Coletando sinais de soberania',
+              en: 'Collecting sovereignty signals',
+              es: 'Recolectando señales de soberanía',
+            ),
+            style: AppTypography.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -656,57 +761,91 @@ class _SovereigntyStatusScreenState
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.cloud_off_rounded,
-              color: _red.withValues(alpha: 0.6),
-              size: 48,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color:
+                  Theme.of(context).colorScheme.error.withValues(alpha: 0.22),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'ENDPOINT INACESSÍVEL',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_off_rounded,
+                color: Theme.of(context).colorScheme.error,
+                size: 36,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Não foi possível alcançar o servidor de atestação.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 12,
+              const SizedBox(height: 16),
+              Text(
+                _copy(
+                  pt: 'Leitura indisponível',
+                  en: 'Readout unavailable',
+                  es: 'Lectura no disponible',
+                ),
+                style: AppTypography.h3.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: () => ref.invalidate(sovereigntyProvider),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+              const SizedBox(height: 10),
+              Text(
+                _copy(
+                  pt: 'Não foi possível alcançar o serviço de atestação neste momento.',
+                  en: 'The attestation service could not be reached at this time.',
+                  es: 'No fue posible alcanzar el servicio de atestación en este momento.',
                 ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: _green.withValues(alpha: 0.4)),
-                  borderRadius: BorderRadius.circular(12),
+                textAlign: TextAlign.center,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.white70,
                 ),
-                child: const Text(
-                  'TENTAR NOVAMENTE',
-                  style: TextStyle(
-                    color: _green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                textAlign: TextAlign.center,
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.white50,
+                ),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _refreshStatus,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .error
+                          .withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Text(
+                    _copy(
+                      pt: 'Tentar novamente',
+                      en: 'Try again',
+                      es: 'Intentar de nuevo',
+                    ),
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -714,22 +853,23 @@ class _SovereigntyStatusScreenState
 
   String _formatDate(String iso) {
     try {
-      final dt = DateTime.parse(iso);
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} '
-          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      final date = DateTime.parse(iso);
+      return '${date.day.toString().padLeft(2, '0')}/'
+          '${date.month.toString().padLeft(2, '0')} '
+          '${date.hour.toString().padLeft(2, '0')}:'
+          '${date.minute.toString().padLeft(2, '0')}';
     } catch (_) {
       return iso;
     }
   }
 }
 
-// ─── Reusable Security Card ─────────────────────────────────────────────────
-
 class _Row {
   final String label;
   final String value;
   final bool isHighlight;
   final bool isMono;
+
   const _Row({
     required this.label,
     required this.value,
@@ -738,20 +878,118 @@ class _Row {
   });
 }
 
+class _SummaryPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool ok;
+
+  const _SummaryPill({
+    required this.label,
+    required this.value,
+    required this.ok,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ok ? AppColors.success : Theme.of(context).colorScheme.error;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.white50,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTypography.bodySmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String detail;
+  final Color? accentColor;
+
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.detail,
+    this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedAccent =
+        accentColor ?? Theme.of(context).colorScheme.onPrimary;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.white50,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTypography.h3.copyWith(
+              color: resolvedAccent,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            detail,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SecurityCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final bool statusOk;
   final String statusLabel;
-  final AnimationController pulseController;
   final List<_Row> rows;
   final Widget? extraWidget;
-
-  static const _green = Color(0xFF00FF94);
-  static const _red = Color(0xFFFF4444);
-  static const _cardBg = Color(0xFF0D0D14);
-  static const _border = Color(0xFF1A1A2E);
 
   const _SecurityCard({
     required this.icon,
@@ -759,29 +997,23 @@ class _SecurityCard extends StatelessWidget {
     required this.subtitle,
     required this.statusOk,
     required this.statusLabel,
-    required this.pulseController,
     required this.rows,
     this.extraWidget,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = statusOk ? _green : _red;
+    final statusColor =
+        statusOk ? AppColors.success : Theme.of(context).colorScheme.error;
 
-    return AnimatedBuilder(
-      animation: pulseController,
-      builder: (context, child) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: statusOk
-                ? color.withValues(alpha: 0.15 + 0.05 * pulseController.value)
-                : color.withValues(alpha: 0.3),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: statusColor.withValues(alpha: statusOk ? 0.16 : 0.22),
         ),
-        child: child,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,138 +1021,102 @@ class _SecurityCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: (statusOk ? _green : _red).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: statusOk ? _green : _red, size: 18),
+                child: Icon(
+                  icon,
+                  color: statusColor,
+                  size: 18,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 11,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.white70,
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: (statusOk ? _green : _red).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  color: statusColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: (statusOk ? _green : _red).withValues(alpha: 0.4),
+                    color: statusColor.withValues(alpha: 0.18),
                   ),
                 ),
                 child: Text(
                   statusLabel,
-                  style: TextStyle(
-                    color: statusOk ? _green : _red,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                  style: AppTypography.caption.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(color: _border, height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          const Divider(color: AppColors.surfaceLight, height: 1),
+          const SizedBox(height: 16),
           for (final row in rows) ...[
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  row.label,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 11,
+                Expanded(
+                  child: Text(
+                    row.label,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.white70,
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 16),
                 Flexible(
                   child: Text(
                     row.value,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: row.isHighlight ? _green : Colors.white,
-                      fontSize: row.isMono ? 10 : 12,
+                    style: (row.isMono
+                            ? AppTypography.caption.copyWith(
+                                fontFamily: 'JetBrainsMono',
+                              )
+                            : AppTypography.bodySmall)
+                        .copyWith(
+                      color: row.isHighlight
+                          ? AppColors.success
+                          : Theme.of(context).colorScheme.onPrimary,
                       fontWeight: FontWeight.w600,
-                      fontFamily: row.isMono ? 'monospace' : null,
-                      letterSpacing: row.isMono ? 0.5 : 0,
                     ),
                   ),
                 ),
               ],
             ),
-            if (rows.last != row) const SizedBox(height: 8),
+            if (rows.last != row) const SizedBox(height: 10),
           ],
           if (extraWidget != null) extraWidget!,
         ],
       ),
     );
   }
-}
-
-// ─── Background Painter ──────────────────────────────────────────────────────
-
-class _GridScanPainter extends CustomPainter {
-  final double progress;
-  _GridScanPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF00FF94).withOpacity(0.03)
-      ..strokeWidth = 0.5;
-
-    const spacing = 40.0;
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-
-    // Scan line
-    final scanY = progress * size.height;
-    final scanPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.transparent,
-          const Color(0xFF00FF94).withOpacity(0.06),
-          const Color(0xFF00FF94).withOpacity(0.1),
-          const Color(0xFF00FF94).withOpacity(0.06),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, scanY - 40, size.width, 80));
-
-    canvas.drawRect(Rect.fromLTWH(0, scanY - 40, size.width, 80), scanPaint);
-  }
-
-  @override
-  bool shouldRepaint(_GridScanPainter old) => old.progress != progress;
 }

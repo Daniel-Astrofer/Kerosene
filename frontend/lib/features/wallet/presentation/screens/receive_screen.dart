@@ -1,25 +1,23 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ndef_record/ndef_record.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/providers/currency_provider.dart';
+import 'package:teste/core/utils/currency_logic.dart';
+import 'package:teste/l10n/l10n_extension.dart';
+import '../../../../core/utils/qr_payment_parser.dart'; // [NEW]
+import '../../domain/entities/wallet.dart';
+import '../../domain/entities/payment_request.dart';
+import '../../presentation/providers/wallet_provider.dart';
+import '../../presentation/state/wallet_state.dart';
 import 'nfc_interaction_screen.dart';
 import 'receive_qr_screen.dart';
 
-import '../../domain/entities/wallet.dart';
-import '../../domain/entities/payment_request.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
-import '../../../../core/providers/price_provider.dart';
-import '../../../../core/providers/currency_provider.dart';
-import '../../presentation/providers/wallet_provider.dart';
-import '../../../../core/utils/currency_logic.dart';
-import '../../presentation/state/wallet_state.dart';
-import '../../../../l10n/app_localizations.dart';
-
-/// Tela de recebimento: dados da carteira + valor em BTC, com opção QR Code ou NFC.
 class ReceiveScreen extends ConsumerStatefulWidget {
   final Wallet? initialWallet;
 
@@ -58,6 +56,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
       }
     });
   }
+
   PaymentRequest get _paymentRequest {
     double? amount;
     if (_amount != '0' && _amount.isNotEmpty) {
@@ -84,27 +83,72 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     );
   }
 
+  void _onKeyTap(String key) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (key == '←') {
+        if (_amount.length > 1) {
+          _amount = _amount.substring(0, _amount.length - 1);
+        } else {
+          _amount = "0";
+        }
+      } else if (key == '.') {
+        if (!_amount.contains('.')) {
+          _amount += '.';
+        }
+      } else {
+        if (_amount == "0") {
+          _amount = key;
+        } else {
+          if (_amount.contains('.')) {
+            final parts = _amount.split('.');
+            if (parts.length > 1 && parts[1].length >= 8) {
+              return;
+            }
+          }
+          if (_amount.length < 16) {
+            _amount += key;
+          }
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
         child: Column(
           children: [
             _buildHeader(context),
-            const SizedBox(height: 24),
-            _buildTabs(),
-            Expanded(
+            const SizedBox(height: AppSpacing.lg),
+            _buildTabs().animate().fade().slideY(begin: 0.1, end: 0),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildAmountDisplay(),
+                  _buildAmountDisplay().animate().scale(curve: Curves.easeOutBack),
                 ],
               ),
             ),
-            _buildKeypad(),
-            const SizedBox(height: 24),
-            _buildContinueButton(),
+
+            _buildKeypad().animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
+            
+            const SizedBox(height: AppSpacing.xl),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: CyberButton(
+                text: context.l10n.continueButton.toUpperCase(),
+                isLoading: _isGenerating,
+                onTap: (double.tryParse(_amount) ?? 0) > 0 ? _generateAndNavigate : null,
+              ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0),
+            ),
+            
+            const SizedBox(height: AppSpacing.xl),
           ],
         ),
       ),
@@ -113,49 +157,42 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           const Spacer(),
           Text(
-            AppLocalizations.of(context)!.receive,
-            style: TextStyle(
-              color: Colors.white.withAlpha(230),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+            context.l10n.receive.toUpperCase(),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
           ),
           const Spacer(),
-          const SizedBox(width: 40),
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildTabs() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 32),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
       ),
       child: Row(
         children: [
-          _buildTabItem("NFC", 0),
-          _buildTabItem("QR Code", 1),
+          _buildTabItem(context.l10n.nfc, 0),
+          _buildTabItem(context.l10n.qrCode, 1),
         ],
       ),
     );
@@ -165,24 +202,28 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     final isSelected = _selectedTabIndex == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedTabIndex = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedTabIndex = index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withAlpha(25) : Colors.transparent,
+            color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(100),
-            border: Border.all(
-              color: isSelected ? Colors.white.withAlpha(30) : Colors.transparent,
-              width: 1,
-            ),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), blurRadius: 10, spreadRadius: 0),
+            ],
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white60,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 13,
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+              color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+              letterSpacing: 2,
             ),
           ),
         ),
@@ -194,36 +235,30 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     return Column(
       children: [
         Text(
-          AppLocalizations.of(context)!.howMuchToReceive.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.3),
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
+          context.l10n.howMuchToReceive.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 3.0,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            const Text(
+            Text(
               "₿ ",
-              style: TextStyle(
-                color: Color(0xFF00FFA3),
-                fontSize: 24,
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
             ),
             Text(
               _amount,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 56,
-                fontWeight: FontWeight.w300,
-                fontFamily: 'Inter',
-                letterSpacing: -1.0,
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                fontSize: 64,
+                fontWeight: FontWeight.w200,
+                letterSpacing: -2.0,
+                fontFamily: 'JetBrainsMono',
               ),
             ),
           ],
@@ -234,7 +269,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   Widget _buildKeypad() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         children: [
           Row(
@@ -277,431 +312,68 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         onTap: () => _onKeyTap(key),
         behavior: HitTestBehavior.opaque,
         child: Container(
-          height: 64,
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          height: 68,
+          margin: const EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              width: 1.5,
             ),
           ),
           alignment: Alignment.center,
           child: isBackspace
-              ? const Icon(Icons.backspace_outlined, color: Colors.white, size: 22)
+              ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 22)
               : Text(
                   key,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.w300,
+                    fontFamily: 'JetBrainsMono',
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
         ),
-      ),
-    );
-  }
-
-  void _onKeyTap(String key) {
-    setState(() {
-      if (key == '←') {
-        if (_amount.length > 1) {
-          _amount = _amount.substring(0, _amount.length - 1);
-        } else {
-          _amount = "0";
-        }
-      } else if (key == '.') {
-        if (!_amount.contains('.')) {
-          _amount += '.';
-        }
-      } else {
-        if (_amount == "0") {
-          _amount = key;
-        } else {
-          if (_amount.contains('.')) {
-            final parts = _amount.split('.');
-            if (parts.length > 1 && parts[1].length >= 8) {
-              return;
-            }
-          }
-          if (_amount.length < 16) {
-            _amount += key;
-          }
-        }
-      }
-    });
-  }
-
-  Widget _buildContinueButton() {
-    final canContinue = (double.tryParse(_amount) ?? 0.0) > 0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: (_isGenerating || !canContinue) ? null : _generateAndNavigate,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0033FF),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                disabledBackgroundColor: const Color(0xFF0033FF).withValues(alpha: 0.2),
-              ),
-              child: _isGenerating
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      "CONTINUE",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Future<void> _generateAndNavigate() async {
-    setState(() {
-      _isGenerating = true;
-    });
+    HapticFeedback.mediumImpact();
+    setState(() => _isGenerating = true);
 
     final String address = _selectedWallet?.address ?? '';
     final double amountBtc = _paymentRequest.amountBtc ?? 0;
 
-    final queryParams = <String, String>{
-      'address': address,
-      'amount': amountBtc.toStringAsFixed(8),
-    };
-    if (_selectedWallet != null) {
-      queryParams['label'] = _selectedWallet!.name;
-    }
-
-    final localUri = Uri(
-      scheme: 'kerosene',
-      path: 'pay',
-      queryParameters: queryParams,
-    ).toString();
-
-    // Background sync
-    try {
-      ref.read(paymentLinkNotifierProvider.notifier).create(
-        amount: amountBtc,
-        receiverWalletName: _selectedWallet?.name ?? 'main',
-        expiresIn: null,
-      );
-    } catch (_) {}
+    // Use unified parser to generate compliant URI
+    final String paymentUri = QrPaymentParser.encode(
+         address: address, 
+         amountBtc: amountBtc,
+         label: _selectedWallet?.name,
+    );
 
     if (mounted) {
-      setState(() {
-        _isGenerating = false;
-      });
+      setState(() => _isGenerating = false);
       
       if (_selectedTabIndex == 0) {
-        // NFC mode
-        // For now push to the UI screen. The actual NFC write logic will be handled inside that screen.
-        // Or we pass the URI to it. We need to update NfcInteractionScreen to accept the URI!
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => NfcInteractionScreen(amountDisplay: _amount, paymentUri: localUri), // Will update NfcInteractionScreen
+            builder: (_) => NfcInteractionScreen(amountDisplay: _amount, paymentUri: paymentUri),
           ),
         );
       } else {
-        // QR Code mode
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => ReceiveQrScreen(
               amountDisplay: _amount,
-              paymentUri: localUri,
+              paymentUri: paymentUri,
+              label: _selectedWallet?.name,
             ),
           ),
         );
       }
     }
-  }
-}
-
-/// Dialog that writes the payment request URI to an NFC tag.
-class _NfcWriteDialog extends StatefulWidget {
-  final String paymentRequestUri;
-  final String walletName;
-
-  const _NfcWriteDialog({
-    required this.paymentRequestUri,
-    required this.walletName,
-  });
-
-  @override
-  State<_NfcWriteDialog> createState() => _NfcWriteDialogState();
-}
-
-class _NfcWriteDialogState extends State<_NfcWriteDialog> {
-  String _status = "Aproxime o celular da tag NFC";
-  bool _writing = false;
-  bool _success = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    // Defer localized string initialization to allow context access or use didChangeDependencies
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _status = AppLocalizations.of(context)!.approachPhoneToNfc;
-        });
-      }
-    });
-
-    _startWriteSession();
-  }
-
-  @override
-  void dispose() {
-    NfcManager.instance.stopSession();
-    super.dispose();
-  }
-
-  void _startWriteSession() {
-    NfcManager.instance.startSession(
-      pollingOptions: {
-        NfcPollingOption.iso14443,
-        NfcPollingOption.iso15693,
-        NfcPollingOption.iso18092,
-      },
-      onDiscovered: (NfcTag tag) async {
-        if (_writing) return;
-        setState(() => _writing = true);
-
-        final ndef = Ndef.from(tag); // from nfc_manager
-        if (ndef == null) {
-          setState(() {
-            _error = AppLocalizations.of(context)!.nfcTagNotSupported;
-            _writing = false;
-          });
-          return;
-        }
-        if (!ndef.isWritable) {
-          setState(() {
-            _error = AppLocalizations.of(context)!.nfcTagNotWritable;
-            _writing = false;
-          });
-          return;
-        }
-
-        // NDEF URI record: type U (0x55), payload = [0x00] + utf8(uri) (0 = no prefix)
-        final uriBytes = utf8.encode(widget.paymentRequestUri);
-        final payload = Uint8List.fromList([0x00, ...uriBytes]);
-        final record = NdefRecord(
-          typeNameFormat: TypeNameFormat.wellKnown,
-          type: Uint8List.fromList([0x55]),
-          identifier: Uint8List(0),
-          payload: payload,
-        );
-        final message = NdefMessage(records: [record]);
-
-        if (message.byteLength > ndef.maxSize) {
-          setState(() {
-            _error = AppLocalizations.of(context)!.nfcTagCapacityError;
-            _writing = false;
-          });
-          return;
-        }
-
-        try {
-          await ndef.write(message: message);
-          if (!mounted) return;
-          setState(() {
-            _status = AppLocalizations.of(context)!.nfcTagWrittenSuccess;
-            _success = true;
-            _writing = false;
-          });
-          await NfcManager.instance.stopSession();
-          await Future.delayed(const Duration(seconds: 1));
-          if (mounted) Navigator.of(context).pop();
-        } catch (e) {
-          if (!mounted) return;
-          setState(() {
-            _error = AppLocalizations.of(context)!.errorWriting(e.toString());
-            _writing = false;
-          });
-        }
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(20),
-      child: GlassContainer(
-        blur: 40,
-        opacity: 0.15,
-        borderRadius: BorderRadius.circular(28),
-        padding: const EdgeInsets.all(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.nfc_rounded,
-                  color: _success
-                      ? Colors.greenAccent
-                      : const Color(0xFF00D4FF),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.writeNfcTag,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'SFProDisplay',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.walletName,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                if (!_success && !_writing && _error == null)
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: const Duration(seconds: 2),
-                    curve: Curves.easeInOut,
-                    builder: (context, value, child) => Container(
-                      width: 120 + (20 * value),
-                      height: 120 + (20 * value),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(
-                            0xFF00D4FF,
-                          ).withValues(alpha: 0.3 * (1 - value)),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    onEnd:
-                        () {}, // Handled by repeating logic in a real app, here it's static pulse
-                  ),
-                Container(
-                  height: 120,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            (_success
-                                    ? Colors.greenAccent
-                                    : _error != null
-                                    ? Colors.redAccent
-                                    : const Color(0xFF00D4FF))
-                                .withValues(alpha: 0.2),
-                        blurRadius: 20,
-                      ),
-                    ],
-                    color: Colors.black.withValues(alpha: 0.4),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
-                    ),
-                  ),
-                  child: Center(
-                    child: _success
-                        ? const Icon(
-                            Icons.check_rounded,
-                            size: 64,
-                            color: Colors.greenAccent,
-                          )
-                        : _writing
-                        ? const CircularProgressIndicator(
-                            color: Color(0xFF00D4FF),
-                            strokeWidth: 3,
-                          )
-                        : Icon(
-                            Icons.contactless_rounded,
-                            size: 56,
-                            color: _error != null
-                                ? Colors.redAccent
-                                : const Color(0xFF00D4FF),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            Text(
-              _error ?? _status,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _error != null
-                    ? Colors.redAccent
-                    : Colors.white.withValues(alpha: 0.9),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  _success ? "Pronto" : "Cancelar",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

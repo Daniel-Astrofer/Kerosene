@@ -35,13 +35,27 @@ class PaymentLink extends Equatable {
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   factory PaymentLink.fromJson(Map<String, dynamic> json) {
+    double amountBtc = (json['amountBtc'] as num?)?.toDouble() ?? 0;
+    if (amountBtc == 0 && json['amount'] is num) {
+      amountBtc = (json['amount'] as num).toDouble();
+    }
+
+    final rawStatus = json['status']?.toString() ?? 'pending';
+
     return PaymentLink(
       id: json['id']?.toString() ?? '',
       userId: (json['userId'] as num?)?.toInt() ?? 0,
-      amountBtc: (json['amountBtc'] as num?)?.toDouble() ?? 0,
-      description: json['description']?.toString() ?? '',
-      depositAddress: json['depositAddress']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'pending',
+      amountBtc: amountBtc,
+      description:
+          json['description']?.toString() ??
+          json['receiverWalletName']?.toString() ??
+          '',
+      depositAddress:
+          json['depositAddress']?.toString() ??
+          json['address']?.toString() ??
+          json['receiverWalletName']?.toString() ??
+          '',
+      status: rawStatus.toLowerCase(),
       txid: json['txid']?.toString(),
       expiresAt: json['expiresAt'] != null
           ? DateTime.tryParse(json['expiresAt'].toString())

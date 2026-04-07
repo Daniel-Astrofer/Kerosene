@@ -23,13 +23,20 @@ class TokenInterceptor extends QueuedInterceptor {
   ) async {
     try {
       final path = options.path;
-      // Exclude ALL onboarding-related paths from token injection. 
-      // These use sessionId as a query parameter, and sending a malformed 
-      // Bearer token (like the sessionId itself) causes 401 JWT errors.
+      // Public auth routes must not receive an Authorization header.
+      // Some flows use sessionId or username/challenge only, and injecting a
+      // stale token can force an unnecessary JWT failure before auth starts.
       final isOnboardingOrAuth =
           path.contains('/auth/login') ||
           path.contains('/auth/signup') ||
+          path.contains('/auth/passkey/challenge') ||
+          path.contains('/auth/passkey/verify') ||
+          path.contains('/auth/passkey/onboarding/') ||
+          path.contains('/auth/passkey/login/') ||
           path.contains('/auth/passkey/register/onboarding') ||
+          path.contains('/auth/hardware/challenge') ||
+          path.contains('/auth/hardware/verify') ||
+          path.contains('/auth/hardware/register/onboarding') ||
           path.contains('/voucher/');
 
       // 1. Injetar Token se não for rota de Auth/Onboarding e se não estiver presente

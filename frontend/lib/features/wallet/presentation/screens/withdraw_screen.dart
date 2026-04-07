@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
-
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/l10n/l10n_extension.dart';
-import '../../../../core/presentation/widgets/custom_error_dialog.dart';
-import '../../../../core/utils/error_translator.dart';
-import '../../../../core/utils/snackbar_helper.dart';
-import '../../../../core/presentation/widgets/pin_dialog.dart';
-import '../../../../core/security/app_pin_service.dart';
-import '../../../../core/security/biometric_service.dart';
-import '../../../transactions/presentation/providers/transaction_provider.dart';
-import '../providers/wallet_provider.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
-import '../widgets/amount_input_pad.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:teste/features/wallet/presentation/screens/withdraw_receipt_screen.dart';
+import '../../domain/entities/wallet.dart';
+import '../../presentation/providers/wallet_provider.dart';
+import '../../presentation/state/wallet_state.dart';
+import '../widgets/withdraw_review_popup.dart';
 
 class WithdrawScreen extends ConsumerStatefulWidget {
   final String walletId;
@@ -25,354 +25,215 @@ class WithdrawScreen extends ConsumerStatefulWidget {
 }
 
 class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
-  final _addressController = TextEditingController();
-  final _amountController = TextEditingController();
-  final _totpController = TextEditingController();
-
-  // Timer for debouncing amount input
-  Timer? _debounce;
-  double _currentAmount = 0.0;
-
-  // Fee selection (0=fast, 1=standard, 2=slow)
-  int _selectedFeeSpeed = 0;
+  Wallet? _selectedWallet;
+  
+  int _selectedTabIndex = 0; // 0: On-chain, 1: Lightning
+  String _amount = '0';
+  bool _isProcessing = false;
 
   @override
-  void dispose() {
-    _addressController.dispose();
-    _amountController.dispose();
-    _totpController.dispose();
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _onAmountChanged(String val) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 800), () {
-      final amt = double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
-      if (amt > 0) {
-        setState(() {
-          _currentAmount = amt;
-        });
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final walletState = ref.read(walletProvider);
+      if (walletState is WalletLoaded) {
+        _selectedWallet = walletState.wallets.firstWhere(
+          (w) => w.name == widget.walletId,
+          orElse: () => walletState.wallets.first,
+        );
+        setState(() {});
       }
     });
   }
 
-  Future<void> _handleWithdraw(BuildContext context, dynamic feeData) async {
-    final address = _addressController.text.trim();
-    final totpCode = _totpController.text.trim();
-    if (address.isEmpty || _currentAmount <= 0) {
-      SnackbarHelper.showError(context.l10n.withdrawInvalidFields);
-      return;
-    }
-    if (totpCode.length != 6) {
-      SnackbarHelper.showError('Código TOTP inválido. Insira os 6 dígitos.');
-      return;
-    }
-
-    // Authenticate
-    final biometricService = BiometricService();
-    final canAuth = await biometricService.canAuthenticate();
-    final iEnrolled = await biometricService.isBiometricEnrolled();
-
-    bool authenticated = false;
-    if (canAuth && iEnrolled) {
-      if (!context.mounted) return;
-      authenticated = await biometricService.authenticate(
-        localizedReason: context.l10n.withdrawAuthReason,
-      );
-    } else {
-      if (!context.mounted) return;
-      final pinService = AppPinService();
-      final hasPinSet = await pinService.hasPinSet();
-      if (!context.mounted) return;
-      authenticated = await PinDialog.show(context, isSetup: !hasPinSet);
-    }
-
-    if (!context.mounted) return;
-    if (!authenticated) {
-      SnackbarHelper.showError(context.l10n.withdrawAuthCancelled);
-      return;
-    }
-
-    // Send transaction (Withdrawal On-chain)
-    final result = await ref
-        .read(withdrawProvider.notifier)
-        .withdraw(
-          toAddress: address,
-          amount: _currentAmount,
-          fromWalletName: widget.walletId,
-          totpCode: totpCode,
-        );
-
-    if (!context.mounted) return;
-    if (result != null) {
-      SnackbarHelper.showSuccess(context.l10n.withdrawSuccess);
-      if (context.mounted) {
-        ref.read(walletProvider.notifier).refresh();
-        Navigator.pop(context);
+  void _onKeyTap(String key) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (key == '←') {
+        if (_amount.length > 1) {
+          _amount = _amount.substring(0, _amount.length - 1);
+        } else {
+          _amount = "0";
+        }
+      } else if (key == '.') {
+        if (!_amount.contains('.')) {
+          _amount += '.';
+        }
+      } else {
+        if (_amount == "0") {
+          _amount = key;
+        } else {
+          if (_amount.contains('.')) {
+            final parts = _amount.split('.');
+            if (parts.length > 1 && parts[1].length >= 8) {
+              return;
+            }
+          }
+          if (_amount.length < 16) {
+            _amount += key;
+          }
+        }
       }
-    } else {
-      final errorState = ref.read(withdrawProvider);
-      if (errorState.error != null && context.mounted) {
-        showCustomErrorDialog(
-          context,
-          ErrorTranslator.translate(context.l10n, errorState.error!),
-        );
-      }
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final feeAsyncValue = ref.watch(feeEstimateProvider(_currentAmount));
-    final sendState = ref.watch(withdrawProvider);
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.black,
-      body: Column(
-        children: [
-          AppBar(
-            title: Text(
-              context.l10n.saqueAction,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
+        child: Column(
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: AppSpacing.lg),
+            _buildTabs().animate().fade().slideY(begin: 0.1, end: 0),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+              child: Column(
+                children: [
+                  _buildAmountDisplay().animate().scale(curve: Curves.easeOutBack),
+                ],
               ),
             ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.white),
+
+            _buildKeypad().animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
+            
+            const SizedBox(height: AppSpacing.xl),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: CyberButton(
+                text: context.l10n.continueButton.toUpperCase(),
+                isLoading: _isProcessing,
+                onTap: (double.tryParse(_amount) ?? 0) > 0 ? _showReviewPopup : null,
+              ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0),
+            ),
+            
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+            ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Address Input
-                  Text(
-                    context.l10n.withdrawAddressLabel,
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInputBox(
-                    controller: _addressController,
-                    hint: context.l10n.withdrawAddressLabel,
-                    icon: Icons.qr_code_scanner_rounded,
-                  ),
+          const Spacer(),
+          Text(
+            context.l10n.saqueAction.toUpperCase(),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
+          ),
+          const Spacer(),
+          const SizedBox(width: 48),
+        ],
+      ),
+    ).animate().fade().slideY(begin: -0.2, end: 0);
+  }
 
-                  const SizedBox(height: 32),
+  Widget _buildTabs() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          _buildTabItem("ON-CHAIN", 0, LucideIcons.link),
+          _buildTabItem("LIGHTNING", 1, LucideIcons.zap),
+        ],
+      ),
+    );
+  }
 
-                  // Amount Input
-                  Text(
-                    context.l10n.withdrawAmountLabel,
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInputBox(
-                    controller: _amountController,
-                    hint: '0.00',
-                    icon: Icons.currency_bitcoin_rounded,
-                    isNumeric: true,
-                    readOnly: true,
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => AmountInputPad(
-                          onNumberPressed: (val) {
-                            final current = _amountController.text;
-                            _amountController.text = current + val;
-                            _onAmountChanged(_amountController.text);
-                          },
-                          onBackspace: () {
-                            final current = _amountController.text;
-                            if (current.isNotEmpty) {
-                              _amountController.text = current.substring(0, current.length - 1);
-                              _onAmountChanged(_amountController.text);
-                            }
-                          },
-                          onDecimal: () {
-                            final current = _amountController.text;
-                            if (!current.contains('.')) {
-                              _amountController.text = current.isEmpty ? '0.' : '$current.';
-                            }
-                          },
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // TOTP code
-                  Text(
-                    'Código TOTP (6 dígitos)',
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInputBox(
-                    controller: _totpController,
-                    hint: '000000',
-                    icon: Icons.lock_clock_rounded,
-                    isNumeric: true,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Network Fee section
-                  if (_currentAmount > 0)
-                    feeAsyncValue.when(
-                      data: (feeData) => _buildFeeSection(feeData),
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(color: Color(0xFFD0F288)),
-                      ),
-                      error: (err, _) => Center(
-                        child: Text(
-                          context.l10n.withdrawErrorFee,
-                          style: TextStyle(color: Colors.red[300]),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 48),
-
-                  // Send Action
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed:
-                          (_currentAmount > 0 &&
-                              sendState.isLoading == false &&
-                              feeAsyncValue.value != null)
-                          ? () => _handleWithdraw(context, feeAsyncValue.value)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0033FF),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        disabledBackgroundColor: const Color(0xFF0033FF).withOpacity(0.2),
-                      ),
-                          : const Text(
-                              "CONTINUE",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+  Widget _buildTabItem(String label, int index, IconData icon) {
+    final isSelected = _selectedTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedTabIndex = index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(100),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), blurRadius: 10, spreadRadius: 0),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  letterSpacing: 2,
+                  fontSize: 10,
                 ),
               ),
             ],
-          ),
-        ),
-      );
-    }
-
-  Widget _buildInputBox({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool isNumeric = false,
-    bool readOnly = false,
-    VoidCallback? onTap,
-    Function(String)? onChanged,
-  }) {
-    return GlassContainer(
-      blur: 20,
-      opacity: 0.05,
-      borderRadius: BorderRadius.circular(20),
-      padding: EdgeInsets.zero,
-      child: TextField(
-        controller: controller,
-        readOnly: readOnly,
-        onTap: onTap,
-        keyboardType: isNumeric
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : TextInputType.text,
-        inputFormatters: isNumeric
-            ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))]
-            : null,
-        onChanged: onChanged,
-        style: const TextStyle(color: Colors.white, fontSize: 18),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white38),
-          prefixIcon: Icon(icon, color: Colors.white54),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 18,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFeeSection(dynamic feeData) {
+  Widget _buildAmountDisplay() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          context.l10n.withdrawFeeSection,
-          style: const TextStyle(
-            color: Colors.white38,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+          "VALOR DO SAQUE".toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 3.0,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            Expanded(
-              child: _buildFeeOption(
-                0,
-                context.l10n.withdrawFeeFast,
-                feeData.estimatedFastBtc,
-                Colors.greenAccent,
-              ),
+            Text(
+              "₿ ",
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildFeeOption(
-                1,
-                context.l10n.withdrawFeeMedium,
-                feeData.estimatedStandardBtc,
-                Colors.orangeAccent,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildFeeOption(
-                2,
-                context.l10n.withdrawFeeSlow,
-                feeData.estimatedSlowBtc,
-                Colors.redAccent,
+            Text(
+              _amount,
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                fontSize: 64,
+                fontWeight: FontWeight.w200,
+                letterSpacing: -2.0,
+                fontFamily: 'JetBrainsMono',
               ),
             ),
           ],
@@ -381,51 +242,128 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 
-  Widget _buildFeeOption(
-    int index,
-    String label,
-    double amountBtc,
-    Color color,
-  ) {
-    final isSelected = _selectedFeeSpeed == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedFeeSpeed = index;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withOpacity(0.1)
-              : Colors.white.withOpacity(0.02),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.05),
-            width: isSelected ? 1.5 : 1.0,
+  Widget _buildKeypad() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _buildKey('1'),
+              _buildKey('2'),
+              _buildKey('3'),
+            ],
           ),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : Colors.white54,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+          Row(
+            children: [
+              _buildKey('4'),
+              _buildKey('5'),
+              _buildKey('6'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildKey('7'),
+              _buildKey('8'),
+              _buildKey('9'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildKey('.'),
+              _buildKey('0'),
+              _buildKey('←'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKey(String key) {
+    final isBackspace = key == '←';
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onKeyTap(key),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 68,
+          margin: const EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              width: 1.5,
             ),
-            const SizedBox(height: 8),
-            Text(
-              amountBtc.toStringAsFixed(6),
-              style: const TextStyle(color: Colors.white, fontSize: 11),
-            ),
-          ],
+          ),
+          alignment: Alignment.center,
+          child: isBackspace
+              ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 22)
+              : Text(
+                  key,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.w300,
+                    fontFamily: 'JetBrainsMono',
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
         ),
       ),
     );
   }
+
+  void _showReviewPopup() {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => WithdrawReviewPopup(
+        amount: double.tryParse(_amount) ?? 0,
+        isLightning: _selectedTabIndex == 1,
+        walletName: _selectedWallet?.name ?? widget.walletId,
+        onConfirm: (address, totp, shamirVerified) {
+          Navigator.pop(context);
+          _executeWithdraw(address, totp);
+        },
+      ),
+    );
+  }
+
+  Future<void> _executeWithdraw(String address, String totp) async {
+    setState(() => _isProcessing = true);
+    
+    final result = await ref.read(withdrawProvider.notifier).withdraw(
+      fromWalletName: _selectedWallet?.name ?? widget.walletId,
+      toAddress: address,
+      amount: double.tryParse(_amount) ?? 0,
+      totpCode: totp,
+    );
+
+    if (mounted) {
+      setState(() => _isProcessing = false);
+      if (result != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WithdrawReceiptScreen(
+              amountBtc: _amount,
+              toAddress: address,
+              txId: result.txid,
+              feeBtc: "0.00001000", // Placeholder if not provided by result
+              walletName: _selectedWallet?.name ?? widget.walletId,
+              timestamp: DateTime.now(),
+              isLightning: _selectedTabIndex == 1,
+            ),
+          ),
+        );
+      } else {
+        final error = ref.read(withdrawProvider).error;
+        if (error != null) {
+          SnackbarHelper.showError(error);
+        }
+      }
+    }
+  }
 }
-```

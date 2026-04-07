@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/entities/wallet.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'deposit_provider_screen.dart';
-import 'deposit_lightning_invoice_screen.dart'; // We'll create this later
-import 'deposit_onchain_invoice_screen.dart'; // We'll create this later
-import '../../../../../shared/widgets/brushed_metal_container.dart';
+import 'deposit_lightning_invoice_screen.dart';
+import 'deposit_onchain_invoice_screen.dart';
 
 class DepositMethodScreen extends ConsumerWidget {
   final Wallet wallet;
@@ -24,7 +30,7 @@ class DepositMethodScreen extends ConsumerWidget {
           builder: (_) => DepositLightningInvoiceScreen(
             wallet: wallet,
             amountFiat: amountFiat,
-            providerName: 'Kerosene', // Direct crypto fallback
+            providerName: 'Kerosene',
           ),
         ),
       );
@@ -35,18 +41,17 @@ class DepositMethodScreen extends ConsumerWidget {
           builder: (_) => DepositOnchainInvoiceScreen(
             wallet: wallet,
             amountFiat: amountFiat,
-            providerName: 'Kerosene', // Direct crypto fallback
+            providerName: 'Kerosene',
           ),
         ),
       );
     } else {
-      // Fiat gateway selected -> Go to provider screen
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => DepositProviderScreen(
             wallet: wallet,
-            amountFiat: amountFiat, // Pass fiat instead of BTC
+            amountFiat: amountFiat,
             method: method,
           ),
         ),
@@ -57,65 +62,61 @@ class DepositMethodScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: BrushedMetalContainer(
-        baseColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTitle(),
-                    const SizedBox(height: 48),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitle().animate().fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.xxl),
 
-                    _buildCategoryLabel('FIAT GATEWAY'),
-                    const SizedBox(height: 16),
-                    _buildMethodCard(
-                      context,
-                      icon: Icons.account_balance_wallet_rounded,
-                      title: 'Pix & Credit Card',
-                      subtitle: 'Instant funding via Ramps',
-                      badgeText: 'FEE 0.99%',
-                      badgeColor: const Color(0xFF1A5CFF),
-                      onTap: () => _navigateToProvider(context, 'Fiat'),
-                    ),
+                  _buildCategoryLabel('FIAT GATEWAY').animate(delay: 100.ms).fade(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildMethodCard(
+                    context,
+                    icon: LucideIcons.wallet,
+                    title: 'Pix & Cartão',
+                    subtitle: 'Depósito instantâneo via Ramps',
+                    badgeText: 'TAXA 0.99%',
+                    badgeColor: Theme.of(context).colorScheme.primary,
+                    onTap: () => _navigateToProvider(context, 'Fiat'),
+                  ).animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
 
-                    const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xl),
 
-                    _buildCategoryLabel('DIRECT CRYPTO'),
-                    const SizedBox(height: 16),
-                    _buildMethodCard(
-                      context,
-                      icon: Icons.bolt_rounded,
-                      title: 'Lightning Network',
-                      subtitle: 'Zero-fee, instant BTC transfer',
-                      badgeText: 'FASTEST',
-                      badgeColor: const Color(0xFF1A5CFF),
-                      onTap: () => _navigateToProvider(context, 'Lightning'),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildMethodCard(
-                      context,
-                      icon: Icons.currency_bitcoin_rounded,
-                      title: 'On-chain Transfer',
-                      subtitle: 'Legacy Bitcoin deposit',
-                      badgeText: '3 CONFIRMATIONS',
-                      badgeColor: Colors.white.withOpacity(0.08),
-                      badgeTextColor: Colors.white54,
-                      onTap: () => _navigateToProvider(context, 'On-chain'),
-                    ),
-                  ],
-                ),
+                  _buildCategoryLabel('DEPÓSITO DIRETO').animate(delay: 300.ms).fade(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildMethodCard(
+                    context,
+                    icon: LucideIcons.zap,
+                    title: 'Lightning Network',
+                    subtitle: 'Instantâneo e sem taxas de rede',
+                    badgeText: 'FASTEST',
+                    badgeColor: Theme.of(context).colorScheme.secondary,
+                    onTap: () => _navigateToProvider(context, 'Lightning'),
+                  ).animate(delay: 400.ms).fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildMethodCard(
+                    context,
+                    icon: LucideIcons.coins,
+                    title: 'On-chain BTC',
+                    subtitle: 'Depósito Bitcoin convencional',
+                    badgeText: '3 CONFIRMS',
+                    badgeColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                    badgeTextColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                    onTap: () => _navigateToProvider(context, 'On-chain'),
+                  ).animate(delay: 500.ms).fade().slideY(begin: 0.1, end: 0),
+                  
+                  const SizedBox(height: AppSpacing.xxl),
+                  _buildFooterSecurity().animate(delay: 600.ms).fade(),
+                ],
               ),
             ),
-            _buildFooterSecurity(),
           ],
         ),
       ),
@@ -124,66 +125,58 @@ class DepositMethodScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 24,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
-          const Text(
-            'Deposit Funds',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+          Text(
+            'MÉTODO',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(LucideIcons.helpCircle, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
-          const Icon(Icons.help_outline_rounded, color: Colors.white, size: 24),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildTitle() {
-    return Center(
-      child: Column(
-        children: [
-          const Text(
-            'Select Method',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Choose your preferred funding source to begin',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Como deseja\nadicionar fundos?',
+          style: AppTypography.h1.copyWith(height: 1.1),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Escolha sua fonte de preferência para começar.',
+          style: AppTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.5)),
+        ),
+      ],
     );
   }
 
   Widget _buildCategoryLabel(String label) {
     return Text(
       label,
-      style: TextStyle(
-        color: const Color(0xFF1A5CFF).withOpacity(0.8), // Blue label
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
+      style: AppTypography.caption.copyWith(
+        color: AppColors.primary.withOpacity(0.6),
+        fontWeight: FontWeight.w900,
         letterSpacing: 2.0,
       ),
     );
@@ -201,82 +194,62 @@ class DepositMethodScreen extends ConsumerWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: badgeColor.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: badgeColor.withValues(alpha: 0.05),
-              blurRadius: 10,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        borderRadius: BorderRadius.circular(AppSpacing.xl),
+        border: Border.all(color: badgeColor.withOpacity(0.15), width: 1.5),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFF0033FF),
-                borderRadius: BorderRadius.circular(16),
+                color: badgeColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppSpacing.md),
+                border: Border.all(color: badgeColor.withOpacity(0.2)),
               ),
-              child: Icon(icon, color: Colors.white, size: 24),
+              child: Icon(icon, color: badgeColor, size: 24),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            // Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: badgeColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                badgeText,
-                style: TextStyle(
-                  color: badgeTextColor ?? badgeColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+            const SizedBox(width: AppSpacing.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: badgeTextColor ?? badgeColor,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white.withOpacity(0.3),
-              size: 24,
+                const SizedBox(height: AppSpacing.xs),
+                Icon(LucideIcons.chevronRight, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2), size: 16),
+              ],
             ),
           ],
         ),
@@ -285,23 +258,18 @@ class DepositMethodScreen extends ConsumerWidget {
   }
 
   Widget _buildFooterSecurity() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 32, top: 16),
+    return Center(
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.shield_rounded,
-            color: const Color(0xFF1A5CFF).withOpacity(0.6),
-            size: 16,
-          ),
+          Icon(LucideIcons.shieldCheck, color: AppColors.primary.withOpacity(0.4), size: 14),
           const SizedBox(width: 8),
           Text(
             'BANK-GRADE ENCRYPTED SECURITY',
-            style: TextStyle(
-              color: const Color(0xFF1A5CFF).withOpacity(0.6),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.primary.withOpacity(0.4),
+              fontWeight: FontWeight.w900,
+              fontSize: 9,
               letterSpacing: 1.0,
             ),
           ),

@@ -77,13 +77,11 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
   }
 
   void _initializeIndices() {
-    // We add +1 for the virtual "Add card" card
     final int count = widget.wallets.length + 1;
     _visualIndices = List.generate(count, (i) => i);
 
     if (widget.initialIndex >= 0 &&
         widget.initialIndex < widget.wallets.length) {
-      // Find where the initial index is and swap it to front
       final currentPos = _visualIndices.indexOf(widget.initialIndex);
       if (currentPos != -1) {
         final temp = _visualIndices[0];
@@ -109,9 +107,8 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     });
   }
 
-  // ── BRING-TO-FRONT: Move card at [rank] to index 0 ──
   void _finalizeCardSwap(int rank) {
-    HapticFeedback.lightImpact(); // Tactile "click" on swap
+    HapticFeedback.lightImpact();
     setState(() {
       if (_visualIndices.isNotEmpty && rank < _visualIndices.length) {
         final int moved = _visualIndices.removeAt(rank);
@@ -124,9 +121,8 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     });
   }
 
-  // ── SEND-TO-BACK: Move card at rank 0 to the last index ──
   void _finalizeSendToBack() {
-    HapticFeedback.lightImpact(); // Tactile "click" on send-to-back
+    HapticFeedback.lightImpact();
     setState(() {
       if (_visualIndices.isNotEmpty) {
         final int moved = _visualIndices.removeAt(0);
@@ -146,10 +142,9 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     }
 
     final double screenHeight = MediaQuery.of(context).size.height;
-    // Calculate relative dimensions
-    final double cardHeight = screenHeight * 0.22; // ~170 on typical screens
-    final double peekOffset = cardHeight * 0.088; // ~15 on typical screens
-    final double totalTravel = cardHeight * 2.05; // ~350 on typical screens
+    final double cardHeight = screenHeight * 0.22;
+    final double peekOffset = cardHeight * 0.088;
+    final double totalTravel = cardHeight * 2.05;
 
     final int n = _visualIndices.length;
     final double frontCardY = max(0, n - 1) * peekOffset;
@@ -179,22 +174,18 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     final double t = _animController.value;
     final int n = _visualIndices.length;
 
-    // Draw Order: Back to Front [N-1 ... 0]
     List<int> drawOrder = List.generate(n, (i) => n - 1 - i);
 
-    // DYNAMIC Z-INDEX LOGIC
     if (_draggedVisualRank != null) {
       if (_isDragUp) {
-        // Pull UP: Promote dragged card to top only after clearing stack
         if (t > 0.45) {
           drawOrder.remove(_draggedVisualRank!);
           drawOrder.add(_draggedVisualRank!);
         }
       } else {
-        // Pull DOWN: Front card (rank 0) goes behind all once it dips below stack
         if (t > 0.45) {
           drawOrder.remove(0);
-          drawOrder.insert(0, 0); // Paint first = behind everything
+          drawOrder.insert(0, 0);
         }
       }
     }
@@ -211,34 +202,23 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
       double y = startY;
       double rotationX = 0.0;
 
-      // ── CHOREOGRAPHY ──────────────────────────────────────────
-
       if (_draggedVisualRank != null) {
         if (_isDragUp) {
-          // ═══════════════════════════════════════════════════
-          // PULL UP: Bring card to front (existing logic)
-          // ═══════════════════════════════════════════════════
           int dragged = _draggedVisualRank!;
-
           if (rank == dragged) {
-            // Phase 1: 0.0 - 0.45 (Lift Vertical - Behind Stack)
             if (t <= 0.45) {
               double progress = t / 0.45;
               y = lerpDouble(startY, startY - (cardHeight + 50), progress)!;
               rotationX = 0.0;
               scale = lerpDouble(startScale, 1.05, progress)!;
-            }
-            // Phase 2: 0.45 - 0.7 (Switch Layer, Tilt Back & Fly Over)
-            else if (t <= 0.7) {
+            } else if (t <= 0.7) {
               double progress = (t - 0.45) / 0.25;
               double liftedY = startY - (cardHeight + 50);
               double targetY = (n - 1) * peekOffset;
               y = lerpDouble(liftedY, targetY - 60, progress)!;
               rotationX = lerpDouble(0.0, -1.5, progress)!;
               scale = 1.05;
-            }
-            // Phase 3: 0.7 - 1.0 (Forward Landing)
-            else {
+            } else {
               double progress = (t - 0.7) / 0.3;
               double targetY = (n - 1) * peekOffset;
               y = lerpDouble(targetY - 60, targetY, progress)!;
@@ -246,7 +226,6 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
               scale = lerpDouble(1.05, 1.0, progress)!;
             }
           } else if (rank < dragged) {
-            // Cards being pushed down
             if (t > 0.6) {
               double progress = (t - 0.6) / 0.4;
               double endY = (n - 1 - (rank + 1)) * peekOffset;
@@ -256,44 +235,28 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
             }
           }
         } else {
-          // ═══════════════════════════════════════════════════
-          // PULL DOWN: Send front card to back (REVERSE)
-          // ═══════════════════════════════════════════════════
-
           if (rank == 0) {
-            // Front card being sent to back
-            double frontY = (n - 1) * peekOffset; // Current front position
-            double backY = 0.0; // Back position (top of stack)
+            double frontY = (n - 1) * peekOffset;
+            double backY = 0.0;
             double backScale = 1.0 - ((n - 1) * 0.05);
-
-            // Phase 1: 0.0 - 0.45 (Drop Down - Still in Front)
             if (t <= 0.45) {
               double progress = t / 0.45;
               y = lerpDouble(frontY, frontY + (cardHeight + 50), progress)!;
               rotationX = 0.0;
               scale = lerpDouble(1.0, 0.95, progress)!;
-            }
-            // Phase 2: 0.45 - 0.7 (Tilt Forward & Fly Behind)
-            else if (t <= 0.7) {
+            } else if (t <= 0.7) {
               double progress = (t - 0.45) / 0.25;
               double droppedY = frontY + (cardHeight + 50);
               y = lerpDouble(droppedY, backY + 60, progress)!;
-              rotationX = lerpDouble(
-                0.0,
-                1.5,
-                progress,
-              )!; // Forward tilt (positive)
+              rotationX = lerpDouble(0.0, 1.5, progress)!;
               scale = 0.95;
-            }
-            // Phase 3: 0.7 - 1.0 (Settle into Back)
-            else {
+            } else {
               double progress = (t - 0.7) / 0.3;
               y = lerpDouble(backY + 60, backY, progress)!;
               rotationX = lerpDouble(1.5, 0.0, progress)!;
               scale = lerpDouble(0.95, backScale, progress)!;
             }
           } else {
-            // All other cards shift UP (promote by one rank)
             if (t > 0.6) {
               double progress = (t - 0.6) / 0.4;
               double newRank = rank - 1;
@@ -311,12 +274,11 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
           ? (rank == 0 ? 1.0 : 0.0)
           : -1.0;
 
-      // Fix Elevation for dragged card
       if (_isDragUp && rank == _draggedVisualRank) {
         elevation = (t > 0.45) ? 1.0 : 0.0;
       }
       if (!_isDragUp && rank == 0) {
-        elevation = (t > 0.45) ? 0.0 : 1.0; // Lose elevation as it goes behind
+        elevation = (t > 0.45) ? 0.0 : 1.0;
       }
 
       cards.add(
@@ -367,18 +329,13 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     return cards;
   }
 
-  /// Wraps back cards in a ShaderMask gradient for visual depth focus.
-  /// Front card and dragged cards pass through untouched.
   Widget _wrapWithDepth({
     required int rank,
     required int n,
     required bool isDragged,
     required Widget child,
   }) {
-    // Front card or actively dragged card: no overlay
     if (rank == 0 || isDragged) return child;
-
-    // Depth opacity scales with rank (further back = darker)
     final double depthOpacity = (rank * 0.15).clamp(0.0, 0.5);
 
     return ShaderMask(
@@ -387,8 +344,8 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white,
-            Colors.white.withValues(alpha: 1.0 - depthOpacity),
+            Theme.of(context).colorScheme.onPrimary,
+            Theme.of(context).colorScheme.onPrimary.withOpacity(1.0 - depthOpacity),
           ],
           stops: const [0.3, 1.0],
         ).createShader(bounds);
@@ -400,17 +357,14 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
 
   void _onDragStart(DragStartDetails d, int rank) {
     if (_animController.isAnimating) return;
-
     if (rank == 0) {
-      // Front card: could go either direction, we'll decide in _onDragUpdate
       _animController.stop();
       setState(() {
         _draggedVisualRank = 0;
-        _isDragUp = true; // Default, will be decided on first delta
+        _isDragUp = true;
         _rawDragAccumulator = 0.0;
       });
     } else if (rank > 0) {
-      // Back card: always pull UP
       _animController.stop();
       setState(() {
         _draggedVisualRank = rank;
@@ -422,34 +376,22 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
 
   void _onDragUpdate(DragUpdateDetails d, int rank, double totalTravel) {
     if (_draggedVisualRank == null) return;
-
     double oldProgress = _animController.value;
-
     setState(() {
       _rawDragAccumulator += d.delta.dy;
-
-      // Determine direction on first meaningful delta
       if (_draggedVisualRank == 0 && oldProgress < 0.01) {
         _isDragUp = _rawDragAccumulator < 0;
       }
-
       double progress;
       if (_isDragUp) {
-        // Pull UP: negative delta = progress
         progress = (_rawDragAccumulator / -totalTravel).clamp(0.0, 1.0);
-
-        // If front card is being dragged UP, proxy to rank 1
         if (_draggedVisualRank == 0 && _visualIndices.length > 1) {
           _draggedVisualRank = 1;
         }
       } else {
-        // Pull DOWN: positive delta = progress
         progress = (_rawDragAccumulator / totalTravel).clamp(0.0, 1.0);
       }
-
       _animController.value = progress;
-
-      // HAPTIC FEEDBACK at layer switch
       if (oldProgress < 0.45 && progress >= 0.45) {
         HapticFeedback.mediumImpact();
       }
@@ -458,7 +400,6 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
 
   void _onDragEnd(DragEndDetails d, int rank) {
     if (_draggedVisualRank == null) return;
-
     bool fastFlick;
     if (_isDragUp) {
       fastFlick = (d.primaryVelocity ?? 0) < -600;
@@ -488,7 +429,6 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
   void _onTap(int rank, Wallet? wallet) {
     if (rank == 0) {
       if (wallet == null) {
-        // This is the Add Card
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CreateWalletScreen()),

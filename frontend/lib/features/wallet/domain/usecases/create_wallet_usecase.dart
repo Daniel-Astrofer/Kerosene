@@ -10,7 +10,14 @@ class CreateWalletUseCase {
   Future<Either<Failure, String>> call({
     required String name,
     required String passphrase,
+    String accountSecurity = 'STANDARD',
   }) async {
-    return await repository.createWallet(name: name, passphrase: passphrase);
+    if (name.isEmpty) {
+      return const Left(ValidationFailure(message: 'Nome da carteira não pode estar vazio'));
+    }
+    if (passphrase.isEmpty) {
+      return const Left(ValidationFailure(message: 'A seed phrase (passphrase) é obrigatória'));
+    }
+    return await repository.createWallet(name: name, passphrase: passphrase, accountSecurity: accountSecurity);
   }
 }

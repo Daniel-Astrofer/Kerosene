@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../auth/presentation/providers/auth_provider.dart'
-    show authLocalDataSourceProvider, apiClientProvider;
+import '../../../../core/services/sovereign_auth_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
+import '../../../auth/controller/auth_local_provider.dart';
+import '../../../../core/network/api_client_provider.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 import '../../data/datasources/transaction_remote_datasource.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
@@ -11,6 +13,8 @@ import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
+import '../../../wallet/domain/repositories/ledger_repository.dart'; // Add this
+import '../../../wallet/presentation/providers/wallet_provider.dart' show ledgerRepositoryProvider;
 
 // ==================== Filter Logic ====================
 
@@ -23,9 +27,14 @@ enum TransactionFilter {
   const TransactionFilter(this.label);
 }
 
-final transactionFilterProvider = StateProvider<TransactionFilter>((ref) {
-  return TransactionFilter.all;
-});
+class TransactionFilterNotifier extends Notifier<TransactionFilter> {
+  @override
+  TransactionFilter build() => TransactionFilter.all;
+
+  void updateFilter(TransactionFilter filter) => state = filter;
+}
+
+final transactionFilterProvider = NotifierProvider<TransactionFilterNotifier, TransactionFilter>(TransactionFilterNotifier.new);
 
 // ==================== Core Providers ====================
 
@@ -50,34 +59,17 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
 final transactionHistoryProvider = FutureProvider<List<Transaction>>((
   ref,
 ) async {
-  // DEV MODE: Mocking Transactions
-  await Future.delayed(const Duration(milliseconds: 500));
-  return [
-    Transaction(
-      id: "tx-xyz-1234",
-      fromAddress: "Me",
-      toAddress: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
-      amountSatoshis: 150000000, // 1.5 BTC
-      feeSatoshis: 500,
-      status: TransactionStatus.confirmed,
-      type: TransactionType.send,
-      confirmations: 110,
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      description: "Transfer to Savings",
-    ),
-    Transaction(
-      id: "tx-abc-987",
-      fromAddress: "External",
-      toAddress: "1A1zP1e...",
-      amountSatoshis: 17500000, // 0.175 BTC
-      feeSatoshis: 0,
-      status: TransactionStatus.confirming,
-      type: TransactionType.deposit,
-      confirmations: 2,
-      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
-      description: "Client payment",
-    ),
-  ];
+  final ledgerRepo = ref.watch(ledgerRepositoryProvider);
+  final result = await ledgerRepo.getHistory(page: 0, size: 50);
+  
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (transactions) {
+      final sortedTransactions = List<Transaction>.from(transactions)
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return sortedTransactions;
+    },
+  );
 });
 
 /// Histórico filtrado por tipo
@@ -110,6 +102,12 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<Transaction>>>((
     }
   });
 });
+
+final transactionsByWalletProvider = FutureProvider.family<List<Transaction>, String>((ref, address) async {
+  final historyAsync = await ref.watch(transactionHistoryProvider.future);
+  return historyAsync.where((tx) => tx.fromAddress == address || tx.toAddress == address).toList();
+});
+
 
 // ==================== Fee Estimation ====================
 
@@ -145,8 +143,21 @@ final depositAddressProvider = FutureProvider<String>((ref) async {
 // ==================== Deposits ====================
 
 final depositsProvider = FutureProvider<List<Deposit>>((ref) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getDeposits();
+  final historyAsync = await ref.watch(transactionHistoryProvider.future);
+  return historyAsync
+      .where((t) => t.type == TransactionType.receive || t.type == TransactionType.deposit)
+      .map((t) => Deposit(
+            id: t.id.hashCode,
+            userId: 0,
+            txid: t.id,
+            fromAddress: t.fromAddress,
+            toAddress: t.toAddress,
+            amountBtc: t.amountSatoshis / 100000000,
+            confirmations: t.confirmations,
+            status: t.status == TransactionStatus.confirmed ? 'credited' : 'pending',
+            createdAt: t.timestamp,
+          ))
+      .toList();
 });
 
 final depositBalanceProvider = FutureProvider<double>((ref) async {
@@ -165,27 +176,20 @@ final depositDetailProvider = FutureProvider.family<Deposit, String>((
 // ==================== Payment Links ====================
 
 final paymentLinksProvider = FutureProvider<List<PaymentLink>>((ref) async {
-  // DEV MODE: Mocking Payment Links
-  await Future.delayed(const Duration(milliseconds: 500));
-  return [
-    PaymentLink(
-      id: "link-001",
-      userId: 1,
-      amountBtc: 0.05,
-      description: "Freelance Design Work",
-      depositAddress: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-      status: "pending",
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
-  ];
+  final repo = ref.watch(transactionRepositoryProvider);
+  return repo.getPaymentLinks();
 });
 
 final paymentLinkDetailProvider = FutureProvider.family<PaymentLink, String>((
   ref,
   linkId,
 ) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getPaymentRequest(linkId);
+  final repo = ref.watch(ledgerRepositoryProvider);
+  final result = await repo.getPaymentRequest(linkId);
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (data) => PaymentLink.fromJson(data),
+  );
 });
 
 // ==================== Action Notifiers ====================
@@ -208,12 +212,14 @@ class AsyncActionState {
 }
 
 /// Notifier para envio de transações Bitcoin
-class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
-  final TransactionRepository _repository;
-  final Ref ref;
+class SendTransactionNotifier extends Notifier<AsyncActionState> {
+  late TransactionRepository _repository;
 
-  SendTransactionNotifier(this._repository, this.ref)
-    : super(const AsyncActionState());
+  @override
+  AsyncActionState build() {
+    _repository = ref.watch(transactionRepositoryProvider);
+    return const AsyncActionState();
+  }
 
   Future<TxStatus?> send({
     required String toAddress,
@@ -222,6 +228,11 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
     String? fromWalletId,
     String? fromAddress,
     String? context,
+    String? passkeySignature,
+    String? confirmationPassphrase,
+    String? totpCode,
+    String? idempotencyKey,
+    int? requestTimestamp,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
@@ -232,6 +243,11 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
         fromWalletId: fromWalletId,
         fromAddress: fromAddress,
         context: context,
+        passkeySignature: passkeySignature,
+        confirmationPassphrase: confirmationPassphrase,
+        totpCode: totpCode,
+        idempotencyKey: idempotencyKey,
+        requestTimestamp: requestTimestamp,
       );
 
       debugPrint('>>> Notifier: Transaction sent successfully: ${result.txid}');
@@ -244,6 +260,46 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
     } catch (e, stack) {
       debugPrint('>>> Notifier Error: $e');
       debugPrint('>>> Stack: $stack');
+      
+      final errorStr = e.toString();
+      if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
+        try {
+          // Extract challenge from error message (format: "PASSKEY_CHALLENGE_REQUIRED:<challenge>")
+          final challenge = errorStr.split('PASSKEY_CHALLENGE_REQUIRED:').last.split('"').first.trim();
+          debugPrint('>>> Notifier: Passkey challenge required. Challenge: $challenge');
+          
+          SnackbarHelper.showSuccess('Assinatura biométrica necessária para esta transação.');
+          
+          // Sign the challenge using Sovereign Passkey (Ed25519)
+          final signature = await SovereignAuthService.instance.signChallenge(challenge);
+          
+          debugPrint('>>> Notifier: Challenge signed. Retrying transaction...');
+          
+          // Retry with signature
+          final result = await _repository.sendTransaction(
+            toAddress: toAddress,
+            amount: amount,
+            feeSatoshis: feeSatoshis,
+            fromWalletId: fromWalletId,
+            fromAddress: fromAddress,
+            context: context,
+            passkeySignature: signature,
+            confirmationPassphrase: confirmationPassphrase,
+            totpCode: totpCode,
+            idempotencyKey: idempotencyKey,
+            requestTimestamp: requestTimestamp,
+          );
+          
+          ref.invalidate(transactionHistoryProvider);
+          state = AsyncActionState(result: result);
+          return result;
+        } catch (signErr) {
+          debugPrint('>>> Notifier: Sign/Retry failed: $signErr');
+          state = AsyncActionState(error: signErr.toString());
+          return null;
+        }
+      }
+      
       state = AsyncActionState(error: e.toString());
       return null;
     }
@@ -277,17 +333,17 @@ class SendTransactionNotifier extends StateNotifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final sendTransactionProvider =
-    StateNotifierProvider<SendTransactionNotifier, AsyncActionState>((ref) {
-      final repo = ref.watch(transactionRepositoryProvider);
-      return SendTransactionNotifier(repo, ref);
-    });
+final sendTransactionProvider = NotifierProvider<SendTransactionNotifier, AsyncActionState>(SendTransactionNotifier.new);
 
 /// Notifier para confirmar depósitos
-class ConfirmDepositNotifier extends StateNotifier<AsyncActionState> {
-  final TransactionRepository _repository;
+class ConfirmDepositNotifier extends Notifier<AsyncActionState> {
+  late TransactionRepository _repository;
 
-  ConfirmDepositNotifier(this._repository) : super(const AsyncActionState());
+  @override
+  AsyncActionState build() {
+    _repository = ref.watch(transactionRepositoryProvider);
+    return const AsyncActionState();
+  }
 
   Future<Deposit?> confirm({
     required String txid,
@@ -312,17 +368,17 @@ class ConfirmDepositNotifier extends StateNotifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final confirmDepositProvider =
-    StateNotifierProvider<ConfirmDepositNotifier, AsyncActionState>((ref) {
-      final repo = ref.watch(transactionRepositoryProvider);
-      return ConfirmDepositNotifier(repo);
-    });
+final confirmDepositProvider = NotifierProvider<ConfirmDepositNotifier, AsyncActionState>(ConfirmDepositNotifier.new);
 
 /// Notifier para Payment Links
-class PaymentLinkNotifier extends StateNotifier<AsyncActionState> {
-  final TransactionRepository _repository;
+class PaymentLinkNotifier extends Notifier<AsyncActionState> {
+  late LedgerRepository _ledgerRepository;
 
-  PaymentLinkNotifier(this._repository) : super(const AsyncActionState());
+  @override
+  AsyncActionState build() {
+    _ledgerRepository = ref.watch(ledgerRepositoryProvider);
+    return const AsyncActionState();
+  }
 
   Future<PaymentLink?> create({
     required double amount,
@@ -331,13 +387,22 @@ class PaymentLinkNotifier extends StateNotifier<AsyncActionState> {
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
-      final result = await _repository.createPaymentRequest(
+      final result = await _ledgerRepository.createPaymentRequest(
         amount: amount,
         receiverWalletName: receiverWalletName,
-        expiresIn: expiresIn,
       );
-      state = AsyncActionState(result: result);
-      return result;
+      
+      return result.fold(
+        (failure) {
+          state = AsyncActionState(error: failure.message);
+          return null;
+        },
+        (data) {
+          final link = PaymentLink.fromJson(data);
+          state = AsyncActionState(result: link);
+          return link;
+        },
+      );
     } catch (e) {
       state = AsyncActionState(error: e.toString());
       return null;
@@ -350,12 +415,22 @@ class PaymentLinkNotifier extends StateNotifier<AsyncActionState> {
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
-      final result = await _repository.payPaymentRequest(
+      final result = await _ledgerRepository.payPaymentRequest(
         linkId: linkId,
         payerWalletName: payerWalletName,
       );
-      state = AsyncActionState(result: result);
-      return result;
+      
+      return result.fold(
+        (failure) {
+          state = AsyncActionState(error: failure.message);
+          return null;
+        },
+        (data) {
+          final link = PaymentLink.fromJson(data);
+          state = AsyncActionState(result: link);
+          return link;
+        },
+      );
     } catch (e) {
       state = AsyncActionState(error: e.toString());
       return null;
@@ -365,19 +440,17 @@ class PaymentLinkNotifier extends StateNotifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final paymentLinkNotifierProvider =
-    StateNotifierProvider<PaymentLinkNotifier, AsyncActionState>((ref) {
-      final repo = ref.watch(transactionRepositoryProvider);
-      return PaymentLinkNotifier(repo);
-    });
+final paymentLinkNotifierProvider = NotifierProvider<PaymentLinkNotifier, AsyncActionState>(PaymentLinkNotifier.new);
 
 /// Notifier para Saques Externos
-class WithdrawNotifier extends StateNotifier<AsyncActionState> {
-  final TransactionRepository _repository;
-  final Ref ref;
+class WithdrawNotifier extends Notifier<AsyncActionState> {
+  late TransactionRepository _repository;
 
-  WithdrawNotifier(this._repository, this.ref)
-    : super(const AsyncActionState());
+  @override
+  AsyncActionState build() {
+    _repository = ref.watch(transactionRepositoryProvider);
+    return const AsyncActionState();
+  }
 
   Future<TxStatus?> withdraw({
     required String fromWalletName,
@@ -385,8 +458,8 @@ class WithdrawNotifier extends StateNotifier<AsyncActionState> {
     required double amount,
     required String totpCode,
     String? description,
-    String? passkeyAssertionResponseJSON,
-    String? passkeyAssertionRequestJSON,
+    String? passkeySignature,
+    String? passkeyChallenge,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
@@ -396,8 +469,8 @@ class WithdrawNotifier extends StateNotifier<AsyncActionState> {
         amount: amount,
         totpCode: totpCode,
         description: description,
-        passkeyAssertionResponseJSON: passkeyAssertionResponseJSON,
-        passkeyAssertionRequestJSON: passkeyAssertionRequestJSON,
+        passkeySignature: passkeySignature,
+        passkeyChallenge: passkeyChallenge,
       );
 
       // Refresh history from API after withdrawal
@@ -406,6 +479,38 @@ class WithdrawNotifier extends StateNotifier<AsyncActionState> {
       state = AsyncActionState(result: result);
       return result;
     } catch (e) {
+      final errorStr = e.toString();
+      if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
+        try {
+          final challenge = errorStr.split('PASSKEY_CHALLENGE_REQUIRED:').last.split('"').first.trim();
+          debugPrint('>>> Notifier: Passkey challenge required for withdrawal. Challenge: $challenge');
+          
+          SnackbarHelper.showSuccess('Assinatura biométrica necessária para confirmar o saque.');
+          
+          final signature = await SovereignAuthService.instance.signChallenge(challenge);
+          
+          debugPrint('>>> Notifier: Withdrawal challenge signed. Retrying...');
+          
+          final result = await _repository.withdraw(
+            fromWalletName: fromWalletName,
+            toAddress: toAddress,
+            amount: amount,
+            totpCode: totpCode,
+            description: description,
+            passkeySignature: signature,
+            passkeyChallenge: challenge,
+          );
+          
+          ref.invalidate(transactionHistoryProvider);
+          state = AsyncActionState(result: result);
+          return result;
+        } catch (signErr) {
+          debugPrint('>>> Notifier: Withdrawal sign/retry failed: $signErr');
+          state = AsyncActionState(error: signErr.toString());
+          return null;
+        }
+      }
+      
       state = AsyncActionState(error: e.toString());
       return null;
     }
@@ -414,8 +519,4 @@ class WithdrawNotifier extends StateNotifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final withdrawProvider =
-    StateNotifierProvider<WithdrawNotifier, AsyncActionState>((ref) {
-      final repo = ref.watch(transactionRepositoryProvider);
-      return WithdrawNotifier(repo, ref);
-    });
+final withdrawProvider = NotifierProvider<WithdrawNotifier, AsyncActionState>(WithdrawNotifier.new);

@@ -25,6 +25,9 @@ abstract class AuthRepository {
   /// Obter usuário atual do cache
   Future<Either<Failure, User>> getCurrentUser();
 
+  /// Obter Backup Codes do cache local
+  Future<Either<Failure, List<String>>> getBackupCodes();
+
   /// Verificar se o usuário está autenticado
   Future<bool> isAuthenticated();
 
@@ -53,66 +56,47 @@ abstract class AuthRepository {
   /// Validar passphrase localmente
   Future<Either<Failure, bool>> validatePassphrase(String passphrase);
 
-  /// Passkey Onboarding (Start) - Returns PublicKeyCredentialCreationOptions JSON
-  Future<Either<Failure, String>> registerPasskeyOnboardingStart(
-    String sessionId,
-  );
+  /// Inicia registro de passkey durante onboarding (start)
+  Future<Either<Failure, String>> passkeyRegisterOnboardingStart({
+    required String sessionId,
+    String? username,
+  });
 
-  /// Passkey Onboarding (Finish)
-  Future<Either<Failure, void>> registerPasskeyOnboardingFinish(
+  /// Finaliza registro de passkey durante onboarding (finish)
+  Future<Either<Failure, void>> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   );
 
-  /// Inicia login via passkey — retorna PublicKeyCredentialRequestOptions JSON
+  /// Inicia login via passkey (busca opções WebAuthn)
   Future<Either<Failure, String>> passkeyLoginStart(String username);
 
-  /// Finaliza login via passkey — retorna User logado
-  Future<Either<Failure, User>> passkeyLoginFinish({
+  /// Finaliza login via passkey (envia credencial WebAuthn)
+  Future<Either<Failure, LoginResult>> passkeyLoginFinish({
     required String username,
     required Map<String, dynamic> credential,
   });
 
   /// Inicia registro de passkey para usuário logado — retorna PublicKeyCredentialCreationOptions JSON
-  Future<Either<Failure, String>> passkeyRegisterStart();
+  Future<Either<Failure, String>> passkeyRegisterStart(String username);
 
   /// Finaliza registro de passkey para usuário logado
   Future<Either<Failure, void>> passkeyRegisterFinish(Map<String, dynamic> credential);
 
-  // Sovereign Auth (Hardware Ed25519)
-  
-  /// Inicia registro de hardware (onboarding)
-  Future<Either<Failure, String>> registerHardwareOnboardingStart(String sessionId);
-
-  /// Finaliza registro de hardware (onboarding)
-  Future<Either<Failure, void>> registerHardwareOnboardingFinish({
-    required String sessionId,
-    required String publicKey,
-    required String deviceName,
-    required String signature,
-  });
-
-  /// Inicia registro de hardware (logado)
-  Future<Either<Failure, String>> registerHardwareForAccountStart();
-
-  /// Finaliza registro de hardware (logado)
-  Future<Either<Failure, void>> registerHardwareForAccountFinish({
-    required String publicKey,
-    required String deviceName,
-  });
-
-  /// Inicia login via hardware (busca desafio)
-  Future<Either<Failure, String>> hardwareLoginStart(String username);
-
-  /// Finaliza login via hardware (envia assinatura)
-  Future<Either<Failure, User>> hardwareLoginFinish({
-    required String username,
-    required String signature,
-  });
-
   /// Onboarding Payment Link
   Future<Either<Failure, OnboardingPaymentLinkDto>> generateOnboardingLink(
     String sessionId,
+  );
+
+  /// Confirma a TX do onboarding e inicia monitoramento on-chain
+  Future<Either<Failure, OnboardingPaymentLinkDto>> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  });
+
+  /// Consulta o estado atual do payment link de onboarding
+  Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
+    String linkId,
   );
 
   /// Mock Confirm Onboarding (Dev shortcut)

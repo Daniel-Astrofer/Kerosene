@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import '../../domain/entities/wallet.dart';
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-import '../../../../shared/widgets/brushed_metal_container.dart';
 
+import 'package:teste/shared/widgets/brushed_metal_container.dart';
+
+/// Premium Wallet Card Component - Refactored
 class WalletCard extends StatefulWidget {
   final Wallet wallet;
   final bool isSelected;
   final VoidCallback? onTap;
   final VoidCallback? onAddressCopied;
   final int colorIndex;
-
-  /// New: Tilt progress for specular shine (-1.0 to 1.0)
   final double tilt;
-  // Callback for menu actions
   final Function(String action)? onMenuAction;
 
   const WalletCard({
@@ -31,46 +30,6 @@ class WalletCard extends StatefulWidget {
   @override
   State<WalletCard> createState() => _WalletCardState();
 
-  // Dynamic gradient colors based on index/type
-  List<Color> _getCardGradient() {
-    // Distinct palettes for the stack fan-out effect
-    final List<List<Color>> palettes = [
-      // 0: Kerosene Sky Blue (Primary)
-      [
-        const Color(0xFF00D4FF),
-        const Color(0xFF00AACC),
-        const Color(0xFF0088AA),
-      ],
-      // 1: Deep Purple
-      [
-        const Color(0xFF7B61FF),
-        const Color(0xFF5B41DF),
-        const Color(0xFF3B21BF),
-      ],
-      // 2: Electric Blue
-      [
-        const Color(0xFF00D4FF),
-        const Color(0xFF00AACC),
-        const Color(0xFF0088AA),
-      ],
-      // 3: Hot Pink / Magenta
-      [
-        const Color(0xFFFF00D4),
-        const Color(0xFFCC00AA),
-        const Color(0xFFAA0088),
-      ],
-      // 4: Amber / Orange
-      [
-        const Color(0xFFFFAA00),
-        const Color(0xFFCC8800),
-        const Color(0xFFAA7700),
-      ],
-    ];
-
-    // Cycle through palettes based on colorIndex
-    return palettes[colorIndex % palettes.length];
-  }
-
   String _shortAddress(String address) {
     if (address.isEmpty) return '—';
     if (address.length <= 16) return address;
@@ -78,8 +37,7 @@ class WalletCard extends StatefulWidget {
   }
 }
 
-class _WalletCardState extends State<WalletCard>
-    with SingleTickerProviderStateMixin {
+class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
 
   @override
@@ -104,48 +62,42 @@ class _WalletCardState extends State<WalletCard>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E24).withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(AppSpacing.xl),
+          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             ListTile(
-              leading: const Icon(Icons.edit, color: Colors.white),
-              title: const Text(
-                'Edit Name',
-                style: TextStyle(color: Colors.white),
-              ),
+              leading: Icon(LucideIcons.edit, color: Theme.of(context).colorScheme.onPrimary),
+              title: Text('EDITAR NOME', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w900, letterSpacing: 1)),
               onTap: () {
                 Navigator.pop(context);
                 widget.onMenuAction?.call('edit');
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text(
-                'Delete Wallet',
-                style: TextStyle(color: Colors.redAccent),
-              ),
+              leading: Icon(LucideIcons.trash2, color: Theme.of(context).colorScheme.error),
+              title: Text('REMOVER CARTEIRA', style: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w900, letterSpacing: 1)),
               onTap: () {
                 Navigator.pop(context);
                 widget.onMenuAction?.call('delete');
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
           ],
         ),
       ),
@@ -156,15 +108,12 @@ class _WalletCardState extends State<WalletCard>
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width * 0.85;
     final height = width / 1.65;
-    final colors = widget._getCardGradient();
-    final neonColor = colors.first;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
-    // Specular shine offset based on tilt
-    // tilt is from 0 to -0.6 typically. Let's normalize it.
     final shineY = widget.tilt * -1.5;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       width: width + 4,
       height: height + 4,
       child: GestureDetector(
@@ -172,44 +121,6 @@ class _WalletCardState extends State<WalletCard>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Moving Backlight (Behind the card)
-            if (widget.isSelected)
-              Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: _rotationController,
-                  child: Container(
-                    width: width * 0.8,
-                    height: height * 0.8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: neonColor.withValues(alpha: 0.4),
-                          blurRadius: 60,
-                          spreadRadius: 10,
-                        ),
-                      ],
-                    ),
-                  ),
-                  builder: (context, child) {
-                    final alignX =
-                        (0.5 *
-                        math.cos(_rotationController.value * 2 * math.pi));
-                    final alignY =
-                        (0.5 *
-                        math.sin(_rotationController.value * 2 * math.pi));
-                    return FractionalTranslation(
-                      translation: Offset(
-                        alignX * 0.125,
-                        alignY * 0.125,
-                      ), // Adjusted for size diff
-                      child: Center(child: child),
-                    );
-                  },
-                ),
-              ),
-
-            // Rotating Neon Glow
             Positioned.fill(
               child: RepaintBoundary(
                 child: AnimatedBuilder(
@@ -217,7 +128,7 @@ class _WalletCardState extends State<WalletCard>
                   builder: (context, child) {
                     return CustomPaint(
                       painter: _NeonGlowPainter(
-                        color: neonColor,
+                        color: primaryColor,
                         rotation: _rotationController.value,
                         intensity: widget.isSelected ? 1.0 : 0.4,
                       ),
@@ -227,322 +138,134 @@ class _WalletCardState extends State<WalletCard>
               ),
             ),
 
-            // The Card Body (Glass)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  width: width,
-                  height: height,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    // Semi-transparent gradient for glass effect
-                    gradient: LinearGradient(
-                      colors: widget
-                          ._getCardGradient()
-                          .map((c) => c.withValues(alpha: 0.85))
-                          .toList(),
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget._getCardGradient().first.withValues(
-                          alpha: 0.25 + (widget.tilt * -0.2),
-                        ),
-                        blurRadius: widget.isSelected ? 24 : 14,
-                        offset: Offset(0, 8 + (widget.tilt * 10)),
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: Offset(0, 6 + (widget.tilt * 15)),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 1.5,
-                    ),
+            Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppSpacing.md),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.2),
+                    blurRadius: widget.isSelected ? 24 : 14,
+                    offset: Offset(0, 8 + (widget.tilt * 10)),
                   ),
-                  child: Stack(
-                    children: [
-                      // GPU Brushed Metal Texture
-                      Positioned.fill(
-                        child: BrushedMetalContainer(
-                          width: width,
-                          height: height,
-                          baseColor: colors.first.withValues(alpha: 0.85),
-                          borderRadius: 20,
-                        ),
+                ],
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppSpacing.md - 1.5),
+                child: Stack(
+                  children: [
+                    // ── Raw Metal Shader (sem filtros acima) ──
+                    Positioned.fill(
+                      child: BrushedMetalContainer(
+                        width: width,
+                        height: height,
+                        baseColor: Theme.of(context).colorScheme.surface.withOpacity(0.85),
+                        borderRadius: AppSpacing.md,
                       ),
+                    ),
 
-                      // Pattern
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: CustomPaint(
-                            painter: _BitcoinPatternPainter(
-                              color: Colors.black.withValues(alpha: 0.05),
-                            ),
-                          ),
-                        ),
-                      ),
+                    Positioned(
+                      right: AppSpacing.lg,
+                      bottom: AppSpacing.lg,
+                      child: Icon(LucideIcons.zap, color: primaryColor.withOpacity(0.4), size: 40),
+                    ),
 
-                      // KEROSENE LOGO
-                      Positioned(
-                        right: 24,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: Opacity(
-                            opacity: 0.85,
-                            child: Image.asset(
-                              'assets/logo/kerosene-logo.png',
-                              height: 22,
-                              fit: BoxFit.contain,
-                              color: Colors.black,
-                              colorBlendMode: BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // --- SPECULAR SHINE (V3 WOW Factor) ---
-                      Positioned.fill(
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 150),
-                          opacity: widget.isSelected ? 1.0 : 0.0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.0),
-                                  Colors.white.withValues(
-                                    alpha: 0.2,
-                                  ), // The streak
-                                  Colors.white.withValues(alpha: 0.0),
-                                ],
-                                stops: const [0.35, 0.5, 0.65],
-                                // Move the gradient based on tilt
-                                transform: GradientTranslation(
-                                  Offset(0.0, shineY),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Soft reflection top
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: 1,
+                    // ── Shine on selection ──
+                    Positioned.fill(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 150),
+                        opacity: widget.isSelected ? 1.0 : 0.0,
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                               colors: [
-                                Colors.white.withValues(alpha: 0.0),
-                                Colors.white.withValues(alpha: 0.4),
-                                Colors.white.withValues(alpha: 0.0),
+                                Theme.of(context).colorScheme.onPrimary.withOpacity(0.0),
+                                Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                                Theme.of(context).colorScheme.onPrimary.withOpacity(0.0),
                               ],
+                              stops: const [0.35, 0.5, 0.65],
+                              transform: GradientTranslation(Offset(0.0, shineY)),
                             ),
                           ),
                         ),
                       ),
+                    ),
 
-                      // Tap area
-                      Positioned.fill(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: widget.onTap != null
-                                ? () => widget.onTap!()
-                                : null,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                      ),
-
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white12),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '₿',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black45,
-                                              blurRadius: 2,
-                                              offset: Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Bitcoin',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black45,
-                                              blurRadius: 2,
-                                              offset: Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                    // ── Card content ──
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
                                 ),
-                                const Spacer(),
-                              ],
-                            ),
-                            Text(
-                              widget.wallet.name,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.95),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                shadows: const [
-                                  Shadow(
-                                    color: Colors.black87,
-                                    offset: Offset(0, 2),
-                                    blurRadius: 4,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('₿', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 18, fontWeight: FontWeight.bold)),
+                                    SizedBox(width: 4),
+                                    Text('BITCOIN', style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5))),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.wallet.name.toUpperCase(),
+                                style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 1, fontWeight: FontWeight.w900),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      widget._shortAddress(widget.wallet.address),
+                                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+                                        fontFamily: 'JetBrainsMono',
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      Clipboard.setData(ClipboardData(text: widget.wallet.address));
+                                      widget.onAddressCopied?.call();
+                                    },
+                                    icon: Icon(LucideIcons.copy, size: 14, color: Theme.of(context).colorScheme.onPrimary),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                                      padding: const EdgeInsets.all(8),
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget._shortAddress(widget.wallet.address),
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.95,
-                                      ),
-                                      fontSize: 11,
-                                      fontFamily: 'monospace',
-                                      shadows: const [
-                                        Shadow(
-                                          color: Colors.black87,
-                                          offset: Offset(0, 2),
-                                          blurRadius: 3,
-                                        ),
-                                      ],
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 30.0),
-                                  child: Material(
-                                    color: Colors.white.withValues(alpha: 0.25),
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: InkWell(
-                                      onTap: () {
-                                        if (widget.wallet.address.isEmpty) {
-                                          return;
-                                        }
-                                        Clipboard.setData(
-                                          ClipboardData(
-                                            text: widget.wallet.address,
-                                          ),
-                                        );
-                                        widget.onAddressCopied?.call();
-                                      },
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.copy_rounded,
-                                              size: 14,
-                                              color: Colors.white.withValues(
-                                                alpha: 0.95,
-                                              ),
-                                              shadows: const [
-                                                Shadow(
-                                                  color: Colors.black54,
-                                                  blurRadius: 2,
-                                                  offset: Offset(0, 1),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Copiar',
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.95,
-                                                ),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                shadows: const [
-                                                  Shadow(
-                                                    color: Colors.black54,
-                                                    blurRadius: 2,
-                                                    offset: Offset(0, 1),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -553,26 +276,14 @@ class _WalletCardState extends State<WalletCard>
   }
 }
 
-// Support for Gradient Translation
 class GradientTranslation extends GradientTransform {
   final Offset offset;
   const GradientTranslation(this.offset);
 
   @override
   Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
-    return Matrix4.translationValues(
-      offset.dx * bounds.width,
-      offset.dy * bounds.height,
-      0.0,
-    );
+    return Matrix4.translationValues(offset.dx * bounds.width, offset.dy * bounds.height, 0.0);
   }
-
-  @override
-  bool operator ==(Object other) =>
-      other is GradientTranslation && other.offset == offset;
-
-  @override
-  int get hashCode => offset.hashCode;
 }
 
 class _NeonGlowPainter extends CustomPainter {
@@ -580,92 +291,37 @@ class _NeonGlowPainter extends CustomPainter {
   final double rotation;
   final double intensity;
 
-  _NeonGlowPainter({
-    required this.color,
-    required this.rotation,
-    this.intensity = 1.0,
-  });
+  _NeonGlowPainter({required this.color, required this.rotation, this.intensity = 1.0});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final RRect rRect = RRect.fromRectAndRadius(
-      rect,
-      const Radius.circular(24),
-    );
+    final RRect rRect = RRect.fromRectAndRadius(rect, const Radius.circular(24));
 
-    // 1. Constant subtle glow (Aura)
     final auraPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
-      ..color = color.withValues(alpha: 0.3 * intensity)
+      ..color = color.withOpacity(0.3 * intensity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
     canvas.drawRRect(rRect, auraPaint);
 
-    // 2. High-intensity rotating beam
     final beamPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 5.0
+      ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
 
-    // Sharp "Beam" Gradient
     final Gradient beamGradient = SweepGradient(
       center: Alignment.center,
-      colors: [
-        color.withValues(alpha: 0.0),
-        color.withValues(alpha: 1.0 * intensity), // The intense part
-        color.withValues(alpha: 0.0),
-      ],
-      stops: const [0.45, 0.5, 0.55], // Tight stops for a "beam" look
-      transform: GradientRotation(rotation * 2 * 3.1415926535),
+      colors: [color.withOpacity(0.0), color.withOpacity(0.8 * intensity), color.withOpacity(0.0)],
+      stops: const [0.4, 0.5, 0.6],
+      transform: GradientRotation(rotation * 2 * 3.14159),
     );
 
     beamPaint.shader = beamGradient.createShader(rect);
     canvas.drawRRect(rRect, beamPaint);
-
-    // 3. Ultra-bright inner streak for "neon" look
-    final streakPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Colors.white.withValues(alpha: 0.8 * intensity)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.0);
-
-    // We reuse the same sweep gradient logic but for a smaller path or just selective redraw
-    // To keep it simple but effective, we'll draw the whole RRect again with the same shader
-    streakPaint.shader = beamGradient.createShader(rect);
-    canvas.drawRRect(rRect, streakPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _NeonGlowPainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.rotation != rotation ||
-        oldDelegate.intensity != intensity;
-  }
-}
-
-class _BitcoinPatternPainter extends CustomPainter {
-  final Color color;
-
-  _BitcoinPatternPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final spacing = 24.0;
-    for (double x = 0; x < size.width + spacing; x += spacing) {
-      for (double y = 0; y < size.height + spacing; y += spacing) {
-        if ((x / spacing + y / spacing).toInt() % 2 == 0) {
-          canvas.drawCircle(Offset(x, y), 1.5, paint);
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _NeonGlowPainter oldDelegate) => true;
 }

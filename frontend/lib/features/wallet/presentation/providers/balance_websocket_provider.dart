@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/config/app_config.dart';
 import '../../../../core/services/balance_websocket_service.dart';
+import '../../../../core/providers/tor_providers.dart';
 import '../../../../main.dart' show sharedPreferencesProvider;
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../auth/presentation/state/auth_state.dart';
+import 'package:teste/features/auth/controller/auth_controller.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import '../../../../core/utils/device_helper.dart';
@@ -24,23 +23,31 @@ class ReceivedTxEvent {
   });
 }
 
-final receivedTxEventProvider = StateProvider<ReceivedTxEvent?>((ref) => null);
+class ReceivedTxEventNotifier extends Notifier<ReceivedTxEvent?> {
+  @override
+  ReceivedTxEvent? build() => null;
+  void updateEvent(ReceivedTxEvent? event) => state = event;
+}
+
+final receivedTxEventProvider = NotifierProvider<ReceivedTxEventNotifier, ReceivedTxEvent?>(ReceivedTxEventNotifier.new);
 
 /// Provider do serviço WebSocket para atualizações de saldo em tempo real
 final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSocketService?>((
   ref,
 ) async {
-  final authState = ref.watch(authProvider);
-
-  // Só conecta se usuário está autenticado
+  final authState = ref.watch(authControllerProvider);
+  
   if (authState is! AuthAuthenticated) {
     debugPrint('⚠️ WebSocket: Usuário não autenticado, não conectando');
     return null;
   }
 
+  // Watch the reactive Tor API URL
+  final baseUrl = ref.watch(torApiUrlProvider);
+  
   final userId = authState.user.id;
   debugPrint(
-    '🔌 Iniciando WebSocket para userId: $userId (DEV MODE: BYPASSED)',
+    '🔌 Iniciando WebSocket para userId: $userId @ $baseUrl',
   );
 
 
@@ -75,7 +82,7 @@ final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSoc
   final deviceHash = await DeviceHelper.getDeviceHash();
 
   final service = BalanceWebSocketService(
-    baseUrl: AppConfig.apiUrl,
+    baseUrl: baseUrl,
     userId: userId.toString(),
     authToken: token,
     deviceHash: deviceHash,
@@ -132,12 +139,12 @@ final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSoc
           // );
 
           // 2. In-App Dialog Trigger
-          ref.read(receivedTxEventProvider.notifier).state = ReceivedTxEvent(
+          ref.read(receivedTxEventProvider.notifier).updateEvent(ReceivedTxEvent(
             amount: receivedAmount,
             walletName: update.walletName,
             sender: extractedSender,
             receiver: update.receiver,
-          );
+          ));
         }
       }
 

@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
 import '../../domain/entities/wallet.dart';
-import '../../../../core/theme/cyber_theme.dart';
+import '../widgets/wallet_credit_card.dart';
 
 class WalletConfigScreen extends StatefulWidget {
   final Wallet wallet;
@@ -15,150 +22,178 @@ class WalletConfigScreen extends StatefulWidget {
 class _WalletConfigScreenState extends State<WalletConfigScreen> {
   bool _isBlocked = false;
   bool _hideBalance = false;
+  int _materialIndex = 0; // 0=Metal, 1=Wood, 2=Diamond, 3=Ruby (Debug Only)
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CyberTheme.bgDeep,
-      appBar: AppBar(
-        title: Text(
-          widget.wallet.name,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: CyberTheme.textPrimary,
-            letterSpacing: 1.0,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: CyberTheme.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              // ─── Status Card ─────────────────────
-              _CyberStatusCard(isBlocked: _isBlocked),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
+        child: Column(
+          children: [
+            _buildAppBar(context),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // ── Wallet Card Preview ──────────────────────────────────────
+                  Hero(
+                    tag: 'card_hero_${widget.wallet.address}',
+                    child: WalletCreditCard(
+                      wallet: widget.wallet,
+                      colorIndex: _materialIndex, 
+                      showDetails: true,
+                    ),
+                  ).animate().scale(curve: Curves.easeOutBack),
+                  
+                  const SizedBox(height: AppSpacing.xxl),
+                  
+                  // ── Settings List ──────────────────────────────────────────
+                  GlassContainer(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    borderRadius: BorderRadius.circular(AppSpacing.xl),
+                    child: Column(
+                      children: [
+                        _CyberActionTile(
+                          title: 'Copiar Endereço',
+                          subtitle: 'Copia o endereço BTC para o clipboard',
+                          icon: LucideIcons.copy,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Clipboard.setData(ClipboardData(text: widget.wallet.address));
+                            SnackbarHelper.showSuccess('Endereço copiado com sucesso');
+                          },
+                        ),
+                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        _CyberActionTile(
+                          title: 'Bloquear Cartão',
+                          subtitle: 'Desativa temporariamente este card',
+                          icon: LucideIcons.lock,
+                          isDestructive: true,
+                          trailing: Switch(
+                            value: _isBlocked,
+                            onChanged: (val) {
+                              HapticFeedback.mediumImpact();
+                              setState(() => _isBlocked = val);
+                            },
+                            activeThumbColor: Theme.of(context).colorScheme.primary,
+                            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          ),
+                        ),
+                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        _CyberActionTile(
+                          title: 'Ocultar Saldo',
+                          subtitle: 'Não mostrar detalhes na tela inicial',
+                          icon: LucideIcons.eyeOff,
+                          trailing: Switch(
+                            value: _hideBalance,
+                            onChanged: (val) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _hideBalance = val);
+                            },
+                            activeThumbColor: Theme.of(context).colorScheme.primary,
+                            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          ),
+                        ),
+                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        _CyberActionTile(
+                          title: 'Exportar Chave Privada',
+                          subtitle: 'Visualizar semente/mnemônico',
+                          icon: LucideIcons.key,
+                          isDestructive: true,
+                          onTap: () {
+                             // Security verify logic
+                          },
+                        ),
+                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        _CyberActionTile(
+                          title: 'Configurações de Tor',
+                          subtitle: 'Gerenciar conexão para este nó',
+                          icon: LucideIcons.shield,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                  ).animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
 
-              const SizedBox(height: 28),
+                  const SizedBox(height: AppSpacing.xl),
 
-              // ─── Action Tiles ────────────────────
-              _CyberActionTile(
-                title: 'Block Card',
-                subtitle: 'Temporarily disable this wallet',
-                icon: Icons.block_flipped,
-                isDestructive: true,
-                trailing: Switch(
-                  value: _isBlocked,
-                  onChanged: (val) => setState(() => _isBlocked = val),
-                  activeThumbColor: CyberTheme.neonRed,
-                  activeTrackColor: CyberTheme.neonRed.withValues(alpha: 0.3),
-                  inactiveThumbColor: CyberTheme.textMuted,
-                  inactiveTrackColor: CyberTheme.border,
-                ),
+                  // ── DEBUG Area ──────────────────────────────────────────────
+                  _buildDebugSection().animate(delay: 400.ms).fade(),
+                  
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
               ),
-              const SizedBox(height: 14),
-              _CyberActionTile(
-                title: 'Hide Balance',
-                subtitle: 'Hide balance on home screen',
-                icon: Icons.visibility_off_outlined,
-                trailing: Switch(
-                  value: _hideBalance,
-                  onChanged: (val) => setState(() => _hideBalance = val),
-                  activeThumbColor: CyberTheme.neonCyan,
-                  activeTrackColor: CyberTheme.neonCyan.withValues(alpha: 0.3),
-                  inactiveThumbColor: CyberTheme.textMuted,
-                  inactiveTrackColor: CyberTheme.border,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _CyberActionTile(
-                title: 'View Transactions',
-                subtitle: 'See full history',
-                icon: Icons.history_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming Soon')));
-                },
-              ),
-              const SizedBox(height: 14),
-              _CyberActionTile(
-                title: 'Export Private Key',
-                subtitle: 'View mnemonic/key',
-                icon: Icons.vpn_key_outlined,
-                isDestructive: true,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Requires Authentication')),
-                  );
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-// ═══════════════════════════════════════════════
-// Status Card — Cybercore Industrial Panel
-// ═══════════════════════════════════════════════
-class _CyberStatusCard extends StatelessWidget {
-  final bool isBlocked;
+  Widget _buildAppBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+            ),
+          ),
+          Text(
+            'CONFIGURAÇÃO',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    ).animate().fade().slideY(begin: -0.2, end: 0);
+  }
 
-  const _CyberStatusCard({required this.isBlocked});
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = isBlocked ? CyberTheme.neonRed : CyberTheme.neonCyan;
-
+  Widget _buildDebugSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: CyberTheme.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
-        boxShadow: CyberTheme.subtleGlow(statusColor),
+        color: AppColors.warning.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppSpacing.md),
+        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: statusColor.withValues(alpha: 0.4),
-                width: 1.5,
+          Row(
+            children: [
+              const Icon(LucideIcons.bug, color: AppColors.warning, size: 14),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                "DEBUG: TEXTURA DO CARD",
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
               ),
-            ),
-            child: Icon(Icons.shield_outlined, size: 28, color: statusColor),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            isBlocked ? 'LOCKED' : 'ACTIVE',
-            style: GoogleFonts.jetBrainsMono(
-              color: statusColor,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 3.0,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'WALLET STATUS',
-            style: CyberTheme.label(size: 11, color: CyberTheme.textMuted),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _DebugMaterialBtn(label: "METAL", index: 0, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(label: "WOOD", index: 1, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(label: "DIAMOND", index: 2, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(label: "RUBY", index: 3, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
+            ],
           ),
         ],
       ),
@@ -166,9 +201,42 @@ class _CyberStatusCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════
-// Action Tile — Extracted Stateless Widget
-// ═══════════════════════════════════════════════
+class _DebugMaterialBtn extends StatelessWidget {
+  final String label;
+  final int index;
+  final int selectedIndex;
+  final Function(int) onTap;
+
+  const _DebugMaterialBtn({required this.label, required this.index, required this.selectedIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = index == selectedIndex;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap(index);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.warning : AppColors.warning.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.xs),
+          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            color: isSelected ? Theme.of(context).colorScheme.onSurface : AppColors.warning,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CyberActionTile extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -188,66 +256,52 @@ class _CyberActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = isDestructive
-        ? CyberTheme.neonRed
-        : CyberTheme.textSecondary;
+    final accentColor = isDestructive ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onPrimary;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            color: CyberTheme.bgCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: CyberTheme.border, width: 1),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: accentColor, size: 20),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(AppSpacing.sm),
+                border: Border.all(color: accentColor.withOpacity(0.1)),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: isDestructive
-                            ? CyberTheme.neonRed
-                            : CyberTheme.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
+              child: Icon(icon, color: isDestructive ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary, size: 20),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: CyberTheme.textMuted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              trailing ??
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: CyberTheme.textMuted,
-                    size: 20,
                   ),
-            ],
-          ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (trailing != null) 
+              trailing! 
+            else 
+              Icon(LucideIcons.chevronRight, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1), size: 16),
+          ],
         ),
       ),
     );

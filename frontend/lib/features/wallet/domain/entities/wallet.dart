@@ -30,6 +30,9 @@ final class Wallet extends Equatable {
   /// Indica se a carteira está ativa
   final bool isActive;
 
+  /// Nível de segurança (STANDARD, SHAMIR, etc)
+  final String accountSecurity;
+
   const Wallet({
     required this.id,
     required this.name,
@@ -40,6 +43,7 @@ final class Wallet extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.isActive = true,
+    this.accountSecurity = 'STANDARD',
   });
 
   /// Cria cópia com modificações
@@ -53,6 +57,7 @@ final class Wallet extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
+    String? accountSecurity,
   }) {
     return Wallet(
       id: id ?? this.id,
@@ -64,6 +69,7 @@ final class Wallet extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,
+      accountSecurity: accountSecurity ?? this.accountSecurity,
     );
   }
 
@@ -84,6 +90,7 @@ final class Wallet extends Equatable {
       type: WalletType.nativeSegwit,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      accountSecurity: json['accountSecurity'] ?? 'STANDARD',
     );
   }
 
@@ -98,6 +105,7 @@ final class Wallet extends Equatable {
     createdAt,
     updatedAt,
     isActive,
+    accountSecurity,
   ];
 }
 

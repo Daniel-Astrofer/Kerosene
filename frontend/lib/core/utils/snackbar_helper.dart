@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../presentation/widgets/animated_error_popup.dart';
+import '../widgets/animated_error_popup.dart';
 
 class SnackbarHelper {
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =

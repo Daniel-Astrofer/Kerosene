@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/presentation/widgets/cyber_background.dart';
 
 import '../../../wallet/domain/entities/wallet.dart';
 import '../providers/transaction_provider.dart';
-import '../../../../l10n/app_localizations.dart';
+import '../../../../l10n/l10n_extension.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
+import '../../../wallet/presentation/state/wallet_state.dart';
 import '../../../transactions/presentation/widgets/transaction_success_dialog.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 
@@ -13,12 +15,12 @@ enum SendMode { nfc, manual, qr }
 
 /// Tela de envio (Withdraw) redesenhada para match o Figma "RECEIVE / ENTER AMOUNT"
 class WithdrawScreen extends ConsumerStatefulWidget {
-  final Wallet wallet;
+  final Wallet? wallet;
   final bool showBackButton;
 
   const WithdrawScreen({
     super.key,
-    required this.wallet,
+    this.wallet,
     this.showBackButton = true,
   });
 
@@ -85,7 +87,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     if (_parsedAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.errorAmountRequired),
+          content: Text(context.l10n.errorAmountRequired),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -126,26 +128,31 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   }
 
   void _showFinalConfirmation() {
+    final walletState = ref.read(walletProvider);
+    final Wallet? effectiveWallet = widget.wallet ??
+        (walletState is WalletLoaded ? walletState.selectedWallet : null);
+    if (effectiveWallet == null) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _WithdrawConfirmationModal(
-        wallet: widget.wallet,
+        wallet: effectiveWallet,
         amount: _parsedAmount,
         address: _addressController.text,
         description: _descriptionController.text,
         totpController: _totpController,
-        onConfirm: _handleWithdraw,
+        onConfirm: () => _handleWithdraw(effectiveWallet),
       ),
     );
   }
 
-  Future<void> _handleWithdraw() async {
+  Future<void> _handleWithdraw(Wallet wallet) async {
     final result = await ref
         .read(withdrawProvider.notifier)
         .withdraw(
-          fromWalletName: widget.wallet.name,
+          fromWalletName: wallet.name,
           toAddress: _addressController.text.trim(),
           amount: _parsedAmount,
           totpCode: _totpController.text.trim(),
@@ -158,7 +165,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       Navigator.pop(context); // Close modal
       showDialog(
         context: context,
-        barrierColor: Colors.black.withValues(alpha: 0.8),
+        barrierColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
         builder: (_) => TransactionSuccessDialog(
           type: TransactionType.send,
           amount: result.amountReceived,
@@ -180,133 +187,86 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final walletState = ref.watch(walletProvider);
+    final Wallet? effectiveWallet = widget.wallet ??
+        (walletState is WalletLoaded ? walletState.selectedWallet : null);
+
+    if (effectiveWallet == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF000000),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFF000000), // Pure black background
-      body: SafeArea(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  _buildAmountDisplay(),
+                ],
+              ),
+            ),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildAddressSection(),
+            ),
 
-                    // AMOUNT TO SEND label
-                    Text(
-                      'AMOUNT TO SEND',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                      ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildNetworkSelection(),
+            ),
+
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildFeeBreakdown(),
+            ),
+
+            const SizedBox(height: 24),
+            _buildKeypad(),
+            
+            const SizedBox(height: 24),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _onContinue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                    elevation: 0,
+                    shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
                     ),
-
-                    const SizedBox(height: 8),
-
-                    // Large BTC amount display
-                    _buildAmountDisplay(),
-
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          color: Colors.white.withValues(alpha: 0.3),
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'PROCESSING: ~15 MINS',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            fontSize: 10,
-                            letterSpacing: 0.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                  ),
+                  child: Text(
+                    context.l10n.withdrawConfirmButton.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2.0,
                     ),
-
-                    const SizedBox(height: 32),
-
-                    // Destination Address
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildAddressSection(),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Network Selection
-                    Text(
-                      'RECEBER VIA:',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildNetworkSelection(),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Fee Breakdown
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _buildFeeBreakdown(),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Confirm Button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _onContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(
-                              0xFF00FFA3,
-                            ), // Neon Green
-                            foregroundColor: Colors.black,
-                            elevation: 0,
-                            shadowColor: const Color(
-                              0xFF00FFA3,
-                            ).withValues(alpha: 0.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                          ),
-                          child: const Text(
-                            'CONFIRMAR E ENVIAR',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-                  ],
+                  ),
                 ),
               ),
             ),
-            // Keypad fixed at bottom
-            _buildKeypad(),
+            
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -315,175 +275,101 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           if (widget.showBackButton)
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
-                  size: 16,
-                ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(Icons.chevron_left_rounded, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                padding: const EdgeInsets.all(8),
               ),
-            ),
-          const Expanded(
-            child: Text(
-              'SECURE WITHDRAWAL',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 3.0,
-              ),
-            ),
+            )
+          else
+            const SizedBox(width: 40),
+          const Spacer(),
+          Text(
+            context.l10n.withdrawConfirmButton.toUpperCase(),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 4, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary),
           ),
-          const SizedBox(width: 40), // Balance the back button
+          const Spacer(),
+          const SizedBox(width: 48), // Balance the back button
         ],
       ),
     );
   }
 
   Widget _buildAmountDisplay() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Flexible(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 120),
-              transitionBuilder: (child, anim) =>
-                  ScaleTransition(scale: anim, child: child),
-              child: Text(
-                _displayAmount,
-                key: ValueKey(_displayAmount),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 48,
-                  fontWeight: FontWeight.w200,
-                  fontFamily: 'Inter',
-                  letterSpacing: -1.0,
-                ),
-                textAlign: TextAlign.center,
+    return Column(
+      children: [
+        Text(
+          context.l10n.amountToSend.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 3.0,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              "₿ ",
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
+            ),
+            Text(
+              _displayAmount,
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                fontSize: 56,
+                fontWeight: FontWeight.w200,
+                letterSpacing: -2.0,
+                fontFamily: 'JetBrainsMono',
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'BTC',
-            style: TextStyle(
-              color: Color(0xFF00FFA3), // neon green
-              fontSize: 18,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '₿',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontSize: 24,
-              fontWeight: FontWeight.w200,
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildAddressSection() {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF00D4FF).withValues(alpha: 0.2),
-        ),
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'DESTINATION ADDRESS',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF00D4FF).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: Color(0xFF00D4FF),
-                      size: 10,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'VERIFIED',
-                      style: TextStyle(
-                        color: Color(0xFF00D4FF),
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF141414),
-              borderRadius: BorderRadius.circular(12),
-            ),
             child: TextField(
               controller: _addressController,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontFamily: 'monospace',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'JetBrainsMono',
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Endereço BTC, Username ou Paynym...',
+                hintText: 'Endereço BTC ou Invoice Lightning',
                 hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                  fontFamily: 'HubotSans',
+                  fontSize: 13,
                 ),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 20),
+                prefixIcon: Icon(Icons.account_balance_wallet_rounded, color: Theme.of(context).colorScheme.primary.withOpacity(0.8), size: 20),
+                prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
             ),
           ),
@@ -493,70 +379,78 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   }
 
   Widget _buildNetworkSelection() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF042B2B), // Dark greenish bg
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF00D4FF).withValues(alpha: 0.3),
-              ), // Cyan border
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.bolt_rounded,
-                  color: Color(0xFF00D4FF),
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Lightning',
-                  style: TextStyle(
-                    color: Color(0xFF00D4FF),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: [
+                  BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), blurRadius: 10, spreadRadius: 0),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.bolt_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 16,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    'Lightning',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF141414),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.link_rounded,
-                  color: Colors.white.withValues(alpha: 0.5),
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'On-chain',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.link_rounded,
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                    size: 16,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    'On-chain',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -565,49 +459,42 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final withdrawalAmount = _parsedAmount;
     final networkFee = 0.0001;
     final serviceFee = 0.00005;
-    final total =
-        withdrawalAmount -
-        networkFee -
-        serviceFee; // Basic subtraction logic for mock
+    final total = withdrawalAmount - networkFee - serviceFee;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
       ),
       child: Column(
         children: [
-          _buildFeeRow(
-            'WITHDRAWAL',
-            '${withdrawalAmount.toStringAsFixed(5)} BTC',
-          ),
-          const SizedBox(height: 12),
           _buildFeeRow('NETWORK FEE', '${networkFee.toStringAsFixed(5)} BTC'),
           const SizedBox(height: 12),
           _buildFeeRow('SERVICE FEE', '${serviceFee.toStringAsFixed(5)} BTC'),
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.05)),
+          Divider(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'TOTAL TO RECEIVE',
+              Text(
+                'TOTAL',
                 style: TextStyle(
-                  color: Color(0xFF00D4FF), // Cyan
+                  color: Theme.of(context).colorScheme.primary,
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
                 ),
               ),
               Text(
                 '${(total > 0 ? total : 0.0).toStringAsFixed(5)} BTC',
-                style: const TextStyle(
-                  color: Color(0xFF00D4FF),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w300,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'JetBrainsMono',
                 ),
               ),
             ],
@@ -624,87 +511,91 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
             fontSize: 10,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
             letterSpacing: 1.0,
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.2),
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'JetBrainsMono',
           ),
         ),
       ],
     );
   }
 
-
   Widget _buildKeypad() {
-    final keys = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['00', '0', '←'],
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: keys.map((row) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: row.map((key) => _buildKey(key)).toList(),
-            ),
-          );
-        }).toList(),
+        children: [
+          Row(
+            children: [
+              _buildKey('1'),
+              _buildKey('2'),
+              _buildKey('3'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildKey('4'),
+              _buildKey('5'),
+              _buildKey('6'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildKey('7'),
+              _buildKey('8'),
+              _buildKey('9'),
+            ],
+          ),
+          Row(
+            children: [
+              _buildKey('.'),
+              _buildKey('0'),
+              _buildKey('←'),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildKey(String key) {
     final isBackspace = key == '←';
-
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _onKeyTap(key),
+      child: GestureDetector(
+        onTap: () => _onKeyTap(key),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 60,
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
             borderRadius: BorderRadius.circular(16),
-            splashColor: Colors.white.withValues(alpha: 0.08),
-            highlightColor: Colors.white.withValues(alpha: 0.04),
-            child: Container(
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.center,
-              child: isBackspace
-                  ? Icon(
-                      Icons.backspace_outlined,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      size: 20,
-                    )
-                  : Text(
-                      key,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w300,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              width: 1.5,
             ),
           ),
+          alignment: Alignment.center,
+          child: isBackspace
+              ? Icon(Icons.backspace_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 22)
+              : Text(
+                  key,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.w300,
+                    fontFamily: 'JetBrainsMono',
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
         ),
       ),
     );
@@ -740,10 +631,10 @@ class _AddressInputModal extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'DETALHES DO ENVIO',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 2.0,
@@ -795,7 +686,7 @@ class _AddressInputModal extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withOpacity(0.5),
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.5,
@@ -804,13 +695,13 @@ class _AddressInputModal extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
             prefixIcon: Icon(icon, color: Colors.white54, size: 20),
             filled: true,
-            fillColor: Colors.black.withValues(alpha: 0.3),
+            fillColor: Colors.black.withOpacity(0.3),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: Color(0xFF292929)),
@@ -860,10 +751,10 @@ class _WithdrawConfirmationModal extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'CONFIRMAR TRANSAÇÃO',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 2.0,
@@ -888,8 +779,8 @@ class _WithdrawConfirmationModal extends StatelessWidget {
             keyboardType: TextInputType.number,
             maxLength: 6,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 24,
               letterSpacing: 8,
               fontWeight: FontWeight.bold,
@@ -897,12 +788,12 @@ class _WithdrawConfirmationModal extends StatelessWidget {
             decoration: InputDecoration(
               hintText: '000000',
               hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
                 letterSpacing: 8,
               ),
               counterText: '',
               labelText: 'CÓDIGO TOTP',
-              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+              labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5)),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -916,7 +807,7 @@ class _WithdrawConfirmationModal extends StatelessWidget {
               onPressed: onConfirm,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00FFA3),
-                foregroundColor: Colors.black,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
@@ -941,7 +832,7 @@ class _WithdrawConfirmationModal extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: Colors.white.withOpacity(0.4),
               fontSize: 13,
             ),
           ),
@@ -949,7 +840,7 @@ class _WithdrawConfirmationModal extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 13,
                 fontFamily: 'Monospace',

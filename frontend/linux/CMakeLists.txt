@@ -74,6 +74,36 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Rust / Arti native library (libnative.so)
+# Invokes `cargo build` during the Flutter Linux build and installs the
+# resulting shared library into the bundle so Dart's DynamicLibrary.open()
+# can find it at runtime.
+# ─────────────────────────────────────────────────────────────────────────────
+set(NATIVE_CRATE_DIR "${CMAKE_SOURCE_DIR}/../native")
+
+if(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "Profile")
+  set(CARGO_PROFILE_FLAG "--release")
+  set(CARGO_TARGET_SUBDIR "release")
+else()
+  set(CARGO_PROFILE_FLAG "")
+  set(CARGO_TARGET_SUBDIR "debug")
+endif()
+
+set(LIBNATIVE_SO
+    "${NATIVE_CRATE_DIR}/target/${CARGO_TARGET_SUBDIR}/libnative.so")
+
+add_custom_command(
+  OUTPUT  "${LIBNATIVE_SO}"
+  COMMAND cargo build ${CARGO_PROFILE_FLAG}
+          --manifest-path "${NATIVE_CRATE_DIR}/Cargo.toml"
+  COMMENT "🦀 Building Rust/Arti native library (${CARGO_TARGET_SUBDIR})..."
+  VERBATIM
+)
+
+add_custom_target(native_rust_lib ALL DEPENDS "${LIBNATIVE_SO}")
+add_dependencies(${BINARY_NAME} native_rust_lib)
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
@@ -105,6 +135,12 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+# Install the Rust/Arti native library so DynamicLibrary.open('libnative.so') works.
+install(FILES "${LIBNATIVE_SO}"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
+
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")

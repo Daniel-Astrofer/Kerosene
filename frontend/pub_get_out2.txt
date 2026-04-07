@@ -1,0 +1,13 @@
+Resolving dependencies...
+Because no versions of passkeys match >2.18.0 <3.0.0 and passkeys >=2.14.0 <2.18.0 depends on passkeys_doctor ^1.2.0, passkeys >=2.14.0 <2.18.0-∞ or >2.18.0 <3.0.0 requires passkeys_doctor ^1.2.0.
+And because passkeys_doctor <1.3.0 depends on package_info_plus ^8.3.0 and passkeys 2.18.0 depends on passkeys_doctor ^1.3.0, passkeys ^2.14.0 requires package_info_plus ^8.3.0 or passkeys_doctor ^1.3.0.
+Because passkeys_doctor 1.3.0 depends on device_info_plus ^11.2.0 and no versions of passkeys_doctor match >1.3.0 <2.0.0, passkeys_doctor ^1.3.0 requires device_info_plus ^11.2.0.
+Thus, passkeys ^2.14.0 requires package_info_plus ^8.3.0 or device_info_plus ^11.2.0.
+And because teste depends on device_info_plus ^12.3.0, passkeys ^2.14.0 requires package_info_plus ^8.3.0.
+So, because teste depends on both package_info_plus ^9.0.0 and passkeys ^2.17.4, version solving failed.
+
+
+You can try one of the following suggestions to make the pubspec resolve:
+* Consider downgrading your constraint on passkeys: flutter pub add passkeys:^2.8.2
+* Consider downgrading your constraint on device_info_plus: flutter pub add device_info_plus:^11.5.0
+Failed to update packages.

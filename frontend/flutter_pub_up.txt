@@ -1,0 +1,21 @@
+
+No changes to pubspec.yaml!
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 93.0.0 (98.0.0 available)
+  analyzer 10.0.1 (12.0.0 available)
+  blockchain_utils 5.4.0 (6.0.0 available)
+  dart_style 3.1.7 (3.1.8 available)
+  device_info_plus 11.5.0 (12.3.0 available)
+  meta 1.17.0 (1.18.2 available)
+  pointycastle 3.9.1 (4.0.0 available)
+  test 1.30.0 (1.31.0 available)
+  test_api 0.7.10 (0.7.11 available)
+  test_core 0.6.16 (0.6.17 available)
+  vector_math 2.2.0 (2.3.0 available)
+  win32 5.15.0 (6.0.0 available)
+  win32_registry 2.1.0 (3.0.2 available)
+No dependencies changed.
+13 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+/home/omega/Kerosene/frontend/l10n.yaml: The argument "synthetic-package" no longer has any effect and should be removed. See http://flutter.dev/to/flutter-gen-deprecation

@@ -2,13 +2,12 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/exceptions.dart';
-import '../../../auth/data/datasources/auth_local_datasource.dart';
+import 'package:teste/features/auth/data/datasources/auth_local_datasource.dart';
 import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
-import '../../../wallet/domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../datasources/transaction_remote_datasource.dart';
 
@@ -52,6 +51,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
     String? fromWalletId,
     String? fromAddress,
     String? context,
+    String? passkeySignature,
+    String? confirmationPassphrase,
+    String? totpCode,
+    String? idempotencyKey,
+    int? requestTimestamp,
   }) async {
     debugPrint('>>> REPO: sendTransaction called');
     debugPrint('>>> Amount: $amount, Fee: $feeSatoshis');
@@ -72,6 +76,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
         amount: amount,
         feeSatoshis: feeSatoshis,
         context: context,
+        passkeySignature: passkeySignature,
+        confirmationPassphrase: confirmationPassphrase,
+        totpCode: totpCode,
+        idempotencyKey: idempotencyKey,
+        requestTimestamp: requestTimestamp,
       );
       debugPrint('>>> Ledger Transaction Success: ${result.txid}');
       return result;
@@ -171,40 +180,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     return remoteDataSource.getDeposit(txid);
   }
 
-  // ==================== Payment Requests ====================
-
-  @override
-  Future<PaymentLink> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-    int? expiresIn,
-  }) async {
-    await _checkAuth();
-    return remoteDataSource.createPaymentRequest(
-      amount: amount,
-      receiverWalletName: receiverWalletName,
-      expiresIn: expiresIn,
-    );
-  }
-
-  @override
-  Future<PaymentLink> getPaymentRequest(String linkId) async {
-    // Payment requests might be public for scanning, but we follow datasource
-    return remoteDataSource.getPaymentRequest(linkId);
-  }
-
-  @override
-  Future<PaymentLink> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-  }) async {
-    await _checkAuth();
-    return remoteDataSource.payPaymentRequest(
-      linkId: linkId,
-      payerWalletName: payerWalletName,
-    );
-  }
-
   @override
   Future<List<PaymentLink>> getPaymentLinks() async {
     await _checkAuth();
@@ -218,8 +193,8 @@ class TransactionRepositoryImpl implements TransactionRepository {
     required double amount,
     required String totpCode,
     String? description,
-    String? passkeyAssertionResponseJSON,
-    String? passkeyAssertionRequestJSON,
+    String? passkeySignature,
+    String? passkeyChallenge,
   }) async {
     await _checkAuth();
     return remoteDataSource.withdraw(
@@ -228,13 +203,8 @@ class TransactionRepositoryImpl implements TransactionRepository {
       amount: amount,
       totpCode: totpCode,
       description: description,
-      passkeyAssertionResponseJSON: passkeyAssertionResponseJSON,
-      passkeyAssertionRequestJSON: passkeyAssertionRequestJSON,
+      passkeySignature: passkeySignature,
+      passkeyChallenge: passkeyChallenge,
     );
-  }
-
-  @override
-  Future<List<Transaction>> getTransactionHistory() async {
-    return remoteDataSource.getTransactionHistory();
   }
 }

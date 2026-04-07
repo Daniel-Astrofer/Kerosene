@@ -6,8 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tor/tor.dart';
 
-/// Manages the embedded Tor client lifecycle.
-/// On activation it starts a local SOCKS5 proxy (default port 9050).
+/// Manages the embedded Tor client lifecycle using the `tor` package
+/// (Foundation Devices). Based on Arti (Rust Tor implementation).
+/// On activation it starts a local SOCKS5 proxy on a dynamic port.
 class TorService {
   static TorService? _instance;
   static TorService get instance => _instance ??= TorService._();
@@ -19,51 +20,49 @@ class TorService {
   bool get isRunning => _isRunning;
   int get socksPort => _socksPort;
 
-  /// Starts the embedded Tor daemon.
-  /// Returns the SOCKS5 port number (9050 by default).
-  Future<int> start() async {
-    // If we're already running in this isolate, return cached port
-    if (_isRunning) return _socksPort;
+  /// Starts the embedded Tor daemon via the `tor` package.
+  /// Returns true if Tor is ready.
+  Future<bool> start() async {
+    if (_isRunning) return true;
 
     try {
-      debugPrint('🧅 TorService: Initializing embedded Tor context...');
+      debugPrint('🧅 TorService: Initializing Tor (Arti) via tor package...');
+
+      // Initialize and start the Tor proxy
       await Tor.init();
-
-      debugPrint('🧅 TorService: Starting daemon...');
       await Tor.instance.start();
+
+      // The `tor` package picks a free port automatically
       _socksPort = Tor.instance.port;
+      _isRunning = Tor.instance.started;
 
-      // Wait for the SOCKS proxy to actually open to prevent "Connection refused"
-      await _waitForProxyToBoot(_socksPort);
-
-      _isRunning = true;
-      debugPrint('🧅 TorService: Tor running on SOCKS5 port $_socksPort');
+      if (_isRunning) {
+        debugPrint(
+          '🧅 TorService: Tor (Arti) running on SOCKS5 port $_socksPort',
+        );
+      } else {
+        debugPrint('🧅 TorService: Tor.instance.started returned false');
+      }
     } catch (e) {
-      debugPrint(
-        '🧅 TorService: Failed to start embedded Tor (Already running or error): $e',
-      );
+      debugPrint('🧅 TorService: Failed to start Tor: $e');
 
-      // Fallback: Check if port 9050 is already listening (system Tor or previous isolate)
-      // or if Tor.instance.port is already valid.
+      // Fallback: check if a system Tor is already listening
       int fallbackPort = 9050;
-      try {
-        if (Tor.instance.port > 0) fallbackPort = Tor.instance.port;
-      } catch (_) {}
-
       _socksPort = fallbackPort;
       debugPrint('🧅 TorService: Falling back to port $_socksPort');
 
       try {
-        await _waitForProxyToBoot(_socksPort, timeoutSeconds: 5);
+        await _waitForProxyToBoot(_socksPort, timeoutSeconds: 3);
         _isRunning = true;
       } catch (err) {
         debugPrint(
           'Tor proxy is NOT answering on $_socksPort. Application may be offline.',
         );
+        _isRunning = false;
       }
     }
 
-    return _socksPort;
+    return _isRunning;
   }
 
   /// Stops the embedded Tor daemon.
@@ -71,16 +70,14 @@ class TorService {
     if (!_isRunning) return;
     try {
       await Tor.instance.stop();
-      debugPrint('🧅 TorService: Tor stopped.');
     } catch (e) {
       debugPrint('🧅 TorService: Error stopping Tor: $e');
-    } finally {
-      _isRunning = false;
     }
+    _isRunning = false;
+    debugPrint('🧅 TorService: Tor (Arti) stopped.');
   }
 
   /// Polls the SOCKS port until a raw TCP connection succeeds.
-  /// Hardened for unstable Windows/Android environments.
   Future<void> _waitForProxyToBoot(int port, {int timeoutSeconds = 45}) async {
     debugPrint(
       '🧅 TorService: Checking if proxy is listening on 127.0.0.1:$port...',
@@ -99,7 +96,7 @@ class TorService {
         debugPrint(
           '🧅 TorService: Proxy is ALIVE at $port after $attempts attempts.',
         );
-        return; // Success!
+        return;
       } catch (_) {
         if (attempts % 5 == 0) {
           debugPrint(
@@ -110,7 +107,7 @@ class TorService {
       }
     }
     throw SocketException(
-      'Tor proxy did not bootstrap within $timeoutSeconds seconds. Check if Tor binary is allowed in firewall.',
+      'Tor proxy did not bootstrap within $timeoutSeconds seconds.',
     );
   }
 
@@ -124,40 +121,30 @@ class TorService {
 
   /// Starts a local TCP server that blindly relays bytes through the Tor SOCKS5 proxy.
   /// This is used to tunnel protocols like WebSockets that don't natively support SOCKS5.
-  /// Multiple concurrent relays to different targets are supported.
   Future<int> startRelay(String targetHost, int targetPort) async {
+    if (!_isRunning) {
+      throw const SocketException('Cannot start relay: Tor is not running');
+    }
     final key = '$targetHost:$targetPort';
-    // If a relay is already running for this specific target, return its port
     if (_relayPorts.containsKey(key)) {
       return _relayPorts[key]!;
     }
 
-    // Bind to an ephemeral port locally
     final relayServer = await ServerSocket.bind('127.0.0.1', 0);
     final relayPort = relayServer.port;
     _relayServers[key] = relayServer;
     _relayPorts[key] = relayPort;
 
     relayServer.listen((clientSocket) async {
+      debugPrint('🧅 Tor Relay: Received connection on 127.0.0.1:$relayPort');
       try {
-        // ── SOCKS5 Connect + Retry ─────────────────────────────────────────
-        // Each attempt opens a FRESH Tor socket + re-does the full handshake.
-        // Tor closes the TCP socket after sending an error response, so
-        // reusing the same socket on retry was causing a RangeError.
-        //
-        // IMPORTANT: We use a StreamIterator + local byte buffer (readBuffer)
-        // instead of asBroadcastStream(). Broadcast streams DROP bytes that
-        // arrive between consecutive 'await for' reads. StreamIterator buffers
-        // all incoming data and never loses bytes between sequential reads.
         bool established = false;
         int relayAttempts = 0;
         const int maxRelayAttempts = 10;
         Socket? torSocket;
         StreamIterator<Uint8List>? torIter;
-        final readBuffer = <int>[]; // shared accumulator across readExact calls
+        final readBuffer = <int>[];
 
-        // Local helper: reads exactly [count] bytes using the current
-        // torIter + readBuffer. Throws SocketException on premature close.
         Future<Uint8List> readExact(int count) async {
           while (readBuffer.length < count) {
             if (!await torIter!.moveNext()) {
@@ -174,13 +161,11 @@ class TorService {
 
         while (!established && relayAttempts < maxRelayAttempts) {
           relayAttempts++;
-          // Cancel the previous iterator and destroy the failed socket.
           await torIter?.cancel();
           torSocket?.destroy();
           readBuffer.clear();
 
           try {
-            // ── Step 0: fresh TCP connection to the SOCKS5 proxy ────────────
             int sockAttempts = 0;
             while (sockAttempts < 5) {
               try {
@@ -193,31 +178,23 @@ class TorService {
               } catch (e) {
                 sockAttempts++;
                 if (sockAttempts >= 5) rethrow;
-                debugPrint(
-                  ' onion TorService [Relay]: SOCKS port $_socksPort not ready. Retrying ($sockAttempts/5)...',
-                );
                 await Future.delayed(const Duration(milliseconds: 1000));
               }
             }
             if (torSocket == null) {
               throw const SocketException('Could not connect to Tor SOCKS5');
             }
-            // Create a StreamIterator — buffers ALL incoming chunks, so no
-            // bytes are ever lost between sequential readExact() calls.
             torIter = StreamIterator<Uint8List>(torSocket);
 
-            // ── Step 1: SOCKS5 Auth Handshake ───────────────────────────────
+            // SOCKS5 Auth Handshake
             torSocket.add([0x05, 0x01, 0x00]);
             await torSocket.flush();
-
             final handshakeRes = await readExact(2);
             if (handshakeRes[0] != 0x05 || handshakeRes[1] != 0x00) {
-              throw SocketException(
-                'Tor SOCKS5 Handshake failed (got: ${handshakeRes.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(', ')})',
-              );
+              throw SocketException('Tor SOCKS5 Handshake failed');
             }
 
-            // ── Step 2: SOCKS5 CONNECT request ──────────────────────────────
+            // SOCKS5 CONNECT request
             final request = <int>[0x05, 0x01, 0x00, 0x03];
             final domainBytes = utf8.encode(targetHost);
             request.add(domainBytes.length);
@@ -227,43 +204,34 @@ class TorService {
             torSocket.add(request);
             await torSocket.flush();
 
-            // Read [VER, REP, RSV, ATYP] — 4 bytes
             final connectRes = await readExact(4);
-
             if (connectRes[1] == 0x00) {
-              // ✅ Success — drain the remaining BND.ADDR + BND.PORT
               final atyp = connectRes[3];
               if (atyp == 0x01) {
-                await readExact(6); // IPv4 (4) + Port (2)
+                await readExact(6);
               } else if (atyp == 0x03) {
                 final len = (await readExact(1))[0];
                 await readExact(len + 2);
               } else if (atyp == 0x04) {
-                await readExact(18); // IPv6 (16) + Port (2)
+                await readExact(18);
               }
               established = true;
-              // Connected silently — logs only on failure or if needed for debug
+              debugPrint('🧅 Tor Relay: Tunnel established to $targetHost:$targetPort');
             } else {
-              // ❌ SOCKS error — Tor closes the TCP socket after this response.
-              // The socket is destroyed at the top of the next loop iteration.
               final errorCode = connectRes[1];
               final errorMsg = _getSocksErrorMessage(errorCode);
               debugPrint(
-                ' onion TorService [Relay]: SOCKS5 Connect failure: $errorMsg (0x${errorCode.toRadixString(16).padLeft(2, '0')}) on attempt $relayAttempts/$maxRelayAttempts',
+                ' onion TorService [Relay]: SOCKS5 Connect failure: $errorMsg on attempt $relayAttempts/$maxRelayAttempts',
               );
               if (relayAttempts >= maxRelayAttempts) {
                 throw SocketException(
                   'Tor SOCKS5 to $targetHost refused after $maxRelayAttempts attempts: $errorMsg',
                 );
               }
-              // Wait longer for Tor to find the circuit (3, 6, 9, 12... seconds)
               await Future.delayed(Duration(seconds: relayAttempts * 3));
             }
           } catch (e) {
             if (relayAttempts >= maxRelayAttempts) rethrow;
-            debugPrint(
-              ' onion TorService [Relay]: Attempt $relayAttempts failed ($e). Retrying with fresh socket...',
-            );
             await Future.delayed(Duration(seconds: relayAttempts * 3));
           }
         }
@@ -274,8 +242,7 @@ class TorService {
           );
         }
 
-        // ── 3. Bi-Directional Pipe ──────────────────────────────────────────
-        // Client -> Tor: pipe all client bytes into the Tor socket.
+        // Bi-Directional Pipe
         final capturedTorSocket = torSocket;
         clientSocket.listen(
           capturedTorSocket.add,
@@ -286,8 +253,6 @@ class TorService {
           },
         );
 
-        // Tor -> Client: first flush anything already in readBuffer (bytes
-        // that arrived alongside the CONNECT response), then pump the iterator.
         final capturedIter = torIter;
         final capturedBuffer = List<int>.from(readBuffer);
         unawaited(() async {
@@ -316,10 +281,6 @@ class TorService {
     return relayPort;
   }
 
-  // _readExactBytes removed — relay now uses StreamIterator + local readBuffer
-  // (see startRelay). This avoids the asBroadcastStream() data-loss bug where
-  // bytes arriving between consecutive 'await for' calls were silently dropped.
-
   /// Maps SOCKS5 error codes (REP) to human readable messages.
   String _getSocksErrorMessage(int code) {
     return switch (code) {
@@ -331,7 +292,6 @@ class TorService {
       0x06 => 'TTL expired',
       0x07 => 'Command not supported',
       0x08 => 'Address type not supported',
-      // Extended Tor error codes
       0xF0 => 'Onion Service Descriptor Not Found',
       0xF1 => 'Onion Service Descriptor Is Invalid',
       0xF2 => 'Onion Service Descriptor Is Stale',
@@ -350,8 +310,7 @@ final torServiceProvider = Provider<TorService>((ref) {
   return TorService.instance;
 });
 
-/// A wrapper class that allows a Socket to be treated as a broadcast stream
-/// and delegated back to external networking libraries (like Dio/HttpClient).
+/// A wrapper class that allows a Socket to be treated as a broadcast stream.
 class BroadcastSocket extends Stream<Uint8List> implements Socket {
   final Socket _socket;
   final Stream<Uint8List> _broadcastStream;

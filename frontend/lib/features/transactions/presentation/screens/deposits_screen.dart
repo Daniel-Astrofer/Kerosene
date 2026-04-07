@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
+import '../../../../core/presentation/widgets/cyber_background.dart';
 import '../../domain/entities/deposit.dart';
 import '../providers/transaction_provider.dart';
 
@@ -17,93 +17,83 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   Widget build(BuildContext context) {
     final depositsAsync = ref.watch(depositsProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: depositsAsync.when(
-                data: (deposits) {
-                  if (deposits.isEmpty) {
-                    return _buildEmptyState();
-                  }
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      ref.invalidate(depositsProvider);
-                    },
-                    backgroundColor: const Color(0xFF1A1A24),
-                    color: const Color(0xFF00FF94),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: deposits.length,
-                      itemBuilder: (context, index) {
-                        return _buildDepositCard(deposits[index]);
-                      },
-                    ),
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00FF94)),
-                ),
-                error: (error, stack) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 48,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading deposits',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+    return CyberBackground(
+      child: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: depositsAsync.when(
+              data: (deposits) {
+                if (deposits.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(depositsProvider);
+                  },
+                  backgroundColor: const Color(0xFF1A1A24),
+                  color: const Color(0xFF00FF94),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    itemCount: deposits.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: _buildDepositCard(deposits[index]),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Color(0xFF00FF94)),
+              ),
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading deposits',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            "Deposits",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+    return AppBar(
+      title: Text(
+        "DEPÓSITOS",
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 2.0,
+          fontFamily: 'JetBrainsMono',
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+        onPressed: () => Navigator.pop(context),
       ),
     );
   }
@@ -116,13 +106,13 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
           Icon(
             Icons.download_outlined,
             size: 64,
-            color: Colors.white.withValues(alpha: 0.2),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
           ),
           const SizedBox(height: 16),
           Text(
             'No deposits yet',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
               fontSize: 16,
             ),
           ),
@@ -132,9 +122,14 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   }
 
   Widget _buildDepositCard(Deposit deposit) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -145,35 +140,33 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
               Text(
                 '${deposit.amountBtc.toStringAsFixed(8)} BTC',
                 style: const TextStyle(
-                  color: Color(0xFF00FF94),
-                  fontSize: 16,
+                  color: Color(0xFFD0F288),
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
+                  fontFamily: 'JetBrainsMono',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           _buildInfoRow(
-            Icons.tag,
+            Icons.alternate_email_rounded,
             'TXID',
             _shortenTxid(deposit.txid),
             onTap: () => _copyToClipboard(deposit.txid),
           ),
-          const SizedBox(height: 8),
+          const Divider(height: 24, color: Colors.white10),
           _buildInfoRow(
-            Icons.access_time,
-            'Time',
+            Icons.calendar_today_rounded,
+            'DATA',
             _formatTimestamp(deposit.createdAt ?? DateTime.now()),
           ),
-          ...[
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              Icons.check_circle_outline,
-              'Confirmations',
-              '${deposit.confirmations}/6',
-            ),
-          ],
+          const Divider(height: 24, color: Colors.white10),
+          _buildInfoRow(
+            Icons.verified_user_outlined,
+            'CONFIRMAÇÕES',
+            '${deposit.confirmations}/6',
+          ),
         ],
       ),
     );
@@ -201,7 +194,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
         label = 'Credited';
         break;
       default:
-        color = Colors.grey;
+        color = Theme.of(context).colorScheme.onSurfaceVariant;
         icon = Icons.help_outline;
         label = status;
     }
@@ -209,9 +202,9 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -239,12 +232,12 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.5)),
+        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5)),
         const SizedBox(width: 8),
         Text(
           '$label:',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
             fontSize: 12,
           ),
         ),
@@ -255,7 +248,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
             child: Text(
               value,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                 fontSize: 12,
                 fontFamily: 'monospace',
               ),
@@ -267,7 +260,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
           Icon(
             Icons.copy,
             size: 12,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
           ),
       ],
     );

@@ -96,7 +96,7 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
       duration: const Duration(milliseconds: 1000),
       curve: Curves.easeInOutBack,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.onSurface,
         body: shaderAsync.when(
           data: (program) => SizedBox.expand(
             child: AnimatedBuilder(

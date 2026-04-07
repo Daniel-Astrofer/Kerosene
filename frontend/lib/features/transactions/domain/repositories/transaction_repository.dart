@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../wallet/domain/entities/transaction.dart';
 import '../entities/fee_estimate.dart';
 import '../entities/tx_status.dart';
 import '../entities/deposit.dart';
@@ -21,6 +20,11 @@ abstract class TransactionRepository {
     String? fromWalletId,
     String? fromAddress,
     String? context,
+    String? passkeySignature,
+    String? confirmationPassphrase,
+    String? totpCode,
+    String? idempotencyKey,
+    int? requestTimestamp,
   });
   Future<Either<Failure, TxStatus>> broadcastTransaction({
     required String rawTxHex,
@@ -47,17 +51,6 @@ abstract class TransactionRepository {
   Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
-  // Payment Requests
-  Future<PaymentLink> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-    int? expiresIn,
-  });
-  Future<PaymentLink> getPaymentRequest(String linkId);
-  Future<PaymentLink> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-  });
   Future<List<PaymentLink>> getPaymentLinks();
 
   // Withdrawals
@@ -67,10 +60,8 @@ abstract class TransactionRepository {
     required double amount,
     required String totpCode,
     String? description,
-    String? passkeyAssertionResponseJSON,
-    String? passkeyAssertionRequestJSON,
+    String? passkeySignature,
+    String? passkeyChallenge,
   });
 
-  // Local Persistence
-  Future<List<Transaction>> getTransactionHistory();
 }

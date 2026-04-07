@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import 'package:dartz/dartz.dart';
@@ -38,9 +39,9 @@ class AuthRepositoryImpl implements AuthRepository {
       await localDataSource.saveMnemonic(passphrase);
       return Right(loginResult);
     } on AuthException catch (e) {
-      return Left(AuthFailure(message: e.message, statusCode: e.statusCode));
+      return Left(AuthFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -69,14 +70,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final user = UserModel(
         id: '0',
-        email: '$username@kerosene.app',
-        name: username,
+        username: username,
         createdAt: DateTime.now(),
       );
       await localDataSource.saveUser(user);
       return Right(user);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -97,7 +97,7 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Right(result);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -129,7 +129,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(sessionId);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao verificar TOTP: $e'));
     }
@@ -137,34 +137,36 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // ─── Passkey onboarding ───────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, String>> registerPasskeyOnboardingStart(
-    String sessionId,
-  ) async {
+  Future<Either<Failure, String>> passkeyRegisterOnboardingStart({
+    required String sessionId,
+    String? username,
+  }) async {
     try {
-      final opts = await remoteDataSource.registerPasskeyOnboardingStart(
-        sessionId,
+      final opts = await remoteDataSource.passkeyRegisterOnboardingStart(
+        sessionId: sessionId,
+        username: username,
       );
       return Right(opts);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, void>> registerPasskeyOnboardingFinish(
+  Future<Either<Failure, void>> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   ) async {
     try {
-      await remoteDataSource.registerPasskeyOnboardingFinish(
+      await remoteDataSource.passkeyRegisterOnboardingFinish(
         sessionId,
         credential,
       );
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -178,14 +180,14 @@ class AuthRepositoryImpl implements AuthRepository {
       final opts = await remoteDataSource.passkeyLoginStart(username);
       return Right(opts);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, User>> passkeyLoginFinish({
+  Future<Either<Failure, LoginResult>> passkeyLoginFinish({
     required String username,
     required Map<String, dynamic> credential,
   }) async {
@@ -199,29 +201,29 @@ class AuthRepositoryImpl implements AuthRepository {
         await localDataSource.saveToken(loginResult.jwt);
       }
 
+      // We still update the local user info if needed
       final user = UserModel(
         id: loginResult.userId.isNotEmpty ? loginResult.userId : '0',
-        email: '$username@kerosene.app',
-        name: username,
+        username: username,
         createdAt: DateTime.now(),
       );
       await localDataSource.saveUser(user);
 
-      return Right(user);
+      return Right(loginResult);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, String>> passkeyRegisterStart() async {
+  Future<Either<Failure, String>> passkeyRegisterStart(String username) async {
     try {
-      final opts = await remoteDataSource.passkeyRegisterStart();
+      final opts = await remoteDataSource.passkeyRegisterStart(username);
       return Right(opts);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -235,122 +237,12 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.passkeyRegisterFinish(credential);
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
-  // ─── Sovereign Auth (Hardware Ed25519) ──────────────────────────────────────────
-
-  @override
-  Future<Either<Failure, String>> registerHardwareOnboardingStart(
-    String sessionId,
-  ) async {
-    try {
-      final challenge = await remoteDataSource.hardwareRegisterStart(sessionId);
-      return Right(challenge);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> registerHardwareOnboardingFinish({
-    required String sessionId,
-    required String publicKey,
-    required String deviceName,
-    required String signature,
-  }) async {
-    try {
-      await remoteDataSource.hardwareRegisterFinish(
-        sessionId: sessionId,
-        publicKey: publicKey,
-        deviceName: deviceName,
-        signature: signature,
-      );
-      return const Right(null);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, String>> registerHardwareForAccountStart() async {
-    try {
-      final challenge = await remoteDataSource.hardwareRegisterForAccountStart();
-      return Right(challenge);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> registerHardwareForAccountFinish({
-    required String publicKey,
-    required String deviceName,
-  }) async {
-    try {
-      await remoteDataSource.hardwareRegisterForAccountFinish(
-        publicKey: publicKey,
-        deviceName: deviceName,
-      );
-      return const Right(null);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, String>> hardwareLoginStart(String username) async {
-    try {
-      final challenge = await remoteDataSource.getHardwareChallenge(username);
-      return Right(challenge);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, User>> hardwareLoginFinish({
-    required String username,
-    required String signature,
-  }) async {
-    try {
-      final loginResult = await remoteDataSource.verifyHardwareSignature(
-        username: username,
-        signature: signature,
-      );
-
-      if (loginResult.jwt.isNotEmpty) {
-        await localDataSource.saveToken(loginResult.jwt);
-      }
-
-      final user = UserModel(
-        id: loginResult.userId.isNotEmpty ? loginResult.userId : '0',
-        email: '$username@kerosene.app',
-        name: username,
-        createdAt: DateTime.now(),
-      );
-      await localDataSource.saveUser(user);
-
-      return Right(user);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
 
   // ─── Voucher onboarding link ──────────────────────────────────────────────────
   @override
@@ -361,7 +253,39 @@ class AuthRepositoryImpl implements AuthRepository {
       final dto = await remoteDataSource.generateOnboardingLink(sessionId);
       return Right(dto);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, OnboardingPaymentLinkDto>> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  }) async {
+    try {
+      final dto = await remoteDataSource.confirmOnboardingPayment(
+        linkId: linkId,
+        txid: txid,
+      );
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
+    String linkId,
+  ) async {
+    try {
+      final dto = await remoteDataSource.getOnboardingPaymentLink(linkId);
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -373,7 +297,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.mockConfirmOnboarding(sessionId);
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -388,7 +312,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.confirmVoucher(voucherId: voucherId, txid: txid);
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -398,11 +322,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      await remoteDataSource.logout();
+      try {
+        await remoteDataSource.logout();
+      } catch (e) {
+        debugPrint('Remote logout failed, proceeding with local clear: $e');
+      }
       await localDataSource.clearAll();
       return const Right(null);
-    } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao fazer logout: $e'));
     }
@@ -429,15 +355,27 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (_) {}
   }
 
-  // ─── getCurrentUser ───────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, User>> getCurrentUser() async {
     try {
+      // 1. Try local cache
       final cachedUser = await localDataSource.getUser();
       if (cachedUser != null) return Right(cachedUser);
-      return const Left(CacheFailure(message: 'Usuário não encontrado'));
+
+      // 2. Try remote if not in cache (requires valid token in intercepted headers)
+      final remoteUser = await remoteDataSource.getCurrentUser();
+      
+      // 3. Save locally and return
+      await localDataSource.saveUser(remoteUser);
+      
+      return Right(remoteUser as User);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));
+    } on AppException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        return Left(AuthFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      }
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
     }
@@ -455,8 +393,7 @@ class AuthRepositoryImpl implements AuthRepository {
             currentUser ??
             UserModel(
               id: '0',
-              email: 'user@kerosene.app',
-              name: 'User',
+              username: 'User',
               createdAt: DateTime.now(),
             );
         await localDataSource.saveUser(user);
@@ -464,7 +401,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       return const Left(AuthFailure(message: 'Falha ao renovar token'));
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao renovar token: $e'));
     }
@@ -483,6 +420,20 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(storedMnemonic == passphrase);
     } catch (e) {
       return Left(CacheFailure(message: 'Erro ao validar passphrase: $e'));
+    }
+  }
+
+  // ─── Backup Codes ─────────────────────────────────────────────────────────────
+  @override
+  Future<Either<Failure, List<String>>> getBackupCodes() async {
+    try {
+      final codes = await localDataSource.getBackupCodes();
+      if (codes != null && codes.isNotEmpty) {
+        return Right(codes);
+      }
+      return const Left(CacheFailure(message: 'Nenhum código de backup encontrado'));
+    } catch (e) {
+      return Left(CacheFailure(message: 'Erro ao obter os códigos de backup: $e'));
     }
   }
 }

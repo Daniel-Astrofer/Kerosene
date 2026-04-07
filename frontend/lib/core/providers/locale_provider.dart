@@ -13,11 +13,13 @@ class LocaleState {
   }
 }
 
-class LocaleNotifier extends StateNotifier<LocaleState> {
+class LocaleNotifier extends Notifier<LocaleState> {
   static const String _localeKey = 'app_locale';
 
-  LocaleNotifier() : super(LocaleState(PlatformDispatcher.instance.locale)) {
+  @override
+  LocaleState build() {
     _loadLocale();
+    return LocaleState(PlatformDispatcher.instance.locale);
   }
 
   Future<void> _loadLocale() async {
@@ -35,8 +37,6 @@ class LocaleNotifier extends StateNotifier<LocaleState> {
   }
 }
 
-final localeProvider = StateNotifierProvider<LocaleNotifier, LocaleState>((
-  ref,
-) {
-  return LocaleNotifier();
-});
+final localeProvider = NotifierProvider<LocaleNotifier, LocaleState>(
+  LocaleNotifier.new,
+);

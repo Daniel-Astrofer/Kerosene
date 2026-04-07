@@ -7,9 +7,11 @@ import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/l10n/app_localizations.dart';
 import 'core/providers/locale_provider.dart';
 import 'features/auth/presentation/screens/welcome_screen.dart';
-import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/auth/presentation/screens/signup/signup_start_screen.dart';
+import 'features/auth/presentation/screens/login_username_screen.dart';
+import 'features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
+import 'features/home/presentation/screens/home_loading_screen.dart';
+import 'features/auth/presentation/screens/server_unavailable_screen.dart';
 import 'features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'features/wallet/presentation/screens/send_money_screen.dart';
 import 'core/services/background_service.dart';
@@ -17,11 +19,11 @@ import 'core/services/notification_service.dart'
     as local_notifications; // Alias for local notification service
 import 'features/transactions/presentation/screens/deposits_screen.dart';
 import 'core/services/audio_service.dart';
+import 'core/providers/tor_providers.dart';
 import 'core/services/tor_service.dart';
 import 'core/config/app_config.dart';
-import 'features/debug/presentation/screens/screen_gallery_screen.dart';
 
-
+import 'features/auth/controller/auth_controller.dart';
 import 'shared/widgets/offline_overlay.dart';
 import 'core/utils/snackbar_helper.dart';
 
@@ -48,20 +50,39 @@ void main() async {
   // Initialize Audio Service (Pre-cache synth sounds)
   await AudioService.instance.init();
 
+  // Inicializar SharedPreferences
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+    ],
+  );
+
   // 🧅 INITIALIZE TOR MANDATORY (Only Network Layer)
   try {
     debugPrint('🚀 Starting Tor Network Bootstrap...');
-    await TorService.instance.start();
-    debugPrint('✅ Tor Network Ready.');
+    final bool torStarted = await TorService.instance.start();
+    AppConfig.isTorEnabled = torStarted;
 
-    // Start local relay to the .onion backend
-    // By tunneling our API through a raw TCP socket, we completely bypass Dart's limits
-    final host = Uri.parse(AppConfig.onionBaseUrl).host;
-    final int relayPort = await TorService.instance.startRelay(host, 80);
-    AppConfig.apiUrl = 'http://127.0.0.1:$relayPort';
-    debugPrint('🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> $host');
+    if (torStarted) {
+      debugPrint('✅ Tor Network Ready.');
+      // Start local relay to the .onion backend
+      final host = Uri.parse(AppConfig.onionBaseUrl).host;
+      final int relayPort = await TorService.instance.startRelay(host, 80);
+      final newApiUrl = 'http://127.0.0.1:$relayPort';
+      AppConfig.apiUrl = newApiUrl;
+      
+      // Update the reactive provider so ApiClient and WebSocket rebuild
+      container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
+      
+      debugPrint('🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host');
+    } else {
+      debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
+    }
   } catch (e) {
     debugPrint('❌ CRITICAL ERROR: Tor or Relay failed to start: $e');
+    AppConfig.isTorEnabled = false;
   }
 
   // Aumentar o limite do cachê de imagens para acomodar texturas premium
@@ -69,15 +90,9 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024;
   PaintingBinding.instance.imageCache.maximumSize = 300;
 
-  // Inicializar SharedPreferences
-  final sharedPreferences = await SharedPreferences.getInstance();
-
   runApp(
-    ProviderScope(
-      overrides: [
-        // Override do provider de SharedPreferences
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const MyApp(),
     ),
   );
@@ -111,16 +126,32 @@ class MyApp extends ConsumerWidget {
         return supportedLocales.first; // Retorna EN por padrão se não suportado
       },
       builder: (context, child) => OfflineOverlay(child: child!),
-      home: const WelcomeScreen(),
+      home: Consumer(
+        builder: (context, ref, child) {
+          final authState = ref.watch(authControllerProvider);
+          if (authState is AuthInitial || authState is AuthLoading) {
+            // Se ainda não determinou se tem sessão ou não,
+            // fica numa tela preta vazia para não piscar o WelcomeScreen.
+            return const Scaffold(backgroundColor: Colors.black);
+          }
+          if (authState is AuthAuthenticated) {
+            return const HomeLoadingScreen();
+          }
+          if (authState is AuthServerUnavailable) {
+            return const ServerUnavailableScreen();
+          }
+          return const WelcomeScreen();
+        },
+      ),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignupStartScreen(),
+        '/login': (context) => const LoginUsernameScreen(),
+        '/signup': (context) => const SignupFlowScreen(),
         '/home': (context) => const HomeScreen(),
+        '/home_loading': (context) => const HomeLoadingScreen(),
         '/create_wallet': (context) => const CreateWalletScreen(),
         '/send-money': (context) => const SendMoneyScreen(),
         '/deposits': (context) => const DepositsScreen(),
-        '/gallery': (context) => const ScreenGalleryScreen(),
       },
     );
   }

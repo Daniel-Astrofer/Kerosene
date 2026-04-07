@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/wallet.dart';
 import '../repositories/wallet_repository.dart';
+import '../repositories/ledger_repository.dart';
 
 class FindWalletUseCase {
   final WalletRepository repository;
@@ -45,7 +46,7 @@ class DeleteWalletUseCase {
 }
 
 class GetLedgerBalanceUseCase {
-  final WalletRepository repository;
+  final LedgerRepository repository;
 
   GetLedgerBalanceUseCase(this.repository);
 
@@ -55,7 +56,7 @@ class GetLedgerBalanceUseCase {
 }
 
 class DeleteLedgerUseCase {
-  final WalletRepository repository;
+  final LedgerRepository repository;
 
   DeleteLedgerUseCase(this.repository);
 

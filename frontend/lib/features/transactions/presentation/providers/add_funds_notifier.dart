@@ -9,21 +9,20 @@ import '../../../wallet/presentation/providers/wallet_provider.dart'
 import '../../../../core/utils/transaction_signer.dart';
 import '../state/add_funds_state.dart';
 
-class AddFundsNotifier extends StateNotifier<AddFundsState> {
-  final CreateUnsignedTransactionUseCase createUnsignedTransactionUseCase;
-  final BroadcastTransactionUseCase broadcastTransactionUseCase;
-  final GetDepositAddressUseCase getDepositAddressUseCase;
-  final CreatePaymentLinkUseCase createPaymentLinkUseCase;
+class AddFundsNotifier extends Notifier<AddFundsState> {
+  late CreateUnsignedTransactionUseCase createUnsignedTransactionUseCase;
+  late BroadcastTransactionUseCase broadcastTransactionUseCase;
+  late GetDepositAddressUseCase getDepositAddressUseCase;
+  late CreatePaymentLinkUseCase createPaymentLinkUseCase;
 
-  final Ref ref;
-
-  AddFundsNotifier({
-    required this.createUnsignedTransactionUseCase,
-    required this.broadcastTransactionUseCase,
-    required this.getDepositAddressUseCase,
-    required this.createPaymentLinkUseCase,
-    required this.ref,
-  }) : super(const AddFundsInitial());
+  @override
+  AddFundsState build() {
+    createUnsignedTransactionUseCase = ref.watch(createUnsignedTransactionUseCaseProvider);
+    broadcastTransactionUseCase = ref.watch(broadcastTransactionUseCaseProvider);
+    getDepositAddressUseCase = ref.watch(getDepositAddressUseCaseProvider);
+    createPaymentLinkUseCase = ref.watch(createPaymentLinkUseCaseProvider);
+    return const AddFundsInitial();
+  }
 
   Future<void> loadDepositAddress() async {
     state = const AddFundsLoading(message: 'Loading deposit address...');
@@ -110,19 +109,4 @@ class AddFundsNotifier extends StateNotifier<AddFundsState> {
   }
 }
 
-final addFundsProvider = StateNotifierProvider<AddFundsNotifier, AddFundsState>(
-  (ref) {
-    final createUnsigned = ref.watch(createUnsignedTransactionUseCaseProvider);
-    final broadcast = ref.watch(broadcastTransactionUseCaseProvider);
-    final getAddress = ref.watch(getDepositAddressUseCaseProvider);
-    final createPaymentLink = ref.watch(createPaymentLinkUseCaseProvider);
-
-    return AddFundsNotifier(
-      createUnsignedTransactionUseCase: createUnsigned,
-      broadcastTransactionUseCase: broadcast,
-      getDepositAddressUseCase: getAddress,
-      createPaymentLinkUseCase: createPaymentLink,
-      ref: ref,
-    );
-  },
-);
+final addFundsProvider = NotifierProvider<AddFundsNotifier, AddFundsState>(AddFundsNotifier.new);

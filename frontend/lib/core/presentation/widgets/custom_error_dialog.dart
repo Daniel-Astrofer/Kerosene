@@ -1,50 +1,129 @@
 import 'package:flutter/material.dart';
-import 'animated_error_popup.dart';
-
-String _getFriendlyMessage(String message) {
-  final lower = message.toLowerCase();
-
-  if (lower.contains("insufficient balance") ||
-      lower.contains("saldo insuficiente")) {
-    return "Insufficient balance to complete this transaction.";
-  }
-  if (lower.contains("user not found") ||
-      lower.contains("usuário não existe") ||
-      lower.contains("user does not exist")) {
-    return "The recipient user could not be found. Please check the address or username.";
-  }
-  if (lower.contains("invalid address") ||
-      lower.contains("endereço inválido")) {
-    return "The Bitcoin address provided is invalid. Please verify and try again.";
-  }
-  if (lower.contains("timeout") || lower.contains("tempo esgotado")) {
-    return "Connection timeout. Please check your internet and try again.";
-  }
-  if (lower.contains("401") ||
-      lower.contains("unauthorized") ||
-      lower.contains("não autorizado")) {
-    return "Session expired. Please log in again.";
-  }
-
-  // Se tem json puro
-  if (message.contains("{") && message.contains("}")) {
-    return "An unexpected error occurred. Please try again later.";
-  }
-
-  return message;
-}
+import '../../theme/cyber_theme.dart';
 
 void showCustomErrorDialog(
   BuildContext context,
   String message, {
+  String title = 'ERRO',
   VoidCallback? onRetry,
   VoidCallback? onGoBack,
 }) {
-  final friendlyMessage = _getFriendlyMessage(message);
-  AnimatedErrorPopup.show(
-    context,
-    message: friendlyMessage,
-    onRetry: onRetry,
-    onGoBack: onGoBack,
+  showDialog(
+    context: context,
+    builder: (context) => CustomErrorDialog(
+      title: title,
+      message: message,
+      onRetry: onRetry,
+      onGoBack: onGoBack,
+    ),
   );
+}
+
+class CustomErrorDialog extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback? onRetry;
+  final VoidCallback? onGoBack;
+
+  const CustomErrorDialog({
+    super.key,
+    required this.title,
+    required this.message,
+    this.onRetry,
+    this.onGoBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: CyberTheme.bgCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: CyberTheme.neonRed.withOpacity(0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: CyberTheme.neonRed.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: CyberTheme.neonRed,
+              size: 48,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title.toUpperCase(),
+              style: CyberTheme.heading(size: 20, color: CyberTheme.neonRed),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                fontSize: 14,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            if (onRetry != null || onGoBack != null) 
+              Row(
+                children: [
+                  if (onGoBack != null)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          onGoBack!();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                          side: BorderSide(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.24)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('VOLTAR'),
+                      ),
+                    ),
+                  if (onGoBack != null && onRetry != null) const SizedBox(width: 12),
+                  if (onRetry != null)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          onRetry!();
+                        },
+                        style: CyberTheme.neonButton(CyberTheme.neonRed),
+                        child: const Text('TENTAR NOVAMENTE'),
+                      ),
+                    ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: CyberTheme.neonButton(CyberTheme.neonRed),
+                  child: const Text('ENTENDIDO'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
