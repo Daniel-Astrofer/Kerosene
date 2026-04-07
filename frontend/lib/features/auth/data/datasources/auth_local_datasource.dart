@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/security/secure_storage_service.dart';
 import '../models/user_model.dart';
 
 /// Interface do AuthLocalDataSource
@@ -32,6 +33,15 @@ abstract class AuthLocalDataSource {
 
   /// Remover TOTP secret
   Future<void> removeTotpSecret();
+
+  /// Salvar Backup Codes
+  Future<void> saveBackupCodes(List<String> codes);
+
+  /// Obter Backup Codes
+  Future<List<String>?> getBackupCodes();
+
+  /// Remover Backup Codes
+  Future<void> removeBackupCodes();
 
   /// Verificar se está autenticado
   Future<bool> isAuthenticated();
@@ -64,13 +74,17 @@ abstract class AuthLocalDataSource {
 /// Implementação do AuthLocalDataSource
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   final SharedPreferences sharedPreferences;
+  final SecureStorageService secureStorage;
 
-  AuthLocalDataSourceImpl(this.sharedPreferences);
+  AuthLocalDataSourceImpl(
+    this.sharedPreferences, {
+    SecureStorageService? secureStorage,
+  }) : secureStorage = secureStorage ?? SecureStorageService();
 
   @override
   Future<void> saveToken(String token) async {
     try {
-      await sharedPreferences.setString(AppConfig.authTokenKey, token);
+      await secureStorage.write(key: AppConfig.authTokenKey, value: token);
     } catch (e) {
       throw CacheException(message: 'Erro ao salvar token: $e');
     }
@@ -79,7 +93,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<String?> getToken() async {
     try {
-      return sharedPreferences.getString(AppConfig.authTokenKey);
+      return await secureStorage.read(key: AppConfig.authTokenKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao obter token: $e');
     }
@@ -88,7 +102,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> removeToken() async {
     try {
-      await sharedPreferences.remove(AppConfig.authTokenKey);
+      await secureStorage.delete(key: AppConfig.authTokenKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao remover token: $e');
     }
@@ -129,7 +143,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> saveTotpSecret(String secret) async {
     try {
-      await sharedPreferences.setString(AppConfig.totpSecretKey, secret);
+      await secureStorage.write(key: AppConfig.totpSecretKey, value: secret);
     } catch (e) {
       throw CacheException(message: 'Erro ao salvar TOTP secret: $e');
     }
@@ -138,7 +152,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<String?> getTotpSecret() async {
     try {
-      return sharedPreferences.getString(AppConfig.totpSecretKey);
+      return await secureStorage.read(key: AppConfig.totpSecretKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao obter TOTP secret: $e');
     }
@@ -147,9 +161,43 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> removeTotpSecret() async {
     try {
-      await sharedPreferences.remove(AppConfig.totpSecretKey);
+      await secureStorage.delete(key: AppConfig.totpSecretKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao remover TOTP secret: $e');
+    }
+  }
+
+  @override
+  Future<void> saveBackupCodes(List<String> codes) async {
+    try {
+      await secureStorage.write(
+        key: AppConfig.backupCodesKey,
+        value: jsonEncode(codes),
+      );
+    } catch (e) {
+      throw CacheException(message: 'Erro ao salvar backup codes: $e');
+    }
+  }
+
+  @override
+  Future<List<String>?> getBackupCodes() async {
+    try {
+      final raw = await secureStorage.read(key: AppConfig.backupCodesKey);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return null;
+      return decoded.map((item) => item.toString()).toList();
+    } catch (e) {
+      throw CacheException(message: 'Erro ao obter backup codes: $e');
+    }
+  }
+
+  @override
+  Future<void> removeBackupCodes() async {
+    try {
+      await secureStorage.delete(key: AppConfig.backupCodesKey);
+    } catch (e) {
+      throw CacheException(message: 'Erro ao remover backup codes: $e');
     }
   }
 
@@ -169,7 +217,10 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
       await removeToken();
       await removeUser();
       await removeTotpSecret();
-      await sharedPreferences.remove('auth_mnemonic');
+      await removeBackupCodes();
+      await secureStorage.delete(key: 'auth_mnemonic');
+      await secureStorage.delete(key: 'saved_username');
+      await secureStorage.delete(key: 'saved_passphrase');
     } catch (e) {
       throw CacheException(message: 'Erro ao limpar dados: $e');
     }
@@ -178,7 +229,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> saveMnemonic(String mnemonic) async {
     try {
-      await sharedPreferences.setString('auth_mnemonic', mnemonic);
+      await secureStorage.write(key: 'auth_mnemonic', value: mnemonic);
     } catch (e) {
       throw CacheException(message: 'Erro ao salvar mnemonic: $e');
     }
@@ -187,7 +238,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<String?> getMnemonic() async {
     try {
-      return sharedPreferences.getString('auth_mnemonic');
+      return await secureStorage.read(key: 'auth_mnemonic');
     } catch (e) {
       throw CacheException(message: 'Erro ao obter mnemonic: $e');
     }
@@ -217,10 +268,8 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> saveCredentials(String username, String passphrase) async {
     try {
-      await sharedPreferences.setString('saved_username', username);
-      // NOTE: storing passphrase in plaintext is not secure for production.
-      // TODO: Move to flutter_secure_storage
-      await sharedPreferences.setString('saved_passphrase', passphrase);
+      await secureStorage.write(key: 'saved_username', value: username);
+      await secureStorage.write(key: 'saved_passphrase', value: passphrase);
     } catch (e) {
       throw CacheException(message: 'Erro ao salvar credenciais: $e');
     }
@@ -229,8 +278,8 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<Map<String, String>?> getCredentials() async {
     try {
-      final username = sharedPreferences.getString('saved_username');
-      final passphrase = sharedPreferences.getString('saved_passphrase');
+      final username = await secureStorage.read(key: 'saved_username');
+      final passphrase = await secureStorage.read(key: 'saved_passphrase');
 
       if (username != null && passphrase != null) {
         return {'username': username, 'passphrase': passphrase};
@@ -244,8 +293,8 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> removeCredentials() async {
     try {
-      await sharedPreferences.remove('saved_username');
-      await sharedPreferences.remove('saved_passphrase');
+      await secureStorage.delete(key: 'saved_username');
+      await secureStorage.delete(key: 'saved_passphrase');
     } catch (e) {
       throw CacheException(message: 'Erro ao remover credenciais: $e');
     }

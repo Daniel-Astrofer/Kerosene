@@ -33,17 +33,20 @@ class AuthAuthenticated extends AuthState {
 
 class AuthTotpVerified extends AuthState {
   final String sessionId;
+  final String username;
 
-  const AuthTotpVerified(this.sessionId);
+  const AuthTotpVerified(this.sessionId, this.username);
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AuthTotpVerified && other.sessionId == sessionId;
+    return other is AuthTotpVerified && 
+           other.sessionId == sessionId &&
+           other.username == username;
   }
 
   @override
-  int get hashCode => sessionId.hashCode;
+  int get hashCode => sessionId.hashCode ^ username.hashCode;
 }
 
 /// Estado não autenticado
@@ -54,17 +57,18 @@ class AuthUnauthenticated extends AuthState {
 /// Estado de erro
 class AuthError extends AuthState {
   final String message;
+  final int? statusCode;
 
-  const AuthError(this.message);
+  const AuthError(this.message, {this.statusCode});
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AuthError && other.message == message;
+    return other is AuthError && other.message == message && other.statusCode == statusCode;
   }
 
   @override
-  int get hashCode => message.hashCode;
+  int get hashCode => message.hashCode ^ statusCode.hashCode;
 }
 
 /// Estado indicando que o signup foi iniciado e requer setup de TOTP
@@ -73,12 +77,14 @@ class AuthRequiresTotpSetup extends AuthState {
   final String passphrase;
   final String totpSecret;
   final String qrCodeUri;
+  final List<String> backupCodes;
 
   const AuthRequiresTotpSetup({
     required this.username,
     required this.passphrase,
     required this.totpSecret,
     required this.qrCodeUri,
+    this.backupCodes = const [],
   });
 }
 
@@ -114,12 +120,64 @@ class AuthHardwareVerified extends AuthState {
 /// Estado indicando que o pagamento de onboarding é necessário
 class AuthPaymentRequired extends AuthState {
   final String sessionId;
+  final String paymentLinkId;
   final double amountBtc;
   final String depositAddress;
+  final String paymentStatus;
+  final String? submittedTxid;
+  final String? statusMessage;
+  final String? errorMessage;
+  final bool isSubmitting;
 
   const AuthPaymentRequired({
     required this.sessionId,
+    required this.paymentLinkId,
     required this.amountBtc,
     required this.depositAddress,
+    this.paymentStatus = 'pending',
+    this.submittedTxid,
+    this.statusMessage,
+    this.errorMessage,
+    this.isSubmitting = false,
   });
+
+  AuthPaymentRequired copyWith({
+    String? sessionId,
+    String? paymentLinkId,
+    double? amountBtc,
+    String? depositAddress,
+    String? paymentStatus,
+    String? submittedTxid,
+    String? statusMessage,
+    String? errorMessage,
+    bool? isSubmitting,
+    bool clearError = false,
+  }) {
+    return AuthPaymentRequired(
+      sessionId: sessionId ?? this.sessionId,
+      paymentLinkId: paymentLinkId ?? this.paymentLinkId,
+      amountBtc: amountBtc ?? this.amountBtc,
+      depositAddress: depositAddress ?? this.depositAddress,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      submittedTxid: submittedTxid ?? this.submittedTxid,
+      statusMessage: statusMessage ?? this.statusMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+    );
+  }
+}
+
+/// Estado quando há falha de comunicação com o servidor mas o usuário tem token
+class AuthServerUnavailable extends AuthState {
+  final String message;
+  const AuthServerUnavailable([this.message = 'Servidor indisponível no momento',]);
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is AuthServerUnavailable && other.message == message;
+  }
+
+  @override
+  int get hashCode => message.hashCode;
 }

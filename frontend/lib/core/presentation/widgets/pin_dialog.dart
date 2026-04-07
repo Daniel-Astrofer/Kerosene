@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'fingerprint_scanner.dart';
-import '../../security/app_pin_service.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/security/app_pin_service.dart';
 
 enum _PinMode { setup, enter }
 
-/// A full-screen PIN dialog.
-///
-/// - [isSetup]: true → shows setup flow, false → shows entry flow.
-/// - Returns `true` if authentication/setup succeeded, `false` if cancelled.
+/// A premium full-screen PIN dialog - Refactored
 class PinDialog extends StatefulWidget {
   final bool isSetup;
 
@@ -18,11 +18,15 @@ class PinDialog extends StatefulWidget {
     BuildContext context, {
     required bool isSetup,
   }) async {
-    final result = await showDialog<bool>(
+    final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.92),
-      builder: (_) => PinDialog(isSetup: isSetup),
+      barrierColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
+      pageBuilder: (context, anim1, anim2) => PinDialog(isSetup: isSetup),
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(opacity: anim1, child: child);
+      },
     );
     return result ?? false;
   }
@@ -80,7 +84,7 @@ class _PinDialogState extends State<PinDialog> {
         } else {
           HapticFeedback.heavyImpact();
           setState(() {
-            _error = 'Incorrect PIN. Try again.';
+            _error = 'PIN INCORRETO. TENTE NOVAMENTE.';
             _entered = '';
           });
         }
@@ -91,143 +95,137 @@ class _PinDialogState extends State<PinDialog> {
   String get _title {
     switch (_mode) {
       case _PinMode.setup:
-        return 'Create Security PIN';
+        return 'CRIAR PIN';
       case _PinMode.enter:
-        return 'Enter Security PIN';
+        return 'AUTENTICAÇÃO';
     }
   }
 
   String get _subtitle {
     switch (_mode) {
       case _PinMode.setup:
-        return 'Choose a 6-digit PIN to secure the app';
+        return 'Escolha um PIN de 6 dígitos para proteger sua carteira.';
       case _PinMode.enter:
-        return 'This local device PIN is the master backup\nthat seals the local trust framework.';
+        return 'Digite seu PIN de segurança para processar esta operação.';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.85)),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: false,
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 40),
-              // App Logo - Using centered circular image for premium feel
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 1000),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.scale(
-                      scale: 0.8 + (0.2 * value),
-                      child: const CyberFingerprintScanner(size: 120),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 32),
-
+              const SizedBox(height: AppSpacing.xxl),
+              _buildVisualIndicator().animate().scale().fade(),
+              const SizedBox(height: AppSpacing.xl),
               Text(
                 _title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                  fontFamily: 'HubotSansExpanded',
+                style: Theme.of(context).textTheme.displayLarge!.copyWith(letterSpacing: 4),
+              ).animate().fade().slideY(begin: 0.1, end: 0),
+              const SizedBox(height: AppSpacing.sm),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Text(
+                  _subtitle,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5)),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 14,
-                  letterSpacing: 0.5,
-                ),
-              ),
+              ).animate(delay: 100.ms).fade(),
 
               const Spacer(),
 
-              // PIN dots with subtle glow
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_pinLength, (i) {
-                  final filled = i < _entered.length;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: filled
-                          ? const Color(0xFF00F0FF)
-                          : Colors.white.withValues(alpha: 0.1),
-                    ),
-                  );
-                }),
-              ),
+              _buildDots().animate().fade(),
+              const SizedBox(height: AppSpacing.md),
+              _buildErrorMessage(),
 
-              // Error message
-              SizedBox(
-                height: 40,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: _error != null
-                      ? Padding(
-                          key: ValueKey(_error),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ),
+              const Spacer(),
 
-              const SizedBox(height: 20),
+              _buildModernKeypad().animate(delay: 200.ms).fade().slideY(begin: 0.2, end: 0),
 
-              // Keypad - Futuristic Grid
-              _buildModernKeypad(),
-
-              const SizedBox(height: 40),
-
-              // Cancel Action
               if (!widget.isSetup)
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white.withValues(alpha: 0.4),
-                  ),
-                  child: const Text(
-                    'CANCEL AUTHENTICATION',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(
+                      'CANCELAR OPERAÇÃO',
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
                     ),
                   ),
-                ),
-              const SizedBox(height: 20),
+                ).animate(delay: 400.ms).fade(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildVisualIndicator() {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 2),
+        boxShadow: [
+          BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), blurRadius: 30, spreadRadius: 5),
+        ],
+      ),
+      child: Center(
+        child: Icon(LucideIcons.shieldCheck, color: Theme.of(context).colorScheme.primary, size: 48),
+      ),
+    );
+  }
+
+  Widget _buildDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_pinLength, (i) {
+        final filled = i < _entered.length;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: filled ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            border: Border.all(
+              color: filled ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.3) : Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+              width: 2,
+            ),
+            boxShadow: [
+              if (filled)
+                BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), blurRadius: 10, spreadRadius: 1),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildErrorMessage() {
+    return SizedBox(
+      height: 24,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _error != null
+            ? Text(
+                _error!,
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w900, letterSpacing: 1),
+                key: ValueKey(_error),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }
@@ -237,60 +235,62 @@ class _PinDialogState extends State<PinDialog> {
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['C', '0', '⌫'],
+      ['C', '0', '←'],
     ];
 
-    return Column(
-      children: keys.map((row) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: row.map((key) {
-            final isAction = key == '⌫' || key == 'C';
-            return Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapDown: (_) {
-                  HapticFeedback.mediumImpact();
-                  if (key == '⌫') {
-                    _onDelete();
-                  } else if (key == 'C') {
-                    setState(() {
-                      _entered = '';
-                      _error = null;
-                    });
-                  } else {
-                    _onDigit(key);
-                  }
-                },
-                child: Container(
-                  width: 75,
-                  height: 75,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.03),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      width: 1,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    key,
-                    style: TextStyle(
-                      color: isAction
-                          ? const Color(0xFF00F0FF).withValues(alpha: 0.8)
-                          : Colors.white,
-                      fontSize: key == '⌫' ? 24 : 28,
-                      fontWeight: FontWeight.w300,
-                    ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: Column(
+        children: keys.map((row) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: row.map((key) => _buildKey(key)).toList(),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildKey(String key) {
+    final isSpecial = key == '←' || key == 'C';
+    
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      child: GestureDetector(
+        onTapDown: (_) {
+          HapticFeedback.lightImpact();
+          if (key == '←') {
+            _onDelete();
+          } else if (key == 'C') {
+            setState(() {
+              _entered = '';
+              _error = null;
+            });
+          } else {
+            _onDigit(key);
+          }
+        },
+        child: Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05), width: 1.5),
+          ),
+          alignment: Alignment.center,
+          child: isSpecial && key == '←'
+              ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 24)
+              : Text(
+                  key,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    color: isSpecial && key == 'C' ? Theme.of(context).colorScheme.error.withOpacity(0.7) : Theme.of(context).colorScheme.onPrimary,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
-              ),
-            );
-          }).toList(),
-        );
-      }).toList(),
+        ),
+      ),
     );
   }
 }

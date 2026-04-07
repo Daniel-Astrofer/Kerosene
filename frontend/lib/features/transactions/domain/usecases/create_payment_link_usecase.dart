@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/payment_link.dart';
-import '../../domain/repositories/transaction_repository.dart';
+import '../../../wallet/domain/repositories/ledger_repository.dart';
 
 class CreatePaymentLinkUseCase {
-  final TransactionRepository repository;
+  final LedgerRepository repository;
 
   CreatePaymentLinkUseCase(this.repository);
 
@@ -12,16 +12,11 @@ class CreatePaymentLinkUseCase {
     required double amount,
     required String receiverWalletName,
   }) async {
-    try {
-      final result = await repository.createPaymentRequest(
-        amount: amount,
-        receiverWalletName: receiverWalletName,
-      );
-      return Right(result);
-    } catch (e) {
-      return Left(
-        UnknownFailure(message: 'Failed to create payment request: $e'),
-      );
-    }
+    final result = await repository.createPaymentRequest(
+      amount: amount,
+      receiverWalletName: receiverWalletName,
+    );
+
+    return result.map((data) => PaymentLink.fromJson(data));
   }
 }

@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'price_provider.dart';
 
-class CurrencyNotifier extends StateNotifier<Currency> {
+class CurrencyNotifier extends Notifier<Currency> {
   static const String _currencyKey = 'app_currency';
 
-  CurrencyNotifier() : super(Currency.usd) {
+  @override
+  Currency build() {
     _loadCurrency();
+    return Currency.usd;
   }
 
   Future<void> _loadCurrency() async {
@@ -51,8 +53,6 @@ class CurrencyNotifier extends StateNotifier<Currency> {
   }
 }
 
-final currencyProvider = StateNotifierProvider<CurrencyNotifier, Currency>((
-  ref,
-) {
-  return CurrencyNotifier();
-});
+final currencyProvider = NotifierProvider<CurrencyNotifier, Currency>(
+  CurrencyNotifier.new,
+);

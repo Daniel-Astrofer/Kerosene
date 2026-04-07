@@ -1,16 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/price_provider.dart';
-import '../../../auth/presentation/providers/auth_provider.dart'
-    show authLocalDataSourceProvider, apiClientProvider;
+import 'package:teste/features/auth/controller/auth_providers.dart';
+import 'package:teste/core/network/api_client_provider.dart';
 import '../../../../core/services/wallet_security_service.dart';
 // [NEW]
 import '../../../../core/utils/transaction_signer.dart';
 import '../../data/datasources/wallet_remote_datasource.dart';
 import '../../data/repositories/wallet_repository_impl.dart';
-import '../../../transactions/data/datasources/transaction_remote_datasource.dart'; // [NEW]
-import '../../../transactions/data/repositories/transaction_repository_impl.dart'; // [NEW]
-import '../../../transactions/domain/repositories/transaction_repository.dart'; // [NEW]
+import '../../data/datasources/ledger_remote_datasource.dart';
+import '../../data/repositories/ledger_repository_impl.dart';
+import '../../domain/repositories/ledger_repository.dart';
+import '../../../transactions/data/datasources/transaction_remote_datasource.dart';
+import '../../../transactions/data/repositories/transaction_repository_impl.dart';
+import '../../../transactions/domain/repositories/transaction_repository.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/wallet.dart';
 import '../../domain/repositories/wallet_repository.dart';
@@ -25,15 +28,26 @@ import '../../domain/usecases/get_deposit_address_usecase.dart';
 import '../state/wallet_state.dart';
 import '../state/create_wallet_state.dart';
 
-// ==================== Repository Provider ====================
+// ==================== Repository Providers ====================
+
+final ledgerRepositoryProvider = Provider<LedgerRepository>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  final remoteDataSource = LedgerRemoteDataSourceImpl(apiClient);
+  return LedgerRepositoryImpl(remoteDataSource: remoteDataSource);
+});
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   final remoteDataSource = WalletRemoteDataSourceImpl(apiClient);
+  final ledgerRemoteDataSource = LedgerRemoteDataSourceImpl(apiClient);
+  final transactionRemoteDataSource =
+      TransactionRemoteDataSourceImpl(apiClient);
   final authLocalDataSource = ref.watch(authLocalDataSourceProvider);
 
   return WalletRepositoryImpl(
     remoteDataSource: remoteDataSource,
+    ledgerRemoteDataSource: ledgerRemoteDataSource,
+    transactionRemoteDataSource: transactionRemoteDataSource,
     authLocalDataSource: authLocalDataSource,
     walletSecurityService: WalletSecurityService(),
   );
@@ -58,7 +72,7 @@ final getWalletsUseCaseProvider = Provider<GetWalletsUseCase>((ref) {
 });
 
 final getTransactionsUseCaseProvider = Provider<GetTransactionsUseCase>((ref) {
-  final repository = ref.watch(walletRepositoryProvider);
+  final repository = ref.watch(ledgerRepositoryProvider);
   return GetTransactionsUseCase(repository);
 });
 
@@ -91,26 +105,26 @@ final deleteWalletUseCaseProvider = Provider<DeleteWalletUseCase>((ref) {
 final getLedgerBalanceUseCaseProvider = Provider<GetLedgerBalanceUseCase>((
   ref,
 ) {
-  final repository = ref.watch(walletRepositoryProvider);
+  final repository = ref.watch(ledgerRepositoryProvider);
   return GetLedgerBalanceUseCase(repository);
 });
 
 final deleteLedgerUseCaseProvider = Provider<DeleteLedgerUseCase>((ref) {
-  final repository = ref.watch(walletRepositoryProvider);
+  final repository = ref.watch(ledgerRepositoryProvider);
   return DeleteLedgerUseCase(repository);
 });
 
 final createUnsignedTransactionUseCaseProvider =
     Provider<CreateUnsignedTransactionUseCase>((ref) {
-      final repository = ref.watch(transactionRepositoryProvider);
-      return CreateUnsignedTransactionUseCase(repository);
-    });
+  final repository = ref.watch(transactionRepositoryProvider);
+  return CreateUnsignedTransactionUseCase(repository);
+});
 
 final broadcastTransactionUseCaseProvider =
     Provider<BroadcastTransactionUseCase>((ref) {
-      final repository = ref.watch(transactionRepositoryProvider);
-      return BroadcastTransactionUseCase(repository);
-    });
+  final repository = ref.watch(transactionRepositoryProvider);
+  return BroadcastTransactionUseCase(repository);
+});
 
 final getDepositAddressUseCaseProvider = Provider<GetDepositAddressUseCase>((
   ref,
@@ -122,21 +136,26 @@ final getDepositAddressUseCaseProvider = Provider<GetDepositAddressUseCase>((
 // ==================== State Notifiers ====================
 
 /// StateNotifier para gerenciar criação de carteiras
-class CreateWalletNotifier extends StateNotifier<CreateWalletState> {
-  final CreateWalletUseCase createWalletUseCase;
+class CreateWalletNotifier extends Notifier<CreateWalletState> {
+  late CreateWalletUseCase createWalletUseCase;
 
-  CreateWalletNotifier({required this.createWalletUseCase})
-    : super(const CreateWalletInitial());
+  @override
+  CreateWalletState build() {
+    createWalletUseCase = ref.watch(createWalletUseCaseProvider);
+    return const CreateWalletInitial();
+  }
 
   Future<void> createWallet({
     required String name,
     required String passphrase,
+    String accountSecurity = 'STANDARD',
   }) async {
     state = const CreateWalletLoading();
 
     final result = await createWalletUseCase(
       name: name,
       passphrase: passphrase,
+      accountSecurity: accountSecurity,
     );
 
     result.fold(
@@ -147,64 +166,29 @@ class CreateWalletNotifier extends StateNotifier<CreateWalletState> {
 }
 
 final createWalletProvider =
-    StateNotifierProvider<CreateWalletNotifier, CreateWalletState>((ref) {
-      final useCase = ref.watch(createWalletUseCaseProvider);
-      return CreateWalletNotifier(createWalletUseCase: useCase);
-    });
+    NotifierProvider<CreateWalletNotifier, CreateWalletState>(
+        CreateWalletNotifier.new);
 
 /// StateNotifier para gerenciar estado de carteiras
-class WalletNotifier extends StateNotifier<WalletState> {
-  final GetWalletsUseCase getWalletsUseCase;
-  final WalletRepository walletRepository;
-  final Ref ref; // Add ref
+class WalletNotifier extends Notifier<WalletState> {
+  late GetWalletsUseCase getWalletsUseCase;
+  late WalletRepository walletRepository;
 
-  WalletNotifier({
-    required this.getWalletsUseCase,
-    required this.walletRepository,
-    required this.ref,
-  }) : super(const WalletInitial());
+  @override
+  WalletState build() {
+    getWalletsUseCase = ref.watch(getWalletsUseCaseProvider);
+    walletRepository = ref.watch(walletRepositoryProvider);
+    return const WalletInitial();
+  }
   // Não chamamos _loadWallets() aqui para evitar duplicação:
   // o HomeScreen.initState chama refresh() via addPostFrameCallback.
-
-  static final List<Wallet> _mockWallets = [
-    Wallet(
-      id: 'mock_1',
-      name: 'Sovereign Black',
-      address: 'bc1q9w6pkv6n5v9m6zv8v7m6zv8v7m6zv8v7m6z',
-      balance: 1.2548,
-      derivationPath: "m/84'/0'/0'/0/0",
-      type: WalletType.nativeSegwit,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Wallet(
-      id: 'mock_2',
-      name: 'Industrial Metal',
-      address: 'bc1q8x5v4n3m2l1k0j9i8h7g6f5e4d3c2b1a0z',
-      balance: 0.0426,
-      derivationPath: "m/84'/0'/0'/0/1",
-      type: WalletType.nativeSegwit,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Wallet(
-      id: 'mock_3',
-      name: 'Cyber Deep',
-      address: 'bc1q7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j',
-      balance: 0.0089,
-      derivationPath: "m/84'/0'/0'/0/2",
-      type: WalletType.nativeSegwit,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-  ];
 
   /// Carrega carteiras e taxa de câmbio
   Future<void> _loadWallets() async {
     state = const WalletLoading();
 
     final walletsResult = await getWalletsUseCase();
-    
+
     // Obter taxa de câmbio (BTC/USD)
     final btcPriceAsync = ref.read(btcPriceProvider);
     final double btcToUsdRate = btcPriceAsync.when(
@@ -215,18 +199,13 @@ class WalletNotifier extends StateNotifier<WalletState> {
 
     walletsResult.fold(
       (failure) {
-        // Mesmo com erro, mostramos os mocks para não quebrar a UI
-        state = WalletLoaded(
-          wallets: _mockWallets,
-          selectedWallet: _mockWallets.first,
-          btcToUsdRate: btcToUsdRate,
-        );
+        // If we fail to fetch wallets (e.g. 403, 401, timeout), we should emit an Error state, NOT an empty loaded state!
+        state = WalletError(failure.message);
       },
       (wallets) {
-        final combinedWallets = [...wallets, ..._mockWallets];
         state = WalletLoaded(
-          wallets: combinedWallets,
-          selectedWallet: combinedWallets.isNotEmpty ? combinedWallets.first : null,
+          wallets: wallets,
+          selectedWallet: wallets.isNotEmpty ? wallets.first : null,
           btcToUsdRate: btcToUsdRate,
         );
       },
@@ -291,26 +270,19 @@ class WalletNotifier extends StateNotifier<WalletState> {
   }
 }
 
-final walletProvider = StateNotifierProvider<WalletNotifier, WalletState>((
-  ref,
-) {
-  final getWalletsUseCase = ref.watch(getWalletsUseCaseProvider);
-  final walletRepository = ref.watch(walletRepositoryProvider);
-
-  return WalletNotifier(
-    getWalletsUseCase: getWalletsUseCase,
-    walletRepository: walletRepository,
-    ref: ref,
-  );
-});
+final walletProvider =
+    NotifierProvider<WalletNotifier, WalletState>(WalletNotifier.new);
 
 // ==================== Transaction Notifier ====================
 
-class TransactionNotifier extends StateNotifier<TransactionState> {
-  final GetTransactionsUseCase getTransactionsUseCase;
+class TransactionNotifier extends Notifier<TransactionState> {
+  late GetTransactionsUseCase getTransactionsUseCase;
 
-  TransactionNotifier({required this.getTransactionsUseCase})
-    : super(const TransactionInitial());
+  @override
+  TransactionState build() {
+    getTransactionsUseCase = ref.watch(getTransactionsUseCaseProvider);
+    return const TransactionInitial();
+  }
 
   Future<void> loadTransactions(String walletId, {int limit = 50}) async {
     state = const TransactionLoading();
@@ -334,27 +306,23 @@ class TransactionNotifier extends StateNotifier<TransactionState> {
 }
 
 final transactionProvider =
-    StateNotifierProvider<TransactionNotifier, TransactionState>((ref) {
-      final getTransactionsUseCase = ref.watch(getTransactionsUseCaseProvider);
-      return TransactionNotifier(
-        getTransactionsUseCase: getTransactionsUseCase,
-      );
-    });
+    NotifierProvider<TransactionNotifier, TransactionState>(
+        TransactionNotifier.new);
 
 // ==================== Send Money Notifier ====================
 
-class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
-  final SendBitcoinUseCase sendBitcoinUseCase;
-  final WalletRepository walletRepository;
-  final TransactionRepository transactionRepository; // [NEW]
-  final Ref ref;
+class SendMoneyNotifier extends Notifier<SendMoneyState> {
+  late SendBitcoinUseCase sendBitcoinUseCase;
+  late WalletRepository walletRepository;
+  late TransactionRepository transactionRepository;
 
-  SendMoneyNotifier({
-    required this.sendBitcoinUseCase,
-    required this.walletRepository,
-    required this.transactionRepository, // [NEW]
-    required this.ref,
-  }) : super(const SendMoneyInitial());
+  @override
+  SendMoneyState build() {
+    sendBitcoinUseCase = ref.watch(sendBitcoinUseCaseProvider);
+    walletRepository = ref.watch(walletRepositoryProvider);
+    transactionRepository = ref.watch(transactionRepositoryProvider);
+    return const SendMoneyInitial();
+  }
 
   /// Valida endereço e estima taxa
   Future<void> prepareTransaction({
@@ -417,12 +385,12 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
           if (w.address.isNotEmpty) fromAddress = w.address;
         });
 
-        final unsignedResult = await transactionRepository
-            .createUnsignedTransaction(
-              toAddress: toAddress,
-              amount: amountSatoshis / 100000000.0,
-              feeLevel: 'standard',
-            );
+        final unsignedResult =
+            await transactionRepository.createUnsignedTransaction(
+          toAddress: toAddress,
+          amount: amountSatoshis / 100000000.0,
+          feeLevel: 'standard',
+        );
 
         await unsignedResult.fold(
           (failure) async {
@@ -438,12 +406,12 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
             );
 
             // 4. Broadcast
-            final broadcastResult = await transactionRepository
-                .broadcastTransaction(
-                  rawTxHex: signedTxHex,
-                  toAddress: toAddress,
-                  amount: amountSatoshis / 100000000.0,
-                );
+            final broadcastResult =
+                await transactionRepository.broadcastTransaction(
+              rawTxHex: signedTxHex,
+              toAddress: toAddress,
+              amount: amountSatoshis / 100000000.0,
+            );
 
             broadcastResult.fold(
               (failure) => state = SendMoneyError(failure.message),
@@ -516,18 +484,7 @@ class SendMoneyNotifier extends StateNotifier<SendMoneyState> {
 }
 
 final sendMoneyProvider =
-    StateNotifierProvider<SendMoneyNotifier, SendMoneyState>((ref) {
-      final sendBitcoinUseCase = ref.watch(sendBitcoinUseCaseProvider);
-      final walletRepository = ref.watch(walletRepositoryProvider);
-      final transactionRepository = ref.watch(transactionRepositoryProvider);
-
-      return SendMoneyNotifier(
-        sendBitcoinUseCase: sendBitcoinUseCase,
-        walletRepository: walletRepository,
-        transactionRepository: transactionRepository,
-        ref: ref,
-      );
-    });
+    NotifierProvider<SendMoneyNotifier, SendMoneyState>(SendMoneyNotifier.new);
 
 // ==================== Total Balance Providers ====================
 
@@ -556,7 +513,22 @@ final totalBalanceUsdProvider = Provider<double?>((ref) {
 
 // ==================== UI State Providers ====================
 
-final balanceVisibilityProvider = StateProvider<bool>((ref) => true);
-final decimalPrecisionProvider = StateProvider<bool>(
-  (ref) => true,
-); // true = 8 digits, false = 2 digits
+class BalanceVisibilityNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+  void toggle() => state = !state;
+}
+
+final balanceVisibilityProvider =
+    NotifierProvider<BalanceVisibilityNotifier, bool>(
+        BalanceVisibilityNotifier.new);
+
+class DecimalPrecisionNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+  void toggle() => state = !state;
+}
+
+final decimalPrecisionProvider =
+    NotifierProvider<DecimalPrecisionNotifier, bool>(
+        DecimalPrecisionNotifier.new);

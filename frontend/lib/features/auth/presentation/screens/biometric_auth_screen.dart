@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/security/biometric_service.dart';
 
+/// Biometric authentication dialog — triggered for secure vault access.
+/// All styling uses AppColors, AppTypography, AppSpacing tokens strictly.
 class BiometricAuthScreen extends StatefulWidget {
   const BiometricAuthScreen({super.key});
 
@@ -8,9 +13,7 @@ class BiometricAuthScreen extends StatefulWidget {
     final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor: const Color(
-        0xFF0F1218,
-      ).withValues(alpha: 0.98), // Very dark blue/black
+      barrierColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
       pageBuilder: (context, animation, secondaryAnimation) {
         return FadeTransition(
           opacity: animation,
@@ -43,7 +46,6 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Automatically trigger biometrics after a short delay to allow screen to render
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 300), _triggerBiometrics);
     });
@@ -51,14 +53,11 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
 
   Future<void> _triggerBiometrics() async {
     final success = await _biometricService.authenticate(
-      localizedReason: 'Acesse seu Cofre com segurança',
+      localizedReason: context.l10n.secureAccess,
     );
     if (mounted) {
       if (success) {
         Navigator.of(context).pop(true);
-      } else {
-        // If biometrics failed or user cancelled the native prompt,
-        // we leave them on this screen so they can try again or use PIN.
       }
     }
   }
@@ -75,7 +74,7 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -84,48 +83,40 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                 alignment: Alignment.topLeft,
                 child: InkWell(
                   onTap: () => Navigator.of(context).pop(false),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppSpacing.lg),
                   child: Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
                     ),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
+                    child: Icon(
+                      LucideIcons.x,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 20,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 60),
+              SizedBox(height: AppSpacing.xxl + AppSpacing.xl),
 
               // Welcome Texts
-              const Text(
-                'Bem-vindo de volta',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 12),
               Text(
-                'Acesse seu Cofre com segurança',
+                context.l10n.welcomeBack,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
+                style: Theme.of(context).textTheme.titleLarge!,
+              ),
+              SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+              Text(
+                context.l10n.secureAccess,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // Fingerprint Scanner UI Graphic
               Center(
@@ -147,9 +138,7 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  const Color(
-                                    0xFF0033FF,
-                                  ).withValues(alpha: 0.2),
+                                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
                                   Colors.transparent,
                                 ],
                               ),
@@ -161,21 +150,17 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                           height: 110,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(
-                              0xFF0033FF,
-                            ).withValues(alpha: 0.1),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             border: Border.all(
-                              color: const Color(
-                                0xFF0033FF,
-                              ).withValues(alpha: 0.3),
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
                         ),
                         // Fingerprint Icon
-                        const Icon(
-                          Icons.fingerprint_rounded,
-                          color: Color(0xFF0033FF),
+                        Icon(
+                          LucideIcons.fingerprint,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 56,
                         ),
                       ],
@@ -184,75 +169,70 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // Status Text
-              const Text(
-                'Toque no sensor para entrar',
+              Text(
+                context.l10n.biometricAuthDesc,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Aguardando leitura...',
+              SizedBox(height: AppSpacing.sm),
+              Text(
+                context.l10n.verifyingDevice,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF0033FF),
-                  fontSize: 14,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
 
-              const SizedBox(height: 60),
+              SizedBox(height: AppSpacing.xxl + AppSpacing.xl),
 
               // Alternative Login Button (Use PIN)
               InkWell(
                 onTap: () => Navigator.of(context).pop(false),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppSpacing.md),
                 child: Container(
                   width: double.infinity,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(16),
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(AppSpacing.md),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
                       width: 1,
                     ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(
-                        Icons.password_rounded,
-                        color: Colors.white,
+                        LucideIcons.keyRound,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         size: 20,
                       ),
-                      SizedBox(width: 8),
+                      SizedBox(width: AppSpacing.sm),
                       Text(
-                        'Usar senha alternativa',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                        context.l10n.changePassword,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.md),
               // Bottom Handle Bar
               Center(
                 child: Container(
                   width: 100,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

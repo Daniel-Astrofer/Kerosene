@@ -96,8 +96,7 @@ class _BitcoinRefreshIndicatorState extends State<BitcoinRefreshIndicator>
               child: Opacity(
                 opacity: opacity,
                 child: Transform.scale(
-                  scale: scale,
-                  child: AnimatedBuilder(
+                  scale: scale, child: AnimatedBuilder(
                     animation: Listenable.merge([
                       _spinnerController,
                       _checkController,
@@ -161,7 +160,7 @@ class BitcoinPainter extends CustomPainter {
 
     // Shadow/Glow
     final Paint shadowPaint = Paint()
-      ..color = Colors.orangeAccent.withValues(alpha: 0.4)
+      ..color = Colors.orangeAccent.withOpacity(0.4)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     canvas.drawCircle(center, radius, shadowPaint);
@@ -173,8 +172,8 @@ class BitcoinPainter extends CustomPainter {
         Offset(0, 0),
         Offset(size.width * 0.5, size.height),
         [
-          Colors.white.withValues(alpha: 0.4),
-          Colors.white.withValues(alpha: 0.0),
+          Colors.white.withOpacity(0.4),
+          Colors.white.withOpacity(0.0),
         ],
       );
     canvas.drawCircle(center, radius * 0.9, shinePaint);
@@ -209,10 +208,10 @@ class BitcoinPainter extends CustomPainter {
         style: TextStyle(
           fontSize: radius * 1.4,
           fontWeight: FontWeight.bold,
-          color: Colors.white.withValues(alpha: opacity * 0.9),
+          color: Colors.white.withOpacity(opacity * 0.9),
           shadows: [
             Shadow(
-              color: Colors.black.withValues(alpha: 0.2 * opacity),
+              color: Colors.black.withOpacity(0.2 * opacity),
               offset: const Offset(1, 1),
               blurRadius: 2,
             ),

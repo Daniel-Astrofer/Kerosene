@@ -42,6 +42,66 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addFunds => 'Adicionar Fundos';
 
   @override
+  String get addCard => 'ADICIONAR CARD';
+
+  @override
+  String get manual => 'MANUAL';
+
+  @override
+  String get qrCode => 'QR Code';
+
+  @override
+  String get nfc => 'NFC';
+
+  @override
+  String get howMuchToReceive => 'Quanto você quer receber?';
+
+  @override
+  String get fixedAmountByRequest => 'VALOR FIXADO POR SOLICITAÇÃO';
+
+  @override
+  String get recipientData => 'DADOS DO DESTINATÁRIO';
+
+  @override
+  String get recipientHint => 'Username ou endereço BTC';
+
+  @override
+  String get descriptionHint => 'Descrição (opcional)';
+
+  @override
+  String get next => 'PRÓXIMO';
+
+  @override
+  String get reviewSend => 'REVISAR ENVIO';
+
+  @override
+  String get recipient => 'Destinatário';
+
+  @override
+  String get description => 'DESCRIÇÃO';
+
+  @override
+  String get networkFee => 'Taxa de Rede';
+
+  @override
+  String get free => 'GRÁTIS';
+
+  @override
+  String get confirm => 'CONFIRMAR';
+
+  @override
+  String get securityTotp => 'SEGURANÇA (TOTP)';
+
+  @override
+  String get destinationAddressHint => 'Endereço BTC de destino';
+
+  @override
+  String get totpHint => '6 dígitos do seu autenticador';
+
+  @override
+  String get confirmWithdraw => 'CONFIRMAR SAQUE';
+
+  @override
   String get recentTransactions => 'Transações Recentes';
 
   @override
@@ -128,7 +188,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addressCopied => 'Endereço copiado!';
 
   @override
-  String get destinationAddress => 'Endereço de Destino';
+  String get destinationAddress => 'ENDEREÇO DE DESTINO';
 
   @override
   String get estimatedFee => 'Taxa Estimada';
@@ -171,6 +231,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get failed => 'Falhou';
+
+  @override
+  String helloUser(String name) {
+    return 'Olá, $name!';
+  }
 
   @override
   String get welcome => 'Bem-vindo';
@@ -219,6 +284,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get save => 'Salvar';
+
+  @override
+  String get continueButton => 'CONTINUAR';
 
   @override
   String get invalidAmount => 'Valor inválido';
@@ -272,9 +340,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get paymentLinks => 'Links de Pagamento';
-
-  @override
-  String get networkFee => 'Taxa de Rede';
 
   @override
   String get youWillReceive => 'Você receberá';
@@ -345,12 +410,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get deposit => 'Depositar';
 
   @override
-  String get nfc => 'NFC';
-
-  @override
-  String get qrCode => 'QR Code';
-
-  @override
   String get sentTo => 'Enviado para';
 
   @override
@@ -360,7 +419,261 @@ class AppLocalizationsPt extends AppLocalizations {
   String get showLess => 'Ver Menos';
 
   @override
+  String get copy => 'COPIAR';
+
+  @override
+  String get share => 'PARTILHAR';
+
+  @override
+  String get waitingConnection => 'Aguardando conexão...';
+
+  @override
+  String get nfcUnavailable => 'NFC INDISPONÍVEL';
+
+  @override
+  String get processing => 'PROCESSANDO...';
+
+  @override
+  String get nfcInDevelopment => 'NFC EM DESENVOLVIMENTO';
+
+  @override
+  String get amountToReceive => 'VALOR A RECEBER';
+
+  @override
+  String get approachToSend => 'APROXIME PARA ENVIAR';
+
+  @override
+  String get approachToRead => 'APROXIME PARA LER';
+
+  @override
+  String get nfcInstructions =>
+      'Mantenha o seu dispositivo próximo do leitor ou de outro smartphone para processar.';
+
+  @override
+  String get cancelOperation => 'CANCELAR OPERAÇÃO';
+
+  @override
   String get confirming => 'Confirmando';
+
+  @override
+  String get sendBitcoin => 'ENVIAR BITCOIN';
+
+  @override
+  String get receiveBitcoin => 'RECEBER BITCOIN';
+
+  @override
+  String get onChain => 'ON-CHAIN';
+
+  @override
+  String get lightning => 'LIGHTNING';
+
+  @override
+  String get transactionAmount => 'VALOR DA TRANSAÇÃO';
+
+  @override
+  String get approximateNfc => 'APROXIMAR NFC';
+
+  @override
+  String get createLink => 'CRIAR LINK';
+
+  @override
+  String get history => 'HISTÓRICO';
+
+  @override
+  String get forgotPassword => 'Esqueceu sua senha?';
+
+  @override
+  String get secureAccess => 'Acesso Seguro';
+
+  @override
+  String get newHere => 'Novo por aqui?';
+
+  @override
+  String get signUpNow => 'Cadastre-se';
+
+  @override
+  String get amountToSend => 'QUANTIA PARA ENVIAR';
+
+  @override
+  String get processingDuration => 'PROCESSAMENTO: ~15 MINS';
+
+  @override
+  String get withdrawConfirmButton => 'CONFIRMAR E ENVIAR';
+
+  @override
+  String get secureWithdrawal => 'RETIRADA SEGURA';
+
+  @override
+  String get totalToReceive => 'TOTAL A RECEBER';
+
+  @override
+  String get sovereignKeyVerification => 'VERIFICAÇÃO DE CHAVE SOBERANA';
+
+  @override
+  String get readyToScan => 'PRONTO PARA ESCANEAR';
+
+  @override
+  String get sovereigntyStatusTitle => 'STATUS DE SOBERANIA';
+
+  @override
+  String get liveAttestationReport => 'RELATÓRIO DE ATESTAÇÃO AO VIVO';
+
+  @override
+  String get systemSovereign => 'SISTEMA SOBERANO';
+
+  @override
+  String get integrityAlert => 'ALERTA DE INTEGRIDADE';
+
+  @override
+  String get hardwareAttestation => 'ATESTAÇÃO DE HARDWARE';
+
+  @override
+  String get networkConsensus => 'CONSENSO DE REDE';
+
+  @override
+  String get ledgerIntegrity => 'INTEGRIDADE DO LEDGER';
+
+  @override
+  String get memoryProtection => 'PROTEÇÃO DE MEMÓRIA';
+
+  @override
+  String get serverUptime => 'Uptime do servidor';
+
+  @override
+  String get realtimeReportInfo => 'Relatório gerado em tempo real';
+
+  @override
+  String get analyzingSovereignty => 'ANALISANDO SOBERANIA…';
+
+  @override
+  String get chooseUniqueHandle => 'Escolha seu Handle Único';
+
+  @override
+  String get chooseUniqueHandleDesc =>
+      'Este será o seu handle único na rede Kerosene. Use-o para receber transferências de outros usuários.';
+
+  @override
+  String get handleLabel => 'HANDLE (VISÍVEL NO APP)';
+
+  @override
+  String get handleHint => 'ex: satoshi_99';
+
+  @override
+  String get errUsernameRequired => 'Por favor, insira um username';
+
+  @override
+  String get errUsernameTooShort => 'Mínimo de 3 caracteres';
+
+  @override
+  String get errUsernameInvalid =>
+      'Apenas letras minúsculas, números e underline (_)';
+
+  @override
+  String get generatePaymentRequest => 'GERAR COBRANÇA';
+
+  @override
+  String get phone => 'TELEFONE';
+
+  @override
+  String get personalAddress => 'ENDEREÇO';
+
+  @override
+  String get notificationChannels => 'CANAIS';
+
+  @override
+  String get notificationAlerts => 'ALERTAS';
+
+  @override
+  String get pushNotifications => 'Notificações Push';
+
+  @override
+  String get pushNotificationsDesc => 'Receber alertas no seu dispositivo';
+
+  @override
+  String get emailNotifications => 'Notificações por Email';
+
+  @override
+  String get emailNotificationsDesc => 'Receber atualizações por email';
+
+  @override
+  String get transactionUpdates => 'Atualizações de Transação';
+
+  @override
+  String get transactionUpdatesDesc => 'Transações de entrada e saída';
+
+  @override
+  String get securityAlertsTitle => 'Alertas de Segurança';
+
+  @override
+  String get securityAlertsDesc => 'Tentativas de login e mudanças de senha';
+
+  @override
+  String get marketingNews => 'Marketing e Notícias';
+
+  @override
+  String get marketingNewsDesc => 'Fique atualizado com as últimas novidades';
+
+  @override
+  String get sovereigntyStatus => 'Status de Soberania';
+
+  @override
+  String get sovereigntyStatusDesc => 'TPM · Quórum · Merkle · Memória';
+
+  @override
+  String get biometricAuth => 'Autenticação Biométrica';
+
+  @override
+  String get biometricAuthDesc =>
+      'Use FaceID ou Impressão Digital para desbloquear';
+
+  @override
+  String get changePin => 'Alterar PIN';
+
+  @override
+  String get changePinDesc => 'Atualize seu código de acesso de 6 dígitos';
+
+  @override
+  String get changePassword => 'Alterar Senha';
+
+  @override
+  String get changePasswordDesc => 'Atualize a senha da sua conta';
+
+  @override
+  String get twoFactorAuth => 'Autenticação de Dois Fatores';
+
+  @override
+  String get twoFactorAuthDesc => 'Adicione uma camada extra de segurança';
+
+  @override
+  String get enableTwoFactorInfo =>
+      'Ative o 2FA para proteger seus ativos contra acessos não autorizados.';
+
+  @override
+  String get faq => 'FAQ';
+
+  @override
+  String get faqDesc => 'Perguntas Frequentes';
+
+  @override
+  String get contactSupport => 'Canal de Suporte';
+
+  @override
+  String get contactSupportDesc => 'Obtenha ajuda da nossa equipe';
+
+  @override
+  String get termsOfService => 'Termos de Serviço';
+
+  @override
+  String get termsOfServiceDesc => 'Leia nossos termos e condições';
+
+  @override
+  String get privacyPolicy => 'Política de Privacidade';
+
+  @override
+  String get privacyPolicyDesc => 'Como cuidamos dos seus dados';
+
+  @override
+  String get developedBy => 'DESENVOLVIDO POR';
 
   @override
   String get typeSend => 'Envio';
@@ -379,9 +692,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get transactionSentSuccess => 'Transação enviada com sucesso!';
-
-  @override
-  String get recipient => 'Destinatário';
 
   @override
   String get selectRecipient => 'Selecionar Destinatário';
@@ -408,9 +718,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get copyAddress => 'Copiar Endereço';
-
-  @override
-  String get howMuchToReceive => 'Quanto você quer receber?';
 
   @override
   String get receiveMethod => 'Método de Recebimento';
@@ -1392,4 +1699,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get withdrawErrorFee => 'Erro ao estimar taxas da rede.';
+
+  @override
+  String get verifyingDevice => 'VERIFICANDO DISPOSITIVO';
+
+  @override
+  String get connectingToServer => 'CONECTANDO AO SERVIDOR';
+
+  @override
+  String get sendingData => 'ENVIANDO DADOS';
 }

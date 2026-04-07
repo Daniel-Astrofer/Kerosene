@@ -7,20 +7,10 @@ abstract class WalletRemoteDataSource {
   Future<String> createWallet({
     required String name,
     required String passphrase,
+    String accountSecurity = 'STANDARD',
   });
 
   Future<List<dynamic>> getWallets();
-
-  Future<Map<String, dynamic>> getLedger({required String walletName});
-
-  Future<List<dynamic>> getAllLedgers();
-
-  Future<Map<String, dynamic>> sendTransaction({
-    required String sender,
-    required String receiver,
-    required double amount,
-    required String context,
-  });
 
   // Wallet CRUD
   Future<Map<String, dynamic>> findWallet({required String name});
@@ -35,11 +25,6 @@ abstract class WalletRemoteDataSource {
     required String name,
     required String passphrase,
   });
-
-  // Ledger
-  Future<double> getBalance({required String walletName});
-
-  Future<String> deleteLedger({required String walletName});
 }
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
@@ -51,11 +36,16 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   Future<String> createWallet({
     required String name,
     required String passphrase,
+    String accountSecurity = 'STANDARD',
   }) async {
     try {
       final response = await apiClient.post(
         AppConfig.walletCreate,
-        data: {'name': name, 'passphrase': passphrase},
+        data: {
+          'name': name,
+          'passphrase': passphrase,
+          'accountSecurity': accountSecurity,
+        },
         options: Options(contentType: 'application/json'),
       );
       return response.data.toString();
@@ -77,61 +67,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao buscar carteiras: $e');
-    }
-  }
-
-  @override
-  Future<Map<String, dynamic>> getLedger({required String walletName}) async {
-    try {
-      final response = await apiClient.get(
-        AppConfig.ledgerFind,
-        queryParameters: {'walletName': walletName},
-      );
-      return response.data is Map<String, dynamic>
-          ? response.data
-          : {'data': response.data};
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar ledger: $e');
-    }
-  }
-
-  @override
-  Future<List<dynamic>> getAllLedgers() async {
-    try {
-      final response = await apiClient.get(AppConfig.ledgerAll);
-      return response.data is List ? response.data : [];
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar todos ledgers: $e');
-    }
-  }
-
-  @override
-  Future<Map<String, dynamic>> sendTransaction({
-    required String sender,
-    required String receiver,
-    required double amount,
-    required String context,
-  }) async {
-    try {
-      final Map<String, dynamic> payload = {
-        'sender': sender,
-        'receiver': receiver,
-        'amount': amount,
-        'context': context,
-      };
-
-      final response = await apiClient.post(
-        AppConfig.ledgerTransaction,
-        data: payload,
-      );
-      return response.data is Map<String, dynamic>
-          ? response.data
-          : {'result': response.data};
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao enviar transação: $e');
     }
   }
 
@@ -186,30 +121,5 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao deletar carteira: $e');
     }
-  }
-
-  // ==================== Ledger ====================
-
-  @override
-  Future<double> getBalance({required String walletName}) async {
-    try {
-      final response = await apiClient.get(
-        AppConfig.ledgerBalance,
-        queryParameters: {'walletName': walletName},
-      );
-      return double.tryParse(response.data.toString().trim()) ?? 0;
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar saldo: $e');
-    }
-  }
-
-  @override
-  Future<String> deleteLedger({required String walletName}) async {
-    // NOTE: DELETE /ledger/delete NÃO EXISTE no servidor (doc seção 3.6).
-    // Esta operação não é suportada pela API atual.
-    throw UnsupportedError(
-      'deleteLedger: endpoint DELETE /ledger/delete não existe no servidor.',
-    );
   }
 }

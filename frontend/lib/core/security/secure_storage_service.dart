@@ -11,9 +11,8 @@ class SecureStorageService {
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
-  /// Options for Android: Enable EncryptedSharedPreferences
   AndroidOptions _getAndroidOptions() =>
-      const AndroidOptions(encryptedSharedPreferences: true);
+      const AndroidOptions();
 
   /// Save a value securely
   Future<void> write({required String key, required String value}) async {

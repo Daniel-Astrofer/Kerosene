@@ -64,7 +64,7 @@ import 'app_localizations_pt.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -87,17 +87,17 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('es'),
-    Locale('pt'),
+    Locale('pt')
   ];
 
   /// Application title
@@ -165,6 +165,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Funds'**
   String get addFunds;
+
+  /// No description provided for @addCard.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD CARD'**
+  String get addCard;
+
+  /// No description provided for @manual.
+  ///
+  /// In en, this message translates to:
+  /// **'MANUAL'**
+  String get manual;
+
+  /// No description provided for @qrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'QR Code'**
+  String get qrCode;
+
+  /// No description provided for @nfc.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC'**
+  String get nfc;
+
+  /// No description provided for @howMuchToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'How much do you want to receive?'**
+  String get howMuchToReceive;
+
+  /// No description provided for @fixedAmountByRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'FIXED AMOUNT BY REQUEST'**
+  String get fixedAmountByRequest;
+
+  /// No description provided for @recipientData.
+  ///
+  /// In en, this message translates to:
+  /// **'RECIPIENT DATA'**
+  String get recipientData;
+
+  /// No description provided for @recipientHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Username or BTC address'**
+  String get recipientHint;
+
+  /// No description provided for @descriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get descriptionHint;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'NEXT'**
+  String get next;
+
+  /// No description provided for @reviewSend.
+  ///
+  /// In en, this message translates to:
+  /// **'REVIEW SEND'**
+  String get reviewSend;
+
+  /// No description provided for @recipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get recipient;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'DESCRIPTION'**
+  String get description;
+
+  /// No description provided for @networkFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Network Fee'**
+  String get networkFee;
+
+  /// No description provided for @free.
+  ///
+  /// In en, this message translates to:
+  /// **'FREE'**
+  String get free;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'CONFIRM'**
+  String get confirm;
+
+  /// No description provided for @securityTotp.
+  ///
+  /// In en, this message translates to:
+  /// **'SECURITY (TOTP)'**
+  String get securityTotp;
+
+  /// No description provided for @destinationAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination BTC Address'**
+  String get destinationAddressHint;
+
+  /// No description provided for @totpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'6 digits from your authenticator'**
+  String get totpHint;
+
+  /// No description provided for @confirmWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'CONFIRM WITHDRAW'**
+  String get confirmWithdraw;
 
   /// No description provided for @recentTransactions.
   ///
@@ -337,7 +457,7 @@ abstract class AppLocalizations {
   /// No description provided for @destinationAddress.
   ///
   /// In en, this message translates to:
-  /// **'Destination Address'**
+  /// **'DESTINATION ADDRESS'**
   String get destinationAddress;
 
   /// No description provided for @estimatedFee.
@@ -423,6 +543,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed'**
   String get failed;
+
+  /// No description provided for @helloUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, {name}!'**
+  String helloUser(String name);
 
   /// No description provided for @welcome.
   ///
@@ -520,6 +646,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get save;
 
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'CONTINUE'**
+  String get continueButton;
+
   /// No description provided for @invalidAmount.
   ///
   /// In en, this message translates to:
@@ -615,12 +747,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payment Links'**
   String get paymentLinks;
-
-  /// No description provided for @networkFee.
-  ///
-  /// In en, this message translates to:
-  /// **'Network Fee'**
-  String get networkFee;
 
   /// No description provided for @youWillReceive.
   ///
@@ -754,18 +880,6 @@ abstract class AppLocalizations {
   /// **'Deposit'**
   String get deposit;
 
-  /// No description provided for @nfc.
-  ///
-  /// In en, this message translates to:
-  /// **'NFC'**
-  String get nfc;
-
-  /// No description provided for @qrCode.
-  ///
-  /// In en, this message translates to:
-  /// **'QR Code'**
-  String get qrCode;
-
   /// No description provided for @sentTo.
   ///
   /// In en, this message translates to:
@@ -784,11 +898,509 @@ abstract class AppLocalizations {
   /// **'Show Less'**
   String get showLess;
 
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'COPY'**
+  String get copy;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'SHARE'**
+  String get share;
+
+  /// No description provided for @waitingConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for connection...'**
+  String get waitingConnection;
+
+  /// No description provided for @nfcUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC UNAVAILABLE'**
+  String get nfcUnavailable;
+
+  /// No description provided for @processing.
+  ///
+  /// In en, this message translates to:
+  /// **'PROCESSING...'**
+  String get processing;
+
+  /// No description provided for @nfcInDevelopment.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC IN DEVELOPMENT'**
+  String get nfcInDevelopment;
+
+  /// No description provided for @amountToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'AMOUNT TO RECEIVE'**
+  String get amountToReceive;
+
+  /// No description provided for @approachToSend.
+  ///
+  /// In en, this message translates to:
+  /// **'APPROACH TO SEND'**
+  String get approachToSend;
+
+  /// No description provided for @approachToRead.
+  ///
+  /// In en, this message translates to:
+  /// **'APPROACH TO READ'**
+  String get approachToRead;
+
+  /// No description provided for @nfcInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your device close to the reader or another smartphone to process.'**
+  String get nfcInstructions;
+
+  /// No description provided for @cancelOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCEL OPERATION'**
+  String get cancelOperation;
+
   /// No description provided for @confirming.
   ///
   /// In en, this message translates to:
   /// **'Confirming'**
   String get confirming;
+
+  /// No description provided for @sendBitcoin.
+  ///
+  /// In en, this message translates to:
+  /// **'SEND BITCOIN'**
+  String get sendBitcoin;
+
+  /// No description provided for @receiveBitcoin.
+  ///
+  /// In en, this message translates to:
+  /// **'RECEIVE BITCOIN'**
+  String get receiveBitcoin;
+
+  /// No description provided for @onChain.
+  ///
+  /// In en, this message translates to:
+  /// **'ON-CHAIN'**
+  String get onChain;
+
+  /// No description provided for @lightning.
+  ///
+  /// In en, this message translates to:
+  /// **'LIGHTNING'**
+  String get lightning;
+
+  /// No description provided for @transactionAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'TRANSACTION AMOUNT'**
+  String get transactionAmount;
+
+  /// No description provided for @approximateNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'APPROXIMATE NFC'**
+  String get approximateNfc;
+
+  /// No description provided for @createLink.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATE LINK'**
+  String get createLink;
+
+  /// No description provided for @history.
+  ///
+  /// In en, this message translates to:
+  /// **'HISTORY'**
+  String get history;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get forgotPassword;
+
+  /// No description provided for @secureAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure Access'**
+  String get secureAccess;
+
+  /// No description provided for @newHere.
+  ///
+  /// In en, this message translates to:
+  /// **'New here?'**
+  String get newHere;
+
+  /// No description provided for @signUpNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Up'**
+  String get signUpNow;
+
+  /// No description provided for @amountToSend.
+  ///
+  /// In en, this message translates to:
+  /// **'AMOUNT TO SEND'**
+  String get amountToSend;
+
+  /// No description provided for @processingDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'PROCESSING: ~15 MINS'**
+  String get processingDuration;
+
+  /// No description provided for @withdrawConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'CONFIRM AND SEND'**
+  String get withdrawConfirmButton;
+
+  /// No description provided for @secureWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'SECURE WITHDRAWAL'**
+  String get secureWithdrawal;
+
+  /// No description provided for @totalToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL TO RECEIVE'**
+  String get totalToReceive;
+
+  /// No description provided for @sovereignKeyVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'SOVEREIGN KEY VERIFICATION'**
+  String get sovereignKeyVerification;
+
+  /// No description provided for @readyToScan.
+  ///
+  /// In en, this message translates to:
+  /// **'READY TO SCAN'**
+  String get readyToScan;
+
+  /// No description provided for @sovereigntyStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SOVEREIGNTY STATUS'**
+  String get sovereigntyStatusTitle;
+
+  /// No description provided for @liveAttestationReport.
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE ATTESTATION REPORT'**
+  String get liveAttestationReport;
+
+  /// No description provided for @systemSovereign.
+  ///
+  /// In en, this message translates to:
+  /// **'SOVEREIGN SYSTEM'**
+  String get systemSovereign;
+
+  /// No description provided for @integrityAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'INTEGRITY ALERT'**
+  String get integrityAlert;
+
+  /// No description provided for @hardwareAttestation.
+  ///
+  /// In en, this message translates to:
+  /// **'HARDWARE ATTESTATION'**
+  String get hardwareAttestation;
+
+  /// No description provided for @networkConsensus.
+  ///
+  /// In en, this message translates to:
+  /// **'NETWORK CONSENSUS'**
+  String get networkConsensus;
+
+  /// No description provided for @ledgerIntegrity.
+  ///
+  /// In en, this message translates to:
+  /// **'LEDGER INTEGRITY'**
+  String get ledgerIntegrity;
+
+  /// No description provided for @memoryProtection.
+  ///
+  /// In en, this message translates to:
+  /// **'MEMORY PROTECTION'**
+  String get memoryProtection;
+
+  /// No description provided for @serverUptime.
+  ///
+  /// In en, this message translates to:
+  /// **'Server uptime'**
+  String get serverUptime;
+
+  /// No description provided for @realtimeReportInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Real-time report generated'**
+  String get realtimeReportInfo;
+
+  /// No description provided for @analyzingSovereignty.
+  ///
+  /// In en, this message translates to:
+  /// **'ANALYZING SOVEREIGNTY…'**
+  String get analyzingSovereignty;
+
+  /// No description provided for @chooseUniqueHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your Unique Handle'**
+  String get chooseUniqueHandle;
+
+  /// No description provided for @chooseUniqueHandleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This will be your unique handle on the Kerosene network. Use it to receive transfers from other users.'**
+  String get chooseUniqueHandleDesc;
+
+  /// No description provided for @handleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HANDLE (VISIBLE IN APP)'**
+  String get handleLabel;
+
+  /// No description provided for @handleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'ex: satoshi_99'**
+  String get handleHint;
+
+  /// No description provided for @errUsernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a username'**
+  String get errUsernameRequired;
+
+  /// No description provided for @errUsernameTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum of 3 characters'**
+  String get errUsernameTooShort;
+
+  /// No description provided for @errUsernameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Only lowercase letters, numbers and underscores (_)'**
+  String get errUsernameInvalid;
+
+  /// No description provided for @generatePaymentRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'GENERATE PAYMENT REQUEST'**
+  String get generatePaymentRequest;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'PHONE'**
+  String get phone;
+
+  /// No description provided for @personalAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'ADDRESS'**
+  String get personalAddress;
+
+  /// No description provided for @notificationChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'CHANNELS'**
+  String get notificationChannels;
+
+  /// No description provided for @notificationAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'ALERTS'**
+  String get notificationAlerts;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @pushNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive alerts on your device'**
+  String get pushNotificationsDesc;
+
+  /// No description provided for @emailNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Notifications'**
+  String get emailNotifications;
+
+  /// No description provided for @emailNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive updates via email'**
+  String get emailNotificationsDesc;
+
+  /// No description provided for @transactionUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction Updates'**
+  String get transactionUpdates;
+
+  /// No description provided for @transactionUpdatesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming and outgoing transactions'**
+  String get transactionUpdatesDesc;
+
+  /// No description provided for @securityAlertsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security Alerts'**
+  String get securityAlertsTitle;
+
+  /// No description provided for @securityAlertsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Login attempts and password changes'**
+  String get securityAlertsDesc;
+
+  /// No description provided for @marketingNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketing & News'**
+  String get marketingNews;
+
+  /// No description provided for @marketingNewsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay updated with latest features'**
+  String get marketingNewsDesc;
+
+  /// No description provided for @sovereigntyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Sovereignty Status'**
+  String get sovereigntyStatus;
+
+  /// No description provided for @sovereigntyStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'TPM · Quorum · Merkle · Memory'**
+  String get sovereigntyStatusDesc;
+
+  /// No description provided for @biometricAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric Authentication'**
+  String get biometricAuth;
+
+  /// No description provided for @biometricAuthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use FaceID or Fingerprint to unlock'**
+  String get biometricAuthDesc;
+
+  /// No description provided for @changePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Change PIN'**
+  String get changePin;
+
+  /// No description provided for @changePinDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your 6-digit access code'**
+  String get changePinDesc;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @changePasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your account password'**
+  String get changePasswordDesc;
+
+  /// No description provided for @twoFactorAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-Factor Authentication'**
+  String get twoFactorAuth;
+
+  /// No description provided for @twoFactorAuthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an extra layer of security'**
+  String get twoFactorAuthDesc;
+
+  /// No description provided for @enableTwoFactorInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable 2FA to protect your assets from unauthorized access.'**
+  String get enableTwoFactorInfo;
+
+  /// No description provided for @faq.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQ'**
+  String get faq;
+
+  /// No description provided for @faqDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get faqDesc;
+
+  /// No description provided for @contactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support'**
+  String get contactSupport;
+
+  /// No description provided for @contactSupportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Get help from our team'**
+  String get contactSupportDesc;
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @termsOfServiceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Read our terms and conditions'**
+  String get termsOfServiceDesc;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @privacyPolicyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'How we handle your data'**
+  String get privacyPolicyDesc;
+
+  /// No description provided for @developedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'DEVELOPED BY'**
+  String get developedBy;
 
   /// No description provided for @typeSend.
   ///
@@ -825,12 +1437,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transaction sent successfully!'**
   String get transactionSentSuccess;
-
-  /// No description provided for @recipient.
-  ///
-  /// In en, this message translates to:
-  /// **'Recipient'**
-  String get recipient;
 
   /// No description provided for @selectRecipient.
   ///
@@ -879,12 +1485,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy Address'**
   String get copyAddress;
-
-  /// No description provided for @howMuchToReceive.
-  ///
-  /// In en, this message translates to:
-  /// **'How much do you want to receive?'**
-  String get howMuchToReceive;
 
   /// No description provided for @receiveMethod.
   ///
@@ -2637,6 +3237,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error estimating network fees.'**
   String get withdrawErrorFee;
+
+  /// No description provided for @verifyingDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'VERIFYING DEVICE'**
+  String get verifyingDevice;
+
+  /// No description provided for @connectingToServer.
+  ///
+  /// In en, this message translates to:
+  /// **'CONNECTING TO SERVER'**
+  String get connectingToServer;
+
+  /// No description provided for @sendingData.
+  ///
+  /// In en, this message translates to:
+  /// **'SENDING DATA'**
+  String get sendingData;
 }
 
 class _AppLocalizationsDelegate
@@ -2668,9 +3286,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

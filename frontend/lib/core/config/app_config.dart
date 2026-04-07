@@ -5,9 +5,9 @@ class AppConfig {
   // ==================== Node Configuration ====================
 
   /// Endereços .onion dos nós remotos
-  static const String nodeIS = 'http://gi6catvghtt6n6ldjl2woyzw4lolevmhb6e46b74dxopytid5f2ovlad.onion';
-  static const String nodeCH = 'http://qo7t6dvhegbiejgva2oo72w2harfcjzcfxh53mo7igvy565jozdnd2ad.onion';
-  static const String nodeSG = 'http://j7lkbq37m2i4mqf7du3fnhiqc6uqizh2vkgtodm45pkbcfzt3fnuqdyd.onion';
+  static const String nodeIS = 'http://wvogcwrsaeuvi7herycmsybpaft2ldwv7iye4h5xxrbcdxec5riidtyd.onion';
+  static const String nodeCH = 'http://iw5ohnsjrkbbazjaza5lidiqxqvqlqbb5g3xqyleeh3o774qwk4snrqd.onion';
+  static const String nodeSG = 'http://ltvlevluljxdc4egiv3y4qku5md5k74lrudlkiv5ws3gnd2yurdoirqd.onion';
 
   /// Mapeamento de nós com nomes amigáveis
   static const Map<String, String> nodes = {
@@ -36,92 +36,95 @@ class AppConfig {
   // ==================== API Headers ====================
   /// Header enviado pelo servidor quando o JWT está próximo de expirar.
   static const String newTokenHeader = 'X-New-Token';
-  // NOTE: x-device-hash foi REMOVIDO do backend. Não enviar esse header.
+  // NOTE: x-device-hash foi REMOVIDO do backend. Não e  // ==================== API Endpoints ====================
+  // (Mapped according to API_REFERENCE.md)
 
-  // ==================== API Endpoints ====================
-
-  // Auth
+  // 1. Authentication & Users
   static const String authSignup = '/auth/signup';
   static const String authSignupVerify = '/auth/signup/totp/verify';
   static const String authLogin = '/auth/login';
   static const String authLoginVerify = '/auth/login/totp/verify';
-  // NOTE: /auth/refresh e /auth/logout não estão na documentação atual do backend.
-  // Mantidos como comentários para compatibilidade futura.
-  // static const String authRefresh = '/auth/refresh';
-  // static const String authLogout = '/auth/logout';
   static const String authPowChallenge = '/auth/pow/challenge';
-  static const String authPasskeyOnboardingStart =
-      '/auth/passkey/register/onboarding/start';
-  static const String authPasskeyOnboardingFinish =
-      '/auth/passkey/register/onboarding/finish';
-  static const String authPasskeyLoginStart = '/auth/passkey/login/start';
-  static const String authPasskeyLoginFinish = '/auth/passkey/login/finish';
-   static const String authPasskeyRegisterStart = '/auth/passkey/register/start';
-  static const String authPasskeyRegisterFinish = '/auth/passkey/register/finish';
   
-  // Sovereign Auth (Hardware Ed25519)
-  static const String authHardwareOnboardingStart = '/auth/hardware/register/onboarding/start';
-  static const String authHardwareOnboardingFinish = '/auth/hardware/register/onboarding/finish';
-  static const String authHardwareChallenge = '/auth/hardware/challenge';
-  static const String authHardwareVerify = '/auth/hardware/verify';
-  static const String authHardwareRegisterStart = '/auth/hardware/register/start';
-  static const String authHardwareRegisterFinish = '/auth/hardware/register/finish';
-  static const String voucherOnboardingLink = '/voucher/onboarding-link';
-  static const String voucherOnboardingMockConfirm =
-      '/voucher/onboarding-mock-confirm';
-  static const String voucherConfirm = '/voucher/confirm';
+  // 1.2 WebAuthn / Passkeys
+  // 1.2 WebAuthn / Passkeys
+  static const String authPasskeyChallenge = '/auth/passkey/challenge';
+  static const String authPasskeyRegister = '/auth/passkey/register';
+  static const String authPasskeyVerify = '/auth/passkey/verify';
+  static const String authPasskeyOnboardingStart = '/auth/passkey/onboarding/start';
+  static const String authPasskeyOnboardingFinish = '/auth/passkey/onboarding/finish';
 
-  // Notifications
-  static const String notificationRegisterToken =
-      '/notifications/register-token';
+  // 1.3 Profile
+  static const String authMe = '/auth/me';
 
-  // Wallet
+  // 2. Wallets
   static const String walletCreate = '/wallet/create';
-  static const String walletUpdate = '/wallet/update';
-  static const String walletFind = '/wallet/find';
   static const String walletAll = '/wallet/all';
+  static const String walletFind = '/wallet/find';
+  static const String walletUpdate = '/wallet/update';
   static const String walletDelete = '/wallet/delete';
 
-  // Ledger
-  static const String ledgerTransaction = '/ledger/transaction';
+  // 3. Ledger & Internal Finances
+  static const String ledgerAll = '/ledger/all';
   static const String ledgerFind = '/ledger/find';
   static const String ledgerBalance = '/ledger/balance';
-  static const String ledgerAll = '/ledger/all';
-  // NOTE: DELETE /ledger/delete NÃO EXISTE no servidor atual (doc seção 3.6).
   static const String ledgerHistory = '/ledger/history';
+  static const String ledgerTransaction = '/ledger/transaction';
 
-  // Transactions - Fee & Status
+  // 3.1 Payment Requests (Internal)
+  static const String ledgerPaymentRequest = '/ledger/payment-request';
+  static const String ledgerPaymentRequestPay = '/ledger/payment-request/{linkId}/pay';
+  static const String ledgerDelete = '/ledger';
+
+  // 4. Bitcoin Transactions
+  static const String transactionsDepositAddress = '/transactions/deposit-address';
   static const String transactionsEstimateFee = '/transactions/estimate-fee';
-  static const String transactionsStatus = '/transactions/status';
-
-  // Transactions - Send & Broadcast
-  static const String transactionsCreateUnsigned =
-      '/transactions/create-unsigned';
+  static const String transactionsCreateUnsigned = '/transactions/create-unsigned';
   static const String transactionsBroadcast = '/transactions/broadcast';
+  static const String transactionsStatus = '/transactions/status';
   static const String transactionsWithdraw = '/transactions/withdraw';
 
-  // Transactions - On-Chain Payment Links
-  static const String transactionsCreatePaymentLink =
-      '/transactions/create-payment-link';
-  static const String transactionsPaymentLink =
-      '/transactions/payment-link'; // + /{linkId}, /confirm, /complete
-  static const String transactionsPaymentLinksList =
-      '/transactions/payment-links';
+  // 4.1 Payment Links (External BTC)
+  static const String transactionsCreatePaymentLink = '/transactions/create-payment-link';
+  static const String transactionsPaymentLink = '/transactions/payment-link'; // + /{linkId}
+  static const String transactionsPaymentLinkConfirm = '/transactions/payment-link/{linkId}/confirm';
+  static const String transactionsPaymentLinkComplete = '/transactions/payment-link/{linkId}/complete';
+  static const String transactionsPaymentLinksList = '/transactions/payment-links';
 
-  // Transactions - Deposits
-  static const String transactionsDepositAddress =
-      '/transactions/deposit-address';
-  static const String transactionsConfirmDeposit =
-      '/transactions/confirm-deposit';
+  // 5. Vouchers
+  static const String voucherRequest = '/voucher/request';
+  static const String voucherConfirm = '/voucher/confirm';
+  static const String voucherOnboardingLink = '/voucher/onboarding-link';
+  static const String voucherOnboardingMockConfirm = '/voucher/onboarding-mock-confirm';
+  static const String voucherTestClaim = '/voucher/test-claim';
+
+  // 6. Notifications
+  static const String notificationsSend = '/notifications/send';
+  static const String notificationRegisterToken = '/notifications/register-token';
+
+  // 7. Sovereignty & Audit
+  static const String sovereigntyStatus = '/sovereignty/status';
+  static const String sovereigntyPing = '/sovereignty/ping';
+  static const String sovereigntyTelemetry = '/sovereignty/telemetry';
+  static const String sovereigntyReattest = '/sovereignty/reattest';
+
+  // 7.2 Proof of Reserves & Audit
+  static const String auditStats = '/v1/audit/stats';
+  static const String auditSiphon = '/v1/audit/siphon';
+  static const String auditMerkleLatestRoot = '/audit/latest-root';
+  static const String auditMerkleHistory = '/audit/history';
+  static const String auditMerkleTrigger = '/audit/trigger';
+
+  // 8. Vault System
+  static const String vaultArm = '/v1/vault/arm';
+  static const String vaultAttest = '/v1/vault/attest';
+  static const String vaultProvision = '/v1/vault/provision';
+
+  // (Legacy / Extra - Checking for compatibility)
+  static const String transactionsConfirmDeposit = '/transactions/confirm-deposit';
   static const String transactionsDeposits = '/transactions/deposits';
-  static const String transactionsDepositBalance =
-      '/transactions/deposit-balance';
+  static const String transactionsDepositBalance = '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
-
-  // Ledger - Payment Requests
-  static const String ledgerPaymentRequest = '/ledger/payment-request';
-  static const String ledgerPaymentRequestPay =
-      '/ledger/payment-request'; // + /{linkId}/pay
 
   // ==================== Storage Keys ====================
 
@@ -134,16 +137,21 @@ class AppConfig {
   /// Chave para armazenar TOTP secret
   static const String totpSecretKey = 'totp_secret';
 
+  /// Chave para armazenar backup codes
+  static const String backupCodesKey = 'backup_codes';
+
   /// Chave para armazenar refresh token
   static const String refreshTokenKey = 'refresh_token';
 
   // ==================== Feature Flags ====================
 
   /// Habilitar modo debug
-  static const bool enableDebugMode = true;
-
+  static const bool enableDebugMode = false;
   /// Habilitar logs
   static const bool enableLogs = true;
+
+  /// Status do Tor
+  static bool isTorEnabled = false;
 
   /// Habilitar analytics
   static const bool enableAnalytics = false;

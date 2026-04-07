@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/auth/presentation/providers/auth_provider.dart';
+import 'package:teste/features/auth/controller/auth_local_provider.dart';
 import '../security/biometric_service.dart';
 
 class BiometricState {
@@ -26,14 +26,14 @@ class BiometricState {
   }
 }
 
-class BiometricNotifier extends StateNotifier<BiometricState> {
-  final Ref ref;
-  final BiometricService _biometricService;
+class BiometricNotifier extends Notifier<BiometricState> {
+  late BiometricService _biometricService;
 
-  BiometricNotifier(this.ref)
-    : _biometricService = BiometricService(),
-      super(const BiometricState()) {
+  @override
+  BiometricState build() {
+    _biometricService = BiometricService();
     _init();
+    return const BiometricState();
   }
 
   Future<void> _init() async {
@@ -64,6 +64,4 @@ class BiometricNotifier extends StateNotifier<BiometricState> {
 }
 
 final biometricProvider =
-    StateNotifierProvider<BiometricNotifier, BiometricState>((ref) {
-      return BiometricNotifier(ref);
-    });
+    NotifierProvider<BiometricNotifier, BiometricState>(BiometricNotifier.new);

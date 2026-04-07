@@ -13,8 +13,13 @@ import '../models/user_model.dart';
 class SignupInitResult {
   final String totpSecret;
   final String qrCodeUri;
+  final List<String> backupCodes;
 
-  const SignupInitResult({required this.totpSecret, required this.qrCodeUri});
+  const SignupInitResult({
+    required this.totpSecret,
+    required this.qrCodeUri,
+    this.backupCodes = const [],
+  });
 }
 
 class LoginResult {
@@ -28,8 +33,9 @@ class LoginResult {
     this.requiresTotp = false,
   });
 
-  /// Parses the backend response format: "userId jwt_token" (space-separated)
-  /// or a simple UUID (session ID) when 2FA is required.
+  /// Parses the backend response according to API v5.8:
+  /// - Login returns 202: data = "pre_auth_token" (UUID string) → requiresTotp = true
+  /// - Login returns 200: data = "userId jwt_token" (space-separated) → requiresTotp = false
   factory LoginResult.fromResponseData(dynamic data) {
     if (data == null) {
       return const LoginResult(requiresTotp: true);
@@ -37,10 +43,8 @@ class LoginResult {
     
     String raw;
     if (data is Map) {
-      // Se for um mapa, tenta extrair dos campos comuns ou do campo 'data' interno
       raw = (data['data'] ?? data['token'] ?? data['jwt'] ?? data['sessionId'] ?? '').toString().trim();
       if (raw.isEmpty) {
-        // Fallback: se o mapa não tem os campos, talvez o mapa todo seja o dado (convertido pra string)
         raw = data.toString().trim();
       }
     } else {
@@ -50,13 +54,15 @@ class LoginResult {
     final spaceIdx = raw.indexOf(' ');
     
     if (spaceIdx <= 0) {
-      // Se não há espaço, é provável que seja um UUID (sessionId) ou JWT direto
+      // No space: either a pre_auth_token (UUID-like) or a final JWT.
+      if (raw.contains('.')) {
+        return LoginResult(requiresTotp: false, jwt: raw);
+      }
+
       if (raw.isNotEmpty && !raw.startsWith('{')) {
-        // Se parece um token ou ID (não começa com { que indicaria JSON falho)
         return LoginResult(requiresTotp: true, jwt: raw);
       }
       
-      // Se o raw é vazio ou parece JSON não processado (e o origin era Map), tenta processar o Map como sucesso direto
       if (data is Map && data.containsKey('token')) {
          return LoginResult(
            userId: (data['userId'] ?? '').toString(),
@@ -81,33 +87,35 @@ class LoginResult {
 
 // ─── DTO returned from voucher/onboarding-link ───────────────────────────────
 class OnboardingPaymentLinkDto {
-  final String id;
+  final String linkId;
   final double amountBtc;
   final String depositAddress;
+  final String type;
   final String status;
-  final String expiresAt;
 
   const OnboardingPaymentLinkDto({
-    required this.id,
+    required this.linkId,
     required this.amountBtc,
     required this.depositAddress,
-    required this.status,
-    required this.expiresAt,
+    this.type = 'ONBOARDING_VOUCHER',
+    this.status = 'pending',
   });
 
   factory OnboardingPaymentLinkDto.fromJson(Map<String, dynamic> json) {
-    // Some endpoints might return amountBtc, others satoshiAmount
     double btc = (json['amountBtc'] as num?)?.toDouble() ?? 0.0;
+    if (btc == 0 && json.containsKey('amountSats')) {
+      btc = ((json['amountSats'] as num?)?.toDouble() ?? 0.0) / 100000000.0;
+    }
     if (btc == 0 && json.containsKey('satoshiAmount')) {
       btc = ((json['satoshiAmount'] as num?)?.toDouble() ?? 0.0) / 100000000.0;
     }
 
     return OnboardingPaymentLinkDto(
-      id: json['id']?.toString() ?? '',
+      linkId: (json['id'] ?? json['linkId'] ?? '').toString(),
       amountBtc: btc,
-      depositAddress: (json['depositAddress'] ?? json['address'] ?? '').toString(),
-      status: json['status']?.toString() ?? 'pending',
-      expiresAt: json['expiresAt']?.toString() ?? '',
+      depositAddress: (json['address'] ?? json['depositAddress'] ?? '').toString(),
+      type: (json['type'] ?? 'ONBOARDING_VOUCHER').toString(),
+      status: (json['status'] ?? 'pending').toString(),
     );
   }
 }
@@ -143,60 +151,41 @@ abstract class AuthRemoteDataSource {
     required String preAuthToken,
   });
 
-  /// Registra passkey de onboarding (start)
-  Future<String> registerPasskeyOnboardingStart(String sessionId);
+  /// Inicia registro de passkey durante onboarding — retorna challenge JSON
+  Future<String> passkeyRegisterOnboardingStart({
+    required String sessionId,
+    String? username,
+  });
 
-  /// Registra passkey de onboarding (finish)
-  Future<void> registerPasskeyOnboardingFinish(
+  /// Finaliza registro de passkey durante onboarding
+  Future<void> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   );
 
-  /// Inicia login via passkey — retorna PublicKeyCredentialRequestOptions JSON
+  /// Inicia login via passkey — retorna challenge JSON
   Future<String> passkeyLoginStart(String username);
 
   /// Finaliza login via passkey — retorna LoginResult com JWT
   Future<LoginResult> passkeyLoginFinish(String username, Map<String, dynamic> credential);
 
-  /// Inicia registro de passkey para usuário logado — retorna PublicKeyCredentialCreationOptions JSON
-  Future<String> passkeyRegisterStart();
+  /// Inicia registro de passkey para usuário logado — retorna challenge JSON
+  Future<String> passkeyRegisterStart(String username);
 
   /// Finaliza registro de passkey para usuário logado
   Future<void> passkeyRegisterFinish(Map<String, dynamic> credential);
 
-  // Sovereign Auth (Hardware Ed25519)
-  
-  /// Inicia registro de hardware auth (onboarding)
-  Future<String> hardwareRegisterStart(String sessionId);
-
-  /// Finaliza registro de hardware auth (onboarding)
-  Future<void> hardwareRegisterFinish({
-    required String sessionId,
-    required String publicKey,
-    required String deviceName,
-    required String signature,
-  });
-
-  /// Inicia registro de hardware auth (logado)
-  Future<String> hardwareRegisterForAccountStart();
-
-  /// Finaliza registro de hardware auth (logado)
-  Future<void> hardwareRegisterForAccountFinish({
-    required String publicKey,
-    required String deviceName,
-  });
-
-  /// Busca desafio para login hardware
-  Future<String> getHardwareChallenge(String username);
-
-  /// Verifica assinatura hardware para login
-  Future<LoginResult> verifyHardwareSignature({
-    required String username,
-    required String signature,
-  });
-
   /// Gera link de pagamento de onboarding
   Future<OnboardingPaymentLinkDto> generateOnboardingLink(String sessionId);
+
+  /// Confirma a transação enviada para o payment link de onboarding
+  Future<OnboardingPaymentLinkDto> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  });
+
+  /// Consulta o estado atual do payment link de onboarding
+  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId);
 
   /// Mock de confirmação de onboarding (atalho para devs)
   Future<void> mockConfirmOnboarding(String sessionId);
@@ -213,7 +202,7 @@ abstract class AuthRemoteDataSource {
   /// Logout
   Future<void> logout();
 
-  /// Obter usuário atual
+  /// Obter usuário atual via GET /auth/me
   Future<UserModel> getCurrentUser();
 }
 
@@ -246,8 +235,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<String> getPowChallenge() async {
     try {
       final response = await apiClient.get(AppConfig.authPowChallenge);
-      // ApiResponseInterceptor already unwraps the outer ApiResponse envelope,
-      // so response.data is already the inner payload: {"challenge": "..."}
       final body = response.data;
       if (body is Map) {
         final challenge = body['challenge']?.toString();
@@ -267,8 +254,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // _solvePoW is now moved to the top-level _solvePoWTask.
-
   // ─── Signup ──────────────────────────────────────────────────────────────────
 
   @override
@@ -284,44 +269,62 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // 2. Solve — brute force nonce (offloads heavy lifting to an Isolate)
       final nonce = await compute(_solvePoWTask, challenge);
 
-      // 3. Call /auth/signup
+      // 3. Call /auth/signup — API v5.8 expects: username, passphrase, challenge, nonce
       final response = await apiClient.post(
         AppConfig.authSignup,
         data: {
           'username': username,
           'passphrase': passphrase,
+          'accountSecurity': accountSecurity,
           'challenge': challenge,
           'nonce': nonce,
-          'accountSecurity': accountSecurity,
         },
       );
 
       // ApiResponseInterceptor already unwraps the ApiResponse envelope.
-      // The backend returns a plain otpauth:// URI string as `data`.
+      // API v5.8 returns: { otpUri: "otpauth://...", backupCodes: ["12345678", ...] }
       final body = response.data;
       debugPrint('🌐 [SIGNUP] Body received: $body');
 
-      String qrCodeUri = '';
-      String totpSecret = '';
-
+      dynamic parsedBody = body;
       if (body is String) {
         final trimmedBody = body.trim();
-        if (trimmedBody.startsWith('otpauth://')) {
-          qrCodeUri = trimmedBody;
-          final uri = Uri.tryParse(trimmedBody);
-          totpSecret = uri?.queryParameters['secret'] ?? '';
-          debugPrint('🔐 TOTP URI received: $qrCodeUri');
+        if (trimmedBody.startsWith('{') || trimmedBody.startsWith('[')) {
+          try {
+            parsedBody = jsonDecode(trimmedBody);
+          } catch (_) {
+            parsedBody = trimmedBody;
+          }
         } else {
-          totpSecret = trimmedBody;
+          parsedBody = trimmedBody;
+        }
+      }
+
+      String qrCodeUri = '';
+      String totpSecret = '';
+      List<String> backupCodes = [];
+
+      if (parsedBody is String) {
+        if (parsedBody.startsWith('otpauth://')) {
+          qrCodeUri = parsedBody;
+          final uri = Uri.tryParse(parsedBody);
+          totpSecret = uri?.queryParameters['secret'] ?? '';
+        } else {
+          totpSecret = parsedBody;
           qrCodeUri = 'otpauth://totp/Kerosene:$username?secret=$totpSecret&issuer=Kerosene';
-          debugPrint('🔐 TOTP Secret received as String: $totpSecret');
         }
-      } else if (body is Map) {
-        // Support all known variations of the secret key
-        var dataMap = body;
-        if (body.containsKey('data') && body['data'] is Map) {
-          dataMap = body['data'];
+      } else if (parsedBody is Map) {
+        Map dataMap = parsedBody;
+        if (dataMap.containsKey('data') && dataMap['data'] is Map) {
+          dataMap = dataMap['data'];
         }
+        
+        // API v5.8: field is `otpUri`
+        qrCodeUri = (dataMap['otpUri'] ?? 
+                    dataMap['otp_uri'] ?? 
+                    dataMap['qrCodeUri'] ?? 
+                    dataMap['qr_code_uri'] ?? 
+                    dataMap['uri'] ?? '').toString();
         
         totpSecret = (dataMap['setupKey'] ?? 
                       dataMap['setup_key'] ?? 
@@ -330,23 +333,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
                       dataMap['secret'] ?? 
                       dataMap['secret_key'] ?? '').toString();
         
-        qrCodeUri = (dataMap['qrCodeUri'] ?? dataMap['qr_code_uri'] ?? dataMap['uri'] ?? '').toString();
-        
-        if (qrCodeUri.isEmpty && totpSecret.isNotEmpty) {
-           final encodedUser = Uri.encodeComponent(username);
-           qrCodeUri = 'otpauth://totp/Kerosene:$encodedUser?secret=$totpSecret&issuer=Kerosene';
+        if (totpSecret.isEmpty && qrCodeUri.startsWith('otpauth://')) {
+          final uri = Uri.tryParse(qrCodeUri);
+          totpSecret = uri?.queryParameters['secret'] ?? '';
         }
-        debugPrint('🔐 TOTP Data extracted from Map. Secret length: ${totpSecret.length}');
+
+        // API v5.8: backupCodes is a List<String> of 10 single-use codes
+        if (dataMap['backupCodes'] is List) {
+          backupCodes = (dataMap['backupCodes'] as List)
+              .map((e) => e.toString())
+              .toList();
+        } else if (dataMap['backup_codes'] is List) {
+          backupCodes = (dataMap['backup_codes'] as List)
+              .map((e) => e.toString())
+              .toList();
+        }
+
+        debugPrint('🔐 TOTP Data extracted. Secret length: ${totpSecret.length}, BackupCodes: ${backupCodes.length}');
       }
 
       if (totpSecret.isEmpty || totpSecret.startsWith('{')) {
-        debugPrint('⚠️ [SIGNUP] TOTP secret looks like JSON or is empty. Falling back to MDV4YK4EJXQHWAG5.');
-        totpSecret = 'MDV4YK4EJXQHWAG5'; // User requested override
-        final encodedUser = Uri.encodeComponent(username);
-        qrCodeUri = 'otpauth://totp/Kerosene:$encodedUser?secret=$totpSecret&issuer=Kerosene';
+        throw ServerException(message: 'Invalid TOTP secret received from server.');
       }
 
-      return SignupInitResult(totpSecret: totpSecret, qrCodeUri: qrCodeUri);
+      return SignupInitResult(
+        totpSecret: totpSecret,
+        qrCodeUri: qrCodeUri,
+        backupCodes: backupCodes,
+      );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao iniciar cadastro: $e');
@@ -365,7 +379,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         AppConfig.authSignupVerify,
         data: {'username': username, 'totpCode': totpCode},
       );
-      // ApiResponseInterceptor unwraps the envelope — body is the raw sessionId string.
       final body = response.data;
       final sessionId = body is String ? body.trim() : body?.toString().trim();
       if (sessionId == null || sessionId.isEmpty) {
@@ -380,7 +393,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // ─── Login — returns "userId jwt_token" ───────────────────────────────────────
+  // ─── Login ───────────────────────────────────────────────────────────────────
 
   @override
   Future<LoginResult> login({
@@ -392,8 +405,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         AppConfig.authLogin,
         data: {'username': username, 'passphrase': passphrase},
       );
-      // ApiResponseInterceptor unwraps the envelope.
-      // Backend returns data: "<userId> <jwt_token>" space-separated
       return LoginResult.fromResponseData(response.data);
     } on AuthException {
       rethrow;
@@ -403,7 +414,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // ─── Login TOTP verify — returns "userId jwt_token" ──────────────────────────
+  // ─── Login TOTP verify ──────────────────────────────────────────────────────
 
   @override
   Future<String> verifyLoginTotp({
@@ -414,17 +425,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final response = await apiClient.post(
         AppConfig.authLoginVerify,
-        data: {'username': username, 'totpCode': totpCode},
+        data: {
+          'username': username,
+          'totpCode': totpCode,
+          'preAuthToken': preAuthToken,
+        },
         options: Options(
           headers: {
-            // TokenInterceptor explicitly ignores /auth routes,
-            // so we inject the preAuthToken manually here.
             'Authorization': 'Bearer $preAuthToken',
           },
         ),
       );
-      // ApiResponseInterceptor unwraps the envelope.
-      // Backend returns data: "<userId> <jwt_token>" space-separated
       final result = LoginResult.fromResponseData(response.data);
       return result.jwt;
     } catch (e) {
@@ -433,17 +444,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  // ─── Passkey onboarding ───────────────────────────────────────────────────────
+  // ─── Passkey Onboarding ───────────────────────────────────────────────────────
 
   @override
-  Future<String> registerPasskeyOnboardingStart(String sessionId) async {
+  Future<String> passkeyRegisterOnboardingStart({
+    required String sessionId,
+    String? username,
+  }) async {
     try {
       final response = await apiClient.post(
         AppConfig.authPasskeyOnboardingStart,
         queryParameters: {'sessionId': sessionId},
       );
-      // ApiResponseInterceptor unwraps the payload.
-      // Backend returns a JSON string (PublicKeyCredentialCreationOptions).
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
@@ -452,7 +464,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> registerPasskeyOnboardingFinish(
+  Future<void> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   ) async {
@@ -464,9 +476,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Erro ao finalizar registro de passkey: $e',
-      );
+      throw ServerException(message: 'Erro ao finalizar registro de passkey: $e');
     }
   }
 
@@ -475,8 +485,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<String> passkeyLoginStart(String username) async {
     try {
-      final response = await apiClient.post(
-        AppConfig.authPasskeyLoginStart,
+      final response = await apiClient.get(
+        AppConfig.authPasskeyChallenge,
         queryParameters: {'username': username},
       );
       return response.data.toString();
@@ -493,11 +503,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   ) async {
     try {
       final response = await apiClient.post(
-        AppConfig.authPasskeyLoginFinish,
-        queryParameters: {'username': username},
-        data: credential,
+        AppConfig.authPasskeyVerify,
+        data: {
+          'username': username,
+          'signature': credential['signature'],
+          'authData': credential['authData'],
+          'clientDataJSON': credential['clientDataJSON'],
+          'credentialId': credential['credentialId'] ?? credential['credential_id'] ?? credential['id'],
+        },
       );
       return LoginResult.fromResponseData(response.data);
+
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao finalizar login via passkey: $e');
@@ -505,9 +521,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<String> passkeyRegisterStart() async {
+  Future<String> passkeyRegisterStart(String username) async {
     try {
-      final response = await apiClient.post(AppConfig.authPasskeyRegisterStart);
+      final response = await apiClient.get(
+        AppConfig.authPasskeyChallenge,
+        queryParameters: {'username': username},
+      );
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
@@ -518,116 +537,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> passkeyRegisterFinish(Map<String, dynamic> credential) async {
     try {
+      // API v5.8 expects: publicKey, publicKeyCose, credentialId, deviceName, signature
       await apiClient.post(
-        AppConfig.authPasskeyRegisterFinish,
+        AppConfig.authPasskeyRegister,
         data: credential,
       );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao finalizar registro de passkey: $e');
-    }
-  }
-
-  // ─── Sovereign Auth (Hardware Ed25519) ──────────────────────────────────────────
-
-  @override
-  Future<String> hardwareRegisterStart(String sessionId) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.authHardwareOnboardingStart,
-        queryParameters: {'sessionId': sessionId},
-      );
-      return response.data.toString();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar registro de hardware auth: $e');
-    }
-  }
-
-  @override
-  Future<void> hardwareRegisterFinish({
-    required String sessionId,
-    required String publicKey,
-    required String deviceName,
-    required String signature,
-  }) async {
-    try {
-      await apiClient.post(
-        AppConfig.authHardwareOnboardingFinish,
-        queryParameters: {'sessionId': sessionId},
-        data: {
-          'publicKey': publicKey,
-          'deviceName': deviceName,
-          'signature': signature,
-        },
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao finalizar registro de hardware auth: $e');
-    }
-  }
-
-  @override
-  Future<String> hardwareRegisterForAccountStart() async {
-    try {
-      final response = await apiClient.post(AppConfig.authHardwareRegisterStart);
-      return response.data.toString();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar registro de hardware: $e');
-    }
-  }
-
-  @override
-  Future<void> hardwareRegisterForAccountFinish({
-    required String publicKey,
-    required String deviceName,
-  }) async {
-    try {
-      await apiClient.post(
-        AppConfig.authHardwareRegisterFinish,
-        data: {
-          'publicKey': publicKey,
-          'deviceName': deviceName,
-        },
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao finalizar registro de hardware: $e');
-    }
-  }
-
-  @override
-  Future<String> getHardwareChallenge(String username) async {
-    try {
-      final response = await apiClient.get(
-        AppConfig.authHardwareChallenge,
-        queryParameters: {'username': username},
-      );
-      return response.data.toString();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao obter desafio de hardware: $e');
-    }
-  }
-
-  @override
-  Future<LoginResult> verifyHardwareSignature({
-    required String username,
-    required String signature,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.authHardwareVerify,
-        data: {
-          'username': username,
-          'signature': signature,
-        },
-      );
-      return LoginResult.fromResponseData(response.data);
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao verificar assinatura de hardware: $e');
     }
   }
 
@@ -657,6 +574,48 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+  Future<OnboardingPaymentLinkDto> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        '${AppConfig.transactionsPaymentLink}/$linkId/confirm',
+        data: {
+          'txid': txid,
+        },
+      );
+      final body = response.data;
+      if (body is Map) {
+        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
+      }
+      throw const ServerException(
+        message: 'Resposta inválida ao confirmar pagamento de onboarding.',
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao confirmar pagamento de onboarding: $e');
+    }
+  }
+
+  @override
+  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId) async {
+    try {
+      final response = await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
+      final body = response.data;
+      if (body is Map) {
+        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
+      }
+      throw const ServerException(
+        message: 'Resposta inválida ao consultar status do onboarding.',
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao consultar status do onboarding: $e');
+    }
+  }
+
+  @override
   Future<void> mockConfirmOnboarding(String sessionId) async {
     try {
       await apiClient.post(
@@ -675,7 +634,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String txid,
   }) async {
     try {
-      // Strip "pay_" prefix if present to avoid 400 Invalid UUID
       final cleanVoucherId = voucherId.startsWith('pay_') 
           ? voucherId.substring(4) 
           : voucherId;
@@ -697,19 +655,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<String> refreshToken() async {
-    // NOTE: /auth/refresh endpoint não está na documentação atual do backend.
-    // Token renewal é feito automaticamente via header X-New-Token (TokenInterceptor).
     return '';
   }
 
   @override
   Future<void> logout() async {
-    // NOTE: /auth/logout endpoint não está na documentação atual do backend.
-    // O logout é realizado localmente limpando o token armazenado.
+    // Logout é realizado localmente limpando o token armazenado.
   }
 
   @override
   Future<UserModel> getCurrentUser() async {
-    throw UnimplementedError();
+    try {
+      final response = await apiClient.get(AppConfig.authMe);
+      final body = response.data;
+
+      if (body is Map<String, dynamic>) {
+        return UserModel.fromJson(body);
+      }
+
+      // Fallback para quando o response é string JSON
+      if (body is String) {
+        final trimmed = body.trim();
+        if (trimmed.startsWith('{')) {
+          final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
+          return UserModel.fromJson(parsed);
+        }
+      }
+
+      throw ServerException(message: 'Formato de resposta inválido em /auth/me');
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao obter usuário: $e');
+    }
   }
 }

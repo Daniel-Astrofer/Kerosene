@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../domain/entities/wallet.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'deposit_lightning_invoice_screen.dart';
 import 'deposit_onchain_invoice_screen.dart';
-import '../../../../../shared/widgets/brushed_metal_container.dart';
 
 class DepositProviderScreen extends ConsumerWidget {
   final Wallet wallet;
   final double amountFiat;
-  final String method; // 'Fiat'
+  final String method;
 
   const DepositProviderScreen({
     super.key,
@@ -21,54 +26,48 @@ class DepositProviderScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: BrushedMetalContainer(
-        baseColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTitle(),
-                    const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitle().animate().fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.xl),
 
-                    _buildProviderCard(
-                      context,
-                      name: 'MoonPay',
-                      description: 'Pix, Visa, Mastercard, Apple Pay',
-                      iconData: Icons.shield_moon_rounded, // placeholder logo
-                      badgeText: 'RECOMENDADO',
-                      badgeColor: const Color(0xFF1A5CFF),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildProviderCard(
-                      context,
-                      name: 'Banxa',
-                      description: 'Pix, Transferência Bancária, Cartão',
-                      iconData:
-                          Icons.currency_exchange_rounded, // placeholder logo
-                      badgeText: 'Mais Rápido',
-                      badgeColor: Colors.white.withOpacity(0.08),
-                      badgeTextColor: Colors.white70,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildProviderCard(
-                      context,
-                      name: 'Mt Pelerin',
-                      description: 'Sem KYC até R\$ 5.000, Pix, Cartão',
-                      iconData:
-                          Icons.account_balance_rounded, // placeholder logo
-                    ),
-                    const SizedBox(height: 48),
-                  ],
-                ),
+                  _buildProviderCard(
+                    context,
+                    name: 'MoonPay',
+                    description: 'Pix, Visa, Mastercard, Apple Pay',
+                    iconData: LucideIcons.moon,
+                    badgeText: 'RECOMENDADO',
+                    badgeColor: Theme.of(context).colorScheme.primary,
+                  ).animate(delay: 100.ms).fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildProviderCard(
+                    context,
+                    name: 'Banxa',
+                    description: 'Pix, Transferência, Cartão',
+                    iconData: LucideIcons.arrowDownUp,
+                    badgeText: 'RÁPIDO',
+                    badgeColor: AppColors.success,
+                  ).animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildProviderCard(
+                    context,
+                    name: 'Mt Pelerin',
+                    description: 'Sem KYC até R\$ 5.000',
+                    iconData: LucideIcons.landmark,
+                    badgeText: 'PRIVADO',
+                    badgeColor: AppColors.warning,
+                  ).animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
+                  
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
               ),
             ),
           ],
@@ -83,7 +82,7 @@ class DepositProviderScreen extends ConsumerWidget {
       MaterialPageRoute(
         builder: (_) => DepositLightningInvoiceScreen(
           wallet: wallet,
-          amountFiat: amountFiat, // Pass fiat
+          amountFiat: amountFiat,
           providerName: provider,
         ),
       ),
@@ -96,7 +95,7 @@ class DepositProviderScreen extends ConsumerWidget {
       MaterialPageRoute(
         builder: (_) => DepositOnchainInvoiceScreen(
           wallet: wallet,
-          amountFiat: amountFiat, // Pass fiat
+          amountFiat: amountFiat,
           providerName: provider,
         ),
       ),
@@ -105,53 +104,40 @@ class DepositProviderScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 24,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
-          const Text(
-            'Selecione o Provedor',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          Text(
+            'PROVEDORES',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
           ),
-          const SizedBox(width: 24), // Balance spacing
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildTitle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Como deseja comprar?',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
+        Text(
+          'Como deseja\ncomprar?',
+          style: AppTypography.h1.copyWith(height: 1.1),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'Selecione o melhor provedor para Pix ou Cartão.',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.6),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.5)),
         ),
       ],
     );
@@ -164,42 +150,26 @@ class DepositProviderScreen extends ConsumerWidget {
     required IconData iconData,
     String? badgeText,
     Color? badgeColor,
-    Color? badgeTextColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: (badgeColor ?? const Color(0xFF0033FF)).withValues(alpha: 0.2),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (badgeColor ?? const Color(0xFF0033FF)).withValues(alpha: 0.05),
-            blurRadius: 15,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
+    final color = badgeColor ?? Theme.of(context).colorScheme.primary;
+    return GlassContainer(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      borderRadius: BorderRadius.circular(AppSpacing.xl),
+      border: Border.all(color: color.withOpacity(0.15), width: 1.5),
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Center(
-                  child: Icon(iconData, color: Colors.black87, size: 28),
-                ),
+                child: Icon(iconData, color: color, size: 24),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,29 +178,22 @@ class DepositProviderScreen extends ConsumerWidget {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold),
                         ),
                         if (badgeText != null) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: badgeColor,
+                              color: color.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               badgeText,
-                              style: TextStyle(
-                                color: badgeTextColor ?? Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
+                              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                                color: color,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -238,34 +201,30 @@ class DepositProviderScreen extends ConsumerWidget {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       description,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               Expanded(
                 child: _buildNetworkButton(
-                  icon: Icons.bolt_rounded,
+                  icon: LucideIcons.zap,
                   label: 'Lightning',
                   onTap: () => _navigateToLightning(context, name),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _buildNetworkButton(
-                  icon: Icons.link_rounded,
+                  icon: LucideIcons.link,
                   label: 'On-chain',
                   onTap: () => _navigateToOnchain(context, name),
                 ),
@@ -277,36 +236,27 @@ class DepositProviderScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNetworkButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white.withOpacity(0.06), // Dark button
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        splashColor: Colors.white.withOpacity(0.1),
-        highlightColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+  Widget _buildNetworkButton({required IconData icon, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(AppSpacing.md),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 14),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
     );

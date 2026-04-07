@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
 
 class QrScannerOverlay extends StatefulWidget {
   final Function(String) onScan;
@@ -30,7 +29,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.black.withValues(alpha: 0.9),
+      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.9),
       child: Stack(
         children: [
           // Scanner
@@ -53,7 +52,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: Theme.of(context).colorScheme.onPrimary, width: 2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Stack(
@@ -70,8 +69,12 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
             left: 20,
             right: 20,
             child: Center(
-              child: GlassContainer(
-                borderRadius: BorderRadius.circular(30),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white10),
+                ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 16,
@@ -79,10 +82,10 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Scan a QR Code',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -91,7 +94,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                     Text(
                       'Align the QR code within the frame to scan',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -99,8 +102,8 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                     ElevatedButton(
                       onPressed: widget.onClose,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 40,
                           vertical: 15,
@@ -124,11 +127,11 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.flash_on, color: Colors.white),
+                  icon: Icon(Icons.flash_on, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () => controller.toggleTorch(),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.cameraswitch, color: Colors.white),
+                  icon: Icon(Icons.cameraswitch, color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () => controller.switchCamera(),
                 ),
               ],

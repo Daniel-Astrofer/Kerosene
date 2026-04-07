@@ -36,7 +36,7 @@ class SovereignAuthService {
       key: _privateKeyKey,
       value: base64Encode(seed),
       iOptions: const IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-      aOptions: const AndroidOptions(encryptedSharedPreferences: true),
+      aOptions: const AndroidOptions(),
     );
 
     // 4. Retornar Public Key em Base64 (X.509 ou raw bytes)
@@ -94,10 +94,8 @@ class SovereignAuthService {
 
       return await _localAuth.authenticate(
         localizedReason: 'Autentique para acessar sua Chave Soberana',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false, // Permite PIN/Padrão do sistema como fallback
-        ),
+        persistAcrossBackgrounding: true,
+        biometricOnly: false, // Permite PIN/Padrão do sistema como fallback
       );
     } catch (e) {
       debugPrint('Erro na autenticação biométrica: $e');

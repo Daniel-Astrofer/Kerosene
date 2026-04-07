@@ -16,6 +16,7 @@ abstract class WalletRepository {
   Future<Either<Failure, String>> createWallet({
     required String name,
     required String passphrase, // Mnemonic
+    String accountSecurity = 'STANDARD',
   });
 
   /// Importar carteira existente via mnemonic
@@ -76,14 +77,6 @@ abstract class WalletRepository {
     required String name,
     required String passphrase,
   });
-
-  // ==================== Ledger ====================
-
-  /// Consultar saldo de uma carteira
-  Future<Either<Failure, double>> getBalance(String walletName);
-
-  /// Deletar ledger de uma carteira
-  Future<Either<Failure, String>> deleteLedger(String walletName);
 
   // ==================== Security ====================
 

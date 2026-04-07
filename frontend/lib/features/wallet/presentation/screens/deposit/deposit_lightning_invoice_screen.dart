@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../../core/utils/snackbar_helper.dart';
-import '../../../../../shared/widgets/brushed_metal_container.dart';
-import '../../../../../core/presentation/widgets/glass_container.dart';
-import '../../../../../core/providers/price_provider.dart';
-import '../../../domain/entities/wallet.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/features/wallet/domain/entities/wallet.dart';
 
 class DepositLightningInvoiceScreen extends ConsumerStatefulWidget {
   final Wallet wallet;
@@ -22,14 +26,12 @@ class DepositLightningInvoiceScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<DepositLightningInvoiceScreen> createState() =>
-      _DepositLightningInvoiceScreenState();
+  ConsumerState<DepositLightningInvoiceScreen> createState() => _DepositLightningInvoiceScreenState();
 }
 
-class _DepositLightningInvoiceScreenState
-    extends ConsumerState<DepositLightningInvoiceScreen> {
+class _DepositLightningInvoiceScreenState extends ConsumerState<DepositLightningInvoiceScreen> {
   Timer? _timer;
-  int _secondsRemaining = 15 * 60; // 15 minutes
+  int _secondsRemaining = 15 * 60;
 
   @override
   void initState() {
@@ -40,9 +42,7 @@ class _DepositLightningInvoiceScreenState
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
-        setState(() {
-          _secondsRemaining--;
-        });
+        setState(() => _secondsRemaining--);
       } else {
         _timer?.cancel();
       }
@@ -57,76 +57,62 @@ class _DepositLightningInvoiceScreenState
 
   String get _formattedMinutes => (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
   String get _formattedSeconds => (_secondsRemaining % 60).toString().padLeft(2, '0');
-  String get _formattedCentiseconds => '00'; // Mocking smooth ms locally is expensive, static for now
 
   void _copyInvoice() {
-    Clipboard.setData(
-      const ClipboardData(
-        text: 'lnbc10u1p3x0d...', // placeholder
-      ),
-    );
-    SnackbarHelper.showSuccess('Fatura copiada para a área de transferência!');
+    HapticFeedback.mediumImpact();
+    Clipboard.setData(const ClipboardData(text: 'lnbc10u1p3x0d...'));
+    SnackbarHelper.showSuccess('Fatura copiada!');
   }
 
   @override
   Widget build(BuildContext context) {
-    // Assuming BRL for mockup
     final btcPriceAsync = ref.watch(btcPriceProvider);
-
-    // Fake fee simulation
-    final networkFeeFiat = 1.50; // R$ 1,50
-    final providerFeeFiat = widget.amountFiat * 0.0099; // 0.99%
+    final networkFeeFiat = 1.50;
+    final providerFeeFiat = widget.amountFiat * 0.0099;
     final totalFiat = widget.amountFiat + networkFeeFiat + providerFeeFiat;
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: BrushedMetalContainer(
-        baseColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
         child: Column(
           children: [
             _buildHeader(context),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                child: btcPriceAsync.when(
-                  data: (price) {
-                    final fiatPrice = price; // simplistic
-                    final receiveBtc = widget.amountFiat / fiatPrice;
-                    final sats = (receiveBtc * 100000000).toInt();
+              child: btcPriceAsync.when(
+                data: (price) {
+                  final receiveBtc = widget.amountFiat / price;
+                  final sats = (receiveBtc * 100000000).toInt();
 
-                    return Column(
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
                       children: [
-                        _buildMainCard(totalFiat),
-                        const SizedBox(height: 24),
-                        _buildTimerWidget(),
-                        const SizedBox(height: 24),
-                        _buildDetailsBlock(
-                          networkFeeFiat,
-                          providerFeeFiat,
-                          receiveBtc,
-                          sats,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildInvoiceField(),
+                        _buildMainCard(totalFiat).animate().fade().scale(),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildTimerWidget().animate(delay: 100.ms).fade(),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildDetailsBlock(networkFeeFiat, providerFeeFiat, receiveBtc, sats).animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
+                        const SizedBox(height: AppSpacing.xl),
+                        _buildInvoiceField().animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
+                        const SizedBox(height: AppSpacing.xxl),
+                        CyberButton(
+                          text: 'COPIAR FATURA',
+                          onTap: _copyInvoice,
+                        ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Mantenha esta tela aberta até confirmar o pagamento.',
+                          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)),
+                        ).animate(delay: 500.ms).fade(),
+                        const SizedBox(height: AppSpacing.xxl),
                       ],
-                    );
-                  },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF1A5CFF)),
-                  ),
-                  error: (e, s) => Center(
-                    child: Text(
-                      'Erro: $e',
-                      style: const TextStyle(color: Colors.red),
                     ),
-                  ),
-                ),
+                  );
+                },
+                loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
+                error: (e, _) => Center(child: Text('Erro: $e', style: TextStyle(color: Theme.of(context).colorScheme.error))),
               ),
             ),
-            _buildFooterButton(),
           ],
         ),
       ),
@@ -135,80 +121,54 @@ class _DepositLightningInvoiceScreenState
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 24,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
-          const Text(
-            'INVOICE LIGHTNING',
-            style: TextStyle(
-              color: Color(0xFF00D4FF), // Lightning color indication
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2.0,
-            ),
+          Text(
+            'FATURA LIGHTNING',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2, color: Theme.of(context).colorScheme.secondary),
           ),
-          const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 24),
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildMainCard(double totalFiat) {
     return GlassContainer(
-      blur: 20,
-      opacity: 0.05,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: const Color(0xFF00D4FF).withValues(alpha: 0.2),
-        width: 1.5,
-      ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      borderRadius: BorderRadius.circular(AppSpacing.xl),
+      border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.2), width: 1.5),
       child: Column(
         children: [
-          const Text(
+          Text(
             'TOTAL A PAGAR',
-            style: TextStyle(
-              color: Color(0xFF00D4FF),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.5,
-            ),
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w900, letterSpacing: 2),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'R\$ ${totalFiat.toStringAsFixed(2).replaceAll('.', ',')}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w200,
-              fontFamily: 'Inter',
-              letterSpacing: -1.0,
-            ),
+            style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 40, fontFamily: 'JetBrainsMono'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               'VIA ${widget.providerName.toUpperCase()}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
-              ),
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1),
             ),
           ),
         ],
@@ -221,28 +181,18 @@ class _DepositLightningInvoiceScreenState
       children: [
         Text(
           'EXPIRA EM',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.4),
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.0,
-          ),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3), fontWeight: FontWeight.w900, letterSpacing: 1),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildTimerBlock(_formattedMinutes),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text(':', style: TextStyle(color: Colors.white54, fontSize: 24)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              child: Text(':', style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2))),
             ),
             _buildTimerBlock(_formattedSeconds),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text(':', style: TextStyle(color: Colors.white54, fontSize: 24)),
-            ),
-            _buildTimerBlock(_formattedCentiseconds),
           ],
         ),
       ],
@@ -250,100 +200,52 @@ class _DepositLightningInvoiceScreenState
   }
 
   Widget _buildTimerBlock(String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      borderRadius: BorderRadius.circular(AppSpacing.md),
       child: Text(
         value,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 24,
-          fontWeight: FontWeight.w300,
-          fontFamily: 'SF Mono',
-        ),
+        style: Theme.of(context).textTheme.titleLarge!.copyWith(fontFamily: 'JetBrainsMono', fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  Widget _buildDetailsBlock(
-    double networkFee,
-    double providerFee,
-    double receiveBtc,
-    int sats,
-  ) {
+  Widget _buildDetailsBlock(double networkFee, double providerFee, double receiveBtc, int sats) {
     return GlassContainer(
-      blur: 20,
-      opacity: 0.05,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: Colors.white.withValues(alpha: 0.1),
-        width: 1.0,
-      ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      borderRadius: BorderRadius.circular(AppSpacing.xl),
       child: Column(
         children: [
-          _buildDetailRow(
-            'Taxa de Rede (Lightning)',
-            'R\$ ${networkFee.toStringAsFixed(2).replaceAll('.', ',')}',
-          ),
-          const SizedBox(height: 12),
-          _buildDetailRow(
-            'Taxa do Provedor',
-            'R\$ ${providerFee.toStringAsFixed(2).replaceAll('.', ',')}',
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(color: Colors.white10, height: 1),
+          _buildDetailRow('Taxa de Rede (Lightning)', 'R\$ ${networkFee.toStringAsFixed(2).replaceAll('.', ',')}'),
+          const SizedBox(height: AppSpacing.sm),
+          _buildDetailRow('Taxa do Provedor', 'R\$ ${providerFee.toStringAsFixed(2).replaceAll('.', ',')}'),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Divider(color: Theme.of(context).colorScheme.onPrimary, height: 1, thickness: 0.05),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'VOCÊ RECEBERÁ',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${receiveBtc.toStringAsFixed(8)} BTC',
-                      style: const TextStyle(
-                        color: Color(0xFF00FFA3), // green
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'VOCÊ RECEBERÁ',
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4), fontWeight: FontWeight.w900, letterSpacing: 1),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${receiveBtc.toStringAsFixed(8)} BTC',
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: AppColors.success, fontWeight: FontWeight.bold, fontFamily: 'JetBrainsMono'),
+                  ),
+                ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00FFA3).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                 child: Text(
-                  'SATS: $sats',
-                  style: const TextStyle(
-                    color: Color(0xFF00FFA3),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  '$sats SATS',
+                  style: Theme.of(context).textTheme.labelSmall!.copyWith(color: AppColors.success, fontWeight: FontWeight.w900),
                 ),
               ),
             ],
@@ -357,22 +259,8 @@ class _DepositLightningInvoiceScreenState
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label, style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5))),
+        Text(value, style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.bold, fontFamily: 'JetBrainsMono')),
       ],
     );
   }
@@ -383,94 +271,34 @@ class _DepositLightningInvoiceScreenState
       children: [
         Text(
           'INVOICE HASH',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.4),
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.5,
-          ),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4), fontWeight: FontWeight.w900, letterSpacing: 1.5),
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.only(left: 16, right: 4, top: 4, bottom: 4),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
-          ),
+        const SizedBox(height: AppSpacing.sm),
+        GlassContainer(
+          padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.xs, top: AppSpacing.xs, bottom: AppSpacing.xs),
+          borderRadius: BorderRadius.circular(AppSpacing.md),
           child: Row(
             children: [
               Expanded(
                 child: Text(
-                  'lightning:lnbc10u1p3x0d...', // truncated
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 14,
-                    fontFamily: 'SF Mono',
-                  ),
+                  'lightning:lnbc10u1p3x0d...',
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontFamily: 'JetBrainsMono', color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
                 onPressed: _copyInvoice,
-                icon: const Icon(
-                  Icons.copy_rounded,
-                  color: Color(0xFF1A5CFF),
-                  size: 20,
-                ),
+                icon: Icon(LucideIcons.copy, color: Theme.of(context).colorScheme.onPrimary, size: 18),
                 style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A5CFF).withOpacity(0.1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.all(10),
                 ),
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFooterButton() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 32, top: 16),
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _copyInvoice,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0033FF), // Branded blue
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'COPIAR FATURA LIGHTNING',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Não feche esta tela até confirmar o pagamento.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

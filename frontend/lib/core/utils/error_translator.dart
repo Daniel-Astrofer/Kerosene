@@ -12,7 +12,7 @@ class ErrorTranslator {
     try {
       final decoded = jsonDecode(codeOrMessage);
       if (decoded is Map<String, dynamic> &&
-          decoded['type'] == 'AppException') {
+          (decoded['type'] == 'AppException' || decoded['type'] == 'Failure')) {
         extractedMessage = decoded['message']?.toString();
         final code = decoded['errorCode']?.toString();
         if (code != null && code.isNotEmpty && code != 'null') {
@@ -59,6 +59,14 @@ class ErrorTranslator {
         return l10n.errAuthUnrecognizedDevice;
       case 'ERR_AUTH_TOTP_TIMEOUT':
         return l10n.errAuthTotpTimeout;
+      case 'ERR_AUTH_PASSKEY_INVALID':
+        return l10n.passkeyErrorFinishing(l10n.errUnexpected); // Fallback to generic message
+      case 'ERR_AUTH_PASSKEY_TIMEOUT':
+        return l10n.errTimeout;
+      case 'ERR_AUTH_PASSKEY_ALREADY_REGISTERED':
+        return l10n.errAuthUserAlreadyExists;
+      case 'ERR_AUTH_SESSION_NOT_FOUND':
+        return l10n.passkeySessionNotFound;
 
       // Ledger / Balance Errors
       case 'ERR_LEDGER_NOT_FOUND':

@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
 
-/// Lista de contatos rápidos
+/// Lista de contatos rápidos - Refatorada
 class QuickContactList extends StatelessWidget {
   const QuickContactList({super.key});
 
   @override
   Widget build(BuildContext context) {
     final contacts = [
-      ('Add', Icons.add, null),
+      ('Add', LucideIcons.plus, null),
       ('GA', null, 'Gilbert'),
       ('SC', null, 'Steph'),
       ('HW', null, 'Harris'),
-      ('G', null, 'Giannis'),
+      ('GN', null, 'Giannis'),
     ];
 
     return SizedBox(
-      height: 100,
+      height: 90,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
         itemCount: contacts.length,
         itemBuilder: (context, index) {
           final contact = contacts[index];
@@ -25,6 +32,7 @@ class QuickContactList extends StatelessWidget {
             label: contact.$1,
             icon: contact.$2,
             name: contact.$3,
+            index: index,
           );
         },
       ),
@@ -35,43 +43,68 @@ class QuickContactList extends StatelessWidget {
     required String label,
     IconData? icon,
     String? name,
+    required int index,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(right: 16),
+    final bool isAdd = icon != null;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpacing.lg),
       child: Column(
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: icon != null
-                  ? const Color(0xFF7B61FF).withValues(alpha: 0.2)
-                  : const Color(0xFF1A1F3A),
-              shape: BoxShape.circle,
-              border: icon != null
-                  ? Border.all(color: const Color(0xFF7B61FF), width: 2)
-                  : null,
-            ),
-            child: Center(
-              child: icon != null
-                  ? Icon(icon, color: const Color(0xFF7B61FF))
-                  : Text(
-                      label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+          GestureDetector(
+            onTap: () => HapticFeedback.lightImpact(),
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: isAdd
+                    ? LinearGradient(
+                        colors: [AppColors.primary, AppColors.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isAdd ? null : Colors.white.withOpacity(0.05),
+                border: Border.all(
+                  color: isAdd ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  if (isAdd)
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.2),
+                      blurRadius: 15,
+                      spreadRadius: 2,
                     ),
+                ],
+              ),
+              child: Center(
+                child: isAdd
+                    ? Icon(icon, color: Colors.white, size: 24)
+                    : Text(
+                        label,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
+                      ),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           Text(
-            name ?? label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            (name ?? label).toUpperCase(),
+            style: AppTypography.caption.copyWith(
+              color: Colors.white.withOpacity(0.4),
+              fontWeight: FontWeight.w900,
+              fontSize: 8,
+              letterSpacing: 1,
+            ),
           ),
         ],
-      ),
+      ).animate(delay: (index * 50).ms).fade().scale(begin: const Offset(0.8, 0.8)),
     );
   }
 }

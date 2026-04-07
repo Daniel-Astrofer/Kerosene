@@ -1,0 +1,174 @@
+/// Represents a decoded payment request from QR or NFC.
+class PaymentData {
+  final String address;
+  final double? amountBtc;
+  final String? label;
+  final String? message;
+
+  const PaymentData({
+    required this.address,
+    this.amountBtc,
+    this.label,
+    this.message,
+  });
+
+  /// Whether this data has enough info to pre-fill a send form.
+  bool get isComplete => address.isNotEmpty;
+}
+
+/// Encodes and decodes payment request URIs used in QR codes and NFC tags.
+///
+/// Supported formats:
+///   bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>
+///   kerosene:pay?address=<address>&amount=<btc>&label=<label>
+class QrPaymentParser {
+  /// Encodes a payment request into a bitcoin: BIP-21 URI.
+  static String encode({
+    required String address,
+    double? amountBtc,
+    String? label,
+    String? message,
+  }) {
+    final params = <String, String>{};
+
+    if (amountBtc != null && amountBtc > 0) {
+      // BIP-21 requires fixed-point, no trailing zeros
+      params['amount'] = amountBtc.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    }
+    if (label != null && label.isNotEmpty) {
+      params['label'] = Uri.encodeQueryComponent(label);
+    }
+    if (message != null && message.isNotEmpty) {
+      params['message'] = Uri.encodeQueryComponent(message);
+    }
+
+    if (params.isEmpty) return 'bitcoin:$address';
+
+    final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+    return 'bitcoin:$address?$query';
+  }
+
+  /// Encodes a kerosene-internal payment URI.
+  static String encodeKerosene({
+    required String address,
+    double? amountBtc,
+    String? label,
+  }) {
+    final params = <String, String>{'address': address};
+
+    if (amountBtc != null && amountBtc > 0) {
+      params['amount'] = amountBtc.toStringAsFixed(8);
+    }
+    if (label != null && label.isNotEmpty) {
+      params['label'] = Uri.encodeQueryComponent(label);
+    }
+
+    final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+    return 'kerosene:pay?$query';
+  }
+
+  /// Decodes any payment URI into a [PaymentData] object.
+  /// Returns null if the data cannot be parsed.
+  static PaymentData? decode(String raw) {
+    if (raw.isEmpty) return null;
+
+    final trimmed = raw.trim();
+
+    // bitcoin: BIP-21 URI
+    if (trimmed.toLowerCase().startsWith('bitcoin:')) {
+      return _parseBitcoinUri(trimmed);
+    }
+
+    // kerosene:pay?...
+    if (trimmed.toLowerCase().startsWith('kerosene:pay')) {
+      return _parseKeroseneUri(trimmed);
+    }
+
+    // kerosene:link:<id> — payment link (handled upstream)
+    if (trimmed.toLowerCase().startsWith('kerosene:link:')) {
+      return null;
+    }
+
+    // Plain address (no scheme) — looks like a bitcoin address
+    if (_looksLikeBitcoinAddress(trimmed)) {
+      return PaymentData(address: trimmed);
+    }
+
+    // Could be a username for internal transfer
+    if (_looksLikeUsername(trimmed)) {
+      return PaymentData(address: trimmed);
+    }
+
+    return null;
+  }
+
+  static PaymentData? _parseBitcoinUri(String uri) {
+    try {
+      // bitcoin:<address>?params
+      final withoutScheme = uri.substring('bitcoin:'.length);
+      final questionIdx = withoutScheme.indexOf('?');
+
+      final address = questionIdx >= 0
+          ? withoutScheme.substring(0, questionIdx)
+          : withoutScheme;
+
+      if (address.isEmpty) return null;
+
+      double? amount;
+      String? label;
+      String? message;
+
+      if (questionIdx >= 0) {
+        final query = withoutScheme.substring(questionIdx + 1);
+        final params = Uri.splitQueryString(query);
+        amount = double.tryParse(params['amount'] ?? '');
+        label = params['label'];
+        message = params['message'];
+      }
+
+      return PaymentData(
+        address: address,
+        amountBtc: amount,
+        label: label,
+        message: message,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static PaymentData? _parseKeroseneUri(String uri) {
+    try {
+      final questionIdx = uri.indexOf('?');
+      if (questionIdx < 0) return null;
+
+      final query = uri.substring(questionIdx + 1);
+      final params = Uri.splitQueryString(query);
+
+      final address = params['address'] ?? '';
+      if (address.isEmpty) return null;
+
+      final amount = double.tryParse(params['amount'] ?? '');
+      final label = params['label'];
+
+      return PaymentData(
+        address: address,
+        amountBtc: amount,
+        label: label,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _looksLikeBitcoinAddress(String s) {
+    // Mainnet: start with 1, 3, or bc1
+    // Testnet: start with m, n, 2, or tb1
+    return RegExp(r'^(1|3|bc1|m|n|2|tb1)[a-zA-HJ-NP-Z0-9]{20,90}$').hasMatch(s);
+  }
+
+  static bool _looksLikeUsername(String s) {
+    // Internal usernames: alphanumeric + underscore, 3-30 chars
+    return RegExp(r'^[a-zA-Z0-9_]{3,30}$').hasMatch(s);
+  }
+}

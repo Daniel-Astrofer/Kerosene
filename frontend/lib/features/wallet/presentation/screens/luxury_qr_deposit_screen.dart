@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
 
-/// Luxury QR Deposit Screen — matches Figma "Luxury QR Deposit Screen"
-/// Shown after user taps "Continue" on the Receive/Enter Amount screen.
+/// Luxury QR Deposit Screen — Refactored with Design System
 class LuxuryQrDepositScreen extends StatelessWidget {
   final String address;
   final double? amountBtc;
@@ -24,8 +31,8 @@ class LuxuryQrDepositScreen extends StatelessWidget {
   }
 
   String get _shortAddress {
-    if (address.length > 16) {
-      return '${address.substring(0, 8)}...${address.substring(address.length - 8)}';
+    if (address.length > 20) {
+      return '${address.substring(0, 10)}...${address.substring(address.length - 10)}';
     }
     return address;
   }
@@ -33,34 +40,37 @@ class LuxuryQrDepositScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF090A0C), // Dark base from image
-      body: SafeArea(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    if (amountBtc != null && amountBtc! > 0)
-                      _buildAmountHeader(),
-                    const SizedBox(height: 24),
-                    _buildQrCard(),
-                    const SizedBox(height: 32),
-                    _buildSubtitles(),
-                    const SizedBox(height: 32),
-                    _buildAddressSection(context),
-                    const SizedBox(height: 24),
-                    _buildActionRow(context),
-                    const SizedBox(height: 48),
-                  ],
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  if (amountBtc != null && amountBtc! > 0)
+                    _buildAmountHeader().animate().fade().scale(),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildQrCard().animate(delay: 100.ms).fade().scale(curve: Curves.easeOutBack),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildSubtitles().animate(delay: 200.ms).fade(),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildAddressSection(context).animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildActionRow(context).animate(delay: 400.ms).fade().slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: AppSpacing.xxl),
+                  if (amountBtc == null || amountBtc! <= 0)
+                    CyberButton(
+                      text: 'DEFINIR VALOR',
+                      onTap: () => Navigator.pop(context),
+                    ).animate(delay: 500.ms).fade().slideY(begin: 0.2, end: 0),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
               ),
             ),
-            _buildSetAmountButton(context),
-            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -69,72 +79,60 @@ class LuxuryQrDepositScreen extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 24,
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
-          const Text(
-            'Receive BTC',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Text(
+            'RECEBER BTC',
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
           ),
-          const SizedBox(width: 24), // Balance spacing
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildAmountHeader() {
-    return Text(
-      amountBtc!.toStringAsFixed(8),
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 40,
-        fontWeight: FontWeight.w300,
-        fontFamily: 'Inter',
-        letterSpacing: -1.0,
-      ),
-      textAlign: TextAlign.center,
+    return Column(
+      children: [
+        Text(
+          amountBtc!.toStringAsFixed(8),
+          style: AppTypography.h1.copyWith(fontSize: 48, fontFamily: 'JetBrainsMono'),
+        ),
+        Text(
+          'BTC',
+          style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.3), fontWeight: FontWeight.bold, letterSpacing: 2),
+        ),
+      ],
     );
   }
 
   Widget _buildQrCard() {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(32), // Highly rounded
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1A5CFF).withOpacity(0.15),
-              blurRadius: 40,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: QrImageView(
-          data: _qrData,
-          version: QrVersions.auto,
-          size: 240,
-          eyeStyle: const QrEyeStyle(
-            eyeShape: QrEyeShape.square,
-            color: Color(0xFF000000),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        borderRadius: BorderRadius.circular(AppSpacing.xxl),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSpacing.lg),
           ),
-          dataModuleStyle: const QrDataModuleStyle(
-            dataModuleShape: QrDataModuleShape.square,
-            color: Color(0xFF000000),
+          child: QrImageView(
+            data: _qrData,
+            version: QrVersions.auto,
+            size: 200,
+            eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+            dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
           ),
         ),
       ),
@@ -144,24 +142,15 @@ class LuxuryQrDepositScreen extends StatelessWidget {
   Widget _buildSubtitles() {
     return Column(
       children: [
-        const Text(
-          'Scan to receive Bitcoin',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+        Text(
+          'Escaneie para receber Bitcoin',
+          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         Text(
-          'Only send Bitcoin (BTC) to this address.\nSending other assets will result in permanent loss.',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            height: 1.4,
-          ),
+          'Envie apenas Bitcoin (BTC) para este endereço.\nO envio de outros ativos resultará em perda permanente.',
+          style: AppTypography.bodySmall.copyWith(color: Colors.white.withOpacity(0.4), height: 1.4),
           textAlign: TextAlign.center,
         ),
       ],
@@ -173,66 +162,39 @@ class LuxuryQrDepositScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'YOUR BTC ADDRESS',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.35),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2.0,
+          'SEU ENDEREÇO BTC',
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+            fontSize: 10,
           ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.only(left: 16, right: 6, top: 6, bottom: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04), // Dark pill container
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-          ),
+        const SizedBox(height: AppSpacing.sm),
+        GlassContainer(
+          padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.xs, top: AppSpacing.xs, bottom: AppSpacing.xs),
+          borderRadius: BorderRadius.circular(AppSpacing.md),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   _shortAddress,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 14,
-                    fontFamily: 'monospace',
-                    letterSpacing: 0.5,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontFamily: 'JetBrainsMono', letterSpacing: 0.5),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
+              const SizedBox(width: AppSpacing.sm),
+              IconButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
                   Clipboard.setData(ClipboardData(text: address));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        'Address copied!',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: const Color(0xFF1A5CFF),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  SnackbarHelper.showSuccess('Endereço copiado!');
                 },
-                child: Container(
+                icon: Icon(LucideIcons.copy, color: Theme.of(context).colorScheme.onPrimary, size: 18),
+                style: IconButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A5CFF), // Blue copy button
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.copy_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
                 ),
               ),
             ],
@@ -247,88 +209,40 @@ class LuxuryQrDepositScreen extends StatelessWidget {
       children: [
         Expanded(
           child: _buildSecondaryActionButton(
-            icon: Icons.ios_share_rounded,
-            label: 'Share',
-            onTap: () {
-              // Share address logic
-            },
+            icon: LucideIcons.share2,
+            label: 'Compartilhar',
+            onTap: () {},
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: _buildSecondaryActionButton(
-            icon: Icons.download_rounded,
-            label: 'Save',
-            onTap: () {
-              // Save QR logic
-            },
+            icon: LucideIcons.download,
+            label: 'Salvar QR',
+            onTap: () {},
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSecondaryActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
+  Widget _buildSecondaryActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
-        ),
+      borderRadius: BorderRadius.circular(AppSpacing.md),
+      child: GlassContainer(
+        height: 56,
+        padding: EdgeInsets.zero,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSetAmountButton(BuildContext context) {
-    if (amountBtc != null && amountBtc! > 0) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: SizedBox(
-        width: double.infinity,
-        height: 60,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1A5CFF), // Royal Blue
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-          onPressed: () {
-            // Usually returns to amount screen or pops
-            Navigator.pop(context);
-          },
-          child: const Text(
-            'Set Amount',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ),
       ),
     );

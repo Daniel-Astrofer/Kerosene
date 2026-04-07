@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
-import '../../../../core/presentation/widgets/pin_dialog.dart';
-import '../../../../core/security/app_pin_service.dart';
-import '../../../../core/security/biometric_service.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/core/utils/error_translator.dart';
+import 'package:teste/core/services/audio_service.dart';
+import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
+
+import '../../../../core/utils/qr_payment_parser.dart';
+import '../../../../core/widgets/transaction_auth_gate.dart';
+
 import '../providers/wallet_provider.dart';
 import '../state/wallet_state.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
-
-import '../../../../core/providers/price_provider.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/cyber_icons.dart';
-import '../../../home/presentation/screens/qr_scanner_screen.dart';
-import 'nfc_interaction_screen.dart';
 import '../../domain/entities/wallet.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
-import 'package:ndef_record/ndef_record.dart'; // Just in case, though might cause collision if NdefRecord is in both?
-import '../../../../core/utils/snackbar_helper.dart';
-import '../../../../core/utils/error_translator.dart';
-import '../../../../core/services/audio_service.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'nfc_interaction_screen.dart';
 
 class SendMoneyScreen extends ConsumerStatefulWidget {
   final String? walletId;
   final String? initialAddress;
-
-  /// Pre-fill amount in BTC (e.g. from QR or NFC payment request).
   final double? initialAmountBtc;
 
   const SendMoneyScreen({
@@ -44,6 +44,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   String? _pendingPaymentLinkId;
   String _lockedRecipientAddress = '';
   double _lockedAmountBtc = 0.0;
+  String? _lockedRecipientLabel;
 
   final _receiverController = TextEditingController();
   final _contextController = TextEditingController();
@@ -54,6 +55,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialAmountBtc != null) {
+      _amount = widget.initialAmountBtc!.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+      _lockedAmountBtc = widget.initialAmountBtc!;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
         _parsePaymentRequest(widget.initialAddress!);
@@ -68,111 +73,115 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     super.dispose();
   }
 
+  void _onKeyTap(String key) {
+    if (_lockedAmountBtc > 0) return; // Prevent changing locked amount
+    
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (key == '←') {
+        if (_amount.length > 1) {
+          _amount = _amount.substring(0, _amount.length - 1);
+        } else {
+          _amount = "0";
+        }
+      } else if (key == '.') {
+        if (!_amount.contains('.')) {
+          _amount += '.';
+        }
+      } else {
+        if (_amount == "0") {
+          _amount = key;
+        } else {
+          if (_amount.contains('.')) {
+            final parts = _amount.split('.');
+            if (parts.length > 1 && parts[1].length >= 8) {
+              return;
+            }
+          }
+          if (_amount.length < 16) {
+            _amount += key;
+          }
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<AsyncActionState>(sendTransactionProvider, (previous, next) {
       if (next.result != null) {
-        // Success handled by HomeScreen with a dialog
-        final result = next.result;
         AudioService.instance.playTransaction();
+        HapticFeedback.vibrate();
         ref.read(sendTransactionProvider.notifier).reset();
-        Navigator.pop(context, result);
+        Navigator.pop(context, next.result);
       } else if (next.error != null) {
         AudioService.instance.playError();
-        String errorMsg = next.error!;
-
-        if (errorMsg.contains('ERR_LEDGER_INSUFFICIENT_BALANCE') ||
-            errorMsg.contains('ERR_LEDGER_NOT_FOUND')) {
-          final walletState = ref.read(walletProvider);
-          if (walletState is WalletLoaded &&
-              walletState.selectedWallet != null) {
-            final currentBalance = walletState.selectedWallet!.balance;
-            final attemptedAmountBtc = _lockedAmountBtc;
-
-            final missingCount = (attemptedAmountBtc - currentBalance).clamp(
-              0.0,
-              double.infinity,
-            );
-            errorMsg =
-                'Saldo insuficiente. Faltam ${missingCount.toStringAsFixed(8)} BTC para completar este envio.';
-          } else {
-            errorMsg = ErrorTranslator.translate(context.l10n, errorMsg);
-          }
-        } else {
-          errorMsg = ErrorTranslator.translate(context.l10n, errorMsg);
-        }
-
+        HapticFeedback.heavyImpact();
+        String errorMsg = ErrorTranslator.translate(context.l10n, next.error!);
         SnackbarHelper.showError(errorMsg);
         ref.read(sendTransactionProvider.notifier).reset();
       }
     });
-
-    // Listen for payment link payments
     ref.listen<AsyncActionState>(paymentLinkNotifierProvider, (previous, next) {
       if (next.result != null) {
         AudioService.instance.playTransaction();
-        SnackbarHelper.showSuccess("Payment successful!");
-        Navigator.pop(context, true);
+        HapticFeedback.vibrate();
+        ref.read(paymentLinkNotifierProvider.notifier).reset();
+        Navigator.pop(context, next.result);
       } else if (next.error != null) {
         AudioService.instance.playError();
-        SnackbarHelper.showError(next.error!);
+        HapticFeedback.heavyImpact();
+        SnackbarHelper.showError(
+          ErrorTranslator.translate(context.l10n, next.error!),
+        );
+        ref.read(paymentLinkNotifierProvider.notifier).reset();
       }
     });
 
+    final sendState = ref.watch(sendTransactionProvider);
+    final paymentLinkState = ref.watch(paymentLinkNotifierProvider);
+    final isLoading = sendState.isLoading || paymentLinkState.isLoading;
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
+        useScroll: true,
+        resizeToAvoidBottomInset: false,
         child: Column(
           children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              if (_pendingPaymentLinkId == null && _lockedRecipientAddress.isEmpty) ...[
-                _buildTabs(),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildAmountDisplay(),
-                      const SizedBox(height: 12),
-                      _buildLiveQuote(),
-                    ],
-                  ),
+            _buildHeader(context),
+            const SizedBox(height: AppSpacing.lg),
+            
+            if (_pendingPaymentLinkId == null && _lockedRecipientAddress.isEmpty) ...[
+              _buildTabs().animate().fade().slideY(begin: 0.1, end: 0),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                child: Column(
+                  children: [
+                    _buildAmountDisplay().animate().scale(curve: Curves.easeOutBack),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildLiveQuote().animate(delay: 200.ms).fade(),
+                  ],
                 ),
-                _buildKeypad(),
-              ] else ...[
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "${_lockedAmountBtc.toStringAsFixed(8)} BTC",
-                          style: const TextStyle(
-                           color: Colors.white,
-                           fontSize: 48,
-                           fontWeight: FontWeight.w300,
-                           fontFamily: 'Inter',
-                           letterSpacing: -1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Amount Locked by Request",
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              _buildContinueButton(),
+              ),
+              _buildKeypad().animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
+            ] else ...[
+              _buildLockedAmountView().animate().fade().scale(),
             ],
-          ),
+
+            const SizedBox(height: AppSpacing.xl),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: CyberButton(
+                text: context.l10n.continueButton.toUpperCase(),
+                isLoading: isLoading,
+                onTap: (double.tryParse(_amount) ?? 0) > 0 ? _handleContinue : null,
+              ).animate(delay: 500.ms).fade().slideY(begin: 0.2, end: 0),
+            ),
+            
+            const SizedBox(height: AppSpacing.xl),
+          ],
         ),
       ),
     );
@@ -180,50 +189,42 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           const Spacer(),
           Text(
-            AppLocalizations.of(context)!.send,
-            style: TextStyle(
-              color: Colors.white.withAlpha(230),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+            context.l10n.send.toUpperCase(),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
           ),
           const Spacer(),
-          const SizedBox(width: 40),
+          const SizedBox(width: 48),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildTabs() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 32),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Row(
         children: [
-          _buildTabItem("NFC", 0),
-          _buildTabItem("Manual", 1),
-          _buildTabItem("QR Code", 2),
+          _buildTabItem(context.l10n.nfc, 0),
+          _buildTabItem(context.l10n.manual, 1),
+          _buildTabItem(context.l10n.qrCode, 2),
         ],
       ),
     );
@@ -233,24 +234,27 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final isSelected = _selectedTabIndex == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedTabIndex = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedTabIndex = index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withAlpha(25) : Colors.transparent,
+            color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(100),
             border: Border.all(
-              color: isSelected ? Colors.white.withAlpha(30) : Colors.transparent,
-              width: 1,
+              color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white60,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 13,
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+              color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              letterSpacing: 1.2,
             ),
           ),
         ),
@@ -262,35 +266,28 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return Column(
       children: [
         Text(
-          AppLocalizations.of(context)!.amount.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.3),
-            fontSize: 10,
+          context.l10n.amount.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
             fontWeight: FontWeight.bold,
             letterSpacing: 2.0,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            const Text(
+            Text(
               "₿ ",
-              style: TextStyle(
-                color: Color(0xFF00FFA3),
-                fontSize: 24,
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary),
             ),
             Text(
               _amount,
-              style: const TextStyle(
-                color: Colors.white,
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
                 fontSize: 56,
                 fontWeight: FontWeight.w300,
-                fontFamily: 'Inter',
                 letterSpacing: -1.0,
               ),
             ),
@@ -305,10 +302,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final amt = double.tryParse(_amount) ?? 0.0;
     final value = amt * (btcUsdPrice ?? 0);
     return Text(
-      "~ \$ ${value.toStringAsFixed(2)} USD",
-      style: TextStyle(
-        color: Colors.white.withAlpha(120),
-        fontSize: 16,
+      "≈ \$ ${value.toStringAsFixed(2)} USD",
+      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
         fontWeight: FontWeight.w500,
       ),
     );
@@ -316,7 +312,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   Widget _buildKeypad() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         children: [
           Row(
@@ -360,128 +356,82 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: 64,
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
           ),
           alignment: Alignment.center,
           child: isBackspace
-              ? const Icon(Icons.backspace_outlined, color: Colors.white, size: 22)
+              ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 20)
               : Text(
                   key,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w300,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w300),
                 ),
         ),
       ),
     );
   }
 
-  void _onKeyTap(String key) {
-    setState(() {
-      if (key == '←') {
-        if (_amount.length > 1) {
-          _amount = _amount.substring(0, _amount.length - 1);
-        } else {
-          _amount = "0";
-        }
-      } else if (key == '.') {
-        if (!_amount.contains('.')) {
-          _amount += '.';
-        }
-      } else {
-        if (_amount == "0") {
-          _amount = key;
-        } else {
-          if (_amount.contains('.')) {
-            final parts = _amount.split('.');
-            if (parts.length > 1 && parts[1].length >= 8) {
-              return;
-            }
-          }
-          if (_amount.length < 16) {
-            _amount += key;
-          }
-        }
-      }
-    });
-  }
-
-  Widget _buildContinueButton() {
-    final sendState = ref.watch(sendTransactionProvider);
-    final canContinue = (double.tryParse(_amount) ?? 0.0) > 0;
-
+  Widget _buildLockedAmountView() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: (sendState.isLoading || !canContinue) ? null : _handleContinue,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0033FF),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                disabledBackgroundColor: const Color(0xFF0033FF).withValues(alpha: 0.2),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        borderRadius: BorderRadius.circular(AppSpacing.xl),
+        child: Column(
+          children: [
+            Text(
+              "${(double.tryParse(_amount) ?? 0).toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} BTC",
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 40,
+                letterSpacing: -1.0,
               ),
-              child: sendState.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      "CONTINUE",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.sm),
+            if (_lockedRecipientLabel != null) ...[
+                Text(
+                  "PARA: ${_lockedRecipientLabel!.toUpperCase()}",
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+            ],
+            Text(
+              context.l10n.fixedAmountByRequest,
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2.0,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   void _handleContinue() async {
     final walletState = ref.read(walletProvider);
-    if (walletState is! WalletLoaded || walletState.selectedWallet == null) return;
+    final currentWallet = _resolveWallet(walletState);
+    if (currentWallet == null) return;
     
+    HapticFeedback.mediumImpact();
+
     if (_pendingPaymentLinkId != null || _lockedRecipientAddress.isNotEmpty) {
       _showConfirmationDialog(
         context,
-        _lockedAmountBtc,
-        0,
-        _lockedAmountBtc,
-        walletState.selectedWallet!.id,
-        walletState.selectedWallet!.address,
+        double.tryParse(_amount) ?? 0.0,
+        0, // Let backend or prepare Tx define actual fee
+        double.tryParse(_amount) ?? 0.0,
+        currentWallet.id,
+        currentWallet.address,
         _lockedRecipientAddress,
         _contextController.text.trim(),
       );
-      return;
-    }
-
-    double inputAmount = double.tryParse(_amount) ?? 0.0;
-    if (inputAmount <= 0) {
-      SnackbarHelper.showError("Please enter a valid amount");
       return;
     }
 
@@ -490,8 +440,23 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     } else if (_selectedTabIndex == 2) {
       _handleScanQr();
     } else {
-      _showManualAddressInput(inputAmount, walletState.selectedWallet!);
+      _showManualAddressInput(double.tryParse(_amount) ?? 0, currentWallet);
     }
+  }
+
+  Wallet? _resolveWallet(WalletState walletState) {
+    if (walletState is! WalletLoaded) return null;
+
+    if (widget.walletId != null) {
+      for (final wallet in walletState.wallets) {
+        if (wallet.id == widget.walletId || wallet.name == widget.walletId) {
+          return wallet;
+        }
+      }
+    }
+
+    return walletState.selectedWallet ??
+        (walletState.wallets.isNotEmpty ? walletState.wallets.first : null);
   }
 
   void _showManualAddressInput(double amountBtc, Wallet wallet) {
@@ -499,117 +464,103 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF0A0A0F),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(50),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  "Manual Entry",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      builder: (_) {
+        return GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
+          padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 
+              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(10),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withAlpha(20)),
-                  ),
-                  child: TextField(
-                    controller: _receiverController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: "Recipient username or address",
-                      hintStyle: TextStyle(color: Colors.white.withAlpha(100)),
-                      border: InputBorder.none,
-                      icon: Icon(Icons.person_outline_rounded, color: Colors.white.withAlpha(200), size: 18),
-                    ),
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(10),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withAlpha(20)),
-                  ),
-                  child: TextField(
-                    controller: _contextController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    maxLength: 100,
-                    decoration: InputDecoration(
-                      hintText: "Description (optional)",
-                      hintStyle: TextStyle(color: Colors.white.withAlpha(100)),
-                      border: InputBorder.none,
-                      counterText: '',
-                      icon: Icon(Icons.edit_note_rounded, color: Colors.white.withAlpha(200), size: 18),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final toAddress = _receiverController.text.trim();
-                      if (toAddress.isEmpty) {
-                        SnackbarHelper.showError("Please enter a valid recipient");
-                        return;
-                      }
-                      Navigator.pop(context);
-                      _showConfirmationDialog(
-                        context,
-                        amountBtc,
-                        0,
-                        amountBtc,
-                        wallet.id,
-                        wallet.address,
-                        toAddress,
-                        _contextController.text.trim(),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text("Next", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                context.l10n.recipientData,
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 1),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              _buildBottomSheetInput(
+                controller: _receiverController,
+                hint: context.l10n.recipientHint,
+                icon: LucideIcons.user,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildBottomSheetInput(
+                controller: _contextController,
+                hint: context.l10n.descriptionHint,
+                icon: LucideIcons.fileText,
+                maxLength: 100,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              CyberButton(
+                text: context.l10n.next,
+                onTap: () {
+                  if (_receiverController.text.trim().isEmpty) {
+                    SnackbarHelper.showError("Informe o destinatário");
+                    return;
+                  }
+                  if (_isExternalBitcoinTarget(_receiverController.text.trim())) {
+                    SnackbarHelper.showError(
+                      "Pagamentos on-chain devem usar o fluxo de saque.",
+                    );
+                    return;
+                  }
+                  Navigator.pop(context);
+                  _showConfirmationDialog(
+                    context,
+                    amountBtc,
+                    0,
+                    amountBtc,
+                    wallet.id,
+                    wallet.address,
+                    _receiverController.text.trim(),
+                    _contextController.text.trim(),
+                  );
+                },
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildBottomSheetInput({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    int? maxLength,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppSpacing.md),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+      ),
+      child: TextField(
+        controller: controller,
+        style: Theme.of(context).textTheme.bodyMedium!,
+        maxLength: maxLength,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)),
+          border: InputBorder.none,
+          counterText: '',
+          icon: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+        ),
+      ),
     );
   }
 
@@ -628,7 +579,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       barrierDismissible: true,
       barrierLabel: '',
       transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, anim1, anim2) => const SizedBox(),
+      pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (context, anim1, anim2, child) {
         return ScaleTransition(
           scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
@@ -638,99 +589,82 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               backgroundColor: Colors.transparent,
               contentPadding: EdgeInsets.zero,
               content: GlassContainer(
-                blur: 40,
-                opacity: 0.1,
-                borderRadius: BorderRadius.circular(30),
-                padding: const EdgeInsets.all(24),
+                borderRadius: BorderRadius.circular(AppSpacing.xl),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      (_pendingPaymentLinkId != null ||
-                              _lockedRecipientAddress.isNotEmpty)
-                          ? "Confirm Tracked Payment"
-                          : "Review Transaction",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      context.l10n.reviewSend,
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
                     ),
-                    const SizedBox(height: 24),
-                    _buildConfirmRow("Recipient", toAddress, isSmall: true),
-                    const Divider(color: Colors.white10, height: 32),
-                    if (txContext.isNotEmpty) ...[
-                      _buildConfirmRow("Descrição", txContext, isSmall: true),
-                      const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildConfirmRow(context.l10n.recipient, _lockedRecipientLabel ?? toAddress, isSmall: _lockedRecipientLabel == null),
+                    if (toAddress != _lockedRecipientLabel && _lockedRecipientLabel != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _buildConfirmRow("ENDEREÇO", toAddress, isSmall: true),
                     ],
-                    _buildConfirmRow(
-                      "Amount",
-                      "${amount.toStringAsFixed(8)} BTC",
-                    ),
-                    const SizedBox(height: 12),
-                    _buildConfirmRow(
-                      "Network Fee",
-                      "Free",
-                      valueColor: const Color(0xFF00FF94),
-                    ),
-                    const Divider(color: Colors.white10, height: 32),
-                    _buildConfirmRow(
-                      "Total",
-                      "${total.toStringAsFixed(8)} BTC",
-                      isBold: true,
-                    ),
-                    const SizedBox(height: 32),
+                    Divider(color: AppColors.white10, height: AppSpacing.xl),
+                    if (txContext.isNotEmpty) ...[
+                      _buildConfirmRow(context.l10n.description, txContext, isSmall: true),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    _buildConfirmRow(context.l10n.amount.toUpperCase(), "${amount.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} BTC"),
+                    const SizedBox(height: AppSpacing.xs),
+                    _buildConfirmRow(context.l10n.networkFee, context.l10n.free, valueColor: Theme.of(context).colorScheme.primary),
+                    Divider(color: AppColors.white10, height: AppSpacing.xl),
+                    _buildConfirmRow(context.l10n.total, "${total.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} BTC", isBold: true),
+                    const SizedBox(height: AppSpacing.xl),
                     Row(
                       children: [
                         Expanded(
                           child: TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              "Cancel",
-                              style: TextStyle(color: Colors.white54),
-                            ),
+                            child: Text(context.l10n.cancel.toUpperCase(), style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4))),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF7B61FF),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: () {
+                          child: CyberButton(
+                            text: context.l10n.confirm,
+                            onTap: () async {
+                              // We close the review dialog
                               Navigator.pop(context);
-                              if (_pendingPaymentLinkId != null) {
-                                _handlePayPaymentLink();
-                              } else {
-                                final satoshiFee = (fee * 100000000).toInt();
-                                ref
-                                    .read(sendTransactionProvider.notifier)
-                                    .send(
+                              
+                              final walletState = ref.read(walletProvider);
+                              final currentWallet = _resolveWallet(walletState);
+                              if (currentWallet == null) {
+                                SnackbarHelper.showError("Carteira de origem indisponível");
+                                return;
+                              }
+
+                              final secLevel = TransactionAuthGate.securityFromString(
+                                currentWallet.accountSecurity,
+                              );
+                              final authResult = await TransactionAuthGate.show(
+                                context,
+                                security: secLevel,
+                              );
+
+                              if (authResult.isAuthenticated && mounted) {
+                                  if (_pendingPaymentLinkId != null) {
+                                    _handlePayPaymentLink(currentWallet);
+                                  } else {
+                                    ref.read(sendTransactionProvider.notifier).send(
                                       fromWalletId: fromWalletId,
                                       fromAddress: fromAddress,
                                       toAddress: toAddress,
                                       amount: amount,
-                                      feeSatoshis: satoshiFee,
-                                      context: txContext.isNotEmpty
-                                          ? txContext
-                                          : null,
+                                      feeSatoshis: (fee * 100000000).toInt(),
+                                      context: txContext.isNotEmpty ? txContext : null,
+                                      confirmationPassphrase: authResult.confirmationPassphrase,
+                                      totpCode: authResult.totpCode,
                                     );
+                                  }
+                              } else {
+                                  SnackbarHelper.showError("Autenticação cancelada ou falhou");
                               }
                             },
-                            child: Text(
-                              (_pendingPaymentLinkId != null ||
-                                      _lockedRecipientAddress.isNotEmpty)
-                                  ? "Pay Now"
-                                  : "Confirm",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                           ),
                         ),
                       ],
@@ -745,31 +679,23 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     );
   }
 
-  Widget _buildConfirmRow(
-    String label,
-    String value, {
-    bool isSmall = false,
-    bool isBold = false,
-    Color? valueColor,
-  }) {
+  Widget _buildConfirmRow(String label, String value, {bool isSmall = false, bool isBold = false, Color? valueColor}) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white38, fontSize: 13),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3), fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
-            color: valueColor ?? Colors.white,
-            fontSize: isSmall ? 13 : 16,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-            fontFamily: isSmall ? null : 'monospace',
+          style: (isSmall ? Theme.of(context).textTheme.bodySmall! : Theme.of(context).textTheme.bodyLarge!).copyWith(
+            color: valueColor ?? Theme.of(context).colorScheme.onPrimary,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+            fontFamily: 'JetBrainsMono',
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          softWrap: true,
         ),
       ],
     );
@@ -801,388 +727,92 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       _fetchPaymentLinkDetails(linkId);
       return;
     }
-
-    if (data.startsWith('kerosene:pay?')) {
-      try {
-        final uri = Uri.parse(data);
-        final address = uri.queryParameters['address'];
-        final amountStr = uri.queryParameters['amount'];
-
-        if (address != null && address.isNotEmpty) {
-          setState(() {
-            _lockedRecipientAddress = address;
-            _lockedAmountBtc = double.tryParse(amountStr ?? '0') ?? 0;
-            _pendingPaymentLinkId = null; // Local locked flow
-          });
-          return;
-        }
-      } catch (e) {
-        debugPrint("Error parsing kerosene:pay link: $e");
-      }
+    
+    final parsed = QrPaymentParser.decode(data);
+    if (parsed != null && parsed.isComplete) {
+       if (_isExternalBitcoinTarget(parsed.address)) {
+         SnackbarHelper.showError(
+           "QR externo detectado. Use o fluxo de saque para pagamentos on-chain.",
+         );
+         return;
+       }
+       setState(() {
+           _lockedRecipientAddress = parsed.address;
+           if (parsed.amountBtc != null && parsed.amountBtc! > 0) {
+              _lockedAmountBtc = parsed.amountBtc!;
+              _amount = parsed.amountBtc!.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+           }
+           if (parsed.label != null && parsed.label!.isNotEmpty) {
+               _lockedRecipientLabel = parsed.label;
+           }
+           if (parsed.message != null && parsed.message!.isNotEmpty) {
+               _contextController.text = parsed.message!;
+           }
+       });
+       
+       HapticFeedback.lightImpact();
+       SnackbarHelper.showSuccess("Dados da requisição carregados!");
+    } else {
+       SnackbarHelper.showError("QR/NFC Request inválido");
     }
-
-    // Completely strict mode - only kerosene links are allowed.
-    SnackbarHelper.showError("Please scan a valid Kerosene Payment Link.");
   }
 
   Future<void> _fetchPaymentLinkDetails(String linkId) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFF7931A)),
-      ),
-    );
+    final result = await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
 
-    try {
-      final link = await ref.read(paymentLinkDetailProvider(linkId).future);
-      if (!mounted) return;
-      Navigator.pop(context);
+    result.fold((failure) {
+      SnackbarHelper.showError(failure.message);
+    }, (data) {
+      final rawAmount = data['amount'];
+      final amount = rawAmount is num
+          ? rawAmount.toDouble()
+          : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
+      final status = (data['status']?.toString() ?? 'PENDING').toUpperCase();
+
+      if (status == 'PAID') {
+        SnackbarHelper.showError("Esta solicitação já foi paga.");
+        return;
+      }
+      if (status == 'CANCELED' || status == 'EXPIRED') {
+        SnackbarHelper.showError("Esta solicitação de pagamento expirou.");
+        return;
+      }
 
       setState(() {
-        _pendingPaymentLinkId = link.id;
-        _lockedRecipientAddress = link.depositAddress;
-        _lockedAmountBtc = link.amountBtc;
-      });
-
-      SnackbarHelper.showSuccess("Tracked payment request loaded.");
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      SnackbarHelper.showError("Failed to fetch payment link details.");
-    }
-  }
-
-  Future<void> _handlePayPaymentLink() async {
-    final walletState = ref.read(walletProvider);
-    if (walletState is! WalletLoaded || walletState.selectedWallet == null) {
-      return;
-    }
-
-    // Biometric / PIN confirmation before sending (same logic as _handleContinue)
-    final biometricService = BiometricService();
-    final canAuth = await biometricService.canAuthenticate();
-    final iEnrolled = await biometricService.isBiometricEnrolled();
-
-    bool authenticated = false;
-    if (canAuth && iEnrolled) {
-      authenticated = await biometricService.authenticate(
-        localizedReason: 'Confirm tracked payment',
-      );
-    } else {
-      final pinService = AppPinService();
-      final hasPinSet = await pinService.hasPinSet();
-      if (!mounted) return;
-      authenticated = await PinDialog.show(context, isSetup: !hasPinSet);
-    }
-
-    if (!mounted) return;
-    if (!authenticated) {
-      SnackbarHelper.showError("Authentication failed.");
-      return;
-    }
-
-    await ref
-        .read(paymentLinkNotifierProvider.notifier)
-        .pay(
-          linkId: _pendingPaymentLinkId!,
-          payerWalletName: walletState.selectedWallet!.name,
-        );
-  }
-
-
-}
-
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              if (_pendingPaymentLinkId != null) {
-                                _handlePayPaymentLink();
-                              } else {
-                                final satoshiFee = (fee * 100000000).toInt();
-                                ref
-                                    .read(sendTransactionProvider.notifier)
-                                    .send(
-                                      fromWalletId: fromWalletId,
-                                      fromAddress: fromAddress,
-                                      toAddress: toAddress,
-                                      amount: amount,
-                                      feeSatoshis: satoshiFee,
-                                      context: txContext.isNotEmpty
-                                          ? txContext
-                                          : null,
-                                    );
-                              }
-                            },
-                            child: Text(
-                              (_pendingPaymentLinkId != null ||
-                                      _lockedRecipientAddress.isNotEmpty)
-                                  ? "Pay Now"
-                                  : "Confirm",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildConfirmRow(
-    String label,
-    String value, {
-    bool isSmall = false,
-    bool isBold = false,
-    Color? valueColor,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white38, fontSize: 13),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? Colors.white,
-            fontSize: isSmall ? 13 : 16,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-            fontFamily: isSmall ? null : 'monospace',
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-
-  void _handleScanQr() async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-    );
-    if (result != null && mounted) {
-      _parsePaymentRequest(result);
-    }
-  }
-
-  void _handleReadNfc() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => NfcInteractionScreen(amountDisplay: _amount)),
-    );
-    if (result != null && result is String && mounted) {
-      _parsePaymentRequest(result);
-    }
-  }
-
-  void _parsePaymentRequest(String data) {
-    if (data.startsWith('kerosene:link:')) {
-      final linkId = data.replaceFirst('kerosene:link:', '');
-      _fetchPaymentLinkDetails(linkId);
-      return;
-    }
-
-    if (data.startsWith('kerosene:pay?')) {
-      try {
-        final uri = Uri.parse(data);
-        final address = uri.queryParameters['address'];
-        final amountStr = uri.queryParameters['amount'];
-
-        if (address != null && address.isNotEmpty) {
-          setState(() {
-            _lockedRecipientAddress = address;
-            _lockedAmountBtc = double.tryParse(amountStr ?? '0') ?? 0;
-            _pendingPaymentLinkId = null; // Local locked flow
-          });
-          return;
+        _pendingPaymentLinkId = linkId;
+        _lockedRecipientLabel = 'SOLICITAÇÃO INTERNA';
+        _lockedRecipientAddress = 'Pagamento por link';
+        if (amount > 0) {
+          _lockedAmountBtc = amount;
+          _amount = amount
+              .toStringAsFixed(8)
+              .replaceAll(RegExp(r'0+$'), '')
+              .replaceAll(RegExp(r'\.$'), '');
         }
-      } catch (e) {
-        debugPrint("Error parsing kerosene:pay link: $e");
-      }
-    }
-
-    // Completely strict mode - only kerosene links are allowed.
-    SnackbarHelper.showError("Please scan a valid Kerosene Payment Link.");
-  }
-
-  Future<void> _fetchPaymentLinkDetails(String linkId) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFF7931A)),
-      ),
-    );
-
-    try {
-      final link = await ref.read(paymentLinkDetailProvider(linkId).future);
-      if (!mounted) return;
-      Navigator.pop(context);
-
-      setState(() {
-        _pendingPaymentLinkId = link.id;
-        _lockedRecipientAddress = link.depositAddress;
-        _lockedAmountBtc = link.amountBtc;
       });
-
-      SnackbarHelper.showSuccess("Tracked payment request loaded.");
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      SnackbarHelper.showError("Failed to fetch payment link details.");
-    }
-  }
-
-  Future<void> _handlePayPaymentLink() async {
-    final walletState = ref.read(walletProvider);
-    if (walletState is! WalletLoaded || walletState.selectedWallet == null) {
-      return;
-    }
-
-    // Biometric / PIN confirmation before sending (same logic as _handleContinue)
-    final biometricService = BiometricService();
-    final canAuth = await biometricService.canAuthenticate();
-    final iEnrolled = await biometricService.isBiometricEnrolled();
-
-    bool authenticated = false;
-    if (canAuth && iEnrolled) {
-      authenticated = await biometricService.authenticate(
-        localizedReason: 'Confirm tracked payment',
-      );
-    } else {
-      final pinService = AppPinService();
-      final hasPinSet = await pinService.hasPinSet();
-      if (!mounted) return;
-      authenticated = await PinDialog.show(context, isSetup: !hasPinSet);
-    }
-
-    if (!mounted) return;
-    if (!authenticated) {
-      SnackbarHelper.showError("Authentication failed.");
-      return;
-    }
-
-    await ref
-        .read(paymentLinkNotifierProvider.notifier)
-        .pay(
-          linkId: _pendingPaymentLinkId!,
-          payerWalletName: walletState.selectedWallet!.name,
-        );
-  }
-}
-
-class _NfcReadDialog extends StatefulWidget {
-  final Function(String) onRead;
-
-  const _NfcReadDialog({required this.onRead});
-
-  @override
-  State<_NfcReadDialog> createState() => _NfcReadDialogState();
-}
-
-class _NfcReadDialogState extends State<_NfcReadDialog> {
-  String _status = "Searching...";
-  final bool _reading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _status = AppLocalizations.of(context)!.approachPhoneToNfc;
-        });
-      }
+      SnackbarHelper.showSuccess("Solicitação de pagamento carregada.");
     });
-    _startReadSession();
   }
 
-  @override
-  void dispose() {
-    NfcManager.instance.stopSession();
-    super.dispose();
-  }
+  void _handlePayPaymentLink(Wallet wallet) {
+    final linkId = _pendingPaymentLinkId;
+    if (linkId == null) {
+      SnackbarHelper.showError("Solicitação de pagamento inválida.");
+      return;
+    }
 
-  void _startReadSession() {
-    NfcManager.instance.startSession(
-      pollingOptions: {
-        NfcPollingOption.iso14443,
-        NfcPollingOption.iso15693,
-        NfcPollingOption.iso18092,
-      },
-      onDiscovered: (NfcTag tag) async {
-        if (!_reading) return;
-
-        final ndef = Ndef.from(tag);
-        if (ndef != null && ndef.cachedMessage != null) {
-          final message = ndef.cachedMessage!;
-          for (final record in message.records) {
-            final payload = record.payload;
-            if (record.typeNameFormat == TypeNameFormat.wellKnown) {
-              if (payload.isNotEmpty) {
-                final text = String.fromCharCodes(payload.skip(1));
-                if (!mounted) return;
-                widget.onRead(text);
-                NfcManager.instance.stopSession();
-                Navigator.pop(context);
-                return;
-              }
-            }
-          }
-        }
-        NfcManager.instance.stopSession();
-      },
+    ref.read(paymentLinkNotifierProvider.notifier).pay(
+      linkId: linkId,
+      payerWalletName: wallet.name,
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(20),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A24).withAlpha(230),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CyberNfcIcon(isActive: true, size: 48),
-            const SizedBox(height: 16),
-            Text(
-              _status,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                AppLocalizations.of(context)!.cancel,
-                style: const TextStyle(color: Colors.white54),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  bool _isExternalBitcoinTarget(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized.startsWith('bitcoin:') ||
+        normalized.startsWith('bc1') ||
+        normalized.startsWith('tb1') ||
+        normalized.startsWith('bcrt1') ||
+        RegExp(r'^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$').hasMatch(value.trim());
   }
 }

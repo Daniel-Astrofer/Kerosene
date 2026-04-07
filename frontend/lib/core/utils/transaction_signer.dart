@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:blockchain_utils/blockchain_utils.dart' hide Mnemonic;
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import '../../features/wallet/domain/entities/unsigned_transaction.dart';
 
@@ -53,10 +53,8 @@ class TransactionSigner {
       );
 
       // Sign
-      final signer = BitcoinSigner.fromKeyBytes(privateKey.raw);
-      final signature = signer.signTransaction(
-        sighash,
-      ); // Returns DER signature
+      // Sign
+      final signature = BitcoinSigner.fromKeyBytes(privateKey.raw).signTransaction(sighash); // Returns DER signature
 
       // Append SIGHASH_ALL (0x01) to signature
       final signatureWithHashType = [...signature, 0x01];

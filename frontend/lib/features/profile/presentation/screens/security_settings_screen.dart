@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
+import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import '../../../../core/providers/biometric_provider.dart';
 import '../../../security/presentation/screens/sovereignty_status_screen.dart';
 
@@ -10,232 +11,187 @@ class SecuritySettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF000000),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF000000), Color(0xFF101018)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+    return CyberBackground(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: _buildHeader(context),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  // ─── Sovereignty Status ───
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SovereigntyStatusScreen(),
+                        ),
+                      ),
+                      borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      AppLocalizations.of(context)!.security,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      // ─── Sovereignty Status ───
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: InkWell(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SovereigntyStatusScreen(),
-                            ),
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              Theme.of(context).colorScheme.primary.withOpacity(0.05)
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF001A0F), Color(0xFF00120A)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(
-                                  0xFF00FF94,
-                                ).withValues(alpha: 0.25),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF00FF94,
-                                    ).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(
-                                        0xFF00FF94,
-                                      ).withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.verified_user_rounded,
-                                    color: Color(0xFF00FF94),
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Status de Soberania',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      SizedBox(height: 3),
-                                      Text(
-                                        'TPM · Quórum · Merkle · Memória',
-                                        style: TextStyle(
-                                          color: Color(0xFF00FF94),
-                                          fontSize: 11,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: Color(0xFF00FF94),
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Biometrics
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final bioState = ref.watch(biometricProvider);
-                          if (!bioState.isSupported) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return _buildSwitchItem(
-                            context,
-                            "Biometric Authentication",
-                            "Use FaceID or Fingerprint to unlock",
-                            bioState.isEnabled,
-                            (value) {
-                              ref
-                                  .read(biometricProvider.notifier)
-                                  .toggleBiometric(value);
-                            },
-                            Icons.fingerprint_rounded,
-                          );
-                        },
-                      ),
-
-                      // Change PIN
-                      _buildActionItem(
-                        context,
-                        "Change PIN",
-                        "Update your 6-digit access code",
-                        Icons.lock_outline_rounded,
-                        () {},
-                      ),
-
-                      // Change Password
-                      _buildActionItem(
-                        context,
-                        "Change Password",
-                        "Update your account password",
-                        Icons.password_rounded,
-                        () {},
-                      ),
-
-                      // 2FA
-                      _buildSwitchItem(
-                        context,
-                        "Two-Factor Authentication",
-                        "Add an extra layer of security",
-                        false, // Mock state
-                        (value) {}, // Mock action
-                        Icons.security_rounded,
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.orange.withValues(alpha: 0.3),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.info_outline_rounded,
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(width: 16),
-                            const Expanded(
-                              child: Text(
-                                "Enable 2FA to protect your assets from unauthorized access.",
-                                style: TextStyle(
-                                  color: Colors.orange,
-                                  fontSize: 13,
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                 ),
                               ),
+                              child: Icon(
+                                Icons.verified_user_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.l10n.sovereigntyStatus,
+                                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    context.l10n.sovereigntyStatusDesc,
+                                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontSize: 11,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 14,
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+
+                  // Biometrics
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final bioState = ref.watch(biometricProvider);
+                      if (!bioState.isSupported) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return _buildSwitchItem(
+                        context,
+                        context.l10n.biometricAuth,
+                        context.l10n.biometricAuthDesc,
+                        bioState.isEnabled,
+                        (value) {
+                          ref
+                              .read(biometricProvider.notifier)
+                              .toggleBiometric(value);
+                        },
+                        Icons.fingerprint_rounded,
+                      );
+                    },
+                  ),
+
+                  // Change PIN
+                  _buildActionItem(
+                    context,
+                    context.l10n.changePin,
+                    context.l10n.changePinDesc,
+                    Icons.lock_outline_rounded,
+                    () {},
+                  ),
+
+                  // Change Password
+                  _buildActionItem(
+                    context,
+                    context.l10n.changePassword,
+                    context.l10n.changePasswordDesc,
+                    Icons.password_rounded,
+                    () {},
+                  ),
+
+                  // 2FA
+                  _buildSwitchItem(
+                    context,
+                    context.l10n.twoFactorAuth,
+                    context.l10n.twoFactorAuthDesc,
+                    false, // Mock state
+                    (value) {}, // Mock action
+                    Icons.security_rounded,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            context.l10n.enableTwoFactorInfo,
+                            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -249,55 +205,83 @@ class SecuritySettingsScreen extends ConsumerWidget {
     IconData icon,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: GlassContainer(
-        blur: 10,
-        opacity: 0.05,
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
         borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: const Color(0xFF00FF94),
-              activeTrackColor: const Color(0xFF00FF94).withValues(alpha: 0.3),
-            ),
-          ],
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
       ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 24),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            inactiveThumbColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+            inactiveTrackColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+            ),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Text(
+          context.l10n.security.toUpperCase(),
+          style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+        ),
+      ],
     );
   }
 
@@ -309,58 +293,55 @@ class SecuritySettingsScreen extends ConsumerWidget {
     VoidCallback onTap,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: GlassContainer(
-        blur: 10,
-        opacity: 0.05,
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
         borderRadius: BorderRadius.circular(20),
-        padding: EdgeInsets.zero,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 24),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 24),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white.withValues(alpha: 0.3),
-                  size: 24,
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 14,
+              ),
+            ],
           ),
         ),
       ),

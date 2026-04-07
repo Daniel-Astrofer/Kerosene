@@ -1,0 +1,377 @@
+[  +13 ms] Could not interpret results of "git describe": 3.26.0-1.0.pre.45348
+[  +51 ms] executing: uname -m
+[  +17 ms] Exit code 0 from: uname -m
+[   +1 ms] x86_64
+[ +167 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +2 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +93 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[   +2 ms] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[ +219 ms] Skipping pub get: version match.
+[  +71 ms] Found plugin audioplayers at /home/omega/.pub-cache/hosted/pub.dev/audioplayers-6.4.0/
+[   +9 ms] Found plugin audioplayers_android at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.0/
+[   +5 ms] Found plugin audioplayers_darwin at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.2.0/
+[   +5 ms] Found plugin audioplayers_linux at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.0/
+[   +9 ms] Found plugin audioplayers_web at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.0/
+[   +9 ms] Found plugin audioplayers_windows at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.0/
+[ +128 ms] Found plugin device_info_plus at /home/omega/.pub-cache/hosted/pub.dev/device_info_plus-11.3.0/
+[  +79 ms] Found plugin flutter_background_service at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service-5.1.0/
+[  +15 ms] Found plugin flutter_background_service_android at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_android-6.3.1/
+[  +11 ms] Found plugin flutter_background_service_ios at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_ios-5.0.3/
+[   +9 ms] Found plugin flutter_credit_card at /home/omega/.pub-cache/hosted/pub.dev/flutter_credit_card-4.1.0/
+[   +9 ms] Found plugin flutter_jailbreak_detection at /home/omega/.pub-cache/hosted/pub.dev/flutter_jailbreak_detection-1.10.0/
+[  +19 ms] Found plugin flutter_local_notifications at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +4 ms] Found plugin flutter_local_notifications_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[  +21 ms] Found plugin flutter_plugin_android_lifecycle at /home/omega/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.26/
+[   +4 ms] Found plugin flutter_secure_storage at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage-9.2.4/
+[   +2 ms] Found plugin flutter_secure_storage_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_linux-1.2.3/
+[   +2 ms] Found plugin flutter_secure_storage_macos at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_macos-3.1.3/
+[   +2 ms] Found plugin flutter_secure_storage_web at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_web-1.2.1/
+[   +3 ms] Found plugin flutter_secure_storage_windows at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_windows-3.1.2/
+[  +35 ms] Found plugin local_auth at /home/omega/.pub-cache/hosted/pub.dev/local_auth-2.3.0/
+[   +4 ms] Found plugin local_auth_android at /home/omega/.pub-cache/hosted/pub.dev/local_auth_android-1.0.47/
+[   +5 ms] Found plugin local_auth_darwin at /home/omega/.pub-cache/hosted/pub.dev/local_auth_darwin-1.4.3/
+[   +9 ms] Found plugin local_auth_windows at /home/omega/.pub-cache/hosted/pub.dev/local_auth_windows-1.0.11/
+[  +33 ms] Found plugin mobile_scanner at /home/omega/.pub-cache/hosted/pub.dev/mobile_scanner-5.2.3/
+[   +5 ms] Found plugin nfc_manager at /home/omega/.pub-cache/hosted/pub.dev/nfc_manager-3.5.0/
+[   +3 ms] Found plugin package_info_plus at /home/omega/.pub-cache/hosted/pub.dev/package_info_plus-8.3.1/
+[   +4 ms] Found plugin passkeys at /home/omega/.pub-cache/hosted/pub.dev/passkeys-2.17.4/
+[   +3 ms] Found plugin passkeys_android at /home/omega/.pub-cache/hosted/pub.dev/passkeys_android-2.12.0/
+[   +4 ms] Found plugin passkeys_darwin at /home/omega/.pub-cache/hosted/pub.dev/passkeys_darwin-0.3.0/
+[   +3 ms] Found plugin passkeys_doctor at /home/omega/.pub-cache/hosted/pub.dev/passkeys_doctor-1.2.0/
+[   +7 ms] Found plugin passkeys_ios at /home/omega/.pub-cache/hosted/pub.dev/passkeys_ios-2.9.0/
+[   +5 ms] Found plugin passkeys_web at /home/omega/.pub-cache/hosted/pub.dev/passkeys_web-2.8.1/
+[   +4 ms] Found plugin passkeys_windows at /home/omega/.pub-cache/hosted/pub.dev/passkeys_windows-0.1.1/
+[   +5 ms] Found plugin path_provider at /home/omega/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +3 ms] Found plugin path_provider_android at /home/omega/.pub-cache/hosted/pub.dev/path_provider_android-2.2.15/
+[   +3 ms] Found plugin path_provider_foundation at /home/omega/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/
+[   +2 ms] Found plugin path_provider_linux at /home/omega/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +7 ms] Found plugin path_provider_windows at /home/omega/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +3 ms] Found plugin permission_handler at /home/omega/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[   +3 ms] Found plugin permission_handler_android at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[   +5 ms] Found plugin permission_handler_apple at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[   +8 ms] Found plugin permission_handler_html at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[   +3 ms] Found plugin permission_handler_windows at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[   +9 ms] Found plugin proximity_sensor at /home/omega/.pub-cache/hosted/pub.dev/proximity_sensor-1.3.10/
+[  +16 ms] Found plugin rive_common at /home/omega/.pub-cache/hosted/pub.dev/rive_common-0.4.15/
+[  +14 ms] Found plugin sensors_plus at /home/omega/.pub-cache/hosted/pub.dev/sensors_plus-6.1.2/
+[   +4 ms] Found plugin shared_preferences at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_android at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.7/
+[   +1 ms] Found plugin shared_preferences_foundation at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +2 ms] Found plugin shared_preferences_linux at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +2 ms] Found plugin shared_preferences_web at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +1 ms] Found plugin shared_preferences_windows at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[  +27 ms] Found plugin tor at /home/omega/.pub-cache/hosted/pub.dev/tor-0.0.9/
+[   +2 ms] Found plugin ua_client_hints at /home/omega/.pub-cache/hosted/pub.dev/ua_client_hints-1.4.1/
+[ +125 ms] Found plugin audioplayers at /home/omega/.pub-cache/hosted/pub.dev/audioplayers-6.4.0/
+[   +2 ms] Found plugin audioplayers_android at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.0/
+[   +3 ms] Found plugin audioplayers_darwin at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.2.0/
+[   +2 ms] Found plugin audioplayers_linux at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.0/
+[   +6 ms] Found plugin audioplayers_web at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.0/
+[   +2 ms] Found plugin audioplayers_windows at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.0/
+[  +44 ms] Found plugin device_info_plus at /home/omega/.pub-cache/hosted/pub.dev/device_info_plus-11.3.0/
+[  +24 ms] Found plugin flutter_background_service at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service-5.1.0/
+[   +2 ms] Found plugin flutter_background_service_android at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_android-6.3.1/
+[   +2 ms] Found plugin flutter_background_service_ios at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_ios-5.0.3/
+[   +4 ms] Found plugin flutter_credit_card at /home/omega/.pub-cache/hosted/pub.dev/flutter_credit_card-4.1.0/
+[   +1 ms] Found plugin flutter_jailbreak_detection at /home/omega/.pub-cache/hosted/pub.dev/flutter_jailbreak_detection-1.10.0/
+[   +6 ms] Found plugin flutter_local_notifications at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +3 ms] Found plugin flutter_local_notifications_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +5 ms] Found plugin flutter_plugin_android_lifecycle at /home/omega/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.26/
+[   +3 ms] Found plugin flutter_secure_storage at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage-9.2.4/
+[   +4 ms] Found plugin flutter_secure_storage_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_linux-1.2.3/
+[   +2 ms] Found plugin flutter_secure_storage_macos at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_macos-3.1.3/
+[   +3 ms] Found plugin flutter_secure_storage_web at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_web-1.2.1/
+[   +2 ms] Found plugin flutter_secure_storage_windows at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_windows-3.1.2/
+[  +26 ms] Found plugin local_auth at /home/omega/.pub-cache/hosted/pub.dev/local_auth-2.3.0/
+[   +1 ms] Found plugin local_auth_android at /home/omega/.pub-cache/hosted/pub.dev/local_auth_android-1.0.47/
+[   +1 ms] Found plugin local_auth_darwin at /home/omega/.pub-cache/hosted/pub.dev/local_auth_darwin-1.4.3/
+[   +1 ms] Found plugin local_auth_windows at /home/omega/.pub-cache/hosted/pub.dev/local_auth_windows-1.0.11/
+[   +8 ms] Found plugin mobile_scanner at /home/omega/.pub-cache/hosted/pub.dev/mobile_scanner-5.2.3/
+[   +3 ms] Found plugin nfc_manager at /home/omega/.pub-cache/hosted/pub.dev/nfc_manager-3.5.0/
+[  +11 ms] Found plugin package_info_plus at /home/omega/.pub-cache/hosted/pub.dev/package_info_plus-8.3.1/
+[   +4 ms] Found plugin passkeys at /home/omega/.pub-cache/hosted/pub.dev/passkeys-2.17.4/
+[   +5 ms] Found plugin passkeys_android at /home/omega/.pub-cache/hosted/pub.dev/passkeys_android-2.12.0/
+[   +1 ms] Found plugin passkeys_darwin at /home/omega/.pub-cache/hosted/pub.dev/passkeys_darwin-0.3.0/
+[   +7 ms] Found plugin passkeys_doctor at /home/omega/.pub-cache/hosted/pub.dev/passkeys_doctor-1.2.0/
+[  +10 ms] Found plugin passkeys_ios at /home/omega/.pub-cache/hosted/pub.dev/passkeys_ios-2.9.0/
+[   +8 ms] Found plugin passkeys_web at /home/omega/.pub-cache/hosted/pub.dev/passkeys_web-2.8.1/
+[   +8 ms] Found plugin passkeys_windows at /home/omega/.pub-cache/hosted/pub.dev/passkeys_windows-0.1.1/
+[  +17 ms] Found plugin path_provider at /home/omega/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +3 ms] Found plugin path_provider_android at /home/omega/.pub-cache/hosted/pub.dev/path_provider_android-2.2.15/
+[   +2 ms] Found plugin path_provider_foundation at /home/omega/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/
+[   +3 ms] Found plugin path_provider_linux at /home/omega/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +5 ms] Found plugin path_provider_windows at /home/omega/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +2 ms] Found plugin permission_handler at /home/omega/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[   +2 ms] Found plugin permission_handler_android at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[   +1 ms] Found plugin permission_handler_apple at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[   +1 ms] Found plugin permission_handler_html at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[   +2 ms] Found plugin permission_handler_windows at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[   +9 ms] Found plugin proximity_sensor at /home/omega/.pub-cache/hosted/pub.dev/proximity_sensor-1.3.10/
+[  +13 ms] Found plugin rive_common at /home/omega/.pub-cache/hosted/pub.dev/rive_common-0.4.15/
+[   +3 ms] Found plugin sensors_plus at /home/omega/.pub-cache/hosted/pub.dev/sensors_plus-6.1.2/
+[   +3 ms] Found plugin shared_preferences at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_android at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.7/
+[   +2 ms] Found plugin shared_preferences_foundation at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +1 ms] Found plugin shared_preferences_linux at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +2 ms] Found plugin shared_preferences_web at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +2 ms] Found plugin shared_preferences_windows at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[  +22 ms] Found plugin tor at /home/omega/.pub-cache/hosted/pub.dev/tor-0.0.9/
+[   +5 ms] Found plugin ua_client_hints at /home/omega/.pub-cache/hosted/pub.dev/ua_client_hints-1.4.1/
+[  +64 ms] Found plugin audioplayers at /home/omega/.pub-cache/hosted/pub.dev/audioplayers-6.4.0/
+[   +4 ms] Found plugin audioplayers_android at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.0/
+[   +5 ms] Found plugin audioplayers_darwin at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.2.0/
+[   +3 ms] Found plugin audioplayers_linux at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.0/
+[   +6 ms] Found plugin audioplayers_web at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.0/
+[   +8 ms] Found plugin audioplayers_windows at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.0/
+[  +35 ms] Found plugin device_info_plus at /home/omega/.pub-cache/hosted/pub.dev/device_info_plus-11.3.0/
+[  +12 ms] Found plugin flutter_background_service at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service-5.1.0/
+[   +5 ms] Found plugin flutter_background_service_android at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_android-6.3.1/
+[   +9 ms] Found plugin flutter_background_service_ios at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_ios-5.0.3/
+[   +5 ms] Found plugin flutter_credit_card at /home/omega/.pub-cache/hosted/pub.dev/flutter_credit_card-4.1.0/
+[   +2 ms] Found plugin flutter_jailbreak_detection at /home/omega/.pub-cache/hosted/pub.dev/flutter_jailbreak_detection-1.10.0/
+[   +4 ms] Found plugin flutter_local_notifications at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[   +2 ms] Found plugin flutter_local_notifications_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[   +3 ms] Found plugin flutter_plugin_android_lifecycle at /home/omega/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.26/
+[   +3 ms] Found plugin flutter_secure_storage at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage-9.2.4/
+[   +2 ms] Found plugin flutter_secure_storage_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_linux-1.2.3/
+[   +2 ms] Found plugin flutter_secure_storage_macos at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_macos-3.1.3/
+[   +3 ms] Found plugin flutter_secure_storage_web at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_web-1.2.1/
+[   +2 ms] Found plugin flutter_secure_storage_windows at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_windows-3.1.2/
+[  +21 ms] Found plugin local_auth at /home/omega/.pub-cache/hosted/pub.dev/local_auth-2.3.0/
+[   +2 ms] Found plugin local_auth_android at /home/omega/.pub-cache/hosted/pub.dev/local_auth_android-1.0.47/
+[   +3 ms] Found plugin local_auth_darwin at /home/omega/.pub-cache/hosted/pub.dev/local_auth_darwin-1.4.3/
+[   +3 ms] Found plugin local_auth_windows at /home/omega/.pub-cache/hosted/pub.dev/local_auth_windows-1.0.11/
+[  +14 ms] Found plugin mobile_scanner at /home/omega/.pub-cache/hosted/pub.dev/mobile_scanner-5.2.3/
+[   +3 ms] Found plugin nfc_manager at /home/omega/.pub-cache/hosted/pub.dev/nfc_manager-3.5.0/
+[   +2 ms] Found plugin package_info_plus at /home/omega/.pub-cache/hosted/pub.dev/package_info_plus-8.3.1/
+[   +2 ms] Found plugin passkeys at /home/omega/.pub-cache/hosted/pub.dev/passkeys-2.17.4/
+[   +2 ms] Found plugin passkeys_android at /home/omega/.pub-cache/hosted/pub.dev/passkeys_android-2.12.0/
+[   +2 ms] Found plugin passkeys_darwin at /home/omega/.pub-cache/hosted/pub.dev/passkeys_darwin-0.3.0/
+[   +2 ms] Found plugin passkeys_doctor at /home/omega/.pub-cache/hosted/pub.dev/passkeys_doctor-1.2.0/
+[   +4 ms] Found plugin passkeys_ios at /home/omega/.pub-cache/hosted/pub.dev/passkeys_ios-2.9.0/
+[   +5 ms] Found plugin passkeys_web at /home/omega/.pub-cache/hosted/pub.dev/passkeys_web-2.8.1/
+[   +3 ms] Found plugin passkeys_windows at /home/omega/.pub-cache/hosted/pub.dev/passkeys_windows-0.1.1/
+[   +6 ms] Found plugin path_provider at /home/omega/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[   +2 ms] Found plugin path_provider_android at /home/omega/.pub-cache/hosted/pub.dev/path_provider_android-2.2.15/
+[   +1 ms] Found plugin path_provider_foundation at /home/omega/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/
+[   +5 ms] Found plugin path_provider_linux at /home/omega/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +6 ms] Found plugin path_provider_windows at /home/omega/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +2 ms] Found plugin permission_handler at /home/omega/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[   +2 ms] Found plugin permission_handler_android at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[   +1 ms] Found plugin permission_handler_apple at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[   +2 ms] Found plugin permission_handler_html at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[   +2 ms] Found plugin permission_handler_windows at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[  +14 ms] Found plugin proximity_sensor at /home/omega/.pub-cache/hosted/pub.dev/proximity_sensor-1.3.10/
+[   +6 ms] Found plugin rive_common at /home/omega/.pub-cache/hosted/pub.dev/rive_common-0.4.15/
+[   +3 ms] Found plugin sensors_plus at /home/omega/.pub-cache/hosted/pub.dev/sensors_plus-6.1.2/
+[   +3 ms] Found plugin shared_preferences at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[   +2 ms] Found plugin shared_preferences_android at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.7/
+[   +1 ms] Found plugin shared_preferences_foundation at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[   +1 ms] Found plugin shared_preferences_linux at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +2 ms] Found plugin shared_preferences_web at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +3 ms] Found plugin shared_preferences_windows at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[  +16 ms] Found plugin tor at /home/omega/.pub-cache/hosted/pub.dev/tor-0.0.9/
+[   +2 ms] Found plugin ua_client_hints at /home/omega/.pub-cache/hosted/pub.dev/ua_client_hints-1.4.1/
+[  +43 ms] Generating /home/omega/Kerosene/frontend/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+[ +262 ms] Building Linux application...
+[  +26 ms] executing: [build/linux/x64/debug/] cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DFLUTTER_TARGET_PLATFORM=linux-x64 /home/omega/Kerosene/frontend/linux
+[ +310 ms] -- Configuring done (0.2s)
+[  +64 ms] -- Generating done (0.1s)
+[        ] -- Build files have been written to: /home/omega/Kerosene/frontend/build/linux/x64/debug
+[  +61 ms] executing: ninja -C build/linux/x64/debug install
+[  +74 ms] ninja: Entering directory `build/linux/x64/debug'
+[  +25 ms] [1/98] Generating libtor.so, _phony_
+[   +2 ms] FAILED: [code=127] plugins/tor/libtor.so plugins/tor/_phony_ /home/omega/Kerosene/frontend/build/linux/x64/debug/plugins/tor/libtor.so /home/omega/Kerosene/frontend/build/linux/x64/debug/plugins/tor/_phony_ 
+[  +21 ms] cd /home/omega/Kerosene/frontend/build/linux/x64/debug/plugins/tor && /usr/bin/cmake -E env CARGOKIT_CMAKE=/usr/bin/cmake CARGOKIT_CONFIGURATION=Debug CARGOKIT_MANIFEST_DIR=/home/omega/Kerosene/frontend/linux/flutter/ephemeral/.plugin_symlinks/tor/linux/../rust CARGOKIT_TARGET_TEMP_DIR=/home/omega/Kerosene/frontend/build/linux/x64/debug/plugins/tor/cargokit_build CARGOKIT_OUTPUT_DIR=/home/omega/Kerosene/frontend/build/linux/x64/debug/plugins/tor CARGOKIT_TARGET_PLATFORM=linux-x64 CARGOKIT_TOOL_TEMP_DIR=/home/omega/Kerosene/frontend/build/linux/x64/debug/plugins/tor/cargokit_build/tool CARGOKIT_ROOT_PROJECT_DIR=/home/omega/Kerosene/frontend/linux /home/omega/.pub-cache/hosted/pub.dev/tor-0.0.9/cargokit/run_build_tool.sh build-cmake
+[   +1 ms] /home/omega/.pub-cache/hosted/pub.dev/tor-0.0.9/cargokit/run_build_tool.sh: linha 59: shasum: comando não encontrado
+[+21862 ms] [2/98] Generating /home/omega/Kerosene/frontend/linux/flutter/ephemeral/libflutter_linux_gtk.so, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_basic_message_channel.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_binary_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_binary_messenger.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_dart_project.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_engine.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_json_message_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_json_method_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_message_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_method_call.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_method_channel.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_method_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_method_response.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_plugin_registrar.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_plugin_registry.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_standard_message_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_standard_method_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_string_codec.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_value.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/fl_view.h, /home/omega/Kerosene/frontend/linux/flutter/ephemeral/flutter_linux/flutter_linux.h, _phony_
+[        ] [   +6 ms] Could not interpret results of "git describe": 3.26.0-1.0.pre.45348
+[        ] [  +25 ms] executing: uname -m
+[        ] [   +6 ms] Exit code 0 from: uname -m
+[        ] [   +1 ms] x86_64
+[        ] [  +56 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] [   +2 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] [ +162 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] [   +1 ms] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] [  +70 ms] Initializing file store
+[        ] [  +32 ms] gen_localizations: Starting due to {}
+[        ] [ +409 ms] gen_dart_plugin_registrant: Starting due to {InvalidatedReasonKind.inputChanged: The following inputs have updated contents: /home/omega/Kerosene/frontend/.dart_tool/package_config_subset}
+[        ] [  +22 ms] unpack_linux: Starting due to {}
+[        ] [ +172 ms] gen_localizations: Complete
+[        ] [  +22 ms] unpack_linux: Complete
+[        ] [ +515 ms] Found plugin audioplayers at /home/omega/.pub-cache/hosted/pub.dev/audioplayers-6.4.0/
+[        ] [   +5 ms] Found plugin audioplayers_android at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_android-5.2.0/
+[        ] [   +5 ms] Found plugin audioplayers_darwin at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_darwin-6.2.0/
+[        ] [   +4 ms] Found plugin audioplayers_linux at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_linux-4.2.0/
+[        ] [  +10 ms] Found plugin audioplayers_web at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_web-5.1.0/
+[        ] [   +9 ms] Found plugin audioplayers_windows at /home/omega/.pub-cache/hosted/pub.dev/audioplayers_windows-4.2.0/
+[        ] [ +197 ms] Found plugin device_info_plus at /home/omega/.pub-cache/hosted/pub.dev/device_info_plus-11.3.0/
+[        ] [  +53 ms] Found plugin flutter_background_service at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service-5.1.0/
+[        ] [   +5 ms] Found plugin flutter_background_service_android at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_android-6.3.1/
+[        ] [   +3 ms] Found plugin flutter_background_service_ios at /home/omega/.pub-cache/hosted/pub.dev/flutter_background_service_ios-5.0.3/
+[        ] [  +15 ms] Found plugin flutter_credit_card at /home/omega/.pub-cache/hosted/pub.dev/flutter_credit_card-4.1.0/
+[        ] [   +8 ms] Found plugin flutter_jailbreak_detection at /home/omega/.pub-cache/hosted/pub.dev/flutter_jailbreak_detection-1.10.0/
+[        ] [  +10 ms] Found plugin flutter_local_notifications at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+[        ] [   +2 ms] Found plugin flutter_local_notifications_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+[        ] [   +2 ms] Found plugin flutter_plugin_android_lifecycle at /home/omega/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.26/
+[        ] [   +3 ms] Found plugin flutter_secure_storage at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage-9.2.4/
+[        ] [   +1 ms] Found plugin flutter_secure_storage_linux at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_linux-1.2.3/
+[        ] [   +2 ms] Found plugin flutter_secure_storage_macos at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_macos-3.1.3/
+[        ] [   +8 ms] Found plugin flutter_secure_storage_web at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_web-1.2.1/
+[        ] [   +5 ms] Found plugin flutter_secure_storage_windows at /home/omega/.pub-cache/hosted/pub.dev/flutter_secure_storage_windows-3.1.2/
+[        ] [  +66 ms] Found plugin local_auth at /home/omega/.pub-cache/hosted/pub.dev/local_auth-2.3.0/
+[        ] [   +1 ms] Found plugin local_auth_android at /home/omega/.pub-cache/hosted/pub.dev/local_auth_android-1.0.47/
+[        ] [   +1 ms] Found plugin local_auth_darwin at /home/omega/.pub-cache/hosted/pub.dev/local_auth_darwin-1.4.3/
+[        ] [   +2 ms] Found plugin local_auth_windows at /home/omega/.pub-cache/hosted/pub.dev/local_auth_windows-1.0.11/
+[        ] [  +19 ms] Found plugin mobile_scanner at /home/omega/.pub-cache/hosted/pub.dev/mobile_scanner-5.2.3/
+[        ] [   +3 ms] Found plugin nfc_manager at /home/omega/.pub-cache/hosted/pub.dev/nfc_manager-3.5.0/
+[        ] [   +6 ms] Found plugin package_info_plus at /home/omega/.pub-cache/hosted/pub.dev/package_info_plus-8.3.1/
+[        ] [   +5 ms] Found plugin passkeys at /home/omega/.pub-cache/hosted/pub.dev/passkeys-2.17.4/
+[        ] [   +6 ms] Found plugin passkeys_android at /home/omega/.pub-cache/hosted/pub.dev/passkeys_android-2.12.0/
+[        ] [   +2 ms] Found plugin passkeys_darwin at /home/omega/.pub-cache/hosted/pub.dev/passkeys_darwin-0.3.0/
+[        ] [   +3 ms] Found plugin passkeys_doctor at /home/omega/.pub-cache/hosted/pub.dev/passkeys_doctor-1.2.0/
+[        ] [   +2 ms] Found plugin passkeys_ios at /home/omega/.pub-cache/hosted/pub.dev/passkeys_ios-2.9.0/
+[        ] [   +6 ms] Found plugin passkeys_web at /home/omega/.pub-cache/hosted/pub.dev/passkeys_web-2.8.1/
+[        ] [   +4 ms] Found plugin passkeys_windows at /home/omega/.pub-cache/hosted/pub.dev/passkeys_windows-0.1.1/
+[        ] [   +6 ms] Found plugin path_provider at /home/omega/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
+[        ] [   +3 ms] Found plugin path_provider_android at /home/omega/.pub-cache/hosted/pub.dev/path_provider_android-2.2.15/
+[        ] [   +2 ms] Found plugin path_provider_foundation at /home/omega/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/
+[        ] [   +5 ms] Found plugin path_provider_linux at /home/omega/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[        ] [   +5 ms] Found plugin path_provider_windows at /home/omega/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[        ] [   +3 ms] Found plugin permission_handler at /home/omega/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[        ] [   +2 ms] Found plugin permission_handler_android at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[        ] [   +2 ms] Found plugin permission_handler_apple at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[        ] [   +2 ms] Found plugin permission_handler_html at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[        ] [   +3 ms] Found plugin permission_handler_windows at /home/omega/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[        ] [  +12 ms] Found plugin proximity_sensor at /home/omega/.pub-cache/hosted/pub.dev/proximity_sensor-1.3.10/
+[   +2 ms] [  +13 ms] Found plugin rive_common at /home/omega/.pub-cache/hosted/pub.dev/rive_common-0.4.15/
+[        ] [   +5 ms] Found plugin sensors_plus at /home/omega/.pub-cache/hosted/pub.dev/sensors_plus-6.1.2/
+[        ] [   +7 ms] Found plugin shared_preferences at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/
+[        ] [   +4 ms] Found plugin shared_preferences_android at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.7/
+[        ] [   +3 ms] Found plugin shared_preferences_foundation at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.4/
+[        ] [   +3 ms] Found plugin shared_preferences_linux at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[        ] [   +6 ms] Found plugin shared_preferences_web at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[        ] [   +2 ms] Found plugin shared_preferences_windows at /home/omega/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[        ] [  +13 ms] Found plugin tor at /home/omega/.pub-cache/hosted/pub.dev/tor-0.0.9/
+[        ] [   +2 ms] Found plugin ua_client_hints at /home/omega/.pub-cache/hosted/pub.dev/ua_client_hints-1.4.1/
+[        ] [  +94 ms] gen_dart_plugin_registrant: Complete
+[        ] [   +2 ms] kernel_snapshot_program: Starting due to {}
+[   +1 ms] [  +16 ms] /home/omega/flutter/bin/cache/dart-sdk/bin/dartaotruntime --disable-dart-dev /home/omega/flutter/bin/cache/dart-sdk/bin/snapshots/frontend_server_aot.dart.snapshot --sdk-root /home/omega/flutter/bin/cache/artifacts/engine/common/flutter_patched_sdk/ --target=flutter --no-print-incremental-dependencies -Ddart.vm.profile=false -Ddart.vm.product=false --enable-asserts --track-widget-creation --packages /home/omega/Kerosene/frontend/.dart_tool/package_config.json --output-dill /home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/program.dill --depfile /home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/kernel_snapshot_program.d --incremental --initialize-from-dill /home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/program.dill --source file:///home/omega/Kerosene/frontend/.dart_tool/flutter_build/dart_plugin_registrant.dart --source package:flutter/src/dart_plugin_registrant.dart -Dflutter.dart_plugin_registrant=file:///home/omega/Kerosene/frontend/.dart_tool/flutter_build/dart_plugin_registrant.dart --verbosity=error package:teste/main.dart
+[        ] [+16309 ms] kernel_snapshot_program: Complete
+[        ] [+1070 ms] native_assets: Starting due to {}
+[        ] [  +34 ms] No packages with native assets. Skipping native assets compilation.
+[        ] [        ] Writing native_assets.yaml.
+[        ] [   +9 ms] Writing /home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/native_assets.yaml done.
+[        ] [        ] native_assets: Complete
+[        ] [   +1 ms] kernel_snapshot_native_assets: Starting due to {InvalidatedReasonKind.inputChanged: The following inputs have updated contents: /home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/native_assets.yaml,/home/omega/Kerosene/frontend/.dart_tool/package_config_subset,/home/omega/flutter/packages/flutter_tools/lib/src/build_system/targets/common.dart,/home/omega/flutter/bin/internal/engine.version,/home/omega/flutter/bin/internal/engine.version,/home/omega/flutter/bin/internal/engine.version,/home/omega/flutter/bin/internal/engine.version}
+[        ] [   +1 ms] kernel_snapshot_native_assets: Complete
+[        ] [        ] kernel_snapshot: Starting due to {InvalidatedReasonKind.inputChanged: The following inputs have updated contents: /home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/program.dill,/home/omega/Kerosene/frontend/.dart_tool/flutter_build/ef9576c04710f1fe13bfe595b8010ac8/native_assets.dill}
+[        ] [  +61 ms] kernel_snapshot: Complete
+[        ] [        ] debug_bundle_linux-x64_assets: Starting due to {}
+[        ] [ +229 ms] Manifest contained wildcard assets. Inserting missing file into build graph to force rerun. for more information see #56466.
+[        ] [  +10 ms] shaderc command: [/home/omega/flutter/bin/cache/artifacts/engine/linux-x64/impellerc, --sksl, --runtime-stage-gles, --runtime-stage-vulkan, --iplr, --sl=/home/omega/Kerosene/frontend/build/flutter_assets/assets/shaders/bitcoin_hodl.frag, --spirv=/home/omega/Kerosene/frontend/build/flutter_assets/assets/shaders/bitcoin_hodl.frag.spirv, --input=/home/omega/Kerosene/frontend/assets/shaders/bitcoin_hodl.frag, --input-type=frag, --include=/home/omega/Kerosene/frontend/assets/shaders, --include=/home/omega/flutter/bin/cache/artifacts/engine/linux-x64/shader_lib]
+[        ] [   +1 ms] shaderc command: [/home/omega/flutter/bin/cache/artifacts/engine/linux-x64/impellerc, --sksl, --runtime-stage-gles, --runtime-stage-vulkan, --iplr, --sl=/home/omega/Kerosene/frontend/build/flutter_assets/assets/shaders/metallic_hologram.frag, --spirv=/home/omega/Kerosene/frontend/build/flutter_assets/assets/shaders/metallic_hologram.frag.spirv, --input=/home/omega/Kerosene/frontend/assets/shaders/metallic_hologram.frag, --input-type=frag, --include=/home/omega/Kerosene/frontend/assets/shaders, --include=/home/omega/flutter/bin/cache/artifacts/engine/linux-x64/shader_lib]
+[        ] [  +49 ms] shaderc command: [/home/omega/flutter/bin/cache/artifacts/engine/linux-x64/impellerc, --sksl, --runtime-stage-gles, --runtime-stage-vulkan, --iplr, --sl=/home/omega/Kerosene/frontend/build/flutter_assets/shaders/ink_sparkle.frag, --spirv=/home/omega/Kerosene/frontend/build/flutter_assets/shaders/ink_sparkle.frag.spirv, --input=/home/omega/flutter/packages/flutter/lib/src/material/shaders/ink_sparkle.frag, --input-type=frag, --include=/home/omega/flutter/packages/flutter/lib/src/material/shaders, --include=/home/omega/flutter/bin/cache/artifacts/engine/linux-x64/shader_lib]
+[        ] [ +446 ms] debug_bundle_linux-x64_assets: Complete
+[        ] [ +699 ms] Persisting file store
+[        ] [  +10 ms] Done persisting file store
+[        ] [   +9 ms] build succeeded.
+[        ] [   +5 ms] "flutter assemble" took 21.106ms.
+[        ] [ +156 ms] ensureAnalyticsSent: 149ms
+[        ] [        ] Running 1 shutdown hook
+[        ] [        ] Shutdown hooks complete
+[        ] [   +1 ms] exiting with code 0
+[        ] ninja: build stopped: subcommand failed.
+[   +7 ms] Building Linux application... (completed in 22,5s)
+[        ] "flutter linux" took 24.657ms.
+[   +6 ms] Build process failed
+[        ] 
+           #0      throwToolExit (package:flutter_tools/src/base/common.dart:10:3)
+           #1      _runBuild (package:flutter_tools/src/linux/build_linux.dart:210:5)
+           <asynchronous suspension>
+           #2      buildLinux (package:flutter_tools/src/linux/build_linux.dart:83:5)
+           <asynchronous suspension>
+           #3      BuildLinuxCommand.runCommand (package:flutter_tools/src/commands/build_linux.dart:87:5)
+           <asynchronous suspension>
+           #4      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1408:27)
+           <asynchronous suspension>
+           #5      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:153:19)
+           <asynchronous suspension>
+           #6      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+           <asynchronous suspension>
+           #7      FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:420:9)
+           <asynchronous suspension>
+           #8      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:153:19)
+           <asynchronous suspension>
+           #9      FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:364:5)
+           <asynchronous suspension>
+           #10     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:130:9)
+           <asynchronous suspension>
+           #11     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:153:19)
+           <asynchronous suspension>
+           #12     main (package:flutter_tools/executable.dart:93:3)
+           <asynchronous suspension>
+
+
+[ +154 ms] ensureAnalyticsSent: 153ms
+[        ] Running 1 shutdown hook
+[        ] Shutdown hooks complete
+[   +2 ms] exiting with code 1

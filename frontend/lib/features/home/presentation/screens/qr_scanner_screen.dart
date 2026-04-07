@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -28,15 +32,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_hasScanned) return; // Evitar múltiplas leituras
+    if (_hasScanned) return; 
 
     for (final barcode in capture.barcodes) {
       if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
         setState(() {
           _hasScanned = true;
         });
-
-        // Retornar o resultado para quem chamou
+        HapticFeedback.mediumImpact();
         Navigator.of(context).pop(barcode.rawValue);
         return;
       }
@@ -46,133 +49,145 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.onSurface,
       body: Stack(
         children: [
-          // Câmera ocupando tela inteira
+          // ── Camera View ───────────────────────────────────────────────────
           MobileScanner(controller: _controller, onDetect: _onDetect),
 
-          // Overlay escuro com buraco no centro
+          // ── Premium Scan Overlay ──────────────────────────────────────────
           _buildScanOverlay(),
 
-          // Barra superior
+          // ── Custom App Bar ───────────────────────────────────────────────
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+            child: Container(
+              padding: const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.0),
+                  ],
                 ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Botão Voltar
                     IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios,
-                        color: Colors.white,
-                      ),
+                      icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
                       onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    // Título
-                    const Text(
-                      'Scanner QR',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
                       ),
                     ),
-                    // Botões de controle
-                    Row(
-                      children: [
-                        // Flash
-                        IconButton(
-                          icon: ValueListenableBuilder(
-                            valueListenable: _controller,
-                            builder: (context, state, child) {
-                              return Icon(
-                                state.torchState == TorchState.on
-                                    ? Icons.flash_on
-                                    : Icons.flash_off,
-                                color: Colors.white,
-                              );
-                            },
+                    const Spacer(),
+                    Text(
+                      'ESCANEIE QR CODE',
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+                    ),
+                    const Spacer(),
+                    ValueListenableBuilder(
+                      valueListenable: _controller,
+                      builder: (context, state, child) {
+                        return IconButton(
+                          icon: Icon(
+                            state.torchState == TorchState.on
+                                ? LucideIcons.zap
+                                : LucideIcons.zapOff,
+                            color: state.torchState == TorchState.on
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onPrimary,
+                            size: 20,
                           ),
                           onPressed: () => _controller.toggleTorch(),
-                        ),
-                        // Trocar câmera
-                        IconButton(
-                          icon: const Icon(
-                            Icons.cameraswitch,
-                            color: Colors.white,
+                          style: IconButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
                           ),
-                          onPressed: () => _controller.switchCamera(),
-                        ),
-                      ],
+                        ).animate(target: state.torchState == TorchState.on ? 1 : 0)
+                         .tint(color: Theme.of(context).colorScheme.primary);
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    IconButton(
+                      icon: Icon(LucideIcons.refreshCcw, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+                      onPressed: () => _controller.switchCamera(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
+          ).animate().fade().slideY(begin: -0.2, end: 0),
 
-          // Instrução na parte inferior
+          // ── Instruction Area ─────────────────────────────────────────────
           Positioned(
-            bottom: 80,
-            left: 40,
-            right: 40,
+            bottom: AppSpacing.xxl + AppSpacing.xl,
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(AppSpacing.lg),
+                border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
               ),
-              child: const Text(
-                'Aponte a câmera para um código QR',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Icon(LucideIcons.qrCode, color: Theme.of(context).colorScheme.primary, size: 24)
+                    .animate(onPlay: (c) => c.repeat())
+                    .shimmer(duration: 1500.ms),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Aponte a câmera para um código QR de pagamento',
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-            ),
+            ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0),
           ),
         ],
       ),
     );
   }
 
-  /// Constrói o overlay com o "buraco" transparente no centro
   Widget _buildScanOverlay() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final scanAreaSize = constraints.maxWidth * 0.7;
+        final scanAreaSize = (constraints.maxWidth < constraints.maxHeight 
+            ? constraints.maxWidth 
+            : constraints.maxHeight) * 0.7;
         final scanAreaTop = (constraints.maxHeight - scanAreaSize) / 2;
         final scanAreaLeft = (constraints.maxWidth - scanAreaSize) / 2;
 
         return Stack(
           children: [
-            // Fundo escuro semitransparente
+            // Dark Overlay
             ColorFiltered(
-              colorFilter: const ColorFilter.mode(
-                Colors.black54,
+              colorFilter: ColorFilter.mode(
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 BlendMode.srcOut,
               ),
               child: Stack(
                 children: [
-                  // Preenche a tela toda
                   Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.black,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurface,
                       backgroundBlendMode: BlendMode.dstOut,
                     ),
                   ),
-                  // Buraco transparente
                   Positioned(
                     top: scanAreaTop,
                     left: scanAreaLeft,
@@ -180,47 +195,23 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                       width: scanAreaSize,
                       height: scanAreaSize,
                       decoration: BoxDecoration(
-                        color: Colors.red, // Qualquer cor, será cortada
-                        borderRadius: BorderRadius.circular(20),
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        borderRadius: BorderRadius.circular(AppSpacing.lg),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            // Borda do scanner
-            Positioned(
-              top: scanAreaTop,
-              left: scanAreaLeft,
-              child: Container(
-                width: scanAreaSize,
-                height: scanAreaSize,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF00D4FF), width: 2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-            // Cantos decorativos
+            
+            // Scanner Frame Corners
             _buildCorner(scanAreaTop, scanAreaLeft, true, true),
-            _buildCorner(
-              scanAreaTop,
-              scanAreaLeft + scanAreaSize - 30,
-              true,
-              false,
-            ),
-            _buildCorner(
-              scanAreaTop + scanAreaSize - 30,
-              scanAreaLeft,
-              false,
-              true,
-            ),
-            _buildCorner(
-              scanAreaTop + scanAreaSize - 30,
-              scanAreaLeft + scanAreaSize - 30,
-              false,
-              false,
-            ),
+            _buildCorner(scanAreaTop, scanAreaLeft + scanAreaSize - 40, true, false),
+            _buildCorner(scanAreaTop + scanAreaSize - 40, scanAreaLeft, false, true),
+            _buildCorner(scanAreaTop + scanAreaSize - 40, scanAreaLeft + scanAreaSize - 40, false, false),
+
+            // Scanning Line Animation
+            _ScanningLine(top: scanAreaTop, left: scanAreaLeft, size: scanAreaSize),
           ],
         );
       },
@@ -232,25 +223,93 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       top: top,
       left: left,
       child: Container(
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           border: Border(
             top: isTop
-                ? const BorderSide(color: Color(0xFF00D4FF), width: 4)
+                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
             bottom: !isTop
-                ? const BorderSide(color: Color(0xFF00D4FF), width: 4)
+                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
             left: isLeft
-                ? const BorderSide(color: Color(0xFF00D4FF), width: 4)
+                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
             right: !isLeft
-                ? const BorderSide(color: Color(0xFF00D4FF), width: 4)
+                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ScanningLine extends StatefulWidget {
+  final double top;
+  final double left;
+  final double size;
+
+  const _ScanningLine({required this.top, required this.left, required this.size});
+
+  @override
+  State<_ScanningLine> createState() => _ScanningLineState();
+}
+
+class _ScanningLineState extends State<_ScanningLine> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 0, end: widget.size).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Positioned(
+          top: widget.top + _animation.value,
+          left: widget.left + AppSpacing.md,
+          child: Container(
+            width: widget.size - AppSpacing.xl,
+            height: 2,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

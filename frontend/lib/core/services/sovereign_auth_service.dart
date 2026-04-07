@@ -19,8 +19,8 @@ class SovereignAuthService {
   SovereignAuthService._internal();
 
   /// Generates a new Ed25519 key pair and stores it securely.
-  /// returns the Base64 encoded public key.
-  Future<String> generateKeyPair() async {
+  /// returns the public key as bytes.
+  Future<Uint8List> generateKeyPair() async {
     try {
       // 1. Generate a random 32-byte seed
       final keyPair = await _algorithm.newKeyPair();
@@ -29,69 +29,77 @@ class SovereignAuthService {
       
       final seedBase64 = base64Encode(seed);
       final pubKeyBase64 = base64Encode(pubKey.bytes);
-
+ 
       // 2. Store in secure storage
       await _storage.write(key: _keySeedStorageKey, value: seedBase64);
       await _storage.write(key: _publicKeyStorageKey, value: pubKeyBase64);
-
+ 
       debugPrint('🔐 [SovereignAuth] New Ed25519 key pair generated and stored.');
-      return pubKeyBase64;
+      return Uint8List.fromList(pubKey.bytes);
     } catch (e) {
       debugPrint('❌ [SovereignAuth] Error generating key pair: $e');
       rethrow;
     }
   }
-
-  /// Gets the stored public key (Base64). Returns null if not exists.
-  Future<String?> getPublicKey() async {
-    return await _storage.read(key: _publicKeyStorageKey);
+ 
+  /// Gets the stored public key. Returns null if not exists.
+  Future<Uint8List?> getPublicKey() async {
+    final b64 = await _storage.read(key: _publicKeyStorageKey);
+    if (b64 == null) return null;
+    return base64Decode(b64);
   }
-
+ 
+  /// Gets a human-readable device name for registration
+  Future<String> getDeviceName() async {
+    return "CyberDevice ${DateTime.now().year}";
+  }
+ 
   /// Signs a hex-encoded challenge using the stored private key.
-  /// Requires biometric authentication.
-  /// Returns the Base64 encoded signature.
   Future<String> signChallenge(String hexChallenge) async {
+    final signatureBytes = await signBytes(_hexToBytes(hexChallenge));
+    return base64Encode(signatureBytes);
+  }
+ 
+  /// Signs a raw byte buffer using the stored private key.
+  /// Requires biometric authentication.
+  /// Returns the raw signature bytes.
+  Future<Uint8List> signBytes(Uint8List data) async {
     try {
       // 1. Authenticate user biometrically
       final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Autentique-se para assinar o desafio de segurança.',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
+        localizedReason: 'Autentique-se para assinar com sua chave de segurança.',
+        biometricOnly: true,
       );
 
+
+ 
       if (!didAuthenticate) {
         throw Exception('Biometric authentication failed or canceled.');
       }
-
+ 
       // 2. Load seed from storage
       final seedBase64 = await _storage.read(key: _keySeedStorageKey);
       if (seedBase64 == null) {
         throw Exception('Sovereign Auth key not found. Please register first.');
       }
-
+ 
       final seed = base64Decode(seedBase64);
       final keyPair = await _algorithm.newKeyPairFromSeed(seed);
-
-      // 3. Convert hex challenge to bytes
-      final challengeBytes = _hexToBytes(hexChallenge);
-
-      // 4. Sign
+ 
+      // 3. Sign
       final signature = await _algorithm.sign(
-        challengeBytes,
+        data,
         keyPair: keyPair,
       );
-
-      final signatureBase64 = base64Encode(signature.bytes);
-      debugPrint('🔐 [SovereignAuth] Challenge signed successfully.');
-      return signatureBase64;
+ 
+      debugPrint('🔐 [SovereignAuth] Data signed successfully.');
+      return Uint8List.fromList(signature.bytes);
     } catch (e) {
-      debugPrint('❌ [SovereignAuth] Error signing challenge: $e');
+      debugPrint('❌ [SovereignAuth] Error signing data: $e');
       rethrow;
     }
   }
-
+ 
   /// Helper to convert hex string to Uint8List
   Uint8List _hexToBytes(String hex) {
     hex = hex.replaceAll(' ', '');
@@ -103,3 +111,4 @@ class SovereignAuthService {
     return bytes;
   }
 }
+

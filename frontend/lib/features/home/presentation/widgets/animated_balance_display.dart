@@ -11,6 +11,7 @@ class AnimatedBalanceDisplay extends StatefulWidget {
   final int decimalPlaces;
   final bool enableFlash;
   final String? prefix;
+  final bool isHidden;
 
   const AnimatedBalanceDisplay({
     super.key,
@@ -19,6 +20,7 @@ class AnimatedBalanceDisplay extends StatefulWidget {
     this.decimalPlaces = 8,
     this.enableFlash = false,
     this.prefix,
+    this.isHidden = false,
   });
 
   @override
@@ -73,6 +75,10 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
     final balanceStr = formatter.format(widget.balance);
     final fullString = (widget.prefix ?? '') + balanceStr;
 
+    if (widget.isHidden) {
+      return _buildRow('••••••••', widget.style);
+    }
+
     if (!widget.enableFlash) {
       return _buildRow(fullString, widget.style);
     }
@@ -83,17 +89,35 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
         final alpha = _flashOpacity.value;
         final Color textColor = alpha > 0.01
             ? Color.lerp(
-                widget.style.color ?? Colors.white,
+                widget.style.color ?? Theme.of(context).colorScheme.onPrimary,
                 _flashColor,
                 alpha,
               )!
-            : (widget.style.color ?? Colors.white);
+            : (widget.style.color ?? Theme.of(context).colorScheme.onPrimary);
         return _buildRow(fullString, widget.style.copyWith(color: textColor));
       },
     );
   }
 
   Widget _buildRow(String fullString, TextStyle style) {
+    if (widget.isHidden) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: List.generate(fullString.length, (index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1.0),
+            child: Text(
+              fullString[index],
+              style: style.copyWith(
+                fontSize: (style.fontSize ?? 40) * 0.8,
+                letterSpacing: 2,
+              ),
+            ),
+          );
+        }),
+      );
+    }
     // Encontrar o ponto decimal
     final dotIndex = fullString.indexOf('.');
     final commaIndex = fullString.indexOf(',');
@@ -112,7 +136,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
         final currentStyle = isDecimalPart
             ? style.copyWith(
                 fontSize: (style.fontSize ?? 40) * 0.5,
-                color: style.color?.withValues(alpha: 0.8),
+                color: style.color?.withOpacity(0.8),
               )
             : style;
 
@@ -122,7 +146,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
             style: char == '.' || char == ','
                 ? style.copyWith(
                     fontSize: (style.fontSize ?? 40) * 0.7,
-                    color: style.color?.withValues(alpha: 0.5),
+                    color: style.color?.withOpacity(0.5),
                   )
                 : currentStyle,
             key: ValueKey('static_$index'),

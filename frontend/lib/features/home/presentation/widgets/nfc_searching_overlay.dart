@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'nfc_scan_animation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
+import 'package:flutter/material.dart';
+import 'nfc_scan_animation.dart';
+
 
 class NfcSearchingOverlay extends StatefulWidget {
   final VoidCallback onCancel;
@@ -117,12 +117,16 @@ class _NfcSearchingOverlayState extends State<NfcSearchingOverlay> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.black.withValues(alpha: 0.7),
+      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: GlassContainer(
-            borderRadius: BorderRadius.circular(32),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: Colors.white10),
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
@@ -142,8 +146,8 @@ class _NfcSearchingOverlayState extends State<NfcSearchingOverlay> {
                         : _isNfcAvailable
                         ? 'NFC Pronto'
                         : 'NFC Indisponível',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -154,7 +158,7 @@ class _NfcSearchingOverlayState extends State<NfcSearchingOverlay> {
                   Text(
                     _statusMessage,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                       fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
@@ -163,11 +167,11 @@ class _NfcSearchingOverlayState extends State<NfcSearchingOverlay> {
                   // Indicador de progresso se escaneando
                   if (_isScanning) ...[
                     const SizedBox(height: 20),
-                    const SizedBox(
+                    SizedBox(
                       width: 30,
                       height: 30,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         strokeWidth: 2,
                       ),
                     ),
@@ -179,8 +183,8 @@ class _NfcSearchingOverlayState extends State<NfcSearchingOverlay> {
                   ElevatedButton(
                     onPressed: widget.onCancel,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,
                         vertical: 16,

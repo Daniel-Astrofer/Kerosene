@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 
 class TransactionSuccessDialog extends StatefulWidget {
@@ -80,12 +79,14 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Center(
-        child: GlassContainer(
+        child: Container(
           width: 280,
           height: 320,
-          blur: 20,
-          opacity: 0.1,
-          borderRadius: BorderRadius.circular(30),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white10),
+          ),
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -100,7 +101,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: _color.withValues(alpha: 0.4),
+                        color: _color.withOpacity(0.4),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -112,7 +113,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                         )
                       : ScaleTransition(
                           scale: _checkAnimation,
-                          child: Icon(_icon, color: Colors.black, size: 48),
+                          child: Icon(_icon, color: Theme.of(context).colorScheme.onSurface, size: 48),
                         ),
                 ),
               ),
@@ -123,8 +124,8 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                   children: [
                     Text(
                       _isReceived ? "Received!" : "Sent!",
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
@@ -150,7 +151,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                                 : "To: ${widget.counterparty}")
                           : "Transaction Completed",
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
                         fontSize: 14,
                         letterSpacing: 0.5,
                       ),

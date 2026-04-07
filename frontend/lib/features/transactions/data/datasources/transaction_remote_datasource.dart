@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import '../../../wallet/domain/entities/transaction.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
@@ -32,6 +31,11 @@ abstract class TransactionRemoteDataSource {
     required double amount,
     required int feeSatoshis,
     String? context,
+    String? passkeySignature,
+    String? confirmationPassphrase,
+    String? totpCode,
+    String? idempotencyKey,
+    int? requestTimestamp,
   });
   Future<TxStatus> broadcastTransaction({
     required String rawTxHex,
@@ -51,17 +55,6 @@ abstract class TransactionRemoteDataSource {
   Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
-  // Payment Requests
-  Future<PaymentLink> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-    int? expiresIn,
-  });
-  Future<PaymentLink> getPaymentRequest(String linkId);
-  Future<PaymentLink> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-  });
   Future<List<PaymentLink>> getPaymentLinks();
 
   // Withdrawals
@@ -71,12 +64,9 @@ abstract class TransactionRemoteDataSource {
     required double amount,
     required String totpCode,
     String? description,
-    String? passkeyAssertionResponseJSON,
-    String? passkeyAssertionRequestJSON,
+    String? passkeySignature,
+    String? passkeyChallenge,
   });
-
-  // Transaction History
-  Future<List<Transaction>> getTransactionHistory();
 }
 
 /// Implementação do TransactionRemoteDataSource
@@ -165,6 +155,11 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required double amount,
     required int feeSatoshis,
     String? context,
+    String? passkeySignature,
+    String? confirmationPassphrase,
+    String? totpCode,
+    String? idempotencyKey,
+    int? requestTimestamp,
   }) async {
     try {
       final response = await apiClient.post(
@@ -174,6 +169,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           'receiver': toAddress,
           'amount': amount,
           'context': context ?? 'transfer',
+          if (passkeySignature != null) 'passkeySignature': passkeySignature,
+          if (confirmationPassphrase != null)
+            'confirmationPassphrase': confirmationPassphrase,
+          if (totpCode != null) 'totpCode': totpCode,
+          if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
+          if (requestTimestamp != null) 'requestTimestamp': requestTimestamp,
         },
       );
 
@@ -320,63 +321,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     }
   }
 
-  // ==================== Payment Links ====================
-
-  @override
-  Future<PaymentLink> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-    int? expiresIn,
-  }) async {
-    try {
-      final dataParams = <String, dynamic>{
-        'amount': amount,
-        'receiverWalletName': receiverWalletName,
-      };
-      if (expiresIn != null) {
-        dataParams['expiresIn'] = expiresIn;
-      }
-
-      final response = await apiClient.post(
-        AppConfig.ledgerPaymentRequest,
-        data: dataParams,
-      );
-      return PaymentLink.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao criar payment request: $e');
-    }
-  }
-
-  @override
-  Future<PaymentLink> getPaymentRequest(String linkId) async {
-    try {
-      final response = await apiClient.get(
-        '${AppConfig.ledgerPaymentRequest}/$linkId',
-      );
-      return PaymentLink.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar payment request: $e');
-    }
-  }
-
-  @override
-  Future<PaymentLink> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        '${AppConfig.ledgerPaymentRequestPay}/$linkId/pay',
-        data: {'payerWalletName': payerWalletName},
-      );
-      return PaymentLink.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao pagar payment request: $e');
-    }
-  }
+  // ==================== Payment Links (External BTC) ====================
 
   @override
   Future<List<PaymentLink>> getPaymentLinks() async {
@@ -402,7 +347,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao listar payment requests: $e');
+      throw ServerException(message: 'Erro ao listar payment links: $e');
     }
   }
 
@@ -415,8 +360,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required double amount,
     required String totpCode,
     String? description,
-    String? passkeyAssertionResponseJSON,
-    String? passkeyAssertionRequestJSON,
+    String? passkeySignature,
+    String? passkeyChallenge,
   }) async {
     try {
       final response = await apiClient.post(
@@ -427,10 +372,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           'amount': amount,
           'totpCode': totpCode,
           if (description != null) 'description': description,
-          if (passkeyAssertionResponseJSON != null)
-            'passkeyAssertionResponseJSON': passkeyAssertionResponseJSON,
-          if (passkeyAssertionRequestJSON != null)
-            'passkeyAssertionRequestJSON': passkeyAssertionRequestJSON,
+          if (passkeySignature != null) 'passkeySignature': passkeySignature,
+          if (passkeyChallenge != null) 'passkeyChallenge': passkeyChallenge,
         },
       );
       return TxStatus.fromJson(_parseJsonResponse(response.data));
@@ -454,109 +397,5 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       throw ServerException(message: 'Erro ao realizar saque: $e');
     }
   }
-
-  @override
-  Future<List<Transaction>> getTransactionHistory() async {
-    try {
-      final response = await apiClient.get(AppConfig.ledgerHistory);
-      // ApiResponseInterceptor already unwraps the envelope, so response.data is the list.
-      final dynamic raw = response.data;
-
-      List<dynamic> list;
-      if (raw is List) {
-        list = raw;
-      } else {
-        return [];
-      }
-
-      return list.map((item) {
-        final m = item as Map<String, dynamic>;
-        // API returns 'transactionType' (e.g. 'INTERNAL'), not 'type'
-        final typeStr = (m['transactionType'] as String? ?? '').toUpperCase();
-        TransactionType txType;
-        switch (typeStr) {
-          case 'INTERNAL':
-          case 'TRANSACTION_SEND':
-          case 'SEND':
-          case 'WITHDRAWAL':
-            // Determine send vs receive based on whose context we are in.
-            // For INTERNAL, we default to send; UI may override based on direction.
-            txType = TransactionType.send;
-            break;
-          case 'TRANSACTION_RECEIVE':
-          case 'RECEIVE':
-          case 'DEPOSIT':
-            txType = TransactionType.receive;
-            break;
-          default:
-            txType = TransactionType.send;
-        }
-
-        final statusStr = (m['status'] as String? ?? '').toLowerCase();
-        TransactionStatus txStatus;
-        switch (statusStr) {
-          case 'pending':
-          case 'processing':
-            txStatus = TransactionStatus.pending;
-            break;
-          case 'failed':
-          case 'error':
-            txStatus = TransactionStatus.failed;
-            break;
-          default:
-            // 'concluded' or 'confirmed' -> confirmed
-            txStatus = TransactionStatus.confirmed;
-        }
-
-        final double amount = (m['amount'] as num?)?.toDouble() ?? 0.0;
-        final int amountSatoshis =
-            (m['amountSatoshis'] as num?)?.toInt() ??
-            (amount * 100000000).round();
-
-        DateTime timestamp;
-        try {
-          timestamp = DateTime.parse(
-            m['createdAt']?.toString() ??
-                m['timestamp']?.toString() ??
-                DateTime.now().toIso8601String(),
-          );
-        } catch (_) {
-          timestamp = DateTime.now();
-        }
-
-        return Transaction(
-          id: m['id']?.toString() ?? m['txid']?.toString() ?? '',
-          // API returns senderIdentifier / receiverIdentifier
-          fromAddress:
-              m['senderIdentifier']?.toString() ??
-              m['sender']?.toString() ??
-              m['fromAddress']?.toString() ??
-              '',
-          toAddress:
-              m['receiverIdentifier']?.toString() ??
-              m['receiver']?.toString() ??
-              m['toAddress']?.toString() ??
-              '',
-          amountSatoshis: amountSatoshis,
-          feeSatoshis:
-              (m['networkFee'] as num?)?.toInt() ??
-              (m['feeSatoshis'] as num?)?.toInt() ??
-              0,
-          status: txStatus,
-          type: txType,
-          confirmations: txStatus == TransactionStatus.confirmed ? 6 : 0,
-          timestamp: timestamp,
-          description:
-              m['context']?.toString() ??
-              m['description']?.toString() ??
-              typeStr,
-          isInternal:
-              typeStr == 'INTERNAL' || (m['isInternal'] as bool? ?? true),
-        );
-      }).toList();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar histórico: $e');
-    }
-  }
 }
+

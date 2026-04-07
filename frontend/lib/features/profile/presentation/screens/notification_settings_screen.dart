@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../core/presentation/widgets/glass_container.dart';
+import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -21,128 +22,115 @@ class _NotificationSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF000000),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF000000), Color(0xFF101018)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+    return CyberBackground(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: _buildHeader(context),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      AppLocalizations.of(context)!.notifications,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader("CHANNELS"),
-                      _buildSwitchItem(
-                        context,
-                        "Push Notifications",
-                        "Receive alerts on your device",
-                        _pushEnabled,
-                        (val) => setState(() => _pushEnabled = val),
-                        Icons.notifications_active_rounded,
-                      ),
-                      _buildSwitchItem(
-                        context,
-                        "Email Notifications",
-                        "Receive updates via email",
-                        _emailEnabled,
-                        (val) => setState(() => _emailEnabled = val),
-                        Icons.email_rounded,
-                      ),
-
-                      const SizedBox(height: 24),
-                      _buildSectionHeader("ALERTS"),
-
-                      _buildSwitchItem(
-                        context,
-                        "Transaction Updates",
-                        "Incoming and outgoing transactions",
-                        _transactionAlerts,
-                        (val) => setState(() => _transactionAlerts = val),
-                        Icons.swap_horiz_rounded,
-                      ),
-                      _buildSwitchItem(
-                        context,
-                        "Security Alerts",
-                        "Login attempts and password changes",
-                        _securityAlerts,
-                        (val) => setState(() => _securityAlerts = val),
-                        Icons.security_rounded,
-                      ),
-                      _buildSwitchItem(
-                        context,
-                        "Marketing & News",
-                        "Stay updated with latest features",
-                        _marketingUpdates,
-                        (val) => setState(() => _marketingUpdates = val),
-                        Icons.campaign_rounded,
-                      ),
-                    ],
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(context.l10n.notificationChannels.toUpperCase()),
+                  _buildSwitchItem(
+                    context,
+                    context.l10n.pushNotifications,
+                    context.l10n.pushNotificationsDesc,
+                    _pushEnabled,
+                    (val) => setState(() => _pushEnabled = val),
+                    Icons.notifications_active_rounded,
                   ),
-                ),
+                  _buildSwitchItem(
+                    context,
+                    context.l10n.emailNotifications,
+                    context.l10n.emailNotificationsDesc,
+                    _emailEnabled,
+                    (val) => setState(() => _emailEnabled = val),
+                    Icons.email_rounded,
+                  ),
+
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildSectionHeader(context.l10n.notificationAlerts.toUpperCase()),
+
+                  _buildSwitchItem(
+                    context,
+                    context.l10n.transactionUpdates,
+                    context.l10n.transactionUpdatesDesc,
+                    _transactionAlerts,
+                    (val) => setState(() => _transactionAlerts = val),
+                    Icons.swap_horiz_rounded,
+                  ),
+                  _buildSwitchItem(
+                    context,
+                    context.l10n.securityAlertsTitle,
+                    context.l10n.securityAlertsDesc,
+                    _securityAlerts,
+                    (val) => setState(() => _securityAlerts = val),
+                    Icons.security_rounded,
+                  ),
+                  _buildSwitchItem(
+                    context,
+                    context.l10n.marketingNews,
+                    context.l10n.marketingNewsDesc,
+                    _marketingUpdates,
+                    (val) => setState(() => _marketingUpdates = val),
+                    Icons.campaign_rounded,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md, left: 4),
       child: Text(
         title,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.5),
-          fontSize: 12,
+        style: Theme.of(context).textTheme.labelSmall!.copyWith(
+          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
           fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
+          letterSpacing: 2.0,
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+            ),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Text(
+          context.l10n.notifications.toUpperCase(),
+          style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+        ),
+      ],
     );
   }
 
@@ -156,53 +144,53 @@ class _NotificationSettingsScreenState
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: GlassContainer(
-        blur: 10,
-        opacity: 0.05,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
         borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white70, size: 20),
+        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+            child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 13,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: const Color(0xFF00D4FF),
-              activeTrackColor: const Color(0xFF00D4FF).withValues(alpha: 0.3),
-            ),
-          ],
-        ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            inactiveThumbColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+            inactiveTrackColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+          ),
+        ],
       ),
     );
   }

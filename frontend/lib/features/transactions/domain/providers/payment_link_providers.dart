@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../usecases/create_payment_link_usecase.dart';
-import '../../presentation/providers/transaction_provider.dart';
+import '../../../wallet/presentation/providers/wallet_provider.dart'; // Import this
 
 final createPaymentLinkUseCaseProvider = Provider<CreatePaymentLinkUseCase>((
   ref,
 ) {
-  final repository = ref.watch(transactionRepositoryProvider);
+  final repository = ref.watch(ledgerRepositoryProvider);
   return CreatePaymentLinkUseCase(repository);
 });

@@ -222,7 +222,8 @@ class _HorizontalCardSwap3DState extends State<HorizontalCardSwap3D>
 
     // Aplica todas as transformações de uma vez na matriz
     matrix.setTranslationRaw(translateX, 0.0, 0.0);
-    matrix.scaleByDouble(scale, scale, 1.0, 1.0);
+    // ignore: deprecated_member_use
+    matrix.scale(scale, scale, 1.0);
     matrix.rotateY(rotateY);
 
     return RepaintBoundary(
