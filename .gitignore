@@ -8,12 +8,12 @@
 !/backend/**
 !/frontend/
 !/frontend/**
+!/docs/
+!/docs/**
+!/scripts/
+!/scripts/**
 
 # Root-level material kept local only.
-/docs/
-/docs/**
-/scripts/
-/scripts/**
 /assets/
 /assets/**
 /screenshots/
@@ -138,6 +138,7 @@
 
 # Documentation and generated analysis outputs kept local.
 **/*.md
+!/docs/**/*.md
 !/.gitignore
 !/.gitattributes
 frontend/*.txt
