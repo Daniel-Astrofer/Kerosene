@@ -166,6 +166,7 @@
   "copy": "COPY",
   "share": "SHARE",
   "waitingConnection": "Waiting for connection...",
+  "offlineRetryHint": "Pull down or tap try again.",
   "nfcUnavailable": "NFC UNAVAILABLE",
   "processing": "PROCESSING...",
   "nfcInDevelopment": "NFC IN DEVELOPMENT",

@@ -59,8 +59,8 @@ Pacotes funcionais:
 
 1. O cliente chama `GET /auth/pow/challenge`.
 2. O cliente envia credenciais para `POST /auth/signup` ou `POST /auth/login`.
-3. O servidor exige TOTP em `POST /auth/signup/totp/verify` ou `POST /auth/login/totp/verify`.
-4. Login bem sucedido retorna JWT.
+3. No signup, `POST /auth/signup/totp/verify` retorna um `sessionId` temporario para o onboarding em Redis.
+4. No login, `POST /auth/login/totp/verify` retorna JWT.
 5. Requisicoes autenticadas usam `Authorization: Bearer <jwt>`.
 6. O backend renova tokens proximos da expiracao pelo header `X-New-Token`.
 
@@ -69,7 +69,7 @@ Passkeys:
 - Controller real: `source.auth.controller.PasskeyController`.
 - Endpoints implementados: `/auth/passkey/challenge`, `/auth/passkey/register`, `/auth/passkey/verify`, `/auth/passkey/onboarding/start`, `/auth/passkey/onboarding/finish`.
 - O fluxo assina desafios e verifica assinatura com chave publica enviada ou armazenada.
-- Observacao real: a `SecurityFilterChain` ainda libera paths antigos como `/auth/passkey/login/start` e `/auth/passkey/register/onboarding/start`; os paths implementados acima caem em `anyRequest().authenticated()` salvo alteracao da configuracao.
+- Observacao real: `challenge`, `verify` e os endpoints de onboarding precisam estar liberados na `SecurityFilterChain`; apenas `/auth/passkey/register` continua protegido por JWT.
 
 ## Fluxo Financeiro Interno
 
@@ -106,11 +106,18 @@ O controller real `TransactionController` oferece:
 - `GET /transactions/status?txid=...`.
 - `POST /transactions/broadcast`.
 - `POST /transactions/create-payment-link`.
-- `GET /transactions/payment-link/{linkId}`.
-- `POST /transactions/payment-link/{linkId}/confirm`.
+- `GET /transactions/payment-link/{linkId}` para fluxos autenticados.
+- `POST /transactions/payment-link/{linkId}/confirm` para fluxos autenticados.
 - `POST /transactions/payment-link/{linkId}/complete`.
 - `GET /transactions/payment-links`.
 - `POST /transactions/withdraw`.
+
+Fluxo real de onboarding sem JWT:
+
+- `POST /voucher/onboarding-link?sessionId=...` cria o payment link publico de onboarding.
+- `GET /voucher/onboarding-link/{linkId}` consulta o status do link sem autenticacao.
+- `POST /voucher/onboarding-link/{linkId}/confirm` confirma o pagamento sem autenticacao.
+- Os endpoints genericos `/transactions/payment-link/*` permanecem para fluxos autenticados.
 
 Limites reais:
 

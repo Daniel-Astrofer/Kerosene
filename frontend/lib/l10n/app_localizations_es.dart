@@ -425,7 +425,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get share => 'SHARE';
 
   @override
-  String get waitingConnection => 'Waiting for connection...';
+  String get waitingConnection => 'Esperando conexión...';
+
+  @override
+  String get offlineRetryHint => 'Desliza hacia abajo o toca reintentar.';
 
   @override
   String get nfcUnavailable => 'NFC UNAVAILABLE';

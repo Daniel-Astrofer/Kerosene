@@ -916,6 +916,12 @@ abstract class AppLocalizations {
   /// **'Waiting for connection...'**
   String get waitingConnection;
 
+  /// No description provided for @offlineRetryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull down or tap try again.'**
+  String get offlineRetryHint;
+
   /// No description provided for @nfcUnavailable.
   ///
   /// In en, this message translates to:

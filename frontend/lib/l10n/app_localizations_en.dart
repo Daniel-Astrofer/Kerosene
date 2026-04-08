@@ -428,6 +428,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get waitingConnection => 'Waiting for connection...';
 
   @override
+  String get offlineRetryHint => 'Pull down or tap try again.';
+
+  @override
   String get nfcUnavailable => 'NFC UNAVAILABLE';
 
   @override

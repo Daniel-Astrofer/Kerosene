@@ -163,6 +163,7 @@
   "copy": "COPIAR",
   "share": "PARTILHAR",
   "waitingConnection": "Aguardando conexão...",
+  "offlineRetryHint": "Puxe para baixo ou toque em tentar novamente.",
   "nfcUnavailable": "NFC INDISPONÍVEL",
   "processing": "PROCESSANDO...",
   "nfcInDevelopment": "NFC EM DESENVOLVIMENTO",

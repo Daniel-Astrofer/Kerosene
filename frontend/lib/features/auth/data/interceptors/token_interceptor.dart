@@ -26,8 +26,7 @@ class TokenInterceptor extends QueuedInterceptor {
       // Public auth routes must not receive an Authorization header.
       // Some flows use sessionId or username/challenge only, and injecting a
       // stale token can force an unnecessary JWT failure before auth starts.
-      final isOnboardingOrAuth =
-          path.contains('/auth/login') ||
+      final isOnboardingOrAuth = path.contains('/auth/login') ||
           path.contains('/auth/signup') ||
           path.contains('/auth/passkey/challenge') ||
           path.contains('/auth/passkey/verify') ||
@@ -95,16 +94,16 @@ class TokenInterceptor extends QueuedInterceptor {
     // NÃO limpamos sessão em 500: esses erros são falhas do servidor
     // (bugs, DB indisponível, etc.) e não indicam que o JWT é inválido.
     // Tratar 500 como sessão inválida derrubava o usuário por erros temporários.
-    final isInvalidSession =
-        statusCode == 401 ||
+    final isInvalidSession = statusCode == 401 ||
         (statusCode == 403 &&
             (errorCode.startsWith('ERR_AUTH_') ||
                 errorCode == 'ERR_AUTH_UNRECOGNIZED_DEVICE' ||
                 (err.response?.data?.toString().contains('JWT') ?? false)));
 
     final path = err.requestOptions.path;
-    final isAuthRoute =
-        path.contains('/auth/login') || path.contains('/auth/signup');
+    final isAuthRoute = path.contains('/auth/login') ||
+        path.contains('/auth/signup') ||
+        path.contains('/auth/passkey/');
 
     if (isInvalidSession && !isAuthRoute && !_redirecting) {
       _redirecting = true;
@@ -145,14 +144,9 @@ class TokenInterceptor extends QueuedInterceptor {
 
         // Snackbar informativo após a navegação
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          SnackbarHelper.scaffoldMessengerKey.currentState?.showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Sua sessão expirou. Por favor, faça login novamente.',
-              ),
-              backgroundColor: Color(0xFFD32F2F),
-              duration: Duration(seconds: 4),
-            ),
+          SnackbarHelper.showWarning(
+            'Sua sessão expirou. Faça login novamente para continuar.',
+            title: 'Sessão encerrada',
           );
         });
       });

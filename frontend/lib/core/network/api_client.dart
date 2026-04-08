@@ -102,11 +102,13 @@ class ApiClient {
   }) async {
     try {
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.get(
+      final response = await _dio.get(
         path,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -122,12 +124,14 @@ class ApiClient {
   }) async {
     try {
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.post(
+      final response = await _dio.post(
         path,
         data: data,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -143,12 +147,14 @@ class ApiClient {
   }) async {
     try {
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.put(
+      final response = await _dio.put(
         path,
         data: data,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -164,12 +170,14 @@ class ApiClient {
   }) async {
     try {
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.delete(
+      final response = await _dio.delete(
         path,
         data: data,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -190,6 +198,10 @@ class ApiClient {
   /// Tratamento de erros
   AppException _handleError(dynamic error) {
     if (error is DioException) {
+      if (error.response != null) {
+        ref.read(networkStatusProvider.notifier).markOnline();
+      }
+
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:

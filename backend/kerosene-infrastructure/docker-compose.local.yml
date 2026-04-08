@@ -48,6 +48,8 @@ services:
       context: ../kerosene/tor
       dockerfile: Dockerfile
     container_name: kerosene-tor-vault-local
+    environment:
+      - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
       - ../kerosene/tor/torrc-vault:/etc/tor/torrc:ro,z
       - ../kerosene/tor/entrypoint.sh:/entrypoint.sh:ro,z
@@ -55,19 +57,27 @@ services:
     # Removed authorized_clients mount from inside HiddenServiceDir to fix Read-only FS error
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks: [net_vault, tor_egress]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/tor-ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
     depends_on: [kerosene-vault]
 
   # ════════════════════════════════════════════════════════════════════════════
   # ICELAND shard (IS)
   # ════════════════════════════════════════════════════════════════════════════
   db-is:
-    image: postgres:17-alpine
+    image: postgres:17-bookworm
     container_name: kerosene_db_is_local
     env_file: ../kerosene/.env
     environment:
       - POSTGRES_DB=kerosene
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--locale=C.UTF-8 --encoding=UTF8
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
       - REQUIRE_MTLS=false
     volumes:
       - pg_data_is:/var/lib/postgresql/data
@@ -104,6 +114,8 @@ services:
       context: ../kerosene/tor
       dockerfile: Dockerfile
     container_name: kerosene-tor-is-local
+    environment:
+      - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
       - ../kerosene/tor/torrc-is:/etc/tor/torrc:ro,z
       - ../kerosene/tor/entrypoint.sh:/entrypoint.sh:ro,z
@@ -111,6 +123,11 @@ services:
       - tor_socks_is:/var/run/tor/socks
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks: [net_db_is, tor_egress]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/tor-ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
     depends_on: [kerosene-app-is]
 
   kerosene-app-is:
@@ -156,13 +173,16 @@ services:
   # SWITZERLAND shard (CH)
   # ════════════════════════════════════════════════════════════════════════════
   db-ch:
-    image: postgres:17-alpine
+    image: postgres:17-bookworm
     container_name: kerosene_db_ch_local
     env_file: ../kerosene/.env
     environment:
       - POSTGRES_DB=kerosene
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--locale=C.UTF-8 --encoding=UTF8
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
       - REQUIRE_MTLS=false
     volumes:
       - pg_data_ch:/var/lib/postgresql/data
@@ -199,6 +219,8 @@ services:
       context: ../kerosene/tor
       dockerfile: Dockerfile
     container_name: kerosene-tor-ch-local
+    environment:
+      - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
       - ../kerosene/tor/torrc-ch:/etc/tor/torrc:ro,z
       - ../kerosene/tor/entrypoint.sh:/entrypoint.sh:ro,z
@@ -206,6 +228,11 @@ services:
       - tor_socks_ch:/var/run/tor/socks
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks: [net_db_ch, tor_egress]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/tor-ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
     depends_on: [kerosene-app-ch]
 
   kerosene-app-ch:
@@ -251,13 +278,16 @@ services:
   # SINGAPORE shard (SG)
   # ════════════════════════════════════════════════════════════════════════════
   db-sg:
-    image: postgres:17-alpine
+    image: postgres:17-bookworm
     container_name: kerosene_db_sg_local
     env_file: ../kerosene/.env
     environment:
       - POSTGRES_DB=kerosene
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--locale=C.UTF-8 --encoding=UTF8
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
       - REQUIRE_MTLS=false
     volumes:
       - pg_data_sg:/var/lib/postgresql/data
@@ -294,6 +324,8 @@ services:
       context: ../kerosene/tor
       dockerfile: Dockerfile
     container_name: kerosene-tor-sg-local
+    environment:
+      - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
       - ../kerosene/tor/torrc-sg:/etc/tor/torrc:ro,z
       - ../kerosene/tor/entrypoint.sh:/entrypoint.sh:ro,z
@@ -301,6 +333,11 @@ services:
       - tor_socks_sg:/var/run/tor/socks
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks: [net_db_sg, tor_egress]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/tor-ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
     depends_on: [kerosene-app-sg]
 
   kerosene-app-sg:

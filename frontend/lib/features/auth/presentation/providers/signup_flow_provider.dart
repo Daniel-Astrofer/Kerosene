@@ -146,23 +146,23 @@ class SignupFlowState extends Equatable {
 
   @override
   List<Object?> get props => [
-    currentStep,
-    seedSecurityOption,
-    slip39TotalShares,
-    slip39Threshold,
-    passphrase,
-    totpSecret,
-    qrCodeUri,
-    sessionId,
-    username,
-    paymentAddress,
-    paymentAmountBtc,
-    paymentLinkId,
-    paymentUri,
-    confirmations,
-    isLoading,
-    error,
-  ];
+        currentStep,
+        seedSecurityOption,
+        slip39TotalShares,
+        slip39Threshold,
+        passphrase,
+        totpSecret,
+        qrCodeUri,
+        sessionId,
+        username,
+        paymentAddress,
+        paymentAmountBtc,
+        paymentLinkId,
+        paymentUri,
+        confirmations,
+        isLoading,
+        error,
+      ];
 }
 
 class SignupFlowNotifier extends Notifier<SignupFlowState> {
@@ -172,20 +172,20 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
   @override
   SignupFlowState build() {
     _prefs = ref.watch(sharedPreferencesProvider);
-    _loadFromPrefs();
-    return const SignupFlowState();
+    return _loadFromPrefs();
   }
 
-  void _loadFromPrefs() {
+  SignupFlowState _loadFromPrefs() {
     try {
       final jsonString = _prefs.getString(_prefsKey);
       if (jsonString != null) {
         final decoded = jsonDecode(jsonString);
-        state = SignupFlowState.fromJson(decoded);
+        return SignupFlowState.fromJson(decoded);
       }
     } catch (e) {
       debugPrint('Error loading signup flow state: $e');
     }
+    return const SignupFlowState();
   }
 
   void _saveToPrefs(SignupFlowState newState) {
@@ -280,7 +280,7 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
       setPaymentDetails(
         address: dto.depositAddress,
         amountBtc: dto.amountBtc,
-        linkId: state.sessionId ?? '',
+        linkId: dto.linkId,
       );
       updateState(state.copyWith(isLoading: false));
     });
@@ -316,4 +316,5 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
 }
 
 final signupFlowProvider =
-    NotifierProvider<SignupFlowNotifier, SignupFlowState>(SignupFlowNotifier.new);
+    NotifierProvider<SignupFlowNotifier, SignupFlowState>(
+        SignupFlowNotifier.new);

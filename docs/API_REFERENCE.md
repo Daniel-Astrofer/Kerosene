@@ -53,12 +53,10 @@ Pela `SecurityFilterChain`, estao `permitAll`:
 /auth/signup/totp/verify
 /auth/login
 /auth/login/totp/verify
-/auth/passkey/login/start
-/auth/passkey/login/finish
-/auth/passkey/register/onboarding/start
-/auth/passkey/register/onboarding/finish
-/auth/hardware/register/onboarding/start
-/auth/hardware/register/onboarding/finish
+/auth/passkey/challenge
+/auth/passkey/verify
+/auth/passkey/onboarding/start
+/auth/passkey/onboarding/finish
 /auth/pow/challenge
 /voucher/**
 /sovereignty/**
@@ -69,7 +67,7 @@ Pela `SecurityFilterChain`, estao `permitAll`:
 /actuator/**
 ```
 
-Observacao importante: os endpoints implementados em `PasskeyController` sao `/auth/passkey/challenge`, `/auth/passkey/register`, `/auth/passkey/verify`, `/auth/passkey/onboarding/start` e `/auth/passkey/onboarding/finish`. Esses paths nao batem com os matchers antigos liberados acima e, no estado atual, caem em `anyRequest().authenticated()`.
+Observacao importante: os endpoints implementados em `PasskeyController` sao `/auth/passkey/challenge`, `/auth/passkey/register`, `/auth/passkey/verify`, `/auth/passkey/onboarding/start` e `/auth/passkey/onboarding/finish`. A `SecurityFilterChain` precisa liberar exatamente esses paths para o fluxo real de onboarding/login via passkey funcionar.
 
 ## Auth
 
@@ -80,7 +78,7 @@ Controller: `source.auth.controller.UsuarioController`
 | `GET` | `/auth/pow/challenge` | Publico | - | `ApiResponse<Map<String,String>>` com `challenge`. |
 | `POST` | `/auth/login` | Publico | `UserDTO` | `202 ApiResponse<String>` com id/pre-auth step. |
 | `POST` | `/auth/signup` | Publico | `UserDTO` | `ApiResponse<SignupResponseDTO>` com `otpUri` e `backupCodes`. |
-| `POST` | `/auth/signup/totp/verify` | Publico | `UserDTO` | `202 ApiResponse<String>` com JWT. |
+| `POST` | `/auth/signup/totp/verify` | Publico | `UserDTO` | `202 ApiResponse<String>` com `sessionId` de onboarding salvo em Redis. |
 | `POST` | `/auth/login/totp/verify` | Publico | `UserDTO` | `202 ApiResponse<String>` com JWT. |
 
 `UserDTO` aceita:
@@ -115,11 +113,11 @@ Controller: `source.auth.controller.PasskeyController`
 
 | Metodo | Path | Auth real | Body/Query | Resposta |
 | --- | --- | --- | --- | --- |
-| `GET` | `/auth/passkey/challenge?username={username}` | JWT no estado atual | Query `username` | `ApiResponse<String>` challenge. |
+| `GET` | `/auth/passkey/challenge?username={username}` | Publico | Query `username` | `ApiResponse<String>` challenge. |
 | `POST` | `/auth/passkey/register` | JWT | `PasskeyRegistrationRequest` | `ApiResponse<String>` `OK`. |
-| `POST` | `/auth/passkey/verify` | JWT no estado atual | `PasskeyVerifyRequest` | `ApiResponse<String>` JWT se assinatura valida. |
-| `POST` | `/auth/passkey/onboarding/start?sessionId={id}` | JWT no estado atual | Query `sessionId` | `ApiResponse<String>` challenge. |
-| `POST` | `/auth/passkey/onboarding/finish?sessionId={id}` | JWT no estado atual | Query `sessionId`, body `PasskeyRegistrationRequest` | `ApiResponse<String>` `OK`. |
+| `POST` | `/auth/passkey/verify` | Publico | `PasskeyVerifyRequest` | `ApiResponse<String>` JWT se assinatura valida. |
+| `POST` | `/auth/passkey/onboarding/start?sessionId={id}` | Publico | Query `sessionId` | `ApiResponse<String>` challenge. |
+| `POST` | `/auth/passkey/onboarding/finish?sessionId={id}` | Publico | Query `sessionId`, body `PasskeyRegistrationRequest` | `ApiResponse<String>` `OK`. |
 
 `PasskeyRegistrationRequest`:
 
@@ -267,8 +265,8 @@ Base path: `/transactions`
 | `GET` | `/transactions/status?txid={hash}` | JWT | Query `txid` | `ApiResponse<TransactionResponseDTO>`. |
 | `POST` | `/transactions/broadcast` | JWT | `BroadcastTransactionDTO` | `ApiResponse<TransactionResponseDTO>`. |
 | `POST` | `/transactions/create-payment-link` | JWT | `CreatePaymentLinkRequest` | `201 ApiResponse<PaymentLinkDTO>`. |
-| `GET` | `/transactions/payment-link/{linkId}` | JWT pela security atual | Path `linkId` | `ApiResponse<PaymentLinkDTO>`. |
-| `POST` | `/transactions/payment-link/{linkId}/confirm` | JWT pela security atual | `ConfirmPaymentRequest` | `ApiResponse<PaymentLinkDTO>`. |
+| `GET` | `/transactions/payment-link/{linkId}` | JWT pela security atual | Path `linkId` | `ApiResponse<PaymentLinkDTO>`. Endpoint autenticado para fluxos ja logados. |
+| `POST` | `/transactions/payment-link/{linkId}/confirm` | JWT pela security atual | `ConfirmPaymentRequest` | `ApiResponse<PaymentLinkDTO>`. Endpoint autenticado para fluxos ja logados. |
 | `POST` | `/transactions/payment-link/{linkId}/complete` | JWT | Path `linkId` | `ApiResponse<PaymentLinkDTO>`. |
 | `GET` | `/transactions/payment-links` | JWT | - | `ApiResponse<List<PaymentLinkDTO>>`. |
 | `POST` | `/transactions/withdraw` | JWT | `WithdrawRequestDTO` | `ApiResponse<TransactionResponseDTO>`. |
@@ -342,9 +340,16 @@ Todos os endpoints em `/voucher/**` estao `permitAll` na security atual.
 | `POST` | `/voucher/request` | Sem body | `depositAddress`, `amountSats`, `pendingVoucherId`. |
 | `POST` | `/voucher/confirm?pendingVoucherId={id}&txid={txid}` | Query | `ApiResponse<String>` com voucher code. |
 | `POST` | `/voucher/onboarding-link?sessionId={id}` | Query `sessionId` | `ApiResponse<PaymentLinkDTO>`. |
+| `GET` | `/voucher/onboarding-link/{linkId}` | Path `linkId` | `ApiResponse<PaymentLinkDTO>` do onboarding. Publico para o usuario ainda sem JWT. |
+| `POST` | `/voucher/onboarding-link/{linkId}/confirm` | `ConfirmPaymentRequest` | `ApiResponse<PaymentLinkDTO>` do onboarding. Publico para o usuario ainda sem JWT. |
 | `POST` | `/voucher/onboarding-mock-confirm?sessionId={id}` | Query `sessionId` | `ApiResponse<String>` `OK`. |
 
-Regra real em `/voucher/onboarding-link`: exige que `SignupState` exista em Redis e que passkey esteja registrada. O valor de onboarding no codigo e `0.00022000` BTC.
+Regras reais de onboarding:
+
+- `POST /voucher/onboarding-link` exige que `SignupState` exista em Redis e que a passkey ja tenha sido registrada.
+- O cliente ainda NAO possui JWT nesse momento; por isso o polling e a confirmacao do pagamento de onboarding devem usar `/voucher/onboarding-link/{linkId}` e `/voucher/onboarding-link/{linkId}/confirm`, e nao `/transactions/payment-link/*`.
+- Os endpoints genericos de `/transactions/payment-link/*` continuam reservados aos fluxos autenticados.
+- O valor de onboarding no codigo e `0.00022000` BTC.
 
 ## Economy e Onramp
 

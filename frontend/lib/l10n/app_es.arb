@@ -130,6 +130,8 @@
   "recentTransactions": "Transacciones Recientes",
   "viewAll": "Ver Todas",
   "showLess": "Ver Menos",
+  "waitingConnection": "Esperando conexión...",
+  "offlineRetryHint": "Desliza hacia abajo o toca reintentar.",
   "confirming": "Confirmando",
   "typeSend": "Envío",
   "typeReceive": "Recepción",
