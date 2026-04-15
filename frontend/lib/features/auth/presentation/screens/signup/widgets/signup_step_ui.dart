@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -78,7 +77,7 @@ class SignupStepLayout extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                       fillColor: Colors.black.withValues(alpha: 0.18),
                       borderColor: Colors.white.withValues(alpha: 0.08),
-                      blurSigma: 26,
+                      blurSigma: 10,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(
                           AppSpacing.lg,
@@ -120,29 +119,37 @@ class SignupGlassSurface extends StatelessWidget {
     required this.borderRadius,
     required this.fillColor,
     required this.borderColor,
-    this.blurSigma = 22,
+    this.blurSigma = 12,
     this.boxShadow,
     this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
+    final decoratedChild = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: gradient == null ? fillColor : null,
+        gradient: gradient,
+        borderRadius: borderRadius,
+        border: Border.all(color: borderColor),
+        boxShadow: boxShadow,
+      ),
+      child: child,
+    );
+
     return ClipRRect(
       borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: gradient == null ? fillColor : null,
-            gradient: gradient,
-            borderRadius: borderRadius,
-            border: Border.all(color: borderColor),
-            boxShadow: boxShadow,
-          ),
-          child: child,
-        ),
-      ),
+      child: blurSigma <= 0
+          ? decoratedChild
+          : BackdropFilter(
+              filterConfig: ImageFilterConfig.blur(
+                sigmaX: blurSigma,
+                sigmaY: blurSigma,
+                bounded: true,
+              ),
+              child: decoratedChild,
+            ),
     );
   }
 }
@@ -178,24 +185,23 @@ class SignupHeroCard extends StatelessWidget {
 
     return SignupGlassSurface(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      borderRadius: BorderRadius.circular(24),
-      fillColor: Colors.black.withValues(alpha: 0.14),
-      borderColor: accent.withValues(alpha: 0.22),
-      blurSigma: 24,
+      borderRadius: BorderRadius.circular(20),
+      fillColor: Colors.black.withValues(alpha: 0.12),
+      borderColor: accent.withValues(alpha: 0.18),
+      blurSigma: 12,
       boxShadow: [
         BoxShadow(
-          color: accent.withValues(alpha: 0.16),
-          blurRadius: 42,
-          spreadRadius: 2,
-          offset: const Offset(0, 18),
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 18,
+          offset: const Offset(0, 10),
         ),
       ],
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          accent.withValues(alpha: 0.18),
-          Colors.white.withValues(alpha: 0.04),
+          accent.withValues(alpha: 0.08),
+          Colors.white.withValues(alpha: 0.03),
         ],
       ),
       child: Column(
@@ -208,7 +214,7 @@ class SignupHeroCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
+                  color: accent.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
                 child: AnimatedGlyphIcon(
@@ -226,7 +232,7 @@ class SignupHeroCard extends StatelessWidget {
                       eyebrow.toUpperCase(),
                       style: Theme.of(context).textTheme.labelSmall!.copyWith(
                             color: accent,
-                            letterSpacing: 1.4,
+                            letterSpacing: 1.0,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -257,10 +263,10 @@ class SignupHeroCard extends StatelessWidget {
               width: double.infinity,
               child: SignupGlassSurface(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                borderRadius: BorderRadius.circular(20),
-                fillColor: Colors.black.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+                fillColor: Colors.black.withValues(alpha: 0.10),
                 borderColor: Colors.white.withValues(alpha: 0.08),
-                blurSigma: 18,
+                blurSigma: 10,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -269,7 +275,7 @@ class SignupHeroCard extends StatelessWidget {
                         highlightLabel!.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(
                               color: Theme.of(context).colorScheme.secondary,
-                              letterSpacing: 1.5,
+                              letterSpacing: 1.0,
                               fontWeight: FontWeight.w700,
                             ),
                       ),
@@ -336,20 +342,18 @@ class SignupPanel extends StatelessWidget {
 
     return SignupGlassSurface(
       padding: padding ?? const EdgeInsets.all(AppSpacing.lg),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       fillColor: Colors.white.withValues(alpha: 0.025),
       borderColor: tone == SignupSurfaceTone.neutral
           ? Colors.white.withValues(alpha: 0.08)
           : accent.withValues(alpha: 0.18),
-      blurSigma: 18,
+      blurSigma: 8,
       boxShadow: [
         BoxShadow(
-          color: accent.withValues(
-            alpha: tone == SignupSurfaceTone.neutral ? 0.06 : 0.14,
-          ),
-          blurRadius: 34,
-          spreadRadius: -4,
-          offset: const Offset(0, 14),
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 14,
+          spreadRadius: -2,
+          offset: const Offset(0, 8),
         ),
       ],
       child: child,
@@ -380,7 +384,7 @@ class SignupInlineNotice extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSpacing.lg),
       fillColor: accent.withValues(alpha: 0.08),
       borderColor: accent.withValues(alpha: 0.20),
-      blurSigma: 16,
+      blurSigma: 8,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -511,7 +515,7 @@ class SignupTag extends StatelessWidget {
         borderColor: tone == SignupSurfaceTone.neutral
             ? Colors.white.withValues(alpha: 0.08)
             : accent.withValues(alpha: 0.20),
-        blurSigma: 14,
+        blurSigma: 0,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

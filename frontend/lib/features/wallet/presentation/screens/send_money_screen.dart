@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:uuid/uuid.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/presentation/widgets/cyber_button.dart';
 import 'package:teste/core/presentation/widgets/glass_container.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/services/audio_service.dart';
 import 'package:teste/l10n/l10n_extension.dart';
-import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
+import 'package:teste/features/security/domain/entities/account_security_profile.dart';
+import 'package:teste/features/security/presentation/providers/security_provider.dart';
+import 'package:teste/features/transactions/presentation/screens/payment_confirmation_screen.dart';
 
 import '../../../../core/utils/qr_payment_parser.dart';
 import '../../../../core/widgets/transaction_auth_gate.dart';
@@ -22,7 +26,6 @@ import '../providers/wallet_provider.dart';
 import '../state/wallet_state.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../domain/entities/wallet.dart';
-import 'nfc_interaction_screen.dart';
 
 class SendMoneyScreen extends ConsumerStatefulWidget {
   final String? walletId;
@@ -45,18 +48,20 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   String _lockedRecipientAddress = '';
   double _lockedAmountBtc = 0.0;
   String? _lockedRecipientLabel;
+  String? _lockedDestinationHash;
+  bool _autoConfirmationScheduled = false;
 
   final _receiverController = TextEditingController();
   final _contextController = TextEditingController();
 
-  int _selectedTabIndex = 1; // 0: NFC, 1: Manual, 2: QR Code
   String _amount = '0';
+  late Currency _selectedCurrency;
 
   @override
   void initState() {
     super.initState();
+    _selectedCurrency = ref.read(currencyProvider);
     if (widget.initialAmountBtc != null) {
-      _amount = widget.initialAmountBtc!.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
       _lockedAmountBtc = widget.initialAmountBtc!;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,203 +80,244 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   void _onKeyTap(String key) {
     if (_lockedAmountBtc > 0) return; // Prevent changing locked amount
-    
+
     HapticFeedback.lightImpact();
     setState(() {
-      if (key == '←') {
-        if (_amount.length > 1) {
-          _amount = _amount.substring(0, _amount.length - 1);
-        } else {
-          _amount = "0";
-        }
-      } else if (key == '.') {
-        if (!_amount.contains('.')) {
-          _amount += '.';
-        }
-      } else {
-        if (_amount == "0") {
-          _amount = key;
-        } else {
-          if (_amount.contains('.')) {
-            final parts = _amount.split('.');
-            if (parts.length > 1 && parts[1].length >= 8) {
-              return;
-            }
-          }
-          if (_amount.length < 16) {
-            _amount += key;
-          }
-        }
-      }
+      _amount = MoneyDisplay.applyKeypadInput(
+        currentValue: _amount,
+        key: key,
+        currency: _selectedCurrency,
+        maxLength: _selectedCurrency == Currency.btc ? 16 : 12,
+      );
     });
+  }
+
+  double _amountAsDouble() => MoneyDisplay.parseEditableInput(_amount);
+
+  double _currentAmountBtc({
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) {
+    if (_lockedAmountBtc > 0) {
+      return _lockedAmountBtc;
+    }
+    return MoneyDisplay.convertToBtcAmount(
+      amount: _amountAsDouble(),
+      currency: _selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncActionState>(sendTransactionProvider, (previous, next) {
-      if (next.result != null) {
-        AudioService.instance.playTransaction();
-        HapticFeedback.vibrate();
-        ref.read(sendTransactionProvider.notifier).reset();
-        Navigator.pop(context, next.result);
-      } else if (next.error != null) {
-        AudioService.instance.playError();
-        HapticFeedback.heavyImpact();
-        String errorMsg = ErrorTranslator.translate(context.l10n, next.error!);
-        SnackbarHelper.showError(errorMsg);
-        ref.read(sendTransactionProvider.notifier).reset();
-      }
-    });
-    ref.listen<AsyncActionState>(paymentLinkNotifierProvider, (previous, next) {
-      if (next.result != null) {
-        AudioService.instance.playTransaction();
-        HapticFeedback.vibrate();
-        ref.read(paymentLinkNotifierProvider.notifier).reset();
-        Navigator.pop(context, next.result);
-      } else if (next.error != null) {
-        AudioService.instance.playError();
-        HapticFeedback.heavyImpact();
-        SnackbarHelper.showError(
-          ErrorTranslator.translate(context.l10n, next.error!),
-        );
-        ref.read(paymentLinkNotifierProvider.notifier).reset();
-      }
-    });
+    final isSending = ref.watch(
+      sendTransactionProvider.select((state) => state.isLoading),
+    );
+    final isPayingLink = ref.watch(
+      paymentLinkNotifierProvider.select((state) => state.isLoading),
+    );
+    final isLoading = isSending || isPayingLink;
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final amountBtc = _currentAmountBtc(
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
 
-    final sendState = ref.watch(sendTransactionProvider);
-    final paymentLinkState = ref.watch(paymentLinkNotifierProvider);
-    final isLoading = sendState.isLoading || paymentLinkState.isLoading;
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: true,
-        resizeToAvoidBottomInset: false,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: AppSpacing.lg),
-            
-            if (_pendingPaymentLinkId == null && _lockedRecipientAddress.isEmpty) ...[
-              _buildTabs().animate().fade().slideY(begin: 0.1, end: 0),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                child: Column(
-                  children: [
-                    _buildAmountDisplay().animate().scale(curve: Curves.easeOutBack),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildLiveQuote().animate(delay: 200.ms).fade(),
-                  ],
-                ),
-              ),
-              _buildKeypad().animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
-            ] else ...[
-              _buildLockedAmountView().animate().fade().scale(),
-            ],
-
-            const SizedBox(height: AppSpacing.xl),
-            
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: CyberButton(
-                text: context.l10n.continueButton.toUpperCase(),
-                isLoading: isLoading,
-                onTap: (double.tryParse(_amount) ?? 0) > 0 ? _handleContinue : null,
-              ).animate(delay: 500.ms).fade().slideY(begin: 0.2, end: 0),
+    return CyberBackground.authenticated(
+      useScroll: true,
+      resizeToAvoidBottomInset: false,
+      child: Column(
+        children: [
+          _buildHeader(context),
+          const SizedBox(height: AppSpacing.lg),
+          if (_pendingPaymentLinkId == null &&
+              _lockedRecipientAddress.isEmpty) ...[
+            RepaintBoundary(
+              child: _buildManualFlowHero(context),
             ),
-            
-            const SizedBox(height: AppSpacing.xl),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: _buildAmountDisplay(
+                btcUsd: btcUsd,
+                btcEur: btcEur,
+                btcBrl: btcBrl,
+              ),
+            ),
+            if (_selectedCurrency != Currency.btc && amountBtc > 0) ...[
+              _buildFiatReferenceLine(amountBtc: amountBtc),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            RepaintBoundary(
+              child: _buildKeypad(),
+            ),
+          ] else ...[
+            _buildLockedAmountView(
+              btcUsd: btcUsd,
+              btcEur: btcEur,
+              btcBrl: btcBrl,
+            ),
           ],
-        ),
+          const SizedBox(height: AppSpacing.xl),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: CyberButton(
+              text: context.l10n.continueButton.toUpperCase(),
+              isLoading: isLoading,
+              onTap: amountBtc > 0 ? _handleContinue : null,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           const Spacer(),
           Text(
             context.l10n.send.toUpperCase(),
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           const Spacer(),
           const SizedBox(width: 48),
         ],
       ),
-    ).animate().fade().slideY(begin: -0.2, end: 0);
+    );
   }
 
-  Widget _buildTabs() {
+  Widget _buildManualFlowHero(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(100),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color:
+              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         children: [
-          _buildTabItem(context.l10n.nfc, 0),
-          _buildTabItem(context.l10n.manual, 1),
-          _buildTabItem(context.l10n.qrCode, 2),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.18),
+              ),
+            ),
+            child: Icon(
+              LucideIcons.arrowUpRight,
+              color: Theme.of(context).colorScheme.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.manual.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.42),
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Defina o valor e continue para informar o hash ou identificador da carteira de destino.',
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.74),
+                        height: 1.4,
+                      ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTabItem(String label, int index) {
-    final isSelected = _selectedTabIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() => _selectedTabIndex = index);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildAmountDisplay({
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) {
+    final primaryAmount = _lockedAmountBtc > 0
+        ? MoneyDisplay.convertFromBtcAmount(
+            btcAmount: _lockedAmountBtc,
+            currency: _selectedCurrency,
+            btcUsd: btcUsd,
+            btcEur: btcEur,
+            btcBrl: btcBrl,
+          )
+        : _amountAsDouble();
+    final primaryAmountLabel = _lockedAmountBtc > 0
+        ? MoneyDisplay.format(
+            amount: primaryAmount,
+            currency: _selectedCurrency,
+            withSymbol: false,
+          )
+        : MoneyDisplay.formatEditableInput(
+            rawValue: _amount,
+            currency: _selectedCurrency,
+            withSymbol: false,
+          );
 
-  Widget _buildAmountDisplay() {
     return Column(
       children: [
         Text(
           context.l10n.amount.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
+              ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Row(
@@ -280,15 +326,17 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              "₿ ",
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary),
+              "${MoneyDisplay.tickerSymbolFor(_selectedCurrency)} ",
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge!
+                  .copyWith(color: Theme.of(context).colorScheme.primary),
             ),
             Text(
-              _amount,
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                fontSize: 56,
-                fontWeight: FontWeight.w300,
-                letterSpacing: -1.0,
+              primaryAmountLabel,
+              style: AppTypography.amountInput(
+                isBtc: _selectedCurrency == Currency.btc,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           ],
@@ -297,15 +345,20 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     );
   }
 
-  Widget _buildLiveQuote() {
-    final btcUsdPrice = ref.watch(latestBtcPriceProvider);
-    final amt = double.tryParse(_amount) ?? 0.0;
-    final value = amt * (btcUsdPrice ?? 0);
-    return Text(
-      "≈ \$ ${value.toStringAsFixed(2)} USD",
-      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-        fontWeight: FontWeight.w500,
+  Widget _buildFiatReferenceLine({required double amountBtc}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Text(
+        'Equivale a ${MoneyDisplay.format(amount: amountBtc, currency: Currency.btc)}',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.58),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
       ),
     );
   }
@@ -358,55 +411,99 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           height: 64,
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
           alignment: Alignment.center,
           child: isBackspace
-              ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 20)
+              ? Icon(LucideIcons.delete,
+                  color: Theme.of(context).colorScheme.onPrimary, size: 20)
               : Text(
                   key,
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w300),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium!
+                      .copyWith(fontWeight: FontWeight.w300),
                 ),
         ),
       ),
     );
   }
 
-  Widget _buildLockedAmountView() {
+  Widget _buildLockedAmountView({
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) {
+    final lockedPrimaryAmount = MoneyDisplay.convertFromBtcAmount(
+      btcAmount: _lockedAmountBtc,
+      currency: _selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: GlassContainer(
+        enableBlur: false,
         padding: const EdgeInsets.all(AppSpacing.xl),
         borderRadius: BorderRadius.circular(AppSpacing.xl),
         child: Column(
           children: [
             Text(
-              "${(double.tryParse(_amount) ?? 0).toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} BTC",
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+              MoneyDisplay.formatCompact(
+                amount: lockedPrimaryAmount,
+                currency: _selectedCurrency,
+              ),
+              style: AppTypography.amountInput(
+                isBtc: _selectedCurrency == Currency.btc,
                 color: Theme.of(context).colorScheme.primary,
-                fontSize: 40,
-                letterSpacing: -1.0,
+              ).copyWith(
+                fontSize: _selectedCurrency == Currency.btc ? 40 : 46,
+                letterSpacing: -1.2,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            if (_lockedRecipientLabel != null) ...[
-                Text(
-                  "PARA: ${_lockedRecipientLabel!.toUpperCase()}",
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+            if (_selectedCurrency != Currency.btc)
+              Text(
+                MoneyDisplay.formatCompact(
+                  amount: _lockedAmountBtc,
+                  currency: Currency.btc,
                 ),
-                const SizedBox(height: AppSpacing.md),
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.5),
+                    ),
+              ),
+            if (_selectedCurrency != Currency.btc)
+              const SizedBox(height: AppSpacing.sm),
+            if (_lockedRecipientLabel != null) ...[
+              Text(
+                "PARA: ${_lockedRecipientLabel!.toUpperCase()}",
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.md),
             ],
             Text(
               context.l10n.fixedAmountByRequest,
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 2.0,
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.4),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2.0,
+                  ),
             ),
           ],
         ),
@@ -418,30 +515,55 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final walletState = ref.read(walletProvider);
     final currentWallet = _resolveWallet(walletState);
     if (currentWallet == null) return;
-    
+    final btcUsd = ref.read(latestBtcPriceProvider);
+    final btcEur = ref.read(btcEurPriceProvider);
+    final btcBrl = ref.read(btcBrlPriceProvider);
+    final amountBtc = _currentAmountBtc(
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+
     HapticFeedback.mediumImpact();
 
     if (_pendingPaymentLinkId != null || _lockedRecipientAddress.isNotEmpty) {
-      _showConfirmationDialog(
-        context,
-        double.tryParse(_amount) ?? 0.0,
-        0, // Let backend or prepare Tx define actual fee
-        double.tryParse(_amount) ?? 0.0,
-        currentWallet.id,
-        currentWallet.address,
-        _lockedRecipientAddress,
-        _contextController.text.trim(),
+      await _openPaymentConfirmation(
+        wallet: currentWallet,
+        amount: amountBtc,
+        fee: 0, // Let backend or prepare Tx define actual fee.
+        total: amountBtc,
+        toAddress: _lockedRecipientAddress,
+        txContext: _contextController.text.trim(),
       );
       return;
     }
 
-    if (_selectedTabIndex == 0) {
-      _handleReadNfc();
-    } else if (_selectedTabIndex == 2) {
-      _handleScanQr();
-    } else {
-      _showManualAddressInput(double.tryParse(_amount) ?? 0, currentWallet);
+    _showManualAddressInput(amountBtc, currentWallet);
+  }
+
+  Future<AccountSecurityProfile> _resolveSecurityProfile(Wallet wallet) async {
+    try {
+      return await ref.read(accountSecurityProfileProvider.future);
+    } catch (_) {
+      return _fallbackSecurityProfile(wallet.accountSecurity);
     }
+  }
+
+  AccountSecurityProfile _fallbackSecurityProfile(String rawSecurity) {
+    final mode = accountSecurityModeFromApi(rawSecurity);
+    final requiredFactors = switch (mode) {
+      AccountSecurityMode.shamir => const ['SLIP39_SHARES', 'TOTP'],
+      AccountSecurityMode.multisig2fa => const ['PASSPHRASE', 'TOTP'],
+      AccountSecurityMode.passkey => const ['PASSKEY'],
+      AccountSecurityMode.standard => const ['PASSKEY'],
+    };
+
+    return AccountSecurityProfile(
+      mode: mode,
+      passkeyAvailable: mode == AccountSecurityMode.standard,
+      passkeyEnabledForTransactions: mode == AccountSecurityMode.standard,
+      requiredFactors: requiredFactors,
+    );
   }
 
   Wallet? _resolveWallet(WalletState walletState) {
@@ -466,8 +588,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       isScrollControlled: true,
       builder: (_) {
         return GlassContainer(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
-          padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 
+          enableBlur: false,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
               MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -478,7 +605,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -486,13 +616,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 context.l10n.recipientData,
-                style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 1),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium!
+                    .copyWith(letterSpacing: 1),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xl),
               _buildBottomSheetInput(
                 controller: _receiverController,
-                hint: context.l10n.recipientHint,
+                hint: 'Hash ou identificador da carteira',
                 icon: LucideIcons.user,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -510,22 +643,21 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     SnackbarHelper.showError("Informe o destinatário");
                     return;
                   }
-                  if (_isExternalBitcoinTarget(_receiverController.text.trim())) {
+                  if (_isExternalBitcoinTarget(
+                      _receiverController.text.trim())) {
                     SnackbarHelper.showError(
                       "Pagamentos on-chain devem usar o fluxo de saque.",
                     );
                     return;
                   }
                   Navigator.pop(context);
-                  _showConfirmationDialog(
-                    context,
-                    amountBtc,
-                    0,
-                    amountBtc,
-                    wallet.id,
-                    wallet.address,
-                    _receiverController.text.trim(),
-                    _contextController.text.trim(),
+                  _openPaymentConfirmation(
+                    wallet: wallet,
+                    amount: amountBtc,
+                    fee: 0,
+                    total: amountBtc,
+                    toAddress: _receiverController.text.trim(),
+                    txContext: _contextController.text.trim(),
                   );
                 },
               ),
@@ -542,232 +674,348 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required IconData icon,
     int? maxLength,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(AppSpacing.md),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
-      ),
+    return GlassContainer(
+      enableBlur: false,
+      blur: 18,
+      opacity: 0.02,
+      color: Theme.of(context).colorScheme.onPrimary,
+      borderRadius: BorderRadius.circular(AppSpacing.md),
+      border: Border.all(color: Colors.transparent),
       child: TextField(
         controller: controller,
         style: Theme.of(context).textTheme.bodyMedium!,
         maxLength: maxLength,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)),
-          border: InputBorder.none,
+          hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.32),
+              ),
           counterText: '',
-          icon: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+          filled: false,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+            size: 20,
+          ),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
         ),
       ),
     );
   }
 
-  void _showConfirmationDialog(
-    BuildContext context,
-    double amount,
-    double fee,
-    double total,
-    String fromWalletId,
-    String fromAddress,
-    String toAddress,
-    String txContext,
-  ) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: '',
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (_, __, ___) => const SizedBox(),
-      transitionBuilder: (context, anim1, anim2, child) {
-        return ScaleTransition(
-          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
-          child: FadeTransition(
-            opacity: anim1,
-            child: AlertDialog(
-              backgroundColor: Colors.transparent,
-              contentPadding: EdgeInsets.zero,
-              content: GlassContainer(
-                borderRadius: BorderRadius.circular(AppSpacing.xl),
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      context.l10n.reviewSend,
-                      style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildConfirmRow(context.l10n.recipient, _lockedRecipientLabel ?? toAddress, isSmall: _lockedRecipientLabel == null),
-                    if (toAddress != _lockedRecipientLabel && _lockedRecipientLabel != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _buildConfirmRow("ENDEREÇO", toAddress, isSmall: true),
-                    ],
-                    Divider(color: AppColors.white10, height: AppSpacing.xl),
-                    if (txContext.isNotEmpty) ...[
-                      _buildConfirmRow(context.l10n.description, txContext, isSmall: true),
-                      const SizedBox(height: AppSpacing.sm),
-                    ],
-                    _buildConfirmRow(context.l10n.amount.toUpperCase(), "${amount.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} BTC"),
-                    const SizedBox(height: AppSpacing.xs),
-                    _buildConfirmRow(context.l10n.networkFee, context.l10n.free, valueColor: Theme.of(context).colorScheme.primary),
-                    Divider(color: AppColors.white10, height: AppSpacing.xl),
-                    _buildConfirmRow(context.l10n.total, "${total.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')} BTC", isBold: true),
-                    const SizedBox(height: AppSpacing.xl),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(context.l10n.cancel.toUpperCase(), style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4))),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: CyberButton(
-                            text: context.l10n.confirm,
-                            onTap: () async {
-                              // We close the review dialog
-                              Navigator.pop(context);
-                              
-                              final walletState = ref.read(walletProvider);
-                              final currentWallet = _resolveWallet(walletState);
-                              if (currentWallet == null) {
-                                SnackbarHelper.showError("Carteira de origem indisponível");
-                                return;
-                              }
+  Future<void> _openPaymentConfirmation({
+    required Wallet wallet,
+    required double amount,
+    required double fee,
+    required double total,
+    required String toAddress,
+    required String txContext,
+  }) async {
+    final selectedCurrency = ref.read(currencyProvider);
+    final btcUsd = ref.read(latestBtcPriceProvider);
+    final btcEur = ref.read(btcEurPriceProvider);
+    final btcBrl = ref.read(btcBrlPriceProvider);
+    final isPaymentLink = _pendingPaymentLinkId != null;
+    final recipientLabel = _lockedRecipientLabel ?? toAddress;
+    final destinationSubtitle = isPaymentLink
+        ? null
+        : _lockedRecipientLabel != null && _lockedRecipientLabel != toAddress
+            ? toAddress
+            : null;
+    final amountLabel = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: amount,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final totalLabel = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: total,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final btcAmountLabel = MoneyDisplay.format(
+      amount: amount,
+      currency: Currency.btc,
+    );
+    final btcTotalLabel = MoneyDisplay.format(
+      amount: total,
+      currency: Currency.btc,
+    );
+    final balanceLabel = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: wallet.balance,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
 
-                              final secLevel = TransactionAuthGate.securityFromString(
-                                currentWallet.accountSecurity,
-                              );
-                              final authResult = await TransactionAuthGate.show(
-                                context,
-                                security: secLevel,
-                              );
+    final details = <PaymentConfirmationDetail>[
+      PaymentConfirmationDetail(
+        label: 'Tipo',
+        value: isPaymentLink
+            ? 'Pagamento por link interno'
+            : 'Transferência interna Kerosene',
+        icon: isPaymentLink ? LucideIcons.link : LucideIcons.repeat2,
+      ),
+      PaymentConfirmationDetail(
+        label: 'Valor',
+        value: amountLabel,
+        icon: LucideIcons.bitcoin,
+        emphasized: true,
+      ),
+      if (selectedCurrency != Currency.btc)
+        PaymentConfirmationDetail(
+          label: 'Valor em BTC',
+          value: btcAmountLabel,
+          icon: LucideIcons.coins,
+          monospace: true,
+        ),
+      PaymentConfirmationDetail(
+        label: context.l10n.networkFee,
+        value: context.l10n.free,
+        icon: LucideIcons.badgeDollarSign,
+        valueColor: Theme.of(context).colorScheme.primary,
+      ),
+      PaymentConfirmationDetail(
+        label: context.l10n.total,
+        value: totalLabel,
+        icon: LucideIcons.receipt,
+        emphasized: true,
+      ),
+      if (selectedCurrency != Currency.btc)
+        PaymentConfirmationDetail(
+          label: 'Total em BTC',
+          value: btcTotalLabel,
+          icon: LucideIcons.equal,
+          monospace: true,
+        ),
+      PaymentConfirmationDetail(
+        label: 'Saldo antes do envio',
+        value: balanceLabel,
+        icon: LucideIcons.walletCards,
+      ),
+      if (txContext.isNotEmpty)
+        PaymentConfirmationDetail(
+          label: context.l10n.description,
+          value: txContext,
+          icon: LucideIcons.fileText,
+        ),
+      if (_pendingPaymentLinkId != null)
+        PaymentConfirmationDetail(
+          label: 'ID do link',
+          value: _pendingPaymentLinkId!,
+          icon: LucideIcons.fingerprint,
+          monospace: true,
+        ),
+      if (isPaymentLink && _lockedDestinationHash != null)
+        PaymentConfirmationDetail(
+          label: 'Hash do destino',
+          value: _lockedDestinationHash!,
+          icon: LucideIcons.lock,
+          monospace: true,
+          copyable: true,
+          copyMessage: 'Hash do destino copiado.',
+        ),
+    ];
 
-                              if (authResult.isAuthenticated && mounted) {
-                                  if (_pendingPaymentLinkId != null) {
-                                    _handlePayPaymentLink(currentWallet);
-                                  } else {
-                                    ref.read(sendTransactionProvider.notifier).send(
-                                      fromWalletId: fromWalletId,
-                                      fromAddress: fromAddress,
-                                      toAddress: toAddress,
-                                      amount: amount,
-                                      feeSatoshis: (fee * 100000000).toInt(),
-                                      context: txContext.isNotEmpty ? txContext : null,
-                                      confirmationPassphrase: authResult.confirmationPassphrase,
-                                      totpCode: authResult.totpCode,
-                                    );
-                                  }
-                              } else {
-                                  SnackbarHelper.showError("Autenticação cancelada ou falhou");
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    final result = await Navigator.of(context).push<dynamic>(
+      MaterialPageRoute(
+        builder: (_) => PaymentConfirmationScreen<dynamic>(
+          title:
+              isPaymentLink ? 'Confirmar pagamento' : context.l10n.reviewSend,
+          eyebrow: isPaymentLink ? 'Pedido bloqueado' : 'Revisão final',
+          amountPrimary: amountLabel,
+          amountSecondary: btcAmountLabel,
+          sourceLabel: 'De',
+          sourceValue: wallet.name,
+          destinationLabel: 'Para',
+          destinationValue: recipientLabel,
+          destinationSubtitle: destinationSubtitle,
+          networkLabel: 'Interno',
+          notice: isPaymentLink
+              ? 'Valor e destino foram definidos pelo link. Confirme apenas se reconhecer este pedido.'
+              : 'Confira os dados antes de confirmar. Depois da autorização, o pedido será enviado ao servidor para processamento.',
+          securityMessage:
+              'A confirmação usa a sessão atual e os fatores de segurança configurados na sua conta antes de enviar o pagamento.',
+          confirmText: context.l10n.confirm,
+          cancelText: context.l10n.cancel,
+          details: details,
+          onConfirm: (confirmationContext, _) => _confirmPayment(
+            confirmationContext: confirmationContext,
+            wallet: wallet,
+            amount: amount,
+            fee: fee,
+            toAddress: toAddress,
+            txContext: txContext,
           ),
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (result != null) {
+      Navigator.of(context).pop(result);
+    }
+  }
+
+  Future<dynamic> _confirmPayment({
+    required BuildContext confirmationContext,
+    required Wallet wallet,
+    required double amount,
+    required double fee,
+    required String toAddress,
+    required String txContext,
+  }) async {
+    final profile = await _resolveSecurityProfile(wallet);
+    final authResult = await TransactionAuthGate.show(
+      confirmationContext,
+      profile: profile,
+      allowDeviceAuthUnavailable: true,
+    );
+
+    if (!authResult.isAuthenticated || !mounted) {
+      SnackbarHelper.showError("Autenticação cancelada ou falhou");
+      return null;
+    }
+
+    if (_pendingPaymentLinkId != null) {
+      final linkId = _pendingPaymentLinkId;
+      if (linkId == null) {
+        SnackbarHelper.showError("Solicitação de pagamento inválida.");
+        return null;
+      }
+
+      final result = await ref.read(paymentLinkNotifierProvider.notifier).pay(
+            linkId: linkId,
+            payerWalletName: wallet.name,
+            totpCode: authResult.totpCode,
+            confirmationPassphrase: authResult.confirmationPassphrase,
+            passkeyAssertionJson: authResult.passkeyAssertionJson,
+          );
+
+      if (result != null) {
+        AudioService.instance.playTransaction();
+        HapticFeedback.vibrate();
+        ref.read(paymentLinkNotifierProvider.notifier).reset();
+        return result;
+      }
+
+      AudioService.instance.playError();
+      HapticFeedback.heavyImpact();
+      final error = ref.read(paymentLinkNotifierProvider).error;
+      if (error != null) {
+        SnackbarHelper.showError(
+          ErrorTranslator.translate(confirmationContext.l10n, error),
         );
-      },
-    );
-  }
-
-  Widget _buildConfirmRow(String label, String value, {bool isSmall = false, bool isBold = false, Color? valueColor}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3), fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: (isSmall ? Theme.of(context).textTheme.bodySmall! : Theme.of(context).textTheme.bodyLarge!).copyWith(
-            color: valueColor ?? Theme.of(context).colorScheme.onPrimary,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
-            fontFamily: 'JetBrainsMono',
-          ),
-          softWrap: true,
-        ),
-      ],
-    );
-  }
-
-  void _handleScanQr() async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-    );
-    if (result != null && mounted) {
-      _parsePaymentRequest(result);
+      }
+      ref.read(paymentLinkNotifierProvider.notifier).reset();
+      return null;
     }
-  }
 
-  void _handleReadNfc() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => NfcInteractionScreen(amountDisplay: _amount)),
-    );
-    if (result != null && result is String && mounted) {
-      _parsePaymentRequest(result);
+    final idempotencyKey = const Uuid().v4();
+    final result = await ref.read(sendTransactionProvider.notifier).send(
+          fromWalletId: wallet.id,
+          fromAddress:
+              wallet.address.trim().isEmpty ? null : wallet.address.trim(),
+          toAddress: toAddress,
+          amount: amount,
+          feeSatoshis: (fee * 100000000).toInt(),
+          context: txContext.isNotEmpty ? txContext : null,
+          passkeyAssertionJson: authResult.passkeyAssertionJson,
+          confirmationPassphrase: authResult.confirmationPassphrase,
+          totpCode: authResult.totpCode,
+          idempotencyKey: idempotencyKey,
+          requestTimestamp: DateTime.now().millisecondsSinceEpoch,
+        );
+
+    if (result != null) {
+      AudioService.instance.playTransaction();
+      HapticFeedback.vibrate();
+      ref.read(sendTransactionProvider.notifier).reset();
+      return result;
     }
+
+    AudioService.instance.playError();
+    HapticFeedback.heavyImpact();
+    final error = ref.read(sendTransactionProvider).error;
+    if (error != null) {
+      SnackbarHelper.showError(
+        ErrorTranslator.translate(confirmationContext.l10n, error),
+      );
+    }
+    ref.read(sendTransactionProvider.notifier).reset();
+    return null;
   }
 
   void _parsePaymentRequest(String data) {
-    if (data.startsWith('kerosene:link:')) {
-      final linkId = data.replaceFirst('kerosene:link:', '');
+    final linkId = QrPaymentParser.extractPaymentLinkId(data);
+    if (linkId != null) {
       _fetchPaymentLinkDetails(linkId);
       return;
     }
-    
+
     final parsed = QrPaymentParser.decode(data);
     if (parsed != null && parsed.isComplete) {
-       if (_isExternalBitcoinTarget(parsed.address)) {
-         SnackbarHelper.showError(
-           "QR externo detectado. Use o fluxo de saque para pagamentos on-chain.",
-         );
-         return;
-       }
-       setState(() {
-           _lockedRecipientAddress = parsed.address;
-           if (parsed.amountBtc != null && parsed.amountBtc! > 0) {
-              _lockedAmountBtc = parsed.amountBtc!;
-              _amount = parsed.amountBtc!.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-           }
-           if (parsed.label != null && parsed.label!.isNotEmpty) {
-               _lockedRecipientLabel = parsed.label;
-           }
-           if (parsed.message != null && parsed.message!.isNotEmpty) {
-               _contextController.text = parsed.message!;
-           }
-       });
-       
-       HapticFeedback.lightImpact();
-       SnackbarHelper.showSuccess("Dados da requisição carregados!");
+      if (_isExternalBitcoinTarget(parsed.address)) {
+        SnackbarHelper.showError(
+          "QR externo detectado. Use o fluxo de saque para pagamentos on-chain.",
+        );
+        return;
+      }
+      setState(() {
+        _lockedRecipientAddress = parsed.address;
+        if (parsed.amountBtc != null && parsed.amountBtc! > 0) {
+          _lockedAmountBtc = parsed.amountBtc!;
+          _amount = parsed.amountBtc!
+              .toStringAsFixed(8)
+              .replaceAll(RegExp(r'0+$'), '')
+              .replaceAll(RegExp(r'\.$'), '');
+        }
+        if (parsed.label != null && parsed.label!.isNotEmpty) {
+          _lockedRecipientLabel = parsed.label;
+        }
+        if (parsed.message != null && parsed.message!.isNotEmpty) {
+          _contextController.text = parsed.message!;
+        }
+      });
+
+      HapticFeedback.lightImpact();
+      SnackbarHelper.showSuccess("Dados da requisição carregados!");
     } else {
-       SnackbarHelper.showError("QR/NFC Request inválido");
+      SnackbarHelper.showError("QR/NFC Request inválido");
     }
   }
 
   Future<void> _fetchPaymentLinkDetails(String linkId) async {
-    final result = await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
+    final result =
+        await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
 
     result.fold((failure) {
       SnackbarHelper.showError(failure.message);
     }, (data) {
-      final rawAmount = data['amount'];
+      final payload = data['data'] is Map
+          ? Map<String, dynamic>.from(data['data'] as Map)
+          : data;
+      final rawAmount = payload['amount'];
       final amount = rawAmount is num
           ? rawAmount.toDouble()
           : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
-      final status = (data['status']?.toString() ?? 'PENDING').toUpperCase();
+      final status = (payload['status']?.toString() ?? 'PENDING').toUpperCase();
+      final destinationHash = _readPaymentRequestDestinationHash(payload);
 
       if (status == 'PAID') {
         SnackbarHelper.showError("Esta solicitação já foi paga.");
@@ -780,8 +1028,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
       setState(() {
         _pendingPaymentLinkId = linkId;
-        _lockedRecipientLabel = 'SOLICITAÇÃO INTERNA';
-        _lockedRecipientAddress = 'Pagamento por link';
+        _lockedDestinationHash =
+            destinationHash.isNotEmpty ? destinationHash : null;
+        _lockedRecipientLabel = destinationHash.isNotEmpty
+            ? _shortHash(destinationHash)
+            : 'Destino bloqueado';
+        _lockedRecipientAddress =
+            destinationHash.isNotEmpty ? destinationHash : 'Destino bloqueado';
         if (amount > 0) {
           _lockedAmountBtc = amount;
           _amount = amount
@@ -791,20 +1044,73 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         }
       });
       SnackbarHelper.showSuccess("Solicitação de pagamento carregada.");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openLockedPaymentConfirmationIfReady();
+      });
     });
   }
 
-  void _handlePayPaymentLink(Wallet wallet) {
-    final linkId = _pendingPaymentLinkId;
-    if (linkId == null) {
-      SnackbarHelper.showError("Solicitação de pagamento inválida.");
+  String _readPaymentRequestDestinationHash(Map<String, dynamic> data) {
+    const keys = [
+      'destinationHash',
+      'destination_hash',
+      'addressHash',
+      'address_hash',
+      'walletHash',
+      'wallet_hash',
+    ];
+
+    for (final key in keys) {
+      final value = data[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return '';
+  }
+
+  Future<void> _openLockedPaymentConfirmationIfReady() async {
+    if (_autoConfirmationScheduled ||
+        _pendingPaymentLinkId == null ||
+        _lockedAmountBtc <= 0 ||
+        !mounted) {
       return;
     }
 
-    ref.read(paymentLinkNotifierProvider.notifier).pay(
-      linkId: linkId,
-      payerWalletName: wallet.name,
+    _autoConfirmationScheduled = true;
+
+    var walletState = ref.read(walletProvider);
+    var currentWallet = _resolveWallet(walletState);
+    if (currentWallet == null) {
+      await ref.read(walletProvider.notifier).refresh();
+      walletState = ref.read(walletProvider);
+      currentWallet = _resolveWallet(walletState);
+    }
+
+    if (currentWallet == null) {
+      SnackbarHelper.showError(
+        'Carteira não carregada. Abra o pagamento novamente após sincronizar.',
+      );
+      return;
+    }
+
+    await _openPaymentConfirmation(
+      wallet: currentWallet,
+      amount: _lockedAmountBtc,
+      fee: 0,
+      total: _lockedAmountBtc,
+      toAddress: _lockedRecipientAddress,
+      txContext: _contextController.text.trim(),
     );
+  }
+
+  String _shortHash(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length <= 18) {
+      return trimmed;
+    }
+    return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 8)}';
   }
 
   bool _isExternalBitcoinTarget(String value) {

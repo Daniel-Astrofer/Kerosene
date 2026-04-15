@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,35 +9,93 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+import 'package:teste/main.dart' show sharedPreferencesProvider;
+import 'package:teste/core/presentation/widgets/app_notice.dart';
+import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/providers/currency_provider.dart';
+import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/widgets/state_feedback_view.dart';
+import 'package:teste/core/widgets/animated_typewriter_text.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/providers/ghost_mode_provider.dart';
+import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/qr_payment_parser.dart';
 import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/shared/widgets/bitcoin_refresh_indicator.dart';
+import 'package:teste/shared/widgets/bouncing_button_wrapper.dart';
+import 'package:teste/shared/widgets/interaction_utils.dart';
 
+import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:teste/features/transactions/domain/entities/payment_link.dart';
+import 'package:teste/features/transactions/domain/entities/tx_status.dart';
+import '../../../transactions/presentation/screens/deposits_screen.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
+import '../../../wallet/presentation/models/wallet_card_appearance.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../wallet/presentation/providers/balance_websocket_provider.dart';
+import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
-import '../../../wallet/presentation/widgets/wallet_credit_card.dart';
+import 'package:teste/features/wallet/presentation/widgets/wallet_credit_card.dart';
+import '../../../wallet/presentation/screens/create_wallet_screen.dart';
+import '../../../wallet/presentation/screens/deposit/deposit_amount_screen.dart';
 import '../../../wallet/presentation/screens/send_money_screen.dart';
+import '../../../wallet/presentation/screens/nfc_interaction_screen.dart';
 import '../../../wallet/presentation/screens/receive_screen.dart';
-import '../widgets/nfc_searching_overlay.dart';
+import '../widgets/animated_balance_display.dart';
 import '../../../transactions/presentation/screens/withdraw_screen.dart';
 import '../../../transactions/presentation/widgets/transaction_success_dialog.dart';
 import '../widgets/animated_tx_icon.dart';
 import '../widgets/latest_tx_popup.dart';
 import '../widgets/tx_detail_overlay.dart';
-import '../../../security/presentation/screens/sovereignty_status_screen.dart';
+import 'qr_scanner_screen.dart';
+import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
+import 'package:teste/features/notifications/presentation/widgets/session_notification_sidebar.dart';
+import '../../../transactions/presentation/widgets/financial_status_badge.dart';
 
 // ─── Riverpod Provider para o Popup ──────────────────────────────────────────
 final txPopupProvider = ChangeNotifierProvider<TxPopupNotifier>((ref) {
   return TxPopupNotifier();
 });
+
+const Color _homeLowerSurfaceColor = Color(0xFF17191C);
+
+Route<T> _buildBottomUpRoute<T>({
+  required WidgetBuilder builder,
+  RouteSettings? settings,
+}) {
+  return PageRouteBuilder<T>(
+    settings: settings,
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return FadeTransition(
+        opacity: Tween<double>(
+          begin: 0.78,
+          end: 1.0,
+        ).animate(curved),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.08),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
 
 class HomeScreen extends ConsumerStatefulWidget {
   static bool skipNextAuth = false;
@@ -53,6 +115,7 @@ class TxPopupNotifier extends ChangeNotifier {
   String _address = '';
   String _amount = '';
   String _time = '';
+  Timer? _dismissTimer;
 
   bool get active => _active;
   TxPopupStatus get status => _status;
@@ -62,12 +125,18 @@ class TxPopupNotifier extends ChangeNotifier {
   String get amount => _amount;
   String get time => _time;
 
+  void _scheduleHide(Duration duration) {
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(duration, hide);
+  }
+
   void show(
       {required bool isSent,
       required String label,
       required String address,
       required String amount,
       required String time}) {
+    _dismissTimer?.cancel();
     _active = true;
     _status = TxPopupStatus.idle;
     _isSent = isSent;
@@ -76,78 +145,75 @@ class TxPopupNotifier extends ChangeNotifier {
     _amount = amount;
     _time = time;
     notifyListeners();
+    _scheduleHide(const Duration(seconds: 4));
   }
 
   void showLoading() {
+    _dismissTimer?.cancel();
     _active = true;
     _status = TxPopupStatus.loading;
-    _label = 'Atualizando...';
-    _address = 'Verificando rede Tor';
+    _label = 'Atualizando carteira';
+    _address = 'Buscando saldo e transações';
     _amount = '...';
     _time = 'agora';
     notifyListeners();
   }
 
   void showSuccess() {
+    _dismissTimer?.cancel();
     _status = TxPopupStatus.success;
-    _label = 'Sincronizando ao Servidor';
-    _address = 'Sincronizado';
+    _label = 'Atualizado';
+    _address = 'Saldo e transações sincronizados';
     notifyListeners();
+    _scheduleHide(const Duration(milliseconds: 1600));
   }
 
   void hide() {
+    _dismissTimer?.cancel();
     _active = false;
     _status = TxPopupStatus.idle;
     notifyListeners();
   }
+
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _isNfcSearching = false;
-  final ScrollController _scrollController = ScrollController();
-  final ValueNotifier<Color> _scaffoldBgColor =
-      ValueNotifier<Color>(AppColors.surface);
+  bool _isNfcAvailable = false;
+  String? _firstUseActionPanelUserId;
+  int _greetingAnimationSeed = 0;
+  late final ProviderSubscription<ReceivedTxEvent?> _receivedTxSubscription;
+  final AppPrimaryNavigationController _navBarController =
+      AppPrimaryNavigationController();
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_updateBgColor);
-  }
+    unawaited(_checkNfcAvailability());
+    _receivedTxSubscription = ref.listenManual<ReceivedTxEvent?>(
+      receivedTxEventProvider,
+      (previous, next) {
+        if (next == null || !mounted) {
+          return;
+        }
 
-  void _updateBgColor() {
-    if (!_scrollController.hasClients) return;
-    if (_scrollController.offset < 300) {
-      if (_scaffoldBgColor.value != AppColors.surface) {
-        _scaffoldBgColor.value = AppColors.surface;
-      }
-    } else if (_scrollController.offset >
-        _scrollController.position.maxScrollExtent - 200) {
-      if (_scaffoldBgColor.value != AppColors.darkGrey) {
-        _scaffoldBgColor.value = AppColors.darkGrey;
-      }
-    }
-  }
+        ref.read(receivedTxEventProvider.notifier).consumeEvent(next.id);
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _scaffoldBgColor.dispose();
-    super.dispose();
-  }
+        final selectedCurrency = ref.read(currencyProvider);
+        final btcUsd = ref.read(latestBtcPriceProvider);
+        final btcEur = ref.read(btcEurPriceProvider);
+        final btcBrl = ref.read(btcBrlPriceProvider);
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    ref.listen<ReceivedTxEvent?>(receivedTxEventProvider, (previous, next) {
-      if (next != null && mounted) {
         showDialog(
           context: context,
-          barrierColor: AppColors.black.withOpacity(0.8),
+          barrierColor: AppColors.black.withValues(alpha: 0.8),
           builder: (_) => TransactionSuccessDialog(
             type: TransactionType.receive,
-            amount: next.amount,
+            amountBtc: next.amount,
             counterparty: next.sender,
           ),
         );
@@ -161,16 +227,842 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isSent: false,
               label: 'Recebido',
               address: shortAddress,
-              amount: '+${next.amount} BTC',
+              amount: MoneyDisplay.formatAmountFromBtc(
+                btcAmount: next.amount,
+                currency: selectedCurrency,
+                btcUsd: btcUsd,
+                btcEur: btcEur,
+                btcBrl: btcBrl,
+                signed: true,
+              ),
               time: 'agora',
             );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _receivedTxSubscription.close();
+    _navBarController.dispose();
+    super.dispose();
+  }
+
+  Wallet? _resolveActiveWallet(WalletState walletState) {
+    if (walletState is! WalletLoaded) {
+      return null;
+    }
+
+    return walletState.selectedWallet ??
+        (walletState.wallets.isNotEmpty ? walletState.wallets.first : null);
+  }
+
+  void _showWalletRequiredNotice() {
+    AppNotice.showInfo(
+      context,
+      title: 'Carteira necessária',
+      message: 'Selecione ou crie uma carteira antes de usar esta ação.',
+    );
+  }
+
+  Future<void> _checkNfcAvailability() async {
+    try {
+      final availability = await NfcManager.instance.checkAvailability();
+      if (!mounted) {
+        return;
       }
+      setState(() {
+        _isNfcAvailable = availability == NfcAvailability.enabled;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isNfcAvailable = false;
+      });
+    }
+  }
+
+  Future<void> _refreshHomeData() async {
+    final popup = ref.read(txPopupProvider);
+    _navBarController.triggerRefreshAnimation();
+    if (mounted) {
+      setState(() {
+        _greetingAnimationSeed++;
+      });
+    }
+    popup.showLoading();
+
+    try {
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(depositsProvider);
+      ref.invalidate(depositBalanceProvider);
+
+      await Future.wait([
+        ref.read(walletProvider.notifier).refresh(),
+        ref.read(transactionHistoryProvider.future),
+      ]);
+
+      popup.showSuccess();
+    } catch (_) {
+      AppNotice.showError(
+        context,
+        title: 'Falha ao atualizar',
+        message: 'Nao foi possivel sincronizar saldo e transacoes.',
+      );
+    } finally {
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (mounted) {
+        ref.read(txPopupProvider).hide();
+      }
+    }
+  }
+
+  Future<T?> _pushFromBottom<T>(WidgetBuilder builder) {
+    return Navigator.of(
+      context,
+    ).push<T>(_buildBottomUpRoute(builder: builder));
+  }
+
+  Future<void> _syncAfterFinancialAction() async {
+    ref.invalidate(transactionHistoryProvider);
+    ref.invalidate(depositsProvider);
+    ref.invalidate(depositBalanceProvider);
+    await ref.read(walletProvider.notifier).refresh();
+  }
+
+  String _compactCounterparty(String value) {
+    final normalized = value.trim();
+    if (normalized.length <= 18) {
+      return normalized;
+    }
+    return '${normalized.substring(0, 8)}...${normalized.substring(normalized.length - 6)}';
+  }
+
+  Future<void> _presentFinancialActionResult(dynamic result) async {
+    if (result == null) {
+      return;
+    }
+
+    await _syncAfterFinancialAction();
+
+    if (!mounted) {
+      return;
+    }
+
+    final selectedCurrency = ref.read(currencyProvider);
+    final btcUsd = ref.read(latestBtcPriceProvider);
+    final btcEur = ref.read(btcEurPriceProvider);
+    final btcBrl = ref.read(btcBrlPriceProvider);
+
+    if (result is TxStatus) {
+      final amountBtc = result.amountReceived > 0 ? result.amountReceived : 0.0;
+      final counterparty = result.receiver.isNotEmpty
+          ? result.receiver
+          : result.sender.isNotEmpty
+              ? result.sender
+              : 'Operação concluída';
+
+      showDialog(
+        context: context,
+        barrierColor: AppColors.black.withValues(alpha: 0.8),
+        builder: (_) => TransactionSuccessDialog(
+          type: TransactionType.send,
+          amountBtc: amountBtc > 0 ? amountBtc : null,
+          counterparty: counterparty,
+        ),
+      );
+
+      ref.read(txPopupProvider).show(
+            isSent: true,
+            label: 'Enviado',
+            address: _compactCounterparty(counterparty),
+            amount: amountBtc > 0
+                ? MoneyDisplay.formatAmountFromBtc(
+                    btcAmount: amountBtc,
+                    currency: selectedCurrency,
+                    btcUsd: btcUsd,
+                    btcEur: btcEur,
+                    btcBrl: btcBrl,
+                    signed: true,
+                  )
+                : '--',
+            time: 'agora',
+          );
+      return;
+    }
+
+    if (result is PaymentLink) {
+      final counterparty = result.description.isNotEmpty
+          ? result.description
+          : result.depositAddress;
+
+      showDialog(
+        context: context,
+        barrierColor: AppColors.black.withValues(alpha: 0.8),
+        builder: (_) => TransactionSuccessDialog(
+          type: TransactionType.send,
+          amountBtc: result.amountBtc > 0 ? result.amountBtc : null,
+          counterparty: counterparty,
+        ),
+      );
+
+      ref.read(txPopupProvider).show(
+            isSent: true,
+            label: 'Pago',
+            address: _compactCounterparty(counterparty),
+            amount: result.amountBtc > 0
+                ? MoneyDisplay.formatAmountFromBtc(
+                    btcAmount: result.amountBtc,
+                    currency: selectedCurrency,
+                    btcUsd: btcUsd,
+                    btcEur: btcEur,
+                    btcBrl: btcBrl,
+                    signed: true,
+                  )
+                : '--',
+            time: 'agora',
+          );
+    }
+  }
+
+  Future<void> _openSendFlow({
+    required Wallet wallet,
+    String? initialAddress,
+    double? initialAmountBtc,
+  }) async {
+    final result = await _pushFromBottom<dynamic>(
+      (_) => SendMoneyScreen(
+        walletId: wallet.id,
+        initialAddress: initialAddress,
+        initialAmountBtc: initialAmountBtc,
+      ),
+    );
+
+    await _presentFinancialActionResult(result);
+  }
+
+  Future<void> _openWithdrawFlow({
+    required Wallet wallet,
+    required WithdrawEntryMode entryMode,
+    String? initialDestination,
+    double? initialAmountBtc,
+    String? initialDescription,
+  }) async {
+    final result = await _pushFromBottom<TxStatus>(
+      (_) => WithdrawScreen(
+        wallet: wallet,
+        entryMode: entryMode,
+        initialDestination: initialDestination,
+        initialAmountBtc: initialAmountBtc,
+        initialDescription: initialDescription,
+      ),
+    );
+
+    await _presentFinancialActionResult(result);
+  }
+
+  void _openSend(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(_openSendFlow(wallet: wallet));
+  }
+
+  void _openSendOnChain(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(
+      _openWithdrawFlow(
+        wallet: wallet,
+        entryMode: WithdrawEntryMode.onChain,
+      ),
+    );
+  }
+
+  void _openSendLightning(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(
+      _openWithdrawFlow(
+        wallet: wallet,
+        entryMode: WithdrawEntryMode.lightning,
+      ),
+    );
+  }
+
+  void _openReceive(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(
+      _pushFromBottom<void>(
+        (_) => ReceiveScreen(
+          initialWallet: wallet,
+          initialMode: ReceiveFlowMode.qrCode,
+        ),
+      ),
+    );
+  }
+
+  void _openReceivePaymentLink(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(
+      _pushFromBottom<void>(
+        (_) => ReceiveScreen(
+          initialWallet: wallet,
+          initialMode: ReceiveFlowMode.paymentLink,
+        ),
+      ),
+    );
+  }
+
+  void _openReceiveNfc(WalletState walletState) {
+    if (!_isNfcAvailable) {
+      AppNotice.showInfo(
+        context,
+        title: context.l10n.nfc,
+        message: 'NFC não está disponível neste dispositivo no momento.',
+      );
+      return;
+    }
+
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(
+      _pushFromBottom<void>(
+        (_) => ReceiveScreen(
+          initialWallet: wallet,
+          initialMode: ReceiveFlowMode.nfc,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSendQr(WalletState walletState) async {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    final payload = await _pushFromBottom<String>(
+      (_) => const QrScannerScreen(),
+    );
+
+    if (!mounted || payload == null || payload.trim().isEmpty) {
+      return;
+    }
+
+    _routeSendPayload(wallet, payload);
+  }
+
+  Future<void> _openSendNfc(WalletState walletState) async {
+    if (!_isNfcAvailable) {
+      AppNotice.showInfo(
+        context,
+        title: context.l10n.nfc,
+        message: 'NFC não está disponível neste dispositivo no momento.',
+      );
+      return;
+    }
+
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    final payload = await _pushFromBottom<dynamic>(
+      (_) => const NfcInteractionScreen(amountDisplay: '0'),
+    );
+
+    if (!mounted || payload is! String || payload.trim().isEmpty) {
+      return;
+    }
+
+    _routeSendPayload(wallet, payload);
+  }
+
+  void _openSendPaymentLink(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    final controller = TextEditingController();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final insets = MediaQuery.of(context).viewInsets.bottom;
+        return GlassContainer(
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            insets + AppSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Link de pagamento',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Cole o payload completo ou somente o ID do link para continuar.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.64),
+                      height: 1.4,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                decoration: InputDecoration(
+                  hintText: 'kerosene://payment/pay/abc123 ou abc123',
+                  hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.28),
+                      ),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.04),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: () {
+                  final normalized =
+                      _normalizePaymentLinkPayload(controller.text);
+                  if (normalized == null) {
+                    AppNotice.showWarning(
+                      context,
+                      title: 'Link inválido',
+                      message: 'Informe um link de pagamento válido.',
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(context);
+                  _routeSendPayload(wallet, normalized);
+                },
+                icon: const Icon(LucideIcons.arrowUpRight),
+                label: const Text('CONTINUAR'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String? _normalizePaymentLinkPayload(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    if (QrPaymentParser.extractPaymentLinkId(trimmed) != null) {
+      return trimmed;
+    }
+    if (QrPaymentParser.decode(trimmed) != null ||
+        trimmed.toLowerCase().startsWith('bitcoin:') ||
+        trimmed.toLowerCase().startsWith('lightning:') ||
+        _looksLikeLightningRequest(trimmed) ||
+        _looksLikeOnChainRequest(trimmed, trimmed)) {
+      return trimmed;
+    }
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      final last = uri.pathSegments.last.trim();
+      if (last.isNotEmpty) {
+        return 'kerosene:link:$last';
+      }
+    }
+
+    return 'kerosene:link:$trimmed';
+  }
+
+  void _routeSendPayload(Wallet wallet, String payload) {
+    final trimmed = payload.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+
+    if (QrPaymentParser.extractPaymentLinkId(trimmed) != null) {
+      unawaited(
+        _openSendFlow(
+          wallet: wallet,
+          initialAddress: trimmed,
+        ),
+      );
+      return;
+    }
+
+    final parsed = QrPaymentParser.decode(trimmed);
+    final candidate = parsed?.address ?? trimmed;
+
+    if (_looksLikeLightningRequest(candidate)) {
+      AppNotice.showInfo(
+        context,
+        title: context.l10n.lightning,
+        message:
+            'Envios Lightning ainda não estão disponíveis no backend atual. Use um destino on-chain ou transferência interna.',
+      );
+      return;
+    }
+
+    if (_looksLikeOnChainRequest(trimmed, candidate)) {
+      unawaited(
+        _openWithdrawFlow(
+          wallet: wallet,
+          entryMode: WithdrawEntryMode.onChain,
+          initialDestination: trimmed,
+          initialAmountBtc: parsed?.amountBtc,
+          initialDescription: parsed?.message,
+        ),
+      );
+      return;
+    }
+
+    unawaited(
+      _openSendFlow(
+        wallet: wallet,
+        initialAddress: trimmed,
+        initialAmountBtc: parsed?.amountBtc,
+      ),
+    );
+  }
+
+  bool _looksLikeLightningRequest(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+
+    final withoutPrefix = trimmed.toLowerCase().startsWith('lightning:')
+        ? trimmed.substring(10).trim()
+        : trimmed;
+    final lower = withoutPrefix.toLowerCase();
+
+    return RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(lower) ||
+        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(lower);
+  }
+
+  bool _looksLikeOnChainRequest(String raw, String candidate) {
+    final trimmedRaw = raw.trim().toLowerCase();
+    final trimmedCandidate = candidate.trim();
+
+    return trimmedRaw.startsWith('bitcoin:') ||
+        RegExp(r'^(1|3|bc1|m|n|2|tb1)[a-zA-HJ-NP-Z0-9]{20,90}$')
+            .hasMatch(trimmedCandidate);
+  }
+
+  void _openDeposit(WalletState walletState) {
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    unawaited(
+      _pushFromBottom<void>(
+        (_) => DepositAmountScreen(wallet: wallet),
+      ),
+    );
+  }
+
+  void _openCreateWallet() {
+    HapticFeedback.lightImpact();
+    unawaited(_openCreateWalletFlow());
+  }
+
+  Future<void> _openCreateWalletFlow() async {
+    final created = await _pushFromBottom<bool>(
+      (_) => const CreateWalletScreen(),
+    );
+    if (created != true || !mounted) {
+      return;
+    }
+
+    ref.invalidate(transactionHistoryProvider);
+    ref.invalidate(depositsProvider);
+    ref.invalidate(depositBalanceProvider);
+  }
+
+  String _firstUseActionPanelKey(String userId) =>
+      'home.first_use_action_panel_seen.$userId';
+
+  bool _hasSeenFirstUseActionPanel(String? userId) {
+    if (userId == null || userId.isEmpty) {
+      return true;
+    }
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    return prefs.getBool(_firstUseActionPanelKey(userId)) ?? false;
+  }
+
+  void _activateFirstUseActionPanel(String userId) {
+    if (_firstUseActionPanelUserId == userId) {
+      return;
+    }
+
+    _firstUseActionPanelUserId = userId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        ref
+            .read(sharedPreferencesProvider)
+            .setBool(_firstUseActionPanelKey(userId), true),
+      );
     });
+  }
+
+  List<_QuickActionData> _buildSendActions(WalletState walletState) {
+    final actions = <_QuickActionData>[
+      _QuickActionData(
+        kind: TxIconKind.address,
+        label: 'Transferir',
+        subtitle: 'Hash ou identificador da carteira',
+        tag: 'INTERNO',
+        accent: const Color(0xFF4F8CFF),
+        onTap: () => _openSend(walletState),
+      ),
+      _QuickActionData(
+        kind: TxIconKind.network,
+        label: 'On-chain',
+        subtitle: 'Endereco Bitcoin externo',
+        tag: 'BTC',
+        accent: const Color(0xFFF7931A),
+        onTap: () => _openSendOnChain(walletState),
+      ),
+      _QuickActionData(
+        kind: TxIconKind.fee,
+        label: 'Lightning',
+        subtitle: 'Invoice ou LNURL',
+        tag: 'LN',
+        accent: const Color(0xFFFFC857),
+        onTap: () => _openSendLightning(walletState),
+      ),
+      _QuickActionData(
+        kind: TxIconKind.qrCode,
+        label: 'QR Code',
+        subtitle: 'Escanear pagamento',
+        tag: 'SCAN',
+        accent: const Color(0xFF00B8D9),
+        onTap: () {
+          unawaited(_openSendQr(walletState));
+        },
+      ),
+      _QuickActionData(
+        kind: TxIconKind.card,
+        label: 'Link de pagamento',
+        subtitle: 'Pagar por link ou ID',
+        tag: 'LINK',
+        accent: const Color(0xFF7C8CFF),
+        onTap: () => _openSendPaymentLink(walletState),
+      ),
+    ];
+
+    if (_isNfcAvailable) {
+      actions.add(
+        _QuickActionData(
+          kind: TxIconKind.nfc,
+          label: context.l10n.nfc,
+          subtitle: 'Aproximar para ler',
+          tag: 'NFC',
+          accent: const Color(0xFF00C2A8),
+          onTap: () {
+            unawaited(_openSendNfc(walletState));
+          },
+        ),
+      );
+    }
+
+    return actions;
+  }
+
+  List<_QuickActionData> _buildReceiveActions(WalletState walletState) {
+    final actions = <_QuickActionData>[
+      _QuickActionData(
+        kind: TxIconKind.deposit,
+        label: 'Depositar',
+        subtitle: 'Adicionar saldo na conta',
+        tag: 'SALDO',
+        accent: const Color(0xFF2FD17C),
+        onTap: () => _openDeposit(walletState),
+      ),
+      _QuickActionData(
+        kind: TxIconKind.qrCode,
+        label: 'QR Code',
+        subtitle: 'Gerar QR com valor',
+        tag: 'QR',
+        accent: const Color(0xFF00B8D9),
+        onTap: () => _openReceive(walletState),
+      ),
+      _QuickActionData(
+        kind: TxIconKind.card,
+        label: 'Link de pagamento',
+        subtitle: 'Link rastreado com status',
+        tag: 'LINK',
+        accent: const Color(0xFF7C8CFF),
+        onTap: () => _openReceivePaymentLink(walletState),
+      ),
+    ];
+
+    if (_isNfcAvailable) {
+      actions.insert(
+        1,
+        _QuickActionData(
+          kind: TxIconKind.nfc,
+          label: context.l10n.nfc,
+          subtitle: 'Receber por aproximação',
+          tag: 'NFC',
+          accent: const Color(0xFF00C2A8),
+          onTap: () => _openReceiveNfc(walletState),
+        ),
+      );
+    }
+
+    return actions;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final sidebarOpen = ref.watch(notificationSidebarProvider);
+    final navigationClearance =
+        AppPrimaryNavigationBar.scaffoldBottomClearance(context);
 
     final authState = ref.watch(authControllerProvider);
     final walletState = ref.watch(walletProvider);
-    final ghostMode = ref.watch(ghostModeProvider);
-    ref.watch(balanceWebSocketServiceProvider);
+    final transactionHistoryAsync = ref.watch(transactionHistoryProvider);
+    final activeWallet = _resolveActiveWallet(walletState);
+    final hasWallet = activeWallet != null;
+    final hasBalance = (activeWallet?.balance ?? 0) > 0;
+    final isReadyActionsVariant = hasWallet && hasBalance;
+    final transactionHistory =
+        transactionHistoryAsync.asData?.value ?? const <Transaction>[];
+    final hasLoadedTransactionHistory = transactionHistoryAsync.hasValue;
+    final hasTransactions = transactionHistory.isNotEmpty;
+    final authenticatedUserId =
+        authState is AuthAuthenticated ? authState.user.id : null;
+    final hasSeenFirstUseActionPanel =
+        _hasSeenFirstUseActionPanel(authenticatedUserId);
+
+    if (authenticatedUserId == null) {
+      _firstUseActionPanelUserId = null;
+    }
+
+    if (authenticatedUserId != null &&
+        isReadyActionsVariant &&
+        hasLoadedTransactionHistory &&
+        !hasTransactions &&
+        !hasSeenFirstUseActionPanel) {
+      _activateFirstUseActionPanel(authenticatedUserId);
+    }
+
+    final showFirstUseReadyPanel = authenticatedUserId != null &&
+        isReadyActionsVariant &&
+        !hasTransactions &&
+        _firstUseActionPanelUserId == authenticatedUserId;
+    final showPrimaryActionPanel =
+        !isReadyActionsVariant || showFirstUseReadyPanel;
 
     // ── NOME DE USUÁRIO REAL E SEGURO ──
     String userName = '';
@@ -181,9 +1073,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         userName =
             fullName.split(' ').first; // Pega o primeiro nome para UI limpa
       }
-    } else if (walletState is WalletLoaded &&
-        walletState.selectedWallet != null) {
-      userName = walletState.selectedWallet!.name;
+    } else if (activeWallet != null) {
+      userName = activeWallet.name;
     } else if (authState is AuthLoading) {
       userName = '...';
     }
@@ -193,508 +1084,1105 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.black,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Backgrounds (agora protegidos por ExcludeSemantics)
+          const _HomeRealtimeBootstrap(),
+          SafeArea(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                BitcoinRefreshIndicator(onRefresh: _refreshHomeData),
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 540),
+                          child: _HomeBalanceSection(
+                            userName: userName,
+                            activeWallet: activeWallet,
+                            onEmptyWalletTap: _openCreateWallet,
+                            greetingAnimationSeed: _greetingAnimationSeed,
+                          ).animate().fade(duration: 320.ms),
+                        ),
+                      ),
+                      ColoredBox(
+                        color: _homeLowerSurfaceColor,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 540),
+                            child: Column(
+                              children: [
+                                if (showPrimaryActionPanel) ...[
+                                  const SizedBox(height: AppSpacing.xl),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.lg,
+                                    ),
+                                    child: _PrimaryActionPanel(
+                                      icon: !hasWallet
+                                          ? LucideIcons.wallet
+                                          : !hasBalance
+                                              ? LucideIcons.download
+                                              : LucideIcons.arrowUpRight,
+                                      title: !hasWallet
+                                          ? 'Estruture sua carteira principal'
+                                          : !hasBalance
+                                              ? 'Inicie com um deposito'
+                                              : 'Operacoes prontas para executar',
+                                      subtitle: !hasWallet
+                                          ? 'Crie sua carteira para habilitar recebimentos, transferencias e monitoramento com seguranca.'
+                                          : !hasBalance
+                                              ? 'Envie fundos para esta carteira e acompanhe a confirmacao da rede em tempo real.'
+                                              : 'Acesse as operacoes essenciais da carteira com confirmacao clara e fluxo objetivo.',
+                                      primaryLabel: !hasWallet
+                                          ? 'Criar carteira'
+                                          : !hasBalance
+                                              ? 'Depositar fundos'
+                                              : 'Enviar BTC',
+                                      primaryIcon: !hasWallet
+                                          ? LucideIcons.plus
+                                          : !hasBalance
+                                              ? LucideIcons.download
+                                              : LucideIcons.arrowUpRight,
+                                      onPrimaryTap: !hasWallet
+                                          ? _openCreateWallet
+                                          : !hasBalance
+                                              ? () => _openDeposit(
+                                                    walletState,
+                                                  )
+                                              : () => _openSend(
+                                                    walletState,
+                                                  ),
+                                      secondaryLabel: hasWallet && hasBalance
+                                          ? 'Receber BTC'
+                                          : hasWallet
+                                              ? 'Ver depositos'
+                                              : null,
+                                      secondaryIcon: hasWallet && hasBalance
+                                          ? LucideIcons.arrowDownLeft
+                                          : hasWallet
+                                              ? LucideIcons.list
+                                              : null,
+                                      onSecondaryTap: hasWallet && hasBalance
+                                          ? () => _openReceive(
+                                                walletState,
+                                              )
+                                          : hasWallet
+                                              ? () => unawaited(
+                                                    _pushFromBottom<void>(
+                                                      (_) =>
+                                                          const DepositsScreen(
+                                                        showPrimaryNavigation:
+                                                            true,
+                                                      ),
+                                                    ),
+                                                  )
+                                              : null,
+                                    ),
+                                  ),
+                                ],
+                                if (hasWallet) ...[
+                                  const SizedBox(height: AppSpacing.xl),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.lg,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _HomeActionSection(
+                                          title: 'Enviar',
+                                          actions: _buildSendActions(
+                                            walletState,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                          height: AppSpacing.xl,
+                                        ),
+                                        _HomeActionSection(
+                                          title: 'Receber',
+                                          actions: _buildReceiveActions(
+                                            walletState,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(
+                                  height: AppSpacing.xl + AppSpacing.md,
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Center(
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 500),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal:
+                                                AppSpacing.xl + AppSpacing.sm,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                context.l10n.recentTransactions,
+                                                style: theme
+                                                    .textTheme.titleMedium!,
+                                              ),
+                                              const SizedBox(
+                                                height: AppSpacing.xs,
+                                              ),
+                                              Text(
+                                                'Toque em uma movimentação para abrir os detalhes.',
+                                                style: theme
+                                                    .textTheme.bodySmall!
+                                                    .copyWith(
+                                                  color: colorScheme.onPrimary
+                                                      .withValues(alpha: 0.42),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.md),
+                                        const _TransactionsList(),
+                                        SizedBox(height: navigationClearance),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: MediaQuery.of(context).size.height * 0.45,
-            child: ExcludeSemantics(
-              child: Container(
-                color: theme.scaffoldBackgroundColor,
-                child: Stack(
+            child: SafeArea(
+              bottom: false,
+              child: LatestTxPopup(
+                suppressed: ref.watch(txPopupProvider).active,
+              ),
+            ),
+          ),
+          const _TxPopupWidget(
+            restingTop: -92.0,
+            activeTop: 12.0,
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: !sidebarOpen,
+              child: GestureDetector(
+                onTap: () =>
+                    ref.read(notificationSidebarProvider.notifier).close(),
+                child: AnimatedOpacity(
+                  opacity: sidebarOpen ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutExpo,
+                  child: Container(color: Colors.black.withValues(alpha: 0.42)),
+                ),
+              ),
+            ),
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutExpo,
+            top: 0,
+            bottom: 0,
+            right: sidebarOpen ? 0 : -360,
+            child: SessionNotificationSidebar(
+              showCloseButton: true,
+              onClose: () =>
+                  ref.read(notificationSidebarProvider.notifier).close(),
+            ),
+          ),
+          AppPrimaryNavigationBar.overlay(
+            currentDestination: AppPrimaryDestination.home,
+            controller: _navBarController,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeRealtimeBootstrap extends ConsumerWidget {
+  const _HomeRealtimeBootstrap();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(balanceWebSocketServiceProvider);
+    return const SizedBox.shrink();
+  }
+}
+
+class _HomeBalanceSection extends ConsumerWidget {
+  final String userName;
+  final Wallet? activeWallet;
+  final VoidCallback onEmptyWalletTap;
+  final int greetingAnimationSeed;
+
+  const _HomeBalanceSection({
+    required this.userName,
+    required this.activeWallet,
+    required this.onEmptyWalletTap,
+    required this.greetingAnimationSeed,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final selectedCurrency = ref.watch(currencyProvider);
+    final balanceSettings = ref.watch(balanceSettingsProvider);
+    final notificationCount = ref.watch(sessionNotificationFeedProvider).length;
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final activeBalanceBtc = activeWallet?.balance ?? 0.0;
+    final showConvertedBalance = selectedCurrency != Currency.btc;
+    final hasSelectedQuote = switch (selectedCurrency) {
+      Currency.btc => true,
+      Currency.usd => btcUsd != null && btcUsd > 0,
+      Currency.eur => btcEur != null && btcEur > 0,
+      Currency.brl => btcBrl != null && btcBrl > 0,
+    };
+    final convertedBalanceValue = MoneyDisplay.convertFromBtcAmount(
+      btcAmount: activeBalanceBtc,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final convertedBalanceLabel = showConvertedBalance
+        ? (balanceSettings.isHidden
+            ? '${MoneyDisplay.tickerSymbolFor(selectedCurrency)} ••••••••'
+            : hasSelectedQuote
+                ? MoneyDisplay.format(
+                    amount: convertedBalanceValue,
+                    currency: selectedCurrency,
+                  )
+                : '${selectedCurrency.code} indisponivel')
+        : null;
+    final primaryBalanceTop = 74.0;
+    final cardChild = _DraggableWalletCard(
+      activeWallet: activeWallet,
+      onEmptyWalletTap: onEmptyWalletTap,
+    );
+
+    const sectionHeight = 430.0;
+    const cardHeight = 175.0;
+    const cardBottom = 26.0;
+    final darkRegionHeight = sectionHeight - cardBottom - (cardHeight / 2);
+    final chartHeight = math.max(0.0, darkRegionHeight - 44);
+
+    return SizedBox(
+      height: sectionHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            height: darkRegionHeight,
+            child: const ColoredBox(
+              color: Colors.black,
+            ),
+          ),
+          Positioned.fill(
+            top: darkRegionHeight,
+            child: const ColoredBox(
+              color: _homeLowerSurfaceColor,
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 20,
+            height: chartHeight,
+            child: const IgnorePointer(
+              child: _HomeLiveBitcoinBackdrop(),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(-1.2, -0.8),
+                    radius: 1.3,
+                    colors: [
+                      const Color(0xFF00C3A5).withValues(alpha: 0.18),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(1.2, -0.8),
+                    radius: 1.3,
+                    colors: [
+                      const Color(0xFF00C3A5).withValues(alpha: 0.18),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 18,
+            left: 20,
+            right: 20,
+            child: Row(
+              children: [
+                const SizedBox(width: 38),
+                Expanded(
+                  child: AnimatedTypewriterText(
+                    key: ValueKey(
+                      'home_greeting_$greetingAnimationSeed-$userName',
+                    ),
+                    text: context.l10n.helloUser(userName),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge!.copyWith(
+                      color: Colors.white.withValues(alpha: 0.58),
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.24,
+                    ),
+                    typingDuration: const Duration(milliseconds: 34),
+                  ),
+                ),
+                _BalanceVisibilityButton(
+                  icon: balanceSettings.isHidden
+                      ? LucideIcons.eyeOff
+                      : LucideIcons.eye,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    ref
+                        .read(balanceSettingsProvider.notifier)
+                        .toggleVisibility();
+                  },
+                ),
+                const SizedBox(width: 8),
+                Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Positioned(
-                      top: -100,
-                      right: -100,
-                      width: 400,
-                      height: 400,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              colorScheme.primary.withOpacity(0.15),
-                              Colors.transparent,
-                            ],
+                    IconButton(
+                      onPressed: () async {
+                        await HapticFeedback.selectionClick();
+                        ref.read(notificationSidebarProvider.notifier).toggle();
+                      },
+                      icon: const Icon(Icons.notifications_active_outlined),
+                      color: Colors.white,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    if (notificationCount > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: FinancialStatusBadge.errorColor,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            notificationCount > 9 ? '9+' : '$notificationCount',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                ),
                           ),
                         ),
                       ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (convertedBalanceLabel != null)
+            Positioned(
+              top: 142,
+              left: 24,
+              right: 24,
+              child: Text(
+                convertedBalanceLabel,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelMedium!.copyWith(
+                  color: Colors.white.withValues(alpha: 0.54),
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          Positioned(
+            top: primaryBalanceTop,
+            left: 26,
+            right: 26,
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: AnimatedBalanceDisplay(
+                      balance: activeBalanceBtc,
+                      prefix: '${MoneyDisplay.tickerSymbolFor(Currency.btc)} ',
+                      decimalPlaces: balanceSettings.decimalPlaces,
+                      locale: MoneyDisplay.localeFor(Currency.btc),
+                      enableFlash: true,
+                      isHidden: balanceSettings.isHidden,
+                      digitWidthFactor: 0.72,
+                      characterSpacing: 1.2,
+                      decimalScaleFactor: 0.65,
+                      separatorScaleFactor: 0.65,
+                      onDecimalTap: () {
+                        HapticFeedback.selectionClick();
+                        ref
+                            .read(balanceSettingsProvider.notifier)
+                            .cycleDecimals();
+                      },
+                      style: theme.textTheme.displayLarge!.copyWith(
+                        color: colorScheme.onPrimary.withValues(alpha: 0.92),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ),
+                if (activeWallet != null) ...[
+                  const SizedBox(height: 14),
+                  _HomeWalletMetaRow(wallet: activeWallet!),
+                ],
+              ],
+            ),
+          ),
+          Positioned(
+            left: 22,
+            right: 22,
+            bottom: cardBottom,
+            child: cardChild,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeEmptyWalletCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _HomeEmptyWalletCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppSpacing.md),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF0F3F8),
+              Color(0xFFD5DCE7),
+              Color(0xFFB8C2D0),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 18,
+              top: 18,
+              child: Container(
+                width: 44,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  LucideIcons.plus,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            Center(
+              child: Text(
+                'Adicionar carteira',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: const Color(0xFF162235),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeWalletMetaRow extends StatelessWidget {
+  final Wallet wallet;
+
+  const _HomeWalletMetaRow({required this.wallet});
+
+  String _shortAddress(String address) {
+    final trimmed = address.trim();
+    if (trimmed.isEmpty) {
+      return 'Endereco indisponivel';
+    }
+    if (trimmed.length <= 18) {
+      return trimmed;
+    }
+    return '${trimmed.substring(0, 8)}...${trimmed.substring(trimmed.length - 8)}';
+  }
+
+  TextStyle _pillTextStyle(Color color) {
+    return AppTypography.caption.copyWith(
+      color: color,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.0,
+      fontFamily: 'JetBrainsMono',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appearance = WalletCardAppearance.fromCardType(wallet.cardType);
+    final address = wallet.address.trim();
+    final baseTextColor = appearance.isDark
+        ? Colors.white.withValues(alpha: 0.90)
+        : appearance.inkPrimary.withValues(alpha: 0.94);
+    final mutedTextColor = appearance.isDark
+        ? Colors.white.withValues(alpha: 0.72)
+        : appearance.inkSecondary.withValues(alpha: 0.90);
+    final neutralSurface = appearance.isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.08);
+    final neutralBorder = appearance.isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.10);
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (address.isNotEmpty)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: address));
+                HapticFeedback.lightImpact();
+                AppNotice.showSuccess(
+                  context,
+                  title: 'Endereco copiado',
+                  message: 'O endereco on-chain da carteira foi copiado.',
+                );
+              },
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: neutralSurface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: neutralBorder),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      LucideIcons.copy,
+                      size: 12,
+                      color: mutedTextColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _shortAddress(address),
+                      style: _pillTextStyle(baseTextColor),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.45,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ExcludeSemantics(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      theme.scaffoldBackgroundColor,
-                      colorScheme.primary.withOpacity(0.08),
-                      colorScheme.secondary.withOpacity(0.12),
-                      theme.scaffoldBackgroundColor,
-                    ],
-                    stops: const [0.0, 0.3, 0.7, 1.0],
-                  ),
-                ),
-              ),
+      ],
+    );
+  }
+}
+
+class _BalanceVisibilityButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _BalanceVisibilityButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkResponse(
+        onTap: onTap,
+        radius: 24,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 18,
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.78),
             ),
           ),
-
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.35,
-            left: 0,
-            right: 0,
-            height: 120,
-            child: const LatestTxPopup(),
-          ),
-
-          RefreshIndicator(
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            color: colorScheme.primary,
-            onRefresh: () async {
-              await ref.read(walletProvider.notifier).refresh();
-            },
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics()),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 500),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned(
-                            top: -100,
-                            left: -100,
-                            width: 400,
-                            height: 400,
-                            child: ExcludeSemantics(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      colorScheme.secondary.withOpacity(0.3),
-                                      Colors.transparent
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              const SizedBox(
-                                  height: AppSpacing.xxl + AppSpacing.sm),
-                              Text(
-                                context.l10n.helloUser(userName),
-                                style: AppTypography.bodyLarge.copyWith(
-                                  color: AppColors.white.withOpacity(0.5),
-                                  letterSpacing: -0.32,
-                                ),
-                              )
-                                  .animate()
-                                  .fade(duration: 300.ms)
-                                  .slideY(begin: 0.05, end: 0),
-                              const SizedBox(height: AppSpacing.lg),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg),
-                                child: _OperationalSummaryCard(
-                                  accountStatus: authState is AuthAuthenticated
-                                      ? 'Autenticada'
-                                      : authState is AuthLoading
-                                          ? 'Verificando'
-                                          : 'Pendente',
-                                  walletStatus: walletState is WalletLoaded
-                                      ? walletState.wallets.isEmpty
-                                          ? 'Nenhuma carteira'
-                                          : walletState.wallets.length == 1
-                                              ? '1 carteira ativa'
-                                              : '${walletState.wallets.length} carteiras ativas'
-                                      : 'Sincronizando carteiras',
-                                  protectionStatus:
-                                      walletState is WalletLoaded &&
-                                              walletState.selectedWallet != null
-                                          ? _formatAccountSecurityLabel(
-                                              walletState.selectedWallet!
-                                                  .accountSecurity,
-                                            )
-                                          : 'Sem carteira',
-                                  privacyStatus: ghostMode
-                                      ? 'Rede onion ativa'
-                                      : 'Conexão direta',
-                                  onOpenSovereignty: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const SovereigntyStatusScreen(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg),
-                                child: Container(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    AppSpacing.lg,
-                                    AppSpacing.xl,
-                                    AppSpacing.lg,
-                                    AppSpacing.lg,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.white.withOpacity(0.03),
-                                    borderRadius: BorderRadius.circular(28),
-                                    border: Border.all(
-                                      color: AppColors.white.withOpacity(0.08),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '₿',
-                                            style: theme.textTheme.displayLarge!
-                                                .copyWith(
-                                              color: AppColors.warning,
-                                              fontWeight: FontWeight.w100,
-                                            ),
-                                          ),
-                                          if (walletState is WalletLoaded &&
-                                              walletState.selectedWallet !=
-                                                  null) ...[
-                                            (() {
-                                              final balanceStr = walletState
-                                                  .selectedWallet!.balance
-                                                  .toStringAsFixed(8);
-                                              final parts =
-                                                  balanceStr.split('.');
-                                              final wholePart = parts[0];
-                                              final decimalPart =
-                                                  parts.length > 1
-                                                      ? parts[1]
-                                                      : '00000000';
-                                              final mainDecimals =
-                                                  decimalPart.length >= 3
-                                                      ? decimalPart.substring(
-                                                          0,
-                                                          3,
-                                                        )
-                                                      : decimalPart;
-                                              final subDecimals =
-                                                  decimalPart.length > 3
-                                                      ? decimalPart.substring(3)
-                                                      : '';
-
-                                              return Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.end,
-                                                children: [
-                                                  Text(
-                                                    ' $wholePart',
-                                                    style: theme
-                                                        .textTheme.displayLarge!
-                                                        .copyWith(
-                                                      color: colorScheme
-                                                          .onPrimary
-                                                          .withOpacity(0.55),
-                                                      fontWeight:
-                                                          FontWeight.w100,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    '.',
-                                                    style: theme
-                                                        .textTheme.titleMedium!
-                                                        .copyWith(
-                                                      color: colorScheme
-                                                          .onPrimary
-                                                          .withOpacity(0.55),
-                                                      fontWeight:
-                                                          FontWeight.w100,
-                                                      height: 2.2,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    mainDecimals,
-                                                    style: theme
-                                                        .textTheme.titleLarge!
-                                                        .copyWith(
-                                                      color: colorScheme
-                                                          .onPrimary
-                                                          .withOpacity(0.55),
-                                                      fontWeight:
-                                                          FontWeight.w100,
-                                                      height: 1.5,
-                                                    ),
-                                                  ),
-                                                  if (subDecimals.isNotEmpty)
-                                                    Text(
-                                                      subDecimals,
-                                                      style: theme
-                                                          .textTheme.labelSmall!
-                                                          .copyWith(
-                                                        color: colorScheme
-                                                            .onPrimary
-                                                            .withOpacity(
-                                                          0.25,
-                                                        ),
-                                                        fontWeight:
-                                                            FontWeight.w200,
-                                                        fontSize: 10,
-                                                        height: 2.5,
-                                                      ),
-                                                    ),
-                                                ],
-                                              );
-                                            })(),
-                                          ] else ...[
-                                            Text(
-                                              ' 0.000',
-                                              style: theme
-                                                  .textTheme.displayLarge!
-                                                  .copyWith(
-                                                color: colorScheme.onPrimary
-                                                    .withOpacity(0.55),
-                                                fontWeight: FontWeight.w100,
-                                              ),
-                                            ),
-                                            Text(
-                                              '.',
-                                              style: theme
-                                                  .textTheme.titleMedium!
-                                                  .copyWith(
-                                                color: colorScheme.onPrimary
-                                                    .withOpacity(0.55),
-                                                fontWeight: FontWeight.w100,
-                                                height: 2.2,
-                                              ),
-                                            ),
-                                            Text(
-                                              '00',
-                                              style: theme.textTheme.titleLarge!
-                                                  .copyWith(
-                                                color: colorScheme.onPrimary
-                                                    .withOpacity(0.55),
-                                                fontWeight: FontWeight.w100,
-                                                height: 1.5,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                      const SizedBox(height: 20),
-                                      SizedBox(
-                                        width: 303,
-                                        height: 175,
-                                        child: walletState is WalletLoaded &&
-                                                walletState.selectedWallet !=
-                                                    null
-                                            ? WalletCreditCard(
-                                                wallet:
-                                                    walletState.selectedWallet!,
-                                                colorIndex: 0,
-                                                isSelected: true,
-                                                showDetails: true,
-                                              )
-                                            : GlassContainer(
-                                                child: Center(
-                                                  child: Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Icon(
-                                                        LucideIcons.plus,
-                                                        color: colorScheme
-                                                            .primary
-                                                            .withOpacity(0.5),
-                                                        size: 32,
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                        'Adicionar carteira',
-                                                        style: theme.textTheme
-                                                            .labelMedium!
-                                                            .copyWith(
-                                                          color: colorScheme
-                                                              .onPrimary
-                                                              .withOpacity(
-                                                            0.45,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xl),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _QuickActionBtn(
-                                      icon: LucideIcons.arrowUpRight,
-                                      label: context.l10n.send,
-                                      onTap: () {
-                                        HapticFeedback.lightImpact();
-                                        if (walletState is WalletLoaded &&
-                                            walletState.selectedWallet !=
-                                                null) {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      SendMoneyScreen(
-                                                          walletId: walletState
-                                                              .selectedWallet!
-                                                              .id)));
-                                        }
-                                      },
-                                    ),
-                                    _QuickActionBtn(
-                                      icon: LucideIcons.arrowDownLeft,
-                                      label: context.l10n.receive,
-                                      onTap: () {
-                                        HapticFeedback.lightImpact();
-                                        if (walletState is WalletLoaded &&
-                                            walletState.selectedWallet !=
-                                                null) {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => ReceiveScreen(
-                                                      initialWallet: walletState
-                                                          .selectedWallet!)));
-                                        }
-                                      },
-                                    ),
-                                    _QuickActionBtn(
-                                      icon: LucideIcons.arrowUpRight,
-                                      label: 'Saque',
-                                      onTap: () {
-                                        HapticFeedback.lightImpact();
-                                        if (walletState is WalletLoaded &&
-                                            walletState.selectedWallet !=
-                                                null) {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => WithdrawScreen(
-                                                      wallet: walletState
-                                                          .selectedWallet!)));
-                                        }
-                                      },
-                                    ),
-                                    _QuickActionBtn(
-                                      icon: LucideIcons.download,
-                                      label: 'Depósito',
-                                      onTap: () {
-                                        HapticFeedback.lightImpact();
-                                        Navigator.pushNamed(
-                                            context, '/deposits');
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                  height: AppSpacing.xl + AppSpacing.md),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(32),
-                        topRight: Radius.circular(32),
-                      ),
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 500),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: AppSpacing.xl),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.xl + AppSpacing.sm),
-                              child: Text(
-                                context.l10n.recentTransactions,
-                                style: theme.textTheme.titleMedium!,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            const _TransactionsList(),
-                            const SizedBox(height: 100),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (_isNfcSearching)
-            Positioned.fill(
-              child: NfcSearchingOverlay(
-                onCancel: () => setState(() => _isNfcSearching = false),
-                onTagRead: (tagData) {
-                  setState(() => _isNfcSearching = false);
-                },
-              ),
-            ),
-
-          const _TxPopupWidget(
-            restingTop: -70.0,
-            activeTop: 50.0,
-          ),
-        ],
+        ),
       ),
     );
+  }
+}
+
+class _DraggableWalletCard extends StatefulWidget {
+  final Wallet? activeWallet;
+  final VoidCallback onEmptyWalletTap;
+
+  const _DraggableWalletCard({
+    required this.activeWallet,
+    required this.onEmptyWalletTap,
+  });
+
+  @override
+  State<_DraggableWalletCard> createState() => _DraggableWalletCardState();
+}
+
+class _DraggableWalletCardState extends State<_DraggableWalletCard>
+    with SingleTickerProviderStateMixin {
+  double _tiltX = 0; // vertical tilt (up/down)
+  double _tiltY = 0; // horizontal tilt (left/right)
+  late AnimationController _springController;
+  Animation<Offset>? _springAnimation;
+
+  static const double _maxTilt = 0.35; // ~20 degrees max tilt
+  static const double _perspective = 0.0012;
+
+  @override
+  void initState() {
+    super.initState();
+    _springController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _springController.addListener(() {
+      if (_springAnimation != null) {
+        setState(() {
+          _tiltX = _springAnimation!.value.dx;
+          _tiltY = _springAnimation!.value.dy;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _springController.dispose();
+    super.dispose();
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    setState(() {
+      _tiltY += details.delta.dx * 0.006;
+      _tiltX -= details.delta.dy * 0.006;
+      _tiltX = _tiltX.clamp(-_maxTilt, _maxTilt);
+      _tiltY = _tiltY.clamp(-_maxTilt, _maxTilt);
+    });
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    _springAnimation = Tween<Offset>(
+      begin: Offset(_tiltX, _tiltY),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _springController, curve: Curves.easeOutBack),
+    );
+    _springController.forward(from: 0);
+  }
+
+  Matrix4 _buildTiltMatrix() {
+    final matrix = Matrix4.identity()
+      ..setEntry(3, 2, _perspective) // perspective
+      ..rotateX(_tiltX) // tilt forward/backward
+      ..rotateY(_tiltY); // tilt left/right
+    return matrix;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onPanUpdate: _handlePanUpdate,
+      onPanEnd: _handlePanEnd,
+      child: Transform(
+        alignment: FractionalOffset.center,
+        transform: _buildTiltMatrix(),
+        child: SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: 303,
+              height: 175,
+              child: widget.activeWallet != null
+                  ? WalletCreditCard(
+                      wallet: widget.activeWallet,
+                      colorIndex: 0,
+                      isSelected: true,
+                      showDetails: true,
+                      tiltX: _tiltX,
+                      tiltY: _tiltY,
+                    )
+                  : _HomeEmptyWalletCard(onTap: widget.onEmptyWalletTap),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PriceTick {
+  final DateTime timestamp;
+  final double price;
+
+  const _PriceTick({
+    required this.timestamp,
+    required this.price,
+  });
+}
+
+class _HomeLiveBitcoinBackdrop extends ConsumerStatefulWidget {
+  const _HomeLiveBitcoinBackdrop();
+
+  @override
+  ConsumerState<_HomeLiveBitcoinBackdrop> createState() =>
+      _HomeLiveBitcoinBackdropState();
+}
+
+class _HomeLiveBitcoinBackdropState
+    extends ConsumerState<_HomeLiveBitcoinBackdrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final ProviderSubscription<AsyncValue<double>> _priceSubscription;
+  final List<_PriceTick> _priceHistory = <_PriceTick>[];
+  static const Duration _historyWindow = Duration(hours: 1);
+  static const int _maxSamples = 500;
+  bool _seeded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+
+    _priceSubscription = ref.listenManual<AsyncValue<double>>(
+      btcPriceProvider,
+      (previous, next) {
+        next.whenData(_recordPrice);
+      },
+    );
+
+    // Fetch real kline data from Binance on startup
+    unawaited(_fetchBinanceKlines());
+  }
+
+  /// Fetches real 1-hour kline data from Binance REST API.
+  Future<void> _fetchBinanceKlines() async {
+    if (_seeded) return;
+
+    try {
+      final uri = Uri.parse(
+        'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60',
+      );
+      final httpClient = HttpClient();
+      httpClient.connectionTimeout = const Duration(seconds: 5);
+      final request = await httpClient.getUrl(uri);
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+      httpClient.close(force: true);
+
+      final List<dynamic> klines = jsonDecode(body) as List<dynamic>;
+      if (klines.isEmpty) return;
+
+      _seeded = true;
+      final ticks = <_PriceTick>[];
+
+      for (final kline in klines) {
+        final openTime = DateTime.fromMillisecondsSinceEpoch(
+          (kline[0] as num).toInt(),
+        );
+        final closePrice = double.parse(kline[4] as String);
+        ticks.add(_PriceTick(timestamp: openTime, price: closePrice));
+      }
+
+      if (!mounted || ticks.isEmpty) return;
+
+      setState(() {
+        _priceHistory.insertAll(0, ticks);
+      });
+
+      debugPrint(
+        '📊 Binance klines loaded: ${ticks.length} candles, '
+        'range ${ticks.first.price.toStringAsFixed(0)}-${ticks.last.price.toStringAsFixed(0)}',
+      );
+    } catch (e) {
+      debugPrint('📊 Binance klines fetch failed: $e');
+      // Fallback: will use live WebSocket data as it arrives
+    }
+  }
+
+  void _recordPrice(double price) {
+    if (!_seeded) {
+      unawaited(_fetchBinanceKlines());
+    }
+
+    final now = DateTime.now();
+
+    // Only record if the price actually changed (to avoid horizontal flat lines)
+    if (_priceHistory.isNotEmpty && _priceHistory.last.price == price) {
+      return;
+    }
+
+    setState(() {
+      _priceHistory.add(_PriceTick(timestamp: now, price: price));
+      _priceHistory.removeWhere(
+        (tick) => now.difference(tick.timestamp) > _historyWindow,
+      );
+      if (_priceHistory.length > _maxSamples) {
+        _priceHistory.removeRange(0, _priceHistory.length - _maxSamples);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _priceSubscription.close();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trendIsUp = _priceHistory.length < 2 ||
+        _priceHistory.last.price >= _priceHistory.first.price;
+    final lineColor =
+        trendIsUp ? const Color(0xFF15D07A) : const Color(0xFFD84C5D);
+    final lineGlowColor =
+        trendIsUp ? const Color(0x4515D07A) : const Color(0x45D84C5D);
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return CustomPaint(
+          painter: _HomeLiveBitcoinPainter(
+            now: DateTime.now(),
+            history: List<_PriceTick>.unmodifiable(_priceHistory),
+            lineColor: lineColor,
+            lineGlowColor: lineGlowColor,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HomeLiveBitcoinPainter extends CustomPainter {
+  final DateTime now;
+  final List<_PriceTick> history;
+  final Color lineColor;
+  final Color lineGlowColor;
+
+  const _HomeLiveBitcoinPainter({
+    required this.now,
+    required this.history,
+    required this.lineColor,
+    required this.lineGlowColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+
+    if (history.isEmpty) {
+      canvas.restore();
+      return;
+    }
+
+    final windowStart =
+        now.subtract(_HomeLiveBitcoinBackdropState._historyWindow);
+    final visibleTicks = history
+        .where((tick) => !tick.timestamp.isBefore(windowStart))
+        .toList(growable: false)
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    if (visibleTicks.length < 2) {
+      canvas.restore();
+      return;
+    }
+
+    // Filter out consecutive ticks with the same price (no horizontal segments)
+    final filtered = <_PriceTick>[visibleTicks.first];
+    for (var i = 1; i < visibleTicks.length; i++) {
+      if (visibleTicks[i].price != visibleTicks[i - 1].price) {
+        filtered.add(visibleTicks[i]);
+      }
+    }
+    if (filtered.length < 2) {
+      // If all prices were the same, just use first and last
+      filtered.clear();
+      filtered.add(visibleTicks.first);
+      filtered.add(visibleTicks.last);
+    }
+
+    final smoothedPrices = <double>[];
+    var smoothedValue = filtered.first.price;
+    for (final tick in filtered) {
+      smoothedValue = lerpDouble(smoothedValue, tick.price, 0.2) ?? tick.price;
+      smoothedPrices.add(smoothedValue);
+    }
+
+    final sortedPrices = List<double>.from(smoothedPrices)..sort();
+    final lowerIndex = ((sortedPrices.length - 1) * 0.12).floor();
+    final upperIndex = ((sortedPrices.length - 1) * 0.88).ceil();
+    var visualMin = sortedPrices[lowerIndex];
+    var visualMax = sortedPrices[upperIndex];
+
+    if ((visualMax - visualMin).abs() < 1.0) {
+      visualMin = sortedPrices.first;
+      visualMax = sortedPrices.last;
+    }
+
+    final center = (visualMin + visualMax) / 2;
+    final halfRange = math.max(1.0, (visualMax - visualMin) / 2);
+    final displayHalfRange = halfRange * 1.2;
+    final verticalPadding = math.max(8.0, size.height * 0.07);
+    final xOverscan = size.width * 0.08;
+
+    final points = <Offset>[];
+    for (var i = 0; i < filtered.length; i++) {
+      final x = filtered.length == 1
+          ? size.width / 2
+          : -xOverscan +
+              (i / (filtered.length - 1)) * (size.width + (xOverscan * 2));
+      final clampedPrice = smoothedPrices[i].clamp(
+        center - displayHalfRange,
+        center + displayHalfRange,
+      );
+      final normalized = ((clampedPrice - (center - displayHalfRange)) /
+              (displayHalfRange * 2))
+          .clamp(0.0, 1.0);
+      final softened = 0.5 + (math.sin((normalized - 0.5) * math.pi) * 0.5);
+      final y = (size.height - verticalPadding) -
+          (softened * (size.height - (verticalPadding * 2)));
+      points.add(Offset(x, y));
+    }
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 1; i < points.length - 1; i++) {
+      final current = points[i];
+      final next = points[i + 1];
+      final midpoint = Offset(
+        (current.dx + next.dx) / 2,
+        (current.dy + next.dy) / 2,
+      );
+      path.quadraticBezierTo(
+        current.dx,
+        current.dy,
+        midpoint.dx,
+        midpoint.dy,
+      );
+    }
+    path.lineTo(points.last.dx, points.last.dy);
+
+    final glowPaint = Paint()
+      ..color = lineGlowColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawPath(path, glowPaint);
+
+    final linePaint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawPath(path, linePaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _HomeLiveBitcoinPainter oldDelegate) {
+    return oldDelegate.now != now ||
+        oldDelegate.history != history ||
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.lineGlowColor != lineGlowColor;
   }
 }
 
@@ -743,6 +2231,7 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
   Widget build(BuildContext context) {
     final popupState = ref.watch(txPopupProvider);
     final theme = Theme.of(context);
+    final safeTop = MediaQuery.of(context).padding.top;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (popupState.active &&
@@ -759,150 +2248,166 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
     return AnimatedBuilder(
       animation: Listenable.merge([_spinAnimation, _slideAnimation]),
       builder: (context, child) {
-        final topPos = widget.restingTop -
-            (widget.restingTop - widget.activeTop) * _slideAnimation.value;
+        final restingTop = widget.restingTop;
+        final visibleTop = safeTop + widget.activeTop;
+        final topPos =
+            restingTop - (restingTop - visibleTop) * _slideAnimation.value;
+        final accent = popupState.status == TxPopupStatus.loading
+            ? theme.colorScheme.primary
+            : popupState.status == TxPopupStatus.success
+                ? AppColors.success
+                : popupState.isSent
+                    ? AppColors.warning
+                    : AppColors.success;
+        final iconData = popupState.status == TxPopupStatus.loading
+            ? Icons.sync_rounded
+            : popupState.status == TxPopupStatus.success
+                ? Icons.check_rounded
+                : (popupState.isSent
+                    ? Icons.arrow_upward_rounded
+                    : Icons.arrow_downward_rounded);
+
         return Positioned(
           top: topPos,
-          left: 0,
-          right: 0,
+          left: 16,
+          right: 16,
           child: Center(
-            child: SizedBox(
-              width: 314,
-              height: 55.6,
-              child: Container(
-                padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0x1AFFFFFF),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(40),
-                    topRight: Radius.circular(40),
-                  ),
-                  border: Border.all(color: const Color(0x0DFFFFFF)),
-                ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Opacity(
+                opacity: _slideAnimation.value.clamp(0.0, 1.0),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(40),
-                    topRight: Radius.circular(40),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 30,
-                              height: 30,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  if (popupState.status !=
-                                      TxPopupStatus.loading)
-                                    Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: popupState.status ==
-                                                  TxPopupStatus.success
-                                              ? const Color(0xFF00FF11)
-                                                  .withOpacity(0.8)
-                                              : const Color(0x33FFFFFF),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                  if (popupState.status ==
-                                      TxPopupStatus.loading)
-                                    ExcludeSemantics(
-                                      // Spinner rotativo blindado
-                                      child: Transform.rotate(
-                                        angle: _spinAnimation.value,
-                                        child: CustomPaint(
-                                          size: const Size(30, 30),
-                                          painter: _SpinningArcPainter(
-                                              color: AppColors.primary),
-                                        ),
-                                      ),
-                                    ),
-                                  if (popupState.status ==
-                                      TxPopupStatus.loading)
-                                    const Icon(Icons.sync_rounded,
-                                        color: AppColors.primary, size: 14)
-                                  else
-                                    Icon(
-                                      popupState.status == TxPopupStatus.success
-                                          ? Icons.check_rounded
-                                          : (popupState.isSent
-                                              ? Icons.arrow_upward
-                                              : Icons.arrow_downward),
-                                      color: popupState.status ==
-                                              TxPopupStatus.success
-                                          ? const Color(0xFF00FF11)
-                                          : const Color(0xFFFF9500),
-                                      size: popupState.status ==
-                                              TxPopupStatus.success
-                                          ? 16
-                                          : 12,
-                                    ),
-                                ],
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color.lerp(
+                          const Color(0xFF151C24),
+                          accent,
+                          0.16,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.28),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.26),
+                            blurRadius: 26,
+                            offset: const Offset(0, 16),
+                          ),
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.12),
+                            blurRadius: 28,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.16),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: accent.withValues(alpha: 0.28),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Column(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (popupState.status == TxPopupStatus.loading)
+                                  ExcludeSemantics(
+                                    child: Transform.rotate(
+                                      angle: _spinAnimation.value,
+                                      child: CustomPaint(
+                                        size: const Size(24, 24),
+                                        painter:
+                                            _SpinningArcPainter(color: accent),
+                                      ),
+                                    ),
+                                  ),
+                                Icon(
+                                  iconData,
+                                  size:
+                                      popupState.status == TxPopupStatus.success
+                                          ? 18
+                                          : 16,
+                                  color: accent,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   popupState.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: AppTypography.bodyMedium.copyWith(
                                     color: theme.colorScheme.onPrimary,
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.1,
                                   ),
                                 ),
+                                const SizedBox(height: 4),
                                 Text(
                                   popupState.address,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: AppTypography.caption.copyWith(
                                     fontFamily: 'JetBrainsMono',
                                     color: theme.colorScheme.onPrimary
-                                        .withOpacity(0.7),
-                                    fontSize: 9,
-                                    height: 1,
+                                        .withValues(alpha: 0.66),
+                                    fontSize: 9.5,
+                                    height: 1.1,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              popupState.amount,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: theme.colorScheme.onPrimary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                                height: 1,
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                popupState.amount,
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: theme.colorScheme.onPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                  height: 1.1,
+                                ),
                               ),
-                            ),
-                            Text(
-                              popupState.time,
-                              style: AppTypography.caption.copyWith(
-                                color: theme.colorScheme.onPrimary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 9,
-                                height: 1.2,
+                              const SizedBox(height: 4),
+                              Text(
+                                popupState.time,
+                                style: AppTypography.caption.copyWith(
+                                  color: theme.colorScheme.onPrimary
+                                      .withValues(alpha: 0.56),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 9.5,
+                                  height: 1.1,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1057,238 +2562,372 @@ class _TransactionsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filteredtxsAsync = ref.watch(filteredTransactionsProvider);
+    final walletState = ref.watch(walletProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final activeWallet = walletState is WalletLoaded
+        ? walletState.selectedWallet ??
+            (walletState.wallets.isNotEmpty ? walletState.wallets.first : null)
+        : null;
 
     return filteredtxsAsync.when(
       data: (txs) {
         if (txs.isEmpty) {
+          final hasWallet = activeWallet != null;
+          final hasBalance = (activeWallet?.balance ?? 0) > 0;
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             child: StateFeedbackView.empty(
-              title: 'Sem transações',
-              description:
-                  'As tuas transações aparecerão aqui assim que realizares a primeira operação.',
-              actionLabel: 'Atualizar',
-              onAction: () => ref.refresh(transactionHistoryProvider),
+              title: !hasWallet
+                  ? 'Crie sua primeira carteira'
+                  : !hasBalance
+                      ? 'Adicione saldo para começar'
+                      : 'Sem transações recentes',
+              description: !hasWallet
+                  ? 'Você precisa de uma carteira para começar a movimentar.'
+                  : !hasBalance
+                      ? 'Assim que entrar o primeiro depósito, suas movimentações aparecem aqui.'
+                      : 'Novas movimentações vão aparecer automaticamente nesta área.',
+              actionLabel: !hasWallet
+                  ? 'Criar carteira'
+                  : !hasBalance
+                      ? 'Depositar'
+                      : 'Atualizar',
+              onAction: () {
+                if (!hasWallet) {
+                  Navigator.of(context).push<void>(
+                    _buildBottomUpRoute(
+                      builder: (_) => const CreateWalletScreen(),
+                    ),
+                  );
+                  return;
+                }
+
+                if (!hasBalance) {
+                  Navigator.of(context).push<void>(
+                    _buildBottomUpRoute(
+                      builder: (_) => DepositAmountScreen(
+                        wallet: activeWallet,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                ref.invalidate(transactionHistoryProvider);
+              },
             ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: txs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-          itemBuilder: (context, index) {
-            final tx = txs[index];
-            final style = _styleFor(tx);
-            final status = _statusStyle(tx.status);
-            final methodKind = _methodIconKind(tx);
-            final txIconKind = _iconKindFor(tx);
-            final counterparty = tx.type == TransactionType.send ||
-                    tx.type == TransactionType.withdrawal
-                ? tx.toAddress
-                : tx.fromAddress;
+        final visibleTxs = txs.take(8).toList(growable: false);
 
-            return InkWell(
-              onTap: () {
-                showGeneralDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierLabel: '',
-                  barrierColor: colorScheme.onSurface.withOpacity(0.1),
-                  transitionDuration: const Duration(milliseconds: 400),
-                  pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
-                    tx: tx,
-                    onClose: () => Navigator.pop(context),
-                  ),
-                  transitionBuilder: (context, anim1, anim2, child) {
-                    return FadeTransition(
-                      opacity: anim1,
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.88, end: 1.0).animate(
-                          CurvedAnimation(
-                              parent: anim1, curve: Curves.easeOutBack),
-                        ),
-                        child: child,
+        return Column(
+          children: [
+            ListView.separated(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: visibleTxs.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final tx = visibleTxs[index];
+                final style = _styleFor(tx);
+                final status = _statusStyle(tx.status);
+                final methodKind = _methodIconKind(tx);
+                final txIconKind = _iconKindFor(tx);
+                final counterparty = tx.type == TransactionType.send ||
+                        tx.type == TransactionType.withdrawal
+                    ? tx.toAddress
+                    : tx.fromAddress;
+                final amountLabel = MoneyDisplay.formatAmountFromBtc(
+                  btcAmount: tx.amountBTC,
+                  currency: selectedCurrency,
+                  btcUsd: btcUsd,
+                  btcEur: btcEur,
+                  btcBrl: btcBrl,
+                );
+                final feeLabel = MoneyDisplay.formatAmountFromBtc(
+                  btcAmount: tx.feeBTC,
+                  currency: selectedCurrency,
+                  btcUsd: btcUsd,
+                  btcEur: btcEur,
+                  btcBrl: btcBrl,
+                );
+
+                return InkWell(
+                  onTap: () {
+                    showGeneralDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      barrierLabel: '',
+                      barrierColor: Colors.black.withValues(alpha: 0.74),
+                      transitionDuration: const Duration(milliseconds: 400),
+                      pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
+                        tx: tx,
+                        onClose: () => Navigator.pop(context),
                       ),
+                      transitionBuilder: (context, anim1, anim2, child) {
+                        return FadeTransition(
+                          opacity: anim1,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.88, end: 1.0).animate(
+                              CurvedAnimation(
+                                  parent: anim1, curve: Curves.easeOutBack),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-              borderRadius:
-                  BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: style.bg.withOpacity(0.10),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: style.bg.withOpacity(0.22), width: 1),
-                          ),
-                          child: Center(
-                            child: AnimatedTxIcon(
-                              kind: txIconKind,
-                              color: style.accent,
-                              size: 24,
-                            ),
-                          ),
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color.lerp(
+                        const Color(0xFF101820),
+                        style.accent,
+                        0.16,
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.md + AppSpacing.xs),
+                      border: Border.all(
+                        color: style.accent.withValues(alpha: 0.14),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.18),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
-                        if (methodKind != null)
-                          Positioned(
-                            right: -4,
-                            bottom: -4,
-                            child: Container(
-                              width: AppSpacing.lg,
-                              height: AppSpacing.lg,
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: colorScheme.surface, width: 1.5),
-                              ),
-                              child: Center(
-                                child: AnimatedTxIcon(
-                                  kind: methodKind,
-                                  color: colorScheme.onPrimary.withOpacity(0.7),
-                                  size: 12,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
-                    const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md, horizontal: AppSpacing.md),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Row(
+                          Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              Text(
-                                style.label,
-                                style: theme.textTheme.bodyMedium!.copyWith(
-                                  color: colorScheme.onPrimary,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: -0.2,
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: style.bg.withValues(alpha: 0.10),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: style.bg.withValues(alpha: 0.22),
+                                      width: 1),
+                                ),
+                                child: Center(
+                                  child: AnimatedTxIcon(
+                                    kind: txIconKind,
+                                    color: style.accent,
+                                    size: 24,
+                                  ),
                                 ),
                               ),
-                              if (tx.isInternal) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 5, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF7B61FF)
-                                        .withOpacity(0.18),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'Interno',
-                                    style: AppTypography.caption.copyWith(
-                                      color: const Color(0xFF7B61FF),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
+                              if (methodKind != null)
+                                Positioned(
+                                  right: -4,
+                                  bottom: -4,
+                                  child: Container(
+                                    width: AppSpacing.lg,
+                                    height: AppSpacing.lg,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: colorScheme.surface,
+                                          width: 1.5),
+                                    ),
+                                    child: Center(
+                                      child: AnimatedTxIcon(
+                                        kind: methodKind,
+                                        color: colorScheme.onPrimary
+                                            .withValues(alpha: 0.7),
+                                        size: 12,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ],
                             ],
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            _abbrevAddress(counterparty),
-                            style: theme.textTheme.labelSmall!.copyWith(
-                              color: colorScheme.onPrimary.withOpacity(0.38),
-                              letterSpacing: 0.2,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Row(
-                            children: [
-                              Icon(status.icon, color: status.color, size: 10),
-                              const SizedBox(width: AppSpacing.xs - 1),
-                              Text(
-                                status.label,
-                                style: theme.textTheme.labelSmall!.copyWith(
-                                    color: status.color,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 10),
-                              ),
-                              if (tx.status ==
-                                  TransactionStatus.confirming) ...[
-                                const SizedBox(width: AppSpacing.xs),
+                          const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      style.label,
+                                      style:
+                                          theme.textTheme.bodyMedium!.copyWith(
+                                        color: colorScheme.onPrimary,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                    if (tx.isInternal) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF070B10),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: const Color(0xFF1A232E),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Interno',
+                                          style: AppTypography.caption.copyWith(
+                                            color: const Color(0xFFC7CDD6),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
                                 Text(
-                                  '${tx.confirmations}/6',
+                                  _abbrevAddress(counterparty),
+                                  style: theme.textTheme.labelSmall!.copyWith(
+                                    color: colorScheme.onPrimary
+                                        .withValues(alpha: 0.38),
+                                    letterSpacing: 0.2,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Row(
+                                  children: [
+                                    Icon(status.icon,
+                                        color: status.color, size: 10),
+                                    const SizedBox(width: AppSpacing.xs - 1),
+                                    Text(
+                                      status.label,
+                                      style: theme.textTheme.labelSmall!
+                                          .copyWith(
+                                              color: status.color,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 10),
+                                    ),
+                                    if (tx.status ==
+                                        TransactionStatus.confirming) ...[
+                                      const SizedBox(width: AppSpacing.xs),
+                                      Text(
+                                        '${tx.confirmations}/6',
+                                        style: theme.textTheme.labelSmall!
+                                            .copyWith(
+                                                color: colorScheme.onPrimary
+                                                    .withValues(alpha: 0.3),
+                                                fontSize: 9),
+                                      ),
+                                    ],
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Text(
+                                      '·',
+                                      style: theme.textTheme.labelSmall!
+                                          .copyWith(
+                                              color: colorScheme.onPrimary
+                                                  .withValues(alpha: 0.2)),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Text(
+                                      _formatDate(tx.timestamp),
+                                      style: theme.textTheme.labelSmall!
+                                          .copyWith(
+                                              color: colorScheme.onPrimary
+                                                  .withValues(alpha: 0.28),
+                                              fontSize: 10),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${style.prefix}$amountLabel',
+                                style: theme.textTheme.bodyMedium!.copyWith(
+                                  color: style.accent,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              if (selectedCurrency != Currency.btc) ...[
+                                const SizedBox(height: AppSpacing.xs - 1),
+                                Text(
+                                  '${style.prefix}${_formatBTC(tx.amountBTC)}',
+                                  style: theme.textTheme.labelSmall!.copyWith(
+                                    color: colorScheme.onPrimary
+                                        .withValues(alpha: 0.32),
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                              if (tx.feeSatoshis > 0) ...[
+                                const SizedBox(height: AppSpacing.xs - 1),
+                                Text(
+                                  'Taxa $feeLabel',
                                   style: theme.textTheme.labelSmall!.copyWith(
                                       color: colorScheme.onPrimary
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.25),
                                       fontSize: 9),
                                 ),
                               ],
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(
-                                '·',
-                                style: theme.textTheme.labelSmall!.copyWith(
-                                    color:
-                                        colorScheme.onPrimary.withOpacity(0.2)),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(
-                                _formatDate(tx.timestamp),
-                                style: theme.textTheme.labelSmall!.copyWith(
-                                    color:
-                                        colorScheme.onPrimary.withOpacity(0.28),
-                                    fontSize: 10),
-                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${style.prefix}${_formatBTC(tx.amountBTC)}',
-                          style: theme.textTheme.bodyMedium!.copyWith(
-                            color: style.accent,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        if (tx.feeSatoshis > 0) ...[
-                          const SizedBox(height: AppSpacing.xs - 1),
-                          Text(
-                            'Taxa ${_formatBTC(tx.feeBTC)}',
-                            style: theme.textTheme.labelSmall!.copyWith(
-                                color: colorScheme.onPrimary.withOpacity(0.25),
-                                fontSize: 9),
-                          ),
-                        ],
-                      ],
+                  ),
+                );
+              },
+            ),
+            if (txs.length > visibleTxs.length)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  0,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).push<void>(
+                      _buildBottomUpRoute(
+                        builder: (_) =>
+                            const DepositsScreen(showPrimaryNavigation: true),
+                      ),
                     ),
-                  ],
+                    child: const Text('Ver histórico completo'),
+                  ),
                 ),
               ),
-            );
-          },
+          ],
         );
       },
       loading: () => const Padding(
@@ -1330,194 +2969,518 @@ class _StatusStyle {
   const _StatusStyle(this.label, this.color, this.icon);
 }
 
-String _formatAccountSecurityLabel(String rawValue) {
-  switch (rawValue.toUpperCase()) {
-    case 'SHAMIR':
-    case 'SHAMIR_SLIP39':
-    case 'SLIP39':
-      return 'Shamir SLIP-39';
-    case 'MULTISIG':
-    case 'MULTISIG_VAULT':
-    case '2FA_MULTISIG':
-      return 'Cofre multisig';
-    case 'STANDARD':
-    default:
-      return 'Semente padrao';
+class _PrimaryActionPanel extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String primaryLabel;
+  final IconData primaryIcon;
+  final VoidCallback onPrimaryTap;
+  final String? secondaryLabel;
+  final IconData? secondaryIcon;
+  final VoidCallback? onSecondaryTap;
+
+  const _PrimaryActionPanel({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.primaryLabel,
+    required this.primaryIcon,
+    required this.onPrimaryTap,
+    this.secondaryLabel,
+    this.secondaryIcon,
+    this.onSecondaryTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: colorScheme.primary.withValues(alpha: 0.94),
+                size: 24,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleLarge!.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodyMedium!.copyWith(
+              color: colorScheme.onPrimary.withValues(alpha: 0.58),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final hasSecondary =
+                  secondaryLabel != null && onSecondaryTap != null;
+              final isCompact = constraints.maxWidth < 360;
+
+              final primaryButton = _ActionPanelButton(
+                label: primaryLabel,
+                icon: primaryIcon,
+                onTap: onPrimaryTap,
+                backgroundColor: const Color(0xFF565C67),
+                foregroundColor: AppColors.white,
+              );
+
+              final secondaryButton = hasSecondary
+                  ? _ActionPanelButton(
+                      label: secondaryLabel!,
+                      icon: secondaryIcon ?? LucideIcons.arrowUpRight,
+                      onTap: onSecondaryTap!,
+                      backgroundColor: const Color(0xFF4A505B),
+                      foregroundColor: AppColors.white,
+                    )
+                  : null;
+
+              if (!hasSecondary) {
+                return primaryButton;
+              }
+
+              if (isCompact) {
+                return Column(
+                  children: [
+                    primaryButton,
+                    const SizedBox(height: AppSpacing.sm),
+                    secondaryButton!,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: primaryButton),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: secondaryButton!),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _OperationalSummaryCard extends StatelessWidget {
-  final String accountStatus;
-  final String walletStatus;
-  final String protectionStatus;
-  final String privacyStatus;
-  final VoidCallback onOpenSovereignty;
+class _QuickActionData {
+  final TxIconKind kind;
+  final String label;
+  final String subtitle;
+  final String tag;
+  final Color accent;
+  final VoidCallback onTap;
 
-  const _OperationalSummaryCard({
-    required this.accountStatus,
-    required this.walletStatus,
-    required this.protectionStatus,
-    required this.privacyStatus,
-    required this.onOpenSovereignty,
+  const _QuickActionData({
+    required this.kind,
+    required this.label,
+    required this.subtitle,
+    required this.tag,
+    required this.accent,
+    required this.onTap,
+  });
+}
+
+class _HomeActionSection extends StatelessWidget {
+  final String title;
+  final List<_QuickActionData> actions;
+
+  const _HomeActionSection({
+    required this.title,
+    required this.actions,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Resumo operacional',
-            style: theme.textTheme.titleMedium!.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleMedium!.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.16,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Conta, carteiras, privacidade e postura de custódia visíveis sem dados sintéticos.',
-            style: theme.textTheme.bodySmall!.copyWith(
-              color: AppColors.white.withOpacity(0.55),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _OperationalPill(label: 'Conta', value: accountStatus),
-              _OperationalPill(label: 'Carteiras', value: walletStatus),
-              _OperationalPill(label: 'Protecao', value: protectionStatus),
-              _OperationalPill(label: 'Privacidade', value: privacyStatus),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          InkWell(
-            onTap: onOpenSovereignty,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.md,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.white.withOpacity(0.02),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.white.withOpacity(0.06)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    LucideIcons.shield,
-                    color: Theme.of(context).colorScheme.secondary,
-                    size: 18,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Abrir relatorio de soberania',
-                      style: theme.textTheme.bodyMedium!.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    LucideIcons.chevronRight,
-                    color: AppColors.white.withOpacity(0.4),
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _HomeQuickActionsRow(actions: actions),
+      ],
     );
   }
 }
 
-class _OperationalPill extends StatelessWidget {
-  final String label;
-  final String value;
+class _HomeQuickActionsRow extends StatelessWidget {
+  final List<_QuickActionData> actions;
 
-  const _OperationalPill({required this.label, required this.value});
+  const _HomeQuickActionsRow({required this.actions});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.white.withOpacity(0.07)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      clipBehavior: Clip.none,
+      child: Row(
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: AppColors.white.withOpacity(0.5),
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
+          for (var index = 0; index < actions.length; index++) ...[
+            if (index > 0) const SizedBox(width: 14),
+            _QuickActionBtn(
+              index: index,
+              kind: actions[index].kind,
+              label: actions[index].label,
+              subtitle: actions[index].subtitle,
+              tag: actions[index].tag,
+              accent: actions[index].accent,
+              onTap: actions[index].onTap,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
+const double _quickActionButtonWidth = 86;
+const double _quickActionButtonHeight = 122;
+const double _quickActionLabelHeight = 38;
+
 // ── Quick Action Button ────────────────────────────────────────────────────────
-class _QuickActionBtn extends StatelessWidget {
-  final IconData icon;
+class _QuickActionBtn extends StatefulWidget {
+  final int index;
+  final TxIconKind kind;
   final String label;
+  final String subtitle;
+  final String tag;
+  final Color accent;
   final VoidCallback onTap;
 
   const _QuickActionBtn(
-      {required this.icon, required this.label, required this.onTap});
+      {required this.index,
+      required this.kind,
+      required this.label,
+      required this.subtitle,
+      required this.tag,
+      required this.accent,
+      required this.onTap});
+
+  @override
+  State<_QuickActionBtn> createState() => _QuickActionBtnState();
+}
+
+class _QuickActionBtnState extends State<_QuickActionBtn>
+    with TickerProviderStateMixin {
+  late final AnimationController _introController;
+  late final AnimationController _pressController;
+
+  @override
+  void initState() {
+    super.initState();
+    _introController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 160),
+      reverseDuration: const Duration(milliseconds: 230),
+    );
+
+    Future<void>.delayed(
+      Duration(milliseconds: 120 + (widget.index * 70)),
+      () {
+        if (!mounted) {
+          return;
+        }
+        _introController.forward();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _introController.dispose();
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails _) {
+    _pressController.forward();
+  }
+
+  void _handleTapCancel() {
+    _pressController.reverse();
+  }
+
+  Future<void> _handleTap() async {
+    _pressController.reverse();
+    unawaited(KeroseneFeedback.lightImpact());
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    if (!mounted) {
+      return;
+    }
+    widget.onTap();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          GlassContainer(
-            blur: 20,
-            opacity: 0.05,
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-            child: SizedBox(
-              width: 64,
-              height: 64,
-              child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_introController, _pressController]),
+      builder: (context, _) {
+        final intro = Curves.easeOutCubic.transform(_introController.value);
+        final press = Curves.easeOutCubic.transform(_pressController.value);
+
+        final iconSurface = Color.lerp(
+          const Color(0xFF40454F),
+          widget.accent,
+          0.12,
+        )!;
+        final iconColor = Color.lerp(
+          Colors.white,
+          widget.accent,
+          0.20,
+        )!;
+        final labelColor = Color.lerp(
+          Colors.white,
+          widget.accent,
+          0.16,
+        )!
+            .withValues(alpha: 0.94);
+
+        return Opacity(
+          opacity: intro,
+          child: Transform.scale(
+            scale: (0.978 + (intro * 0.022)) - (press * 0.04),
+            child: Material(
+              color: Colors.transparent,
+              child: Semantics(
+                button: true,
+                label: '${widget.label}. ${widget.subtitle}',
+                child: Tooltip(
+                  message: widget.label,
+                  child: InkWell(
+                    onTapDown: _handleTapDown,
+                    onTapCancel: _handleTapCancel,
+                    onTapUp: (_) => _handleTapCancel(),
+                    onTap: _handleTap,
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: _quickActionButtonWidth,
+                      height: _quickActionButtonHeight,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _QuickActionIconBadge(
+                            kind: widget.kind,
+                            press: press,
+                            surfaceColor: iconSurface,
+                            iconColor: iconColor,
+                          ),
+                          const SizedBox(height: 13),
+                          SizedBox(
+                            height: _quickActionLabelHeight,
+                            child: Center(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                child: Text(
+                                  widget.label,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.labelLarge!.copyWith(
+                                    color: labelColor,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.12,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(label,
-              style: theme.textTheme.labelSmall!
-                  .copyWith(color: theme.colorScheme.onPrimary)),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _QuickActionIconBadge extends StatelessWidget {
+  final TxIconKind kind;
+  final double press;
+  final Color surfaceColor;
+  final Color iconColor;
+
+  const _QuickActionIconBadge({
+    required this.kind,
+    required this.press,
+    required this.surfaceColor,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(0, press * 1.2),
+      child: Transform.scale(
+        scale: 1 - (press * 0.04),
+        child: Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Icon(
+              _quickActionIcon(kind),
+              color: iconColor,
+              size: 28,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+IconData _quickActionIcon(TxIconKind kind) {
+  switch (kind) {
+    case TxIconKind.address:
+      return Icons.swap_horiz_rounded;
+    case TxIconKind.network:
+      return Icons.currency_bitcoin_rounded;
+    case TxIconKind.fee:
+      return Icons.flash_on_rounded;
+    case TxIconKind.qrCode:
+      return Icons.qr_code_2_rounded;
+    case TxIconKind.card:
+      return Icons.link_rounded;
+    case TxIconKind.nfc:
+      return Icons.nfc_rounded;
+    case TxIconKind.deposit:
+      return Icons.account_balance_wallet_rounded;
+    case TxIconKind.receive:
+      return Icons.south_west_rounded;
+    case TxIconKind.send:
+      return Icons.north_east_rounded;
+    case TxIconKind.withdrawal:
+      return Icons.outbox_rounded;
+    case TxIconKind.swap:
+      return Icons.sync_alt_rounded;
+    case TxIconKind.pending:
+    case TxIconKind.clock:
+      return Icons.schedule_rounded;
+    case TxIconKind.confirmed:
+      return Icons.check_circle_rounded;
+    case TxIconKind.failed:
+      return Icons.cancel_rounded;
+  }
+}
+
+class _ActionPanelButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  const _ActionPanelButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final surfaceBase = Color.lerp(
+      _homeLowerSurfaceColor,
+      backgroundColor,
+      0.42,
+    )!;
+
+    return BouncingButtonWrapper(
+      onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          height: 60,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: surfaceBase,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: foregroundColor.withValues(alpha: 0.86),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge!.copyWith(
+                      color: foregroundColor,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.12,
+                    ),
+                  ),
+                ),
+                Icon(
+                  LucideIcons.arrowUpRight,
+                  size: 16,
+                  color: foregroundColor.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

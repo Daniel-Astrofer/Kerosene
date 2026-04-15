@@ -20,6 +20,9 @@ class ReceivePaymentLinkScreen extends ConsumerStatefulWidget {
   final String requestedAmountLabel;
   final String btcAmountLabel;
   final String? walletLabel;
+  final String? cardTypeLabel;
+  final String? depositFeeLabel;
+  final String? netAmountLabel;
 
   const ReceivePaymentLinkScreen({
     super.key,
@@ -27,6 +30,9 @@ class ReceivePaymentLinkScreen extends ConsumerStatefulWidget {
     required this.requestedAmountLabel,
     required this.btcAmountLabel,
     this.walletLabel,
+    this.cardTypeLabel,
+    this.depositFeeLabel,
+    this.netAmountLabel,
   });
 
   @override
@@ -54,12 +60,32 @@ class _ReceivePaymentLinkScreenState
     super.dispose();
   }
 
-  String get _paymentUri => QrPaymentParser.encode(
-        address: _link.depositAddress,
-        amountBtc: _link.amountBtc,
-        label: widget.walletLabel,
-        message: _link.description,
-      );
+  bool get _isLockedPaymentRequest => _link.isInternalPaymentRequest;
+
+  String get _paymentUri {
+    if (_isLockedPaymentRequest) {
+      final explicitUri = _link.paymentUri?.trim();
+      if (explicitUri != null && explicitUri.isNotEmpty) {
+        return explicitUri;
+      }
+      return QrPaymentParser.encodePaymentLink(_link.id);
+    }
+
+    return QrPaymentParser.encode(
+      address: _link.depositAddress,
+      amountBtc: _link.amountBtc,
+      label: widget.walletLabel,
+      message: _link.description,
+    );
+  }
+
+  String get _destinationHash {
+    final value = _link.destinationHash?.trim();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+    return _link.depositAddress;
+  }
 
   Duration get _remainingTime {
     final expiresAt = _link.expiresAt;
@@ -179,35 +205,41 @@ class _ReceivePaymentLinkScreenState
     if (_link.isExpired) {
       return 'Este link nao aceita mais pagamentos. Gere um novo QR para continuar a receber.';
     }
+    if (_isLockedPaymentRequest) {
+      return 'Quem abrir este QR ou link verá apenas a confirmação. Valor e destino ficam travados pelo servidor.';
+    }
     return 'Use o QR code ou copie o link de pagamento abaixo. O status sera atualizado automaticamente.';
+  }
+
+  String _shortHash(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length <= 18) {
+      return trimmed;
+    }
+    return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 8)}';
   }
 
   @override
   Widget build(BuildContext context) {
     final statusMeta = FinancialStatusBadge.paymentLink(_link.status);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: true,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: 18),
-                _buildHero(statusMeta).animate().fade().slideY(begin: 0.08),
-                const SizedBox(height: 18),
-                _buildQrCard(context).animate(delay: 80.ms).fade(),
-                const SizedBox(height: 18),
-                _buildLinkDetails(context).animate(delay: 120.ms).fade(),
-                const SizedBox(height: 18),
-                _buildActions(context).animate(delay: 160.ms).fade(),
-              ],
-            ),
-          ),
+    return CyberBackground.authenticated(
+      useScroll: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 18),
+            _buildHero(statusMeta).animate().fade().slideY(begin: 0.08),
+            const SizedBox(height: 18),
+            _buildQrCard(context).animate(delay: 80.ms).fade(),
+            const SizedBox(height: 18),
+            _buildLinkDetails(context).animate(delay: 120.ms).fade(),
+            const SizedBox(height: 18),
+            _buildActions(context).animate(delay: 160.ms).fade(),
+          ],
         ),
       ),
     );
@@ -322,6 +354,25 @@ class _ReceivePaymentLinkScreenState
               ),
             ),
           ],
+          if (widget.depositFeeLabel != null ||
+              widget.netAmountLabel != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              [
+                if (widget.cardTypeLabel != null) widget.cardTypeLabel,
+                if (widget.depositFeeLabel != null)
+                  'depósito ${widget.depositFeeLabel}',
+                if (widget.netAmountLabel != null)
+                  'líquido ${widget.netAmountLabel}',
+              ].join(' • '),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                height: 1.35,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text(
             _statusHeadline,
@@ -349,6 +400,11 @@ class _ReceivePaymentLinkScreenState
                 title: 'ID',
                 value: _link.id,
               ),
+              if (_isLockedPaymentRequest && _destinationHash.isNotEmpty)
+                _DetailTag(
+                  title: 'Destino',
+                  value: _shortHash(_destinationHash),
+                ),
               _DetailTag(
                 title: 'Expira',
                 value: _formatDateTime(_link.expiresAt),
@@ -426,6 +482,34 @@ class _ReceivePaymentLinkScreenState
   }
 
   Widget _buildLinkDetails(BuildContext context) {
+    if (_isLockedPaymentRequest) {
+      return Column(
+        children: [
+          _CopyFieldCard(
+            title: 'Link de pagamento',
+            value: _paymentUri,
+            helper:
+                'Este link abre a confirmação com valor e destino travados.',
+            onCopy: () => _copyValue(
+              _paymentUri,
+              'Link de pagamento copiado para a area de transferencia.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          _CopyFieldCard(
+            title: 'Hash do destino',
+            value: _destinationHash,
+            helper:
+                'Somente o hash publico da carteira de destino fica visivel para quem paga.',
+            onCopy: () => _copyValue(
+              _destinationHash,
+              'Hash do destino copiado para a area de transferencia.',
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         _CopyFieldCard(

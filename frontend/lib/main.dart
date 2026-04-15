@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:teste/core/theme/app_theme.dart';
 
 import 'package:teste/l10n/app_localizations.dart';
+import 'core/providers/appearance_provider.dart';
 import 'core/providers/locale_provider.dart';
 import 'features/auth/presentation/screens/welcome_screen.dart';
 import 'features/auth/presentation/screens/login_username_screen.dart';
@@ -14,6 +15,8 @@ import 'features/home/presentation/screens/home_loading_screen.dart';
 import 'features/auth/presentation/screens/server_unavailable_screen.dart';
 import 'features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'features/wallet/presentation/screens/send_money_screen.dart';
+import 'features/mining/presentation/screens/mining_screen.dart';
+import 'features/settings/presentation/screens/settings_screen.dart';
 import 'core/services/background_service.dart';
 import 'core/services/notification_service.dart'
     as local_notifications; // Alias for local notification service
@@ -22,10 +25,12 @@ import 'core/services/audio_service.dart';
 import 'core/providers/tor_providers.dart';
 import 'core/services/tor_service.dart';
 import 'core/config/app_config.dart';
+import 'core/utils/qr_payment_parser.dart';
 
 import 'features/auth/controller/auth_controller.dart';
 import 'shared/widgets/offline_overlay.dart';
 import 'core/utils/snackbar_helper.dart';
+import 'features/wallet/presentation/providers/balance_websocket_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,11 +77,12 @@ void main() async {
       final int relayPort = await TorService.instance.startRelay(host, 80);
       final newApiUrl = 'http://127.0.0.1:$relayPort';
       AppConfig.apiUrl = newApiUrl;
-      
+
       // Update the reactive provider so ApiClient and WebSocket rebuild
       container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
-      
-      debugPrint('🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host');
+
+      debugPrint(
+          '🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host');
     } else {
       debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
     }
@@ -104,14 +110,15 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider).locale;
+    final appearance = ref.watch(appearanceProvider);
 
     return MaterialApp(
-      title: 'Kerosene',
+      title: 'Kerosene Bank',
       navigatorKey: SnackbarHelper.navigatorKey,
       scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       scrollBehavior: const KeroseneScrollBehavior(),
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.themeFor(appearance.themeVariant),
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -125,7 +132,19 @@ class MyApp extends ConsumerWidget {
         }
         return supportedLocales.first; // Retorna EN por padrão se não suportado
       },
-      builder: (context, child) => OfflineOverlay(child: child!),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.maybeOf(context);
+        Widget current = OfflineOverlay(child: child!);
+        if (mediaQuery != null) {
+          current = MediaQuery(
+            data: mediaQuery.copyWith(
+              textScaler: TextScaler.linear(appearance.fontScale.scaleFactor),
+            ),
+            child: current,
+          );
+        }
+        return _AppRealtimeBootstrap(child: current);
+      },
       home: Consumer(
         builder: (context, ref, child) {
           final authState = ref.watch(authControllerProvider);
@@ -149,11 +168,45 @@ class MyApp extends ConsumerWidget {
         '/signup': (context) => const SignupFlowScreen(),
         '/home': (context) => const HomeScreen(),
         '/home_loading': (context) => const HomeLoadingScreen(),
+        '/settings': (context) =>
+            const SettingsScreen(showPrimaryNavigation: true),
+        '/history': (context) =>
+            const DepositsScreen(showPrimaryNavigation: true),
+        '/mining': (context) => const MiningScreen(),
         '/create_wallet': (context) => const CreateWalletScreen(),
         '/send-money': (context) => const SendMoneyScreen(),
-        '/deposits': (context) => const DepositsScreen(),
+        '/deposits': (context) =>
+            const DepositsScreen(showPrimaryNavigation: true),
+      },
+      onGenerateRoute: (settings) {
+        final linkId =
+            QrPaymentParser.extractPaymentLinkId(settings.name ?? '');
+        if (linkId != null) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => SendMoneyScreen(
+              initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+            ),
+          );
+        }
+        return null;
       },
     );
+  }
+}
+
+class _AppRealtimeBootstrap extends ConsumerWidget {
+  final Widget child;
+
+  const _AppRealtimeBootstrap({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    if (authState is AuthAuthenticated) {
+      ref.watch(balanceWebSocketServiceProvider);
+    }
+    return child;
   }
 }
 
