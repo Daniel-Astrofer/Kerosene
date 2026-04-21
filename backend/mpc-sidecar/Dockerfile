@@ -3,7 +3,7 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Install git, gcc (for tss-lib), and protobuf tools
+# Install protobuf tooling for generated gRPC bindings.
 RUN apk add --no-cache git build-base protoc protobuf-dev
 
 # Install protoc generators
@@ -23,14 +23,14 @@ RUN export PATH=$PATH:$(go env GOPATH)/bin && \
 
 RUN go mod tidy
 
-# Build the enclave sidecar (CGO enabled because of tss-lib math)
-RUN CGO_ENABLED=1 GOOS=linux go build -o mpc_enclave main.go
+# Build the enclave sidecar.
+RUN CGO_ENABLED=0 GOOS=linux go build -o mpc_enclave main.go
 
 # Production Run Stage
 FROM alpine:latest
 
-# Installs ca-certificates if calls to external APIs are needed and libc for CGO
-RUN apk --no-cache add ca-certificates tzdata libc6-compat
+# Installs ca-certificates if calls to external APIs are needed.
+RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 COPY --from=builder /app/mpc_enclave .

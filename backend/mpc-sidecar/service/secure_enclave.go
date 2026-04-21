@@ -3,24 +3,30 @@ package service
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 )
 
 const (
 	// Permanent encrypted storage on disk
 	PersistentStorageDir = "/app/encrypted-shards"
-	
+
 	// Volatile RAM disk (tmpfs) mapped in docker-compose
 	RamDiskDir = "/mnt/mpc-shards"
 )
 
-// In a real SGX/TEE setup, this key is provisioned internally and 
-// NEVER leaves the enclave memory. We mock it here for the sidecar.
-var mockSgxMasterKey = []byte("my_32_byte_super_secure_sgx_key!")
+var (
+	masterKeyOnce sync.Once
+	masterKey     []byte
+	masterKeyErr  error
+)
 
 // InitSecureEnclave simulates the Secure Boot / TEE unlocking process.
 // It decrypts the shards from persistent storage and writes them to the RAM disk.
@@ -40,7 +46,7 @@ func InitSecureEnclave() error {
 		return nil // Nothing to decrypt yet
 	}
 
-	files, err := ioutil.ReadDir(PersistentStorageDir)
+	files, err := os.ReadDir(PersistentStorageDir)
 	if err != nil {
 		return fmt.Errorf("failed to read persistent storage: %v", err)
 	}
@@ -65,19 +71,23 @@ func InitSecureEnclave() error {
 	return nil
 }
 
-// Simulates decrypting a file with AES-GCM
 func decryptShardToRam(encryptedPath, ramPath string) error {
-	ciphertext, err := ioutil.ReadFile(encryptedPath)
+	ciphertext, err := os.ReadFile(encryptedPath)
 	if err != nil {
 		return err
 	}
 
-	// Simplistic mock check. Real AES-GCM requires nonce management.
 	if len(ciphertext) == 0 {
 		return nil
 	}
-	
-	block, err := aes.NewCipher(mockSgxMasterKey)
+
+	key, err := enclaveMasterKey()
+	if err != nil {
+		return err
+	}
+	defer zeroBytes(key)
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return err
 	}
@@ -86,13 +96,11 @@ func decryptShardToRam(encryptedPath, ramPath string) error {
 	if err != nil {
 		return err
 	}
-	
-	// Assuming first 12 bytes are nonce for this mock
+
 	if len(ciphertext) < aesgcm.NonceSize() {
-		// Mock: just writing it as is if it's too small/not encrypted properly
-		return ioutil.WriteFile(ramPath, ciphertext, 0600)
+		return fmt.Errorf("encrypted shard is too short to contain a GCM nonce")
 	}
-	
+
 	nonce, ciphertext := ciphertext[:aesgcm.NonceSize()], ciphertext[aesgcm.NonceSize():]
 	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
@@ -100,7 +108,7 @@ func decryptShardToRam(encryptedPath, ramPath string) error {
 	}
 
 	// Write to tmpfs
-	return ioutil.WriteFile(ramPath, plaintext, 0600)
+	return os.WriteFile(ramPath, plaintext, 0600)
 }
 
 // SaveEncryptedShard is called when a new user generates a key.
@@ -109,14 +117,27 @@ func SaveEncryptedShard(filename string, plaintextData []byte) error {
 	ramPath := filepath.Join(RamDiskDir, filename+".decrypted")
 	encryptedPath := filepath.Join(PersistentStorageDir, filename)
 
+	if err := os.MkdirAll(RamDiskDir, 0700); err != nil {
+		return fmt.Errorf("failed to create RAM shard dir: %v", err)
+	}
+	if err := os.MkdirAll(PersistentStorageDir, 0700); err != nil {
+		return fmt.Errorf("failed to create encrypted shard dir: %v", err)
+	}
+
 	// 1. Save plaintext to RAM
-	err := ioutil.WriteFile(ramPath, plaintextData, 0600)
+	err := os.WriteFile(ramPath, plaintextData, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to save shard to RAM: %v", err)
 	}
 
 	// 2. Encrypt and save to Disk
-	block, err := aes.NewCipher(mockSgxMasterKey)
+	key, err := enclaveMasterKey()
+	if err != nil {
+		return err
+	}
+	defer zeroBytes(key)
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return err
 	}
@@ -127,10 +148,12 @@ func SaveEncryptedShard(filename string, plaintextData []byte) error {
 	}
 
 	nonce := make([]byte, aesgcm.NonceSize())
-	// In production, use crypto/rand to generate nonce!
+	if _, err := rand.Read(nonce); err != nil {
+		return fmt.Errorf("failed to generate AES-GCM nonce: %v", err)
+	}
 	ciphertext := aesgcm.Seal(nonce, nonce, plaintextData, nil)
 
-	err = ioutil.WriteFile(encryptedPath, ciphertext, 0600)
+	err = os.WriteFile(encryptedPath, ciphertext, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to save encrypted shard to disk: %v", err)
 	}
@@ -142,5 +165,61 @@ func SaveEncryptedShard(filename string, plaintextData []byte) error {
 // GetShardFromRam reads the shard directly from the tmpfs.
 func GetShardFromRam(filename string) ([]byte, error) {
 	ramPath := filepath.Join(RamDiskDir, filename+".decrypted")
-	return ioutil.ReadFile(ramPath)
+	return os.ReadFile(ramPath)
+}
+
+func enclaveMasterKey() ([]byte, error) {
+	masterKeyOnce.Do(func() {
+		masterKey, masterKeyErr = loadMasterKey()
+	})
+	if masterKeyErr != nil {
+		return nil, masterKeyErr
+	}
+
+	copyKey := make([]byte, len(masterKey))
+	copy(copyKey, masterKey)
+	return copyKey, nil
+}
+
+func loadMasterKey() ([]byte, error) {
+	if raw := strings.TrimSpace(os.Getenv("MPC_MASTER_KEY_B64")); raw != "" {
+		return decodeMasterKey([]byte(raw))
+	}
+
+	if path := strings.TrimSpace(os.Getenv("MPC_MASTER_KEY_FILE")); path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read MPC_MASTER_KEY_FILE: %v", err)
+		}
+		return decodeMasterKey(data)
+	}
+
+	return nil, errors.New("MPC master key is not configured; set MPC_MASTER_KEY_B64 or MPC_MASTER_KEY_FILE from Vault/HSM")
+}
+
+func decodeMasterKey(data []byte) ([]byte, error) {
+	trimmed := []byte(strings.TrimSpace(string(data)))
+	if len(trimmed) == 32 {
+		key := make([]byte, 32)
+		copy(key, trimmed)
+		return key, nil
+	}
+
+	decoded := make([]byte, base64.StdEncoding.DecodedLen(len(trimmed)))
+	n, err := base64.StdEncoding.Decode(decoded, trimmed)
+	if err != nil {
+		return nil, fmt.Errorf("MPC master key must be 32 raw bytes or base64-encoded AES-256: %v", err)
+	}
+	decoded = decoded[:n]
+	if len(decoded) != 32 {
+		zeroBytes(decoded)
+		return nil, fmt.Errorf("MPC master key must be 32 bytes, got %d", len(decoded))
+	}
+	return decoded, nil
+}
+
+func zeroBytes(data []byte) {
+	for i := range data {
+		data[i] = 0
+	}
 }

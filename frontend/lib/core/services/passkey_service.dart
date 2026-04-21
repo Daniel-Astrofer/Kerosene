@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import '../config/app_config.dart';
 import 'sovereign_auth_service.dart';
 
 /// Passkey service that delegates to SovereignAuthService (Ed25519 + biometric).
@@ -29,27 +30,30 @@ class PasskeyService {
   }) async {
     // 1. Generate fresh key pair (stored in secure storage)
     final pubKeyBytes = await _sovereignAuth.generateKeyPair();
-    
+
     // 2. Build synthetic clientDataJSON and authData
     final clientDataJsonBytes = utf8.encode(jsonEncode({
       'type': 'webauthn.create',
       'challenge': _toBase64Url(_hexToBytes(challengeHex)),
-      'origin': 'android:apk-key-hash:kerosene',
+      'origin': AppConfig.passkeyOrigin,
       'crossOrigin': false,
     }));
     final clientDataJson = _toBase64Url(clientDataJsonBytes);
-    final authDataBytes = _buildAuthenticatorDataBytes();
+    final authDataBytes = _buildAuthenticatorDataBytes(
+      await _sovereignAuth.nextSignatureCounter(),
+    );
 
     // 3. Compute signature over (authData + sha256(UTF8(clientDataJSON_string)))
     final clientDataHash = sha256.convert(clientDataJsonBytes).bytes;
-    final signatureData = Uint8List.fromList([...authDataBytes, ...clientDataHash]);
-    
+    final signatureData =
+        Uint8List.fromList([...authDataBytes, ...clientDataHash]);
+
     // 4. Sign (triggers biometric prompt)
     final signatureBytes = await _sovereignAuth.signBytes(signatureData);
 
     // 5. Build final payload (Mixed Base64 as per documentation)
     final deviceName = await _sovereignAuth.getDeviceName();
-    
+
     // ATTENTION: All byte-heavy fields are Base64 (Standard)
     // Signature, authData, clientDataJSON are Base64URL
     final publicKeyBase64 = _toBase64(pubKeyBytes);
@@ -76,7 +80,7 @@ class PasskeyService {
   }
 
   /// Authenticates using an existing passkey.
-  /// 
+  ///
   /// Purpose: Performs POST /auth/passkey/verify (Login)
   /// Campos: username, signature, authData, clientDataJSON (Exactly 4 fields)
   Future<Map<String, dynamic>> authenticate({
@@ -86,22 +90,26 @@ class PasskeyService {
     // 1. Get the stored public key
     final pubKeyBytes = await _sovereignAuth.getPublicKey();
     if (pubKeyBytes == null) {
-      throw Exception('Nenhuma passkey registrada neste dispositivo. Faça o registro primeiro.');
+      throw Exception(
+          'Nenhuma passkey registrada neste dispositivo. Faça o registro primeiro.');
     }
 
     // 2. Build synthetic authData and clientDataJSON
     final clientDataJsonBytes = utf8.encode(jsonEncode({
       'type': 'webauthn.get',
       'challenge': _toBase64Url(_hexToBytes(challengeHex)),
-      'origin': 'android:apk-key-hash:kerosene',
+      'origin': AppConfig.passkeyOrigin,
       'crossOrigin': false,
     }));
     final clientDataJson = _toBase64Url(clientDataJsonBytes);
-    final authDataBytes = _buildAuthenticatorDataBytes();
+    final authDataBytes = _buildAuthenticatorDataBytes(
+      await _sovereignAuth.nextSignatureCounter(),
+    );
 
     // 3. Compute signature over (authData + sha256(UTF8(clientDataJSON_string)))
     final clientDataHash = sha256.convert(clientDataJsonBytes).bytes;
-    final signatureData = Uint8List.fromList([...authDataBytes, ...clientDataHash]);
+    final signatureData =
+        Uint8List.fromList([...authDataBytes, ...clientDataHash]);
 
     // 4. Sign (triggers biometric prompt)
     final signatureBytes = await _sovereignAuth.signBytes(signatureData);
@@ -127,23 +135,19 @@ class PasskeyService {
     return Uint8List.fromList([...header, ...pubKey]);
   }
 
-
-
-
-
   /// Checks if a passkey is already registered on this device.
   Future<bool> hasRegisteredPasskey() async {
     final pubKey = await _sovereignAuth.getPublicKey();
     return pubKey != null;
   }
 
-  /// Builds a minimal synthetic authenticatorData bytes (37 bytes).
-  Uint8List _buildAuthenticatorDataBytes() {
-
-    // 32 zero bytes for rpIdHash (not validated for .onion typically)
+  /// Builds synthetic authenticatorData bytes (37 bytes).
+  Uint8List _buildAuthenticatorDataBytes(int signatureCounter) {
+    final rpIdHash = sha256.convert(utf8.encode(AppConfig.passkeyRpId)).bytes;
     // flags: 0x05 = UP (bit 0) + UV (bit 2) = user present + user verified
-    // counter: 4 zero bytes
-    final data = List<int>.filled(32, 0) + [0x05] + [0, 0, 0, 0];
+    final counterBytes = ByteData(4)
+      ..setUint32(0, signatureCounter, Endian.big);
+    final data = rpIdHash + [0x05] + counterBytes.buffer.asUint8List();
     return Uint8List.fromList(data);
   }
 
