@@ -6,17 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:teste/core/presentation/widgets/recent_transaction_destinations_section.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/providers/recent_transaction_destinations_provider.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/qr_payment_parser.dart';
-import 'package:teste/core/widgets/bouncing_button.dart';
 import 'package:teste/core/widgets/transaction_auth_gate.dart';
 import 'package:teste/features/security/domain/entities/account_security_profile.dart';
 import 'package:teste/features/security/presentation/providers/security_provider.dart';
@@ -26,6 +25,7 @@ import 'package:teste/features/transactions/presentation/providers/transaction_p
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 
 enum WithdrawEntryMode { onChain, lightning }
@@ -139,6 +139,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   @override
   void dispose() {
     _feeEstimateDebounce?.cancel();
+    _pageController.dispose();
     _addressController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -310,7 +311,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     _WithdrawDestinationAnalysis d,
   ) {
     if (d.type == _WithdrawDestinationType.empty) {
-      return Theme.of(context).colorScheme.onSurfaceVariant;
+      return Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.46);
     }
     if (d.isInvalid) {
       return Theme.of(context).colorScheme.error;
@@ -318,7 +319,19 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     if (!_destinationMatchesFlow(d)) {
       return AppColors.warning;
     }
-    return AppColors.success;
+    return Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.74);
+  }
+
+  List<RecentTransactionDestination> _recentDestinationsForCurrentFlow() {
+    final kind = switch (widget.entryMode) {
+      WithdrawEntryMode.onChain => RecentTransactionDestinationKind.onChain,
+      WithdrawEntryMode.lightning => RecentTransactionDestinationKind.lightning,
+    };
+
+    return ref
+        .watch(recentTransactionDestinationsProvider)
+        .where((destination) => destination.kind == kind)
+        .toList(growable: false);
   }
 
   IconData _destinationValidationIcon(_WithdrawDestinationAnalysis d) {
@@ -395,8 +408,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   void _scheduleFeeEstimate() {
     if (widget.entryMode != WithdrawEntryMode.onChain) {
-      if (!mounted ||
-          (!_feeEstimatePending && _debouncedAmountBtc == 0)) {
+      if (!mounted || (!_feeEstimatePending && _debouncedAmountBtc == 0)) {
         return;
       }
       setState(() {
@@ -418,8 +430,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     _feeEstimateDebounce?.cancel();
 
     if (nextAmountBtc <= 0) {
-      if (!mounted ||
-          (!_feeEstimatePending && _debouncedAmountBtc == 0)) {
+      if (!mounted || (!_feeEstimatePending && _debouncedAmountBtc == 0)) {
         return;
       }
       setState(() {
@@ -786,6 +797,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       return null;
     }
 
+    await ref
+        .read(recentTransactionDestinationsProvider.notifier)
+        .saveDestination(
+          address: destination.normalizedValue,
+          kind: destination.isLightning
+              ? RecentTransactionDestinationKind.lightning
+              : RecentTransactionDestinationKind.onChain,
+          label: _resolveRecentDestinationLabel(),
+        );
     ref.read(withdrawProvider.notifier).reset();
     return result;
   }
@@ -797,6 +817,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       return _fallbackSecurityProfile(wallet.accountSecurity);
     }
   }
+
+  int _currentStep = 0;
+  final _pageController = PageController();
 
   AccountSecurityProfile _fallbackSecurityProfile(String rawSecurity) {
     final mode = accountSecurityModeFromApi(rawSecurity);
@@ -834,8 +857,14 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         (walletState is WalletLoaded ? walletState.selectedWallet : null);
 
     if (wallet == null) {
-      return const CyberBackground.authenticated(
-        child: Center(child: CircularProgressIndicator()),
+      return ReceiveFlowScaffold(
+        title: _screenTitle(context),
+        subtitle: 'Carregando carteira para iniciar o envio.',
+        scrollable: false,
+        showBackButton: widget.showBackButton,
+        child: const Center(
+          child: CircularProgressIndicator(color: receiveFlowMutedTextColor),
+        ),
       );
     }
 
@@ -860,68 +889,114 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       platformFeeRate: wallet.withdrawalFeeRate,
       feeEstimateAsync: feeEstimateAsync,
     );
-    final canContinue = _destinationMatchesFlow(destination) &&
+    final canContinueAmount = _destinationMatchesFlow(destination) &&
         (widget.entryMode == WithdrawEntryMode.lightning
             ? feeQuote.hasAmount
             : feeQuote.isReady);
+    final canGoToAmountStep = _destinationMatchesFlow(destination) &&
+        !destination.isInvalid &&
+        destination.type != _WithdrawDestinationType.empty;
+    final recentDestinations = _recentDestinationsForCurrentFlow();
 
-    return CyberBackground.authenticated(
-      useScroll: false,
-      child: Column(
+    return ReceiveFlowScaffold(
+      title: _screenTitle(context),
+      subtitle: widget.entryMode == WithdrawEntryMode.lightning
+          ? 'Informe a invoice Lightning, revise o valor e confirme o pagamento.'
+          : 'Informe o endereço Bitcoin, revise taxas e confirme o saque.',
+      scrollable: false,
+      showBackButton: widget.showBackButton,
+      bodyPadding: EdgeInsets.zero,
+      onBack: _handleBack,
+      child: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
         children: [
-          _buildHeader(context),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.md,
-                AppSpacing.lg,
-                AppSpacing.xl,
-              ),
-              child: Column(
-                children: [
-                  _buildAmountCard(
-                    context,
-                    wallet: wallet,
-                    btcUsd: btcUsd,
-                    btcEur: btcEur,
-                    btcBrl: btcBrl,
-                  ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              children: [
+                _buildDestinationCard(context, destination),
+                if (recentDestinations.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.lg),
-                  _buildDestinationCard(context, destination),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildDescriptionCard(context),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildFeeCard(
-                    context,
-                    wallet: wallet,
-                    destination: destination,
-                    feeQuote: feeQuote,
-                    btcUsd: btcUsd,
-                    btcEur: btcEur,
-                    btcBrl: btcBrl,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  if (_selectedCurrency != Currency.btc && amountBtc > 0) ...[
-                    _buildFiatReferenceLine(amountBtc: amountBtc),
-                    const SizedBox(height: AppSpacing.md),
-                  ],
-                  _buildKeypad(context),
-                  const SizedBox(height: AppSpacing.lg),
-                  BouncingButton(
-                    text: context.l10n.withdrawConfirmButton,
-                    isLoading: isSubmittingWithdraw,
-                    icon: LucideIcons.arrowUpRight,
-                    onPressed: canContinue
-                        ? () => _onContinue(
-                              wallet: wallet,
-                              destination: destination,
-                              feeQuote: feeQuote,
-                            )
-                        : null,
+                  RecentTransactionDestinationsSection(
+                    title: widget.entryMode == WithdrawEntryMode.lightning
+                        ? 'Ultimas invoices'
+                        : 'Ultimos enderecos',
+                    destinations: recentDestinations,
+                    onSelect: _applyRecentDestination,
                   ),
                 ],
-              ),
+                const SizedBox(height: AppSpacing.lg),
+                _buildDescriptionCard(context),
+                const SizedBox(height: AppSpacing.xl),
+                ReceiveFlowPrimaryButton(
+                  label: 'CONTINUAR',
+                  icon: LucideIcons.arrowRight,
+                  onTap: canGoToAmountStep
+                      ? () {
+                          FocusScope.of(context).unfocus();
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOutCubic,
+                          );
+                          setState(() => _currentStep = 1);
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              children: [
+                _buildAmountCard(
+                  context,
+                  wallet: wallet,
+                  btcUsd: btcUsd,
+                  btcEur: btcEur,
+                  btcBrl: btcBrl,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _buildFeeCard(
+                  context,
+                  wallet: wallet,
+                  destination: destination,
+                  feeQuote: feeQuote,
+                  btcUsd: btcUsd,
+                  btcEur: btcEur,
+                  btcBrl: btcBrl,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                if (_selectedCurrency != Currency.btc && amountBtc > 0) ...[
+                  _buildFiatReferenceLine(amountBtc: amountBtc),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                _buildKeypad(context),
+                const SizedBox(height: AppSpacing.lg),
+                ReceiveFlowPrimaryButton(
+                  label: context.l10n.withdrawConfirmButton,
+                  isLoading: isSubmittingWithdraw,
+                  icon: LucideIcons.arrowUpRight,
+                  onTap: canContinueAmount
+                      ? () => _onContinue(
+                            wallet: wallet,
+                            destination: destination,
+                            feeQuote: feeQuote,
+                          )
+                      : null,
+                ),
+              ],
             ),
           ),
         ],
@@ -929,42 +1004,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          if (widget.showBackButton)
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: Icon(
-                LucideIcons.chevronLeft,
-                color: Theme.of(context).colorScheme.onPrimary,
-                size: 22,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.04),
-              ),
-            )
-          else
-            const SizedBox(width: 40),
-          const Spacer(),
-          Text(
-            _screenTitle(context),
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                  letterSpacing: 3,
-                  fontWeight: FontWeight.w900,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-          ),
-          const Spacer(),
-          const SizedBox(width: 40),
-        ],
-      ),
-    );
+  void _handleBack() {
+    if (_currentStep == 1) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      );
+      setState(() => _currentStep = 0);
+      return;
+    }
+
+    Navigator.pop(context);
   }
 
   Widget _buildAmountCard(
@@ -980,43 +1030,39 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcBrl: btcBrl,
     );
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+    return ReceiveFlowPanel(
       child: Column(
         children: [
           Text(
             context.l10n.amountToSend,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.white.withValues(alpha: 0.60),
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
+                  fontWeight: FontWeight.w500,
                 ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
                 MoneyDisplay.tickerSymbolFor(_selectedCurrency),
-                style: AppTypography.h1.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: receiveFlowMutedTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
-              Text(
-                _displayAmount,
-                style: AppTypography.amountInput(
-                  isBtc: _selectedCurrency == Currency.btc,
-                  color: Theme.of(context).colorScheme.onPrimary,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  _displayAmount,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.amountInput(
+                    isBtc: _selectedCurrency == Currency.btc,
+                    color: receiveFlowTextColor,
+                  ).copyWith(fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -1028,8 +1074,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 : (amountBtc / wallet.balance).clamp(0.0, 1.0),
             minHeight: 6,
             borderRadius: BorderRadius.circular(999),
-            color: Theme.of(context).colorScheme.primary,
-            backgroundColor: Colors.white.withValues(alpha: 0.06),
+            color: receiveFlowTextColor,
+            backgroundColor: receiveFlowDividerColor,
           ),
         ],
       ),
@@ -1037,17 +1083,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   }
 
   Widget _buildFiatReferenceLine({required double amountBtc}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      child: Text(
-        'Equivale a ${MoneyDisplay.format(amount: amountBtc, currency: Currency.btc)}',
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: Colors.white.withValues(alpha: 0.58),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
-            ),
-      ),
+    return Text(
+      'Equivale a ${MoneyDisplay.format(amount: amountBtc, currency: Currency.btc)}',
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: receiveFlowMutedTextColor,
+            fontWeight: FontWeight.w500,
+          ),
     );
   }
 
@@ -1058,185 +1100,178 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final accent = _destinationValidationColor(context, destination);
     final isEmpty = destination.type == _WithdrawDestinationType.empty;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            ReceiveFlowSectionLabel(
+              AppCopy.withdrawDestinationLabel.resolve(context),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _pasteDestination,
+              icon: const Icon(LucideIcons.clipboard, size: 15),
+              label: Text(
+                AppCopy.withdrawDestinationPaste.resolve(context),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: receiveFlowMutedTextColor,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: receiveFlowPanelColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: receiveFlowBorderColor),
+          ),
+          child: TextField(
+            controller: _addressController,
+            onChanged: (_) => setState(() {}),
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            minLines: 1,
+            maxLines: 1,
+            cursorColor: accent,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: receiveFlowTextColor,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w700,
+                ),
+            decoration: InputDecoration(
+              isDense: true,
+              filled: false,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              prefixIcon: Icon(
+                widget.entryMode == WithdrawEntryMode.lightning
+                    ? LucideIcons.zap
+                    : LucideIcons.link,
+                size: 18,
+                color: isEmpty ? receiveFlowFaintTextColor : accent,
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 42,
+                minHeight: 24,
+              ),
+              suffixIcon: isEmpty
+                  ? null
+                  : Icon(
+                      _destinationValidationIcon(destination),
+                      size: 18,
+                      color: accent,
+                    ),
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 42,
+                minHeight: 24,
+              ),
+              hintText: _destinationHint(context),
+              hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: receiveFlowFaintTextColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              _destinationValidationIcon(destination),
+              size: 15,
+              color: accent,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                _destinationValidationText(context, destination),
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: accent,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionCard(BuildContext context) {
+    return ReceiveFlowPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                AppCopy.withdrawDestinationLabel.resolve(context),
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                      color: Colors.white.withValues(alpha: 0.60),
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: _pasteDestination,
-                icon: const Icon(LucideIcons.clipboard, size: 15),
-                label: Text(
-                  AppCopy.withdrawDestinationPaste.resolve(context),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  minimumSize: const Size(0, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
+          ReceiveFlowSectionLabel(
+            AppCopy.withdrawDescriptionLabel.resolve(context),
           ),
-          GlassContainer(
-            enableBlur: false,
-            blur: 18,
-            opacity: 0.02,
-            color: Theme.of(context).colorScheme.onPrimary,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.transparent),
-            child: TextField(
-              controller: _addressController,
-              onChanged: (_) => setState(() {}),
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.done,
-              minLines: 1,
-              maxLines: 1,
-              cursorColor: accent,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontFamily: 'JetBrainsMono',
-                    fontWeight: FontWeight.w700,
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _descriptionController,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: receiveFlowTextColor,
+                ),
+            decoration: InputDecoration(
+              hintText: context.l10n.withdrawDescHint,
+              hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: receiveFlowFaintTextColor,
                   ),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: false,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                prefixIcon: Icon(
-                  widget.entryMode == WithdrawEntryMode.lightning
-                      ? LucideIcons.zap
-                      : LucideIcons.link,
-                  size: 18,
-                  color:
-                      isEmpty ? Colors.white.withValues(alpha: 0.34) : accent,
-                ),
-                prefixIconConstraints: const BoxConstraints(
-                  minWidth: 42,
-                  minHeight: 24,
-                ),
-                suffixIcon: isEmpty
-                    ? null
-                    : Icon(
-                        _destinationValidationIcon(destination),
-                        size: 18,
-                        color: accent,
-                      ),
-                suffixIconConstraints: const BoxConstraints(
-                  minWidth: 42,
-                  minHeight: 24,
-                ),
-                hintText: _destinationHint(context),
-                hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Colors.white.withValues(alpha: 0.28),
-                      fontWeight: FontWeight.w500,
-                    ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
+              filled: true,
+              fillColor: receiveFlowPanelAltColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: receiveFlowBorderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: receiveFlowBorderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: receiveFlowMutedTextColor),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                _destinationValidationIcon(destination),
-                size: 15,
-                color: accent,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: Text(
-                  _destinationValidationText(context, destination),
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: accent,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDescriptionCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppCopy.withdrawDescriptionLabel.resolve(context),
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.white.withValues(alpha: 0.60),
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _descriptionController,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-            decoration: InputDecoration(
-              hintText: context.l10n.withdrawDescHint,
-              hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: Colors.white.withValues(alpha: 0.26),
-                  ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.04),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.34),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void _applyRecentDestination(RecentTransactionDestination destination) {
+    final value = destination.address.trim();
+    if (value.isEmpty) {
+      return;
+    }
+
+    HapticFeedback.selectionClick();
+    setState(() {
+      _addressController.text = value;
+      _addressController.selection = TextSelection.fromPosition(
+        TextPosition(offset: value.length),
+      );
+    });
+    _scheduleFeeEstimate();
+  }
+
+  String? _resolveRecentDestinationLabel() {
+    final label = _descriptionController.text.trim();
+    if (label.isEmpty) {
+      return null;
+    }
+    return label;
   }
 
   String _formatTransactionBtcAmount({
@@ -1271,7 +1306,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     required double? btcEur,
     required double? btcBrl,
   }) {
-    final quoteColor = Colors.white.withValues(alpha: 0.72);
+    const quoteColor = receiveFlowTextColor;
 
     final amountValue = _formatTransactionBtcAmount(
       btcAmount: feeQuote.amountBtc,
@@ -1338,27 +1373,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         ? null
         : '${feeQuote.feeRateSatPerByte!.toStringAsFixed(0)} sat/vB';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+    return ReceiveFlowPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          ReceiveFlowSectionLabel(
             context.l10n.withdrawFeeSection,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.white.withValues(alpha: 0.60),
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
-                ),
           ),
           const SizedBox(height: AppSpacing.md),
-          if (feeQuote.isLoading) const LinearProgressIndicator(minHeight: 4),
+          if (feeQuote.isLoading)
+            const LinearProgressIndicator(
+              minHeight: 4,
+              color: receiveFlowTextColor,
+              backgroundColor: receiveFlowDividerColor,
+            ),
           _FeeRow(label: 'Carteira de origem', value: wallet.name),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
@@ -1379,8 +1407,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             maxLines: 3,
           ),
           const SizedBox(height: AppSpacing.md),
-          Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
-          const SizedBox(height: AppSpacing.md),
+          const ReceiveFlowDivider(),
           _FeeRow(label: context.l10n.withdrawAmountLabel, value: amountValue),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
@@ -1436,7 +1463,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               decoration: BoxDecoration(
                 color:
                     Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: Theme.of(context)
                       .colorScheme
@@ -1457,9 +1484,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                color: receiveFlowPanelAltColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: receiveFlowBorderColor),
               ),
               child: Text(
                 !hasAmount
@@ -1468,7 +1495,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                         ? 'A taxa da plataforma usa o cartão ${wallet.cardType.label}. O roteamento acima é o teto reservado para o pagamento Lightning.'
                         : 'A taxa da plataforma usa o cartão ${wallet.cardType.label}. A taxa de rede usa a estimativa padrão atual da mempool.',
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: receiveFlowMutedTextColor,
                       height: 1.45,
                     ),
               ),
@@ -1479,63 +1506,53 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   }
 
   Widget _buildKeypad(BuildContext context) {
-    return Column(
-      children: [
-        Row(children: [
-          _buildKey(context, '1'),
-          _buildKey(context, '2'),
-          _buildKey(context, '3')
-        ]),
-        Row(children: [
-          _buildKey(context, '4'),
-          _buildKey(context, '5'),
-          _buildKey(context, '6')
-        ]),
-        Row(children: [
-          _buildKey(context, '7'),
-          _buildKey(context, '8'),
-          _buildKey(context, '9')
-        ]),
-        Row(children: [
-          _buildKey(context, '.'),
-          _buildKey(context, '0'),
-          _buildKey(context, '←')
-        ]),
-      ],
+    return ReceiveFlowPanel(
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        children: [
+          Row(children: [
+            _buildKey(context, '1'),
+            _buildKey(context, '2'),
+            _buildKey(context, '3')
+          ]),
+          Row(children: [
+            _buildKey(context, '4'),
+            _buildKey(context, '5'),
+            _buildKey(context, '6')
+          ]),
+          Row(children: [
+            _buildKey(context, '7'),
+            _buildKey(context, '8'),
+            _buildKey(context, '9')
+          ]),
+          Row(children: [
+            _buildKey(context, '.'),
+            _buildKey(context, '0'),
+            _buildKey(context, '←')
+          ]),
+        ],
+      ),
     );
   }
 
   Widget _buildKey(BuildContext context, String key) {
     final isBackspace = key == '←';
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onKeyTap(isBackspace ? key : key),
-        child: Container(
-          height: 64,
-          margin: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Center(
-            child: isBackspace
-                ? Icon(
-                    LucideIcons.delete,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    size: 18,
-                  )
-                : Text(
-                    key,
-                    style: AppTypography.number.copyWith(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
-          ),
-        ),
-      ),
+    return ReceiveFlowKeypadButton(
+      onTap: () => _onKeyTap(key),
+      child: isBackspace
+          ? const Icon(
+              LucideIcons.delete,
+              color: receiveFlowTextColor,
+              size: 18,
+            )
+          : Text(
+              key,
+              style: AppTypography.number.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.w400,
+                color: receiveFlowTextColor,
+              ),
+            ),
     );
   }
 }
@@ -1559,9 +1576,7 @@ class _FeeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = emphasize
-        ? Theme.of(context).colorScheme.primary
-        : Colors.white.withValues(alpha: 0.72);
+    const textColor = receiveFlowTextColor;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1570,8 +1585,8 @@ class _FeeRow extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Colors.white.withValues(alpha: 0.56),
-                  fontWeight: FontWeight.w600,
+                  color: receiveFlowMutedTextColor,
+                  fontWeight: FontWeight.w400,
                 ),
           ),
         ),
@@ -1585,7 +1600,7 @@ class _FeeRow extends StatelessWidget {
             textAlign: TextAlign.right,
             style: AppTypography.bodySmall.copyWith(
               color: valueColor ?? textColor,
-              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
+              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
               fontFamily: monospace ? 'JetBrainsMono' : null,
               height: 1.35,
             ),

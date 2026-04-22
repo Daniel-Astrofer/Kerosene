@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:teste/core/presentation/widgets/btc_quote_badge.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
@@ -13,13 +14,22 @@ import 'package:teste/features/notifications/presentation/widgets/session_notifi
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_activity_details_sheet.dart';
-import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/balance_websocket_provider.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
-import 'package:teste/features/home/presentation/widgets/animated_balance_display.dart';
+
+const Color _background = authenticatedSurfaceBackgroundColor;
+const Color _surface = Color(0xFF0D0F11);
+const Color _surfaceRaised = Color(0xFF111418);
+const Color _surfacePressed = Color(0xFF15191E);
+const Color _border = Color(0xFF262B31);
+const Color _borderSoft = Color(0xFF1D2228);
+const Color _textPrimary = Color(0xFFF2F4F5);
+const Color _textSecondary = Color(0xFFA3ABB3);
+const Color _textMuted = Color(0xFF6E7781);
+const Color _iconMuted = Color(0xFF9099A3);
 
 class DepositsScreen extends ConsumerStatefulWidget {
   final bool showPrimaryNavigation;
@@ -34,11 +44,12 @@ class DepositsScreen extends ConsumerStatefulWidget {
 }
 
 class _DepositsScreenState extends ConsumerState<DepositsScreen> {
-  static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy • HH:mm');
+  static final DateFormat _dateTimeFormat = DateFormat('dd/MM/yyyy HH:mm');
+  static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
+  static final DateFormat _timeFormat = DateFormat('HH:mm');
 
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _linksSectionKey = GlobalKey();
-  final GlobalKey _historySectionKey = GlobalKey();
   final AppPrimaryNavigationController _navBarController =
       AppPrimaryNavigationController();
 
@@ -76,25 +87,19 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(successMessage),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppNotice.showSuccess(context, message: successMessage);
   }
 
-  Future<void> _scrollToSection(GlobalKey key) async {
-    final sectionContext = key.currentContext;
+  Future<void> _scrollToLinks() async {
+    final sectionContext = _linksSectionKey.currentContext;
     if (sectionContext == null) {
       return;
     }
-
     await HapticFeedback.selectionClick();
     await Scrollable.ensureVisible(
       sectionContext,
-      alignment: 0.08,
-      duration: const Duration(milliseconds: 260),
+      alignment: 0.10,
+      duration: const Duration(milliseconds: 240),
       curve: Curves.easeOutCubic,
     );
   }
@@ -125,69 +130,55 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isWide = screenWidth >= 1180;
-    final isCompact = screenWidth < 860;
-    final pageHorizontalPadding = isCompact ? 16.0 : 20.0;
-    final pageTopPadding = isCompact ? 10.0 : 12.0;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = screenWidth >= 1120;
+    final isCompact = screenWidth < 760;
+    final pageHorizontalPadding = isCompact ? 16.0 : 24.0;
+    final pageTopPadding = isCompact ? 14.0 : 20.0;
     final pageBottomPadding = widget.showPrimaryNavigation
         ? AppPrimaryNavigationBar.scaffoldBottomClearance(context)
-        : (isWide ? 28.0 : 108.0);
+        : (isCompact ? 112.0 : 32.0);
 
-    final linksAsync = ref.watch(paymentLinksProvider);
-    final historyAsync = ref.watch(
-      pagedTransactionHistoryProvider((page: _page, size: _size)),
-    );
-    final wsAsync = ref.watch(balanceWebSocketServiceProvider);
     final walletState = ref.watch(walletProvider);
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final balanceVisible = ref.watch(balanceVisibilityProvider);
-    final totalBalanceBtc = ref.watch(totalBalanceBtcProvider);
-    final sidebarOpen = ref.watch(notificationSidebarProvider);
-    final notifications = ref.watch(sessionNotificationFeedProvider);
-    final notificationCount = notifications.length;
     final activeWallet = _resolveActiveWallet(walletState);
     final depositAddressAsync = ref.watch(depositAddressProvider);
     final depositAddress = _resolveDepositAddress(
       wallet: activeWallet,
       remoteAddress: depositAddressAsync,
     );
-    final isRealtimeActive = wsAsync.asData?.value?.isConnected ?? false;
-    final primaryBalanceValue = MoneyDisplay.convertFromBtcAmount(
-      btcAmount: totalBalanceBtc,
+
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final totalBalanceBtc = ref.watch(totalBalanceBtcProvider);
+    final balanceVisible = ref.watch(balanceVisibilityProvider);
+    final primaryBalance = MoneyDisplay.format(
+      amount: MoneyDisplay.convertFromBtcAmount(
+        btcAmount: totalBalanceBtc,
+        currency: selectedCurrency,
+        btcUsd: btcUsd,
+        btcEur: btcEur,
+        btcBrl: btcBrl,
+      ),
       currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
     );
-    final secondaryCurrency = MoneyDisplay.fallbackFiatFor(selectedCurrency);
-    final secondaryBalanceLabel = selectedCurrency == Currency.btc
+    final secondaryBalance = selectedCurrency == Currency.btc
         ? MoneyDisplay.format(
             amount: MoneyDisplay.convertFromBtcAmount(
               btcAmount: totalBalanceBtc,
-              currency: secondaryCurrency,
+              currency: Currency.brl,
               btcUsd: btcUsd,
               btcEur: btcEur,
               btcBrl: btcBrl,
             ),
-            currency: secondaryCurrency,
+            currency: Currency.brl,
           )
-        : MoneyDisplay.format(
-            amount: totalBalanceBtc,
-            currency: Currency.btc,
-          );
-    final quoteLabel = selectedCurrency == Currency.btc
-        ? null
-        : MoneyDisplay.formatQuoteValue(
-            currency: selectedCurrency,
-            btcUsd: btcUsd,
-            btcEur: btcEur,
-            btcBrl: btcBrl,
-          );
+        : MoneyDisplay.format(amount: totalBalanceBtc, currency: Currency.btc);
 
+    final wsAsync = ref.watch(balanceWebSocketServiceProvider);
+    final isRealtimeActive = wsAsync.asData?.value?.isConnected ?? false;
+    final linksAsync = ref.watch(paymentLinksProvider);
     final links = linksAsync.asData?.value ?? const <PaymentLink>[];
     final sortedLinks = [...links]..sort((a, b) {
         final rankCompare = _paymentLinkPriority(a).compareTo(
@@ -199,11 +190,13 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
         return (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
             .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0));
       });
-    final pendingLinks = sortedLinks
+    final openLinks = sortedLinks
         .where((link) => link.isPending || link.isVerifyingOnboarding)
         .toList();
-    final expiredLinks = sortedLinks.where(_isLinkExpired).length;
 
+    final historyAsync = ref.watch(
+      pagedTransactionHistoryProvider((page: _page, size: _size)),
+    );
     final historyRows = [
       ...(historyAsync.asData?.value ?? const <Transaction>[])
     ]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -214,49 +207,23 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
               tx.status == TransactionStatus.confirming,
         )
         .toList();
-    final incomeTransactions = historyRows
-        .where(
-          (tx) =>
-              tx.type == TransactionType.deposit ||
-              tx.type == TransactionType.receive,
-        )
-        .length;
-    final hasBalance = totalBalanceBtc > 0;
-
-    final primaryAction = _resolvePrimaryAction(
-      context: context,
-      depositAddress: depositAddress,
-      hasBalance: hasBalance,
-      pendingLinks: pendingLinks,
-      pendingTransactions: pendingTransactions,
-    );
-
-    final attentionCards = _buildAttentionCards(
-      depositAddress: depositAddress,
-      hasBalance: hasBalance,
-      pendingLinks: pendingLinks,
-      expiredLinks: expiredLinks,
-      pendingTransactions: pendingTransactions,
-      notificationCount: notificationCount,
-      isWide: isWide,
-    );
+    final sidebarOpen = ref.watch(notificationSidebarProvider);
+    final notifications = ref.watch(sessionNotificationFeedProvider);
+    final notificationCount = notifications.length;
 
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
+      backgroundColor: _background,
       body: Stack(
         children: [
-          const _MonitoringBackdrop(),
+          const ColoredBox(color: _background),
           Row(
             children: [
               Expanded(
                 child: SafeArea(
                   child: RefreshIndicator(
                     onRefresh: _refreshData,
-                    color: Theme.of(context).colorScheme.primary,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest
-                        .withValues(alpha: 0.85),
+                    color: _textPrimary,
+                    backgroundColor: _surfaceRaised,
                     child: CustomScrollView(
                       controller: _scrollController,
                       physics: const BouncingScrollPhysics(
@@ -270,129 +237,134 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                             pageHorizontalPadding,
                             pageBottomPadding,
                           ),
-                          sliver: SliverList(
-                            delegate: SliverChildListDelegate([
-                              _buildHeader(
-                                context,
-                                isWide: isWide,
-                                notificationCount: notificationCount,
-                              ),
-                              SizedBox(height: isCompact ? 16 : 20),
-                              RepaintBoundary(
-                                child: _MonitoringHeroCard(
-                                  walletName: activeWallet?.name,
-                                  walletSecurity: activeWallet?.accountSecurity,
-                                  walletCardType: activeWallet?.cardType,
-                                  depositFeeRate: activeWallet?.depositFeeRate,
-                                  balanceVisible: balanceVisible,
-                                  selectedCurrency: selectedCurrency,
-                                  primaryBalanceValue: primaryBalanceValue,
-                                  secondaryBalanceLabel: secondaryBalanceLabel,
-                                  quoteLabel: quoteLabel,
-                                  realtimeActive: isRealtimeActive,
-                                  pendingLinksCount: pendingLinks.length,
-                                  pendingTransactionsCount:
-                                      pendingTransactions.length,
-                                  notificationCount: notificationCount,
-                                  headline: _heroHeadline(
-                                    hasBalance: hasBalance,
-                                    pendingLinksCount: pendingLinks.length,
-                                    pendingTransactionsCount:
-                                        pendingTransactions.length,
-                                    notificationCount: notificationCount,
-                                  ),
-                                  supportingText: _heroSupportingText(
-                                    depositAddress: depositAddress,
-                                    hasBalance: hasBalance,
-                                    pendingLinksCount: pendingLinks.length,
-                                    pendingTransactionsCount:
-                                        pendingTransactions.length,
-                                    isRealtimeActive: isRealtimeActive,
-                                  ),
-                                  onToggleBalance: () async {
-                                    await HapticFeedback.selectionClick();
-                                    ref
-                                        .read(
-                                          balanceVisibilityProvider.notifier,
-                                        )
-                                        .toggle();
-                                  },
-                                  onPrimaryAction: primaryAction.onTap,
-                                  primaryActionLabel: primaryAction.label,
-                                  primaryActionIcon: primaryAction.icon,
-                                  onSecondaryAction: () {
-                                    if (pendingLinks.isNotEmpty) {
-                                      _scrollToSection(_linksSectionKey);
-                                      return;
-                                    }
-                                    _scrollToSection(_historySectionKey);
-                                  },
-                                  secondaryActionLabel: pendingLinks.isNotEmpty
-                                      ? 'Ver cobranças'
-                                      : 'Ver movimentações',
+                          sliver: SliverToBoxAdapter(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: isWide ? 1040 : 720,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _StatementHeader(
+                                      walletName: activeWallet?.name,
+                                      notificationCount: notificationCount,
+                                      showNotificationButton: !isWide,
+                                      onBack: () => widget.showPrimaryNavigation
+                                          ? AppPrimaryNavigationBar.backOrHome(
+                                              context)
+                                          : Navigator.maybePop(context),
+                                      onRefresh: _refreshData,
+                                      onNotifications: () async {
+                                        await HapticFeedback.selectionClick();
+                                        ref
+                                            .read(
+                                              notificationSidebarProvider
+                                                  .notifier,
+                                            )
+                                            .toggle();
+                                      },
+                                    ),
+                                    SizedBox(height: isCompact ? 16 : 20),
+                                    _StatementOverview(
+                                      balance: balanceVisible
+                                          ? primaryBalance
+                                          : '••••',
+                                      secondaryBalance: balanceVisible
+                                          ? secondaryBalance
+                                          : 'Saldo oculto',
+                                      balanceVisible: balanceVisible,
+                                      transactionCount: historyRows.length,
+                                      pendingCount: pendingTransactions.length,
+                                      openLinkCount: openLinks.length,
+                                      realtimeActive: isRealtimeActive,
+                                      onToggleBalance: () async {
+                                        await HapticFeedback.selectionClick();
+                                        ref
+                                            .read(
+                                              balanceVisibilityProvider
+                                                  .notifier,
+                                            )
+                                            .toggle();
+                                      },
+                                      onCopyAddress: depositAddress == null
+                                          ? null
+                                          : () => _copyValue(
+                                                depositAddress,
+                                                'Endereço copiado.',
+                                              ),
+                                      onOpenLinks: openLinks.isEmpty
+                                          ? null
+                                          : _scrollToLinks,
+                                      onRefresh: _refreshData,
+                                    ),
+                                    if (openLinks.isNotEmpty ||
+                                        linksAsync.isLoading) ...[
+                                      SizedBox(height: isCompact ? 20 : 24),
+                                      Container(
+                                        key: _linksSectionKey,
+                                        child: _OpenLinksSection(
+                                          linksAsync: linksAsync,
+                                          links: openLinks,
+                                          selectedCurrency: selectedCurrency,
+                                          btcUsd: btcUsd,
+                                          btcEur: btcEur,
+                                          btcBrl: btcBrl,
+                                          onCopyAddress: (address) =>
+                                              _copyValue(
+                                            address,
+                                            'Endereço copiado.',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    SizedBox(height: isCompact ? 20 : 24),
+                                    _SectionTitle(
+                                      icon: LucideIcons.receipt,
+                                      title: 'Movimentações',
+                                      trailing: 'Página ${_page + 1}',
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _HistorySection(
+                                      historyAsync: historyAsync,
+                                      rows: historyRows,
+                                      isCompact: isCompact,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _PaginationControls(
+                                      page: _page,
+                                      size: _size,
+                                      isLoading: historyAsync.isLoading,
+                                      canGoNext: !historyAsync.isLoading &&
+                                          historyRows.length >= _size,
+                                      onPrevious: _page == 0
+                                          ? null
+                                          : () async {
+                                              await HapticFeedback
+                                                  .selectionClick();
+                                              setState(() => _page -= 1);
+                                            },
+                                      onNext: !historyAsync.isLoading &&
+                                              historyRows.length >= _size
+                                          ? () async {
+                                              await HapticFeedback
+                                                  .selectionClick();
+                                              setState(() => _page += 1);
+                                            }
+                                          : null,
+                                      onSizeChanged: (value) async {
+                                        await HapticFeedback.selectionClick();
+                                        setState(() {
+                                          _size = value;
+                                          _page = 0;
+                                        });
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
-                              SizedBox(height: isCompact ? 16 : 20),
-                              if (attentionCards.isNotEmpty) ...[
-                                _SectionHeader(
-                                  title: 'O que fazer agora',
-                                  subtitle:
-                                      'A tela se adapta ao seu momento para reduzir passos e leitura desnecessária.',
-                                ),
-                                SizedBox(height: isCompact ? 12 : 14),
-                                RepaintBoundary(
-                                  child: _AttentionGrid(cards: attentionCards),
-                                ),
-                                SizedBox(height: isCompact ? 20 : 24),
-                              ],
-                              Container(
-                                key: _linksSectionKey,
-                                child: _SectionHeader(
-                                  title: 'Links de pagamento e vouchers',
-                                  subtitle:
-                                      'Os links criados no receber por QR aparecem aqui com o status real da API, como pendente, pago, expirado ou concluído.',
-                                ),
-                              ),
-                              SizedBox(height: isCompact ? 12 : 14),
-                              RepaintBoundary(
-                                child: _buildPaymentLinksSection(
-                                    linksAsync, sortedLinks),
-                              ),
-                              SizedBox(height: isCompact ? 20 : 24),
-                              Container(
-                                key: _historySectionKey,
-                                child: _SectionHeader(
-                                  title: 'Movimentações',
-                                  subtitle:
-                                      'Histórico real do ledger com paginação. No celular, a leitura fica em cartões; em telas largas, você vê a tabela completa.',
-                                ),
-                              ),
-                              SizedBox(height: isCompact ? 12 : 14),
-                              RepaintBoundary(
-                                child: _buildHistorySection(
-                                  historyAsync: historyAsync,
-                                  rows: historyRows,
-                                  isCompact: isCompact,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              RepaintBoundary(
-                                child: _buildPaginationControls(
-                                  historyAsync: historyAsync,
-                                  rows: historyRows,
-                                ),
-                              ),
-                              if (incomeTransactions > 0) ...[
-                                const SizedBox(height: 16),
-                                _FriendlyInfoCard(
-                                  icon: Icons.savings_rounded,
-                                  accent: FinancialStatusBadge.successColor,
-                                  title: 'Você está no controle',
-                                  message:
-                                      '$incomeTransactions movimentação${incomeTransactions == 1 ? '' : 'ões'} de entrada já apareceram nesta página. O acompanhamento continua em tempo real enquanto a conexão estiver ativa.',
-                                ),
-                              ],
-                            ]),
+                            ),
                           ),
                         ),
                       ],
@@ -408,7 +380,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
               child: GestureDetector(
                 onTap: () =>
                     ref.read(notificationSidebarProvider.notifier).close(),
-                child: Container(color: Colors.black.withValues(alpha: 0.42)),
+                child: ColoredBox(color: Colors.black.withValues(alpha: 0.46)),
               ),
             ),
             Align(
@@ -439,732 +411,6 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     );
   }
 
-  _HeroAction _resolvePrimaryAction({
-    required BuildContext context,
-    required String? depositAddress,
-    required bool hasBalance,
-    required List<PaymentLink> pendingLinks,
-    required List<Transaction> pendingTransactions,
-  }) {
-    if (!hasBalance && depositAddress != null) {
-      return _HeroAction(
-        label: 'Copiar endereço',
-        icon: Icons.copy_rounded,
-        onTap: () => _copyValue(
-          depositAddress,
-          'Endereço da conta copiado para receber BTC.',
-        ),
-      );
-    }
-
-    if (pendingLinks.isNotEmpty) {
-      return _HeroAction(
-        label: 'Abrir cobrança',
-        icon: Icons.qr_code_2_rounded,
-        onTap: () async {
-          await HapticFeedback.selectionClick();
-          if (!mounted) {
-            return;
-          }
-          await FinancialActivityDetailsSheet.show(
-            context,
-            paymentLink: pendingLinks.first,
-          );
-        },
-      );
-    }
-
-    if (pendingTransactions.isNotEmpty) {
-      return _HeroAction(
-        label: 'Ver andamento',
-        icon: Icons.route_rounded,
-        onTap: () async {
-          await HapticFeedback.selectionClick();
-          if (!mounted) {
-            return;
-          }
-          await FinancialActivityDetailsSheet.show(
-            context,
-            transaction: pendingTransactions.first,
-          );
-        },
-      );
-    }
-
-    return _HeroAction(
-      label: 'Atualizar agora',
-      icon: Icons.refresh_rounded,
-      onTap: _refreshData,
-    );
-  }
-
-  List<_AttentionCardData> _buildAttentionCards({
-    required String? depositAddress,
-    required bool hasBalance,
-    required List<PaymentLink> pendingLinks,
-    required int expiredLinks,
-    required List<Transaction> pendingTransactions,
-    required int notificationCount,
-    required bool isWide,
-  }) {
-    final cards = <_AttentionCardData>[];
-
-    if (!hasBalance && depositAddress != null) {
-      cards.add(
-        _AttentionCardData(
-          icon: Icons.south_west_rounded,
-          accent: FinancialStatusBadge.successColor,
-          title: 'Pronto para receber',
-          message:
-              'Sua conta ainda está sem saldo. Copie o endereço e compartilhe só quando precisar receber.',
-          ctaLabel: 'Copiar endereço',
-          onTap: () => _copyValue(
-            depositAddress,
-            'Endereço da conta copiado para receber BTC.',
-          ),
-        ),
-      );
-    }
-
-    if (pendingLinks.isNotEmpty) {
-      cards.add(
-        _AttentionCardData(
-          icon: Icons.schedule_send_rounded,
-          accent: FinancialStatusBadge.pendingColor,
-          title: 'Cobranças aguardando',
-          message:
-              '${pendingLinks.length} item${pendingLinks.length == 1 ? '' : 's'} ainda ${pendingLinks.length == 1 ? 'precisa' : 'precisam'} de pagamento ou conferência.',
-          ctaLabel: 'Ver pendências',
-          onTap: () => _scrollToSection(_linksSectionKey),
-        ),
-      );
-    }
-
-    if (pendingTransactions.isNotEmpty) {
-      cards.add(
-        _AttentionCardData(
-          icon: Icons.sync_rounded,
-          accent: FinancialStatusBadge.infoColor,
-          title: 'Movimentações em andamento',
-          message:
-              '${pendingTransactions.length} transa${pendingTransactions.length == 1 ? 'ção' : 'ções'} ainda está${pendingTransactions.length == 1 ? '' : 'o'} em processamento.',
-          ctaLabel: 'Ver andamento',
-          onTap: () => _scrollToSection(_historySectionKey),
-        ),
-      );
-    }
-
-    if (expiredLinks > 0) {
-      cards.add(
-        _AttentionCardData(
-          icon: Icons.lock_clock_rounded,
-          accent: FinancialStatusBadge.errorColor,
-          title: 'Itens expirados',
-          message:
-              '$expiredLinks link${expiredLinks == 1 ? '' : 's'} já não aceita${expiredLinks == 1 ? '' : 'm'} novos pagamentos.',
-          ctaLabel: 'Revisar',
-          onTap: () => _scrollToSection(_linksSectionKey),
-        ),
-      );
-    }
-
-    if (!isWide && notificationCount > 0) {
-      cards.add(
-        _AttentionCardData(
-          icon: Icons.notifications_active_rounded,
-          accent: FinancialStatusBadge.successColor,
-          title: 'Atualizações recentes',
-          message:
-              '$notificationCount alerta${notificationCount == 1 ? '' : 's'} chegou${notificationCount == 1 ? '' : 'ram'} nesta sessão.',
-          ctaLabel: 'Abrir alertas',
-          onTap: () async {
-            await HapticFeedback.selectionClick();
-            ref.read(notificationSidebarProvider.notifier).open();
-          },
-        ),
-      );
-    }
-
-    if (cards.isEmpty) {
-      cards.add(
-        _AttentionCardData(
-          icon: Icons.verified_user_rounded,
-          accent: FinancialStatusBadge.successColor,
-          title: 'Tudo em ordem',
-          message:
-              'Saldo, cobranças e movimentações estão sob controle. Se algo mudar, o alerta aparece automaticamente.',
-          ctaLabel: 'Atualizar',
-          onTap: _refreshData,
-        ),
-      );
-    }
-
-    return cards;
-  }
-
-  Widget _buildHeader(
-    BuildContext context, {
-    required bool isWide,
-    required int notificationCount,
-  }) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        IconButton(
-          onPressed: widget.showPrimaryNavigation
-              ? () => AppPrimaryNavigationBar.backOrHome(context)
-              : () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: Colors.white,
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white.withValues(alpha: 0.06),
-            padding: EdgeInsets.all(isCompact ? 10 : 12),
-          ),
-        ),
-        SizedBox(width: isCompact ? 10 : 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Seu dinheiro',
-                style: (isCompact
-                        ? theme.textTheme.titleLarge
-                        : theme.textTheme.headlineSmall)
-                    ?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Saldo, cobranças e movimentações em uma única tela.',
-                style: (isCompact
-                        ? theme.textTheme.bodySmall
-                        : theme.textTheme.bodyMedium)
-                    ?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.62),
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (isWide)
-          _TopStatusPill(
-            icon: Icons.lock_rounded,
-            label: 'Monitoramento seguro',
-            accent: Colors.white,
-          )
-        else
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                onPressed: () async {
-                  await HapticFeedback.selectionClick();
-                  ref.read(notificationSidebarProvider.notifier).toggle();
-                },
-                icon: const Icon(Icons.notifications_active_outlined),
-                color: Colors.white,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.06),
-                ),
-              ),
-              if (notificationCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: FinancialStatusBadge.errorColor,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      notificationCount > 9 ? '9+' : '$notificationCount',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentLinksSection(
-    AsyncValue<List<PaymentLink>> linksAsync,
-    List<PaymentLink> links,
-  ) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-
-    return linksAsync.when(
-      loading: () => const _LoadingCard(
-        message: 'Buscando cobranças e vouchers...',
-      ),
-      error: (error, _) => _ErrorCard(message: error.toString()),
-      data: (_) {
-        if (links.isEmpty) {
-          return const _EmptyCard(
-            title: 'Nenhuma cobrança recente',
-            message:
-                'Quando um voucher de onboarding ou um link de pagamento for criado, ele aparece aqui para acompanhamento rápido.',
-          );
-        }
-
-        return Column(
-          children: links.take(4).map((link) {
-            final status = FinancialStatusBadge.paymentLink(link.status);
-            final accent = status.color;
-            final title = link.isOnboardingVoucher
-                ? 'Voucher de onboarding'
-                : 'Cobrança por link';
-            final helper = _paymentLinkHelperText(link);
-            final dueLabel = link.expiresAt != null && !_isLinkExpired(link)
-                ? 'Expira ${_relativeTime(link.expiresAt!)}'
-                : link.createdAt != null
-                    ? _relativeTime(link.createdAt!)
-                    : 'Atualizado agora';
-            final amountLabel = MoneyDisplay.formatAmountFromBtc(
-              btcAmount: link.amountBtc,
-              currency: selectedCurrency,
-              btcUsd: btcUsd,
-              btcEur: btcEur,
-              btcBrl: btcBrl,
-            );
-
-            return Padding(
-              padding: EdgeInsets.only(bottom: isCompact ? 10 : 12),
-              child: InkWell(
-                onTap: () => FinancialActivityDetailsSheet.show(
-                  context,
-                  paymentLink: link,
-                ),
-                borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  width: double.infinity,
-                  padding: EdgeInsets.all(isCompact ? 16 : 18),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        accent.withValues(alpha: 0.11),
-                        const Color(0xFF0E1722),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(isCompact ? 20 : 24),
-                    border: Border.all(color: accent.withValues(alpha: 0.24)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.16),
-                        blurRadius: isCompact ? 14 : 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: isCompact ? 16 : 18,
-                                      ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  helper,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.72),
-                                        fontSize: isCompact ? 13 : null,
-                                        height: 1.4,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          FinancialStatusBadge(meta: status, compact: true),
-                        ],
-                      ),
-                      SizedBox(height: isCompact ? 14 : 18),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
-                        child: Text(
-                          amountLabel,
-                          key: ValueKey(
-                            '${link.id}_${link.amountBtc}_${selectedCurrency.code}',
-                          ),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                height: 1,
-                                fontSize: isCompact ? 22 : 24,
-                              ),
-                        ),
-                      ),
-                      if (selectedCurrency != Currency.btc) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          MoneyDisplay.format(
-                            amount: link.amountBtc,
-                            currency: Currency.btc,
-                          ),
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.48),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                      ],
-                      SizedBox(height: isCompact ? 12 : 14),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _MetricPill(
-                            label: 'Para receber',
-                            value: _shorten(link.depositAddress),
-                            accent: Colors.white,
-                          ),
-                          _MetricPill(
-                            label: 'Momento',
-                            value: dueLabel,
-                            accent: accent,
-                          ),
-                          if (link.createdAt != null)
-                            _MetricPill(
-                              label: 'Criado em',
-                              value: _dateFormat.format(link.createdAt!),
-                              accent: Colors.white70,
-                            ),
-                        ],
-                      ),
-                      SizedBox(height: isCompact ? 12 : 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => _copyValue(
-                                link.depositAddress,
-                                'Endereço de depósito copiado.',
-                              ),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: accent,
-                                foregroundColor: Colors.black,
-                                minimumSize:
-                                    Size.fromHeight(isCompact ? 44 : 48),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    isCompact ? 14 : 16,
-                                  ),
-                                ),
-                              ),
-                              icon: const Icon(Icons.copy_rounded),
-                              label: const Text('Copiar endereço'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          OutlinedButton(
-                            onPressed: () => FinancialActivityDetailsSheet.show(
-                              context,
-                              paymentLink: link,
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.14),
-                              ),
-                              minimumSize: Size(104, isCompact ? 44 : 48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  isCompact ? 14 : 16,
-                                ),
-                              ),
-                            ),
-                            child: const Text('Detalhes'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildHistorySection({
-    required AsyncValue<List<Transaction>> historyAsync,
-    required List<Transaction> rows,
-    required bool isCompact,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 14 : 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0C141E),
-        borderRadius: BorderRadius.circular(isCompact ? 24 : 28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.16),
-            blurRadius: isCompact ? 18 : 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: historyAsync.when(
-        loading: () => const _LoadingCard(
-          message: 'Atualizando movimentações do ledger...',
-          dense: true,
-        ),
-        error: (error, _) => _ErrorCard(message: error.toString()),
-        data: (_) {
-          if (rows.isEmpty) {
-            return const _EmptyCard(
-              title: 'Sem movimentações nesta página',
-              message:
-                  'Ajuste a paginação ou aguarde novas entradas. Quando algo chegar, esta lista atualiza automaticamente.',
-            );
-          }
-
-          if (isCompact) {
-            return Column(
-              children: rows.map((tx) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _HistoryCard(
-                    transaction: tx,
-                    onTap: () => FinancialActivityDetailsSheet.show(
-                      context,
-                      transaction: tx,
-                    ),
-                  ),
-                );
-              }).toList(),
-            );
-          }
-
-          // Avoid LayoutBuilder inside SliverChildListDelegate (causes
-          // _RenderLayoutBuilder is not a subtype of RenderSliver crash).
-          // Use a SingleChildScrollView that fills its parent naturally.
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: IntrinsicWidth(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _HistoryHeaderRow(),
-                  const Divider(color: Colors.white12, height: 22),
-                  ...rows.map(
-                    (tx) => _HistoryTableRow(
-                      transaction: tx,
-                      onTap: () => FinancialActivityDetailsSheet.show(
-                        context,
-                        transaction: tx,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPaginationControls({
-    required AsyncValue<List<Transaction>> historyAsync,
-    required List<Transaction> rows,
-  }) {
-    final canGoNext = historyAsync.isLoading ? false : rows.length >= _size;
-
-    // Avoid LayoutBuilder inside SliverChildListDelegate context.
-    // Use MediaQuery.sizeOf for the responsive breakpoint instead.
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isNarrow = screenWidth < 720;
-
-    final info = Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        _MetricPill(
-          label: 'Página atual',
-          value: '${_page + 1}',
-          accent: Colors.white,
-        ),
-        DropdownButtonHideUnderline(
-          child: DropdownButton<int>(
-            value: _size,
-            dropdownColor: const Color(0xFF111A24),
-            borderRadius: BorderRadius.circular(16),
-            items: const [10, 25, 50].map((size) {
-              return DropdownMenuItem<int>(
-                value: size,
-                child: Text('$size por página'),
-              );
-            }).toList(),
-            onChanged: (value) async {
-              if (value == null) {
-                return;
-              }
-              await HapticFeedback.selectionClick();
-              setState(() {
-                _size = value;
-                _page = 0;
-              });
-            },
-          ),
-        ),
-        Text(
-          'Consulta atual: /ledger/history?page=$_page&size=$_size',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.58),
-              ),
-        ),
-      ],
-    );
-
-    final actions = Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        OutlinedButton.icon(
-          onPressed: _page == 0 || historyAsync.isLoading
-              ? null
-              : () async {
-                  await HapticFeedback.selectionClick();
-                  setState(() => _page -= 1);
-                },
-          icon: const Icon(Icons.chevron_left_rounded),
-          label: const Text('Anterior'),
-        ),
-        FilledButton.icon(
-          onPressed: !canGoNext
-              ? null
-              : () async {
-                  await HapticFeedback.selectionClick();
-                  setState(() => _page += 1);
-                },
-          style: FilledButton.styleFrom(
-            backgroundColor: FinancialStatusBadge.successColor,
-            foregroundColor: Colors.black,
-          ),
-          icon: const Icon(Icons.chevron_right_rounded),
-          label: const Text('Próxima'),
-        ),
-      ],
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isNarrow ? 14 : 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B141D),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: isNarrow
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                info,
-                const SizedBox(height: 14),
-                actions,
-              ],
-            )
-          : Row(
-              children: [
-                Expanded(child: info),
-                const SizedBox(width: 16),
-                actions,
-              ],
-            ),
-    );
-  }
-
-  static String _heroHeadline({
-    required bool hasBalance,
-    required int pendingLinksCount,
-    required int pendingTransactionsCount,
-    required int notificationCount,
-  }) {
-    if (!hasBalance) {
-      return 'Conta pronta para receber';
-    }
-    if (pendingLinksCount > 0) {
-      return 'Há dinheiro esperando por você';
-    }
-    if (pendingTransactionsCount > 0) {
-      return 'Tudo visível enquanto processa';
-    }
-    if (notificationCount > 0) {
-      return 'Atualizações chegaram agora';
-    }
-    return 'Tudo sob controle';
-  }
-
-  static String _heroSupportingText({
-    required String? depositAddress,
-    required bool hasBalance,
-    required int pendingLinksCount,
-    required int pendingTransactionsCount,
-    required bool isRealtimeActive,
-  }) {
-    if (!hasBalance && depositAddress != null) {
-      return 'Sua carteira está pronta para receber. Copie o endereço quando precisar e acompanhe o saldo daqui.';
-    }
-    if (pendingLinksCount > 0) {
-      return 'Você tem $pendingLinksCount cobrança${pendingLinksCount == 1 ? '' : 's'} aguardando pagamento ou conferência.';
-    }
-    if (pendingTransactionsCount > 0) {
-      return 'Há $pendingTransactionsCount movimentação${pendingTransactionsCount == 1 ? '' : 'ões'} em andamento. O status muda automaticamente.';
-    }
-    if (isRealtimeActive) {
-      return 'O acompanhamento em tempo real está ativo. Se algo mudar, você vê primeiro por aqui.';
-    }
-    return 'Você continua vendo o histórico mesmo sem tempo real ativo. Use atualizar para buscar o estado mais recente.';
-  }
-
   static int _paymentLinkPriority(PaymentLink link) {
     if (link.isPending) {
       return 0;
@@ -1185,369 +431,248 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     return link.status == 'expired' || link.isExpired;
   }
 
-  static String _paymentLinkHelperText(PaymentLink link) {
-    if (link.isOnboardingVoucher &&
-        (link.isPending || link.isVerifyingOnboarding)) {
-      return 'Use este voucher para concluir o onboarding sem precisar navegar por várias telas.';
+  static String shorten(String value, {int head = 10, int tail = 6}) {
+    final normalized = value.trim();
+    if (normalized.length <= head + tail + 3) {
+      return normalized;
     }
-    if (link.isPaid || link.isCompleted) {
-      return 'Pagamento recebido. Você pode abrir os detalhes para conferir o identificador e o horário.';
-    }
-    if (_isLinkExpired(link)) {
-      return 'Este link expirou e não aceita novos pagamentos.';
-    }
-    return 'Compartilhe o endereço de depósito e acompanhe o status sem sair desta tela.';
-  }
-
-  static String _relativeTime(DateTime date) {
-    final localDate = date.toLocal();
-    final difference = DateTime.now().difference(localDate);
-    if (difference.isNegative) {
-      final future = localDate.difference(DateTime.now());
-      if (future.inMinutes < 1) {
-        return 'em instantes';
-      }
-      if (future.inHours < 1) {
-        return 'em ${future.inMinutes} min';
-      }
-      if (future.inDays < 1) {
-        return 'em ${future.inHours} h';
-      }
-      return 'em ${future.inDays} d';
-    }
-    if (difference.inMinutes < 1) {
-      return 'agora';
-    }
-    if (difference.inHours < 1) {
-      return 'há ${difference.inMinutes} min';
-    }
-    if (difference.inDays < 1) {
-      return 'há ${difference.inHours} h';
-    }
-    return 'há ${difference.inDays} d';
-  }
-
-  static String _shorten(String value) {
-    if (value.length <= 18) {
-      return value;
-    }
-    return '${value.substring(0, 10)}...${value.substring(value.length - 6)}';
+    return '${normalized.substring(0, head)}...${normalized.substring(normalized.length - tail)}';
   }
 }
 
-class _MonitoringBackdrop extends StatelessWidget {
-  const _MonitoringBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return const AmbientSideGlowBackdrop.authenticated();
-  }
-}
-
-class _MonitoringHeroCard extends StatelessWidget {
+class _StatementHeader extends StatelessWidget {
   final String? walletName;
-  final String? walletSecurity;
-  final WalletCardType? walletCardType;
-  final double? depositFeeRate;
-  final bool balanceVisible;
-  final Currency selectedCurrency;
-  final double primaryBalanceValue;
-  final String secondaryBalanceLabel;
-  final String? quoteLabel;
-  final bool realtimeActive;
-  final int pendingLinksCount;
-  final int pendingTransactionsCount;
   final int notificationCount;
-  final String headline;
-  final String supportingText;
-  final VoidCallback onToggleBalance;
-  final VoidCallback onPrimaryAction;
-  final String primaryActionLabel;
-  final IconData primaryActionIcon;
-  final VoidCallback onSecondaryAction;
-  final String secondaryActionLabel;
+  final bool showNotificationButton;
+  final VoidCallback onBack;
+  final VoidCallback onRefresh;
+  final VoidCallback onNotifications;
 
-  const _MonitoringHeroCard({
+  const _StatementHeader({
     required this.walletName,
-    required this.walletSecurity,
-    required this.walletCardType,
-    required this.depositFeeRate,
-    required this.balanceVisible,
-    required this.selectedCurrency,
-    required this.primaryBalanceValue,
-    required this.secondaryBalanceLabel,
-    required this.quoteLabel,
-    required this.realtimeActive,
-    required this.pendingLinksCount,
-    required this.pendingTransactionsCount,
     required this.notificationCount,
-    required this.headline,
-    required this.supportingText,
-    required this.onToggleBalance,
-    required this.onPrimaryAction,
-    required this.primaryActionLabel,
-    required this.primaryActionIcon,
-    required this.onSecondaryAction,
-    required this.secondaryActionLabel,
+    required this.showNotificationButton,
+    required this.onBack,
+    required this.onRefresh,
+    required this.onNotifications,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
     final theme = Theme.of(context);
-    final balanceStyle = (isCompact
-                ? theme.textTheme.headlineSmall
-                : theme.textTheme.headlineMedium)
-            ?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: isCompact ? 28 : 34,
-          height: 0.96,
-          letterSpacing: isCompact ? -0.5 : -0.8,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ) ??
-        TextStyle(
-          color: Colors.white,
-          fontSize: isCompact ? 28 : 34,
-          fontWeight: FontWeight.w700,
-          height: 0.96,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        );
+    final titleStyle = theme.textTheme.headlineSmall?.copyWith(
+      color: _textPrimary,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0,
+      height: 1.0,
+    );
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 18 : 22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0F1D2A), Color(0xFF0A1520)],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _IconButtonShell(
+          tooltip: 'Voltar',
+          icon: LucideIcons.arrowLeft,
+          onPressed: onBack,
         ),
-        borderRadius: BorderRadius.circular(isCompact ? 28 : 32),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: isCompact ? 22 : 28,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _TopStatusPill(
-                icon: realtimeActive
-                    ? Icons.bolt_rounded
-                    : Icons.cloud_off_rounded,
-                label: realtimeActive
-                    ? 'Tempo real ativo'
-                    : 'Tempo real indisponível',
-                accent: realtimeActive
-                    ? FinancialStatusBadge.successColor
-                    : FinancialStatusBadge.errorColor,
-              ),
-              _TopStatusPill(
-                icon: Icons.lock_rounded,
-                label: walletSecurity ?? 'STANDARD',
-                accent: Colors.white,
-              ),
-              if (walletName != null && walletName!.trim().isNotEmpty)
-                _TopStatusPill(
-                  icon: Icons.account_balance_wallet_rounded,
-                  label: walletName!,
-                  accent: Colors.white,
-                ),
-              if (walletCardType != null)
-                _TopStatusPill(
-                  icon: Icons.percent_rounded,
-                  label:
-                      '${walletCardType!.label} • depósito ${WalletCardType.formatRate(depositFeeRate ?? walletCardType!.defaultFeeRate)}',
-                  accent: Theme.of(context).colorScheme.primary,
-                ),
-            ],
-          ),
-          SizedBox(height: isCompact ? 18 : 22),
-          Text(
-            'Saldo monitorado',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.68),
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(height: isCompact ? 10 : 14),
-          Row(
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedBalanceDisplay(
-                      balance: primaryBalanceValue,
-                      prefix:
-                          '${MoneyDisplay.tickerSymbolFor(selectedCurrency)} ',
-                      decimalPlaces: MoneyDisplay.decimalsFor(selectedCurrency),
-                      locale: MoneyDisplay.localeFor(selectedCurrency),
-                      enableFlash: true,
-                      isHidden: !balanceVisible,
-                      digitWidthFactor: isCompact ? 0.7 : 0.66,
-                      characterSpacing: isCompact ? 1.0 : 0.8,
-                      decimalScaleFactor: isCompact ? 0.58 : 0.62,
-                      separatorScaleFactor: 0.74,
-                      style: balanceStyle,
-                      animateInitialValue: false,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: isCompact ? 8 : 12),
-              IconButton(
-                onPressed: onToggleBalance,
-                icon: Icon(
-                  balanceVisible
-                      ? Icons.visibility_off_rounded
-                      : Icons.visibility_rounded,
-                ),
-                color: Colors.white,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.07),
-                  padding: EdgeInsets.all(isCompact ? 10 : 12),
+              Text('Extrato', style: titleStyle),
+              const SizedBox(height: 5),
+              Text(
+                walletName == null || walletName!.trim().isEmpty
+                    ? 'Ledger da conta'
+                    : walletName!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                  height: 1.2,
                 ),
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 6 : 8),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: Text(
-              balanceVisible
-                  ? secondaryBalanceLabel
-                  : 'Toque no olho para mostrar o valor',
-              key: ValueKey(
-                'secondary_$balanceVisible\_$selectedCurrency\_$secondaryBalanceLabel',
-              ),
-              style: (isCompact
-                      ? theme.textTheme.bodyMedium
-                      : theme.textTheme.titleMedium)
-                  ?.copyWith(
-                color: Colors.white.withValues(alpha: 0.68),
-                fontWeight: FontWeight.w600,
-                fontSize: isCompact ? 14 : null,
-              ),
-            ),
+        ),
+        _IconButtonShell(
+          tooltip: 'Atualizar',
+          icon: LucideIcons.refreshCw,
+          onPressed: onRefresh,
+        ),
+        if (showNotificationButton) ...[
+          const SizedBox(width: 8),
+          _NotificationButton(
+            count: notificationCount,
+            onPressed: onNotifications,
           ),
-          if (quoteLabel != null) ...[
-            const SizedBox(height: 10),
-            BtcQuoteBadge(value: quoteLabel!, compact: isCompact),
-          ],
-          SizedBox(height: isCompact ? 18 : 22),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: Column(
-              key: ValueKey('$headline|$supportingText'),
+        ],
+      ],
+    );
+  }
+}
+
+class _StatementOverview extends StatelessWidget {
+  final String balance;
+  final String secondaryBalance;
+  final bool balanceVisible;
+  final int transactionCount;
+  final int pendingCount;
+  final int openLinkCount;
+  final bool realtimeActive;
+  final VoidCallback onToggleBalance;
+  final VoidCallback? onCopyAddress;
+  final VoidCallback? onOpenLinks;
+  final VoidCallback onRefresh;
+
+  const _StatementOverview({
+    required this.balance,
+    required this.secondaryBalance,
+    required this.balanceVisible,
+    required this.transactionCount,
+    required this.pendingCount,
+    required this.openLinkCount,
+    required this.realtimeActive,
+    required this.onToggleBalance,
+    required this.onCopyAddress,
+    required this.onOpenLinks,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCompact = MediaQuery.sizeOf(context).width < 760;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _borderSoft),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              isCompact ? 14 : 16,
+              isCompact ? 14 : 16,
+              isCompact ? 12 : 14,
+              12,
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  headline,
-                  style: (isCompact
-                          ? theme.textTheme.titleLarge
-                          : theme.textTheme.headlineSmall)
-                      ?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: isCompact ? 22 : null,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Saldo',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: _textMuted,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          balance,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: _textPrimary,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                            height: 1.0,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        secondaryBalance,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: _textMuted,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  supportingText,
-                  style: (isCompact
-                          ? theme.textTheme.bodyMedium
-                          : theme.textTheme.bodyLarge)
-                      ?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: isCompact ? 14 : null,
-                    height: 1.45,
-                  ),
+                const SizedBox(width: 10),
+                _IconButtonShell(
+                  tooltip: balanceVisible ? 'Ocultar saldo' : 'Mostrar saldo',
+                  icon: balanceVisible ? LucideIcons.eyeOff : LucideIcons.eye,
+                  onPressed: onToggleBalance,
                 ),
               ],
             ),
           ),
-          SizedBox(height: isCompact ? 16 : 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              SizedBox(
-                height: isCompact ? 46 : 50,
-                child: FilledButton.icon(
-                  onPressed: onPrimaryAction,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: FinancialStatusBadge.successColor,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 16 : 20,
-                    ),
-                  ),
-                  icon: Icon(primaryActionIcon),
-                  label: Text(primaryActionLabel),
+          const Divider(height: 1, color: _borderSoft),
+          Padding(
+            padding: EdgeInsets.all(isCompact ? 10 : 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _OverviewMetric(
+                  icon: LucideIcons.receipt,
+                  label: 'Itens',
+                  value: '$transactionCount',
                 ),
-              ),
-              SizedBox(
-                height: isCompact ? 46 : 50,
-                child: OutlinedButton.icon(
-                  onPressed: onSecondaryAction,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.16)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 16 : 20,
-                    ),
-                  ),
-                  icon: const Icon(Icons.swipe_right_alt_rounded),
-                  label: Text(secondaryActionLabel),
+                _OverviewMetric(
+                  icon: LucideIcons.clock3,
+                  label: 'Pendentes',
+                  value: '$pendingCount',
                 ),
-              ),
-            ],
+                _OverviewMetric(
+                  icon: LucideIcons.link2,
+                  label: 'Cobranças',
+                  value: '$openLinkCount',
+                ),
+                _OverviewMetric(
+                  icon:
+                      realtimeActive ? LucideIcons.radio : LucideIcons.cloudOff,
+                  label: 'Rede',
+                  value: realtimeActive ? 'Ativa' : 'Manual',
+                ),
+              ],
+            ),
           ),
-          SizedBox(height: isCompact ? 16 : 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _HeroMetric(
-                label: 'Cobranças aguardando',
-                value: '$pendingLinksCount',
-                accent: FinancialStatusBadge.pendingColor,
-              ),
-              _HeroMetric(
-                label: 'Em andamento',
-                value: '$pendingTransactionsCount',
-                accent: FinancialStatusBadge.infoColor,
-              ),
-              _HeroMetric(
-                label: 'Alertas da sessão',
-                value: '$notificationCount',
-                accent: FinancialStatusBadge.successColor,
-              ),
-            ],
+          const Divider(height: 1, color: _borderSoft),
+          Padding(
+            padding: EdgeInsets.all(isCompact ? 10 : 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _MonoActionButton(
+                  icon: LucideIcons.copy,
+                  label: 'Copiar endereço',
+                  onPressed: onCopyAddress,
+                ),
+                _MonoActionButton(
+                  icon: LucideIcons.link,
+                  label: 'Cobranças',
+                  onPressed: onOpenLinks,
+                ),
+                _MonoActionButton(
+                  icon: LucideIcons.refreshCw,
+                  label: 'Atualizar',
+                  onPressed: onRefresh,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1555,54 +680,49 @@ class _MonitoringHeroCard extends StatelessWidget {
   }
 }
 
-class _HeroMetric extends StatelessWidget {
+class _OverviewMetric extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  final Color accent;
 
-  const _HeroMetric({
+  const _OverviewMetric({
+    required this.icon,
     required this.label,
     required this.value,
-    required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
+    final theme = Theme.of(context);
 
     return Container(
-      constraints: BoxConstraints(minWidth: isCompact ? 104 : 120),
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 12 : 14,
-        vertical: isCompact ? 10 : 12,
-      ),
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: _surfaceRaised,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _borderSoft),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(icon, size: 15, color: _iconMuted),
+          const SizedBox(width: 8),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.56),
-                  fontWeight: FontWeight.w700,
-                  fontSize: isCompact ? 11.5 : null,
-                ),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: _textMuted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(width: 7),
           Text(
             value,
-            style: (isCompact
-                    ? Theme.of(context).textTheme.titleMedium
-                    : Theme.of(context).textTheme.titleLarge)
-                ?.copyWith(
-              color: accent,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: _textPrimary,
               fontWeight: FontWeight.w800,
-              fontSize: isCompact ? 18 : null,
+              letterSpacing: 0,
             ),
           ),
         ],
@@ -1611,286 +731,391 @@ class _HeroMetric extends StatelessWidget {
   }
 }
 
-class _TopStatusPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color accent;
+class _OpenLinksSection extends StatelessWidget {
+  final AsyncValue<List<PaymentLink>> linksAsync;
+  final List<PaymentLink> links;
+  final Currency selectedCurrency;
+  final double? btcUsd;
+  final double? btcEur;
+  final double? btcBrl;
+  final ValueChanged<String> onCopyAddress;
 
-  const _TopStatusPill({
-    required this.icon,
-    required this.label,
-    required this.accent,
+  const _OpenLinksSection({
+    required this.linksAsync,
+    required this.links,
+    required this.selectedCurrency,
+    required this.btcUsd,
+    required this.btcEur,
+    required this.btcBrl,
+    required this.onCopyAddress,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
+    return linksAsync.when(
+      loading: () => const _LoadingPanel(message: 'Carregando cobranças'),
+      error: (error, _) => _ErrorPanel(message: error.toString()),
+      data: (_) {
+        if (links.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 12,
-        vertical: isCompact ? 7 : 8,
-      ),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.16)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: isCompact ? 14 : 16, color: accent),
-          SizedBox(width: isCompact ? 6 : 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: accent,
-                  fontWeight: FontWeight.w700,
-                  fontSize: isCompact ? 11.5 : null,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _SectionHeader({
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: (isCompact
-                  ? Theme.of(context).textTheme.titleMedium
-                  : Theme.of(context).textTheme.titleLarge)
-              ?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: isCompact ? 18 : null,
-          ),
-        ),
-        SizedBox(height: isCompact ? 4 : 6),
-        Text(
-          subtitle,
-          style: (isCompact
-                  ? Theme.of(context).textTheme.bodySmall
-                  : Theme.of(context).textTheme.bodyMedium)
-              ?.copyWith(
-            color: Colors.white.withValues(alpha: 0.58),
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AttentionGrid extends StatelessWidget {
-  final List<_AttentionCardData> cards;
-
-  const _AttentionGrid({required this.cards});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: cards.map((card) {
-        return SizedBox(
-          width: 320,
-          child: _AttentionCard(data: card),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SectionTitle(
+              icon: LucideIcons.link2,
+              title: 'Cobranças abertas',
+              trailing: '${links.length}',
+            ),
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _borderSoft),
+              ),
+              child: Column(
+                children: [
+                  for (var index = 0;
+                      index < links.take(3).length;
+                      index++) ...[
+                    if (index > 0) const Divider(height: 1, color: _borderSoft),
+                    _PaymentLinkRow(
+                      link: links[index],
+                      amount: MoneyDisplay.formatAmountFromBtc(
+                        btcAmount: links[index].amountBtc,
+                        currency: selectedCurrency,
+                        btcUsd: btcUsd,
+                        btcEur: btcEur,
+                        btcBrl: btcBrl,
+                      ),
+                      onCopyAddress: () =>
+                          onCopyAddress(links[index].depositAddress),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         );
-      }).toList(),
+      },
     );
   }
 }
 
-class _AttentionCard extends StatelessWidget {
-  final _AttentionCardData data;
+class _PaymentLinkRow extends StatelessWidget {
+  final PaymentLink link;
+  final String amount;
+  final VoidCallback onCopyAddress;
 
-  const _AttentionCard({required this.data});
+  const _PaymentLinkRow({
+    required this.link,
+    required this.amount,
+    required this.onCopyAddress,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
+    final theme = Theme.of(context);
+    final title =
+        link.isOnboardingVoucher ? 'Voucher onboarding' : 'Link de pagamento';
+    final moment = link.expiresAt != null
+        ? 'Expira ${_relativeTime(link.expiresAt!)}'
+        : link.createdAt != null
+            ? _relativeTime(link.createdAt!)
+            : 'Agora';
 
-    return Container(
-      padding: EdgeInsets.all(isCompact ? 16 : 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D1620),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: data.accent.withValues(alpha: 0.18)),
+    return InkWell(
+      onTap: () => FinancialActivityDetailsSheet.show(
+        context,
+        paymentLink: link,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: isCompact ? 38 : 42,
-            height: isCompact ? 38 : 42,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        child: Row(
+          children: [
+            const _MonoIconBox(icon: LucideIcons.link),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: _textPrimary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${_linkStatusLabel(link)} · $moment',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  amount,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: _textPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                GestureDetector(
+                  onTap: onCopyAddress,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        LucideIcons.copy,
+                        size: 12,
+                        color: _textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'copiar',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: _textMuted,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistorySection extends StatelessWidget {
+  final AsyncValue<List<Transaction>> historyAsync;
+  final List<Transaction> rows;
+  final bool isCompact;
+
+  const _HistorySection({
+    required this.historyAsync,
+    required this.rows,
+    required this.isCompact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return historyAsync.when(
+      loading: () => const _LoadingPanel(message: 'Atualizando ledger'),
+      error: (error, _) => _ErrorPanel(message: error.toString()),
+      data: (_) {
+        if (rows.isEmpty) {
+          return const _EmptyPanel(
+            icon: LucideIcons.receipt,
+            title: 'Sem movimentações',
+            message: 'Nada nesta página.',
+          );
+        }
+
+        if (isCompact) {
+          return Container(
             decoration: BoxDecoration(
-              color: data.accent.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
+              color: _surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _borderSoft),
             ),
-            child:
-                Icon(data.icon, color: data.accent, size: isCompact ? 20 : 24),
-          ),
-          SizedBox(height: isCompact ? 12 : 16),
-          Text(
-            data.title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: isCompact ? 16 : null,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            data.message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: isCompact ? 13 : null,
-                  height: 1.4,
-                ),
-          ),
-          SizedBox(height: isCompact ? 12 : 16),
-          TextButton.icon(
-            onPressed: data.onTap,
-            style: TextButton.styleFrom(
-              foregroundColor: data.accent,
-              padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (var index = 0; index < rows.length; index++) ...[
+                  if (index > 0) const Divider(height: 1, color: _borderSoft),
+                  _HistoryListRow(
+                    transaction: rows[index],
+                    onTap: () => FinancialActivityDetailsSheet.show(
+                      context,
+                      transaction: rows[index],
+                    ),
+                  ),
+                ],
+              ],
             ),
-            icon: const Icon(Icons.arrow_forward_rounded),
-            label: Text(data.ctaLabel),
+          );
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _borderSoft),
           ),
-        ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: 980,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _HistoryTableHeader(),
+                  const Divider(height: 1, color: _borderSoft),
+                  for (var index = 0; index < rows.length; index++) ...[
+                    if (index > 0) const Divider(height: 1, color: _borderSoft),
+                    _HistoryTableRow(
+                      transaction: rows[index],
+                      onTap: () => FinancialActivityDetailsSheet.show(
+                        context,
+                        transaction: rows[index],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HistoryListRow extends ConsumerWidget {
+  final Transaction transaction;
+  final VoidCallback onTap;
+
+  const _HistoryListRow({
+    required this.transaction,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final amountLabel = _transactionAmountLabel(
+      transaction: transaction,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final counterparty = _counterpartyLabel(transaction);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          children: [
+            _MonoIconBox(icon: _historyTypeIcon(transaction)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _historyTypeLabel(transaction),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: _textPrimary,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _StatusText(transaction.status),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    counterparty,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 150),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      amountLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: _textPrimary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _DepositsScreenState._timeFormat
+                        .format(transaction.timestamp),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _MetricPill extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color accent;
-
-  const _MetricPill({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
+class _HistoryTableHeader extends StatelessWidget {
+  const _HistoryTableHeader();
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 12,
-        vertical: isCompact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.46),
-                  fontWeight: FontWeight.w700,
-                  fontSize: isCompact ? 10 : null,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: accent,
-                  fontWeight: FontWeight.w700,
-                  fontSize: isCompact ? 13 : null,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineInfoChip extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final Color? accent;
-
-  const _InlineInfoChip({
-    required this.icon,
-    required this.value,
-    this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
-    final resolvedAccent = accent ?? Colors.white;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 12,
-        vertical: isCompact ? 7 : 8,
-      ),
-      decoration: BoxDecoration(
-        color: resolvedAccent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: resolvedAccent.withValues(alpha: 0.12)),
-      ),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: isCompact ? 13 : 14, color: resolvedAccent),
-          SizedBox(width: isCompact ? 6 : 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: resolvedAccent.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w700,
-                  fontSize: isCompact ? 10.5 : null,
-                  letterSpacing: 0,
-                ),
-          ),
+          _TableHeadCell(width: 240, text: 'Tipo'),
+          _TableHeadCell(width: 140, text: 'Status'),
+          _TableHeadCell(width: 170, text: 'Valor'),
+          _TableHeadCell(width: 280, text: 'Contraparte'),
+          _TableHeadCell(width: 140, text: 'Data'),
         ],
       ),
-    );
-  }
-}
-
-class _HistoryHeaderRow extends StatelessWidget {
-  const _HistoryHeaderRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        _HistoryCell(width: 150, text: 'Tipo'),
-        _HistoryCell(width: 140, text: 'Status'),
-        _HistoryCell(width: 160, text: 'Valor'),
-        _HistoryCell(width: 240, text: 'Quem participou'),
-        _HistoryCell(width: 180, text: 'Data'),
-      ],
     );
   }
 }
@@ -1906,93 +1131,83 @@ class _HistoryTableRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final status = FinancialStatusBadge.transaction(transaction.status);
-    final isCredit = transaction.type == TransactionType.receive ||
-        transaction.type == TransactionType.deposit;
+    final theme = Theme.of(context);
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
-    final amountColor = isCredit
-        ? FinancialStatusBadge.successColor
-        : transaction.type == TransactionType.withdrawal
-            ? FinancialStatusBadge.errorColor
-            : FinancialStatusBadge.pendingColor;
-    final counterparty =
-        (isCredit ? transaction.fromAddress : transaction.toAddress).trim();
-    final amountLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: transaction.amountBTC,
+    final amountLabel = _transactionAmountLabel(
+      transaction: transaction,
       currency: selectedCurrency,
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
-      signed: true,
-    );
-    final rowGradient = LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [
-        Color.lerp(const Color(0xFF101823), amountColor, 0.18)!,
-        Colors.black,
-        const Color(0xFF111A24),
-      ],
     );
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          gradient: rowGradient,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: amountColor.withValues(alpha: 0.16)),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            _HistoryValueCell(
-              width: 150,
-              child: Text(
-                _historyTypeLabel(transaction),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+            SizedBox(
+              width: 240,
+              child: Row(
+                children: [
+                  _MonoIconBox(
+                      icon: _historyTypeIcon(transaction), small: true),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _historyTypeLabel(transaction),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: _textPrimary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
+                      ),
                     ),
+                  ),
+                ],
               ),
             ),
-            _HistoryValueCell(
-              width: 140,
-              child: FinancialStatusBadge(meta: status, compact: true),
-            ),
-            _HistoryValueCell(
-              width: 160,
+            SizedBox(width: 140, child: _StatusText(transaction.status)),
+            SizedBox(
+              width: 170,
               child: Text(
                 amountLabel,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: amountColor,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-            ),
-            _HistoryValueCell(
-              width: 240,
-              child: Text(
-                counterparty.isEmpty ? 'Não informado' : counterparty,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.72),
-                    ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _textPrimary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
               ),
             ),
-            _HistoryValueCell(
-              width: 180,
+            SizedBox(
+              width: 280,
+              child: Text(
+                _counterpartyLabel(transaction),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _textSecondary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 140,
               child: Text(
                 _DepositsScreenState._dateFormat.format(transaction.timestamp),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.72),
-                    ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _textMuted,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
               ),
             ),
           ],
@@ -2002,205 +1217,355 @@ class _HistoryTableRow extends ConsumerWidget {
   }
 }
 
-class _HistoryCard extends ConsumerWidget {
-  final Transaction transaction;
-  final VoidCallback onTap;
+class _PaginationControls extends StatelessWidget {
+  final int page;
+  final int size;
+  final bool isLoading;
+  final bool canGoNext;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+  final ValueChanged<int> onSizeChanged;
 
-  const _HistoryCard({
-    required this.transaction,
-    required this.onTap,
+  const _PaginationControls({
+    required this.page,
+    required this.size,
+    required this.isLoading,
+    required this.canGoNext,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onSizeChanged,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final status = FinancialStatusBadge.transaction(transaction.status);
-    final isCompact = MediaQuery.sizeOf(context).width < 860;
-    final isCredit = transaction.type == TransactionType.receive ||
-        transaction.type == TransactionType.deposit;
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final amountColor = isCredit
-        ? FinancialStatusBadge.successColor
-        : transaction.type == TransactionType.withdrawal
-            ? FinancialStatusBadge.errorColor
-            : FinancialStatusBadge.pendingColor;
-    final counterparty =
-        (isCredit ? transaction.fromAddress : transaction.toAddress).trim();
-    final amountLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: transaction.amountBTC,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-      signed: true,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCompact = MediaQuery.sizeOf(context).width < 760;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _borderSoft),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Pág. ${page + 1}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: _textMuted,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(width: 10),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: size,
+              dropdownColor: _surfaceRaised,
+              borderRadius: BorderRadius.circular(8),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: _textPrimary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+              iconEnabledColor: _textMuted,
+              items: const [10, 25, 50].map((value) {
+                return DropdownMenuItem<int>(
+                  value: value,
+                  child: Text(isCompact ? '$value' : '$value por página'),
+                );
+              }).toList(),
+              onChanged: isLoading
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        onSizeChanged(value);
+                      }
+                    },
+            ),
+          ),
+          const Spacer(),
+          _IconButtonShell(
+            tooltip: 'Anterior',
+            icon: LucideIcons.chevronLeft,
+            onPressed: onPrevious,
+          ),
+          const SizedBox(width: 8),
+          _IconButtonShell(
+            tooltip: 'Próxima',
+            icon: LucideIcons.chevronRight,
+            onPressed: canGoNext ? onNext : null,
+          ),
+        ],
+      ),
     );
-    final cardGradient = LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [
-        Color.lerp(const Color(0xFF101823), amountColor, 0.18)!,
-        Colors.black,
-        const Color(0xFF111A24),
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? trailing;
+
+  const _SectionTitle({
+    required this.icon,
+    required this.title,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: _iconMuted),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: _textPrimary,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+        if (trailing != null)
+          Text(
+            trailing!,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: _textMuted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
       ],
     );
+  }
+}
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(isCompact ? 14 : 16),
-        decoration: BoxDecoration(
-          gradient: cardGradient,
-          borderRadius: BorderRadius.circular(isCompact ? 20 : 22),
-          border: Border.all(color: amountColor.withValues(alpha: 0.18)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: isCompact ? 38 : 42,
-                  height: isCompact ? 38 : 42,
-                  decoration: BoxDecoration(
-                    color: amountColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-                    border: Border.all(
-                      color: amountColor.withValues(alpha: 0.18),
-                    ),
-                  ),
-                  child: Icon(
-                    _historyTypeIcon(transaction),
-                    color: amountColor,
-                    size: isCompact ? 18 : 20,
-                  ),
+class _MonoActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _MonoActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final disabled = onPressed == null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: disabled
+            ? null
+            : () {
+                HapticFeedback.selectionClick();
+                onPressed?.call();
+              },
+        borderRadius: BorderRadius.circular(8),
+        child: Ink(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          decoration: BoxDecoration(
+            color: disabled ? _background : _surfaceRaised,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _borderSoft),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color:
+                    disabled ? _textMuted.withValues(alpha: 0.42) : _iconMuted,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: disabled
+                      ? _textMuted.withValues(alpha: 0.42)
+                      : _textSecondary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
                 ),
-                SizedBox(width: isCompact ? 10 : 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _historyTypeLabel(transaction),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: isCompact ? 16 : null,
-                                ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        counterparty.isEmpty
-                            ? 'Origem ou destino não informado'
-                            : _DepositsScreenState._shorten(counterparty),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.56),
-                              fontSize: isCompact ? 12 : null,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: isCompact ? 132 : 156),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          amountLabel,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: amountColor,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: isCompact ? 18 : 20,
-                                    height: 1,
-                                  ),
-                        ),
-                      ),
-                      if (selectedCurrency != Currency.btc) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          MoneyDisplay.format(
-                            amount: transaction.amountBTC,
-                            currency: Currency.btc,
-                          ),
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.44),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: isCompact ? 11 : null,
-                                  ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: isCompact ? 10 : 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FinancialStatusBadge(meta: status, compact: true),
-                _InlineInfoChip(
-                  icon: Icons.schedule_rounded,
-                  value: _DepositsScreenState._dateFormat
-                      .format(transaction.timestamp),
-                ),
-                if (transaction.status == TransactionStatus.confirming)
-                  _InlineInfoChip(
-                    icon: Icons.shield_outlined,
-                    value: '${transaction.confirmations}/6 confirmações',
-                    accent: FinancialStatusBadge.pendingColor,
-                  ),
-                if (transaction.feeSatoshis > 0)
-                  _InlineInfoChip(
-                    icon: Icons.toll_rounded,
-                    value: 'Taxa ${MoneyDisplay.formatAmountFromBtc(
-                      btcAmount: transaction.feeBTC,
-                      currency: selectedCurrency,
-                      btcUsd: btcUsd,
-                      btcEur: btcEur,
-                      btcBrl: btcBrl,
-                    )}',
-                    accent: Colors.white70,
-                  ),
-                const _InlineInfoChip(
-                  icon: Icons.chevron_right_rounded,
-                  value: 'Detalhes',
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _HistoryCell extends StatelessWidget {
+class _IconButtonShell extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _IconButtonShell({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        width: 38,
+        height: 38,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: disabled
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    onPressed?.call();
+                  },
+            borderRadius: BorderRadius.circular(8),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: disabled ? _background : _surfaceRaised,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _borderSoft),
+              ),
+              child: Icon(
+                icon,
+                size: 17,
+                color: disabled
+                    ? _textMuted.withValues(alpha: 0.36)
+                    : _textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onPressed;
+
+  const _NotificationButton({
+    required this.count,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _IconButtonShell(
+          tooltip: 'Alertas',
+          icon: LucideIcons.bell,
+          onPressed: onPressed,
+        ),
+        if (count > 0)
+          Positioned(
+            right: -3,
+            top: -3,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 16),
+              height: 16,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _textPrimary,
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(
+                count > 9 ? '9+' : '$count',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _background,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                      height: 1,
+                    ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MonoIconBox extends StatelessWidget {
+  final IconData icon;
+  final bool small;
+
+  const _MonoIconBox({
+    required this.icon,
+    this.small = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = small ? 28.0 : 34.0;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: _surfacePressed,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _border),
+      ),
+      child: Icon(icon, size: small ? 14 : 16, color: _iconMuted),
+    );
+  }
+}
+
+class _StatusText extends StatelessWidget {
+  final TransactionStatus status;
+
+  const _StatusText(this.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(_statusIcon(status), size: 12, color: _textMuted),
+        const SizedBox(width: 5),
+        Text(
+          _statusLabel(status),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: _textMuted,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TableHeadCell extends StatelessWidget {
   final double width;
   final String text;
 
-  const _HistoryCell({
+  const _TableHeadCell({
     required this.width,
     required this.text,
   });
@@ -2210,64 +1575,49 @@ class _HistoryCell extends StatelessWidget {
     return SizedBox(
       width: width,
       child: Text(
-        text.toUpperCase(),
+        text,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.46),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
+              color: _textMuted,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
             ),
       ),
     );
   }
 }
 
-class _HistoryValueCell extends StatelessWidget {
-  final double width;
-  final Widget child;
-
-  const _HistoryValueCell({
-    required this.width,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(width: width, child: child);
-  }
-}
-
-class _LoadingCard extends StatelessWidget {
+class _LoadingPanel extends StatelessWidget {
   final String message;
-  final bool dense;
 
-  const _LoadingCard({
-    required this.message,
-    this.dense = false,
-  });
+  const _LoadingPanel({required this.message});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(dense ? 18 : 22),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E1622),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _borderSoft),
       ),
       child: Row(
         children: [
           const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: _textSecondary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.72),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
                   ),
             ),
           ),
@@ -2277,143 +1627,98 @@ class _LoadingCard extends StatelessWidget {
   }
 }
 
-class _ErrorCard extends StatelessWidget {
+class _ErrorPanel extends StatelessWidget {
   final String message;
 
-  const _ErrorCard({required this.message});
+  const _ErrorPanel({required this.message});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: FinancialStatusBadge.errorColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: FinancialStatusBadge.errorColor.withValues(alpha: 0.24),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Não deu para atualizar agora',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: FinancialStatusBadge.errorColor,
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.82),
-                  height: 1.45,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyCard extends StatelessWidget {
-  final String title;
-  final String message;
-
-  const _EmptyCard({
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0E1622),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.62),
-                  height: 1.45,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FriendlyInfoCard extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String message;
-
-  const _FriendlyInfoCard({
-    required this.icon,
-    required this.accent,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: accent.withValues(alpha: 0.18)),
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _borderSoft),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
+          const Icon(LucideIcons.alertCircle, size: 17, color: _textMuted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Falha ao atualizar',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _textPrimary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
+                ),
+              ],
             ),
-            child: Icon(icon, color: accent),
           ),
-          const SizedBox(width: 14),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyPanel extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+
+  const _EmptyPanel({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _borderSoft),
+      ),
+      child: Row(
+        children: [
+          _MonoIconBox(icon: icon),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: _textPrimary,
                         fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
                       ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 3),
                 Text(
                   message,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.72),
-                        height: 1.45,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
                       ),
                 ),
               ],
@@ -2440,62 +1745,51 @@ class _MobileActionDock extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0C141D),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 22,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onRefresh,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: FinancialStatusBadge.successColor,
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size.fromHeight(50),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _borderSoft),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _MonoActionButton(
+                    icon: LucideIcons.refreshCw,
+                    label: 'Atualizar',
+                    onPressed: onRefresh,
                   ),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Atualizar'),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onNotifications,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(50),
-                    side:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.14)),
-                  ),
-                  icon: Stack(
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const Icon(Icons.notifications_active_outlined),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _MonoActionButton(
+                          icon: LucideIcons.bell,
+                          label: 'Alertas',
+                          onPressed: onNotifications,
+                        ),
+                      ),
                       if (notificationCount > 0)
                         Positioned(
-                          right: -6,
-                          top: -6,
+                          right: 3,
+                          top: -3,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
-                            ),
+                            constraints: const BoxConstraints(minWidth: 16),
+                            height: 16,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: FinancialStatusBadge.errorColor,
-                              borderRadius: BorderRadius.circular(999),
+                              color: _textPrimary,
+                              borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
                               notificationCount > 9
@@ -2505,18 +1799,20 @@ class _MobileActionDock extends StatelessWidget {
                                   .textTheme
                                   .labelSmall
                                   ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
+                                    color: _background,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0,
+                                    height: 1,
                                   ),
                             ),
                           ),
                         ),
                     ],
                   ),
-                  label: const Text('Alertas'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -2524,34 +1820,47 @@ class _MobileActionDock extends StatelessWidget {
   }
 }
 
-class _HeroAction {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _HeroAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
+bool _isCredit(Transaction tx) {
+  return tx.type == TransactionType.receive ||
+      tx.type == TransactionType.deposit;
 }
 
-class _AttentionCardData {
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String message;
-  final String ctaLabel;
-  final VoidCallback onTap;
+String _transactionAmountLabel({
+  required Transaction transaction,
+  required Currency currency,
+  required double? btcUsd,
+  required double? btcEur,
+  required double? btcBrl,
+}) {
+  if (transaction.type == TransactionType.swap) {
+    return MoneyDisplay.formatAmountFromBtc(
+      btcAmount: transaction.amountBTC,
+      currency: currency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+  }
 
-  const _AttentionCardData({
-    required this.icon,
-    required this.accent,
-    required this.title,
-    required this.message,
-    required this.ctaLabel,
-    required this.onTap,
-  });
+  final signedAmount =
+      _isCredit(transaction) ? transaction.amountBTC : -transaction.amountBTC;
+
+  return MoneyDisplay.formatAmountFromBtc(
+    btcAmount: signedAmount,
+    currency: currency,
+    btcUsd: btcUsd,
+    btcEur: btcEur,
+    btcBrl: btcBrl,
+    signed: true,
+  );
+}
+
+String _counterpartyLabel(Transaction tx) {
+  final value = (_isCredit(tx) ? tx.fromAddress : tx.toAddress).trim();
+  if (value.isEmpty) {
+    return 'Sem contraparte';
+  }
+  return _DepositsScreenState.shorten(value, head: 12, tail: 6);
 }
 
 String _historyTypeLabel(Transaction tx) {
@@ -2561,9 +1870,9 @@ String _historyTypeLabel(Transaction tx) {
     case TransactionType.withdrawal:
       return 'Saque';
     case TransactionType.send:
-      return 'Saída';
+      return tx.isInternal ? 'Envio interno' : 'Envio';
     case TransactionType.receive:
-      return 'Entrada';
+      return tx.isInternal ? 'Recebimento interno' : 'Recebimento';
     case TransactionType.swap:
       return 'Swap';
     case TransactionType.fee:
@@ -2574,14 +1883,87 @@ String _historyTypeLabel(Transaction tx) {
 IconData _historyTypeIcon(Transaction tx) {
   switch (tx.type) {
     case TransactionType.deposit:
+      return LucideIcons.arrowDownToLine;
     case TransactionType.receive:
-      return Icons.south_west_rounded;
+      return LucideIcons.arrowDownLeft;
     case TransactionType.withdrawal:
+      return LucideIcons.arrowUpFromLine;
     case TransactionType.send:
-      return Icons.north_east_rounded;
+      return LucideIcons.arrowUpRight;
     case TransactionType.swap:
-      return Icons.swap_horiz_rounded;
+      return LucideIcons.arrowLeftRight;
     case TransactionType.fee:
-      return Icons.toll_rounded;
+      return LucideIcons.receipt;
   }
+}
+
+String _statusLabel(TransactionStatus status) {
+  switch (status) {
+    case TransactionStatus.confirmed:
+      return 'Concluído';
+    case TransactionStatus.confirming:
+      return 'Confirmando';
+    case TransactionStatus.pending:
+      return 'Pendente';
+    case TransactionStatus.failed:
+      return 'Falhou';
+  }
+}
+
+IconData _statusIcon(TransactionStatus status) {
+  switch (status) {
+    case TransactionStatus.confirmed:
+      return LucideIcons.checkCircle2;
+    case TransactionStatus.confirming:
+      return LucideIcons.loader2;
+    case TransactionStatus.pending:
+      return LucideIcons.clock3;
+    case TransactionStatus.failed:
+      return LucideIcons.alertCircle;
+  }
+}
+
+String _linkStatusLabel(PaymentLink link) {
+  if (link.isVerifyingOnboarding) {
+    return 'Verificando';
+  }
+  if (link.isPending) {
+    return 'Pendente';
+  }
+  if (link.isPaid || link.isCompleted) {
+    return 'Pago';
+  }
+  if (link.isExpired) {
+    return 'Expirado';
+  }
+  return link.status;
+}
+
+String _relativeTime(DateTime date) {
+  final localDate = date.toLocal();
+  final now = DateTime.now();
+  final difference = now.difference(localDate);
+  if (difference.isNegative) {
+    final future = localDate.difference(now);
+    if (future.inMinutes < 1) {
+      return 'em instantes';
+    }
+    if (future.inHours < 1) {
+      return 'em ${future.inMinutes} min';
+    }
+    if (future.inDays < 1) {
+      return 'em ${future.inHours} h';
+    }
+    return 'em ${future.inDays} d';
+  }
+  if (difference.inMinutes < 1) {
+    return 'agora';
+  }
+  if (difference.inHours < 1) {
+    return 'há ${difference.inMinutes} min';
+  }
+  if (difference.inDays < 1) {
+    return 'há ${difference.inHours} h';
+  }
+  return _DepositsScreenState._dateTimeFormat.format(localDate);
 }

@@ -9,6 +9,7 @@ import '../../../core/services/audio_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/passkey_service.dart';
 import '../../../core/errors/failures.dart';
+import '../../../core/providers/alert_preferences_provider.dart';
 import '../presentation/state/auth_state.dart';
 import 'auth_providers.dart';
 
@@ -25,6 +26,34 @@ class AuthController extends Notifier<AuthState> {
   final PasskeyService passkeyService = PasskeyService.instance;
   Timer? _onboardingPollTimer;
   bool _isPollingOnboarding = false;
+  bool _isCompletingOnboarding = false;
+
+  AuthError _mapFailureToAuthError(Failure failure) {
+    return AuthError(
+      failure.message,
+      statusCode: failure.statusCode,
+      errorCode: failure.errorCode,
+    );
+  }
+
+  AuthError _mapPasskeyExceptionToAuthError(
+    Object error, {
+    required String fallbackMessage,
+  }) {
+    final raw = error.toString().trim();
+    final knownCode = RegExp(
+      r'(ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS|ERR_AUTH_PASSKEY_AUTH_CANCELLED)',
+    ).firstMatch(raw);
+
+    if (knownCode != null) {
+      return AuthError(
+        raw,
+        errorCode: knownCode.group(1),
+      );
+    }
+
+    return AuthError('$fallbackMessage: $raw');
+  }
 
   @override
   AuthState build() {
@@ -44,13 +73,22 @@ class AuthController extends Notifier<AuthState> {
     _isPollingOnboarding = false;
   }
 
+  Future<void> _syncBackgroundAlertsService() async {
+    final backgroundAlertsEnabled = await loadBackgroundAlertsEnabled();
+    if (backgroundAlertsEnabled) {
+      await startBackgroundService();
+      return;
+    }
+    await stopBackgroundService();
+  }
+
   void _startOnboardingPolling({
     required String linkId,
     required String username,
     required String password,
   }) {
     _stopOnboardingPolling();
-    _onboardingPollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+    _onboardingPollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
       unawaited(_pollOnboardingPaymentStatus(
         linkId: linkId,
         username: username,
@@ -59,18 +97,38 @@ class AuthController extends Notifier<AuthState> {
     });
   }
 
+  void _completeOnboardingAndLogin({
+    required String username,
+    required String password,
+  }) {
+    if (_isCompletingOnboarding) {
+      return;
+    }
+
+    _isCompletingOnboarding = true;
+    _stopOnboardingPolling();
+    unawaited(
+      continueAfterOnboardingPayment(
+        username: username,
+        password: password,
+      ).whenComplete(() {
+        _isCompletingOnboarding = false;
+      }),
+    );
+  }
+
   String _statusMessageForPaymentStatus(String status) {
     switch (status) {
       case 'verifying_onboarding':
-        return 'Transação localizada. A conta será ativada após 3 confirmações na rede.';
+        return 'Pagamento localizado. Agora faltam 3 confirmações na rede para ativar sua conta.';
       case 'completed':
-        return 'Pagamento confirmado com sucesso. Redirecionando para o login.';
+        return 'Pagamento confirmado. Finalizando sua conta...';
       case 'expired':
-        return 'O link de pagamento expirou. Gere um novo link para continuar.';
+        return 'O link de pagamento expirou. Gere um novo para continuar.';
       case 'paid':
-        return 'Pagamento identificado. Aguardando liberação final.';
+        return 'Pagamento identificado. Aguardando a liberação final.';
       default:
-        return 'Envie o valor exato e informe o TXID da transação para iniciar a validação.';
+        return 'O link público continua em polling. Envie o valor exato e cole o TXID quando sua wallet mostrar a transação.';
     }
   }
 
@@ -123,8 +181,12 @@ class AuthController extends Notifier<AuthState> {
         );
 
         if (linkDto.status == 'completed') {
+          _completeOnboardingAndLogin(
+            username: username,
+            password: password,
+          );
+        } else if (linkDto.status == 'expired') {
           _stopOnboardingPolling();
-          unawaited(login(username: username, password: password));
         }
       },
     );
@@ -148,7 +210,7 @@ class AuthController extends Notifier<AuthState> {
           (user) {
             state = AuthAuthenticated(user);
             notificationService.initializeAndRegister();
-            startBackgroundService();
+            unawaited(_syncBackgroundAlertsService());
           },
         );
       } else {
@@ -173,7 +235,7 @@ class AuthController extends Notifier<AuthState> {
       (failure) async {
         AudioService.instance.playError();
         await authRepository.clearInvalidSession();
-        state = AuthError(failure.message);
+        state = _mapFailureToAuthError(failure);
       },
       (loginResult) {
         if (loginResult.requiresTotp) {
@@ -193,6 +255,9 @@ class AuthController extends Notifier<AuthState> {
     required String username,
     required String password,
     String accountSecurity = 'STANDARD',
+    int? shamirTotalShares,
+    int? shamirThreshold,
+    int? multisigThreshold,
   }) async {
     state = const AuthLoading();
     final result = await signupUseCase(
@@ -200,13 +265,16 @@ class AuthController extends Notifier<AuthState> {
         username: username,
         passphrase: password,
         accountSecurity: accountSecurity,
+        shamirTotalShares: shamirTotalShares,
+        shamirThreshold: shamirThreshold,
+        multisigThreshold: multisigThreshold,
       ),
     );
 
     result.fold(
       (failure) {
         AudioService.instance.playError();
-        state = AuthError(failure.message);
+        state = _mapFailureToAuthError(failure);
       },
       (signupResult) => state = AuthRequiresTotpSetup(
         username: username,
@@ -233,7 +301,7 @@ class AuthController extends Notifier<AuthState> {
     );
 
     result.fold(
-      (failure) => state = AuthError(failure.message),
+      (failure) => state = _mapFailureToAuthError(failure),
       (sessionId) => state = AuthTotpVerified(sessionId, username),
     );
   }
@@ -252,10 +320,10 @@ class AuthController extends Notifier<AuthState> {
       preAuthToken: preAuthToken,
     );
 
-    result.fold((failure) => state = AuthError(failure.message), (user) {
+    result.fold((failure) => state = _mapFailureToAuthError(failure), (user) {
       state = AuthAuthenticated(user);
       notificationService.initializeAndRegister();
-      startBackgroundService();
+      unawaited(_syncBackgroundAlertsService());
     });
   }
 
@@ -280,17 +348,18 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> loginWithPasskey(String username) async {
     if (username.isEmpty) {
-      state = const AuthError('Por favor, insira o usuário para entrar com Passkey');
+      state = const AuthError(
+          'Por favor, insira o usuário para entrar com Passkey');
       return;
     }
     state = const AuthLoading();
-    
+
     // 1. Get challenge from backend
     final startResult = await authRepository.passkeyLoginStart(username);
-    
+
     await startResult.fold(
       (failure) async {
-        state = AuthError(failure.message, statusCode: failure.statusCode);
+        state = _mapFailureToAuthError(failure);
       },
       (challengeHex) async {
         try {
@@ -299,20 +368,20 @@ class AuthController extends Notifier<AuthState> {
             challengeHex: challengeHex,
             username: username,
           );
-          
+
           // 3. Finish login with backend (credential already has the right structure)
           final finishResult = await authRepository.passkeyLoginFinish(
             username: username,
             credential: credential,
           );
-          
+
           finishResult.fold(
-            (failure) => state = AuthError(failure.message, statusCode: failure.statusCode),
+            (failure) => state = _mapFailureToAuthError(failure),
             (loginResult) {
               if (loginResult.requiresTotp) {
                 state = AuthRequiresLoginTotp(
                   username: username,
-                  passphrase: '', 
+                  passphrase: '',
                   preAuthToken: loginResult.jwt,
                 );
               } else {
@@ -321,29 +390,32 @@ class AuthController extends Notifier<AuthState> {
             },
           );
         } catch (e) {
-          state = AuthError('Erro na autenticação via passkey: $e');
+          state = _mapPasskeyExceptionToAuthError(
+            e,
+            fallbackMessage: 'Erro na autenticação via passkey',
+          );
         }
       },
     );
   }
 
-
   Future<void> registerPasskey() async {
     final currentState = state;
     if (currentState is! AuthAuthenticated) {
-      state = const AuthError('Você precisa estar logado para registrar uma passkey');
+      state = const AuthError(
+          'Você precisa estar logado para registrar uma passkey');
       return;
     }
-    
+
     final username = currentState.user.name;
     state = const AuthLoading();
 
     // 1. Get challenge from backend
     final startResult = await authRepository.passkeyRegisterStart(username);
-    
+
     await startResult.fold(
       (failure) async {
-        state = AuthError(failure.message);
+        state = _mapFailureToAuthError(failure);
       },
       (challengeHex) async {
         try {
@@ -352,21 +424,31 @@ class AuthController extends Notifier<AuthState> {
             challengeHex: challengeHex,
             username: username,
           );
-          
+
           // 3. Finish registration with backend
-          final finishResult = await authRepository.passkeyRegisterFinish(credential);
-          
-          finishResult.fold(
-            (failure) => state = AuthError(failure.message),
-            (_) {
-              // Stay authenticated
-              state = AuthAuthenticated(currentState.user);
-              // NotificationService doesn't have showNotification yet, just debug log
-              debugPrint('🔐 Passkey registered successfully for ${currentState.user.name}');
+          final finishResult =
+              await authRepository.passkeyRegisterFinish(credential);
+
+          await finishResult.fold(
+            (failure) async {
+              state = _mapFailureToAuthError(failure);
+            },
+            (_) async {
+              final refreshedUser = await authRepository.getCurrentUser();
+              refreshedUser.fold(
+                (_) => state = AuthAuthenticated(currentState.user),
+                (user) => state = AuthAuthenticated(user),
+              );
+              debugPrint(
+                '🔐 Passkey registered successfully for ${currentState.user.name}',
+              );
             },
           );
         } catch (e) {
-          state = AuthError('Erro no registro de passkey: $e');
+          state = _mapPasskeyExceptionToAuthError(
+            e,
+            fallbackMessage: 'Erro no registro de passkey',
+          );
         }
       },
     );
@@ -378,7 +460,7 @@ class AuthController extends Notifier<AuthState> {
     if (currentState is AuthTotpVerified) {
       username = currentState.username;
     }
-    
+
     state = const AuthLoading();
 
     // 1. Get challenge from backend
@@ -386,58 +468,72 @@ class AuthController extends Notifier<AuthState> {
       sessionId: sessionId,
       username: username,
     );
-    
+
     await result.fold(
       (failure) async {
-        state = AuthError(failure.message);
+        state = _mapFailureToAuthError(failure);
       },
       (challengeHex) async {
         try {
-          final effectiveUsername = username ?? 'User_${sessionId.substring(0, 4)}';
-          
+          final effectiveUsername =
+              username ?? 'User_${sessionId.substring(0, 4)}';
+
           // 2. Register passkey (generates key pair + signs challenge with biometric)
           final credential = await passkeyService.register(
             challengeHex: challengeHex,
             username: effectiveUsername,
           );
-          
+
           // 3. Finish registration with backend
-          final finishResult = await authRepository.passkeyRegisterOnboardingFinish(
+          final finishResult =
+              await authRepository.passkeyRegisterOnboardingFinish(
             sessionId,
             credential,
           );
-          
+
           finishResult.fold(
-            (failure) => state = AuthError(failure.message),
+            (failure) => state = _mapFailureToAuthError(failure),
             (_) {
               AudioService.instance.playTransaction();
               state = const AuthHardwareVerified();
             },
           );
         } catch (e) {
-          state = AuthError('Erro no registro de passkey: $e');
+          state = _mapPasskeyExceptionToAuthError(
+            e,
+            fallbackMessage: 'Erro no registro de passkey',
+          );
         }
       },
     );
   }
 
-
-
-
-  Future<void> getOnboardingLink(String sessionId) async {
+  Future<void> getOnboardingLink({
+    required String sessionId,
+    required String username,
+    required String password,
+  }) async {
     _stopOnboardingPolling();
     state = const AuthLoading();
     final result = await authRepository.generateOnboardingLink(sessionId);
     result.fold(
-      (failure) => state = AuthError(failure.message),
-      (linkDto) => state = AuthPaymentRequired(
-        sessionId: sessionId,
-        paymentLinkId: linkDto.linkId,
-        amountBtc: linkDto.amountBtc,
-        depositAddress: linkDto.depositAddress,
-        paymentStatus: linkDto.status,
-        statusMessage: _statusMessageForPaymentStatus(linkDto.status),
-      ),
+      (failure) => state = _mapFailureToAuthError(failure),
+      (linkDto) {
+        state = AuthPaymentRequired(
+          sessionId: sessionId,
+          paymentLinkId: linkDto.linkId,
+          amountBtc: linkDto.amountBtc,
+          depositAddress: linkDto.depositAddress,
+          paymentStatus: linkDto.status,
+          statusMessage: _statusMessageForPaymentStatus(linkDto.status),
+        );
+
+        _startOnboardingPolling(
+          linkId: linkDto.linkId,
+          username: username,
+          password: password,
+        );
+      },
     );
   }
 
@@ -455,7 +551,7 @@ class AuthController extends Notifier<AuthState> {
     final cleanTxid = txid.trim();
     if (cleanTxid.isEmpty) {
       state = currentState.copyWith(
-        errorMessage: 'Informe o TXID da transação on-chain para continuar.',
+        errorMessage: 'Cole o TXID da transação on-chain para continuar.',
       );
       return;
     }
@@ -463,7 +559,7 @@ class AuthController extends Notifier<AuthState> {
     state = currentState.copyWith(
       isSubmitting: true,
       submittedTxid: cleanTxid,
-      statusMessage: 'Validando a transação na blockchain...',
+      statusMessage: 'Validando a transação na rede Bitcoin...',
       clearError: true,
     );
 
@@ -481,7 +577,7 @@ class AuthController extends Notifier<AuthState> {
             errorMessage: failure.message,
           );
         } else {
-          state = AuthError(failure.message);
+          state = _mapFailureToAuthError(failure);
         }
       },
       (linkDto) {
@@ -499,7 +595,15 @@ class AuthController extends Notifier<AuthState> {
         );
 
         if (linkDto.status == 'completed') {
-          unawaited(login(username: username, password: password));
+          _completeOnboardingAndLogin(
+            username: username,
+            password: password,
+          );
+          return;
+        }
+
+        if (linkDto.status == 'expired') {
+          _stopOnboardingPolling();
           return;
         }
 
@@ -517,6 +621,13 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
+  Future<void> continueAfterOnboardingPayment({
+    required String username,
+    required String password,
+  }) async {
+    await login(username: username, password: password);
+  }
+
   Future<void> mockConfirmOnboarding({
     required String sessionId,
     required String username,
@@ -524,9 +635,9 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     state = const AuthLoading();
     final result = await authRepository.mockConfirmOnboarding(sessionId);
-    
+
     result.fold(
-      (failure) => state = AuthError(failure.message),
+      (failure) => state = _mapFailureToAuthError(failure),
       (_) => login(username: username, password: password),
     );
   }
