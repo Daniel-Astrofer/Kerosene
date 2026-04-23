@@ -44,7 +44,8 @@ maybe_enable_redis_overcommit() {
 
 service_has_master_key() {
   local service="$1"
-  compose logs --no-color --tail 200 "$service" 2>/dev/null | grep -Fq "Master key securely locked in RAM. Shard is UP."
+  compose logs --no-color --tail 200 "$service" 2>/dev/null | grep -Eq \
+    "Master key securely locked in RAM\\.|SUCCESS: Master key provisioned on attempt"
 }
 
 read_onion_hostname() {
@@ -116,6 +117,12 @@ fi
 
 info "Starting local backend cluster with $COMPOSE_FILE"
 compose "${UP_ARGS[@]}" "${COMPOSE_SERVICES[@]}"
+
+if [[ "$DETACH" -eq 1 ]]; then
+  "$SCRIPT_DIR/migrate-local-db.sh"
+else
+  warn "Foreground mode skips automatic local DB migrations. Run scripts/migrate-local-db.sh in another terminal if you reuse persisted volumes."
+fi
 
 if [[ "$DETACH" -eq 1 && "$ARM_VAULT" -eq 1 ]]; then
   info "Waiting for Vault container before arming..."

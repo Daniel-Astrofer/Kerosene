@@ -1,5 +1,6 @@
 import 'package:teste/core/network/api_client.dart';
 import 'package:teste/features/mining/data/models/mempool_market_models.dart';
+import 'package:teste/features/mining/data/models/mempool_transaction_models.dart';
 
 class MempoolService {
   final ApiClient _client;
@@ -74,7 +75,8 @@ class MempoolService {
               ),
       blocks: results[4] != null
           ? (results[4] as List<dynamic>)
-              .map((item) => MempoolBlock.fromJson(item as Map<String, dynamic>))
+              .map(
+                  (item) => MempoolBlock.fromJson(item as Map<String, dynamic>))
               .toList()
           : _lastValidData?.blocks ?? const [],
       hashrate: results[5] != null
@@ -108,6 +110,34 @@ class MempoolService {
 
     _lastValidData = newData;
     return newData;
+  }
+
+  Future<MempoolTransactionSummary?> fetchTransactionSummary(
+      String txid) async {
+    final txResponse = await _getSafeJson('/tx/$txid');
+    if (txResponse is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final status = (txResponse['status'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
+    final blockHash = status['block_hash']?.toString().trim() ?? '';
+
+    List<String> blockTxids = const <String>[];
+    if (blockHash.isNotEmpty) {
+      final blockTxidsResponse = await _getSafeJson('/block/$blockHash/txids');
+      if (blockTxidsResponse is List) {
+        blockTxids = blockTxidsResponse
+            .map((entry) => entry?.toString() ?? '')
+            .where((entry) => entry.isNotEmpty)
+            .toList(growable: false);
+      }
+    }
+
+    return MempoolTransactionSummary.fromJson(
+      txResponse,
+      blockTxids: blockTxids,
+    );
   }
 
   Future<dynamic> _getSafeJson(String path) async {

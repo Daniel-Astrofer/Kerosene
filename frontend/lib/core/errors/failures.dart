@@ -19,7 +19,8 @@ abstract class Failure {
 
 /// Falha de servidor (5xx)
 class ServerFailure extends Failure {
-  const ServerFailure({required super.message, super.statusCode, super.errorCode});
+  const ServerFailure(
+      {required super.message, super.statusCode, super.errorCode});
 }
 
 /// Falha de rede (sem conexão)
@@ -29,7 +30,8 @@ class NetworkFailure extends Failure {
 
 /// Falha de autenticação (401, 403)
 class AuthFailure extends Failure {
-  const AuthFailure({required super.message, super.statusCode, super.errorCode});
+  const AuthFailure(
+      {required super.message, super.statusCode, super.errorCode});
 }
 
 /// Falha de validação (400)

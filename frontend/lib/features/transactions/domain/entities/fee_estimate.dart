@@ -38,13 +38,13 @@ class FeeEstimate extends Equatable {
 
   @override
   List<Object?> get props => [
-    fastSatPerByte,
-    standardSatPerByte,
-    slowSatPerByte,
-    estimatedFastBtc,
-    estimatedStandardBtc,
-    estimatedSlowBtc,
-    amountReceived,
-    totalToSend,
-  ];
+        fastSatPerByte,
+        standardSatPerByte,
+        slowSatPerByte,
+        estimatedFastBtc,
+        estimatedStandardBtc,
+        estimatedSlowBtc,
+        amountReceived,
+        totalToSend,
+      ];
 }

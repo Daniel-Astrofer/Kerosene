@@ -1,37 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/widgets/bouncing_button.dart';
-import 'package:teste/core/widgets/cyber_text_field.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/features/auth/presentation/widgets/auth_entry_ui.dart';
+import 'package:teste/features/auth/presentation/widgets/modern_auth_text_field.dart';
 import 'package:teste/l10n/l10n_extension.dart';
+
+import 'emergency_recovery_screen.dart';
 import 'passkey_verification_screen.dart';
-/// Username entry screen — first step of the login flow.
-/// Navigates to PasskeyVerificationScreen.
+
 class LoginUsernameScreen extends ConsumerStatefulWidget {
   const LoginUsernameScreen({super.key});
 
   @override
-  ConsumerState<LoginUsernameScreen> createState() => _LoginUsernameScreenState();
+  ConsumerState<LoginUsernameScreen> createState() =>
+      _LoginUsernameScreenState();
 }
 
 class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
   final _usernameController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  void _handleContinue() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PasskeyVerificationScreen(
-            username: _usernameController.text,
-          ),
-        ),
-      );
-    }
-  }
 
   @override
   void dispose() {
@@ -39,81 +27,95 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
     super.dispose();
   }
 
+  void _normalizeUsername(String value) {
+    final sanitized = value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    final normalized = sanitized.substring(0, sanitized.length.clamp(0, 24));
+    if (normalized != value) {
+      _usernameController.value = TextEditingValue(
+        text: normalized,
+        selection: TextSelection.collapsed(offset: normalized.length),
+      );
+    }
+    setState(() {});
+  }
+
+  void _handleContinue() {
+    final username = _usernameController.text.trim();
+    if (username.length < 3) {
+      AppNotice.showError(
+        context,
+        title: context.l10n.username,
+        message: 'Informe o username da conta.',
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PasskeyVerificationScreen(
+          username: username,
+        ),
+      ),
+    );
+  }
+
+  void _openRecovery() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EmergencyRecoveryScreen(
+          initialUsername: _usernameController.text.trim(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CyberBackground(
-      useScroll: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Back Button
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(
-                top: AppSpacing.md,
-                left: AppSpacing.sm,
-              ),
-              child: IconButton(
-                icon: Icon(
-                  LucideIcons.arrowLeft,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
+    return AuthEntryScaffold(
+      eyebrow: 'ACESSAR CONTA',
+      title: context.l10n.welcomeBack,
+      subtitle:
+          'Primeiro informe seu nome de usuário',
+      onBack: () => Navigator.of(context).maybePop(),
+      child: AuthEntryPanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ModernAuthTextField(
+              controller: _usernameController,
+              label: context.l10n.username,
+              hint: 'Nome de usuário',
+              icon: LucideIcons.user,
+              autofocus: true,
+              keyboardType: TextInputType.text,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.username],
+              onChanged: _normalizeUsername,
+              onFieldSubmitted: (_) => _handleContinue(),
             ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 72),
-                  Text(
-                    context.l10n.welcomeBack,
-                    style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                      fontSize: 32,
-                      height: 1.1,
-                      letterSpacing: -0.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-
-                  CyberTextField(
-                    controller: _usernameController,
-                    label: context.l10n.username.toUpperCase(),
-                    hint: 'astroferas',
-                    prefixIcon: Icon(
-                      LucideIcons.user,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      size: 20,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return context.l10n.required;
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 96),
-
-                  BouncingButton(
-                    text: context.l10n.continueButton,
-                    onPressed: _handleContinue,
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-              ),
+            const SizedBox(height: AppSpacing.lg),
+            const AuthEntryNote(
+              icon: LucideIcons.fingerprint,
+              title: 'Aviso',
+              body:
+                  'A Kerosene tenta a passkey local primeiro.',
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.xl),
+            AuthEntryButton(
+              text: context.l10n.continueButton.toUpperCase(),
+              icon: LucideIcons.arrowRight,
+              onPressed: _handleContinue,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AuthEntryButton(
+              text: context.l10n.forgotPassword.toUpperCase(),
+              outlined: true,
+              onPressed: _openRecovery,
+            ),
+          ],
+        ),
       ),
     );
   }

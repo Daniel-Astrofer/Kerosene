@@ -36,11 +36,17 @@ final class Transaction extends Equatable {
   /// Altura do bloco (null se pendente)
   final int? blockHeight;
 
+  /// TXID on-chain quando a entrada do ledger referencia uma transação externa.
+  final String? blockchainTxid;
+
   /// Descrição/nota da transação
   final String? description;
 
   /// Indica se é uma transação interna (entre usuários da plataforma)
   final bool isInternal;
+
+  /// Indica se é uma transação Lightning
+  final bool isLightning;
 
   const Transaction({
     required this.id,
@@ -54,8 +60,10 @@ final class Transaction extends Equatable {
     required this.timestamp,
     this.blockHash,
     this.blockHeight,
+    this.blockchainTxid,
     this.description,
     this.isInternal = false,
+    this.isLightning = false,
   });
 
   /// Valor total (amount + fee)
@@ -86,14 +94,18 @@ final class Transaction extends Equatable {
       'timestamp': timestamp.toIso8601String(),
       'blockHash': blockHash,
       'blockHeight': blockHeight,
+      'blockchainTxid': blockchainTxid,
       'description': description,
       'isInternal': isInternal,
+      'isLightning': isLightning,
     };
   }
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     // If it's from local storage (newly added format)
-    if (json.containsKey('status') && json['status'] is String) {
+    if (json.containsKey('status') &&
+        json['status'] is String &&
+        json.containsKey('amountSatoshis')) {
       return Transaction(
         id: json['id'],
         fromAddress: json['fromAddress'],
@@ -112,99 +124,193 @@ final class Transaction extends Equatable {
         timestamp: DateTime.parse(json['timestamp']),
         blockHash: json['blockHash'],
         blockHeight: json['blockHeight'],
+        blockchainTxid: json['blockchainTxid']?.toString(),
         description: json['description'],
         isInternal: json['isInternal'] ?? false,
+        isLightning: json['isLightning'] ?? false,
       );
     }
 
-    // Original Ledger API format (New structure)
+    // LedgerTransactionHistory / API payload format
     final amountVal = (json['amount'] as num?)?.toDouble() ?? 0.0;
+    final networkFee = (json['networkFee'] as num?)?.toDouble() ?? 0.0;
+    final currentUserId = _parseInt(json['currentUserId']);
+    final senderUserId = _parseInt(json['senderUserId']);
+    final receiverUserId = _parseInt(json['receiverUserId']);
 
-    final senderField =
-        [
-              json['senderIdentifier'],
-              json['sender'],
-              json['from'],
-              json['fromAddress'],
-            ]
-            .map((e) => e?.toString())
-            .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+    final senderField = [
+      json['senderIdentifier'],
+      json['sender'],
+      json['from'],
+      json['fromAddress'],
+    ]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
-    final receiverField =
-        [
-              json['receiverIdentifier'],
-              json['receiver'],
-              json['to'],
-              json['toAddress'],
-            ]
-            .map((e) => e?.toString())
-            .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+    final receiverField = [
+      json['receiverIdentifier'],
+      json['receiver'],
+      json['to'],
+      json['toAddress'],
+    ]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
-    final typeField = (json['transactionType'] ?? json['type'])
-        ?.toString()
-        .toUpperCase();
-    bool isSend = false;
-
-    if (typeField == 'SEND' ||
-        typeField == 'DEBIT' ||
-        typeField == 'WITHDRAWAL' ||
-        typeField == 'TRANSACTION_SEND') {
-      isSend = true;
-    } else if (amountVal < 0) {
-      isSend = true;
-    }
-
-    TransactionType txType = isSend
-        ? TransactionType.send
-        : TransactionType.receive;
-    if (typeField == 'WITHDRAWAL') {
-      txType = TransactionType.withdrawal;
-    } else if (typeField == 'DEPOSIT') {
-      txType = TransactionType.deposit;
-    } else if (typeField == 'TRANSACTION_SEND') {
-      txType = TransactionType.send;
-    } else if (typeField == 'TRANSACTION_RECEIVE') {
-      txType = TransactionType.receive;
-    }
+    final typeField =
+        (json['transactionType'] ?? json['type'])?.toString().toUpperCase() ??
+            '';
+    final confirmations =
+        _parseInt(json['confirmations']) ?? _parseInt(json['nonce']) ?? 0;
+    final txType = _resolveType(
+      typeField: typeField,
+      amountVal: amountVal,
+      currentUserId: currentUserId,
+      senderUserId: senderUserId,
+      receiverUserId: receiverUserId,
+    );
+    final txStatus = _resolveStatus(
+      rawStatus: json['status']?.toString(),
+      confirmations: confirmations,
+    );
+    final createdAt = _parseDateTime(json['createdAt'] ?? json['timestamp']);
 
     return Transaction(
-      id: (json['id'] ?? '').toString(),
-      fromAddress: senderField ?? (isSend ? 'Me' : 'External'),
-      toAddress: receiverField ?? (isSend ? 'External' : 'Me'),
+      id: (json['id'] ?? json['blockchainTxid'] ?? '').toString(),
+      fromAddress: senderField ??
+          (txType == TransactionType.send ||
+                  txType == TransactionType.withdrawal
+              ? 'Minha carteira'
+              : 'Rede Bitcoin'),
+      toAddress: receiverField ??
+          (txType == TransactionType.send ||
+                  txType == TransactionType.withdrawal
+              ? 'Rede Bitcoin'
+              : 'Minha carteira'),
       amountSatoshis: (amountVal.abs() * 100000000).round(),
-      feeSatoshis: 0,
-      status: TransactionStatus.confirmed,
+      feeSatoshis: (networkFee.abs() * 100000000).round(),
+      status: txStatus,
       type: txType,
-      confirmations: (json['nonce'] ?? 6) as int,
-      timestamp: DateTime.now(),
+      confirmations: confirmations,
+      timestamp: createdAt ?? DateTime.now(),
       description:
           json['context']?.toString() ?? json['description']?.toString(),
-      isInternal:
+      blockchainTxid: json['blockchainTxid']?.toString(),
+      isInternal: typeField == 'INTERNAL' ||
           typeField == 'TRANSFER' ||
           typeField == 'TRANSACTION_SEND' ||
           typeField == 'TRANSACTION_RECEIVE' ||
           json['context'] == 'transfer' ||
           (json['description']?.toString().toLowerCase().contains('transfer') ??
               false),
+      isLightning: typeField.contains('LIGHTNING') ||
+          (json['description']?.toString().toUpperCase().contains('LIGHTNING') ?? false) ||
+          (json['context']?.toString().toUpperCase().contains('LIGHTNING') ?? false),
     );
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    return DateTime.tryParse(value.toString())?.toLocal();
+  }
+
+  static TransactionType _resolveType({
+    required String typeField,
+    required double amountVal,
+    required int? currentUserId,
+    required int? senderUserId,
+    required int? receiverUserId,
+  }) {
+    if (typeField == 'EXTERNAL_WITHDRAWAL' || typeField == 'WITHDRAWAL') {
+      return TransactionType.withdrawal;
+    }
+
+    if (typeField == 'EXTERNAL_DEPOSIT' || typeField == 'DEPOSIT') {
+      return TransactionType.deposit;
+    }
+
+    if (typeField == 'TRANSACTION_SEND' ||
+        typeField == 'SEND' ||
+        typeField == 'DEBIT') {
+      return TransactionType.send;
+    }
+
+    if (typeField == 'TRANSACTION_RECEIVE' || typeField == 'RECEIVE') {
+      return TransactionType.receive;
+    }
+
+    if (typeField == 'INTERNAL' || typeField == 'TRANSFER') {
+      if (currentUserId != null) {
+        if (senderUserId == currentUserId && receiverUserId != currentUserId) {
+          return TransactionType.send;
+        }
+        if (receiverUserId == currentUserId && senderUserId != currentUserId) {
+          return TransactionType.receive;
+        }
+      }
+    }
+
+    return amountVal < 0 ? TransactionType.send : TransactionType.receive;
+  }
+
+  static TransactionStatus _resolveStatus({
+    required String? rawStatus,
+    required int confirmations,
+  }) {
+    final normalized = rawStatus?.toUpperCase() ?? 'PENDING';
+
+    switch (normalized) {
+      case 'CONCLUDED':
+      case 'COMPLETED':
+      case 'PAID':
+        return TransactionStatus.confirmed;
+      case 'VERIFYING_ONBOARDING':
+        return TransactionStatus.confirming;
+      case 'PENDING':
+        return confirmations > 0
+            ? TransactionStatus.confirming
+            : TransactionStatus.pending;
+      case 'CANCELED':
+      case 'CANCELLED':
+      case 'EXPIRED':
+      case 'FAILED':
+        return TransactionStatus.failed;
+      default:
+        return confirmations > 0
+            ? TransactionStatus.confirming
+            : TransactionStatus.pending;
+    }
   }
 
   @override
   List<Object?> get props => [
-    id,
-    fromAddress,
-    toAddress,
-    amountSatoshis,
-    feeSatoshis,
-    status,
-    type,
-    confirmations,
-    timestamp,
-    blockHash,
-    blockHeight,
-    description,
-    isInternal,
-  ];
+        id,
+        fromAddress,
+        toAddress,
+        amountSatoshis,
+        feeSatoshis,
+        status,
+        type,
+        confirmations,
+        timestamp,
+        blockHash,
+        blockHeight,
+        blockchainTxid,
+        description,
+        isInternal,
+        isLightning,
+      ];
 }
 
 /// Status da transação

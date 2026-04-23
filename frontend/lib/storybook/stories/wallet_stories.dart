@@ -2,6 +2,7 @@
 // Contains home, wallet, deposit, send/receive, and transaction history screens.
 import 'package:storybook_flutter/storybook_flutter.dart';
 
+import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import 'package:teste/features/home/presentation/screens/home_loading_screen.dart';
@@ -41,7 +42,8 @@ List<Story> walletStories() {
     // ─── Home & Dashboard ───────────────────────────────
     Story(
       name: 'Wallet/Home Dashboard',
-      description: 'Main dashboard with balance, wallets, and recent transactions.',
+      description:
+          'Main dashboard with balance, wallets, and recent transactions.',
       builder: (context) => const HomeScreen(),
     ),
     Story(
@@ -58,7 +60,8 @@ List<Story> walletStories() {
     ),
     Story(
       name: 'Wallet/Details',
-      description: 'Individual wallet detail view with balance and transactions.',
+      description:
+          'Individual wallet detail view with balance and transactions.',
       builder: (context) => WalletDetailsScreen(wallet: _mockWallet),
     ),
     Story(
@@ -103,15 +106,19 @@ List<Story> walletStories() {
     Story(
       name: 'Wallet/Deposit — Method',
       description: 'Choose deposit method (Pix, Card, Wire).',
-      builder: (context) =>
-          DepositMethodScreen(wallet: _mockWallet, amountFiat: 1000.0),
+      builder: (context) => DepositMethodScreen(
+        wallet: _mockWallet,
+        inputAmount: 1000.0,
+        inputCurrency: Currency.brl,
+      ),
     ),
     Story(
       name: 'Wallet/Deposit — Provider',
       description: 'Select onramp provider for the deposit.',
       builder: (context) => DepositProviderScreen(
         wallet: _mockWallet,
-        amountFiat: 1000.0,
+        inputAmount: 1000.0,
+        inputCurrency: Currency.brl,
         method: 'Pix',
       ),
     ),
@@ -120,7 +127,8 @@ List<Story> walletStories() {
       description: 'On-chain BTC invoice with address and QR.',
       builder: (context) => DepositOnchainInvoiceScreen(
         wallet: _mockWallet,
-        amountFiat: 1000.0,
+        inputAmount: 1000.0,
+        inputCurrency: Currency.brl,
         providerName: 'Kerosene',
       ),
     ),
@@ -129,7 +137,8 @@ List<Story> walletStories() {
       description: 'Lightning Network invoice with BOLT11 QR.',
       builder: (context) => DepositLightningInvoiceScreen(
         wallet: _mockWallet,
-        amountFiat: 1000.0,
+        inputAmount: 1000.0,
+        inputCurrency: Currency.brl,
         providerName: 'Kerosene',
       ),
     ),

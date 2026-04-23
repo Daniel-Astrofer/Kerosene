@@ -235,9 +235,9 @@ class AppCopy {
     es: 'Confianza continua',
   );
   static const signupHardwareNoticeBody = LocalizedCopy(
-    en: 'Once the passkey is created successfully, you move straight to the on-chain activation.',
-    pt: 'Quando a passkey for criada com sucesso, você segue direto para a ativação on-chain.',
-    es: 'Cuando la passkey se cree con éxito, pasarás directo a la activación on-chain.',
+    en: 'Once the passkey is created successfully, signup is complete.',
+    pt: 'Quando a passkey for criada com sucesso, o cadastro estará concluído.',
+    es: 'Cuando la passkey se cree con éxito, el registro estará completo.',
   );
   static const signupHardwareCta = LocalizedCopy(
     en: 'Bind this device',
@@ -452,19 +452,19 @@ class AppCopy {
     es: 'Base del acceso',
   );
   static const presentationActivationEyebrow = LocalizedCopy(
-    en: 'ACTIVATION WITH A LIVE QUOTE',
-    pt: 'ATIVAÇÃO COM VALOR ATUALIZADO',
-    es: 'ACTIVACIÓN CON IMPORTE ACTUALIZADO',
+    en: 'DEPOSIT INSIDE THE PLATFORM',
+    pt: 'DEPÓSITO DENTRO DA PLATAFORMA',
+    es: 'DEPÓSITO DENTRO DE LA PLATAFORMA',
   );
   static const presentationActivationTitle = LocalizedCopy(
-    en: 'Onboarding requires an initial deposit. It is not a subscription.',
-    pt: 'A ativação exige um valor consultado em tempo real. Não é assinatura.',
-    es: 'La activación requiere un importe consultado en tiempo real. No es una suscripción.',
+    en: 'Signup does not ask for a deposit.',
+    pt: 'O cadastro não pede depósito.',
+    es: 'El registro no pide depósito.',
   );
   static const presentationActivationSummary = LocalizedCopy(
-    en: 'The activation amount is requested directly from the backend before confirmation. Network and processing fees may vary over time.',
-    pt: 'O valor de ativação é consultado diretamente no backend antes da confirmação. As taxas de rede e de processamento podem variar conforme o momento.',
-    es: 'El importe de activación se consulta directamente en el backend antes de la confirmación. Las comisiones de red y de procesamiento pueden variar con el tiempo.',
+    en: 'Receiving inside the platform is released after the first deposit made from the authenticated deposit flow.',
+    pt: 'O recebimento dentro da plataforma é liberado após o primeiro depósito feito pelo fluxo autenticado.',
+    es: 'La recepción dentro de la plataforma se libera después del primer depósito hecho desde el flujo autenticado.',
   );
   static const presentationActivationHighlightLivePending = LocalizedCopy(
     en: 'Amount fetched live before payment',
@@ -755,6 +755,81 @@ class AppCopy {
     pt: 'CONFIRMAR SAQUE',
     es: 'CONFIRMAR RETIRO',
   );
+  static const withdrawDestinationDetectedOnChain = LocalizedCopy(
+    en: 'Valid on-chain address detected',
+    pt: 'Endereco on-chain valido detectado',
+    es: 'Direccion on-chain valida detectada',
+  );
+  static const withdrawDestinationDetectedLightning = LocalizedCopy(
+    en: 'Lightning invoice detected',
+    pt: 'Invoice Lightning detectado',
+    es: 'Invoice Lightning detectado',
+  );
+  static const withdrawDestinationInvalid = LocalizedCopy(
+    en: 'Enter a valid Bitcoin address or Lightning invoice.',
+    pt: 'Informe um endereco Bitcoin valido ou um invoice Lightning valido.',
+    es: 'Ingresa una direccion Bitcoin valida o un invoice Lightning valido.',
+  );
+  static const withdrawDestinationLightningUnsupported = LocalizedCopy(
+    en: 'This withdrawal endpoint currently supports only on-chain Bitcoin addresses.',
+    pt: 'Este fluxo de saque suporta apenas enderecos Bitcoin on-chain no backend atual.',
+    es: 'Este flujo de retiro solo admite direcciones Bitcoin on-chain en el backend actual.',
+  );
+  static const withdrawDestinationPaste = LocalizedCopy(
+    en: 'Paste',
+    pt: 'Colar',
+    es: 'Pegar',
+  );
+  static const withdrawDestinationPasteHint = LocalizedCopy(
+    en: 'Paste an on-chain address, bitcoin: URI, or Lightning invoice.',
+    pt: 'Cole um endereco on-chain, URI bitcoin: ou invoice Lightning.',
+    es: 'Pega una direccion on-chain, URI bitcoin: o invoice Lightning.',
+  );
+  static const withdrawWalletBalanceLabel = LocalizedCopy(
+    en: 'AVAILABLE BALANCE',
+    pt: 'SALDO DISPONIVEL',
+    es: 'SALDO DISPONIBLE',
+  );
+  static const withdrawDestinationLabel = LocalizedCopy(
+    en: 'DESTINATION',
+    pt: 'DESTINO',
+    es: 'DESTINO',
+  );
+  static const withdrawNetworkAutoLabel = LocalizedCopy(
+    en: 'AUTO DETECTION',
+    pt: 'DETECCAO AUTOMATICA',
+    es: 'DETECCION AUTOMATICA',
+  );
+  static const withdrawSecurityTotpHint = LocalizedCopy(
+    en: 'Enter the wallet TOTP to authorize this withdrawal.',
+    pt: 'Digite o TOTP da carteira para autorizar este saque.',
+    es: 'Ingresa el TOTP de la wallet para autorizar este retiro.',
+  );
+  static const withdrawDescriptionLabel = LocalizedCopy(
+    en: 'DESCRIPTION',
+    pt: 'DESCRICAO',
+    es: 'DESCRIPCION',
+  );
+  static const withdrawReviewSummaryLabel = LocalizedCopy(
+    en: 'WITHDRAWAL SUMMARY',
+    pt: 'RESUMO DO SAQUE',
+    es: 'RESUMEN DEL RETIRO',
+  );
+  static const withdrawInsufficientBalance = LocalizedCopy(
+    en: 'Insufficient balance to cover the withdrawal and estimated network fee.',
+    pt: 'Saldo insuficiente para cobrir o saque e a taxa estimada da rede.',
+    es: 'Saldo insuficiente para cubrir el retiro y la tasa estimada de la red.',
+  );
+  static const withdrawNetworkOnChainChip = LocalizedCopy(
+    en: 'ON-CHAIN',
+    pt: 'ON-CHAIN',
+    es: 'ON-CHAIN',
+  );
+  static const withdrawNetworkReviewChip = LocalizedCopy(
+    en: 'REVIEW',
+    pt: 'REVISAR',
+    es: 'REVISAR',
+  );
 
   static const withdrawReceiptWallet = LocalizedCopy(
     en: 'WALLET',
@@ -875,9 +950,9 @@ class AppCopy {
     es: 'Completa todas las palabras antes de continuar.',
   );
   static const loginPassphraseTitle = LocalizedCopy(
-    en: 'Passphrase',
-    pt: 'Frase secreta',
-    es: 'Frase secreta',
+    en: 'BIP39',
+    pt: 'BIP39',
+    es: 'BIP39',
   );
   static const loginPassphraseManualMode = LocalizedCopy(
     en: 'Manual login',
@@ -885,9 +960,9 @@ class AppCopy {
     es: 'Login manual',
   );
   static const loginPassphraseDescription = LocalizedCopy(
-    en: 'Enter the secret phrase exactly in the stored order. The layout below adapts between one and two columns to avoid clipping and misalignment.',
-    pt: 'Digite a frase secreta exatamente na ordem em que foi armazenada. O layout abaixo se adapta entre uma e duas colunas para evitar cortes e desalinhamentos.',
-    es: 'Ingresa la frase secreta exactamente en el orden en que fue guardada. El layout se adapta entre una y dos columnas para evitar cortes y desalineacion.',
+    en: 'Enter your BIP39 phrase exactly in the stored order. The layout below adapts between one and two columns to avoid clipping and misalignment.',
+    pt: 'Digite sua frase BIP39 exatamente na ordem em que foi armazenada. O layout abaixo se adapta entre uma e duas colunas para evitar cortes e desalinhamentos.',
+    es: 'Ingresa tu frase BIP39 exactamente en el orden en que fue guardada. El layout se adapta entre una y dos columnas para evitar cortes y desalineacion.',
   );
   static const loginPassphraseRecoveryHint = LocalizedCopy(
     en: 'If you lost the passphrase, use the recovery codes to rotate TOTP, passkey, and seed in a new flow.',
@@ -900,9 +975,9 @@ class AppCopy {
     es: 'palabra',
   );
   static const loginManualModePassphrase = LocalizedCopy(
-    en: 'Secret phrase',
-    pt: 'Frase secreta',
-    es: 'Frase secreta',
+    en: 'BIP39',
+    pt: 'BIP39',
+    es: 'BIP39',
   );
   static const loginManualModeShamir = LocalizedCopy(
     en: 'SLIP-39 shares',
@@ -928,6 +1003,41 @@ class AppCopy {
     en: 'Reconstruct and continue',
     pt: 'Reconstruir e continuar',
     es: 'Reconstruir y continuar',
+  );
+  static const loginPassphraseInvalidWord = LocalizedCopy(
+    en: 'Use only valid recovery words before continuing.',
+    pt: 'Use apenas palavras validas de recuperacao antes de continuar.',
+    es: 'Usa solo palabras validas de recuperacion antes de continuar.',
+  );
+  static const loginShamirInvalidShare = LocalizedCopy(
+    en: 'One or more SLIP-39 shards are invalid or incomplete.',
+    pt: 'Uma ou mais shards SLIP-39 estao invalidas ou incompletas.',
+    es: 'Una o mas shards SLIP-39 son invalidas o incompletas.',
+  );
+  static const loginMultisigTitle = LocalizedCopy(
+    en: 'Multisig',
+    pt: 'Multisig',
+    es: 'Multisig',
+  );
+  static const loginMultisigDescription = LocalizedCopy(
+    en: 'Enter each multisig recovery shard using the same guided word layout. Every shard is validated before the request is sent.',
+    pt: 'Informe cada shard de recuperacao multisig usando o mesmo layout guiado por palavras. Cada shard e validado antes do envio.',
+    es: 'Ingresa cada shard de recuperacion multisig usando el mismo layout guiado por palabras. Cada shard se valida antes del envio.',
+  );
+  static const loginMultisigShardCountLabel = LocalizedCopy(
+    en: 'Shards provided',
+    pt: 'Shards informadas',
+    es: 'Shards informadas',
+  );
+  static const loginMultisigShardCountHint = LocalizedCopy(
+    en: 'Use the number of multisig shards you have available for this access.',
+    pt: 'Use a quantidade de shards multisig disponiveis para este acesso.',
+    es: 'Usa la cantidad de shards multisig disponibles para este acceso.',
+  );
+  static const loginMultisigShardIncomplete = LocalizedCopy(
+    en: 'Complete every word in this multisig shard before continuing.',
+    pt: 'Preencha todas as palavras desta shard multisig antes de continuar.',
+    es: 'Completa todas las palabras de este shard multisig antes de continuar.',
   );
 
   static const authReasonWalletAccess = LocalizedCopy(
@@ -2498,9 +2608,9 @@ class AppCopy {
       default:
         return _resolve(
           context,
-          en: 'Send the exact amount and follow the automatic account activation.',
-          pt: 'Envie o valor exato e acompanhe a ativacao automatica da conta.',
-          es: 'Envia el importe exacto y sigue la activación automática de la cuenta.',
+          en: 'Finish the passkey step to complete signup.',
+          pt: 'Finalize a etapa de passkey para concluir o cadastro.',
+          es: 'Finaliza la etapa de passkey para completar el registro.',
         );
     }
   }
@@ -2527,9 +2637,9 @@ class AppCopy {
   }) {
     if (hasPaymentRequired) {
       return _resolve(context,
-          en: 'Activation amount',
-          pt: 'Valor de ativacao',
-          es: 'Importe de activación');
+          en: 'Deposit inside the app',
+          pt: 'Depósito no app',
+          es: 'Depósito en la app');
     }
     if (currentStep >= 8) {
       return _resolve(context,

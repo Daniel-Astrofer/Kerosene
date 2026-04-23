@@ -3,15 +3,26 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 
-const Color miningInk = Color(0xFF04070C);
-const Color miningSurface = Color(0xFF0F151D);
-const Color miningSurfaceRaised = Color(0xFF131C27);
-const Color miningBorder = Color(0xFF223244);
-const Color miningMuted = Color(0xFF8D9AAF);
-const Color miningBlue = Color(0xFF67B5FF);
-const Color miningTeal = Color(0xFF2AD1A3);
-const Color miningAmber = Color(0xFFF4B562);
-const Color miningRed = Color(0xFFFF7474);
+const Color miningInk = Color(0xFF020202);
+const Color miningSurface = Color(0xFF090909);
+const Color miningSurfaceRaised = Color(0xFF111111);
+const Color miningSurfaceElevated = Color(0xFF171717);
+const Color miningBorder = Color(0xFF232323);
+const Color miningBorderStrong = Color(0xFF383B40);
+const Color miningMuted = Color(0xFF8E949C);
+const Color miningBlue = Color(0xFFC4CDD8);
+const Color miningTeal = Color(0xFFF2F3F4);
+const Color miningAmber = Color(0xFFAAB0B8);
+const Color miningRed = Color(0xFF727880);
+
+const double miningPanelRadiusValue = 4;
+const double miningInnerRadiusValue = 3;
+const BorderRadius miningPanelBorderRadius = BorderRadius.all(
+  Radius.circular(miningPanelRadiusValue),
+);
+const BorderRadius miningInnerBorderRadius = BorderRadius.all(
+  Radius.circular(miningInnerRadiusValue),
+);
 
 enum MiningStatusTone {
   neutral,
@@ -19,6 +30,68 @@ enum MiningStatusTone {
   info,
   warning,
   danger,
+}
+
+Color miningToneColor(MiningStatusTone tone) {
+  switch (tone) {
+    case MiningStatusTone.live:
+      return miningTeal;
+    case MiningStatusTone.info:
+      return miningBlue;
+    case MiningStatusTone.warning:
+      return miningAmber;
+    case MiningStatusTone.danger:
+      return miningRed;
+    case MiningStatusTone.neutral:
+      return miningMuted;
+  }
+}
+
+Color miningAccentBorder(Color accent, {double emphasis = 0.18}) {
+  return Color.lerp(miningBorderStrong, accent, emphasis) ?? miningBorderStrong;
+}
+
+BoxDecoration miningInsetDecoration({
+  Color accent = miningBlue,
+  bool emphasized = false,
+  Color? color,
+}) {
+  final borderColor = miningAccentBorder(
+    accent,
+    emphasis: emphasized ? 0.34 : 0.14,
+  );
+
+  return BoxDecoration(
+    color: color ?? miningSurfaceRaised,
+    borderRadius: miningInnerBorderRadius,
+    border: Border.all(color: borderColor),
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        (color ?? miningSurfaceElevated).withValues(alpha: 0.98),
+        (color ?? miningSurfaceRaised).withValues(alpha: 0.98),
+      ],
+    ),
+  );
+}
+
+TextStyle miningMonoStyle(
+  TextStyle base, {
+  Color? color,
+  FontWeight? fontWeight,
+  double? fontSize,
+  double? height,
+  double? letterSpacing,
+}) {
+  return base.copyWith(
+    fontFamily: AppTypography.numericFontFamily,
+    color: color,
+    fontWeight: fontWeight,
+    fontSize: fontSize,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
 }
 
 class MiningPanel extends StatelessWidget {
@@ -32,65 +105,71 @@ class MiningPanel extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.lg),
     this.accent = miningBlue,
-    this.radius = 24,
+    this.radius = miningPanelRadiusValue,
   });
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(radius);
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: miningBorder),
+        borderRadius: borderRadius,
+        border: Border.all(color: miningAccentBorder(accent)),
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            miningSurfaceRaised,
+            miningSurfaceElevated,
             miningSurface,
             miningInk,
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
-            blurRadius: 30,
-            offset: const Offset(0, 20),
-          ),
-          BoxShadow(
-            color: accent.withValues(alpha: 0.08),
-            blurRadius: 22,
-            spreadRadius: -6,
-          ),
-        ],
       ),
       child: Stack(
         children: [
           Positioned(
-            top: -42,
-            right: -18,
-            child: IgnorePointer(
-              child: Container(
-                width: 132,
-                height: 132,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      accent.withValues(alpha: 0.16),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
+            top: 0,
+            left: 0,
+            child: _CornerBracket(
+              accent: accent.withValues(alpha: 0.32),
+              alignEnd: false,
             ),
           ),
           Positioned(
-            left: 22,
-            right: 22,
+            top: 0,
+            right: 0,
+            child: _CornerBracket(
+              accent: Colors.white.withValues(alpha: 0.08),
+              alignEnd: true,
+            ),
+          ),
+          Positioned(
+            left: 18,
+            right: 18,
             top: 0,
             child: Container(
               height: 1,
-              color: Colors.white.withValues(alpha: 0.08),
+              color: accent.withValues(alpha: 0.12),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: borderRadius,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.018),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.08),
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
             ),
           ),
           Padding(
@@ -125,10 +204,12 @@ class MiningSectionHeading extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
+                title.toUpperCase(),
                 style: AppTypography.h3.copyWith(
+                  fontFamily: 'HubotSansCondensed',
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                  fontSize: 22,
+                  letterSpacing: 0.9,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -136,6 +217,7 @@ class MiningSectionHeading extends StatelessWidget {
                 subtitle,
                 style: AppTypography.bodySmall.copyWith(
                   color: miningMuted,
+                  height: 1.35,
                 ),
               ),
             ],
@@ -164,71 +246,45 @@ class MiningStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _toneColor(tone);
-    final dot = Container(
-      width: 8,
-      height: 8,
+    final color = miningToneColor(tone);
+    final marker = Container(
+      width: 10,
+      height: 10,
       decoration: BoxDecoration(
         color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.35),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
+        borderRadius: miningInnerBorderRadius,
       ),
     );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
+        color: miningSurface.withValues(alpha: 0.92),
+        borderRadius: miningInnerBorderRadius,
+        border: Border.all(color: miningAccentBorder(color, emphasis: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (pulse)
-            dot
+            marker
                 .animate(onPlay: (controller) => controller.repeat())
-                .fade(begin: 0.45, end: 1, duration: 900.ms)
-                .scale(
-                  begin: const Offset(0.9, 0.9),
-                  end: const Offset(1.18, 1.18),
-                  duration: 900.ms,
-                )
+                .fade(begin: 0.35, end: 1, duration: 950.ms)
           else
-            dot,
+            marker,
           const SizedBox(width: 8),
           Text(
             label,
-            style: AppTypography.caption.copyWith(
+            style: miningMonoStyle(
+              AppTypography.caption,
               color: color,
               fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
+              letterSpacing: 0.8,
             ),
           ),
         ],
       ),
     );
-  }
-
-  Color _toneColor(MiningStatusTone tone) {
-    switch (tone) {
-      case MiningStatusTone.live:
-        return miningTeal;
-      case MiningStatusTone.info:
-        return miningBlue;
-      case MiningStatusTone.warning:
-        return miningAmber;
-      case MiningStatusTone.danger:
-        return miningRed;
-      case MiningStatusTone.neutral:
-        return miningMuted;
-    }
   }
 }
 
@@ -251,11 +307,7 @@ class MiningMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
+      decoration: miningInsetDecoration(accent: accent),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -272,7 +324,9 @@ class MiningMetricCard extends StatelessWidget {
                     label.toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: accent,
+                      fontFamily: 'HubotSansCondensed',
                       fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -283,9 +337,11 @@ class MiningMetricCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               value,
-              style: AppTypography.h2.copyWith(
+              style: miningMonoStyle(
+                AppTypography.h2,
                 fontWeight: FontWeight.w700,
                 height: 1.0,
+                letterSpacing: -0.6,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -320,8 +376,9 @@ class MiningTrendChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
+        color: miningSurface,
+        borderRadius: miningInnerBorderRadius,
+        border: Border.all(color: miningAccentBorder(color, emphasis: 0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -336,7 +393,8 @@ class MiningTrendChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: AppTypography.caption.copyWith(
+            style: miningMonoStyle(
+              AppTypography.caption,
               color: color,
               fontWeight: FontWeight.w700,
             ),
@@ -362,12 +420,13 @@ class MiningSkeletonBlock extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        borderRadius: borderRadius ?? BorderRadius.circular(16),
+        borderRadius: borderRadius ?? miningInnerBorderRadius,
+        border: Border.all(color: miningBorder),
         gradient: LinearGradient(
           colors: [
-            Colors.white.withValues(alpha: 0.03),
+            Colors.white.withValues(alpha: 0.02),
             Colors.white.withValues(alpha: 0.07),
-            Colors.white.withValues(alpha: 0.03),
+            Colors.white.withValues(alpha: 0.02),
           ],
         ),
       ),
@@ -376,5 +435,43 @@ class MiningSkeletonBlock extends StatelessWidget {
         .fade(begin: 0.45, end: 1, duration: 900.ms)
         .then()
         .fade(begin: 1, end: 0.45, duration: 900.ms);
+  }
+}
+
+class _CornerBracket extends StatelessWidget {
+  final Color accent;
+  final bool alignEnd;
+
+  const _CornerBracket({
+    required this.accent,
+    required this.alignEnd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 18,
+      height: 18,
+      child: Stack(
+        children: [
+          Align(
+            alignment: alignEnd ? Alignment.topRight : Alignment.topLeft,
+            child: Container(
+              width: 18,
+              height: 1,
+              color: accent,
+            ),
+          ),
+          Align(
+            alignment: alignEnd ? Alignment.bottomRight : Alignment.topLeft,
+            child: Container(
+              width: 1,
+              height: 18,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

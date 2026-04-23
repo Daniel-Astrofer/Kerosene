@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/constants/app_copy.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/error_translator.dart';
@@ -104,9 +106,7 @@ class _EmergencyRecoveryScreenState
   String _t(LocalizedCopy copy) => copy.resolve(context);
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    AppNotice.showInfo(context, message: message);
   }
 
   void _resetRecoveryFlow() {
@@ -409,120 +409,125 @@ class _EmergencyRecoveryScreenState
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.onboardingBackgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
-                    const Spacer(),
-                    Text(
-                      _t(_RecoveryCopy.screenTitle),
-                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: AmbientSideGlowBackdrop(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
-                    AppSpacing.sm,
+                    AppSpacing.md,
                     AppSpacing.lg,
-                    AppSpacing.xl,
+                    AppSpacing.md,
                   ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.10),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _t(_RecoveryCopy.screenTitle),
+                        style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.10),
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Center(
-                              child: AuthActionIllustration(
-                                mode: _headerMode(),
-                                color: accent,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            Text(
-                              _issue?.title ??
-                                  _RecoveryCopy.stageTitle(context, _stage),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall!
-                                  .copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              _issue?.message ??
-                                  _RecoveryCopy.stageMessage(context, _stage),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                    height: 1.55,
-                                  ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            if (_stage == _RecoveryStage.collect)
-                              _buildCollectStep(context),
-                            if (_stage == _RecoveryStage.configure)
-                              _buildConfigureStep(context),
-                            if (_stage == _RecoveryStage.success)
-                              _buildSuccessStep(context),
-                            if (_issue != null) ...[
-                              const SizedBox(height: AppSpacing.lg),
-                              if (_issue!.requiresRestart)
-                                BouncingButton(
-                                  text: _t(_RecoveryCopy.restartRecovery),
-                                  onPressed: _resetRecoveryFlow,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Center(
+                                child: AuthActionIllustration(
+                                  mode: _headerMode(),
+                                  color: accent,
                                 ),
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                              Text(
+                                _issue?.title ??
+                                    _RecoveryCopy.stageTitle(context, _stage),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                _issue?.message ??
+                                    _RecoveryCopy.stageMessage(context, _stage),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      height: 1.55,
+                                    ),
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                              if (_stage == _RecoveryStage.collect)
+                                _buildCollectStep(context),
+                              if (_stage == _RecoveryStage.configure)
+                                _buildConfigureStep(context),
+                              if (_stage == _RecoveryStage.success)
+                                _buildSuccessStep(context),
+                              if (_issue != null) ...[
+                                const SizedBox(height: AppSpacing.lg),
+                                if (_issue!.requiresRestart)
+                                  BouncingButton(
+                                    text: _t(_RecoveryCopy.restartRecovery),
+                                    onPressed: _resetRecoveryFlow,
+                                  ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

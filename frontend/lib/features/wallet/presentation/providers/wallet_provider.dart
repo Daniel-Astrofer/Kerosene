@@ -33,7 +33,11 @@ import '../state/create_wallet_state.dart';
 final ledgerRepositoryProvider = Provider<LedgerRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   final remoteDataSource = LedgerRemoteDataSourceImpl(apiClient);
-  return LedgerRepositoryImpl(remoteDataSource: remoteDataSource);
+  final authLocalDataSource = ref.watch(authLocalDataSourceProvider);
+  return LedgerRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    authLocalDataSource: authLocalDataSource,
+  );
 });
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
@@ -184,8 +188,10 @@ class WalletNotifier extends Notifier<WalletState> {
   // o HomeScreen.initState chama refresh() via addPostFrameCallback.
 
   /// Carrega carteiras e taxa de câmbio
-  Future<void> _loadWallets() async {
-    state = const WalletLoading();
+  Future<void> _loadWallets({bool isRefresh = false}) async {
+    if (!isRefresh || state is! WalletLoaded) {
+      state = const WalletLoading();
+    }
 
     final walletsResult = await getWalletsUseCase();
 
@@ -214,7 +220,7 @@ class WalletNotifier extends Notifier<WalletState> {
 
   /// Recarrega carteiras
   Future<void> refresh() async {
-    await _loadWallets();
+    await _loadWallets(isRefresh: true);
   }
 
   /// Seleciona uma carteira

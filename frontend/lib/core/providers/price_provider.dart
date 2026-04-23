@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../network/api_client_provider.dart';
 import '../services/price_websocket_service.dart';
 
 /// Provider for WebSocket price service
@@ -20,14 +22,65 @@ final btcPriceProvider = StreamProvider<double>((ref) {
   return service.priceStream;
 });
 
-/// Provider for latest BTC price (synchronous access)
+/// Provider for latest BTC price (synchronous access).
+/// Falls back to backend HTTP price when the external WebSocket feed is unavailable.
 final latestBtcPriceProvider = Provider<double?>((ref) {
   final priceAsync = ref.watch(btcPriceProvider);
-  return priceAsync.when(
-    data: (price) => price,
-    loading: () => null,
-    error: (_, __) => null,
-  );
+  final wsPrice = priceAsync.whenOrNull(data: (price) => price);
+
+  if (wsPrice != null && wsPrice > 0) {
+    return wsPrice;
+  }
+
+  // Fallback: use the backend's cached BTC price
+  final backendRates = ref.watch(backendBtcRatesProvider);
+  final backendPrice = backendRates.asData?.value?.btcUsd;
+  if (backendPrice != null && backendPrice > 0) {
+    return backendPrice;
+  }
+
+  return null;
+});
+
+class BackendBtcRates {
+  final double btcUsd;
+  final double btcBrl;
+  final double usdBrl;
+
+  const BackendBtcRates({
+    required this.btcUsd,
+    required this.btcBrl,
+    required this.usdBrl,
+  });
+
+  factory BackendBtcRates.fromJson(Map<String, dynamic> json) {
+    final btcUsd = (json['btcUsd'] as num?)?.toDouble() ?? 0;
+    final btcBrl = (json['btcBrl'] as num?)?.toDouble() ?? 0;
+    final usdBrl = (json['usdBrl'] as num?)?.toDouble() ??
+        (btcUsd > 0 ? btcBrl / btcUsd : 0);
+
+    return BackendBtcRates(
+      btcUsd: btcUsd,
+      btcBrl: btcBrl,
+      usdBrl: usdBrl,
+    );
+  }
+}
+
+final backendBtcRatesProvider = FutureProvider<BackendBtcRates?>((ref) async {
+  try {
+    final apiClient = ref.watch(apiClientProvider);
+    final response = await apiClient.get('/api/economy/btc-price');
+    final payload = Map<String, dynamic>.from(response.data as Map);
+    return BackendBtcRates.fromJson(payload);
+  } catch (_) {
+    return null;
+  }
+});
+
+final usdBrlRateProvider = Provider<double?>((ref) {
+  final backendRates = ref.watch(backendBtcRatesProvider);
+  return backendRates.asData?.value?.usdBrl;
 });
 
 /// Provider for BTC/EUR exchange rate
@@ -42,7 +95,7 @@ final btcEurPriceProvider = Provider<double?>((ref) {
 final btcBrlPriceProvider = Provider<double?>((ref) {
   final btcUsdPrice = ref.watch(latestBtcPriceProvider);
   if (btcUsdPrice == null) return null;
-  const brlUsdRate = 5.0; // Approximation for now
+  final brlUsdRate = ref.watch(usdBrlRateProvider) ?? 5.0;
   return btcUsdPrice * brlUsdRate;
 });
 
@@ -59,6 +112,20 @@ enum Currency {
 
   const Currency(this.code, this.name, this.decimals);
 }
+
+final currencyQuoteProvider =
+    Provider.family<double?, Currency>((ref, currency) {
+  switch (currency) {
+    case Currency.btc:
+      return 1;
+    case Currency.usd:
+      return ref.watch(latestBtcPriceProvider);
+    case Currency.eur:
+      return ref.watch(btcEurPriceProvider);
+    case Currency.brl:
+      return ref.watch(btcBrlPriceProvider);
+  }
+});
 
 /// Helper to convert any currency to BTC
 double convertToBtc(

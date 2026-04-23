@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 
-const Color receiveFlowPanelColor = Color(0xFF11151A);
-const Color receiveFlowPanelAltColor = Color(0xFF0D1116);
-const Color receiveFlowBorderColor = Color(0xFF242A31);
-const Color receiveFlowDividerColor = Color(0xFF1C222A);
-const Color receiveFlowTextColor = Color(0xFFF4F6F8);
-const Color receiveFlowMutedTextColor = Color(0xFF97A0AA);
-const Color receiveFlowFaintTextColor = Color(0xFF6E7680);
+const Color receiveFlowBackgroundColor = Color(0xFF020202);
+const Color receiveFlowBackgroundTopColor = Color(0xFF090909);
+const Color receiveFlowBackgroundBottomColor = Color(0xFF040404);
+const Color receiveFlowPanelColor = Color(0xFF0D0D0D);
+const Color receiveFlowPanelAltColor = Color(0xFF141414);
+const Color receiveFlowPanelRaisedColor = Color(0xFF1A1A1A);
+const Color receiveFlowBorderColor = Color(0xFF262626);
+const Color receiveFlowBorderStrongColor = Color(0xFF383838);
+const Color receiveFlowDividerColor = Color(0xFF1B1B1B);
+const Color receiveFlowTextColor = Color(0xFFF1F1ED);
+const Color receiveFlowMutedTextColor = Color(0xFFA0A09B);
+const Color receiveFlowFaintTextColor = Color(0xFF6B6B66);
 
 class ReceiveFlowScaffold extends StatelessWidget {
   final String title;
@@ -20,6 +24,7 @@ class ReceiveFlowScaffold extends StatelessWidget {
   final List<Widget> actions;
   final VoidCallback? onBack;
   final bool showBackButton;
+  final double chromeRadius;
 
   const ReceiveFlowScaffold({
     super.key,
@@ -31,6 +36,7 @@ class ReceiveFlowScaffold extends StatelessWidget {
     this.actions = const [],
     this.onBack,
     this.showBackButton = true,
+    this.chromeRadius = 0,
   });
 
   @override
@@ -47,25 +53,92 @@ class ReceiveFlowScaffold extends StatelessWidget {
           );
 
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: _ReceiveFlowHeader(
-                title: title,
-                subtitle: subtitle,
-                actions: actions,
-                onBack: onBack,
-                showBackButton: showBackButton,
+      backgroundColor: receiveFlowBackgroundColor,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const _ReceiveFlowBackdrop(),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: _ReceiveFlowHeader(
+                    title: title,
+                    subtitle: subtitle,
+                    actions: actions,
+                    onBack: onBack,
+                    showBackButton: showBackButton,
+                    chromeRadius: chromeRadius,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(child: body),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReceiveFlowBackdrop extends StatelessWidget {
+  const _ReceiveFlowBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            receiveFlowBackgroundTopColor,
+            receiveFlowBackgroundColor,
+            receiveFlowBackgroundBottomColor,
+          ],
+          stops: [0, 0.44, 1],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0, -0.92),
+                radius: 1.1,
+                colors: [
+                  Colors.white.withValues(alpha: 0.05),
+                  Colors.transparent,
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Expanded(child: body),
-          ],
-        ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.018),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.12),
+                ],
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              height: 1,
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -77,6 +150,7 @@ class _ReceiveFlowHeader extends StatelessWidget {
   final List<Widget> actions;
   final VoidCallback? onBack;
   final bool showBackButton;
+  final double chromeRadius;
 
   const _ReceiveFlowHeader({
     required this.title,
@@ -84,55 +158,71 @@ class _ReceiveFlowHeader extends StatelessWidget {
     required this.actions,
     required this.onBack,
     required this.showBackButton,
+    required this.chromeRadius,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showBackButton)
-          ReceiveFlowIconButton(
-            icon: LucideIcons.chevronLeft,
-            onTap: onBack ?? () => Navigator.maybePop(context),
-          )
-        else
-          const SizedBox(width: 42, height: 42),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: receiveFlowTextColor,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0,
-                      ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: receiveFlowMutedTextColor,
-                          fontWeight: FontWeight.w400,
-                          height: 1.3,
-                        ),
-                  ),
-                ],
-              ],
-            ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.04),
           ),
         ),
-        if (actions.isNotEmpty) ...[
-          const SizedBox(width: 12),
-          Row(mainAxisSize: MainAxisSize.min, children: actions),
-        ],
-      ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (showBackButton)
+              ReceiveFlowIconButton(
+                icon: LucideIcons.chevronLeft,
+                onTap: onBack ?? () => Navigator.maybePop(context),
+                radius: chromeRadius,
+              )
+            else
+              const SizedBox(width: 42, height: 42),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: receiveFlowTextColor,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.8,
+                            height: 1,
+                          ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: receiveFlowMutedTextColor,
+                              fontWeight: FontWeight.w400,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (actions.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Row(mainAxisSize: MainAxisSize.min, children: actions),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -140,11 +230,13 @@ class _ReceiveFlowHeader extends StatelessWidget {
 class ReceiveFlowIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final double radius;
 
   const ReceiveFlowIconButton({
     super.key,
     required this.icon,
     required this.onTap,
+    this.radius = 0,
   });
 
   @override
@@ -153,12 +245,12 @@ class ReceiveFlowIconButton extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(icon, color: receiveFlowTextColor, size: 18),
       style: IconButton.styleFrom(
-        backgroundColor: receiveFlowPanelColor,
+        backgroundColor: receiveFlowPanelAltColor,
         minimumSize: const Size(42, 42),
         padding: const EdgeInsets.all(10),
-        side: const BorderSide(color: receiveFlowBorderColor),
+        side: const BorderSide(color: receiveFlowBorderStrongColor),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(radius),
         ),
       ),
     );
@@ -178,7 +270,7 @@ class ReceiveFlowPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.backgroundColor,
     this.borderColor,
-    this.radius = 12,
+    this.radius = 0,
   });
 
   @override
@@ -190,9 +282,10 @@ class ReceiveFlowPanel extends StatelessWidget {
         border: Border.all(color: borderColor ?? receiveFlowBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.16),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 26,
+            spreadRadius: -18,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
@@ -212,8 +305,8 @@ class ReceiveFlowSectionLabel extends StatelessWidget {
       text,
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: receiveFlowFaintTextColor,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.6,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
           ),
     );
   }
@@ -232,11 +325,11 @@ class ReceiveFlowTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: receiveFlowPanelAltColor,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: receiveFlowBorderColor),
+        color: receiveFlowPanelRaisedColor,
+        borderRadius: BorderRadius.circular(0),
+        border: Border.all(color: receiveFlowBorderStrongColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -249,8 +342,8 @@ class ReceiveFlowTag extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: receiveFlowMutedTextColor,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.7,
                 ),
           ),
         ],
@@ -281,24 +374,24 @@ class ReceiveFlowActionTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(0),
         child: Ink(
           decoration: BoxDecoration(
             color: receiveFlowPanelColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(0),
             border: Border.all(color: receiveFlowBorderColor),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: receiveFlowPanelAltColor,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: receiveFlowBorderColor),
+                    color: receiveFlowPanelRaisedColor,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: receiveFlowBorderStrongColor),
                   ),
                   child: Icon(icon, color: receiveFlowTextColor, size: 18),
                 ),
@@ -311,8 +404,8 @@ class ReceiveFlowActionTile extends StatelessWidget {
                         title,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: receiveFlowTextColor,
-                              fontWeight: FontWeight.w500,
-                              height: 1.15,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
                             ),
                       ),
                       const SizedBox(height: 4),
@@ -332,7 +425,8 @@ class ReceiveFlowActionTile extends StatelessWidget {
                     tag!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: receiveFlowFaintTextColor,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.7,
                         ),
                   ),
                   const SizedBox(width: 8),
@@ -356,6 +450,7 @@ class ReceiveFlowPrimaryButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isLoading;
   final IconData? icon;
+  final double radius;
 
   const ReceiveFlowPrimaryButton({
     super.key,
@@ -363,6 +458,7 @@ class ReceiveFlowPrimaryButton extends StatelessWidget {
     required this.onTap,
     this.isLoading = false,
     this.icon,
+    this.radius = 0,
   });
 
   @override
@@ -371,21 +467,21 @@ class ReceiveFlowPrimaryButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 54,
       child: FilledButton(
         onPressed: enabled ? onTap : null,
         style: FilledButton.styleFrom(
           backgroundColor:
-              enabled ? Colors.white : Colors.white.withValues(alpha: 0.08),
+              enabled ? Colors.white : Colors.white.withValues(alpha: 0.06),
           foregroundColor: enabled ? Colors.black : receiveFlowMutedTextColor,
-          disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.06),
           disabledForegroundColor: receiveFlowMutedTextColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(radius),
             side: BorderSide(
               color: enabled
                   ? Colors.white.withValues(alpha: 0.92)
-                  : receiveFlowBorderColor,
+                  : receiveFlowBorderStrongColor,
             ),
           ),
           elevation: 0,
@@ -394,7 +490,10 @@ class ReceiveFlowPrimaryButton extends StatelessWidget {
             ? const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: receiveFlowTextColor,
+                  strokeWidth: 2,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -406,8 +505,8 @@ class ReceiveFlowPrimaryButton extends StatelessWidget {
                   Text(
                     label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.1,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
                         ),
                   ),
                 ],
@@ -440,9 +539,9 @@ class ReceiveFlowSecondaryButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: receiveFlowPanelColor,
           foregroundColor: receiveFlowTextColor,
-          side: const BorderSide(color: receiveFlowBorderColor),
+          side: const BorderSide(color: receiveFlowBorderStrongColor),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(0),
           ),
         ),
         child: Row(
@@ -457,7 +556,8 @@ class ReceiveFlowSecondaryButton extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowTextColor,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
                   ),
             ),
           ],
@@ -476,11 +576,13 @@ class ReceiveFlowSecondaryButton extends StatelessWidget {
 class ReceiveFlowKeypadButton extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
+  final double radius;
 
   const ReceiveFlowKeypadButton({
     super.key,
     required this.child,
     required this.onTap,
+    this.radius = 0,
   });
 
   @override
@@ -492,13 +594,13 @@ class ReceiveFlowKeypadButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(radius),
             child: Ink(
-              height: 56,
+              height: 60,
               decoration: BoxDecoration(
-                color: receiveFlowPanelColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: receiveFlowBorderColor),
+                color: receiveFlowPanelAltColor,
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(color: receiveFlowBorderStrongColor),
               ),
               child: Center(child: child),
             ),
@@ -531,6 +633,7 @@ class ReceiveFlowMetricRow extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: receiveFlowMutedTextColor,
+                  letterSpacing: 0.2,
                 ),
           ),
         ),
@@ -592,9 +695,9 @@ class ReceiveFlowStatePanel extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: receiveFlowPanelAltColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: receiveFlowBorderColor),
+              color: receiveFlowPanelRaisedColor,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: receiveFlowBorderStrongColor),
             ),
             child: Icon(icon, color: receiveFlowTextColor, size: 18),
           ),
@@ -604,7 +707,7 @@ class ReceiveFlowStatePanel extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: receiveFlowTextColor,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
           const SizedBox(height: 8),

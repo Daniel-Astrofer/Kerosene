@@ -26,7 +26,8 @@ class OfflineOverlay extends ConsumerWidget {
               child: Material(
                 color: Colors.transparent,
                 child: DecoratedBox(
-                  decoration: const BoxDecoration(gradient: AppColors.bgGradient),
+                  decoration:
+                      const BoxDecoration(gradient: AppColors.bgGradient),
                   child: SafeArea(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
@@ -131,8 +132,8 @@ class OfflineOverlay extends ConsumerWidget {
                                             textAlign: TextAlign.center,
                                             style: AppTypography.bodySmall
                                                 .copyWith(
-                                                  color: AppColors.white70,
-                                                ),
+                                              color: AppColors.white70,
+                                            ),
                                           ),
                                           const SizedBox(height: AppSpacing.lg),
                                           BouncingButton(

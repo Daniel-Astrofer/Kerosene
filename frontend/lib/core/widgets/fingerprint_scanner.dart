@@ -58,12 +58,12 @@ class _CyberFingerprintScannerState extends State<CyberFingerprintScanner>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: widget.color.withOpacity(0.5),
+                        color: widget.color.withValues(alpha: 0.5),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: widget.color.withOpacity(0.3),
+                          color: widget.color.withValues(alpha: 0.3),
                           blurRadius: 15,
                           spreadRadius: 2,
                         ),
@@ -80,7 +80,7 @@ class _CyberFingerprintScannerState extends State<CyberFingerprintScanner>
                   color: Theme.of(context).colorScheme.onSurface,
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(0.2),
+                      color: widget.color.withValues(alpha: 0.2),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -94,8 +94,7 @@ class _CyberFingerprintScannerState extends State<CyberFingerprintScanner>
               ),
               // Scanning Line
               Positioned(
-                top:
-                    (widget.size * 0.2) +
+                top: (widget.size * 0.2) +
                     (widget.size * 0.6 * _controller.value),
                 child: Container(
                   width: widget.size * 0.5,

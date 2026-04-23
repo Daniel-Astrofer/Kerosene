@@ -54,7 +54,8 @@ class TransactionSigner {
 
       // Sign
       // Sign
-      final signature = BitcoinSigner.fromKeyBytes(privateKey.raw).signTransaction(sighash); // Returns DER signature
+      final signature = BitcoinKeySigner.fromKeyBytes(privateKey.raw)
+          .signECDSADer(sighash); // Returns DER signature
 
       // Append SIGHASH_ALL (0x01) to signature
       final signatureWithHashType = [...signature, 0x01];

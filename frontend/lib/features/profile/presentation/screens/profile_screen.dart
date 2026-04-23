@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/constants/app_copy.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/providers/alert_preferences_provider.dart';
 import 'package:teste/core/providers/biometric_provider.dart';
-import 'package:teste/core/providers/ghost_mode_provider.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/l10n/l10n_extension.dart';
@@ -11,9 +13,7 @@ import '../../../security/presentation/screens/sovereignty_status_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
-import 'notification_settings_screen.dart';
 import 'personal_data_screen.dart';
-import 'security_settings_screen.dart';
 import 'support_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -24,7 +24,7 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
     final walletState = ref.watch(walletProvider);
     final biometricState = ref.watch(biometricProvider);
-    final ghostMode = ref.watch(ghostModeProvider);
+    final alertPreferences = ref.watch(alertPreferencesProvider);
 
     final username =
         authState is AuthAuthenticated ? authState.user.name.trim() : 'Usuario';
@@ -55,22 +55,14 @@ class ProfileScreen extends ConsumerWidget {
                 : 'Biometria desativada')
             : 'Biometria indisponível';
 
-    final routingLabel = ghostMode ? 'Rede onion ativa' : 'Conexão direta';
+    final routingLabel = alertPreferences.backgroundAlertsEnabled
+        ? 'Monitoramento em segundo plano'
+        : 'Alertas locais desativados';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF06080D),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF070A10),
-              Color(0xFF0C1118),
-              Color(0xFF050607),
-            ],
-          ),
-        ),
+      backgroundColor: authenticatedSurfaceBackgroundColor,
+      body: ColoredBox(
+        color: authenticatedSurfaceBackgroundColor,
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
@@ -199,22 +191,22 @@ class ProfileScreen extends ConsumerWidget {
                 runSpacing: 12,
                 children: [
                   _PosturePill(
-                    label: 'Carteiras',
+                    label: AppCopy.profileWallets.resolve(context),
                     value: walletLabel,
                     accent: Theme.of(context).colorScheme.secondary,
                   ),
                   _PosturePill(
-                    label: 'Proteção',
+                    label: AppCopy.profileProtection.resolve(context),
                     value: securityLabel,
                     accent: AppColors.success,
                   ),
                   _PosturePill(
-                    label: 'Biometria',
+                    label: AppCopy.profileBiometrics.resolve(context),
                     value: biometricLabel,
                     accent: const Color(0xFFF2C94C),
                   ),
                   _PosturePill(
-                    label: 'Privacidade',
+                    label: AppCopy.profilePrivacy.resolve(context),
                     value: routingLabel,
                     accent: const Color(0xFF7AA2F7),
                   ),
@@ -239,7 +231,7 @@ class ProfileScreen extends ConsumerWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const SecuritySettingsScreen(),
+                            builder: (_) => const SettingsScreen(),
                           ),
                         );
                       },
@@ -308,12 +300,12 @@ class ProfileScreen extends ConsumerWidget {
                       iconColor: const Color(0xFFA78BFA),
                       title: context.l10n.notifications,
                       subtitle:
-                          'Controle alertas de transação, segurança e push.',
+                          'Controle alertas de transação e segurança em segundo plano.',
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const NotificationSettingsScreen(),
+                            builder: (_) => const SettingsScreen(),
                           ),
                         );
                       },

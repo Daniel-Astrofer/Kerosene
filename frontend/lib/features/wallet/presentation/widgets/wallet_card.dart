@@ -37,7 +37,8 @@ class WalletCard extends StatefulWidget {
   }
 }
 
-class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateMixin {
+class _WalletCardState extends State<WalletCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
 
   @override
@@ -64,9 +65,14 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
       builder: (context) => Container(
         margin: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
+          color:
+              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(AppSpacing.xl),
-          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+          border: Border.all(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -76,22 +82,35 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
             ListTile(
-              leading: Icon(LucideIcons.edit, color: Theme.of(context).colorScheme.onPrimary),
-              title: Text('EDITAR NOME', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w900, letterSpacing: 1)),
+              leading: Icon(LucideIcons.edit,
+                  color: Theme.of(context).colorScheme.onPrimary),
+              title: Text('EDITAR NOME',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall!
+                      .copyWith(fontWeight: FontWeight.w900, letterSpacing: 1)),
               onTap: () {
                 Navigator.pop(context);
                 widget.onMenuAction?.call('edit');
               },
             ),
             ListTile(
-              leading: Icon(LucideIcons.trash2, color: Theme.of(context).colorScheme.error),
-              title: Text('REMOVER CARTEIRA', style: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w900, letterSpacing: 1)),
+              leading: Icon(LucideIcons.trash2,
+                  color: Theme.of(context).colorScheme.error),
+              title: Text('REMOVER CARTEIRA',
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1)),
               onTap: () {
                 Navigator.pop(context);
                 widget.onMenuAction?.call('delete');
@@ -113,7 +132,8 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
     final shineY = widget.tilt * -1.5;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       width: width + 4,
       height: height + 4,
       child: GestureDetector(
@@ -137,7 +157,6 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                 ),
               ),
             ),
-
             Container(
               width: width,
               height: height,
@@ -145,13 +164,16 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                 borderRadius: BorderRadius.circular(AppSpacing.md),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.2),
+                    color: primaryColor.withValues(alpha: 0.2),
                     blurRadius: widget.isSelected ? 24 : 14,
                     offset: Offset(0, 8 + (widget.tilt * 10)),
                   ),
                 ],
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.2),
                   width: 1.5,
                 ),
               ),
@@ -164,7 +186,10 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                       child: BrushedMetalContainer(
                         width: width,
                         height: height,
-                        baseColor: Theme.of(context).colorScheme.surface.withOpacity(0.85),
+                        baseColor: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withValues(alpha: 0.85),
                         borderRadius: AppSpacing.md,
                       ),
                     ),
@@ -172,7 +197,8 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                     Positioned(
                       right: AppSpacing.lg,
                       bottom: AppSpacing.lg,
-                      child: Icon(LucideIcons.zap, color: primaryColor.withOpacity(0.4), size: 40),
+                      child: Icon(LucideIcons.zap,
+                          color: primaryColor.withValues(alpha: 0.4), size: 40),
                     ),
 
                     // ── Shine on selection ──
@@ -186,12 +212,22 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Theme.of(context).colorScheme.onPrimary.withOpacity(0.0),
-                                Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
-                                Theme.of(context).colorScheme.onPrimary.withOpacity(0.0),
+                                Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.0),
+                                Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.1),
+                                Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.0),
                               ],
                               stops: const [0.35, 0.5, 0.65],
-                              transform: GradientTranslation(Offset(0.0, shineY)),
+                              transform:
+                                  GradientTranslation(Offset(0.0, shineY)),
                             ),
                           ),
                         ),
@@ -209,18 +245,41 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+                                  border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                          .withValues(alpha: 0.1)),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text('₿', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 18, fontWeight: FontWeight.bold)),
+                                    Text('₿',
+                                        style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
                                     SizedBox(width: 4),
-                                    Text('BITCOIN', style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5))),
+                                    Text('BITCOIN',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall!
+                                            .copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary
+                                                    .withValues(alpha: 0.5))),
                                   ],
                                 ),
                               ),
@@ -231,30 +290,50 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                             children: [
                               Text(
                                 widget.wallet.name.toUpperCase(),
-                                style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 1, fontWeight: FontWeight.w900),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium!
+                                    .copyWith(
+                                        letterSpacing: 1,
+                                        fontWeight: FontWeight.w900),
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      widget._shortAddress(widget.wallet.address),
-                                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-                                        fontFamily: 'JetBrainsMono',
-                                      ),
+                                      widget
+                                          ._shortAddress(widget.wallet.address),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall!
+                                          .copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary
+                                                .withValues(alpha: 0.5),
+                                            fontFamily: 'JetBrainsMono',
+                                          ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   IconButton(
                                     onPressed: () {
                                       HapticFeedback.lightImpact();
-                                      Clipboard.setData(ClipboardData(text: widget.wallet.address));
+                                      Clipboard.setData(ClipboardData(
+                                          text: widget.wallet.address));
                                       widget.onAddressCopied?.call();
                                     },
-                                    icon: Icon(LucideIcons.copy, size: 14, color: Theme.of(context).colorScheme.onPrimary),
+                                    icon: Icon(LucideIcons.copy,
+                                        size: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary),
                                     style: IconButton.styleFrom(
-                                      backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                          .withValues(alpha: 0.1),
                                       padding: const EdgeInsets.all(8),
                                     ),
                                   ),
@@ -282,7 +361,8 @@ class GradientTranslation extends GradientTransform {
 
   @override
   Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
-    return Matrix4.translationValues(offset.dx * bounds.width, offset.dy * bounds.height, 0.0);
+    return Matrix4.translationValues(
+        offset.dx * bounds.width, offset.dy * bounds.height, 0.0);
   }
 }
 
@@ -291,17 +371,19 @@ class _NeonGlowPainter extends CustomPainter {
   final double rotation;
   final double intensity;
 
-  _NeonGlowPainter({required this.color, required this.rotation, this.intensity = 1.0});
+  _NeonGlowPainter(
+      {required this.color, required this.rotation, this.intensity = 1.0});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final RRect rRect = RRect.fromRectAndRadius(rect, const Radius.circular(24));
+    final RRect rRect =
+        RRect.fromRectAndRadius(rect, const Radius.circular(24));
 
     final auraPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
-      ..color = color.withOpacity(0.3 * intensity)
+      ..color = color.withValues(alpha: 0.3 * intensity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
     canvas.drawRRect(rRect, auraPaint);
 
@@ -313,7 +395,11 @@ class _NeonGlowPainter extends CustomPainter {
 
     final Gradient beamGradient = SweepGradient(
       center: Alignment.center,
-      colors: [color.withOpacity(0.0), color.withOpacity(0.8 * intensity), color.withOpacity(0.0)],
+      colors: [
+        color.withValues(alpha: 0.0),
+        color.withValues(alpha: 0.8 * intensity),
+        color.withValues(alpha: 0.0)
+      ],
       stops: const [0.4, 0.5, 0.6],
       transform: GradientRotation(rotation * 2 * 3.14159),
     );

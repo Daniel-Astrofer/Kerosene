@@ -362,7 +362,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeSlogan =>
-      'The decentralized financial platform\nbuilt on Bitcoin.';
+      'The world\'s first privacy-focused international Bitcoin bank.';
 
   @override
   String get signIn => 'Sign In';
@@ -1097,7 +1097,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get presentationSlide3Body =>
-      'Our policy is simple:\n\n• 0.9% on deposits\n• 0.9% on withdrawals\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.\nNo unexpected variations.';
+      'Our policy is simple:\n\n• External deposits and withdrawals use the wallet card fee\n• Bronze: 0.9%\n• White: 0.8%\n• Black: 0.7%\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.';
 
   @override
   String get presentationSlide4Title => 'Commitment to Predictability';
@@ -1209,7 +1209,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passkeyNoBiometrics =>
-      'No biometric hardware available on this device.';
+      'Set up biometrics or a screen lock on this device to use Sovereign Key.';
 
   @override
   String passkeyErrorStarting(String message) {

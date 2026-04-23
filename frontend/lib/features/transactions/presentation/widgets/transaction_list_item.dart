@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/providers/currency_provider.dart';
+import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 
-class TransactionListItem extends StatelessWidget {
+class TransactionListItem extends ConsumerWidget {
   final Transaction transaction;
 
   const TransactionListItem({super.key, required this.transaction});
@@ -24,74 +27,130 @@ class TransactionListItem extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final bool isReceive = transaction.type == TransactionType.receive || transaction.type == TransactionType.deposit;
-    final IconData icon = isReceive ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
-    final Color color = isReceive ? AppColors.success : Theme.of(context).colorScheme.error;
-    final String label = isReceive ? 'Recebido' : 'Enviado';
-    final String prefix = isReceive ? '+' : '-';
-    
-    // Fallback for types that are not receive/send
-    final finalIcon = transaction.type == TransactionType.swap ? LucideIcons.arrowLeftRight : icon;
-    final finalColor = transaction.type == TransactionType.swap ? Theme.of(context).colorScheme.secondary : color;
-    final finalLabel = transaction.type == TransactionType.swap ? 'Swap' : label;
-    final finalPrefix = transaction.type == TransactionType.swap ? '' : prefix;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visual = TransactionVisualSpec.fromTransaction(transaction);
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final amountLabel = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: transaction.amountBTC,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
 
-    final counterparty = isReceive ? transaction.fromAddress : transaction.toAddress;
-    final displayAddress = counterparty.length > 12 
+    final counterparty = switch (visual.direction) {
+      TransactionVisualDirection.incoming => transaction.fromAddress,
+      TransactionVisualDirection.outgoing => transaction.toAddress,
+      TransactionVisualDirection.neutral => transaction.toAddress.isNotEmpty
+          ? transaction.toAddress
+          : transaction.fromAddress,
+    };
+    final displayAddress = counterparty.length > 12
         ? '${counterparty.substring(0, 6)}…${counterparty.substring(counterparty.length - 4)}'
         : counterparty;
+    final cardGradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        Color.lerp(const Color(0xFF101923), visual.amountColor, 0.18)!,
+        Colors.black,
+        const Color(0xFF121A24),
+      ],
+    );
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: finalColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-              border: Border.all(color: finalColor.withOpacity(0.2)),
-            ),
-            child: Icon(finalIcon, color: finalColor, size: 20),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          gradient: cardGradient,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: visual.amountColor.withValues(alpha: 0.18),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            TransactionTypeIconBadge(
+              spec: visual,
+              size: 44,
+              iconSize: 20,
+              borderRadius: 14,
+              backgroundColor: const Color(0xFF111720),
+              borderColor: visual.iconColor.withValues(alpha: 0.24),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    visual.label,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    displayAddress,
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.4)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  finalLabel,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary),
+                  '${visual.prefix}$amountLabel',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: visual.amountColor,
+                      ),
                 ),
+                if (selectedCurrency != Currency.btc) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${visual.prefix}${_formatBTC(transaction.amountBTC)}',
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.3),
+                        ),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
-                  displayAddress,
-                  style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
-                  overflow: TextOverflow.ellipsis,
+                  _formatDate(transaction.timestamp),
+                  style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.3)),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$finalPrefix${_formatBTC(transaction.amountBTC)}',
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: finalColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _formatDate(transaction.timestamp),
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

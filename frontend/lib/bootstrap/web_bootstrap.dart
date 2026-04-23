@@ -49,20 +49,27 @@ Future<void> initializeApp(ProviderContainer container) async {
   final resolvedApiUrl = _resolveApiUrl();
   debugPrint('🌐 Web Admin API URL: $resolvedApiUrl');
 
-  // Set the API URL globally
-  AppConfig.apiUrl = resolvedApiUrl;
+  configureResolvedApiUrl(container, resolvedApiUrl);
+}
 
-  // Configure the active node URL based on the resolved URL
-  // If the URL is an onion address, set it as the active node
+@visibleForTesting
+void configureResolvedApiUrl(
+  ProviderContainer container,
+  String resolvedApiUrl,
+) {
+  // Web requests go directly to the resolved origin. Keep the logical active
+  // node aligned with that host so passkey rpId/authenticatorData validation
+  // uses the same host the backend actually receives.
+  AppConfig.apiUrl = resolvedApiUrl;
+  AppConfig.activeNodeUrl = resolvedApiUrl;
+
   try {
     final host = Uri.parse(resolvedApiUrl).host;
     if (host.endsWith('.onion')) {
-      AppConfig.activeNodeUrl = resolvedApiUrl;
       debugPrint('🧅 Onion routing active → $host');
     }
   } catch (_) {}
 
-  // Update the reactive Tor URL provider
   container.read(torApiUrlProvider.notifier).updateUrl(resolvedApiUrl);
 }
 
@@ -187,9 +194,7 @@ class _ServerUnavailableView extends StatelessWidget {
               const SizedBox(height: 24),
               OutlinedButton(
                 onPressed: () {
-                  ref
-                      .read(authControllerProvider.notifier)
-                      .retrySessionCheck();
+                  ref.read(authControllerProvider.notifier).retrySessionCheck();
                 },
                 child: const Text('Retry Connection'),
               ),

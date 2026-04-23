@@ -26,8 +26,7 @@ class LiveFeeGrid extends StatelessWidget {
         children: [
           MiningSectionHeading(
             title: 'Mercado de taxas',
-            subtitle:
-                'Leitura operacional das faixas prioritária, flexível e econômica.',
+            subtitle: 'Faixas ativas, spread e janela de inclusão.',
             trailing: MiningTrendChip(
               label: '${viewData.projectedFastLaneWindowMinutes} min',
               positive: viewData.congestionLevel == MiningCongestionLevel.calm,
@@ -62,7 +61,9 @@ class LiveFeeGrid extends StatelessWidget {
             builder: (context, constraints) {
               final cardWidth = constraints.maxWidth >= 520
                   ? (constraints.maxWidth - AppSpacing.sm * 3) / 4
-                  : (constraints.maxWidth - AppSpacing.sm) / 2;
+                  : constraints.maxWidth < 420
+                      ? double.infinity
+                      : (constraints.maxWidth - AppSpacing.sm) / 2;
 
               return Wrap(
                 spacing: AppSpacing.sm,
@@ -102,10 +103,9 @@ class LiveFeeGrid extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            decoration: miningInsetDecoration(
+              accent: miningBlue,
+              emphasized: true,
             ),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -116,7 +116,9 @@ class LiveFeeGrid extends StatelessWidget {
                     'Faixa de inclusão imediata',
                     style: AppTypography.caption.copyWith(
                       color: miningMuted,
+                      fontFamily: 'HubotSansCondensed',
                       fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -160,27 +162,33 @@ class _FeeTile extends StatelessWidget {
     return Container(
       width: width,
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withValues(alpha: 0.18)),
-      ),
+      decoration: miningInsetDecoration(accent: accent),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            width: 28,
+            height: 2,
+            color: accent.withValues(alpha: 0.72),
+          ),
+          const SizedBox(height: AppSpacing.md),
           Text(
             label.toUpperCase(),
             style: AppTypography.caption.copyWith(
               color: accent,
+              fontFamily: 'HubotSansCondensed',
               fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             '$value sat/vB',
-            style: AppTypography.h3.copyWith(
+            style: miningMonoStyle(
+              AppTypography.h3,
               color: Colors.white,
               fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -213,45 +221,44 @@ class _FeeBand extends StatelessWidget {
 
     return Column(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: SizedBox(
-            height: 12,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          miningTeal,
-                          miningBlue,
-                          miningAmber,
-                          miningRed,
-                        ],
-                        stops: const [0.0, 0.35, 0.72, 1.0],
-                      ),
+        SizedBox(
+          height: 12,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: miningInnerBorderRadius,
+                    border: Border.all(color: miningBorder),
+                    gradient: const LinearGradient(
+                      colors: [
+                        miningRed,
+                        miningAmber,
+                        miningBlue,
+                        miningTeal,
+                      ],
+                      stops: [0.0, 0.34, 0.7, 1.0],
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment(-1 + (medianStop * 2), 0),
-                  child: Container(
-                    width: 3,
-                    height: 18,
-                    color: Colors.white,
-                  ),
+              ),
+              Align(
+                alignment: Alignment(-1 + (medianStop * 2), 0),
+                child: Container(
+                  width: 3,
+                  height: 18,
+                  color: Colors.white,
                 ),
-                Align(
-                  alignment: Alignment(-1 + (minStop * 2), 0),
-                  child: Container(
-                    width: 2,
-                    height: 14,
-                    color: Colors.white.withValues(alpha: 0.72),
-                  ),
+              ),
+              Align(
+                alignment: Alignment(-1 + (minStop * 2), 0),
+                child: Container(
+                  width: 2,
+                  height: 14,
+                  color: Colors.white.withValues(alpha: 0.72),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -303,14 +310,19 @@ class _BandLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(color: miningMuted),
+          style: AppTypography.caption.copyWith(
+            color: miningMuted,
+            fontFamily: 'HubotSansCondensed',
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           value,
-          style: AppTypography.bodySmall.copyWith(
+          style: miningMonoStyle(
+            AppTypography.bodySmall,
             color: Colors.white,
             fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
           ),
         ),
       ],

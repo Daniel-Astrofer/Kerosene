@@ -8,7 +8,7 @@ class SupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberBackground(
+    return CyberBackground.authenticated(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -51,29 +51,35 @@ class SupportScreen extends StatelessWidget {
                     Icons.privacy_tip_rounded,
                     () {},
                   ),
-
                   const SizedBox(height: 32),
-
                   Center(
                     child: Column(
                       children: [
                         Text(
                           "KEROSENE v1.0.0",
-                          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall!.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimary
+                                        .withValues(alpha: 0.2),
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 2,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           "${context.l10n.developedBy} DANIEL-ASTROFER",
-                          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall!.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimary
+                                        .withValues(alpha: 0.1),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                  ),
                         ),
                       ],
                     ),
@@ -98,9 +104,13 @@ class SupportScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+        border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 0.05)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -112,10 +122,18 @@ class SupportScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 24),
+                child: Icon(icon,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.7),
+                    size: 24),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -125,16 +143,19 @@ class SupportScreen extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-                      ),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.5),
+                          ),
                     ),
                   ],
                 ),
@@ -159,9 +180,16 @@ class SupportScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1)),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -173,7 +201,10 @@ class SupportScreen extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Text(
           context.l10n.helpSupport.toUpperCase(),
-          style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium!
+              .copyWith(letterSpacing: 2),
         ),
       ],
     );

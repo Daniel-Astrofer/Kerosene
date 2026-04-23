@@ -50,14 +50,19 @@ class _NeonActionButtonState extends State<NeonActionButton> {
           width: double.infinity,
           height: 56,
           decoration: BoxDecoration(
-            color: isDisabled ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
+            color: isDisabled
+                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                : null,
             gradient: isDisabled ? null : AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(AppSpacing.md),
             boxShadow: isDisabled
                 ? []
                 : [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.30),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.30),
                       blurRadius: AppSpacing.lg,
                       spreadRadius: 2,
                       offset: const Offset(0, AppSpacing.sm),
@@ -69,7 +74,10 @@ class _NeonActionButtonState extends State<NeonActionButton> {
             child: InkWell(
               onTap: null,
               borderRadius: BorderRadius.circular(AppSpacing.md),
-              splashColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.15),
+              splashColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.15),
               child: Center(
                 child: widget.isLoading
                     ? SizedBox(
@@ -84,7 +92,10 @@ class _NeonActionButtonState extends State<NeonActionButton> {
                         widget.text,
                         style: AppTypography.buttonText.copyWith(
                           color: isDisabled
-                              ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .onPrimary
+                                  .withValues(alpha: 0.3)
                               : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),

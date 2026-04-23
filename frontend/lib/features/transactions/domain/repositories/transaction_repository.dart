@@ -4,6 +4,9 @@ import '../entities/fee_estimate.dart';
 import '../entities/tx_status.dart';
 import '../entities/deposit.dart';
 import '../entities/payment_link.dart';
+import '../entities/external_transfer.dart';
+import '../entities/lightning_invoice.dart';
+import '../entities/wallet_network_address.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
 /// Interface abstrata do TransactionRepository
@@ -20,7 +23,7 @@ abstract class TransactionRepository {
     String? fromWalletId,
     String? fromAddress,
     String? context,
-    String? passkeySignature,
+    String? passkeyAssertionJson,
     String? confirmationPassphrase,
     String? totpCode,
     String? idempotencyKey,
@@ -42,6 +45,7 @@ abstract class TransactionRepository {
 
   // Deposits
   Future<Either<Failure, String>> getDepositAddress();
+  Future<Either<Failure, Map<String, String>>> getOnrampUrls();
   Future<Deposit> confirmDeposit({
     required String txid,
     required String fromAddress,
@@ -51,17 +55,40 @@ abstract class TransactionRepository {
   Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
+  Future<PaymentLink> createPaymentLink({
+    required double amount,
+    String? description,
+  });
+  Future<PaymentLink> getPaymentLink(String linkId);
   Future<List<PaymentLink>> getPaymentLinks();
+
+  Future<WalletNetworkAddress> getWalletNetworkProfile({
+    required String walletName,
+  });
+  Future<WalletNetworkAddress> issueOnchainAddress({
+    required String walletName,
+    bool regenerate = false,
+  });
+  Future<LightningInvoice> createLightningInvoice({
+    required String walletName,
+    required double amount,
+    String? memo,
+    int expiresInSeconds = 900,
+  });
+  Future<List<ExternalTransfer>> getExternalTransfers();
+  Future<ExternalTransfer> getExternalTransfer(String transferId);
 
   // Withdrawals
   Future<TxStatus> withdraw({
     required String fromWalletName,
-    required String toAddress,
+    String? toAddress,
+    String? paymentRequest,
     required double amount,
-    required String totpCode,
+    String? totpCode,
+    bool isLightning = false,
+    double maxRoutingFeeBtc = 0.000001,
     String? description,
-    String? passkeySignature,
-    String? passkeyChallenge,
+    String? confirmationPassphrase,
+    String? passkeyAssertionJson,
   });
-
 }

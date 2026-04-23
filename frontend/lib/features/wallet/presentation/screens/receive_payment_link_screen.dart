@@ -2,18 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/utils/qr_payment_parser.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
 import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 
 class ReceivePaymentLinkScreen extends ConsumerStatefulWidget {
   final PaymentLink initialLink;
@@ -63,11 +62,12 @@ class _ReceivePaymentLinkScreenState
   bool get _isLockedPaymentRequest => _link.isInternalPaymentRequest;
 
   String get _paymentUri {
+    final explicitUri = _link.paymentUri?.trim();
+    if (explicitUri != null && explicitUri.isNotEmpty) {
+      return explicitUri;
+    }
+
     if (_isLockedPaymentRequest) {
-      final explicitUri = _link.paymentUri?.trim();
-      if (explicitUri != null && explicitUri.isNotEmpty) {
-        return explicitUri;
-      }
       return QrPaymentParser.encodePaymentLink(_link.id);
     }
 
@@ -223,99 +223,38 @@ class _ReceivePaymentLinkScreenState
   Widget build(BuildContext context) {
     final statusMeta = FinancialStatusBadge.paymentLink(_link.status);
 
-    return CyberBackground.authenticated(
-      useScroll: true,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 18),
-            _buildHero(statusMeta).animate().fade().slideY(begin: 0.08),
-            const SizedBox(height: 18),
-            _buildQrCard(context).animate(delay: 80.ms).fade(),
-            const SizedBox(height: 18),
-            _buildLinkDetails(context).animate(delay: 120.ms).fade(),
-            const SizedBox(height: 18),
-            _buildActions(context).animate(delay: 160.ms).fade(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            LucideIcons.chevronLeft,
-            color: Theme.of(context).colorScheme.onPrimary,
-            size: 24,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
-            padding: const EdgeInsets.all(AppSpacing.sm),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'RECEBER POR QR',
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                      letterSpacing: 3,
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Link de pagamento rastreado',
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onPrimary
-                          .withValues(alpha: 0.56),
-                    ),
-              ),
-            ],
-          ),
-        ),
+    return ReceiveFlowScaffold(
+      title: 'Recebimento',
+      subtitle: 'QR, link e acompanhamento no mesmo padrão visual.',
+      actions: [
         if (_isRefreshing)
           const SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              color: receiveFlowTextColor,
+              strokeWidth: 2,
+            ),
           ),
       ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHero(statusMeta),
+          const SizedBox(height: 16),
+          _buildQrCard(context),
+          const SizedBox(height: 16),
+          _buildLinkDetails(context),
+          const SizedBox(height: 16),
+          _buildActions(context),
+        ],
+      ),
     );
   }
 
   Widget _buildHero(FinancialStatusMeta statusMeta) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D1A26), Color(0xFF09111A)],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+    return ReceiveFlowPanel(
+      backgroundColor: receiveFlowPanelAltColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -323,7 +262,10 @@ class _ReceivePaymentLinkScreenState
             spacing: 10,
             runSpacing: 10,
             children: [
-              FinancialStatusBadge(meta: statusMeta, compact: true),
+              ReceiveFlowTag(
+                label: statusMeta.label.resolve(context),
+                icon: LucideIcons.activity,
+              ),
               _MetricChip(
                 icon: Icons.timer_outlined,
                 label: _link.isExpired
@@ -336,9 +278,9 @@ class _ReceivePaymentLinkScreenState
           Text(
             widget.requestedAmountLabel,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
+              color: receiveFlowTextColor,
+              fontSize: 28,
+              fontWeight: FontWeight.w500,
               height: 1,
               letterSpacing: -0.8,
             ),
@@ -348,9 +290,9 @@ class _ReceivePaymentLinkScreenState
             Text(
               widget.btcAmountLabel,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                color: receiveFlowMutedTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
@@ -366,9 +308,9 @@ class _ReceivePaymentLinkScreenState
                   'líquido ${widget.netAmountLabel}',
               ].join(' • '),
               style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
+                color: receiveFlowMutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 height: 1.35,
               ),
             ),
@@ -377,18 +319,18 @@ class _ReceivePaymentLinkScreenState
           Text(
             _statusHeadline,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+              color: receiveFlowTextColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             _statusMessage,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
-              fontSize: 14,
-              height: 1.45,
+              color: receiveFlowMutedTextColor,
+              fontSize: 13,
+              height: 1.4,
             ),
           ),
           const SizedBox(height: 16),
@@ -422,24 +364,14 @@ class _ReceivePaymentLinkScreenState
   }
 
   Widget _buildQrCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color:
-              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.07),
-        ),
-      ),
+    return ReceiveFlowPanel(
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(0),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.12),
@@ -455,25 +387,20 @@ class _ReceivePaymentLinkScreenState
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: Color(0xFF071018),
+                color: Colors.black,
               ),
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: Color(0xFF071018),
+                color: Colors.black,
               ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            context.l10n.receiveScanToPay.toUpperCase(),
+            context.l10n.receiveScanToPay,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.42),
-                  letterSpacing: 2.6,
-                  fontWeight: FontWeight.w900,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
                 ),
           ),
         ],
@@ -544,7 +471,7 @@ class _ReceivePaymentLinkScreenState
           child: _ActionButton(
             onTap: () => _refreshLink(),
             icon: LucideIcons.refreshCw,
-            label: 'ATUALIZAR',
+            label: 'Atualizar',
           ),
         ),
         const SizedBox(width: 12),
@@ -552,7 +479,7 @@ class _ReceivePaymentLinkScreenState
           child: _ActionButton(
             onTap: () => Navigator.pushNamed(context, '/history'),
             icon: LucideIcons.history,
-            label: 'HISTORICO',
+            label: 'Histórico',
           ),
         ),
       ],
@@ -575,17 +502,7 @@ class _CopyFieldCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color:
-              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.06),
-        ),
-      ),
+    return ReceiveFlowPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -594,8 +511,9 @@ class _CopyFieldCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.w800,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w500,
                       ),
                 ),
               ),
@@ -603,6 +521,9 @@ class _CopyFieldCard extends StatelessWidget {
                 onPressed: onCopy,
                 icon: const Icon(Icons.copy_rounded, size: 16),
                 label: const Text('Copiar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: receiveFlowMutedTextColor,
+                ),
               ),
             ],
           ),
@@ -610,20 +531,17 @@ class _CopyFieldCard extends StatelessWidget {
           SelectableText(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: receiveFlowTextColor,
               fontSize: 13,
               height: 1.45,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             helper,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.54),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
                   height: 1.4,
                 ),
           ),
@@ -646,36 +564,10 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return ReceiveFlowSecondaryButton(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color:
-              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.06),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                size: 18, color: Theme.of(context).colorScheme.onPrimary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                    letterSpacing: 1.8,
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ],
-        ),
-      ),
+      icon: icon,
+      label: label,
     );
   }
 }
@@ -694,19 +586,20 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
+        color: receiveFlowPanelRaisedColor,
+        borderRadius: BorderRadius.circular(0),
+        border: Border.all(color: receiveFlowBorderStrongColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: Colors.white70),
+          Icon(icon, size: 15, color: receiveFlowMutedTextColor),
           const SizedBox(width: 8),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
           ),
@@ -731,8 +624,9 @@ class _DetailTag extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 96),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
+        color: receiveFlowPanelColor,
+        borderRadius: BorderRadius.circular(0),
+        border: Border.all(color: receiveFlowBorderStrongColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -740,17 +634,17 @@ class _DetailTag extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.white.withValues(alpha: 0.48),
-                  fontWeight: FontWeight.w700,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowFaintTextColor,
+                  fontWeight: FontWeight.w400,
                 ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w500,
                 ),
           ),
         ],

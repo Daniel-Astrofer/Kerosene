@@ -7,6 +7,7 @@ import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
 import 'package:teste/features/auth/presentation/screens/login_username_screen.dart';
 import 'package:teste/features/auth/presentation/screens/passkey_verification_screen.dart';
+import 'package:teste/features/auth/presentation/screens/signup/steps/signup_pow_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/widgets/signup_step_ui.dart';
 import 'package:teste/features/auth/presentation/screens/totp_screen.dart';
 import 'package:teste/l10n/app_localizations.dart';
@@ -117,6 +118,27 @@ void main() {
         expectNoLayoutExceptions(
           tester,
           label: 'SignupStepLayout @ $size',
+        );
+      }
+    });
+
+    testWidgets('signup pow step stays stable in compact sizes', (
+      tester,
+    ) async {
+      for (final size in [compactPortrait, compactLandscape]) {
+        await pumpResponsiveScreen(
+          tester,
+          size: size,
+          child: const SignupPowStep(
+            username: 'astroferas',
+            mnemonic: 'alpha beta gamma delta',
+            accountSecurity: 'STANDARD',
+            runId: 0,
+          ),
+        );
+        expectNoLayoutExceptions(
+          tester,
+          label: 'SignupPowStep @ $size',
         );
       }
     });

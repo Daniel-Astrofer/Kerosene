@@ -6,9 +6,10 @@ class AppColors {
   static const Color primary = Color(0xFF6A11CB); // Purple (Primary UI)
   static const Color secondary = Color(0xFF2575FC); // Blue (Secondary UI)
   static const Color accent = Color(0xFF00E5BC); // Neon Green (Accent only)
-  static const Color background = Color(0xFF000000); // Deep AMOLED Black (Figma)
+  static const Color background =
+      Color(0xFF000000); // Deep AMOLED Black (Figma)
   static const Color surface = Color(0xFF1A1A1B); // Surface/Glass (Figma)
-  
+
   // Backward compatibility from initial design
   static const Color darkSurface = Color(0xFF1A1A1B);
   static const Color secondary1 = Color(0xFF0073D0);
@@ -43,7 +44,7 @@ class AppColors {
   static const Color textMuted = grey;
   static const Color neonCyan = primary;
   static const Color bgInput = Color(0xFF121212);
-  
+
   static const Color surfaceLight = Color(0xFF1A1A1A);
   static const Color surfaceDark = Color(0xFF050505);
 
@@ -62,6 +63,20 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [Color(0xFF0F0B1E), Color(0xFF000000)], // Subtly purplish black
+  );
+
+  static const Color onboardingBackgroundTop = Color(0xFF07090E);
+  static const Color onboardingBackgroundMid = Color(0xFF0B1017);
+  static const Color onboardingBackgroundBottom = Color(0xFF050608);
+
+  static const LinearGradient onboardingBackgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      onboardingBackgroundTop,
+      onboardingBackgroundMid,
+      onboardingBackgroundBottom,
+    ],
   );
 
   static TextStyle heading({required double size, Color color = white}) {

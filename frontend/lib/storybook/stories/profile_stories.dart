@@ -14,7 +14,8 @@ List<Story> profileStories() {
   return [
     Story(
       name: 'Profile/Main Profile',
-      description: 'User profile overview with avatar, username, and quick actions.',
+      description:
+          'User profile overview with avatar, username, and quick actions.',
       builder: (context) => const ProfileScreen(),
     ),
     Story(

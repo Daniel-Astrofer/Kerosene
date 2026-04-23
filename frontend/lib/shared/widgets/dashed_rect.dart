@@ -18,7 +18,8 @@ class DashedRect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _DashedRectPainter(color: color, strokeWidth: strokeWidth, gap: gap),
+      painter:
+          _DashedRectPainter(color: color, strokeWidth: strokeWidth, gap: gap),
       child: child,
     );
   }

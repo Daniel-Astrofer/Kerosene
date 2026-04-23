@@ -10,14 +10,36 @@ class MiningFormatters {
 
   static String btc(double value) => '${_btcFormat.format(value)} BTC';
 
+  static String btcFromSats(int sats) => btc(sats / 100000000.0);
+
   static String compactInt(num value) => _compactNumber.format(value);
 
   static String compactUnsigned(num value) =>
       _compactCurrency.format(value).trim();
 
+  static String largeNumber(num value) {
+    final absolute = value.abs();
+    if (absolute >= 1000000000000) {
+      return '${(value / 1000000000000).toStringAsFixed(2)} T';
+    }
+    if (absolute >= 1000000000) {
+      return '${(value / 1000000000).toStringAsFixed(2)} B';
+    }
+    if (absolute >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(2)} M';
+    }
+    if (absolute >= 1000) {
+      return '${(value / 1000).toStringAsFixed(2)} K';
+    }
+    return NumberFormat('0.##').format(value);
+  }
+
   static String feeRate(double value) => '${_feeFormat.format(value)} sat/vB';
 
   static String percent(double value) => '${_percentFormat.format(value)}%';
+
+  static String signedPercent(double value) =>
+      '${value >= 0 ? '+' : ''}${_percentFormat.format(value)}%';
 
   static String hashrate(double hashesPerSecond) {
     const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
@@ -63,5 +85,21 @@ class MiningFormatters {
     return DateFormat(
       'dd/MM HH:mm',
     ).format(DateTime.fromMillisecondsSinceEpoch(epochMillis));
+  }
+
+  static String shortDateTime(DateTime value) {
+    return DateFormat('dd/MM HH:mm').format(value);
+  }
+
+  static String timeOfDay(DateTime value) {
+    return DateFormat('HH:mm:ss').format(value);
+  }
+
+  static String megabytes(double value) {
+    return '${NumberFormat('0.00').format(value)} MB';
+  }
+
+  static String blockFill(double ratio) {
+    return '${(ratio * 100).toStringAsFixed(0)}% cheio';
   }
 }

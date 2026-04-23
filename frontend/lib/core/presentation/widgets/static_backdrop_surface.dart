@@ -13,6 +13,24 @@ class StaticBackdropSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    final topColor = Color.lerp(
+          backgroundColor,
+          Colors.white,
+          0.06,
+        ) ??
+        backgroundColor;
+    final upperMidColor = Color.lerp(
+          backgroundColor,
+          const Color(0xFF0B1220),
+          0.28,
+        ) ??
+        backgroundColor;
+    final lowerMidColor = Color.lerp(
+          backgroundColor,
+          Colors.black,
+          0.10,
+        ) ??
+        backgroundColor;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -21,14 +39,31 @@ class StaticBackdropSurface extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withValues(alpha: 0.015),
+            topColor,
+            upperMidColor,
+            lowerMidColor,
             backgroundColor,
           ],
+          stops: const [0.0, 0.24, 0.62, 1.0],
         ),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.0, -0.92),
+                  radius: 1.24,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.030),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
           Positioned(
             top: -size.width * 0.18,
             right: -size.width * 0.14,
@@ -88,6 +123,22 @@ class StaticBackdropSurface extends StatelessWidget {
                       Colors.transparent,
                     ],
                   ),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.010),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.08),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
                 ),
               ),
             ),

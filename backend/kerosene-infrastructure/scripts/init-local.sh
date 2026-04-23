@@ -34,7 +34,6 @@ REQUIRED_VARS=(
   PASSWORD_PEPPER
   FOUNDER_TOTP_SECRET
   AES_SECRET
-  API_KEY
 )
 for var in "${REQUIRED_VARS[@]}"; do
   if [[ -z "${!var:-}" ]]; then error "Missing required variable: $var"; fi
@@ -52,7 +51,7 @@ fix_torrc() {
   local service_name=$2
   info "Generating $file..."
   # Use printf to ensure no \r and strict format
-  printf "User kerosene\nSocksPort unix:/var/run/tor/socks/tor.sock WorldWritable\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 %s:8080\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" "$service_name" > "$file"
+  printf "User kerosene\nSocksPort unix:/var/run/tor/socks/tor.sock WorldWritable\nControlSocket /var/run/tor/control/control\nControlSocketsGroupWritable 1\nCookieAuthentication 1\nCookieAuthFile /var/run/tor/control/control_auth_cookie\nCookieAuthFileGroupReadable 1\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 127.0.0.1:8080\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" "$service_name" > "$file"
 }
 
 fix_torrc "$BACKEND_DIR/tor/torrc-is" "kerosene-app-is-local"
@@ -60,7 +59,7 @@ fix_torrc "$BACKEND_DIR/tor/torrc-ch" "kerosene-app-ch-local"
 fix_torrc "$BACKEND_DIR/tor/torrc-sg" "kerosene-app-sg-local"
 
 info "Generating $BACKEND_DIR/tor/torrc-vault..."
-printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 kerosene-vault-local:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
+printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 172.24.0.10:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
 
 info "Initialization complete."
 echo "  bash scripts/start-local.sh"

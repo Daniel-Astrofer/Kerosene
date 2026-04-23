@@ -2,7 +2,7 @@
 
 uniform vec2 iResolution;
 uniform float iTime;
-uniform float uIsDelayed;
+uniform float uVisualState;
 
 out vec4 fragColor;
 
@@ -71,11 +71,17 @@ void main()
         f += 0.01 / abs(length(p * 0.75 + vec2(c, s)));
     }
     
-    // Dynamic color based on delay
-    vec3 baseLightsColor = vec3(0.3, 0.6, 1.0); // Cyan/Blue
-    vec3 warningColor = vec3(1.0, 0.0, 0.2);     // Vibrant Red
-    vec3 currentLightsColor = mix(baseLightsColor, warningColor, uIsDelayed);
-    
+    vec3 bootColor = vec3(0.18, 0.46, 1.0);
+    vec3 warningColor = vec3(1.0, 0.08, 0.18);
+    vec3 retryColor = vec3(1.0, 0.78, 0.12);
+    vec3 currentLightsColor = bootColor;
+
+    if (uVisualState > 1.5) {
+        currentLightsColor = retryColor;
+    } else if (uVisualState > 0.5) {
+        currentLightsColor = warningColor;
+    }
+
     vec3 lights_col_f = currentLightsColor * f;
 
     // Background Glow

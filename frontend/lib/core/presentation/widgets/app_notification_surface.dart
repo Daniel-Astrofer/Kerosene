@@ -16,31 +16,31 @@ class AppNotificationAction {
 }
 
 class AppNotificationStyle {
-  static const Color surfaceColor = Color(0xFF151A21);
-  static const Color borderColor = Color(0xFF2A323D);
-  static const Color buttonColor = Color(0xFF252C35);
-  static const Color closeButtonColor = Color(0xFF303844);
-  static const Color titleColor = Color(0xFFF5F7FB);
-  static const Color bodyColor = Color(0xFFD9DEE8);
-  static const Color metaColor = Color(0xFFB7BEC9);
+  static const Color surfaceColor = Color(0xFF07090C);
+  static const Color borderColor = Color(0xFF252A31);
+  static const Color buttonColor = Color(0xFF171B20);
+  static const Color closeButtonColor = Color(0xFF11151A);
+  static const Color titleColor = Color(0xFFF1F3F5);
+  static const Color bodyColor = Color(0xFFB8BFC7);
+  static const Color metaColor = Color(0xFF7F8790);
 
   static Color accentFor(AppNotificationTone tone) {
     return switch (tone) {
-      AppNotificationTone.success => const Color(0xFF26E88D),
-      AppNotificationTone.error => const Color(0xFFFF6D7A),
-      AppNotificationTone.warning => const Color(0xFFFF9F43),
-      AppNotificationTone.info => const Color(0xFFEAF0F7),
-      AppNotificationTone.neutral => const Color(0xFFDDE3EC),
+      AppNotificationTone.success => const Color(0xFFE5E8E6),
+      AppNotificationTone.error => const Color(0xFFD9D9D9),
+      AppNotificationTone.warning => const Color(0xFFC9CED3),
+      AppNotificationTone.info => const Color(0xFFB9C2CC),
+      AppNotificationTone.neutral => const Color(0xFFD8DDE2),
     };
   }
 
   static IconData iconFor(AppNotificationTone tone) {
     return switch (tone) {
-      AppNotificationTone.success => Icons.check_circle_rounded,
-      AppNotificationTone.error => Icons.error_rounded,
-      AppNotificationTone.warning => Icons.warning_rounded,
-      AppNotificationTone.info => Icons.info_rounded,
-      AppNotificationTone.neutral => Icons.notifications_rounded,
+      AppNotificationTone.success => Icons.check_circle_outline,
+      AppNotificationTone.error => Icons.error_outline,
+      AppNotificationTone.warning => Icons.report_problem_outlined,
+      AppNotificationTone.info => Icons.info_outline,
+      AppNotificationTone.neutral => Icons.notifications_none,
     };
   }
 }
@@ -69,7 +69,7 @@ class AppNotificationSurface extends StatelessWidget {
     this.footerLabel,
     this.leadingIcon,
     this.padding = const EdgeInsets.fromLTRB(16, 14, 14, 14),
-    this.borderRadius = 14,
+    this.borderRadius = 0,
     this.minHeight,
     this.maxMessageLines = 3,
     this.showLeadingIcon = true,
@@ -92,9 +92,9 @@ class AppNotificationSurface extends StatelessWidget {
         border: Border.all(color: AppNotificationStyle.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.32),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -108,12 +108,23 @@ class AppNotificationSurface extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (showLeadingIcon) ...[
-                  Icon(
-                    leadingIcon ?? AppNotificationStyle.iconFor(tone),
-                    color: accent,
-                    size: 20,
+                  Container(
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D1014),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Icon(
+                      leadingIcon ?? AppNotificationStyle.iconFor(tone),
+                      color: accent,
+                      size: 17,
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                 ],
                 Expanded(
                   child: Text(
@@ -122,9 +133,9 @@ class AppNotificationSurface extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppNotificationStyle.titleColor,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      height: 1.12,
                       letterSpacing: 0,
                     ),
                   ),
@@ -143,8 +154,8 @@ class AppNotificationSurface extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodySmall.copyWith(
                   color: AppNotificationStyle.bodyColor,
-                  fontSize: 14,
-                  height: 1.45,
+                  fontSize: 13,
+                  height: 1.42,
                   letterSpacing: 0,
                 ),
               ),
@@ -174,7 +185,7 @@ class AppNotificationSurface extends StatelessWidget {
                       style: AppTypography.caption.copyWith(
                         color: AppNotificationStyle.metaColor,
                         fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         height: 1,
                         letterSpacing: 0,
                       ),
@@ -225,6 +236,7 @@ class _NotificationCloseButton extends StatelessWidget {
         style: IconButton.styleFrom(
           backgroundColor: AppNotificationStyle.closeButtonColor,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const RoundedRectangleBorder(),
         ),
       ),
     );
@@ -257,7 +269,7 @@ class _NotificationActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         foregroundColor: Colors.white.withValues(alpha: 0.92),
         backgroundColor: AppNotificationStyle.buttonColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        shape: const RoundedRectangleBorder(),
         textStyle: AppTypography.bodySmall.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w700,

@@ -52,7 +52,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   bool _autoConfirmationScheduled = false;
 
   final _receiverController = TextEditingController();
-  final _contextController = TextEditingController();
 
   String _amount = '0';
   late Currency _selectedCurrency;
@@ -78,7 +77,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   void dispose() {
     _pageController.dispose();
     _receiverController.dispose();
-    _contextController.dispose();
     super.dispose();
   }
 
@@ -138,11 +136,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return ReceiveFlowScaffold(
       title: context.l10n.send,
       subtitle: hasLockedDestination
-          ? 'Pedido carregado com destino e valor travados para revisão.'
-          : 'Informe o destino interno, defina o valor e confirme a transferência.',
+          ? 'Destino e valor bloqueados. Revise o envio.'
+          : 'Informe o endereço ou usuário, escolha o valor e revise.',
       scrollable: false,
       bodyPadding: EdgeInsets.zero,
       onBack: () => _handleBack(hasLockedDestination),
+      chromeRadius: 0,
       child: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -176,16 +175,37 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   Widget _buildManualFlowHero(BuildContext context) {
     return ReceiveFlowPanel(
+      radius: 0,
       backgroundColor: receiveFlowPanelAltColor,
-      child: Row(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const ReceiveFlowSectionLabel('ENVIO'),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Digite o endereço ou nome de usuário.',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Use um destino interno da Kerosene e siga para o valor.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
+                  height: 1.35,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: receiveFlowPanelColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(0),
               border: Border.all(color: receiveFlowBorderColor),
             ),
             child: const Icon(
@@ -194,23 +214,44 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               size: 18,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const ReceiveFlowSectionLabel('DESTINO INTERNO'),
-                const SizedBox(height: 4),
-                Text(
-                  'Informe o identificador da carteira de destino e siga para a revisao do valor.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: receiveFlowMutedTextColor,
-                        height: 1.4,
-                      ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecipientSummaryPanel() {
+    final recipientValue = _currentRecipientValue();
+    final recipientLabel = _currentRecipientLabel();
+    final recipientSubtitle = _currentRecipientSubtitle();
+
+    return ReceiveFlowPanel(
+      radius: 0,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      backgroundColor: receiveFlowPanelAltColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ReceiveFlowSectionLabel('DESTINO'),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            recipientLabel.isEmpty ? recipientValue : recipientLabel,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
                 ),
-              ],
-            ),
           ),
+          if (recipientSubtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              recipientSubtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                    fontFamily: 'JetBrainsMono',
+                    height: 1.35,
+                  ),
+            ),
+          ],
         ],
       ),
     );
@@ -243,6 +284,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           );
 
     return ReceiveFlowPanel(
+      radius: 0,
       child: Column(
         children: [
           Text(
@@ -296,6 +338,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   Widget _buildKeypad() {
     return ReceiveFlowPanel(
+      radius: 0,
       padding: const EdgeInsets.all(10),
       child: Column(
         children: [
@@ -311,6 +354,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   Widget _buildKey(String key) {
     final isBackspace = key == '←';
     return ReceiveFlowKeypadButton(
+      radius: 0,
       onTap: () => _onKeyTap(key),
       child: isBackspace
           ? const Icon(
@@ -342,6 +386,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       btcBrl: btcBrl,
     );
     return ReceiveFlowPanel(
+      radius: 0,
       backgroundColor: receiveFlowPanelAltColor,
       child: Column(
         children: [
@@ -374,10 +419,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             const SizedBox(height: AppSpacing.sm),
           if (_lockedRecipientLabel != null) ...[
             Text(
-              "PARA: ${_lockedRecipientLabel!.toUpperCase()}",
+              "DESTINO: ${_lockedRecipientLabel!.toUpperCase()}",
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                     color: receiveFlowTextColor,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -415,10 +460,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       amount: amountBtc,
       fee: 0,
       total: amountBtc,
-      toAddress: _lockedRecipientAddress.isNotEmpty
-          ? _lockedRecipientAddress
-          : _receiverController.text.trim(),
-      txContext: _contextController.text.trim(),
+      toAddress: _currentRecipientValue(),
     );
   }
 
@@ -479,42 +521,30 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         children: [
           _buildManualFlowHero(context),
           const SizedBox(height: AppSpacing.xl),
-          Text(
-            context.l10n.recipientData,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(letterSpacing: 1),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.lg),
           _buildStepInput(
+            label: 'DESTINO',
             controller: _receiverController,
-            hint: 'Hash ou identificador da carteira',
+            hint: 'Endereço ou nome de usuário',
             icon: LucideIcons.user,
           ),
           if (recentInternalDestinations.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             RecentTransactionDestinationsSection(
-              title: 'Ultimos destinos',
+              title: 'Já enviados',
               destinations: recentInternalDestinations,
               onSelect: _applyRecentInternalDestination,
+              maxItems: 6,
+              radius: 0,
             ),
           ],
-          const SizedBox(height: AppSpacing.md),
-          _buildStepInput(
-            controller: _contextController,
-            hint: context.l10n.descriptionHint,
-            icon: LucideIcons.fileText,
-            maxLength: 100,
-          ),
           const SizedBox(height: AppSpacing.xxl),
           ReceiveFlowPrimaryButton(
-            label: 'CONTINUAR',
+            label: 'IR PARA O VALOR',
             icon: LucideIcons.arrowRight,
+            radius: 0,
             onTap: () {
               if (_receiverController.text.trim().isEmpty) {
-                SnackbarHelper.showError("Informe o destinatário");
+                SnackbarHelper.showError("Informe o endereço ou usuário.");
                 return;
               }
               if (_isExternalBitcoinTarget(_receiverController.text.trim())) {
@@ -548,6 +578,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
       child: Column(
         children: [
+          _buildRecipientSummaryPanel(),
+          const SizedBox(height: AppSpacing.lg),
           if (_pendingPaymentLinkId == null &&
               _lockedRecipientAddress.isEmpty) ...[
             Padding(
@@ -574,9 +606,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ],
           const SizedBox(height: AppSpacing.xl),
           ReceiveFlowPrimaryButton(
-            label: context.l10n.continueButton.toUpperCase(),
+            label: 'REVISAR',
             icon: LucideIcons.arrowRight,
             isLoading: isLoading,
+            radius: 0,
             onTap: amountBtc > 0 ? _handleContinue : null,
           ),
         ],
@@ -585,6 +618,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   Widget _buildStepInput({
+    required String label,
     required TextEditingController controller,
     required String hint,
     required IconData icon,
@@ -593,39 +627,87 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: receiveFlowPanelColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(0),
         border: Border.all(color: receiveFlowBorderColor),
       ),
-      child: TextField(
-        controller: controller,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: receiveFlowTextColor,
-              fontWeight: FontWeight.w500,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
             ),
-        maxLength: maxLength,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: receiveFlowFaintTextColor,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: receiveFlowFaintTextColor,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.6,
+                  ),
+            ),
+          ),
+          Divider(height: 1, color: receiveFlowBorderColor),
+          TextField(
+            controller: controller,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w500,
+                ),
+            maxLength: maxLength,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowFaintTextColor,
+                  ),
+              counterText: '',
+              filled: false,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
               ),
-          counterText: '',
-          filled: false,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.md,
+              prefixIcon: Icon(
+                icon,
+                color: receiveFlowMutedTextColor,
+                size: 20,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
           ),
-          prefixIcon: Icon(
-            icon,
-            color: receiveFlowMutedTextColor,
-            size: 20,
-          ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
+        ],
       ),
     );
+  }
+
+  String _currentRecipientValue() {
+    return _lockedRecipientAddress.isNotEmpty
+        ? _lockedRecipientAddress
+        : _receiverController.text.trim();
+  }
+
+  String _currentRecipientLabel() {
+    final label = _lockedRecipientLabel?.trim();
+    if (label == null || label.isEmpty || label == 'Destino bloqueado') {
+      return _currentRecipientValue();
+    }
+    return label;
+  }
+
+  String? _currentRecipientSubtitle() {
+    final value = _currentRecipientValue();
+    final label = _lockedRecipientLabel?.trim();
+    if (label == null ||
+        label.isEmpty ||
+        label == value ||
+        label == 'Destino bloqueado') {
+      return null;
+    }
+    return value;
   }
 
   Future<void> _openPaymentConfirmation({
@@ -634,19 +716,15 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required double fee,
     required double total,
     required String toAddress,
-    required String txContext,
   }) async {
     final selectedCurrency = ref.read(currencyProvider);
     final btcUsd = ref.read(latestBtcPriceProvider);
     final btcEur = ref.read(btcEurPriceProvider);
     final btcBrl = ref.read(btcBrlPriceProvider);
     final isPaymentLink = _pendingPaymentLinkId != null;
-    final recipientLabel = _lockedRecipientLabel ?? toAddress;
-    final destinationSubtitle = isPaymentLink
-        ? null
-        : _lockedRecipientLabel != null && _lockedRecipientLabel != toAddress
-            ? toAddress
-            : null;
+    final recipientLabel = _currentRecipientLabel();
+    final destinationSubtitle =
+        isPaymentLink ? null : _currentRecipientSubtitle();
     final amountLabel = MoneyDisplay.formatAmountFromBtc(
       btcAmount: amount,
       currency: selectedCurrency,
@@ -722,12 +800,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         value: balanceLabel,
         icon: LucideIcons.walletCards,
       ),
-      if (txContext.isNotEmpty)
-        PaymentConfirmationDetail(
-          label: context.l10n.description,
-          value: txContext,
-          icon: LucideIcons.fileText,
-        ),
       if (_pendingPaymentLinkId != null)
         PaymentConfirmationDetail(
           label: 'ID do link',
@@ -762,7 +834,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           networkLabel: 'Interno',
           notice: isPaymentLink
               ? 'Valor e destino foram definidos pelo link. Confirme apenas se reconhecer este pedido.'
-              : 'Confira os dados antes de confirmar. Depois da autorização, o pedido será enviado ao servidor para processamento.',
+              : 'Confira os dados antes de confirmar. Depois da autorização, o envio será processado.',
           securityMessage:
               'A confirmação usa a sessão atual e os fatores de segurança configurados na sua conta antes de enviar o pagamento.',
           confirmText: context.l10n.confirm,
@@ -774,7 +846,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             amount: amount,
             fee: fee,
             toAddress: toAddress,
-            txContext: txContext,
           ),
         ),
       ),
@@ -792,7 +863,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required double amount,
     required double fee,
     required String toAddress,
-    required String txContext,
   }) async {
     final profile = await _resolveSecurityProfile(wallet);
     final authResult = await TransactionAuthGate.show(
@@ -848,7 +918,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           toAddress: toAddress,
           amount: amount,
           feeSatoshis: (fee * 100000000).toInt(),
-          context: txContext.isNotEmpty ? txContext : null,
+          context: null,
           passkeyAssertionJson: authResult.passkeyAssertionJson,
           confirmationPassphrase: authResult.confirmationPassphrase,
           totpCode: authResult.totpCode,
@@ -908,9 +978,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         }
         if (parsed.label != null && parsed.label!.isNotEmpty) {
           _lockedRecipientLabel = parsed.label;
-        }
-        if (parsed.message != null && parsed.message!.isNotEmpty) {
-          _contextController.text = parsed.message!;
         }
       });
 
@@ -1050,7 +1117,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       fee: 0,
       total: _lockedAmountBtc,
       toAddress: _lockedRecipientAddress,
-      txContext: _contextController.text.trim(),
     );
   }
 

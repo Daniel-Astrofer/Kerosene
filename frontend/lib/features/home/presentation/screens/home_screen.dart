@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -51,6 +50,7 @@ import '../../../wallet/presentation/screens/receive_hub_screen.dart';
 import '../widgets/animated_balance_display.dart';
 import '../../../transactions/presentation/screens/withdraw_screen.dart';
 import '../../../transactions/presentation/widgets/transaction_success_dialog.dart';
+import '../../../transactions/presentation/widgets/transaction_visuals.dart';
 import '../widgets/latest_tx_popup.dart';
 import '../widgets/tx_detail_overlay.dart';
 import 'qr_scanner_screen.dart';
@@ -853,13 +853,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _QuickActionData(
         kind: _HomeActionIconKind.internalTransfer,
         label: 'Cheque',
-        subtitle: 'Transferencia interna',
+        subtitle: 'Transferência interna',
         onTap: () => _openSend(walletState),
       ),
       _QuickActionData(
         kind: _HomeActionIconKind.sendOnChain,
         label: 'Enviar On-chain',
-        subtitle: 'Saque para endereco BTC',
+        subtitle: 'Saque para endereço BTC',
         onTap: () => _openSendOnChain(walletState),
       ),
       _QuickActionData(
@@ -1010,12 +1010,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       title: !hasWallet
                                           ? 'Estruture sua carteira principal'
                                           : !hasBalance
-                                              ? 'Inicie com um deposito'
+                                              ? 'Carteira pronta para uso'
                                               : 'Operacoes prontas para executar',
                                       subtitle: !hasWallet
                                           ? 'Crie sua carteira para habilitar recebimentos, transferencias e monitoramento com seguranca.'
                                           : !hasBalance
-                                              ? 'Envie fundos para esta carteira e acompanhe a confirmacao da rede em tempo real.'
+                                              ? 'Você pode depositar quando quiser e acompanhar a confirmacao da rede em tempo real.'
                                               : 'Acesse as operacoes essenciais da carteira com confirmacao clara e fluxo objetivo.',
                                       primaryLabel: !hasWallet
                                           ? 'Criar carteira'
@@ -1408,72 +1408,6 @@ class _HomeBalanceSection extends ConsumerWidget {
   }
 }
 
-class _HomeEmptyWalletCard extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _HomeEmptyWalletCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppSpacing.md),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF0F3F8),
-              Color(0xFFD5DCE7),
-              Color(0xFFB8C2D0),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: 18,
-              top: 18,
-              child: Container(
-                width: 44,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  LucideIcons.plus,
-                  size: 16,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            Center(
-              child: Text(
-                'Adicionar carteira',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: const Color(0xFF162235),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _BalanceVisibilityButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -1596,7 +1530,7 @@ class _DraggableWalletCardState extends State<_DraggableWalletCard>
             fit: BoxFit.scaleDown,
             child: SizedBox(
               width: 303,
-              height: 175,
+              height: 191,
               child: widget.activeWallet != null
                   ? WalletCreditCard(
                       wallet: widget.activeWallet,
@@ -1606,7 +1540,13 @@ class _DraggableWalletCardState extends State<_DraggableWalletCard>
                       tiltX: _tiltX,
                       tiltY: _tiltY,
                     )
-                  : _HomeEmptyWalletCard(onTap: widget.onEmptyWalletTap),
+                  : WalletCreditCard(
+                      wallet: null,
+                      colorIndex: 2,
+                      isSelected: true,
+                      isAddCard: true,
+                      onTap: widget.onEmptyWalletTap,
+                    ),
             ),
           ),
         ),
@@ -2166,108 +2106,6 @@ class _TransactionsList extends ConsumerWidget {
 
   static String _pad(int v) => v.toString().padLeft(2, '0');
 
-  static bool _isPaymentLink(Transaction tx) {
-    final description = (tx.description ?? '').toLowerCase();
-    return tx.id.startsWith('pl_') ||
-        description.contains('link') ||
-        description.contains('payment');
-  }
-
-  static _TxStyle _styleFor(Transaction tx) {
-    final isOutgoing = tx.type == TransactionType.send ||
-        tx.type == TransactionType.withdrawal;
-    final isPaymentLink = _isPaymentLink(tx);
-
-    if (isPaymentLink) {
-      return _TxStyle(
-        icon: LucideIcons.fileSymlink,
-        label: isOutgoing ? 'Link pago' : 'Link de pagamento',
-        prefix: isOutgoing ? '-' : '+',
-        iconColor: const Color(0xFF9FA8B3),
-        amountColor:
-            isOutgoing ? const Color(0xFFD59A9A) : const Color(0xFFA8C7B1),
-      );
-    }
-
-    if (tx.isInternal) {
-      if (isOutgoing) {
-        return const _TxStyle(
-          icon: LucideIcons.gitBranch,
-          label: 'Saida interna',
-          prefix: '-',
-          iconColor: Color(0xFF8794A3),
-          amountColor: Color(0xFFD59A9A),
-        );
-      } else {
-        return const _TxStyle(
-          icon: LucideIcons.gitPullRequest,
-          label: 'Entrada interna',
-          prefix: '+',
-          iconColor: Color(0xFF8794A3),
-          amountColor: Color(0xFFA8C7B1),
-        );
-      }
-    }
-
-    if (tx.isLightning) {
-      if (isOutgoing) {
-        return const _TxStyle(
-          icon: LucideIcons.server,
-          label: 'Saida Lightning',
-          prefix: '-',
-          iconColor: Color(0xFFB89B64),
-          amountColor: Color(0xFFD59A9A),
-        );
-      } else {
-        return const _TxStyle(
-          icon: LucideIcons.router,
-          label: 'Entrada Lightning',
-          prefix: '+',
-          iconColor: Color(0xFFB89B64),
-          amountColor: Color(0xFFA8C7B1),
-        );
-      }
-    }
-
-    // Default (On-chain)
-    switch (tx.type) {
-      case TransactionType.receive:
-      case TransactionType.deposit:
-        return const _TxStyle(
-          icon: LucideIcons.inbox,
-          label: 'Entrada',
-          prefix: '+',
-          iconColor: Color(0xFF9CA8B4),
-          amountColor: Color(0xFFA8C7B1),
-        );
-      case TransactionType.send:
-      case TransactionType.withdrawal:
-        return const _TxStyle(
-          icon: LucideIcons.packageOpen,
-          label: 'Saida',
-          prefix: '-',
-          iconColor: Color(0xFF9CA8B4),
-          amountColor: Color(0xFFD59A9A),
-        );
-      case TransactionType.swap:
-        return const _TxStyle(
-          icon: LucideIcons.shuffle,
-          label: 'Swap',
-          prefix: '',
-          iconColor: Color(0xFF8FA7C2),
-          amountColor: Color(0xFFA8C7B1),
-        );
-      case TransactionType.fee:
-        return const _TxStyle(
-          icon: LucideIcons.receipt,
-          label: 'Taxa',
-          prefix: '-',
-          iconColor: Color(0xFF9AA3AE),
-          amountColor: Color(0xFFD59A9A),
-        );
-    }
-  }
-
   static _StatusStyle _statusStyle(TransactionStatus s) {
     switch (s) {
       case TransactionStatus.pending:
@@ -2369,7 +2207,7 @@ class _TransactionsList extends ConsumerWidget {
               ),
               itemBuilder: (context, index) {
                 final tx = visibleTxs[index];
-                final style = _styleFor(tx);
+                final visual = TransactionVisualSpec.fromTransaction(tx);
                 final status = _statusStyle(tx.status);
                 final amountLabel = MoneyDisplay.formatAmountFromBtc(
                   btcAmount: tx.amountBTC,
@@ -2408,15 +2246,10 @@ class _TransactionsList extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            color: const Color(0xFF171B20),
-                            child: Icon(
-                              style.icon,
-                              color: style.iconColor,
-                              size: 17,
-                            ),
+                          TransactionTypeIconBadge(
+                            spec: visual,
+                            size: 34,
+                            iconSize: 17,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -2424,7 +2257,7 @@ class _TransactionsList extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  style.label,
+                                  visual.label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall!.copyWith(
@@ -2466,12 +2299,12 @@ class _TransactionsList extends ConsumerWidget {
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 144),
                             child: Text(
-                              '${style.prefix}$amountLabel',
+                              '${visual.prefix}$amountLabel',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
                               style: theme.textTheme.bodySmall!.copyWith(
-                                color: style.amountColor,
+                                color: visual.amountColor,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0,
                               ),
@@ -2513,7 +2346,7 @@ class _TransactionsList extends ConsumerWidget {
         child: StateFeedbackView(
           state: FeedbackState.loading,
           title: 'A carregar…',
-          description: 'A sincronizar as tuas transações com a rede.',
+          description: 'Sincronizando dispositivo.',
         ),
       ),
       error: (e, __) => Padding(
@@ -2524,20 +2357,6 @@ class _TransactionsList extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _TxStyle {
-  final IconData icon;
-  final String label;
-  final String prefix;
-  final Color iconColor;
-  final Color amountColor;
-  const _TxStyle(
-      {required this.icon,
-      required this.label,
-      required this.prefix,
-      required this.iconColor,
-      required this.amountColor});
 }
 
 class _StatusStyle {
@@ -3017,9 +2836,9 @@ class _HomeActionIcon extends StatelessWidget {
       case _HomeActionIconKind.viewDeposits:
         return Icon(LucideIcons.clipboardList, size: size, color: iconColor);
       case _HomeActionIconKind.internalTransfer:
-        return _ChequeIcon(size: size, color: iconColor);
+        return Icon(LucideIcons.checkSquare, size: size, color: iconColor);
       case _HomeActionIconKind.sendOnChain:
-        return _BtcBlockchainIcon(size: size, color: iconColor);
+        return Icon(LucideIcons.cloudHail, size: size, color: iconColor);
       case _HomeActionIconKind.payLightning:
         return Icon(LucideIcons.zap, size: size, color: iconColor);
       case _HomeActionIconKind.scanQr:
@@ -3029,73 +2848,6 @@ class _HomeActionIcon extends StatelessWidget {
       case _HomeActionIconKind.sendNfc:
         return Icon(LucideIcons.smartphoneNfc, size: size, color: iconColor);
     }
-  }
-}
-
-class _ChequeIcon extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _ChequeIcon({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _MonochromeSvgIcon(
-      assetPath: 'assets/images/send_internal.svg',
-      width: size + 3,
-      height: size + 4,
-      color: color,
-    );
-  }
-}
-
-class _MonochromeSvgIcon extends StatelessWidget {
-  final String assetPath;
-  final double width;
-  final double height;
-  final Color color;
-
-  const _MonochromeSvgIcon({
-    required this.assetPath,
-    required this.width,
-    required this.height,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: SvgPicture.asset(
-        assetPath,
-        fit: BoxFit.contain,
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      ),
-    );
-  }
-}
-
-class _BtcBlockchainIcon extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BtcBlockchainIcon({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _MonochromeSvgIcon(
-      assetPath: 'assets/images/send_btc_chain.svg',
-      width: size + 11,
-      height: size - 3,
-      color: color,
-    );
   }
 }
 

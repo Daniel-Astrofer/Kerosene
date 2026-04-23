@@ -143,7 +143,8 @@ class PasskeyService {
 
   /// Builds synthetic authenticatorData bytes (37 bytes).
   Uint8List _buildAuthenticatorDataBytes(int signatureCounter) {
-    final rpIdHash = sha256.convert(utf8.encode(AppConfig.passkeyRpId)).bytes;
+    final rpIdHash =
+        sha256.convert(utf8.encode(AppConfig.effectivePasskeyRpId)).bytes;
     // flags: 0x05 = UP (bit 0) + UV (bit 2) = user present + user verified
     final counterBytes = ByteData(4)
       ..setUint32(0, signatureCounter, Endian.big);

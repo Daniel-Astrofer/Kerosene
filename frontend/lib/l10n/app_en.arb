@@ -140,7 +140,7 @@
   "setSpendingLimit": "Set Spending Limit",
   "amountInBtc": "Amount in BTC",
   "getStartedDescription": "Create your first Bitcoin wallet to get started.",
-  "welcomeSlogan": "The decentralized financial platform\nbuilt on Bitcoin.",
+  "welcomeSlogan": "The world's first privacy-focused international Bitcoin bank.",
   "signIn": "Sign In",
   "createAccount": "Create Account",
   "welcomeBack": "Welcome Back",
@@ -432,7 +432,7 @@
   "presentationSlide2Title": "Account Creation with Structural Protection Mechanism",
   "presentationSlide2Body": "To preserve infrastructure integrity, account creation requires sending 0.003 BTC.\nThis amount remains entirely in your account.\nDuring registration, only the network transaction fee necessary for operation confirmation is deducted.\nThis technical requirement exists to:\n\n• Prevent automated account creation\n• Reduce distributed attack vectors\n• Maintain operational stability\n• Protect all platform users\n\nIt is not a monthly fee.\nIt is not a recurring charge.\nIt is a structural protection mechanism.",
   "presentationSlide3Title": "Clear and Objective Fee Structure",
-  "presentationSlide3Body": "Our policy is simple:\n\n• 0.9% on deposits\n• 0.9% on withdrawals\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.\nNo unexpected variations.",
+  "presentationSlide3Body": "Our policy is simple:\n\n• External deposits and withdrawals use the wallet card fee\n• Bronze: 0.9%\n• White: 0.8%\n• Black: 0.7%\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.",
   "presentationSlide4Title": "Commitment to Predictability",
   "presentationSlide4Body": "Kerosene was designed to operate with:\n\n• Technical stability\n• Operational transparency\n• Structural security\n• Cost predictability\n\nOur priority is to maintain a solid, protected, and long-term sustainable infrastructure.",
   "presentationSkip": "Skip",
@@ -572,7 +572,7 @@
   "totpEstablishingSession": "Establishing Session...",
 
   "passkeySessionNotFound": "Session not found. Please restart the process.",
-  "passkeyNoBiometrics": "No biometric hardware available on this device.",
+  "passkeyNoBiometrics": "Set up biometrics or a screen lock on this device to use Sovereign Key.",
   "passkeyErrorStarting": "Error starting registration: {message}",
   "@passkeyErrorStarting": {
     "placeholders": {

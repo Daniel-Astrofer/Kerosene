@@ -170,7 +170,7 @@ void onStart(ServiceInstance service) async {
     },
     onNotification: (event) async {
       await NotificationService().showSubtleNotification(
-        id: event.timestamp.millisecondsSinceEpoch.remainder(1 << 31),
+        id: event.systemNotificationId,
         title: event.title,
         body: event.body,
       );

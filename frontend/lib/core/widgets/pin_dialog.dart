@@ -21,7 +21,8 @@ class PinDialog extends StatefulWidget {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.92),
+      barrierColor:
+          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.92),
       builder: (_) => PinDialog(isSetup: isSetup),
     );
     return result ?? false;
@@ -113,7 +114,11 @@ class _PinDialogState extends State<PinDialog> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85)),
+        decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.85)),
         child: SafeArea(
           child: Column(
             children: [
@@ -149,7 +154,10 @@ class _PinDialogState extends State<PinDialog> {
                 _subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.6),
                   fontSize: 14,
                   letterSpacing: 0.5,
                 ),
@@ -171,7 +179,10 @@ class _PinDialogState extends State<PinDialog> {
                       shape: BoxShape.circle,
                       color: filled
                           ? const Color(0xFF00F0FF)
-                          : Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.1),
                     ),
                   );
                 }),
@@ -211,7 +222,10 @@ class _PinDialogState extends State<PinDialog> {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                    foregroundColor: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.4),
                   ),
                   child: const Text(
                     'CANCEL AUTHENTICATION',
@@ -266,9 +280,15 @@ class _PinDialogState extends State<PinDialog> {
                   height: 75,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.03),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.05),
                       width: 1,
                     ),
                   ),
@@ -277,7 +297,7 @@ class _PinDialogState extends State<PinDialog> {
                     key,
                     style: TextStyle(
                       color: isAction
-                          ? const Color(0xFF00F0FF).withOpacity(0.8)
+                          ? const Color(0xFF00F0FF).withValues(alpha: 0.8)
                           : Theme.of(context).colorScheme.onPrimary,
                       fontSize: key == '⌫' ? 24 : 28,
                       fontWeight: FontWeight.w300,

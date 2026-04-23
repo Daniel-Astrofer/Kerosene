@@ -29,7 +29,10 @@ class _SeedGridState extends State<SeedGrid> {
             color: const Color(0xFF0A0A0E),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-               color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
             ),
           ),
           child: Row(
@@ -41,7 +44,7 @@ class _SeedGridState extends State<SeedGrid> {
           ),
         ),
         const SizedBox(height: 32),
-        
+
         // Grid Container
         Container(
           padding: const EdgeInsets.all(24),
@@ -49,8 +52,9 @@ class _SeedGridState extends State<SeedGrid> {
             color: const Color(0xFF030303),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-               color: const Color(0xFF1E3A8A).withOpacity(0.3), // subtle blue border
-               width: 1,
+              color: const Color(0xFF1E3A8A)
+                  .withValues(alpha: 0.3), // subtle blue border
+              width: 1,
             ),
           ),
           child: GridView.builder(
@@ -71,7 +75,10 @@ class _SeedGridState extends State<SeedGrid> {
                     number,
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.3),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -117,7 +124,12 @@ class _SeedGridState extends State<SeedGrid> {
             length.toString(),
             style: TextStyle(
               fontFamily: 'Inter',
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.3),
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),

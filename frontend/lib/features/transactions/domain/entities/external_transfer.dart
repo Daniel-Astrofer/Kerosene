@@ -61,6 +61,7 @@ class ExternalTransfer extends Equatable {
       blockchainTxid: externalReference.isNotEmpty ? externalReference : null,
       description: context,
       isInternal: false,
+      isLightning: isLightning,
     );
   }
 
@@ -78,10 +79,10 @@ class ExternalTransfer extends Equatable {
       platformFeeBtc: (json['platformFeeBtc'] as num?)?.toDouble() ?? 0,
       totalDebitedBtc: (json['totalDebitedBtc'] as num?)?.toDouble() ?? 0,
       externalReference: json['externalReference']?.toString() ?? '',
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '')
-          ?.toLocal(),
-      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '')
-          ?.toLocal(),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toLocal(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '')?.toLocal(),
       context: json['context']?.toString() ?? '',
     );
   }

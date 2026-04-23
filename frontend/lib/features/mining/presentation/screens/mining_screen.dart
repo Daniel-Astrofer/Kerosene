@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:teste/core/presentation/widgets/static_backdrop_surface.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/mining/presentation/providers/mining_dashboard_provider.dart';
 import 'package:teste/features/mining/presentation/providers/mining_providers.dart';
@@ -48,15 +47,14 @@ class _MiningScreenState extends ConsumerState<MiningScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: StaticBackdropSurface(
-        backgroundColor: miningInk,
+      body: _MiningBackdrop(
         child: Stack(
           children: [
             SafeArea(
               child: RefreshIndicator(
                 onRefresh: _refresh,
                 color: miningBlue,
-                backgroundColor: miningSurfaceRaised,
+                backgroundColor: miningSurface,
                 edgeOffset: 12,
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(
@@ -66,7 +64,7 @@ class _MiningScreenState extends ConsumerState<MiningScreen> {
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
                         AppSpacing.lg,
-                        AppSpacing.md,
+                        AppSpacing.lg,
                         AppSpacing.lg,
                         AppPrimaryNavigationBar.scaffoldBottomClearance(
                           context,
@@ -100,6 +98,124 @@ class _MiningScreenState extends ConsumerState<MiningScreen> {
       ),
     );
   }
+}
+
+class _MiningBackdrop extends StatelessWidget {
+  final Widget child;
+
+  const _MiningBackdrop({
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF0C0C0C),
+            Color(0xFF050505),
+            Color(0xFF020202),
+          ],
+          stops: [0.0, 0.34, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: _MiningBackdropFrame(),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _MiningBackdropFrame extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: CustomPaint(
+            painter: const _MiningBackdropGridPainter(),
+            isComplex: true,
+            willChange: false,
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0.0, -0.88),
+                radius: 1.16,
+                colors: [
+                  Colors.white.withValues(alpha: 0.045),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 112,
+          left: 20,
+          right: 20,
+          child: Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.03),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 1,
+            color: miningBorder.withValues(alpha: 0.8),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiningBackdropGridPainter extends CustomPainter {
+  const _MiningBackdropGridPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final minor = Paint()
+      ..color = Colors.white.withValues(alpha: 0.018)
+      ..strokeWidth = 1;
+    final major = Paint()
+      ..color = miningBorder.withValues(alpha: 0.28)
+      ..strokeWidth = 1;
+
+    const minorStep = 96.0;
+    const majorStep = 192.0;
+
+    for (double y = 0; y <= size.height; y += minorStep) {
+      final paint = (y % majorStep).abs() < 0.1 ? major : minor;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+
+    for (double x = 0; x <= size.width; x += majorStep) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        minor,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _MiningInitialState extends ConsumerWidget {
@@ -315,11 +431,13 @@ class _OverviewHeroSection extends ConsumerWidget {
       return const MiningLoadingColumn();
     }
 
-    return MiningOverviewHero(
-      snapshot: snapshot,
-      viewData: viewData,
-      syncMeta: syncMeta,
-      onRefresh: onRefresh,
+    return RepaintBoundary(
+      child: MiningOverviewHero(
+        snapshot: snapshot,
+        viewData: viewData,
+        syncMeta: syncMeta,
+        onRefresh: onRefresh,
+      ),
     );
   }
 }
@@ -368,9 +486,11 @@ class _FeeSection extends ConsumerWidget {
       return const MiningLoadingColumn();
     }
 
-    return LiveFeeGrid(
-      feeMarket: snapshot.feeMarket,
-      viewData: viewData,
+    return RepaintBoundary(
+      child: LiveFeeGrid(
+        feeMarket: snapshot.feeMarket,
+        viewData: viewData,
+      ),
     );
   }
 }
@@ -387,9 +507,11 @@ class _MempoolPressureSection extends ConsumerWidget {
       return const MiningLoadingColumn();
     }
 
-    return MiningMempoolPressureCard(
-      snapshot: snapshot,
-      viewData: viewData,
+    return RepaintBoundary(
+      child: MiningMempoolPressureCard(
+        snapshot: snapshot,
+        viewData: viewData,
+      ),
     );
   }
 }
@@ -406,9 +528,11 @@ class _NetworkHealthSection extends ConsumerWidget {
       return const MiningLoadingColumn();
     }
 
-    return MiningNetworkHealthCard(
-      snapshot: snapshot,
-      viewData: viewData,
+    return RepaintBoundary(
+      child: MiningNetworkHealthCard(
+        snapshot: snapshot,
+        viewData: viewData,
+      ),
     );
   }
 }
@@ -419,7 +543,9 @@ class _LocalMiningMonitorSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final operation = ref.watch(miningOperationProvider);
-    return MiningLocalMonitorCard(operation: operation);
+    return RepaintBoundary(
+      child: MiningLocalMonitorCard(operation: operation),
+    );
   }
 }
 
@@ -473,9 +599,11 @@ class _PoolDistributionSection extends ConsumerWidget {
       return const MiningLoadingColumn();
     }
 
-    return MiningPoolDistributionCard(
-      pools: snapshot.dominantPools,
-      viewData: viewData,
+    return RepaintBoundary(
+      child: MiningPoolDistributionCard(
+        pools: snapshot.dominantPools,
+        viewData: viewData,
+      ),
     );
   }
 }

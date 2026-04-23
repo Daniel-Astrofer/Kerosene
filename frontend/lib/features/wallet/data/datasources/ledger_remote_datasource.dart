@@ -25,7 +25,7 @@ abstract class LedgerRemoteDataSource {
   });
 
   // 3.1 Payment Requests (Internal)
-  
+
   /// Creates an internal payment request link.
   Future<Map<String, dynamic>> createPaymentRequest({
     required double amount,
@@ -39,6 +39,9 @@ abstract class LedgerRemoteDataSource {
   Future<Map<String, dynamic>> payPaymentRequest({
     required String linkId,
     required String payerWalletName,
+    String? totpCode,
+    String? confirmationPassphrase,
+    String? passkeyAssertionJson,
   });
 
   /// Deletes a ledger account.
@@ -149,7 +152,8 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao criar solicitação de pagamento: $e');
+      throw ServerException(
+          message: 'Erro ao criar solicitação de pagamento: $e');
     }
   }
 
@@ -162,7 +166,8 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar solicitação de pagamento: $e');
+      throw ServerException(
+          message: 'Erro ao buscar solicitação de pagamento: $e');
     }
   }
 
@@ -170,16 +175,27 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
   Future<Map<String, dynamic>> payPaymentRequest({
     required String linkId,
     required String payerWalletName,
+    String? totpCode,
+    String? confirmationPassphrase,
+    String? passkeyAssertionJson,
   }) async {
     try {
       final response = await apiClient.post(
         AppConfig.ledgerPaymentRequestPay.replaceFirst('{linkId}', linkId),
-        data: {'payerWalletName': payerWalletName},
+        data: {
+          'payerWalletName': payerWalletName,
+          if (totpCode != null) 'totpCode': totpCode,
+          if (confirmationPassphrase != null)
+            'confirmationPassphrase': confirmationPassphrase,
+          if (passkeyAssertionJson != null)
+            'passkeyAssertionJson': passkeyAssertionJson,
+        },
       );
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao pagar solicitação de pagamento: $e');
+      throw ServerException(
+          message: 'Erro ao pagar solicitação de pagamento: $e');
     }
   }
 

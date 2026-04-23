@@ -83,9 +83,23 @@ class TokenInterceptor extends QueuedInterceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final statusCode = err.response?.statusCode;
+    final path = err.requestOptions.path;
+    final responseDataText = err.response?.data?.toString() ?? '';
     final errorCode = err.response?.data is Map
         ? (err.response!.data['errorCode'] as String? ?? '')
         : '';
+    final isAuthRoute = path.contains('/auth/login') ||
+        path.contains('/auth/signup') ||
+        path.contains('/auth/passkey/');
+    final isTransactionRoute = path.contains('/transactions/') ||
+        path.contains('/ledger/transaction') ||
+        path.contains('/ledger/payment-request/');
+    final isTransactionFactorError = isTransactionRoute &&
+        (errorCode == 'ERR_AUTH_INCORRECT_TOTP' ||
+            errorCode == 'ERR_AUTH_GENERIC' ||
+            responseDataText.contains('PASSKEY_CHALLENGE_REQUIRED'));
+    final isExplicitInvalidSession = errorCode == 'ERR_AUTH_INVALID_SESSION' ||
+        responseDataText.toLowerCase().contains('invalid session');
 
     // Detecta sessão inválida:
     // • 401 — token expirado, ausente ou rejeitado pelo servidor.
@@ -94,16 +108,13 @@ class TokenInterceptor extends QueuedInterceptor {
     // NÃO limpamos sessão em 500: esses erros são falhas do servidor
     // (bugs, DB indisponível, etc.) e não indicam que o JWT é inválido.
     // Tratar 500 como sessão inválida derrubava o usuário por erros temporários.
-    final isInvalidSession = statusCode == 401 ||
-        (statusCode == 403 &&
-            (errorCode.startsWith('ERR_AUTH_') ||
-                errorCode == 'ERR_AUTH_UNRECOGNIZED_DEVICE' ||
-                (err.response?.data?.toString().contains('JWT') ?? false)));
-
-    final path = err.requestOptions.path;
-    final isAuthRoute = path.contains('/auth/login') ||
-        path.contains('/auth/signup') ||
-        path.contains('/auth/passkey/');
+    final isInvalidSession = isExplicitInvalidSession ||
+        (!isTransactionFactorError &&
+            (statusCode == 401 ||
+                (statusCode == 403 &&
+                    (errorCode.startsWith('ERR_AUTH_') ||
+                        errorCode == 'ERR_AUTH_UNRECOGNIZED_DEVICE' ||
+                        responseDataText.contains('JWT')))));
 
     if (isInvalidSession && !isAuthRoute && !_redirecting) {
       _redirecting = true;

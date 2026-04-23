@@ -59,9 +59,9 @@ class WithdrawReceiptScreen extends StatelessWidget {
         width: 72,
         height: 72,
         decoration: BoxDecoration(
-          color: receiveFlowPanelColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: receiveFlowBorderColor),
+          color: receiveFlowPanelRaisedColor,
+          borderRadius: BorderRadius.circular(0),
+          border: Border.all(color: receiveFlowBorderStrongColor),
         ),
         child: const Icon(
           LucideIcons.check,

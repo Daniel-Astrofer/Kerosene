@@ -1,17 +1,187 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import 'package:teste/core/network/api_client_provider.dart';
+import 'package:teste/core/services/passkey_service.dart';
 import 'package:teste/core/network/mempool_api_client_provider.dart';
 import 'package:teste/features/mining/data/models/mempool_market_models.dart';
+import 'package:teste/features/mining/data/models/mempool_transaction_models.dart';
+import 'package:teste/features/mining/data/services/mining_marketplace_service.dart';
 import 'package:teste/features/mining/data/services/mempool_service.dart';
+import 'package:teste/features/mining/domain/entities/mining_allocation.dart';
+import 'package:teste/features/mining/domain/entities/mining_rig_offer.dart';
+import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/main.dart'; // To access sharedPreferencesProvider
 
 final mempoolServiceProvider = Provider<MempoolService>((ref) {
   return MempoolService(ref.watch(mempoolApiClientProvider));
 });
 
+final miningMarketplaceServiceProvider = Provider<MiningMarketplaceService>((
+  ref,
+) {
+  return MiningMarketplaceService(ref.watch(apiClientProvider));
+});
+
 final mempoolMiningDashboardProvider =
     FutureProvider.autoDispose<MempoolMiningDashboardData>((ref) async {
   return ref.watch(mempoolServiceProvider).fetchDashboard();
 });
+
+final mempoolTransactionSummaryProvider =
+    FutureProvider.autoDispose.family<MempoolTransactionSummary?, String>((
+  ref,
+  txid,
+) async {
+  return ref.watch(mempoolServiceProvider).fetchTransactionSummary(txid);
+});
+
+final miningRigOffersProvider =
+    FutureProvider<List<MiningRigOffer>>((ref) async {
+  final rigs = await ref.watch(miningMarketplaceServiceProvider).getRigOffers();
+  final sorted = List<MiningRigOffer>.from(rigs)
+    ..sort((a, b) => a.pricePerUnitDayBtc.compareTo(b.pricePerUnitDayBtc));
+  return sorted;
+});
+
+final miningAllocationsProvider =
+    FutureProvider<List<MiningAllocation>>((ref) async {
+  final allocations =
+      await ref.watch(miningMarketplaceServiceProvider).getAllocations();
+  final sorted = List<MiningAllocation>.from(allocations)
+    ..sort((a, b) {
+      final left = a.startsAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final right = b.startsAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return right.compareTo(left);
+    });
+  return sorted;
+});
+
+final miningAllocationDetailProvider =
+    FutureProvider.family<MiningAllocation, String>((ref, allocationId) async {
+  return ref
+      .watch(miningMarketplaceServiceProvider)
+      .getAllocation(allocationId);
+});
+
+class MiningMarketplaceActionState {
+  final bool isLoading;
+  final String? error;
+  final MiningAllocation? allocation;
+
+  const MiningMarketplaceActionState({
+    this.isLoading = false,
+    this.error,
+    this.allocation,
+  });
+}
+
+class MiningMarketplaceActionNotifier
+    extends Notifier<MiningMarketplaceActionState> {
+  late MiningMarketplaceService _service;
+
+  @override
+  MiningMarketplaceActionState build() {
+    _service = ref.watch(miningMarketplaceServiceProvider);
+    return const MiningMarketplaceActionState();
+  }
+
+  Future<MiningAllocation?> createAllocation({
+    required String walletName,
+    required int rigId,
+    double? requestedHashrate,
+    double? budgetBtc,
+    required int durationHours,
+    required String payoutAddress,
+    required String poolUrl,
+    required String workerName,
+    required String totpCode,
+    String? confirmationPassphrase,
+    String? passkeyAssertionResponseJson,
+  }) async {
+    state = const MiningMarketplaceActionState(isLoading: true);
+    try {
+      final allocation = await _service.createAllocation(
+        walletName: walletName,
+        rigId: rigId,
+        requestedHashrate: requestedHashrate,
+        budgetBtc: budgetBtc,
+        durationHours: durationHours,
+        payoutAddress: payoutAddress,
+        poolUrl: poolUrl,
+        workerName: workerName,
+        totpCode: totpCode,
+        confirmationPassphrase: confirmationPassphrase,
+        passkeyAssertionResponseJson: passkeyAssertionResponseJson,
+      );
+      ref.invalidate(miningAllocationsProvider);
+      await ref.read(walletProvider.notifier).refresh();
+      state = MiningMarketplaceActionState(allocation: allocation);
+      return allocation;
+    } catch (e) {
+      final errorStr = e.toString();
+      if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
+        try {
+          final challenge = _extractPasskeyChallenge(e);
+          if (challenge == null) {
+            throw StateError(
+              'Não foi possível extrair o challenge da passkey da resposta do servidor.',
+            );
+          }
+
+          final assertionJson = await _buildPasskeyAssertionJson(challenge);
+          final allocation = await _service.createAllocation(
+            walletName: walletName,
+            rigId: rigId,
+            requestedHashrate: requestedHashrate,
+            budgetBtc: budgetBtc,
+            durationHours: durationHours,
+            payoutAddress: payoutAddress,
+            poolUrl: poolUrl,
+            workerName: workerName,
+            totpCode: totpCode,
+            confirmationPassphrase: confirmationPassphrase,
+            passkeyAssertionResponseJson: assertionJson,
+          );
+          ref.invalidate(miningAllocationsProvider);
+          await ref.read(walletProvider.notifier).refresh();
+          state = MiningMarketplaceActionState(allocation: allocation);
+          return allocation;
+        } catch (signErr) {
+          debugPrint('>>> Mining allocation passkey flow failed: $signErr');
+          state = MiningMarketplaceActionState(error: signErr.toString());
+          return null;
+        }
+      }
+      state = MiningMarketplaceActionState(error: errorStr);
+      return null;
+    }
+  }
+
+  Future<MiningAllocation?> cancelAllocation(String allocationId) async {
+    state = const MiningMarketplaceActionState(isLoading: true);
+    try {
+      final allocation = await _service.cancelAllocation(allocationId);
+      ref.invalidate(miningAllocationsProvider);
+      await ref.read(walletProvider.notifier).refresh();
+      state = MiningMarketplaceActionState(allocation: allocation);
+      return allocation;
+    } catch (e) {
+      state = MiningMarketplaceActionState(error: e.toString());
+      return null;
+    }
+  }
+
+  void reset() {
+    state = const MiningMarketplaceActionState();
+  }
+}
+
+final miningMarketplaceActionProvider = NotifierProvider<
+    MiningMarketplaceActionNotifier, MiningMarketplaceActionState>(
+  MiningMarketplaceActionNotifier.new,
+);
 
 enum MiningOperationStatus {
   idle,
@@ -159,3 +329,59 @@ final miningOperationProvider =
     NotifierProvider<MiningOperationNotifier, MiningOperationState>(
   MiningOperationNotifier.new,
 );
+
+String? _extractPasskeyChallenge(Object error) {
+  const marker = 'PASSKEY_CHALLENGE_REQUIRED:';
+  final rawError = error.toString().trim();
+  final candidates = <String>[rawError];
+
+  try {
+    final decoded = jsonDecode(rawError);
+    if (decoded is Map) {
+      final message = decoded['message']?.toString().trim();
+      final nestedError = decoded['error']?.toString().trim();
+
+      if (message != null && message.isNotEmpty) {
+        candidates.insert(0, message);
+      }
+
+      if (nestedError != null && nestedError.isNotEmpty) {
+        candidates.add(nestedError);
+      }
+    }
+  } catch (_) {}
+
+  final hexPattern = RegExp(
+    '${RegExp.escape(marker)}([0-9a-fA-F]+)',
+  );
+
+  for (final candidate in candidates) {
+    final hexMatch = hexPattern.firstMatch(candidate);
+    if (hexMatch != null) {
+      return hexMatch.group(1);
+    }
+
+    final markerIndex = candidate.indexOf(marker);
+    if (markerIndex < 0) {
+      continue;
+    }
+
+    var challenge = candidate.substring(markerIndex + marker.length).trim();
+    challenge = challenge.replaceFirst(RegExp(r"""^['"]+"""), '');
+    challenge = challenge.replaceFirst(RegExp(r"""['",}\]\s]+$"""), '');
+
+    if (challenge.isNotEmpty) {
+      return challenge;
+    }
+  }
+
+  return null;
+}
+
+Future<String> _buildPasskeyAssertionJson(String challenge) async {
+  final credential = await PasskeyService.instance.authenticate(
+    challengeHex: challenge,
+    username: 'mining',
+  );
+  return jsonEncode(credential);
+}

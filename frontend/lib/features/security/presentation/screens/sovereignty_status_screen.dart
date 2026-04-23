@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -69,19 +70,9 @@ class _SovereigntyStatusScreenState
     final statusAsync = ref.watch(sovereigntyStatusProvider);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF06080D),
-              Color(0xFF0B1017),
-              Color(0xFF060709),
-            ],
-          ),
-        ),
+      backgroundColor: authenticatedSurfaceBackgroundColor,
+      body: ColoredBox(
+        color: authenticatedSurfaceBackgroundColor,
         child: SafeArea(
           child: Column(
             children: [
@@ -337,6 +328,8 @@ class _SovereigntyStatusScreenState
     final totalNodes = status.networkConsensus['totalNodes'] ?? 0;
     final ledgerCount = status.ledgerIntegrity['ledgerCount'] ?? 0;
     final diskPersistence = status.memoryProtection['diskPersistence'] == true;
+    final quorumLabel = _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum');
+    final ledgerLabel = _copy(pt: 'Ledger', en: 'Ledger', es: 'Ledger');
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -365,7 +358,7 @@ class _SovereigntyStatusScreenState
             SizedBox(
               width: itemWidth,
               child: _MetricCard(
-                label: _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum'),
+                label: quorumLabel,
                 value: '$activeNodes/$totalNodes',
                 detail: _copy(
                   pt: 'Nós ativos',
@@ -377,7 +370,7 @@ class _SovereigntyStatusScreenState
             SizedBox(
               width: itemWidth,
               child: _MetricCard(
-                label: _copy(pt: 'Ledger', en: 'Ledger', es: 'Ledger'),
+                label: ledgerLabel,
                 value: '$ledgerCount',
                 detail: _copy(
                   pt: 'Carteiras auditadas',
@@ -421,11 +414,15 @@ class _SovereigntyStatusScreenState
 
   Widget _buildTpmCard(Map<String, dynamic> tpm) {
     final verified = tpm['status'] == 'VERIFIED';
+    final chipSubtitle = (tpm['chip'] ?? 'Secure Element').toString();
+    final pcrQuoteHashLabel = 'PCR Quote Hash';
+    final chipLabel = _copy(pt: 'Chip', en: 'Chip', es: 'Chip');
+    final chipValue = (tpm['chip'] ?? 'Generic TPM').toString();
 
     return _SecurityCard(
       icon: Icons.memory_rounded,
       title: context.l10n.hardwareAttestation,
-      subtitle: tpm['chip'] ?? 'Secure Element',
+      subtitle: chipSubtitle,
       statusOk: verified,
       statusLabel: tpm['status'] ?? 'UNKNOWN',
       rows: [
@@ -447,13 +444,13 @@ class _SovereigntyStatusScreenState
           value: '${tpm['totalChecks'] ?? 0}',
         ),
         _Row(
-          label: 'PCR Quote Hash',
+          label: pcrQuoteHashLabel,
           value: tpm['quoteHash'] ?? '0x...',
           isMono: true,
         ),
         _Row(
-          label: _copy(pt: 'Chip', en: 'Chip', es: 'Chip'),
-          value: tpm['chip'] ?? 'Generic TPM',
+          label: chipLabel,
+          value: chipValue,
         ),
       ],
     );
@@ -463,6 +460,9 @@ class _SovereigntyStatusScreenState
     final active = quorum['status'] == 'ACTIVE';
     final activeNodes = quorum['activeNodes'] ?? 0;
     final totalNodes = quorum['totalNodes'] ?? 3;
+    final quorumLabel = _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum');
+    final algorithmLabel =
+        _copy(pt: 'Algoritmo', en: 'Algorithm', es: 'Algoritmo');
     final jurisdictions = (quorum['jurisdictions'] as List<dynamic>?)
             ?.map((entry) => entry.toString())
             .toList() ??
@@ -477,12 +477,12 @@ class _SovereigntyStatusScreenState
       statusLabel: quorum['status'] ?? 'OFFLINE',
       rows: [
         _Row(
-          label: _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum'),
+          label: quorumLabel,
           value: '$activeNodes/$totalNodes',
           isHighlight: activeNodes == totalNodes,
         ),
         _Row(
-          label: _copy(pt: 'Algoritmo', en: 'Algorithm', es: 'Algoritmo'),
+          label: algorithmLabel,
           value: quorum['consensusAlgorithm'] ?? 'BFT',
         ),
         for (int i = 0; i < jurisdictions.length; i++)
@@ -568,11 +568,12 @@ class _SovereigntyStatusScreenState
 
   Widget _buildMerkleCard(Map<String, dynamic> merkle) {
     final status = merkle['status'] ?? 'INVALID';
+    final subtitle = 'Merkle Tree (SHA-256)';
 
     return _SecurityCard(
       icon: Icons.account_tree_rounded,
       title: context.l10n.ledgerIntegrity,
-      subtitle: 'Merkle Tree (SHA-256)',
+      subtitle: subtitle,
       statusOk: status == 'VALID',
       statusLabel: status,
       rows: [
@@ -605,16 +606,19 @@ class _SovereigntyStatusScreenState
 
   Widget _buildMemoryCard(Map<String, dynamic> memory) {
     final status = memory['status'] ?? 'UNLOCKED';
+    final subtitle = (memory['shardLocation'] ?? 'Unknown location').toString();
+    final mechanismLabel =
+        _copy(pt: 'Mecanismo', en: 'Mechanism', es: 'Mecanismo');
 
     return _SecurityCard(
       icon: Icons.lock_rounded,
       title: context.l10n.memoryProtection,
-      subtitle: memory['shardLocation'] ?? 'Unknown location',
+      subtitle: subtitle,
       statusOk: status == 'LOCKED',
       statusLabel: status,
       rows: [
         _Row(
-          label: _copy(pt: 'Mecanismo', en: 'Mechanism', es: 'Mecanismo'),
+          label: mechanismLabel,
           value: memory['mechanism'] ?? 'None',
         ),
         _Row(

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class OnrampWebViewScreen extends StatefulWidget {
@@ -123,250 +121,171 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return CyberBackground(
-      useScroll: false,
-      resizeToAvoidBottomInset: false,
+    return ReceiveFlowScaffold(
+      title: widget.providerName,
+      subtitle: 'Checkout seguro no app.',
+      scrollable: false,
+      bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      actions: [
+        ReceiveFlowIconButton(
+          icon: LucideIcons.refreshCw,
+          onTap: _reload,
+        ),
+      ],
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
+          ReceiveFlowPanel(
+            backgroundColor: receiveFlowPanelAltColor,
             child: Row(
               children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    LucideIcons.chevronLeft,
-                    color: colorScheme.onPrimary,
-                    size: 24,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: receiveFlowPanelRaisedColor,
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: receiveFlowBorderStrongColor),
                   ),
-                  style: IconButton.styleFrom(
-                    backgroundColor:
-                        colorScheme.onPrimary.withValues(alpha: 0.05),
-                    padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: const Icon(
+                    LucideIcons.shieldCheck,
+                    color: receiveFlowTextColor,
+                    size: 18,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.providerName.toUpperCase(),
-                        style: theme.textTheme.titleMedium!.copyWith(
-                          letterSpacing: 1.8,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        widget.amountLabel,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: receiveFlowTextColor,
+                              fontWeight: FontWeight.w500,
+                            ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        'Checkout seguro no app',
-                        style: theme.textTheme.labelSmall!.copyWith(
-                          color: colorScheme.onPrimary.withValues(alpha: 0.5),
-                        ),
+                        'Compra estimada em ${widget.btcAmountLabel}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: receiveFlowMutedTextColor,
+                            ),
                       ),
                     ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: _reload,
-                  icon: Icon(
-                    LucideIcons.refreshCw,
-                    color: colorScheme.onPrimary,
-                    size: 18,
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor:
-                        colorScheme.onPrimary.withValues(alpha: 0.05),
-                    padding: const EdgeInsets.all(AppSpacing.sm),
                   ),
                 ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: GlassContainer(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              borderRadius: BorderRadius.circular(AppSpacing.lg),
-              border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.18),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      LucideIcons.shieldCheck,
-                      color: colorScheme.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.amountLabel,
-                          style: theme.textTheme.bodyLarge!.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Compra estimada em ${widget.btcAmountLabel}',
-                          style: theme.textTheme.bodySmall!.copyWith(
-                            color:
-                                colorScheme.onPrimary.withValues(alpha: 0.62),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
           const SizedBox(height: AppSpacing.md),
           if (!_pageLoaded || _progress < 100)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  minHeight: 3,
-                  value: _progress <= 0 ? null : _progress / 100,
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(0),
+              child: LinearProgressIndicator(
+                minHeight: 3,
+                value: _progress <= 0 ? null : _progress / 100,
+                backgroundColor: const Color(0x14FFFFFF),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
           const SizedBox(height: AppSpacing.md),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: GlassContainer(
-                borderRadius: BorderRadius.circular(AppSpacing.xl),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.xl),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      WebViewWidget(controller: _controller),
-                      if (_errorMessage != null)
-                        ColoredBox(
-                          color: const Color(0xEE050505),
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.xl),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    LucideIcons.cloudOff,
-                                    size: 30,
-                                    color: colorScheme.error,
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  Text(
-                                    'Nao foi possivel carregar o provedor',
-                                    textAlign: TextAlign.center,
-                                    style: AppTypography.h3.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    _errorMessage!,
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.bodyMedium!.copyWith(
-                                      color: colorScheme.onPrimary
-                                          .withValues(alpha: 0.62),
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.lg),
-                                  FilledButton(
-                                    onPressed: _reload,
-                                    child: const Text('Tentar novamente'),
-                                  ),
-                                ],
-                              ),
+            child: ReceiveFlowPanel(
+              padding: EdgeInsets.zero,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(0),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    WebViewWidget(controller: _controller),
+                    if (_errorMessage != null)
+                      ColoredBox(
+                        color: const Color(0xEE050505),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.cloudOff,
+                                  size: 28,
+                                  color: receiveFlowTextColor,
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
+                                  'Não foi possível carregar o provedor',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                        color: receiveFlowTextColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: receiveFlowMutedTextColor,
+                                      ),
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                ReceiveFlowSecondaryButton(
+                                  onTap: _reload,
+                                  label: 'Tentar novamente',
+                                  icon: LucideIcons.refreshCw,
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: GlassContainer(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              borderRadius: BorderRadius.circular(AppSpacing.lg),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Endereco BTC vinculado ao checkout',
-                          style: theme.textTheme.labelSmall!.copyWith(
-                            color:
-                                colorScheme.onPrimary.withValues(alpha: 0.52),
-                            letterSpacing: 0.6,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          widget.depositAddress.isEmpty
-                              ? 'Endereco indisponivel'
-                              : widget.depositAddress,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall!.copyWith(
-                            fontFamily: 'JetBrainsMono',
-                            color:
-                                colorScheme.onPrimary.withValues(alpha: 0.82),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
+          const SizedBox(height: AppSpacing.md),
+          ReceiveFlowPanel(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const ReceiveFlowSectionLabel(
+                        'Endereço BTC vinculado ao checkout',
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        widget.depositAddress.isEmpty
+                            ? 'Endereço indisponível'
+                            : widget.depositAddress,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: receiveFlowTextColor,
+                              fontFamily: 'JetBrainsMono',
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  IconButton(
-                    onPressed:
-                        widget.depositAddress.isEmpty ? null : _copyAddress,
-                    icon: const Icon(LucideIcons.copy, size: 18),
-                    style: IconButton.styleFrom(
-                      backgroundColor:
-                          colorScheme.primary.withValues(alpha: 0.12),
-                      foregroundColor: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                ReceiveFlowSecondaryButton(
+                  onTap: widget.depositAddress.isEmpty ? null : _copyAddress,
+                  icon: LucideIcons.copy,
+                  label: 'Copiar',
+                  fullWidth: false,
+                ),
+              ],
             ),
           ),
         ],

@@ -40,9 +40,9 @@ class AuthTotpVerified extends AuthState {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AuthTotpVerified && 
-           other.sessionId == sessionId &&
-           other.username == username;
+    return other is AuthTotpVerified &&
+        other.sessionId == sessionId &&
+        other.username == username;
   }
 
   @override
@@ -58,33 +58,46 @@ class AuthUnauthenticated extends AuthState {
 class AuthError extends AuthState {
   final String message;
   final int? statusCode;
+  final String? errorCode;
 
-  const AuthError(this.message, {this.statusCode});
+  const AuthError(
+    this.message, {
+    this.statusCode,
+    this.errorCode,
+  });
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AuthError && other.message == message && other.statusCode == statusCode;
+    return other is AuthError &&
+        other.message == message &&
+        other.statusCode == statusCode &&
+        other.errorCode == errorCode;
   }
 
   @override
-  int get hashCode => message.hashCode ^ statusCode.hashCode;
+  int get hashCode =>
+      message.hashCode ^ statusCode.hashCode ^ errorCode.hashCode;
 }
 
 /// Estado indicando que o signup foi iniciado e requer setup de TOTP
 class AuthRequiresTotpSetup extends AuthState {
   final String username;
   final String passphrase;
+  final String sessionId;
   final String totpSecret;
   final String qrCodeUri;
   final List<String> backupCodes;
+  final bool totpOptional;
 
   const AuthRequiresTotpSetup({
     required this.username,
     required this.passphrase,
+    required this.sessionId,
     required this.totpSecret,
     required this.qrCodeUri,
     this.backupCodes = const [],
+    this.totpOptional = true,
   });
 }
 
@@ -100,6 +113,7 @@ class AuthRequiresLoginTotp extends AuthState {
     this.preAuthToken,
   });
 }
+
 /// Estado indicando que o desafio de hardware foi recebido e aguarda assinatura
 class AuthHardwareChallengeReceived extends AuthState {
   final String challengeHex;
@@ -117,7 +131,7 @@ class AuthHardwareVerified extends AuthState {
   const AuthHardwareVerified();
 }
 
-/// Estado indicando que o pagamento de onboarding é necessário
+/// Estado indicando que o depósito de ativação é necessário
 class AuthPaymentRequired extends AuthState {
   final String sessionId;
   final String paymentLinkId;
@@ -170,8 +184,10 @@ class AuthPaymentRequired extends AuthState {
 /// Estado quando há falha de comunicação com o servidor mas o usuário tem token
 class AuthServerUnavailable extends AuthState {
   final String message;
-  const AuthServerUnavailable([this.message = 'Servidor indisponível no momento',]);
-  
+  const AuthServerUnavailable([
+    this.message = 'Servidor indisponível no momento',
+  ]);
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

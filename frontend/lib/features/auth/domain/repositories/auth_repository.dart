@@ -2,7 +2,15 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user.dart';
 import '../../data/datasources/auth_remote_datasource.dart'
-    show SignupInitResult, OnboardingPaymentLinkDto, LoginResult;
+    show
+        SignupInitResult,
+        ActivationStatusResult,
+        AccountSecurityStatusResult,
+        BackupCodesStatusResult,
+        LoginResult,
+        TotpSetupResult,
+        EmergencyRecoveryStartResult,
+        EmergencyRecoveryFinishResult;
 
 /// Interface do repositório de autenticação
 abstract class AuthRepository {
@@ -17,6 +25,9 @@ abstract class AuthRepository {
     required String username,
     required String passphrase,
     String accountSecurity,
+    int? shamirTotalShares,
+    int? shamirThreshold,
+    int? multisigThreshold,
   });
 
   /// Fazer logout
@@ -39,10 +50,8 @@ abstract class AuthRepository {
 
   /// Verificar TOTP de cadastro — retorna sessionId (Redis, temporário)
   Future<Either<Failure, String>> verifyTotp({
-    required String username,
-    required String passphrase,
-    required String totpCode,
-    String? totpSecret,
+    required String sessionId,
+    String? totpCode,
   });
 
   /// Verificar TOTP de Login (2FA) — retorna User com JWT
@@ -63,7 +72,7 @@ abstract class AuthRepository {
   });
 
   /// Finaliza registro de passkey durante onboarding (finish)
-  Future<Either<Failure, void>> passkeyRegisterOnboardingFinish(
+  Future<Either<Failure, LoginResult>> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   );
@@ -81,23 +90,46 @@ abstract class AuthRepository {
   Future<Either<Failure, String>> passkeyRegisterStart(String username);
 
   /// Finaliza registro de passkey para usuário logado
-  Future<Either<Failure, void>> passkeyRegisterFinish(Map<String, dynamic> credential);
+  Future<Either<Failure, void>> passkeyRegisterFinish(
+      Map<String, dynamic> credential);
 
-  /// Onboarding Payment Link
-  Future<Either<Failure, OnboardingPaymentLinkDto>> generateOnboardingLink(
-    String sessionId,
-  );
+  /// Inicia emergency recovery com nova passphrase e recovery codes.
+  Future<Either<Failure, EmergencyRecoveryStartResult>> startEmergencyRecovery({
+    required String username,
+    required String newPassphrase,
+    required List<String> recoveryCodes,
+  });
 
-  /// Confirma a TX do onboarding e inicia monitoramento on-chain
-  Future<Either<Failure, OnboardingPaymentLinkDto>> confirmOnboardingPayment({
+  /// Finaliza emergency recovery com novo TOTP e nova passkey.
+  Future<Either<Failure, EmergencyRecoveryFinishResult>>
+      finishEmergencyRecovery({
+    required String recoverySessionId,
+    required String totpCode,
+    required Map<String, dynamic> credential,
+  });
+
+  Future<Either<Failure, ActivationStatusResult>> getActivationStatus();
+
+  Future<Either<Failure, ActivationStatusResult>> createActivationDepositLink();
+
+  Future<Either<Failure, ActivationStatusResult>> confirmActivationPayment({
     required String linkId,
     required String txid,
   });
 
-  /// Consulta o estado atual do payment link de onboarding
-  Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
-    String linkId,
-  );
+  Future<Either<Failure, AccountSecurityStatusResult>> getSecurityStatus();
+
+  Future<Either<Failure, TotpSetupResult>> setupTotp();
+
+  Future<Either<Failure, BackupCodesStatusResult>> verifyTotpSetup({
+    required String totpCode,
+  });
+
+  Future<Either<Failure, void>> disableTotp();
+
+  Future<Either<Failure, BackupCodesStatusResult>> getBackupCodesStatus();
+
+  Future<Either<Failure, BackupCodesStatusResult>> regenerateBackupCodes();
 
   /// Mock Confirm Onboarding (Dev shortcut)
   Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId);

@@ -362,7 +362,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get welcomeSlogan =>
-      'Construída com infraestrutura monetária moderna, projetada para oferecer segurança, previsibilidade e velocidade.';
+      'O primeiro banco internacional de bitcoin focado em privacidade do mundo.';
 
   @override
   String get signIn => 'Entrar';
@@ -1103,7 +1103,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get presentationSlide3Body =>
-      'Nossa política é simples:\n\n• 0.9% sobre depósitos\n• 0.9% sobre saques\n• 0% para transferências internas\n\nTransferências entre usuários da Kerosene são instantâneas e sem custo.\n\nSem tarifas ocultas.\nSem variações inesperadas.';
+      'Nossa política é simples:\n\n• Depósitos e saques externos usam a taxa do cartão da carteira\n• Bronze: 0.9%\n• White: 0.8%\n• Black: 0.7%\n• 0% para transferências internas\n\nTransferências entre usuários da Kerosene são instantâneas e sem custo.\n\nSem tarifas ocultas.';
 
   @override
   String get presentationSlide4Title => 'Compromisso com Previsibilidade';
@@ -1216,7 +1216,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get passkeyNoBiometrics =>
-      'Nenhum hardware biométrico disponível neste dispositivo.';
+      'Configure biometria ou um bloqueio de tela neste dispositivo para usar a Chave Soberana.';
 
   @override
   String passkeyErrorStarting(String message) {

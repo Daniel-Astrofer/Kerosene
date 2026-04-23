@@ -22,8 +22,10 @@ List<Story> uiStories() {
     Story(
       name: 'UI/Atomic/Bouncing Button',
       builder: (context) {
-        final text = context.knobs.text(label: 'Button Text', initial: 'FORJAR CARTEIRA');
-        final isLoading = context.knobs.boolean(label: 'Loading State', initial: false);
+        final text = context.knobs
+            .text(label: 'Button Text', initial: 'FORJAR CARTEIRA');
+        final isLoading =
+            context.knobs.boolean(label: 'Loading State', initial: false);
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -71,7 +73,8 @@ List<Story> uiStories() {
     Story(
       name: 'UI/Atomic/Cyber Progress Bar',
       builder: (context) {
-        final currentStep = context.knobs.sliderInt(label: 'Current Step', initial: 5, min: 0, max: 10);
+        final currentStep = context.knobs
+            .sliderInt(label: 'Current Step', initial: 5, min: 0, max: 10);
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),

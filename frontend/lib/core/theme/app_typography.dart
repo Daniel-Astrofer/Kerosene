@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 /// Refactored for better visibility and cyber-minimalist UI using project fonts.
 class AppTypography {
   static const String fontFamily = 'HubotSans';
+  static const String numericFontFamily = 'JetBrainsMono';
 
   static final TextStyle h1 = TextStyle(
     fontFamily: fontFamily,
@@ -47,7 +48,7 @@ class AppTypography {
   static final TextStyle bodySmall = TextStyle(
     fontFamily: fontFamily,
     fontSize: 13,
-    fontWeight: FontWeight.w300, // Light
+    fontWeight: FontWeight.w400, // Regular for clearer rendering
     color: Colors.white70,
     height: 1.4,
   );
@@ -55,7 +56,7 @@ class AppTypography {
   static final TextStyle caption = TextStyle(
     fontFamily: fontFamily,
     fontSize: 11,
-    fontWeight: FontWeight.w300, // Light
+    fontWeight: FontWeight.w500, // Medium for small uppercase labels
     color: Colors.white38,
     letterSpacing: 0.5,
   );
@@ -75,4 +76,18 @@ class AppTypography {
     color: Colors.white,
     letterSpacing: 1.0,
   );
+
+  static TextStyle amountInput({
+    required bool isBtc,
+    Color color = Colors.white,
+  }) {
+    return TextStyle(
+      fontFamily: numericFontFamily,
+      fontSize: isBtc ? 48 : 56,
+      fontWeight: FontWeight.w600,
+      color: color,
+      letterSpacing: -1.8,
+      height: 1.0,
+    );
+  }
 }

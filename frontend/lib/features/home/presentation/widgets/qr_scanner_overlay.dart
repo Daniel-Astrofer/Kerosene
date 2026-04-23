@@ -29,7 +29,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.9),
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
       child: Stack(
         children: [
           // Scanner
@@ -52,7 +52,8 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).colorScheme.onPrimary, width: 2),
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.onPrimary, width: 2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Stack(
@@ -71,7 +72,10 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
             child: Center(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: Colors.white10),
                 ),
@@ -94,7 +98,10 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                     Text(
                       'Align the QR code within the frame to scan',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -102,8 +109,12 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                     ElevatedButton(
                       onPressed: widget.onClose,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.2),
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 40,
                           vertical: 15,
@@ -127,11 +138,13 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.flash_on, color: Theme.of(context).colorScheme.onPrimary),
+                  icon: Icon(Icons.flash_on,
+                      color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () => controller.toggleTorch(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.cameraswitch, color: Theme.of(context).colorScheme.onPrimary),
+                  icon: Icon(Icons.cameraswitch,
+                      color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () => controller.switchCamera(),
                 ),
               ],

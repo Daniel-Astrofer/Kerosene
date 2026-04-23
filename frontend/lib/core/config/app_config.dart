@@ -68,12 +68,45 @@ class AppConfig {
   );
   static const String passkeyRpId = String.fromEnvironment(
     'PASSKEY_RP_ID',
-    defaultValue: 'kerosene',
+    defaultValue: '',
   );
+
+  static String get effectivePasskeyRpId {
+    final explicit = passkeyRpId.trim();
+    if (explicit.isNotEmpty) {
+      return explicit;
+    }
+
+    try {
+      final onionHost = Uri.parse(onionBaseUrl).host.trim();
+      if (onionHost.isNotEmpty) {
+        return onionHost;
+      }
+    } catch (_) {}
+
+    try {
+      final apiHost = Uri.parse(apiUrl).host.trim();
+      if (apiHost.isNotEmpty) {
+        return apiHost;
+      }
+    } catch (_) {}
+
+    return 'localhost';
+  }
 
   // 1.3 Profile
   static const String authMe = '/auth/me';
   static const String authSecurityProfile = '/auth/security/profile';
+  static const String authSecurityStatus = '/auth/security-status';
+  static const String authActivationStatus = '/auth/activation-status';
+  static const String authActivationDepositLink =
+      '/auth/activation-status/deposit-link';
+  static const String authBackupCodes = '/auth/backup-codes';
+  static const String authBackupCodesRegenerate =
+      '/auth/backup-codes/regenerate';
+  static const String authTotpSetup = '/auth/totp/setup';
+  static const String authTotpVerify = '/auth/totp/verify';
+  static const String authTotpDisable = '/auth/totp';
 
   // 2. Wallets
   static const String walletCreate = '/wallet/create';
@@ -130,7 +163,7 @@ class AppConfig {
       '/transactions/payment-links';
   static const String transactionsOnrampUrls = '/api/onramp/urls';
 
-  // 5. Vouchers
+  // 5. Vouchers (legacy / transitional)
   static const String voucherRequest = '/voucher/request';
   static const String voucherConfirm = '/voucher/confirm';
   static const String voucherOnboardingLink = '/voucher/onboarding-link';

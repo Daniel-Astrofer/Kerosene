@@ -120,6 +120,116 @@ class MoneyDisplay {
     return formatter.format(amount).trim();
   }
 
+  static String formatCompact({
+    required double amount,
+    required Currency currency,
+    bool withSymbol = true,
+    int? maxDecimalPlaces,
+  }) {
+    final decimals = maxDecimalPlaces ?? decimalsFor(currency);
+    final locale = localeFor(currency);
+    final formatter = NumberFormat.decimalPattern(locale)
+      ..minimumFractionDigits = 0
+      ..maximumFractionDigits = decimals;
+    final value = formatter.format(amount);
+
+    if (!withSymbol) {
+      return value;
+    }
+
+    final symbol = currency == Currency.btc
+        ? tickerSymbolFor(currency)
+        : symbolFor(currency);
+    return '$symbol $value';
+  }
+
+  static double parseEditableInput(String rawValue) {
+    final normalized = rawValue.trim();
+    if (normalized.isEmpty || normalized == '.') {
+      return 0;
+    }
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  static String formatEditableInput({
+    required String rawValue,
+    required Currency currency,
+    bool withSymbol = true,
+  }) {
+    final normalized = rawValue.trim().isEmpty ? '0' : rawValue.trim();
+    final locale = localeFor(currency);
+    final formatter = NumberFormat.decimalPattern(locale)
+      ..minimumFractionDigits = 0
+      ..maximumFractionDigits = 0;
+    final decimalSeparator = formatter.symbols.DECIMAL_SEP;
+    final hasDecimal = normalized.contains('.');
+    final hasTrailingDecimal = normalized.endsWith('.');
+    final parts = normalized.split('.');
+    final integerPart = parts.first.isEmpty ? '0' : parts.first;
+    final decimalPart = parts.length > 1 ? parts[1] : '';
+    final integerValue = int.tryParse(integerPart) ?? 0;
+
+    var value = formatter.format(integerValue);
+    if (hasDecimal) {
+      value += decimalSeparator;
+      if (!hasTrailingDecimal && decimalPart.isNotEmpty) {
+        value += decimalPart;
+      }
+    }
+
+    if (!withSymbol) {
+      return value;
+    }
+
+    final symbol = currency == Currency.btc
+        ? tickerSymbolFor(currency)
+        : symbolFor(currency);
+    return '$symbol $value';
+  }
+
+  static String applyKeypadInput({
+    required String currentValue,
+    required String key,
+    required Currency currency,
+    int maxLength = 16,
+  }) {
+    final current = currentValue.isEmpty ? '0' : currentValue;
+
+    if (key == '←') {
+      if (current.length <= 1) {
+        return '0';
+      }
+      final updated = current.substring(0, current.length - 1);
+      return updated.isEmpty ? '0' : updated;
+    }
+
+    if (key == '.') {
+      if (decimalsFor(currency) == 0 || current.contains('.')) {
+        return current;
+      }
+      final updated = '$current.';
+      return updated.length <= maxLength ? updated : current;
+    }
+
+    if (!RegExp(r'^\d$').hasMatch(key)) {
+      return current;
+    }
+
+    if (current.contains('.')) {
+      final parts = current.split('.');
+      if (parts.length > 1 && parts[1].length >= decimalsFor(currency)) {
+        return current;
+      }
+    }
+
+    if (current == '0') {
+      return key == '0' ? '0' : key;
+    }
+
+    final updated = '$current$key';
+    return updated.length <= maxLength ? updated : current;
+  }
+
   static String formatAmountFromBtc({
     required double btcAmount,
     required Currency currency,
@@ -156,8 +266,28 @@ class MoneyDisplay {
     required double? btcEur,
     required double? btcBrl,
   }) {
+    final quoteValue = formatQuoteValue(
+      currency: currency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+
+    if (quoteValue == null) {
+      return currency == Currency.btc ? '' : 'Cotacao ao vivo indisponivel';
+    }
+
+    return 'BTC · $quoteValue';
+  }
+
+  static String? formatQuoteValue({
+    required Currency currency,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) {
     if (currency == Currency.btc) {
-      return '1 BTC = 1 BTC';
+      return null;
     }
 
     final rate = convertFromBtcAmount(
@@ -169,10 +299,10 @@ class MoneyDisplay {
     );
 
     if (rate <= 0) {
-      return 'Cotacao ao vivo indisponivel';
+      return null;
     }
 
-    return '1 BTC = ${format(amount: rate, currency: currency)}';
+    return format(amount: rate, currency: currency);
   }
 
   static Currency fallbackFiatFor(Currency currency) {

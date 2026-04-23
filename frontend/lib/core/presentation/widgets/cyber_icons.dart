@@ -77,7 +77,7 @@ class _AnimatedCyberIconState extends State<AnimatedCyberIcon>
         builder: (context, child) {
           final color = widget.isActive
               ? Theme.of(context).colorScheme.onPrimary
-              : Theme.of(context).colorScheme.onPrimary.withOpacity(0.5);
+              : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5);
           return CustomPaint(
             painter: widget.painterBuilder(_animation.value, color),
           );
@@ -275,8 +275,7 @@ class _PlusPainter extends CustomPainter {
     final Paint paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth =
-          2.5 // Slightly thicker
+      ..strokeWidth = 2.5 // Slightly thicker
       ..strokeCap = StrokeCap.round;
 
     final w = size.width;
@@ -586,7 +585,7 @@ class _NftPainter extends CustomPainter {
     if (progress > 0.5) {
       final innerProgress = (progress - 0.5) * 2;
       final innerPaint = Paint()
-        ..color = color.withOpacity(0.5 * innerProgress)
+        ..color = color.withValues(alpha: 0.5 * innerProgress)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
 
@@ -668,7 +667,7 @@ class _ProfilePainter extends CustomPainter {
     if (progress > 0.0) {
       final scanY = h * progress;
       final scanPaint = Paint()
-        ..color = color.withOpacity(0.8 * (1.0 - progress))
+        ..color = color.withValues(alpha: 0.8 * (1.0 - progress))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
 
@@ -743,9 +742,9 @@ class _QrPainter extends CyberIconPainter {
       final scanPaint = Paint()
         ..shader = LinearGradient(
           colors: [
-            color.withOpacity(0),
+            color.withValues(alpha: 0),
             color,
-            color.withOpacity(0),
+            color.withValues(alpha: 0),
           ],
         ).createShader(Rect.fromLTWH(0, scanY, w, 2))
         ..strokeWidth = 2;
@@ -800,7 +799,7 @@ class _NfcPainter extends CyberIconPainter {
       final waveProgress = (progress * 3 - (i - 1)).clamp(0.0, 1.0);
 
       if (waveProgress > 0) {
-        paint.color = color.withOpacity(waveProgress);
+        paint.color = color.withValues(alpha: waveProgress);
         final radius = (w * 0.25) * i;
         canvas.drawArc(
           Rect.fromCircle(center: center, radius: radius),

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/presentation/widgets/animated_notice_icon.dart';
+import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 
 enum AppNoticeType { success, error, info, warning }
 
@@ -104,6 +101,7 @@ class AppNotice {
         message: message,
         title: title,
         duration: duration,
+        onClose: messenger.hideCurrentSnackBar,
       ),
     );
   }
@@ -114,6 +112,7 @@ class AppNotice {
     required String message,
     String? title,
     required Duration duration,
+    VoidCallback? onClose,
   }) {
     final bottomInset = MediaQuery.maybeOf(context)?.viewPadding.bottom ?? 0;
 
@@ -125,12 +124,22 @@ class AppNotice {
       dismissDirection: DismissDirection.horizontal,
       margin: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 12),
       padding: EdgeInsets.zero,
-      content: _NoticeCard(
-        type: type,
+      content: AppNotificationSurface(
+        tone: _toneFor(type),
         title: title ?? _defaultTitle(context, type),
         message: message,
+        onClose: onClose,
       ),
     );
+  }
+
+  static AppNotificationTone _toneFor(AppNoticeType type) {
+    return switch (type) {
+      AppNoticeType.success => AppNotificationTone.success,
+      AppNoticeType.error => AppNotificationTone.error,
+      AppNoticeType.info => AppNotificationTone.info,
+      AppNoticeType.warning => AppNotificationTone.warning,
+    };
   }
 
   static String _defaultTitle(BuildContext context, AppNoticeType type) {
@@ -161,128 +170,6 @@ class AppNotice {
             : languageCode == 'es'
                 ? 'Atención'
                 : 'Attention';
-    }
-  }
-}
-
-class _NoticeCard extends StatelessWidget {
-  final AppNoticeType type;
-  final String title;
-  final String message;
-
-  const _NoticeCard({
-    required this.type,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final config = _NoticeConfig.fromType(type);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF101217),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: config.color.withValues(alpha: 0.32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: config.color.withValues(alpha: 0.12),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: config.color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: config.color.withValues(alpha: 0.22)),
-              ),
-              child: Center(
-                child: AnimatedNoticeIcon(
-                  kind: config.iconKind,
-                  color: config.color,
-                  size: 22,
-                  strokeWidth: 2.2,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NoticeConfig {
-  final Color color;
-  final AnimatedNoticeIconKind iconKind;
-
-  const _NoticeConfig({
-    required this.color,
-    required this.iconKind,
-  });
-
-  factory _NoticeConfig.fromType(AppNoticeType type) {
-    switch (type) {
-      case AppNoticeType.success:
-        return const _NoticeConfig(
-          color: AppColors.success,
-          iconKind: AnimatedNoticeIconKind.success,
-        );
-      case AppNoticeType.error:
-        return const _NoticeConfig(
-          color: AppColors.error,
-          iconKind: AnimatedNoticeIconKind.error,
-        );
-      case AppNoticeType.info:
-        return const _NoticeConfig(
-          color: AppColors.secondary,
-          iconKind: AnimatedNoticeIconKind.info,
-        );
-      case AppNoticeType.warning:
-        return const _NoticeConfig(
-          color: AppColors.warning,
-          iconKind: AnimatedNoticeIconKind.warning,
-        );
     }
   }
 }

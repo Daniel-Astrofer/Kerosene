@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/network/api_client_provider.dart';
 import '../../data/datasources/security_remote_datasource.dart';
 import '../../data/repositories/security_repository_impl.dart';
+import '../../domain/entities/account_security_profile.dart';
 import '../../domain/repositories/security_repository.dart';
 import '../../domain/entities/security_status.dart';
 
-final securityRemoteDataSourceProvider = Provider<SecurityRemoteDataSource>((ref) {
+final securityRemoteDataSourceProvider =
+    Provider<SecurityRemoteDataSource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return SecurityRemoteDataSourceImpl(apiClient);
 });
@@ -30,5 +32,15 @@ final auditStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return result.fold(
     (failure) => throw Exception(failure.message),
     (stats) => stats,
+  );
+});
+
+final accountSecurityProfileProvider =
+    FutureProvider<AccountSecurityProfile>((ref) async {
+  final repository = ref.watch(securityRepositoryProvider);
+  final result = await repository.getAccountSecurityProfile();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (profile) => profile,
   );
 });

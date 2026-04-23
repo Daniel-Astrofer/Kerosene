@@ -13,4 +13,5 @@ class TorApiUrlNotifier extends Notifier<String> {
   }
 }
 
-final torApiUrlProvider = NotifierProvider<TorApiUrlNotifier, String>(TorApiUrlNotifier.new);
+final torApiUrlProvider =
+    NotifierProvider<TorApiUrlNotifier, String>(TorApiUrlNotifier.new);

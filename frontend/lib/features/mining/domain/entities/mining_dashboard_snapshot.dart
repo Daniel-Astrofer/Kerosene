@@ -91,7 +91,6 @@ class MiningDashboardSnapshot extends Equatable {
         hashrateTimeline,
         dominantPools,
         rewardWindow,
-        fetchedAt,
       ];
 }
 

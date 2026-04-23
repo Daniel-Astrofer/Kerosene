@@ -55,6 +55,12 @@ class TransactionAuthGate {
       resolvedProfile,
       forceTotp: forceTotp,
     );
+    final needsManualFactors = _needsManualFactors(effectiveProfile);
+
+    if (effectiveProfile.requiresPasskey && !needsManualFactors) {
+      onAuthenticated?.call();
+      return const TransactionAuthResult.success();
+    }
 
     if (!effectiveProfile.requiresPasskey) {
       final biometricService = BiometricService();
@@ -73,9 +79,7 @@ class TransactionAuthGate {
     }
 
     final TransactionAuthResult result;
-    if (!effectiveProfile.requiresPassphrase &&
-        !effectiveProfile.requiresTotp &&
-        !effectiveProfile.requiresPasskey) {
+    if (!needsManualFactors) {
       result = const TransactionAuthResult.success();
     } else if (effectiveProfile.requiresShamirShares) {
       result = await showModalBottomSheet<TransactionAuthResult>(
@@ -147,6 +151,12 @@ class TransactionAuthGate {
     return profile.copyWith(
       requiredFactors: [...profile.requiredFactors, 'TOTP'],
     );
+  }
+
+  static bool _needsManualFactors(AccountSecurityProfile profile) {
+    return profile.requiresPassphrase ||
+        profile.requiresTotp ||
+        profile.requiresShamirShares;
   }
 
   static Future<_DeviceAuthOutcome> _showDevicePinFallback(
@@ -228,9 +238,7 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
     return _AuthorizationSheetBase(
       icon: widget.profile.mode == AccountSecurityMode.multisig2fa
           ? LucideIcons.shield
-          : widget.profile.requiresPasskey
-              ? LucideIcons.fingerprint
-              : LucideIcons.keyRound,
+          : LucideIcons.keyRound,
       title: widget.profile.mode == AccountSecurityMode.multisig2fa
           ? AppCopy.transactionAuthVaultTitle.resolve(context)
           : AppCopy.transactionAuthOperationTitle.resolve(context),
@@ -254,12 +262,6 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
                   label: 'TOTP',
                   icon: LucideIcons.shield,
                   color: theme.colorScheme.secondary,
-                ),
-              if (widget.profile.requiresPasskey)
-                _FactorChip(
-                  label: 'Passkey',
-                  icon: LucideIcons.fingerprint,
-                  color: Colors.amber,
                 ),
             ],
           ),
@@ -289,18 +291,6 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
                   .resolve(context),
               onChanged: (_) => setState(() => _totpError = false),
             ),
-          if (widget.profile.requiresPasskey) ...[
-            const SizedBox(height: 12),
-            _PassiveFactorNotice(
-              icon: LucideIcons.fingerprint,
-              title: AppCopy.transactionAuthPasskeyChallengeTitle.resolve(
-                context,
-              ),
-              message: AppCopy.transactionAuthPasskeyChallengeMessage.resolve(
-                context,
-              ),
-            ),
-          ],
           const SizedBox(height: AppSpacing.xl),
           _ConfirmButton(
             onTap: _confirm,
@@ -601,63 +591,6 @@ class _FactorChip extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: Theme.of(context).colorScheme.onPrimary,
                 ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PassiveFactorNotice extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-
-  const _PassiveFactorNotice({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(AppSpacing.md),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: Colors.amber),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.6),
-                        height: 1.45,
-                      ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

@@ -1,6 +1,16 @@
-import 'dart:ui' show lerpDouble;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+double _sceneProgress(
+  double progress,
+  double begin,
+  double end, {
+  Curve curve = Curves.easeInOutCubic,
+}) {
+  final t = ((progress - begin) / (end - begin)).clamp(0.0, 1.0);
+  return curve.transform(t);
+}
 
 enum AuthActionIllustrationMode {
   connectingServer,
@@ -25,7 +35,7 @@ class AuthActionIllustration extends StatefulWidget {
     required this.mode,
     required this.color,
     this.size = 172,
-    this.duration = const Duration(milliseconds: 3200),
+    this.duration = const Duration(milliseconds: 5200),
   });
 
   @override
@@ -59,7 +69,7 @@ class _AuthActionIllustrationState extends State<AuthActionIllustration>
       vsync: this,
       duration: widget.duration,
     );
-    _restartAnimation();
+    _restart();
   }
 
   @override
@@ -69,18 +79,18 @@ class _AuthActionIllustrationState extends State<AuthActionIllustration>
         oldWidget.duration != widget.duration ||
         oldWidget.color != widget.color) {
       _controller.duration = widget.duration;
-      _restartAnimation();
+      _restart();
     }
   }
 
-  void _restartAnimation() {
+  void _restart() {
     _controller.stop();
     _controller.reset();
     if (_repeats) {
       _controller.repeat();
-    } else {
-      _controller.forward();
+      return;
     }
+    _controller.forward();
   }
 
   @override
@@ -97,12 +107,26 @@ class _AuthActionIllustrationState extends State<AuthActionIllustration>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          return CustomPaint(
-            painter: _AuthActionIllustrationPainter(
-              mode: widget.mode,
-              progress: Curves.easeInOutCubic.transform(_controller.value),
-              color: widget.color,
-            ),
+          final progress = Curves.easeInOutCubic.transform(_controller.value);
+          return Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              _GlowBackdrop(
+                color: widget.color,
+                progress: progress,
+              ),
+              _OrbitLayer(
+                color: widget.color,
+                progress: progress,
+                repeats: _repeats,
+              ),
+              _ModeScene(
+                mode: widget.mode,
+                color: widget.color,
+                progress: progress,
+              ),
+            ],
           );
         },
       ),
@@ -110,497 +134,830 @@ class _AuthActionIllustrationState extends State<AuthActionIllustration>
   }
 }
 
-class _AuthActionIllustrationPainter extends CustomPainter {
+class _ModeScene extends StatelessWidget {
   final AuthActionIllustrationMode mode;
-  final double progress;
   final Color color;
+  final double progress;
 
-  _AuthActionIllustrationPainter({
+  const _ModeScene({
     required this.mode,
-    required this.progress,
     required this.color,
+    required this.progress,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final framePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = color.withValues(alpha: 0.16);
-    final frame = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1),
-      const Radius.circular(28),
-    );
-    canvas.drawRRect(frame, framePaint);
-
-    switch (mode) {
-      case AuthActionIllustrationMode.connectingServer:
-        _paintConnecting(canvas, size);
-        break;
-      case AuthActionIllustrationMode.keyTransfer:
-        _paintKeyTransfer(canvas, size);
-        break;
-      case AuthActionIllustrationMode.fingerprintScan:
-        _paintFingerprintScan(canvas, size);
-        break;
-      case AuthActionIllustrationMode.recoveryCodes:
-        _paintRecoveryCodes(canvas, size);
-        break;
-      case AuthActionIllustrationMode.shieldSuccess:
-        _paintShieldSuccess(canvas, size);
-        break;
-      case AuthActionIllustrationMode.userMissing:
-        _paintUserMissing(canvas, size);
-        break;
-      case AuthActionIllustrationMode.warning:
-        _paintWarning(canvas, size);
-        break;
-      case AuthActionIllustrationMode.keyRejected:
-        _paintKeyRejected(canvas, size);
-        break;
-      case AuthActionIllustrationMode.sessionExpired:
-        _paintSessionExpired(canvas, size);
-        break;
-    }
-  }
-
-  Paint _strokePaint({
-    double alpha = 1,
-    double strokeWidth = 2.8,
-  }) {
-    return Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = strokeWidth
-      ..color = color.withValues(alpha: alpha);
-  }
-
-  Paint _fillPaint({double alpha = 0.08}) {
-    return Paint()
-      ..style = PaintingStyle.fill
-      ..color = color.withValues(alpha: alpha);
-  }
-
-  void _drawPathProgress(Canvas canvas, Path path, Paint paint, double value) {
-    final clamped = value.clamp(0.0, 1.0);
-    for (final metric in path.computeMetrics()) {
-      final partial = metric.extractPath(0, metric.length * clamped);
-      canvas.drawPath(partial, paint);
-    }
-  }
-
-  void _paintConnecting(Canvas canvas, Size size) {
-    final paint = _strokePaint();
-    final serverRect = Rect.fromCenter(
-      center: Offset(size.width * 0.62, size.height * 0.50),
-      width: size.width * 0.34,
-      height: size.height * 0.36,
-    );
-    final serverRRect =
-        RRect.fromRectAndRadius(serverRect, const Radius.circular(18));
-    canvas.drawRRect(serverRRect, _fillPaint(alpha: 0.03));
-
-    final serverPath = Path()
-      ..addRRect(serverRRect)
-      ..moveTo(serverRect.left + 18, serverRect.top + 18)
-      ..lineTo(serverRect.right - 18, serverRect.top + 18)
-      ..moveTo(serverRect.left + 18, serverRect.center.dy)
-      ..lineTo(serverRect.right - 18, serverRect.center.dy)
-      ..moveTo(serverRect.left + 18, serverRect.bottom - 18)
-      ..lineTo(serverRect.right - 18, serverRect.bottom - 18);
-    _drawPathProgress(canvas, serverPath, paint, progress);
-
-    final linkPaint = _strokePaint(alpha: 0.8, strokeWidth: 2.2);
-    for (var i = 0; i < 3; i++) {
-      final y = size.height * (0.34 + i * 0.16);
-      final startX = size.width * 0.18;
-      final endX = size.width * 0.42;
-      final path = Path()
-        ..moveTo(startX, y)
-        ..lineTo(endX, y);
-      _drawPathProgress(canvas, path, linkPaint, progress);
-
-      final pulseOffset = (progress + i * 0.18) % 1;
-      final pulseX = lerpDouble(startX, endX, pulseOffset)!;
-      canvas.drawCircle(
-        Offset(pulseX, y),
-        3.3,
-        Paint()..color = color.withValues(alpha: 0.9),
-      );
-    }
-  }
-
-  void _paintKeyTransfer(Canvas canvas, Size size) {
-    final serverPaint = _strokePaint(alpha: 0.9);
-    final serverRect = Rect.fromCenter(
-      center: Offset(size.width * 0.73, size.height * 0.50),
-      width: size.width * 0.22,
-      height: size.height * 0.28,
-    );
-    final serverPath = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(serverRect, const Radius.circular(16)),
-      )
-      ..moveTo(serverRect.left + 14, serverRect.center.dy)
-      ..lineTo(serverRect.right - 14, serverRect.center.dy);
-    _drawPathProgress(canvas, serverPath, serverPaint, 1);
-
-    final keyTravel = Curves.easeInOut.transform(progress);
-    final keyCenter = Offset(
-      lerpDouble(size.width * 0.24, size.width * 0.52, keyTravel)!,
-      size.height * 0.50,
-    );
-
-    final trailPaint = _strokePaint(alpha: 0.55, strokeWidth: 2.0);
-    final trail = Path()
-      ..moveTo(size.width * 0.18, size.height * 0.50)
-      ..lineTo(serverRect.left - 8, size.height * 0.50);
-    _drawPathProgress(canvas, trail, trailPaint, progress);
-
-    canvas.drawCircle(
-      Offset(
-        lerpDouble(size.width * 0.18, serverRect.left - 8, keyTravel)!,
-        size.height * 0.50,
-      ),
-      3.2,
-      Paint()..color = color.withValues(alpha: 0.9),
-    );
-
-    canvas.save();
-    canvas.translate(keyCenter.dx, keyCenter.dy);
-    final keyPath = Path()
-      ..addOval(
-        Rect.fromCircle(center: const Offset(-12, 0), radius: 12),
-      )
-      ..moveTo(0, 0)
-      ..lineTo(30, 0)
-      ..moveTo(18, 0)
-      ..lineTo(18, 10)
-      ..moveTo(26, 0)
-      ..lineTo(26, 8);
-    _drawPathProgress(canvas, keyPath, _strokePaint(), progress);
-    canvas.restore();
-  }
-
-  void _paintFingerprintScan(Canvas canvas, Size size) {
-    final paint = _strokePaint();
-    final center = Offset(size.width * 0.5, size.height * 0.54);
-    final w = size.width * 0.38;
-    final h = size.height * 0.48;
-
-    final curves = <Path>[
-      Path()
-        ..moveTo(center.dx, center.dy - h * 0.44)
-        ..cubicTo(
-          center.dx - w * 0.26,
-          center.dy - h * 0.36,
-          center.dx - w * 0.30,
-          center.dy - h * 0.10,
-          center.dx - w * 0.12,
-          center.dy + h * 0.08,
-        )
-        ..cubicTo(
-          center.dx - w * 0.03,
-          center.dy + h * 0.17,
-          center.dx - w * 0.02,
-          center.dy + h * 0.28,
-          center.dx - w * 0.12,
-          center.dy + h * 0.38,
+  Widget build(BuildContext context) {
+    return switch (mode) {
+      AuthActionIllustrationMode.connectingServer => _ConnectionScene(
+          color: color,
+          progress: progress,
+          sourceIcon: Icons.cloud_queue_rounded,
+          targetIcon: Icons.dns_rounded,
         ),
-      Path()
-        ..moveTo(center.dx, center.dy - h * 0.34)
-        ..cubicTo(
-          center.dx - w * 0.16,
-          center.dy - h * 0.28,
-          center.dx - w * 0.18,
-          center.dy - h * 0.08,
-          center.dx - w * 0.04,
-          center.dy + h * 0.05,
-        )
-        ..cubicTo(
-          center.dx + w * 0.05,
-          center.dy + h * 0.14,
-          center.dx + w * 0.07,
-          center.dy + h * 0.27,
-          center.dx - w * 0.01,
-          center.dy + h * 0.36,
+      AuthActionIllustrationMode.keyTransfer => _ConnectionScene(
+          color: color,
+          progress: progress,
+          sourceIcon: Icons.key_rounded,
+          targetIcon: Icons.lock_open_rounded,
+          emphasizeTarget: true,
         ),
-      Path()
-        ..moveTo(center.dx, center.dy - h * 0.24)
-        ..cubicTo(
-          center.dx + w * 0.14,
-          center.dy - h * 0.20,
-          center.dx + w * 0.18,
-          center.dy - h * 0.02,
-          center.dx + w * 0.07,
-          center.dy + h * 0.11,
-        )
-        ..cubicTo(
-          center.dx - w * 0.01,
-          center.dy + h * 0.18,
-          center.dx - w * 0.03,
-          center.dy + h * 0.28,
-          center.dx + w * 0.04,
-          center.dy + h * 0.38,
+      AuthActionIllustrationMode.fingerprintScan => _FingerprintScene(
+          color: color,
+          progress: progress,
         ),
-      Path()
-        ..moveTo(center.dx, center.dy - h * 0.40)
-        ..cubicTo(
-          center.dx + w * 0.30,
-          center.dy - h * 0.30,
-          center.dx + w * 0.32,
-          center.dy + h * 0.08,
-          center.dx + w * 0.12,
-          center.dy + h * 0.26,
+      AuthActionIllustrationMode.recoveryCodes => _RecoveryScene(
+          color: color,
+          progress: progress,
         ),
-    ];
-
-    for (var i = 0; i < curves.length; i++) {
-      final localProgress = ((progress - i * 0.08) / 0.92).clamp(0.0, 1.0);
-      _drawPathProgress(canvas, curves[i], paint, localProgress);
-    }
-
-    final scanY = lerpDouble(
-      center.dy - h * 0.42,
-      center.dy + h * 0.40,
-      progress,
-    )!;
-    canvas.drawLine(
-      Offset(center.dx - w * 0.30, scanY),
-      Offset(center.dx + w * 0.30, scanY),
-      _strokePaint(alpha: 0.8, strokeWidth: 1.6),
-    );
-  }
-
-  void _paintRecoveryCodes(Canvas canvas, Size size) {
-    final stroke = _strokePaint();
-    final fill = _fillPaint(alpha: 0.04);
-    final cards = [
-      Rect.fromLTWH(
-        size.width * 0.23,
-        size.height * 0.28,
-        size.width * 0.44,
-        size.height * 0.14,
-      ),
-      Rect.fromLTWH(
-        size.width * 0.27,
-        size.height * 0.43,
-        size.width * 0.44,
-        size.height * 0.14,
-      ),
-      Rect.fromLTWH(
-        size.width * 0.31,
-        size.height * 0.58,
-        size.width * 0.44,
-        size.height * 0.14,
-      ),
-    ];
-
-    for (var i = 0; i < cards.length; i++) {
-      final reveal = ((progress - i * 0.12) / 0.88).clamp(0.0, 1.0);
-      final rrect =
-          RRect.fromRectAndRadius(cards[i], const Radius.circular(16));
-      canvas.drawRRect(rrect, fill);
-      _drawPathProgress(canvas, Path()..addRRect(rrect), stroke, reveal);
-      for (var line = 0; line < 3; line++) {
-        final y = cards[i].top + 16 + (line * 12);
-        final path = Path()
-          ..moveTo(cards[i].left + 16, y)
-          ..lineTo(cards[i].right - 16, y);
-        _drawPathProgress(
-            canvas, path, _strokePaint(alpha: 0.75, strokeWidth: 1.8), reveal);
-      }
-    }
-
-    final checkPath = Path()
-      ..moveTo(size.width * 0.42, size.height * 0.61)
-      ..lineTo(size.width * 0.49, size.height * 0.68)
-      ..lineTo(size.width * 0.63, size.height * 0.49);
-    _drawPathProgress(
-        canvas, checkPath, _strokePaint(strokeWidth: 3), progress);
-  }
-
-  void _paintShieldSuccess(Canvas canvas, Size size) {
-    final shield = Path()
-      ..moveTo(size.width * 0.5, size.height * 0.20)
-      ..lineTo(size.width * 0.72, size.height * 0.28)
-      ..lineTo(size.width * 0.68, size.height * 0.58)
-      ..quadraticBezierTo(
-        size.width * 0.62,
-        size.height * 0.76,
-        size.width * 0.50,
-        size.height * 0.84,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.38,
-        size.height * 0.76,
-        size.width * 0.32,
-        size.height * 0.58,
-      )
-      ..lineTo(size.width * 0.28, size.height * 0.28)
-      ..close();
-    canvas.drawPath(shield, _fillPaint(alpha: 0.05));
-    _drawPathProgress(canvas, shield, _strokePaint(), progress);
-
-    final check = Path()
-      ..moveTo(size.width * 0.38, size.height * 0.51)
-      ..lineTo(size.width * 0.47, size.height * 0.60)
-      ..lineTo(size.width * 0.63, size.height * 0.42);
-    _drawPathProgress(
-      canvas,
-      check,
-      _strokePaint(strokeWidth: 3.2),
-      ((progress - 0.28) / 0.72).clamp(0.0, 1.0),
-    );
-  }
-
-  void _paintUserMissing(Canvas canvas, Size size) {
-    final paint = _strokePaint();
-    final head = Path()
-      ..addOval(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.50, size.height * 0.33),
-          radius: size.width * 0.10,
+      AuthActionIllustrationMode.shieldSuccess => _TerminalScene(
+          color: color,
+          progress: progress,
+          icon: Icons.verified_user_rounded,
+          badgeIcon: Icons.check_rounded,
+          badgeColor: color,
         ),
-      );
-    final body = Path()
-      ..moveTo(size.width * 0.30, size.height * 0.72)
-      ..quadraticBezierTo(
-        size.width * 0.50,
-        size.height * 0.52,
-        size.width * 0.70,
-        size.height * 0.72,
-      );
-
-    _drawPathProgress(canvas, head, paint, progress);
-    _drawPathProgress(canvas, body, paint, progress);
-
-    final slash = Path()
-      ..moveTo(size.width * 0.28, size.height * 0.24)
-      ..lineTo(size.width * 0.74, size.height * 0.78);
-    _drawPathProgress(
-      canvas,
-      slash,
-      _strokePaint(strokeWidth: 3.4),
-      ((progress - 0.2) / 0.8).clamp(0.0, 1.0),
-    );
-  }
-
-  void _paintWarning(Canvas canvas, Size size) {
-    final triangle = Path()
-      ..moveTo(size.width * 0.50, size.height * 0.18)
-      ..lineTo(size.width * 0.78, size.height * 0.72)
-      ..lineTo(size.width * 0.22, size.height * 0.72)
-      ..close();
-    canvas.drawPath(triangle, _fillPaint(alpha: 0.04));
-    _drawPathProgress(canvas, triangle, _strokePaint(), progress);
-
-    final exclamation = Path()
-      ..moveTo(size.width * 0.50, size.height * 0.34)
-      ..lineTo(size.width * 0.50, size.height * 0.54)
-      ..moveTo(size.width * 0.50, size.height * 0.62)
-      ..lineTo(size.width * 0.50, size.height * 0.64);
-    _drawPathProgress(
-      canvas,
-      exclamation,
-      _strokePaint(strokeWidth: 3.2),
-      ((progress - 0.22) / 0.78).clamp(0.0, 1.0),
-    );
-  }
-
-  void _paintKeyRejected(Canvas canvas, Size size) {
-    final keyPath = Path()
-      ..addOval(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.38, size.height * 0.46),
-          radius: size.width * 0.10,
+      AuthActionIllustrationMode.userMissing => _TerminalScene(
+          color: color,
+          progress: progress,
+          icon: Icons.person_off_rounded,
+          badgeIcon: Icons.search_off_rounded,
+          badgeColor: color,
         ),
-      )
-      ..moveTo(size.width * 0.48, size.height * 0.46)
-      ..lineTo(size.width * 0.72, size.height * 0.46)
-      ..moveTo(size.width * 0.60, size.height * 0.46)
-      ..lineTo(size.width * 0.60, size.height * 0.56)
-      ..moveTo(size.width * 0.68, size.height * 0.46)
-      ..lineTo(size.width * 0.68, size.height * 0.54);
-    _drawPathProgress(canvas, keyPath, _strokePaint(), progress);
-
-    final slash = Path()
-      ..moveTo(size.width * 0.24, size.height * 0.25)
-      ..lineTo(size.width * 0.78, size.height * 0.76);
-    _drawPathProgress(
-      canvas,
-      slash,
-      _strokePaint(strokeWidth: 3.2),
-      ((progress - 0.16) / 0.84).clamp(0.0, 1.0),
-    );
+      AuthActionIllustrationMode.warning => _TerminalScene(
+          color: color,
+          progress: progress,
+          icon: Icons.warning_amber_rounded,
+          badgeIcon: Icons.priority_high_rounded,
+          badgeColor: color,
+        ),
+      AuthActionIllustrationMode.keyRejected => _TerminalScene(
+          color: color,
+          progress: progress,
+          icon: Icons.key_off_rounded,
+          badgeIcon: Icons.close_rounded,
+          badgeColor: color,
+        ),
+      AuthActionIllustrationMode.sessionExpired => _TerminalScene(
+          color: color,
+          progress: progress,
+          icon: Icons.timer_off_rounded,
+          badgeIcon: Icons.refresh_rounded,
+          badgeColor: color,
+        ),
+    };
   }
+}
 
-  void _paintSessionExpired(Canvas canvas, Size size) {
-    final framePaint = _strokePaint();
-    final top = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.50, size.height * 0.28),
-        width: size.width * 0.34,
-        height: size.height * 0.12,
-      ),
-      const Radius.circular(10),
-    );
-    final bottom = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.50, size.height * 0.72),
-        width: size.width * 0.34,
-        height: size.height * 0.12,
-      ),
-      const Radius.circular(10),
-    );
-    final body = Path()
-      ..moveTo(size.width * 0.34, size.height * 0.34)
-      ..quadraticBezierTo(
-        size.width * 0.48,
-        size.height * 0.46,
-        size.width * 0.34,
-        size.height * 0.66,
-      )
-      ..moveTo(size.width * 0.66, size.height * 0.34)
-      ..quadraticBezierTo(
-        size.width * 0.52,
-        size.height * 0.46,
-        size.width * 0.66,
-        size.height * 0.66,
-      );
+class _GlowBackdrop extends StatelessWidget {
+  final Color color;
+  final double progress;
 
-    _drawPathProgress(canvas, Path()..addRRect(top), framePaint, progress);
-    _drawPathProgress(canvas, Path()..addRRect(bottom), framePaint, progress);
-    _drawPathProgress(canvas, body, framePaint, progress);
-
-    final sandProgress = ((progress - 0.24) / 0.76).clamp(0.0, 1.0);
-    final topSand = Rect.fromCenter(
-      center:
-          Offset(size.width * 0.50, size.height * (0.40 + sandProgress * 0.08)),
-      width: size.width * 0.12 * (1 - sandProgress * 0.5),
-      height: size.height * 0.06 * (1 - sandProgress * 0.4),
-    );
-    final bottomSand = Rect.fromCenter(
-      center:
-          Offset(size.width * 0.50, size.height * (0.62 + sandProgress * 0.04)),
-      width: size.width * 0.14 * (0.55 + sandProgress * 0.4),
-      height: size.height * 0.05 * (0.5 + sandProgress * 0.5),
-    );
-    canvas.drawOval(topSand, _fillPaint(alpha: 0.10));
-    canvas.drawOval(bottomSand, _fillPaint(alpha: 0.10));
-    canvas.drawLine(
-      Offset(size.width * 0.50, size.height * 0.48),
-      Offset(size.width * 0.50,
-          lerpDouble(size.height * 0.52, size.height * 0.60, sandProgress)!),
-      _strokePaint(alpha: 0.7, strokeWidth: 1.8),
-    );
-  }
+  const _GlowBackdrop({
+    required this.color,
+    required this.progress,
+  });
 
   @override
-  bool shouldRepaint(covariant _AuthActionIllustrationPainter oldDelegate) {
-    return oldDelegate.mode != mode ||
-        oldDelegate.progress != progress ||
-        oldDelegate.color != color;
+  Widget build(BuildContext context) {
+    final pulse = 0.92 + (math.sin(progress * math.pi * 2) * 0.025);
+    return Transform.scale(
+      scale: pulse,
+      child: Container(
+        width: 170,
+        height: 170,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.20),
+              color.withValues(alpha: 0.07),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.52, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrbitLayer extends StatelessWidget {
+  final Color color;
+  final double progress;
+  final bool repeats;
+
+  const _OrbitLayer({
+    required this.color,
+    required this.progress,
+    required this.repeats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rotation =
+        repeats ? progress * math.pi * 1.2 : progress * math.pi * 0.9;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 148,
+          height: 148,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withValues(alpha: 0.10),
+            ),
+          ),
+        ),
+        Container(
+          width: 118,
+          height: 118,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withValues(alpha: 0.14),
+            ),
+          ),
+        ),
+        Transform.rotate(
+          angle: rotation,
+          child: SizedBox(
+            width: 138,
+            height: 138,
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: _OrbitDot(
+                    color: color,
+                    radius: 5,
+                    alpha: 0.82,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _OrbitDot(
+                    color: color,
+                    radius: 3,
+                    alpha: 0.38,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: _OrbitDot(
+                    color: color,
+                    radius: 4,
+                    alpha: 0.52,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OrbitDot extends StatelessWidget {
+  final Color color;
+  final double radius;
+  final double alpha;
+
+  const _OrbitDot({
+    required this.color,
+    required this.radius,
+    required this.alpha,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withValues(alpha: alpha),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: alpha * 0.35),
+            blurRadius: radius * 4,
+            spreadRadius: -1,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionScene extends StatelessWidget {
+  final Color color;
+  final double progress;
+  final IconData sourceIcon;
+  final IconData targetIcon;
+  final bool emphasizeTarget;
+
+  const _ConnectionScene({
+    required this.color,
+    required this.progress,
+    required this.sourceIcon,
+    required this.targetIcon,
+    this.emphasizeTarget = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sourceReveal = _sceneProgress(progress, 0.00, 0.22);
+    final trackReveal = _sceneProgress(progress, 0.14, 0.62);
+    final pulseReveal = _sceneProgress(progress, 0.34, 0.84);
+    final targetReveal = _sceneProgress(progress, 0.52, 0.96);
+    final bubbleX = -0.78 + (pulseReveal * 1.56);
+    final centerLift = math.sin(progress * math.pi * 2) * 3;
+    final centerScale = 0.92 + (_sceneProgress(progress, 0.10, 0.38) * 0.08);
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+          left: 28,
+          right: 28,
+          child: SizedBox(
+            height: 4,
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: color.withValues(alpha: 0.12),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: 0.16 + (trackReveal * 0.84),
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withValues(alpha: 0.15),
+                          color.withValues(alpha: 0.78),
+                          color.withValues(alpha: 0.28),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.26),
+                          blurRadius: 16,
+                          spreadRadius: -5,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Align(
+          alignment: const Alignment(-0.82, 0),
+          child: _SideGlyph(
+            icon: sourceIcon,
+            color: color,
+            filled: false,
+            reveal: sourceReveal,
+          ),
+        ),
+        Align(
+          alignment: const Alignment(0.82, 0),
+          child: _SideGlyph(
+            icon: targetIcon,
+            color: color,
+            filled: emphasizeTarget,
+            reveal: targetReveal,
+          ),
+        ),
+        Align(
+          alignment: Alignment(bubbleX, 0),
+          child: Opacity(
+            opacity: 0.18 + (pulseReveal * 0.82),
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.92),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.40),
+                    blurRadius: 18,
+                    spreadRadius: -2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Transform.translate(
+          offset: Offset(0, centerLift),
+          child: Transform.scale(
+            scale: centerScale,
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                color: Colors.white.withValues(alpha: 0.05),
+                border: Border.all(color: color.withValues(alpha: 0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.20),
+                    blurRadius: 28,
+                    spreadRadius: -12,
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    sourceIcon == Icons.key_rounded
+                        ? Icons.shield_rounded
+                        : Icons.sync_rounded,
+                    size: 44,
+                    color: color.withValues(alpha: 0.14),
+                  ),
+                  Icon(
+                    sourceIcon == Icons.key_rounded
+                        ? Icons.key_rounded
+                        : Icons.cloud_sync_rounded,
+                    size: 34,
+                    color: color.withValues(alpha: 0.96),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FingerprintScene extends StatelessWidget {
+  final Color color;
+  final double progress;
+
+  const _FingerprintScene({
+    required this.color,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final frameReveal = _sceneProgress(progress, 0.00, 0.22);
+    final printReveal = _sceneProgress(progress, 0.16, 0.52);
+    final scanProgress = _sceneProgress(
+      progress,
+      0.32,
+      0.96,
+      curve: Curves.easeInOutSine,
+    );
+    final promptReveal = _sceneProgress(progress, 0.62, 0.92);
+    final scanAlignment = -0.78 + (scanProgress * 1.56);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Transform.scale(
+          scale: 0.92 + (frameReveal * 0.08),
+          child: Container(
+            width: 104,
+            height: 124,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              color: Colors.white.withValues(alpha: 0.05),
+              border: Border.all(color: color.withValues(alpha: 0.20)),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.18),
+                  blurRadius: 26,
+                  spreadRadius: -12,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Opacity(
+                opacity: 0.20 + (printReveal * 0.80),
+                child: Icon(
+                  Icons.fingerprint_rounded,
+                  size: 58,
+                  color: color.withValues(alpha: 0.96),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 30,
+          right: 30,
+          child: Align(
+            alignment: Alignment(0, scanAlignment),
+            child: Container(
+              height: 8,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    color.withValues(alpha: 0.16),
+                    color.withValues(alpha: 0.88),
+                    color.withValues(alpha: 0.16),
+                    Colors.transparent,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.30),
+                    blurRadius: 16,
+                    spreadRadius: -4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 26,
+          right: 34,
+          child: Opacity(
+            opacity: 0.18 + (promptReveal * 0.82),
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
+                border: Border.all(color: color.withValues(alpha: 0.18)),
+              ),
+              child: Icon(
+                Icons.touch_app_rounded,
+                size: 16,
+                color: color.withValues(alpha: 0.88),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 36,
+          top: 18,
+          child: Opacity(
+            opacity: frameReveal,
+            child: _FrameCorner(
+              color: color,
+              top: true,
+              left: true,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 36,
+          top: 18,
+          child: Opacity(
+            opacity: frameReveal,
+            child: _FrameCorner(
+              color: color,
+              top: true,
+              left: false,
+            ),
+          ),
+        ),
+        Positioned(
+          left: 36,
+          bottom: 18,
+          child: Opacity(
+            opacity: frameReveal,
+            child: _FrameCorner(
+              color: color,
+              top: false,
+              left: true,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 36,
+          bottom: 18,
+          child: Opacity(
+            opacity: frameReveal,
+            child: _FrameCorner(
+              color: color,
+              top: false,
+              left: false,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecoveryScene extends StatelessWidget {
+  final Color color;
+  final double progress;
+
+  const _RecoveryScene({
+    required this.color,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final firstReveal = _sceneProgress(progress, 0.00, 0.30);
+    final secondReveal = _sceneProgress(progress, 0.18, 0.48);
+    final thirdReveal = _sceneProgress(progress, 0.36, 0.70);
+    final yOffset = math.sin(progress * math.pi * 2) * 3;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Transform.translate(
+          offset: Offset(-18, 16 - yOffset),
+          child: _RecoveryCard(
+            color: color,
+            alpha: 0.10,
+            reveal: firstReveal,
+            icon: Icons.key_rounded,
+          ),
+        ),
+        Transform.translate(
+          offset: Offset(18, 2 + (yOffset * 0.4)),
+          child: _RecoveryCard(
+            color: color,
+            alpha: 0.14,
+            reveal: secondReveal,
+            icon: Icons.security_rounded,
+          ),
+        ),
+        Transform.translate(
+          offset: Offset(0, -16 + yOffset),
+          child: Transform.scale(
+            scale: 0.94 + (thirdReveal * 0.06),
+            child: Container(
+              width: 96,
+              height: 116,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                color: Colors.white.withValues(alpha: 0.06),
+                border: Border.all(color: color.withValues(alpha: 0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.16),
+                    blurRadius: 24,
+                    spreadRadius: -10,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_rounded,
+                    size: 34,
+                    color: color.withValues(alpha: 0.96),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: color.withValues(alpha: 0.30),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 28,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: color.withValues(alpha: 0.18),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecoveryCard extends StatelessWidget {
+  final Color color;
+  final double alpha;
+  final double reveal;
+  final IconData icon;
+
+  const _RecoveryCard({
+    required this.color,
+    required this.alpha,
+    required this.reveal,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.20 + (reveal * 0.80),
+      child: Transform.scale(
+        scale: 0.92 + (reveal * 0.08),
+        child: Container(
+          width: 82,
+          height: 96,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            color: Colors.white.withValues(alpha: 0.04),
+            border: Border.all(color: color.withValues(alpha: alpha)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  size: 24,
+                  color: color.withValues(alpha: 0.92),
+                ),
+                const SizedBox(height: 14),
+                ...List.generate(
+                  2,
+                  (index) => Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(bottom: index == 1 ? 0 : 8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TerminalScene extends StatelessWidget {
+  final Color color;
+  final double progress;
+  final IconData icon;
+  final IconData badgeIcon;
+  final Color badgeColor;
+
+  const _TerminalScene({
+    required this.color,
+    required this.progress,
+    required this.icon,
+    required this.badgeIcon,
+    required this.badgeColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final reveal = Curves.easeOutBack.transform(progress.clamp(0.0, 1.0));
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Transform.scale(
+          scale: 0.86 + (reveal * 0.18),
+          child: Container(
+            width: 102,
+            height: 102,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.05),
+              border: Border.all(color: color.withValues(alpha: 0.20)),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.16),
+                  blurRadius: 28,
+                  spreadRadius: -10,
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              size: 52,
+              color: color.withValues(alpha: 0.95),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 30,
+          bottom: 28,
+          child: Transform.scale(
+            scale: 0.6 + (reveal * 0.4),
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: badgeColor.withValues(alpha: 0.94),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+              ),
+              child: Icon(
+                badgeIcon,
+                size: 18,
+                color: Colors.black.withValues(alpha: 0.82),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SideGlyph extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final bool filled;
+  final double reveal;
+
+  const _SideGlyph({
+    required this.icon,
+    required this.color,
+    this.filled = false,
+    this.reveal = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.24 + (reveal * 0.76),
+      child: Transform.scale(
+        scale: 0.88 + (reveal * 0.12),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: filled
+                ? color.withValues(alpha: 0.14)
+                : Colors.white.withValues(alpha: 0.04),
+            border: Border.all(color: color.withValues(alpha: 0.18)),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: color.withValues(alpha: 0.90),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FrameCorner extends StatelessWidget {
+  final Color color;
+  final bool top;
+  final bool left;
+
+  const _FrameCorner({
+    required this.color,
+    required this.top,
+    required this.left,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderSide = BorderSide(
+      color: color.withValues(alpha: 0.44),
+      width: 2,
+    );
+
+    return SizedBox(
+      width: 18,
+      height: 18,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: top ? borderSide : BorderSide.none,
+            bottom: top ? BorderSide.none : borderSide,
+            left: left ? borderSide : BorderSide.none,
+            right: left ? BorderSide.none : borderSide,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: top && left ? const Radius.circular(8) : Radius.zero,
+            topRight: top && !left ? const Radius.circular(8) : Radius.zero,
+            bottomLeft: !top && left ? const Radius.circular(8) : Radius.zero,
+            bottomRight: !top && !left ? const Radius.circular(8) : Radius.zero,
+          ),
+        ),
+      ),
+    );
   }
 }

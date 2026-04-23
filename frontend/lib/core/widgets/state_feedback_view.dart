@@ -96,7 +96,10 @@ class StateFeedbackView extends StatelessWidget {
             // ── Title ────────────────────────────────────────────────────────
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: color),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge!
+                  .copyWith(color: color),
               textAlign: TextAlign.center,
             ).animate().fade(duration: 300.ms).slideY(begin: 0.1, end: 0),
 
@@ -240,7 +243,7 @@ class _EmptyStatePainter extends CustomPainter {
     );
 
     final boxPaint = Paint()
-      ..color = color.withOpacity(0.25)
+      ..color = color.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
@@ -253,30 +256,29 @@ class _EmptyStatePainter extends CustomPainter {
       canvas,
       Offset(rect.left + 16, cy),
       Offset(rect.right - 16, cy),
-      color.withOpacity(0.15),
+      color.withValues(alpha: 0.15),
     );
     _drawDashedLine(
       canvas,
       Offset(rect.left + 16, cy + 16),
       Offset(rect.right - 36, cy + 16),
-      color.withOpacity(0.10),
+      color.withValues(alpha: 0.10),
     );
 
     // Floating glowing dot
     final dotPaint = Paint()
-      ..color = color.withOpacity(0.9)
+      ..color = color.withValues(alpha: 0.9)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(cx, cy - 32 + floatOffset), 7, dotPaint);
 
     // Halo around dot
     final haloPaint = Paint()
-      ..color = color.withOpacity(0.15)
+      ..color = color.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(cx, cy - 32 + floatOffset), 14, haloPaint);
   }
 
-  void _drawDashedLine(
-      Canvas canvas, Offset start, Offset end, Color color) {
+  void _drawDashedLine(Canvas canvas, Offset start, Offset end, Color color) {
     const dashWidth = 6.0;
     const dashSpace = 4.0;
     final paint = Paint()
@@ -331,7 +333,7 @@ class _ErrorStatePainter extends CustomPainter {
       height: size.height * 0.68,
     );
     final screenPaint = Paint()
-      ..color = color.withOpacity(0.20 + pulse * 0.10)
+      ..color = color.withValues(alpha: 0.20 + pulse * 0.10)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
     canvas.drawRRect(
@@ -341,7 +343,7 @@ class _ErrorStatePainter extends CustomPainter {
 
     // Crack — zig-zag path through the center
     final crackPaint = Paint()
-      ..color = color.withOpacity(0.7 + pulse * 0.3)
+      ..color = color.withValues(alpha: 0.7 + pulse * 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round
@@ -356,19 +358,22 @@ class _ErrorStatePainter extends CustomPainter {
 
     // Animate crack reveal using PathMetrics
     final pm = crack.computeMetrics().first;
-    final revealLength = pm.length * 1.0; // fully revealed; you can animate this
+    final revealLength =
+        pm.length * 1.0; // fully revealed; you can animate this
     final extractedPath = pm.extractPath(0, revealLength);
     canvas.drawPath(extractedPath, crackPaint);
 
     // Center "X" icon
     final xPaint = Paint()
-      ..color = color.withOpacity(0.85)
+      ..color = color.withValues(alpha: 0.85)
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     const r = 10.0;
-    canvas.drawLine(Offset(cx - r, cy - 30 - r), Offset(cx + r, cy - 30 + r), xPaint);
-    canvas.drawLine(Offset(cx + r, cy - 30 - r), Offset(cx - r, cy - 30 + r), xPaint);
+    canvas.drawLine(
+        Offset(cx - r, cy - 30 - r), Offset(cx + r, cy - 30 + r), xPaint);
+    canvas.drawLine(
+        Offset(cx + r, cy - 30 - r), Offset(cx - r, cy - 30 + r), xPaint);
   }
 
   @override
@@ -398,17 +403,17 @@ class _NetworkErrorPainter extends CustomPainter {
 
     final arcPaints = [
       Paint()
-        ..color = color.withOpacity(0.15 + flicker * 0.05)
+        ..color = color.withValues(alpha: 0.15 + flicker * 0.05)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round,
       Paint()
-        ..color = color.withOpacity(0.30 + flicker * 0.1)
+        ..color = color.withValues(alpha: 0.30 + flicker * 0.1)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round,
       Paint()
-        ..color = color.withOpacity(0.50 + flicker * 0.1)
+        ..color = color.withValues(alpha: 0.50 + flicker * 0.1)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round,
@@ -420,7 +425,8 @@ class _NetworkErrorPainter extends CustomPainter {
 
     for (int i = 0; i < 3; i++) {
       canvas.drawArc(
-        Rect.fromCenter(center: Offset(cx, cy), width: radii[i] * 2, height: radii[i] * 2),
+        Rect.fromCenter(
+            center: Offset(cx, cy), width: radii[i] * 2, height: radii[i] * 2),
         startAngle,
         sweepAngle,
         false,
@@ -433,13 +439,13 @@ class _NetworkErrorPainter extends CustomPainter {
       Offset(cx, cy + 8),
       4,
       Paint()
-        ..color = color.withOpacity(0.9)
+        ..color = color.withValues(alpha: 0.9)
         ..style = PaintingStyle.fill,
     );
 
     // Slash line — the "no signal"
     final slashPaint = Paint()
-      ..color = color.withOpacity(0.85)
+      ..color = color.withValues(alpha: 0.85)
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(
@@ -476,7 +482,7 @@ class _LoadingOrbPainter extends CustomPainter {
       Offset(cx, cy),
       10,
       Paint()
-        ..color = color.withOpacity(0.9)
+        ..color = color.withValues(alpha: 0.9)
         ..style = PaintingStyle.fill,
     );
 
@@ -492,7 +498,7 @@ class _LoadingOrbPainter extends CustomPainter {
       final sweep = math.pi * 2 * ring.arcLen;
 
       final paint = Paint()
-        ..color = color.withOpacity(ring.alpha)
+        ..color = color.withValues(alpha: ring.alpha)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round;

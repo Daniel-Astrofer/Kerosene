@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
 import 'package:teste/core/presentation/widgets/custom_error_dialog.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:teste/features/auth/presentation/providers/signup_flow_provider.dart';
+import 'package:teste/features/auth/presentation/screens/signup/widgets/signup_step_ui.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 
 class SignupPowStep extends ConsumerStatefulWidget {
@@ -28,31 +32,24 @@ class SignupPowStep extends ConsumerStatefulWidget {
   ConsumerState<SignupPowStep> createState() => _SignupPowStepState();
 }
 
-class _SignupPowStepState extends ConsumerState<SignupPowStep>
-    with TickerProviderStateMixin {
+enum _PowPhaseKey { request, solve, provision }
+
+class _SignupPowStepState extends ConsumerState<SignupPowStep> {
   static const List<_PowPhase> _phases = [
     _PowPhase(
-      title: 'Solicitando desafio',
-      body:
-          'O shard está obtendo o desafio PoW único para esta criação de conta.',
+      key: _PowPhaseKey.request,
       icon: LucideIcons.keyRound,
     ),
     _PowPhase(
-      title: 'Dispositivo resolvendo PoW',
-      body:
-          'O aparelho testa nonces localmente até encontrar a resposta criptográfica válida.',
+      key: _PowPhaseKey.solve,
       icon: LucideIcons.cpu,
     ),
     _PowPhase(
-      title: 'Provisionando credenciais',
-      body:
-          'A resposta foi aceita e o backend está preparando o segredo inicial do autenticador.',
+      key: _PowPhaseKey.provision,
       icon: LucideIcons.shieldCheck,
     ),
   ];
 
-  late final AnimationController _pulseController;
-  late final AnimationController _scanController;
   Timer? _phaseTimer;
   int _phaseIndex = 0;
   int _lastStartedRunId = 0;
@@ -61,14 +58,6 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep>
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
-    _scanController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat();
     _maybeStartRun(widget.runId);
   }
 
@@ -83,8 +72,6 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep>
   @override
   void dispose() {
     _phaseTimer?.cancel();
-    _pulseController.dispose();
-    _scanController.dispose();
     super.dispose();
   }
 
@@ -103,6 +90,7 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep>
   }
 
   void _startSignup() {
+    final flowState = ref.read(signupFlowProvider);
     _phaseTimer?.cancel();
     ref.read(authControllerProvider.notifier).clearError();
     setState(() {
@@ -129,6 +117,18 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep>
           username: widget.username,
           password: widget.mnemonic,
           accountSecurity: widget.accountSecurity,
+          shamirTotalShares:
+              flowState.seedSecurityOption == SeedSecurityOption.slip39
+                  ? flowState.slip39TotalShares
+                  : null,
+          shamirThreshold:
+              flowState.seedSecurityOption == SeedSecurityOption.slip39
+                  ? flowState.slip39Threshold
+                  : null,
+          multisigThreshold:
+              flowState.seedSecurityOption == SeedSecurityOption.multisig2fa
+                  ? flowState.multisigThreshold
+                  : null,
         );
   }
 
@@ -164,7 +164,7 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep>
         showCustomErrorDialog(
           context,
           next.message,
-          title: 'Falha ao resolver o PoW',
+          title: AppCopy.signupPowErrorTitle.resolve(context),
           onRetry: () {
             _dialogOpen = false;
             _startSignup();
@@ -179,331 +179,466 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep>
 
     final phase = _phases[_phaseIndex.clamp(0, _phases.length - 1)];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: AppSpacing.lg,
+    return SignupStepLayout(
+      eyebrow: AppCopy.signupPowEyebrow.resolve(context),
+      title: context.l10n.usernameLoadingPow,
+      subtitle: AppCopy.signupPowSubtitle.resolve(context),
+      icon: LucideIcons.cpu,
+      tone: SignupSurfaceTone.primary,
+      highlightLabel: AppCopy.signupPowHighlightLabel.resolve(context),
+      highlightValue: _localizedPhaseTitle(context, phase.key),
+      highlightHint: _localizedPhaseBody(context, phase.key),
+      chips: [
+        AppCopy.signupPowChipAutomatic.resolve(context),
+        AppCopy.signupPowChipKeepOpen.resolve(context),
+        AppCopy.signupPowChipAutoAdvance.resolve(context),
+      ],
+      children: [
+        SignupPanel(
+          tone: SignupSurfaceTone.primary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: _PowStatusPanel(
+                  phaseIndex: _phaseIndex,
+                  phaseCount: _phases.length,
+                  isLoading: isLoading,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  AnimatedGlyphIcon(
+                    icon: phase.icon,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _localizedPhaseTitle(context, phase.key),
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                    ),
+                  ),
+                  _StatusChip(isLoading: isLoading),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ...List.generate(_phases.length, (index) {
+                final item = _phases[index];
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == _phases.length - 1 ? 0 : AppSpacing.md,
+                  ),
+                  child: _PhaseRow(
+                    title: _localizedPhaseTitle(context, item.key),
+                    subtitle: _localizedPhaseBody(context, item.key),
+                    icon: item.icon,
+                    isDone: index < _phaseIndex,
+                    isCurrent: index == _phaseIndex,
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SignupInlineNotice(
+          icon: isLoading ? LucideIcons.loader : LucideIcons.badgeCheck,
+          title: AppCopy.signupPowNoticeTitle.resolve(context),
+          message: isLoading
+              ? AppCopy.signupPowNoticeLoading.resolve(context)
+              : AppCopy.signupPowNoticeReady.resolve(context),
+          tone: SignupSurfaceTone.primary,
+        ),
+      ],
+    );
+  }
+
+  String _localizedPhaseTitle(BuildContext context, _PowPhaseKey key) {
+    switch (key) {
+      case _PowPhaseKey.request:
+        return AppCopy.signupPowPhaseRequestTitle.resolve(context);
+      case _PowPhaseKey.solve:
+        return AppCopy.signupPowPhaseSolveTitle.resolve(context);
+      case _PowPhaseKey.provision:
+        return AppCopy.signupPowPhaseProvisionTitle.resolve(context);
+    }
+  }
+
+  String _localizedPhaseBody(BuildContext context, _PowPhaseKey key) {
+    switch (key) {
+      case _PowPhaseKey.request:
+        return AppCopy.signupPowPhaseRequestBody.resolve(context);
+      case _PowPhaseKey.solve:
+        return AppCopy.signupPowPhaseSolveBody.resolve(context);
+      case _PowPhaseKey.provision:
+        return AppCopy.signupPowPhaseProvisionBody.resolve(context);
+    }
+  }
+}
+
+class _PowStatusPanel extends StatelessWidget {
+  final int phaseIndex;
+  final int phaseCount;
+  final bool isLoading;
+
+  const _PowStatusPanel({
+    required this.phaseIndex,
+    required this.phaseCount,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final completion = isLoading
+        ? math.min(0.92, (phaseIndex + 0.35) / math.max(1, phaseCount))
+        : 1.0;
+    final accent = Color.lerp(
+      Theme.of(context).colorScheme.secondary,
+      AppColors.success,
+      completion * 0.45,
+    )!;
+
+    return SizedBox(
+      width: 296,
+      child: _PowActivityPanel(
+        accent: accent,
+        completion: completion,
+        phaseIndex: phaseIndex,
+        phaseCount: phaseCount,
+        isLoading: isLoading,
+      ),
+    );
+  }
+}
+
+class _PowActivityPanel extends StatelessWidget {
+  final Color accent;
+  final double completion;
+  final int phaseIndex;
+  final int phaseCount;
+  final bool isLoading;
+
+  const _PowActivityPanel({
+    required this.accent,
+    required this.completion,
+    required this.phaseIndex,
+    required this.phaseCount,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = Theme.of(context).colorScheme.onPrimary;
+    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
+    final statusColor = isLoading ? AppColors.warning : AppColors.success;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: Colors.white.withValues(alpha: 0.03),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            context.l10n.usernameLoadingPow,
-            style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                  fontSize: 26,
-                  letterSpacing: -0.4,
+          Row(
+            children: [
+              _PowActivityDot(accent: accent, isLoading: isLoading),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppCopy.signupPowDeviceTitle.resolve(context),
+                      style: Theme.of(context).textTheme.labelLarge!.copyWith(
+                            color: foreground,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppCopy.signupPowDeviceSubtitle.resolve(context),
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                            color: secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
                 ),
-            textAlign: TextAlign.left,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Este aparelho está executando a prova de trabalho exigida pelo backend. Quando a resposta for aceita, você segue automaticamente para configurar o autenticador.',
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.55,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _AnimatedPowDevice(
-                  pulseController: _pulseController,
-                  scanController: _scanController,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          AnimatedGlyphIcon(
-                            icon: phase.icon,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              phase.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium!
-                                  .copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                  ),
-                            ),
-                          ),
-                          _StatusChip(isLoading: isLoading),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        phase.body,
-                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                              height: 1.5,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      ...List.generate(_phases.length, (index) {
-                        final item = _phases[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom:
-                                index == _phases.length - 1 ? 0 : AppSpacing.md,
-                          ),
-                          child: _PhaseRow(
-                            title: item.title,
-                            subtitle: item.body,
-                            icon: item.icon,
-                            isDone: index < _phaseIndex,
-                            isCurrent: index == _phaseIndex,
-                          ),
-                        );
-                      }),
-                    ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.22),
                   ),
                 ),
-              ],
-            ),
+                child: Text(
+                  isLoading
+                      ? AppCopy.signupPowStatusInProgress.resolve(context)
+                      : AppCopy.signupPowStatusCompleted.resolve(context),
+                  style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 18),
           Text(
             isLoading
-                ? 'Mantenha o aplicativo aberto por alguns segundos enquanto o cálculo termina.'
-                : 'Aguardando o backend concluir a transição para o próximo passo.',
+                ? AppCopy.signupPowNoticeLoading.resolve(context)
+                : AppCopy.signupPowNoticeReady.resolve(context),
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: secondary,
                   height: 1.45,
                 ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: 18),
+          _PowProgressTrack(
+            completion: completion,
+            accent: accent,
+          ),
+          const SizedBox(height: 16),
+          _PowStageMeter(
+            completion: completion,
+            phaseIndex: phaseIndex,
+            phaseCount: phaseCount,
+            accent: accent,
+          ),
+          const SizedBox(height: 16),
+          _PowSignalRow(
+            phaseIndex: phaseIndex,
+            phaseCount: phaseCount,
+            accent: accent,
+            isLoading: isLoading,
+          ),
         ],
       ),
     );
   }
 }
 
-class _AnimatedPowDevice extends StatelessWidget {
-  final AnimationController pulseController;
-  final AnimationController scanController;
+class _PowActivityDot extends StatelessWidget {
+  final Color accent;
+  final bool isLoading;
 
-  const _AnimatedPowDevice({
-    required this.pulseController,
-    required this.scanController,
+  const _PowActivityDot({
+    required this.accent,
+    required this.isLoading,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 260,
-      height: 300,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([pulseController, scanController]),
-        builder: (context, _) {
-          final pulse = pulseController.value;
-          final scan = scanController.value;
+    final color = isLoading ? accent : AppColors.success;
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              Transform.scale(
-                scale: 0.92 + (pulse * 0.14),
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.secondary.withOpacity(0.22),
-                        AppColors.primary.withOpacity(0.12),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Transform.scale(
-                scale: 0.78 + (pulse * 0.18),
-                child: Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.accent.withOpacity(0.18),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 180,
-                height: 240,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withOpacity(0.16)),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withOpacity(0.08),
-                      Colors.white.withOpacity(0.02),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.10),
-                      blurRadius: 30,
-                      offset: const Offset(0, 18),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.surface.withOpacity(0.85),
-                                const Color(0xFF070A12),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _PowGridPainter(progress: scan),
-                        ),
-                      ),
-                      Positioned(
-                        left: 18,
-                        right: 18,
-                        top: 36 + (scan * 130),
-                        child: Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                AppColors.accent.withOpacity(0.85),
-                                Colors.transparent,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accent.withOpacity(0.25),
-                                blurRadius: 14,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AnimatedGlyphIcon(
-                              icon: LucideIcons.smartphone,
-                              size: 42,
-                              color: AppColors.secondary,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              'POW',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge!
-                                  .copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                    letterSpacing: 4,
-                                  ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'NONCE SEARCH',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall!
-                                  .copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                    letterSpacing: 2.2,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withValues(alpha: 0.92),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.10),
+            blurRadius: 8,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _PowGridPainter extends CustomPainter {
-  final double progress;
+class _PowProgressTrack extends StatelessWidget {
+  final double completion;
+  final Color accent;
 
-  const _PowGridPainter({
-    required this.progress,
+  const _PowProgressTrack({
+    required this.completion,
+    required this.accent,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
-      ..strokeWidth = 1;
-
-    for (double x = 0; x <= size.width; x += 24) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-
-    for (double y = 0; y <= size.height; y += 24) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-
-    final activePaint = Paint()
-      ..color = AppColors.secondary.withOpacity(0.18)
-      ..strokeWidth = 1.5;
-    final activeY = 28 + (progress * (size.height - 56));
-
-    canvas.drawLine(
-      Offset(18, activeY),
-      Offset(size.width - 18, activeY),
-      activePaint,
+  Widget build(BuildContext context) {
+    return Container(
+      height: 8,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Colors.white.withValues(alpha: 0.06),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: AnimatedFractionallySizedBox(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          widthFactor: completion.clamp(0.0, 1.0),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: accent.withValues(alpha: 0.88),
+            ),
+          ),
+        ),
+      ),
     );
   }
+}
+
+class _PowStageMeter extends StatelessWidget {
+  final double completion;
+  final int phaseIndex;
+  final int phaseCount;
+  final Color accent;
+
+  const _PowStageMeter({
+    required this.completion,
+    required this.phaseIndex,
+    required this.phaseCount,
+    required this.accent,
+  });
 
   @override
-  bool shouldRepaint(covariant _PowGridPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+  Widget build(BuildContext context) {
+    final foreground = Theme.of(context).colorScheme.onPrimary;
+    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Colors.white.withValues(alpha: 0.03),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '${phaseIndex + 1}/$phaseCount',
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const Spacer(),
+              Text(
+                '${(completion * 100).round()}%',
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: List.generate(phaseCount, (index) {
+              final isComplete = index < phaseIndex;
+              final isCurrent = index == phaseIndex;
+              final color = isComplete || isCurrent
+                  ? accent.withValues(alpha: isCurrent ? 0.88 : 0.58)
+                  : Colors.white.withValues(alpha: 0.10);
+
+              return Expanded(
+                child: Padding(
+                  padding:
+                      EdgeInsets.only(right: index == phaseCount - 1 ? 0 : 8),
+                  child: Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: color,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PowSignalRow extends StatelessWidget {
+  final int phaseIndex;
+  final int phaseCount;
+  final Color accent;
+  final bool isLoading;
+
+  const _PowSignalRow({
+    required this.phaseIndex,
+    required this.phaseCount,
+    required this.accent,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            isLoading
+                ? AppCopy.signupPowPhaseSolveTitle.resolve(context)
+                : AppCopy.signupPowStatusCompleted.resolve(context),
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: secondary,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 56,
+          height: 12,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(phaseCount, (index) {
+              final isComplete = index < phaseIndex || !isLoading;
+              final isCurrent = index == phaseIndex && isLoading;
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: isCurrent ? 18 : 10,
+                height: 6,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: isComplete || isCurrent
+                      ? accent.withValues(alpha: isCurrent ? 0.92 : 0.58)
+                      : Colors.white.withValues(alpha: 0.12),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -537,9 +672,9 @@ class _PhaseRow extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(isCurrent ? 0.18 : 0.10),
+            color: accentColor.withValues(alpha: isCurrent ? 0.18 : 0.10),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: accentColor.withOpacity(0.22)),
+            border: Border.all(color: accentColor.withValues(alpha: 0.22)),
           ),
           child: Center(
             child: AnimatedGlyphIcon(
@@ -591,20 +726,22 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isLoading ? AppColors.warning : AppColors.success;
-    final label = isLoading ? 'EM PROCESSO' : 'CONCLUÍDO';
+    final label = isLoading
+        ? AppCopy.signupPowStatusInProgress.resolve(context)
+        : AppCopy.signupPowStatusCompleted.resolve(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.22)),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall!.copyWith(
               color: color,
-              letterSpacing: 1.2,
+              letterSpacing: 0.2,
               fontWeight: FontWeight.w700,
             ),
       ),
@@ -613,13 +750,11 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _PowPhase {
-  final String title;
-  final String body;
+  final _PowPhaseKey key;
   final IconData icon;
 
   const _PowPhase({
-    required this.title,
-    required this.body,
+    required this.key,
     required this.icon,
   });
 }

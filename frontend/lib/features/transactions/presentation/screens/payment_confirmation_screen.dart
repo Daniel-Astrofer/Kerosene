@@ -275,9 +275,9 @@ class _FlowEndpointRow extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: receiveFlowPanelAltColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: receiveFlowBorderColor),
+            color: receiveFlowPanelRaisedColor,
+            borderRadius: BorderRadius.circular(0),
+            border: Border.all(color: receiveFlowBorderStrongColor),
           ),
           child: Icon(icon, color: receiveFlowTextColor, size: 18),
         ),
@@ -457,8 +457,8 @@ class _ReceiptDetailRow extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: receiveFlowPanelAltColor,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: receiveFlowBorderColor),
+                  borderRadius: BorderRadius.circular(0),
+                  border: Border.all(color: receiveFlowBorderStrongColor),
                 ),
                 child: SelectableText(
                   detail.value,

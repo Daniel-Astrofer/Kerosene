@@ -7,6 +7,9 @@ class PaymentLink extends Equatable {
   final int userId;
   final String? sessionId;
   final double amountBtc;
+  final double grossAmountBtc;
+  final double depositFeeBtc;
+  final double netAmountBtc;
   final String description;
   final String depositAddress;
   final String? destinationHash;
@@ -24,6 +27,9 @@ class PaymentLink extends Equatable {
     required this.userId,
     this.sessionId,
     required this.amountBtc,
+    this.grossAmountBtc = 0,
+    this.depositFeeBtc = 0,
+    this.netAmountBtc = 0,
     required this.description,
     required this.depositAddress,
     this.destinationHash,
@@ -56,6 +62,12 @@ class PaymentLink extends Equatable {
     if (amountBtc == 0 && data['amount'] is num) {
       amountBtc = (data['amount'] as num).toDouble();
     }
+    final grossAmountBtc =
+        (data['grossAmountBtc'] as num?)?.toDouble() ?? amountBtc;
+    final depositFeeBtc =
+        (data['depositFeeBtc'] as num?)?.toDouble() ?? 0;
+    final netAmountBtc =
+        (data['netAmountBtc'] as num?)?.toDouble() ?? amountBtc;
 
     final rawStatus = data['status']?.toString() ?? 'pending';
 
@@ -64,6 +76,9 @@ class PaymentLink extends Equatable {
       userId: (data['userId'] as num?)?.toInt() ?? 0,
       sessionId: data['sessionId']?.toString(),
       amountBtc: amountBtc,
+      grossAmountBtc: grossAmountBtc,
+      depositFeeBtc: depositFeeBtc,
+      netAmountBtc: netAmountBtc,
       description: data['description']?.toString() ?? '',
       depositAddress: data['depositAddress']?.toString() ??
           data['address']?.toString() ??
@@ -101,6 +116,9 @@ class PaymentLink extends Equatable {
         userId,
         sessionId,
         amountBtc,
+        grossAmountBtc,
+        depositFeeBtc,
+        netAmountBtc,
         description,
         depositAddress,
         destinationHash,

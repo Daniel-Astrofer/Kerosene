@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/presentation/widgets/cyber_button.dart';
@@ -21,7 +22,8 @@ class UnifiedTransactionScreen extends StatefulWidget {
   });
 
   @override
-  State<UnifiedTransactionScreen> createState() => _UnifiedTransactionScreenState();
+  State<UnifiedTransactionScreen> createState() =>
+      _UnifiedTransactionScreenState();
 }
 
 class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
@@ -47,25 +49,12 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: authenticatedSurfaceBackgroundColor,
       body: Stack(
         children: [
-          // Cyber Background Effect
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.7, -0.6),
-                  radius: 1.2,
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                    Theme.of(context).scaffoldBackgroundColor,
-                  ],
-                ),
-              ),
-            ),
+          const Positioned.fill(
+            child: ColoredBox(color: authenticatedSurfaceBackgroundColor),
           ),
-
           SafeArea(
             child: Column(
               children: [
@@ -98,20 +87,30 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
 
   Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
             ),
           ),
           Text(
-            widget.isSend ? context.l10n.sendBitcoin.toUpperCase() : context.l10n.receiveBitcoin.toUpperCase(),
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            widget.isSend
+                ? context.l10n.sendBitcoin.toUpperCase()
+                : context.l10n.receiveBitcoin.toUpperCase(),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           const SizedBox(width: 48),
         ],
@@ -145,23 +144,39 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+            : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(AppSpacing.md),
         border: Border.all(
-          color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
           width: 1.5,
         ),
       ),
       child: Column(
         children: [
-          Icon(icon, color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.3), size: 20),
+          Icon(icon,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.3),
+              size: 20),
           const SizedBox(height: AppSpacing.xs),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-              fontWeight: FontWeight.w900,
-            ),
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.3),
+                  fontWeight: FontWeight.w900,
+                ),
           ),
         ],
       ),
@@ -172,11 +187,14 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
     return Column(
       children: [
         Text(
-            context.l10n.transactionAmount.toUpperCase(),
+          context.l10n.transactionAmount.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-            letterSpacing: 2,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
+                letterSpacing: 2,
+              ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Row(
@@ -186,12 +204,16 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
           children: [
             Text(
               '₿',
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(color: Theme.of(context).colorScheme.primary, fontSize: 32),
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.primary, fontSize: 32),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               _amountController.text.isEmpty ? '0.00' : _amountController.text,
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 48, fontFamily: 'JetBrainsMono'),
+              style: Theme.of(context)
+                  .textTheme
+                  .displayLarge!
+                  .copyWith(fontSize: 48, fontFamily: 'JetBrainsMono'),
             ),
           ],
         ),
@@ -203,19 +225,31 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(AppSpacing.md),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+        border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 0.05)),
       ),
       child: TextField(
         controller: _addressController,
-        style: Theme.of(context).textTheme.bodySmall!.copyWith(fontFamily: 'JetBrainsMono'),
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall!
+            .copyWith(fontFamily: 'JetBrainsMono'),
         decoration: InputDecoration(
           hintText: context.l10n.destinationAddressHint,
-          hintStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
+          hintStyle: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.2)),
           border: InputBorder.none,
           suffixIcon: IconButton(
-            icon: Icon(LucideIcons.qrCode, color: Theme.of(context).colorScheme.primary),
+            icon: Icon(LucideIcons.qrCode,
+                color: Theme.of(context).colorScheme.primary),
             onPressed: _handleScanQr,
           ),
         ),
@@ -232,10 +266,15 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
       crossAxisSpacing: AppSpacing.md,
       childAspectRatio: 1.5,
       children: [
-        _buildActionCard(context.l10n.scanQR.toUpperCase(), LucideIcons.qrCode, _handleScanQr),
-        _buildActionCard(context.l10n.approximateNfc.toUpperCase(), LucideIcons.wifi, _handleNfc),
-        if (!widget.isSend) _buildActionCard(context.l10n.createLink.toUpperCase(), LucideIcons.share2, () {}),
-        _buildActionCard(context.l10n.history.toUpperCase(), LucideIcons.history, () {}),
+        _buildActionCard(context.l10n.scanQR.toUpperCase(), LucideIcons.qrCode,
+            _handleScanQr),
+        _buildActionCard(context.l10n.approximateNfc.toUpperCase(),
+            LucideIcons.wifi, _handleNfc),
+        if (!widget.isSend)
+          _buildActionCard(
+              context.l10n.createLink.toUpperCase(), LucideIcons.share2, () {}),
+        _buildActionCard(
+            context.l10n.history.toUpperCase(), LucideIcons.history, () {}),
       ],
     ).animate().fade(delay: 400.ms);
   }
@@ -246,9 +285,14 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
       borderRadius: BorderRadius.circular(AppSpacing.lg),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+          color:
+              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(AppSpacing.lg),
-          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+          border: Border.all(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -257,7 +301,12 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               label,
-              style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5)),
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.5)),
             ),
           ],
         ),
@@ -269,7 +318,11 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: CyberButton(
-        text: _isProcessing ? context.l10n.processing.toUpperCase() : (widget.isSend ? context.l10n.confirmSend.toUpperCase() : context.l10n.generatePaymentRequest.toUpperCase()),
+        text: _isProcessing
+            ? context.l10n.processing.toUpperCase()
+            : (widget.isSend
+                ? context.l10n.confirmSend.toUpperCase()
+                : context.l10n.generatePaymentRequest.toUpperCase()),
         onTap: _handleProcess,
         isLoading: _isProcessing,
       ),
@@ -292,7 +345,9 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
       MaterialPageRoute(
         builder: (_) => NfcInteractionScreen(
           amountDisplay: _amountController.text,
-          paymentUri: widget.isSend ? null : 'bitcoin:${_addressController.text}?amount=${_amountController.text}',
+          paymentUri: widget.isSend
+              ? null
+              : 'bitcoin:${_addressController.text}?amount=${_amountController.text}',
         ),
       ),
     );

@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
-import 'tor_service.dart';
 
 /// Service for real-time BTC price updates via WebSocket
-/// Primary: Binance, Backup: Coinbase
+/// Primary: Binance, Backup: Coinbase.
+/// External market feeds stay on clearnet; only the sovereign backend uses Tor.
 class PriceWebSocketService {
   IOWebSocketChannel? _primaryChannel;
   IOWebSocketChannel? _backupChannel;
@@ -26,28 +25,14 @@ class PriceWebSocketService {
     _connectPrimary();
   }
 
-  /// Creates an HttpClient that accepts certs for the local Tor relay
-  HttpClient _createRelayHttpClient() {
-    return HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        return host == '127.0.0.1' || host == 'localhost';
-      };
-  }
-
   Future<void> _connectPrimary() async {
     if (_isConnecting || _isDisposed) return;
     _isConnecting = true;
 
     try {
-      debugPrint('>>> PriceWebSocket: Connecting to Binance via Tor...');
-      final relayPort = await TorService.instance.startRelay(
-        'stream.binance.com',
-        9443,
-      );
-
+      debugPrint('>>> PriceWebSocket: Connecting to Binance via clearnet...');
       _primaryChannel = IOWebSocketChannel.connect(
-        Uri.parse('wss://127.0.0.1:$relayPort/ws/btcusdt@ticker'),
-        customClient: _createRelayHttpClient(),
+        Uri.parse('wss://stream.binance.com:9443/ws/btcusdt@ticker'),
       );
 
       await _primaryChannel!.ready;
@@ -59,7 +44,9 @@ class PriceWebSocketService {
           try {
             final json = jsonDecode(data);
             final price = double.parse(json['c']); // Current price
-            _priceController.add(price);
+            if (!_isDisposed) {
+              _priceController.add(price);
+            }
             _usingBackup = false;
             debugPrint(
               '>>> PriceWebSocket: Binance price: \$${price.toStringAsFixed(2)}',
@@ -91,17 +78,13 @@ class PriceWebSocketService {
     if (_usingBackup || _isDisposed) return;
 
     try {
-      debugPrint('>>> PriceWebSocket: Switching to Coinbase backup via Tor...');
+      debugPrint(
+        '>>> PriceWebSocket: Switching to Coinbase backup via clearnet...',
+      );
       _usingBackup = true;
 
-      final relayPort = await TorService.instance.startRelay(
-        'ws-feed.exchange.coinbase.com',
-        443,
-      );
-
       _backupChannel = IOWebSocketChannel.connect(
-        Uri.parse('wss://127.0.0.1:$relayPort'),
-        customClient: _createRelayHttpClient(),
+        Uri.parse('wss://ws-feed.exchange.coinbase.com'),
       );
 
       await _backupChannel!.ready;
@@ -121,7 +104,9 @@ class PriceWebSocketService {
             final json = jsonDecode(data);
             if (json['type'] == 'ticker' && json['price'] != null) {
               final price = double.parse(json['price']);
-              _priceController.add(price);
+              if (!_isDisposed) {
+                _priceController.add(price);
+              }
               debugPrint(
                 '>>> PriceWebSocket: Coinbase price: \$${price.toStringAsFixed(2)}',
               );

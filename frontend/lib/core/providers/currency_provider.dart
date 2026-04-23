@@ -35,9 +35,10 @@ class CurrencyNotifier extends Notifier<Currency> {
   }
 
   void toggleCurrency() {
-    // Simple toggle between common currencies or cycle through all
-    // For this app, let's cycle: USD -> BRL -> EUR -> USD
     switch (state) {
+      case Currency.btc:
+        setCurrency(Currency.usd);
+        break;
       case Currency.usd:
         setCurrency(Currency.brl);
         break;
@@ -45,10 +46,7 @@ class CurrencyNotifier extends Notifier<Currency> {
         setCurrency(Currency.eur);
         break;
       case Currency.eur:
-        setCurrency(Currency.usd);
-        break;
-      default:
-        setCurrency(Currency.usd);
+        setCurrency(Currency.btc);
     }
   }
 }

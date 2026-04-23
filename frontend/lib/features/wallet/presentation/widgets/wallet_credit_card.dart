@@ -1,21 +1,20 @@
-import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crypto/crypto.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/l10n/l10n_extension.dart';
-import '../../../../shared/widgets/brushed_metal_container.dart';
+
 import '../../domain/entities/wallet.dart';
-import '../models/wallet_card_appearance.dart';
 import '../providers/balance_settings_provider.dart';
 import '../screens/wallet_config_screen.dart';
 
-class WalletCreditCard extends ConsumerStatefulWidget {
+const _creditCardWidth = 303.0;
+const _creditCardHeight = 191.0;
+const _creditCardRadius = 20.0;
+
+class WalletCreditCard extends ConsumerWidget {
   final Wallet? wallet;
   final int colorIndex;
   final bool isSelected;
@@ -41,450 +40,830 @@ class WalletCreditCard extends ConsumerStatefulWidget {
     this.tiltY = 0.0,
   });
 
-  @override
-  ConsumerState<WalletCreditCard> createState() => _WalletCreditCardState();
-}
-
-class _WalletCreditCardState extends ConsumerState<WalletCreditCard> {
-  ui.Image? _textTexture;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.isAddCard) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _generateTexture();
-      });
+  void _openConfig(BuildContext context) {
+    if (onLongPress != null) {
+      onLongPress!();
+      return;
     }
-  }
-
-  @override
-  void didUpdateWidget(WalletCreditCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isAddCard) return;
-
-    if (oldWidget.wallet?.name != widget.wallet?.name ||
-        oldWidget.wallet?.balance != widget.wallet?.balance ||
-        oldWidget.wallet?.address != widget.wallet?.address ||
-        oldWidget.wallet?.cardType != widget.wallet?.cardType ||
-        oldWidget.showDetails != widget.showDetails) {
-      _generateTexture();
-    }
-  }
-
-  Future<void> _generateTexture() async {
-    const cardW = 303.0;
-    const cardH = 175.0;
-
-    final baseDpr = View.of(context).devicePixelRatio;
-    final dpr = baseDpr * 2.0;
-
-    final targetW = (cardW * dpr).toInt();
-    final targetH = (cardH * dpr).toInt();
-
-    final recorder = ui.PictureRecorder();
-    final canvas =
-        Canvas(recorder, Rect.fromLTWH(0, 0, cardW * dpr, cardH * dpr));
-
-    canvas.drawColor(Colors.transparent, BlendMode.clear);
-    canvas.scale(dpr);
-
-    final textPaint = Paint()..color = Theme.of(context).colorScheme.onPrimary;
-
-    if (widget.wallet != null) {
-      // We remove the gradient paint to keep the background perfectly transparent, 
-      // preventing alpha-channel interference with the shader's engrave mask.
-      final chipX = cardW - 68;
-      final chipY = 24.0;
-      final chipRect = RRect.fromLTRBR(
-          chipX, chipY, chipX + 44, chipY + 32, const Radius.circular(6));
-
-      final chipBasePaint = Paint()
-        ..color =
-            Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.95)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.4);
-      canvas.drawRRect(chipRect, chipBasePaint);
-
-      final linePaint = Paint()
-        ..color = Theme.of(context).colorScheme.onSurface
-        ..style = PaintingStyle.stroke
-        ..blendMode = BlendMode.clear
-        ..strokeWidth = 1.0;
-
-      final cw = 44.0;
-      final ch = 32.0;
-      canvas.drawLine(Offset(chipX + cw * 0.35, chipY),
-          Offset(chipX + cw * 0.35, chipY + ch), linePaint);
-      canvas.drawLine(Offset(chipX + cw * 0.65, chipY),
-          Offset(chipX + cw * 0.65, chipY + ch), linePaint);
-      canvas.drawLine(Offset(chipX, chipY + ch * 0.3),
-          Offset(chipX + cw * 0.25, chipY + ch * 0.3), linePaint);
-      canvas.drawLine(Offset(chipX, chipY + ch * 0.7),
-          Offset(chipX + cw * 0.25, chipY + ch * 0.7), linePaint);
-      canvas.drawLine(Offset(chipX + cw * 0.75, chipY + ch * 0.3),
-          Offset(chipX + cw, chipY + ch * 0.3), linePaint);
-      canvas.drawLine(Offset(chipX + cw * 0.75, chipY + ch * 0.7),
-          Offset(chipX + cw, chipY + ch * 0.7), linePaint);
-      canvas.drawCircle(Offset(chipX + cw / 2, chipY + ch / 2), 5, linePaint);
-
-      // TEXT
-      canvas.saveLayer(null, textPaint);
-
-      final nameText = widget.wallet!.name.toUpperCase();
-      final namePainter = TextPainter(
-        text: TextSpan(
-          text: nameText,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
-            height: 1.0,
-            fontFamily: 'JetBrainsMono',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-        ellipsis: '...',
-      );
-      namePainter.layout(maxWidth: cardW - 116);
-      namePainter.paint(canvas, const Offset(24, 24));
-
-      final balanceSettings = ref.read(balanceSettingsProvider);
-      final String balanceStr;
-      if (balanceSettings.isHidden) {
-        balanceStr = "•••••••• BTC";
-      } else {
-        balanceStr =
-            "${widget.wallet!.balance.toStringAsFixed(balanceSettings.decimalPlaces)} BTC";
-      }
-      final balanceFontSize = _fitMonospaceFontSize(
-        balanceStr,
-        maxWidth: cardW - 48,
-        baseFontSize: 22,
-        minFontSize: 15,
-        fontWeight: FontWeight.w900,
-      );
-      final balancePainter = TextPainter(
-        text: TextSpan(
-          text: balanceStr,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: balanceFontSize,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0,
-            height: 1.0,
-            fontFamily: 'JetBrainsMono',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      balancePainter.layout();
-      balancePainter.paint(
-        canvas,
-        Offset(
-          24.0, // Center Left (padding matches the name)
-          (cardH - balancePainter.height) / 2 + 4,
-        ),
-      );
-
-      final addressHash = _addressHash(widget.wallet!.address);
-      final hashLabel = addressHash.isNotEmpty ? _maskHash(addressHash) : '';
-      final addressPainter = TextPainter(
-        text: TextSpan(
-          text: hashLabel.isNotEmpty ? 'HASH $hashLabel' : '',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0,
-            height: 1.0,
-            fontFamily: 'JetBrainsMono',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-        ellipsis: '...',
-      );
-      addressPainter.layout(maxWidth: cardW - 48);
-      addressPainter.paint(
-        canvas,
-        Offset((cardW - addressPainter.width) / 2, 110),
-      );
-
-      canvas.restore();
+    if (isAddCard || wallet == null) {
+      return;
     }
 
-    try {
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(targetW, targetH);
-
-      if (mounted) {
-        setState(() => _textTexture = img);
-      }
-    } catch (e) {
-      debugPrint("🚨 Error creating wallet texture: $e");
-    }
-  }
-
-  String _addressHash(String address) {
-    final normalized = address.trim();
-    if (normalized.isEmpty) return '';
-    return sha256.convert(utf8.encode(normalized)).toString();
-  }
-
-  String _maskHash(String hash) {
-    if (hash.length <= 16) return hash;
-    return '${hash.substring(0, 8)}...${hash.substring(hash.length - 8)}';
-  }
-
-  double _fitMonospaceFontSize(
-    String text, {
-    required double maxWidth,
-    required double baseFontSize,
-    required double minFontSize,
-    required FontWeight fontWeight,
-  }) {
-    var fontSize = baseFontSize;
-    while (fontSize > minFontSize) {
-      final painter = TextPainter(
-        text: TextSpan(
-          text: text,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: fontWeight,
-            fontFamily: 'JetBrainsMono',
-            letterSpacing: 0,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-      )..layout(maxWidth: double.infinity);
-
-      if (painter.width <= maxWidth) {
-        return fontSize;
-      }
-
-      fontSize -= 1;
-    }
-
-    return minFontSize;
-  }
-
-  String _localizedCopy({
-    required BuildContext context,
-    required String pt,
-    required String en,
-    required String es,
-  }) {
-    switch (Localizations.localeOf(context).languageCode) {
-      case 'en':
-        return en;
-      case 'es':
-        return es;
-      default:
-        return pt;
-    }
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 520),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            WalletConfigScreen(wallet: wallet!),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 0.16),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+          );
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(position: slide, child: child),
+          );
+        },
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context) {
-    const width = 303.0;
-    const cardHeight = 175.0;
-    final appearance = widget.wallet != null
-        ? WalletCardAppearance.fromCardType(widget.wallet!.cardType)
-        : WalletCardAppearance.fromIndex(widget.colorIndex);
-    final badgeBackground = appearance.isDark
-        ? Colors.black.withValues(alpha: 0.22)
-        : appearance.cardShadowColor.withValues(alpha: 0.18);
-    final badgeBorder = appearance.isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : appearance.cardHighlightColor.withValues(alpha: 0.18);
-    final badgeTextColor = appearance.isDark
-        ? Colors.white.withValues(alpha: 0.88)
-        : appearance.cardHighlightColor.withValues(alpha: 0.92);
-    final walletAddressHash =
-        widget.wallet == null ? '' : _addressHash(widget.wallet!.address);
-
-    ref.listen(balanceSettingsProvider, (prev, next) {
-      if (prev?.isHidden != next.isHidden ||
-          prev?.decimalPlaces != next.decimalPlaces) {
-        _generateTexture();
-      }
-    });
-
-    final showShadow = widget.isSelected || widget.elevation > 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balanceSettings = ref.watch(balanceSettingsProvider);
+    final palette = _CreditCardPalette.resolve(wallet?.cardType, colorIndex);
+    final showShadow = isSelected || elevation > 0;
 
     return GestureDetector(
-      onTap: widget.onTap,
-      onLongPress: () {
-        if (widget.onLongPress != null) {
-          widget.onLongPress!();
-          return;
-        }
-        if (widget.isAddCard || widget.wallet == null) return;
-        HapticFeedback.mediumImpact();
-
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 600),
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                WalletConfigScreen(wallet: widget.wallet!),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              final slide = Tween<Offset>(
-                begin: const Offset(0, 0.2),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                  parent: animation, curve: Curves.easeOutBack));
-              return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: slide, child: child));
-            },
-          ),
-        );
-      },
+      onTap: onTap,
+      onLongPress: () => _openConfig(context),
       child: Center(
         child: Hero(
-          tag: 'card_hero_${widget.wallet?.address ?? widget.colorIndex}',
+          tag: 'card_hero_${wallet?.address ?? colorIndex}',
           transitionOnUserGestures: true,
-          child: Container(
-            height: cardHeight,
-            width: width,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppSpacing.md),
-              boxShadow: [
-                if (showShadow)
+          child: SizedBox(
+            width: _creditCardWidth,
+            height: _creditCardHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.md),
-                  child: Stack(
-                    children: [
-                      BrushedMetalContainer(
-                        width: width,
-                        height: cardHeight,
-                        materialId: appearance.paletteIndex.toDouble(),
-                        tiltX: widget.tiltX,
-                        tiltY: widget.tiltY,
-                        baseColor: appearance.baseColor,
-                        borderRadius: AppSpacing.md,
-                        textTexture: _textTexture,
-                      ),
-                      if (widget.wallet != null && walletAddressHash.isNotEmpty)
-                        Positioned(
-                          bottom: 20,
-                          left: 24,
-                          right: 24,
-                          child: GestureDetector(
-                            onTap: () {
-                              Clipboard.setData(
-                                ClipboardData(text: walletAddressHash),
-                              );
-                              HapticFeedback.lightImpact();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    _localizedCopy(
-                                      context: context,
-                                      pt: 'Hash copiado',
-                                      en: 'Hash copied',
-                                      es: 'Hash copiado',
-                                    ),
-                                  ),
-                                  duration: const Duration(seconds: 2),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: badgeBackground,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: badgeBorder,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Icon(
-                                    LucideIcons.copy,
-                                    size: 10,
-                                    color:
-                                        badgeTextColor.withValues(alpha: 0.8),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      'Hash ${_maskHash(walletAddressHash)}',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTypography.caption.copyWith(
-                                        color: badgeTextColor,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0,
-                                        fontFamily: 'JetBrainsMono',
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (widget.isAddCard)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: Colors.white.withValues(alpha: 0.06),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.14),
-                            ),
-                          ),
-                          child: Icon(
-                            LucideIcons.plus,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            size: 22,
-                          ),
-                        ),
-                        SizedBox(height: AppSpacing.sm),
-                        Text(
-                          context.l10n.addCard,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.white70,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-                      ],
+                    color: Colors.black.withValues(
+                      alpha: showShadow ? 0.34 : 0.18,
                     ),
+                    blurRadius: showShadow ? 24 : 14,
+                    offset: Offset(0, showShadow ? 14 : 8),
                   ),
-              ],
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                child: isAddCard || wallet == null
+                    ? _EmptyCreditCardFace(palette: palette)
+                    : _PhysicalCreditCardFace(
+                        wallet: wallet!,
+                        palette: palette,
+                        balanceSettings: balanceSettings,
+                        showDetails: showDetails,
+                        isSelected: isSelected,
+                        tiltX: tiltX,
+                        tiltY: tiltY,
+                      ),
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+class _PhysicalCreditCardFace extends StatelessWidget {
+  final Wallet wallet;
+  final _CreditCardPalette palette;
+  final BalanceSettings balanceSettings;
+  final bool showDetails;
+  final bool isSelected;
+  final double tiltX;
+  final double tiltY;
+
+  const _PhysicalCreditCardFace({
+    required this.wallet,
+    required this.palette,
+    required this.balanceSettings,
+    required this.showDetails,
+    required this.isSelected,
+    required this.tiltX,
+    required this.tiltY,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: palette.gradient,
+              stops: const [0.0, 0.58, 1.0],
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: _CreditCardSurfacePainter(
+            palette: palette,
+            isSelected: isSelected,
+            tiltX: tiltX,
+            tiltY: tiltY,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _CardBrandBlock(
+                      palette: palette,
+                      tier: wallet.cardType.label.toUpperCase(),
+                    ),
+                  ),
+                  _NetworkMark(color: palette.inkPrimary),
+                ],
+              ),
+              const Spacer(),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _CardChip(palette: palette),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.contactless,
+                    color: palette.inkPrimary.withValues(alpha: 0.72),
+                    size: 24,
+                  ),
+                  const Spacer(),
+                  if (showDetails)
+                    _BalanceBlock(
+                      label: _balanceLabel(wallet, balanceSettings),
+                      palette: palette,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                _maskedCardNumber(wallet),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: palette.inkPrimary,
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.8,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: _CardTextField(
+                      label: 'CARD HOLDER',
+                      value: wallet.name.toUpperCase(),
+                      palette: palette,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _CardTextField(
+                    label: 'VALID THRU',
+                    value: _expiryLabel(wallet),
+                    palette: palette,
+                    alignEnd: true,
+                  ),
+                  if (showDetails && wallet.passphraseHash.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: _SecurityHashButton(
+                        hash: wallet.passphraseHash.trim(),
+                        palette: palette,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                border: Border.all(
+                  color: palette.border,
+                  width: isSelected ? 1.25 : 1.0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _balanceLabel(Wallet wallet, BalanceSettings settings) {
+    if (settings.isHidden) {
+      return 'BTC ********';
+    }
+    return '${wallet.balance.toStringAsFixed(settings.decimalPlaces)} BTC';
+  }
+
+  static String _maskedCardNumber(Wallet wallet) {
+    final source = (wallet.address.isNotEmpty ? wallet.address : wallet.id)
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .toUpperCase();
+    final last4 = source.length >= 4
+        ? source.substring(source.length - 4)
+        : source.padLeft(4, '0');
+    return '****  ****  ****  $last4';
+  }
+
+  static String _expiryLabel(Wallet wallet) {
+    final expiryYear = wallet.createdAt.year + 4;
+    final month = wallet.createdAt.month.toString().padLeft(2, '0');
+    final year = (expiryYear % 100).toString().padLeft(2, '0');
+    return '$month/$year';
+  }
+}
+
+class _EmptyCreditCardFace extends StatelessWidget {
+  final _CreditCardPalette palette;
+
+  const _EmptyCreditCardFace({required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: palette.gradient,
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: _CreditCardSurfacePainter(
+            palette: palette,
+            isSelected: false,
+            tiltX: 0,
+            tiltY: 0,
+          ),
+        ),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 54,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: Icon(
+                  LucideIcons.plus,
+                  color: palette.inkPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                context.l10n.addCard.toUpperCase(),
+                style: AppTypography.bodySmall.copyWith(
+                  color: palette.inkPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                border: Border.all(color: palette.border),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardBrandBlock extends StatelessWidget {
+  final _CreditCardPalette palette;
+  final String tier;
+
+  const _CardBrandBlock({
+    required this.palette,
+    required this.tier,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'KEROSENE',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bodyMedium.copyWith(
+            color: palette.inkPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.6,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '$tier CARD',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.caption.copyWith(
+            color: palette.inkSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            height: 1.0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BalanceBlock extends StatelessWidget {
+  final String label;
+  final _CreditCardPalette palette;
+
+  const _BalanceBlock({
+    required this.label,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 126),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            'BALANCE',
+            style: AppTypography.caption.copyWith(
+              color: palette.inkSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: AppTypography.bodySmall.copyWith(
+                color: palette.inkPrimary,
+                fontFamily: 'JetBrainsMono',
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardTextField extends StatelessWidget {
+  final String label;
+  final String value;
+  final _CreditCardPalette palette;
+  final bool alignEnd;
+
+  const _CardTextField({
+    required this.label,
+    required this.value,
+    required this.palette,
+    this.alignEnd = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: palette.inkSecondary,
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.9,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 5),
+        SizedBox(
+          width: alignEnd ? 58 : double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: AppTypography.bodySmall.copyWith(
+                color: palette.inkPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SecurityHashButton extends StatelessWidget {
+  final String hash;
+  final _CreditCardPalette palette;
+
+  const _SecurityHashButton({
+    required this.hash,
+    required this.palette,
+  });
+
+  void _copyHash(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: hash));
+    HapticFeedback.selectionClick();
+    AppNotice.showSuccess(
+      context,
+      title: 'Hash copiado',
+      message: 'O hash da carteira foi copiado.',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkResponse(
+        onTap: () => _copyHash(context),
+        radius: 18,
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color:
+                Colors.white.withValues(alpha: palette.isLight ? 0.18 : 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: palette.inkPrimary.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Icon(
+            LucideIcons.copy,
+            size: 13,
+            color: palette.inkPrimary.withValues(alpha: 0.82),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardChip extends StatelessWidget {
+  final _CreditCardPalette palette;
+
+  const _CardChip({required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 45,
+      height: 34,
+      child: CustomPaint(
+        painter: _CardChipPainter(palette: palette),
+      ),
+    );
+  }
+}
+
+class _NetworkMark extends StatelessWidget {
+  final Color color;
+
+  const _NetworkMark({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 42,
+      height: 24,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 2,
+            top: 2,
+            child: _NetworkDisc(color: color.withValues(alpha: 0.38)),
+          ),
+          Positioned(
+            right: 2,
+            top: 2,
+            child: _NetworkDisc(color: color.withValues(alpha: 0.58)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NetworkDisc extends StatelessWidget {
+  final Color color;
+
+  const _NetworkDisc({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _CreditCardSurfacePainter extends CustomPainter {
+  final _CreditCardPalette palette;
+  final bool isSelected;
+  final double tiltX;
+  final double tiltY;
+
+  const _CreditCardSurfacePainter({
+    required this.palette,
+    required this.isSelected,
+    required this.tiltX,
+    required this.tiltY,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = palette.line.withValues(alpha: palette.isLight ? 0.28 : 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.75;
+
+    for (var i = -4; i < 15; i++) {
+      final y = i * 18.0;
+      canvas.drawLine(
+        Offset(-20, y),
+        Offset(size.width + 22, y + size.width * 0.28),
+        linePaint,
+      );
+    }
+
+    final finePaint = Paint()
+      ..color = palette.line.withValues(alpha: palette.isLight ? 0.18 : 0.10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.45;
+    for (var x = 24.0; x < size.width; x += 18) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x - 40, size.height),
+        finePaint,
+      );
+    }
+
+    final highlightDx = size.width * (0.55 + (tiltY * 0.18).clamp(-0.16, 0.16));
+    final highlightDy =
+        size.height * (0.22 + (tiltX * 0.12).clamp(-0.10, 0.10));
+    final highlightPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: isSelected ? 0.18 : 0.10),
+          Colors.white.withValues(alpha: 0.00),
+        ],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(highlightDx, highlightDy),
+          radius: size.width * 0.56,
+        ),
+      );
+    canvas.drawRect(Offset.zero & size, highlightPaint);
+
+    final edgePaint = Paint()
+      ..color = Colors.white.withValues(alpha: palette.isLight ? 0.22 : 0.10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(6, 6, size.width - 12, size.height - 12),
+        const Radius.circular(_creditCardRadius - 6),
+      ),
+      edgePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CreditCardSurfacePainter oldDelegate) {
+    return oldDelegate.palette != palette ||
+        oldDelegate.isSelected != isSelected ||
+        oldDelegate.tiltX != tiltX ||
+        oldDelegate.tiltY != tiltY;
+  }
+}
+
+class _CardChipPainter extends CustomPainter {
+  final _CreditCardPalette palette;
+
+  const _CardChipPainter({required this.palette});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+    final fill = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: palette.chipGradient,
+      ).createShader(rect);
+    final stroke = Paint()
+      ..color =
+          palette.inkPrimary.withValues(alpha: palette.isLight ? 0.18 : 0.24)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9;
+    final line = Paint()
+      ..color = Colors.black.withValues(alpha: palette.isLight ? 0.22 : 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.85;
+
+    canvas.drawRRect(rrect, fill);
+    canvas.drawRRect(rrect, stroke);
+
+    final x = rect.left;
+    final y = rect.top;
+    final w = rect.width;
+    final h = rect.height;
+    canvas.drawLine(
+        Offset(x + w * 0.33, y + 3), Offset(x + w * 0.33, y + h - 3), line);
+    canvas.drawLine(
+        Offset(x + w * 0.67, y + 3), Offset(x + w * 0.67, y + h - 3), line);
+    canvas.drawLine(
+        Offset(x + 3, y + h * 0.32), Offset(x + w * 0.26, y + h * 0.32), line);
+    canvas.drawLine(
+        Offset(x + 3, y + h * 0.68), Offset(x + w * 0.26, y + h * 0.68), line);
+    canvas.drawLine(Offset(x + w * 0.74, y + h * 0.32),
+        Offset(x + w - 3, y + h * 0.32), line);
+    canvas.drawLine(Offset(x + w * 0.74, y + h * 0.68),
+        Offset(x + w - 3, y + h * 0.68), line);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardChipPainter oldDelegate) {
+    return oldDelegate.palette != palette;
+  }
+}
+
+@immutable
+class _CreditCardPalette {
+  final List<Color> gradient;
+  final List<Color> chipGradient;
+  final Color border;
+  final Color line;
+  final Color inkPrimary;
+  final Color inkSecondary;
+  final bool isLight;
+
+  const _CreditCardPalette({
+    required this.gradient,
+    required this.chipGradient,
+    required this.border,
+    required this.line,
+    required this.inkPrimary,
+    required this.inkSecondary,
+    required this.isLight,
+  });
+
+  static _CreditCardPalette resolve(WalletCardType? type, int colorIndex) {
+    final resolvedType = type ??
+        switch (colorIndex % 3) {
+          0 => WalletCardType.bronze,
+          1 => WalletCardType.white,
+          _ => WalletCardType.black,
+        };
+
+    return switch (resolvedType) {
+      WalletCardType.bronze => _blue,
+      WalletCardType.white => _silver,
+      WalletCardType.black => _black,
+    };
+  }
+
+  static const _blue = _CreditCardPalette(
+    gradient: [
+      Color(0xFF182843),
+      Color(0xFF0B111B),
+      Color(0xFF10151D),
+    ],
+    chipGradient: [
+      Color(0xFFE9EEF3),
+      Color(0xFFADB7C2),
+      Color(0xFF727D88),
+    ],
+    border: Color(0xFF2F405A),
+    line: Color(0xFF9FB0C6),
+    inkPrimary: Color(0xFFF3F6FA),
+    inkSecondary: Color(0xFF9EADBF),
+    isLight: false,
+  );
+
+  static const _silver = _CreditCardPalette(
+    gradient: [
+      Color(0xFFF1F3F5),
+      Color(0xFFBFC5CC),
+      Color(0xFF7F8790),
+    ],
+    chipGradient: [
+      Color(0xFFF5F1E6),
+      Color(0xFFD4C392),
+      Color(0xFF9C8753),
+    ],
+    border: Color(0xFFE8ECEF),
+    line: Color(0xFF4D5660),
+    inkPrimary: Color(0xFF101418),
+    inkSecondary: Color(0xFF3E4650),
+    isLight: true,
+  );
+
+  static const _black = _CreditCardPalette(
+    gradient: [
+      Color(0xFF030405),
+      Color(0xFF0A0D11),
+      Color(0xFF1A1F26),
+    ],
+    chipGradient: [
+      Color(0xFFDFE5EA),
+      Color(0xFF9BA4AE),
+      Color(0xFF5F6872),
+    ],
+    border: Color(0xFF2A3038),
+    line: Color(0xFF6E7782),
+    inkPrimary: Color(0xFFF1F3F5),
+    inkSecondary: Color(0xFF8F98A3),
+    isLight: false,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _CreditCardPalette &&
+            runtimeType == other.runtimeType &&
+            gradient == other.gradient &&
+            chipGradient == other.chipGradient &&
+            border == other.border &&
+            line == other.line &&
+            inkPrimary == other.inkPrimary &&
+            inkSecondary == other.inkSecondary &&
+            isLight == other.isLight;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        gradient,
+        chipGradient,
+        border,
+        line,
+        inkPrimary,
+        inkSecondary,
+        isLight,
+      );
 }

@@ -1,6 +1,6 @@
 # Arquitetura Real do Kerosene
 
-Documento tecnico baseado no codigo presente no repositorio em 2026-04-07.
+Documento tecnico baseado no codigo presente no repositorio em 2026-04-14.
 
 ## Visao Geral
 
@@ -8,13 +8,14 @@ Documento tecnico baseado no codigo presente no repositorio em 2026-04-07.
 flowchart LR
   App[Flutter App] --> TorRelay[Relay local Tor no app]
   TorRelay --> OnionShard[Hidden service Tor do shard]
+  OnionShard --> Vanguards[Vanguards controller addon]
   OnionShard --> Api[Kerosene API Spring Boot]
   Api --> Pg[(PostgreSQL por shard)]
   Api --> Redis[(Redis por shard)]
   Api --> VaultTor[Hidden service Tor do Vault]
   VaultTor --> Vault[Vault Spring Boot]
   Api --> Mpc[MPC Sidecar Go gRPC]
-  Api --> Bitcoin[Bitcoin/Pocket Network]
+  Api --> Bitcoin[Bitcoin/Esplora]
 ```
 
 O sistema e um monorepo dividido em quatro blocos principais:
@@ -25,6 +26,49 @@ O sistema e um monorepo dividido em quatro blocos principais:
 | Vault | `backend/vault` | Armamento de chave mestra, atestacao TPM simulada/validada e provisionamento de AES key para shards. |
 | MPC sidecar | `backend/mpc-sidecar` | Servico Go/gRPC para contratos `Keygen` e `Sign` usando `tss-lib`. |
 | App | `frontend` | Flutter app com Riverpod, Dio, Tor, passkeys, NFC, QR, wallet UI e background service. |
+
+## Camada Onion Hardening
+
+Os shards IS, CH e SG agora executam `Tor + Vanguards` como plano de roteamento Onion.
+
+Objetivo:
+
+- manter `Layer 2` e `Layer 3` vanguards fixos/rotacionados segundo os algoritmos do addon oficial;
+- reduzir superficie para `Guard Discovery` e correlacao de guards de onion service;
+- separar o daemon de defesa do daemon Tor, preservando restart independente e limites de privilegio.
+
+Topologia por shard:
+
+```mermaid
+flowchart LR
+  App[Kerosene API] --> Socks[Unix socket SOCKS]
+  Tor[Tor hidden service]
+  Vg[Vanguards]
+  State[(vanguards.state)]
+  Control[ControlSocket + cookie]
+
+  Tor --> App
+  Tor --> Control
+  Vg --> Control
+  Vg --> State
+  App --> State
+```
+
+Implementacao real no repositorio:
+
+- `backend/kerosene/tor/torrc-is`
+- `backend/kerosene/tor/torrc-ch`
+- `backend/kerosene/tor/torrc-sg`
+- `backend/kerosene/tor/vanguards/Dockerfile`
+- `backend/kerosene/tor/vanguards/vanguards.conf`
+- `backend/kerosene/tor/vanguards/entrypoint.sh`
+
+Fluxo operacional:
+
+1. O container Tor sobe o hidden service e expoe `ControlSocket`.
+2. O sidecar `vanguards` autentica via cookie no `ControlSocket`.
+3. O addon passa a atualizar `Layer2`/`Layer3`, `bandguards` e `rendguard`.
+4. O backend principal nao fala com o controller Tor; ele apenas consome o socket SOCKS e observa o arquivo de estado para health.
 
 ## Backend Principal
 
@@ -50,6 +94,7 @@ Pacotes funcionais:
 | `source.wallet` | Criacao, listagem, update e delecao de carteiras. |
 | `source.ledger` | Balancos internos, historico, transacoes internas, payment requests e auditoria Merkle. |
 | `source.transactions` | Endereco de deposito, fee estimate, unsigned tx, broadcast, withdraw, payment links, economy e onramp. |
+| `source.mining` | Marketplace interno de rigs, aluguel de hashpower, cancelamento pro-rata e liquidacao de rendimento projetado. |
 | `source.voucher` | Voucher Bitcoin e pagamento de onboarding. |
 | `source.notification` | Notificacao via WebSocket user queue. |
 | `source.security` | VaultKeyProvider, status de soberania, atestacao, heartbeat, egress guard e servicos de falha segura. |
@@ -61,8 +106,10 @@ Pacotes funcionais:
 2. O cliente envia credenciais para `POST /auth/signup` ou `POST /auth/login`.
 3. No signup, `POST /auth/signup/totp/verify` retorna um `sessionId` temporario para o onboarding em Redis.
 4. No login, `POST /auth/login/totp/verify` retorna JWT.
-5. Requisicoes autenticadas usam `Authorization: Bearer <jwt>`.
-6. O backend renova tokens proximos da expiracao pelo header `X-New-Token`.
+5. No pior caso de recuperacao, `POST /auth/recovery/emergency/start` usa PoW + multiplos recovery codes e abre uma sessao curta sem JWT.
+6. `POST /auth/recovery/emergency/finish` valida o NOVO TOTP e a NOVA passkey e so entao rotaciona passphrase, TOTP, passkey e recovery codes para o mesmo username.
+7. Requisicoes autenticadas usam `Authorization: Bearer <jwt>`.
+8. O backend renova tokens proximos da expiracao pelo header `X-New-Token`.
 
 Passkeys:
 
@@ -70,6 +117,19 @@ Passkeys:
 - Endpoints implementados: `/auth/passkey/challenge`, `/auth/passkey/register`, `/auth/passkey/verify`, `/auth/passkey/onboarding/start`, `/auth/passkey/onboarding/finish`.
 - O fluxo assina desafios e verifica assinatura com chave publica enviada ou armazenada.
 - Observacao real: `challenge`, `verify` e os endpoints de onboarding precisam estar liberados na `SecurityFilterChain`; apenas `/auth/passkey/register` continua protegido por JWT.
+
+Recuperacao extrema:
+
+- Controller real: `source.auth.controller.EmergencyRecoveryController`.
+- Endpoints implementados: `/auth/recovery/emergency/start` e `/auth/recovery/emergency/finish`.
+- O `start` nao muda credenciais ainda; ele valida PoW, multipos recovery codes e cria uma sessao curta em Redis.
+- O `finish` consome a sessao com `GETDEL` e troca as credenciais antigas por novas de forma transacional.
+- O fluxo sempre exige:
+  - nova passphrase BIP39
+  - novo TOTP confirmado
+  - nova passkey com prova criptografica
+  - no minimo 3 recovery codes distintos
+- Os recovery codes antigos deixam de valer imediatamente apos o sucesso.
 
 ## Fluxo Financeiro Interno
 
@@ -93,6 +153,11 @@ Ledger:
 
 - `LedgerController` resolve o usuario autenticado pelo `SecurityContextHolder`.
 - `TransactionDTO` suporta `sender`, `receiver`, `amount`, `context`, `idempotencyKey`, `requestTimestamp`, `passkeyAssertionJson`, `confirmationPassphrase` e `totpCode`.
+- Autorizacao de transacao e baseada no perfil da conta:
+  - `STANDARD` e `PASSKEY`: passkey obrigatoria sob challenge do servidor; TOTP nao e solicitado.
+  - `SHAMIR`: shares SLIP-39/passphrase reconstruida + TOTP.
+  - `MULTISIG_2FA`: passphrase + TOTP; threshold `3` adiciona passkey.
+- Falhas de TOTP/passkey em transacao nao invalidam JWT e nao devem deslogar o usuario.
 - Operacoes financeiras em `/ledger/transaction` e `/ledger/payment-request/{linkId}/pay` tem rate limit por usuario de 10 operacoes por minuto.
 - O historico e paginado por `page` e `size`, com `size` limitado a 100.
 
@@ -112,6 +177,39 @@ O controller real `TransactionController` oferece:
 - `GET /transactions/payment-links`.
 - `POST /transactions/withdraw`.
 
+O controller real `NetworkPaymentsController` oferece:
+
+- `POST /transactions/network/onchain/address`.
+- `GET /transactions/network/wallet-profile?walletName=...`.
+- `POST /transactions/network/onchain/send`.
+- `POST /transactions/network/lightning/invoice`.
+- `POST /transactions/network/lightning/pay`.
+- `GET /transactions/network/transfers`.
+- `GET /transactions/network/transfers/{transferId}`.
+
+Detalhes reais:
+
+- Pagamentos externos on-chain e Lightning cobram `0.9%` de taxa de plataforma alem do fee de rede.
+- Saidas externas usam `WalletAuthorizationService` e seguem a mesma matriz de fatores do ledger: conta padrao usa passkey sem TOTP; TOTP aparece apenas para modos superiores a `STANDARD`.
+- O adapter de custodia e configuravel por `custody.*` e usa `BCX` como nome default do provider.
+- `GET /transactions/deposit-address` e os fluxos de onramp/payment link emitem um endereco custodial dedicado por wallet/usuario.
+- Em ambiente sem provider live, esses enderecos on-chain sao derivados de uma branch da carteira principal da Kerosene (`bitcoin.platform.master-xpub` com fallback para `bitcoin.hot-wallet.xpub`) e cada emissao avanca o indice da wallet monitorada.
+- Lightning usa payload mock deterministico em desenvolvimento.
+
+O controller real `MiningController` oferece:
+
+- `GET /mining/rigs`.
+- `POST /mining/allocations`.
+- `GET /mining/allocations`.
+- `GET /mining/allocations/{allocationId}`.
+- `POST /mining/allocations/{allocationId}/cancel`.
+
+Modelo real da mineracao:
+
+- Inspirado no fluxo de hashpower rental da MRR: catalogo de rigs por algoritmo, unidade de hash, preco por unidade-dia e janela minima/maxima de locacao.
+- A alocacao pode ser calculada por `requestedHashrate` ou por `budgetBtc`.
+- Cancelamentos calculam refund proporcional do tempo restante e settlement do rendimento projetado do tempo consumido.
+
 Fluxo real de onboarding sem JWT:
 
 - `POST /voucher/onboarding-link?sessionId=...` cria o payment link publico de onboarding.
@@ -121,7 +219,7 @@ Fluxo real de onboarding sem JWT:
 
 Limites reais:
 
-- `bitcoin.deposit-address` possui um valor default em `application.properties`; producao deve sobrescrever.
+- `bitcoin.deposit-address` ainda existe como fallback estatico para onboarding publico/voucher; nao e mais a fonte principal do endpoint autenticado `/transactions/deposit-address`.
 - `LedgerAuditController#getActualOnchainBalance` retorna `50.00000000` como mock/fallback no codigo atual.
 - `MpcSidecarClient` em Java abre canal gRPC, mas `keygen` e `sign` ainda retornam placeholders. O sidecar Go tem contrato gRPC real.
 
@@ -239,7 +337,7 @@ Mecanismos presentes:
 - `RateLimitFilter`: 20 req/min para `/auth/*` e 100 req/min para demais paths por IP.
 - `ParanoidSecurityFilter`: exige `application/json` ou `application/x-protobuf` para requests com body, limita payload a 2 KB, remove headers forjaveis e injeta padding.
 - JWT renewal por `X-New-Token`.
-- TOTP em signup/login e endpoints sensiveis de auditoria.
+- TOTP em signup/login, endpoints sensiveis de auditoria e transacoes somente quando a politica elevada exigir (`SHAMIR`/`MULTISIG_2FA`). Contas `STANDARD` e `PASSKEY` usam passkey nas transacoes e nao pedem TOTP.
 - `VaultKeyProvider` usa Vault quando `vault.enabled=true` e cai para `AES_SECRET` em desenvolvimento.
 - `NetworkEgressFilter` documenta enforcement por iptables/seccomp, sem instalar SecurityManager.
 

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/constants/app_copy.dart';
+import 'package:teste/core/providers/currency_provider.dart';
+import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 import 'deposit_method_screen.dart';
 
 class DepositAmountScreen extends ConsumerStatefulWidget {
@@ -16,51 +19,107 @@ class DepositAmountScreen extends ConsumerStatefulWidget {
   const DepositAmountScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<DepositAmountScreen> createState() => _DepositAmountScreenState();
+  ConsumerState<DepositAmountScreen> createState() =>
+      _DepositAmountScreenState();
 }
 
 class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
-  String _amountRaw = '0';
+  String _amount = '0';
+  late Currency _selectedCurrency;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCurrency = ref.read(currencyProvider);
+  }
 
   double get _parsedAmount {
-    if (_amountRaw.isEmpty) return 0.0;
-    final n = int.tryParse(_amountRaw) ?? 0;
-    return n / 100.0;
+    return MoneyDisplay.parseEditableInput(_amount);
   }
 
   String get _displayAmount {
-    if (_amountRaw.isEmpty || _amountRaw == '0') return '0,00';
-    final n = int.tryParse(_amountRaw) ?? 0;
-    final value = n / 100.0;
-
-    final parts = value.toStringAsFixed(2).split('.');
-    final integerPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
+    return MoneyDisplay.formatEditableInput(
+      rawValue: _amount,
+      currency: _selectedCurrency,
     );
-    return '$integerPart,${parts[1]}';
+  }
+
+  String? _quoteHint({
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) {
+    if (_parsedAmount <= 0) {
+      if (_selectedCurrency == Currency.btc) {
+        return null;
+      }
+      return MoneyDisplay.formatQuote(
+        currency: _selectedCurrency,
+        btcUsd: btcUsd,
+        btcEur: btcEur,
+        btcBrl: btcBrl,
+      );
+    }
+
+    if (_selectedCurrency == Currency.btc) {
+      final brlValue = MoneyDisplay.convertFromBtcAmount(
+        btcAmount: _parsedAmount,
+        currency: Currency.brl,
+        btcUsd: btcUsd,
+        btcEur: btcEur,
+        btcBrl: btcBrl,
+      );
+      return 'Equivale a ${MoneyDisplay.formatCompact(amount: brlValue, currency: Currency.brl)}';
+    }
+
+    final btcAmount = MoneyDisplay.convertToBtcAmount(
+      amount: _parsedAmount,
+      currency: _selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    return 'Voce recebe ${MoneyDisplay.formatCompact(amount: btcAmount, currency: Currency.btc)}';
+  }
+
+  int get _maxRawLength {
+    return _selectedCurrency == Currency.btc ? 16 : 12;
+  }
+
+  String get _currencyDescription {
+    switch (_selectedCurrency) {
+      case Currency.btc:
+        return AppCopy.depositCurrencyDescription(
+          context,
+          isBtc: true,
+          code: _selectedCurrency.code,
+        );
+      case Currency.usd:
+      case Currency.eur:
+      case Currency.brl:
+        return AppCopy.depositCurrencyDescription(
+          context,
+          isBtc: false,
+          code: _selectedCurrency.code,
+        );
+    }
   }
 
   void _onKeyTap(String key) {
     HapticFeedback.lightImpact();
     setState(() {
-      if (key == '←') {
-        if (_amountRaw.length > 1) {
-          _amountRaw = _amountRaw.substring(0, _amountRaw.length - 1);
-        } else {
-          _amountRaw = '0';
-        }
-      } else {
-        if (_amountRaw.length < 10) {
-          _amountRaw = _amountRaw == '0' ? key : '$_amountRaw$key';
-        }
-      }
+      _amount = MoneyDisplay.applyKeypadInput(
+        currentValue: _amount,
+        key: key,
+        currency: _selectedCurrency,
+        maxLength: _maxRawLength,
+      );
     });
   }
 
   void _onContinue() {
     if (_parsedAmount <= 0) {
-      SnackbarHelper.showError("Por favor, insira um valor maior que zero.");
+      SnackbarHelper.showError(AppCopy.depositAmountZero.resolve(context));
       return;
     }
     HapticFeedback.mediumImpact();
@@ -69,7 +128,8 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       MaterialPageRoute(
         builder: (_) => DepositMethodScreen(
           wallet: widget.wallet,
-          amountFiat: _parsedAmount,
+          inputAmount: _parsedAmount,
+          inputCurrency: _selectedCurrency,
         ),
       ),
     );
@@ -77,97 +137,96 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: false,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: Column(
-                children: [
-                  const Spacer(flex: 2),
-                  _buildEnterAmountLabel().animate().fade(),
-                  const SizedBox(height: AppSpacing.sm),
-                  _buildAmountDisplay().animate().fade().scale(begin: const Offset(0.9, 0.9)),
-                  const Spacer(flex: 3),
-                  _buildKeypad().animate(delay: 100.ms).fade().slideY(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.xl),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: CyberButton(
-                      text: 'CONTINUAR',
-                      onTap: _onContinue,
-                    ),
-                  ).animate(delay: 200.ms).fade().slideY(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final quoteHint = _quoteHint(
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
     );
-  }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ReceiveFlowScaffold(
+      title: 'Depositar',
+      subtitle: 'Informe o valor e siga para o método de entrada.',
+      scrollable: false,
+      bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-              padding: const EdgeInsets.all(AppSpacing.sm),
+          ReceiveFlowPanel(
+            backgroundColor: receiveFlowPanelAltColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ReceiveFlowSectionLabel('Moeda selecionada'),
+                const SizedBox(height: 4),
+                Text(
+                  _selectedCurrency.code,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _currencyDescription,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: receiveFlowMutedTextColor,
+                        height: 1.35,
+                      ),
+                ),
+              ],
             ),
           ),
-          Text(
-            'ADICIONAR SALDO',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+          const SizedBox(height: AppSpacing.md),
+          _buildAmountDisplay(quoteHint),
+          const SizedBox(height: AppSpacing.md),
+          _buildKeypad(),
+          const SizedBox(height: AppSpacing.md),
+          ReceiveFlowPrimaryButton(
+            label: 'Continuar',
+            onTap: _onContinue,
           ),
-          const SizedBox(width: 48),
         ],
       ),
-    ).animate().fade().slideY(begin: -0.2, end: 0);
-  }
-
-  Widget _buildEnterAmountLabel() {
-    return Text(
-      'VALOR DO DEPÓSITO',
-      style: Theme.of(context).textTheme.labelSmall!.copyWith(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2.0,
-        fontSize: 10,
-      ),
     );
   }
 
-  Widget _buildAmountDisplay() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
+  Widget _buildAmountDisplay(String? quoteHint) {
+    return ReceiveFlowPanel(
+      child: Column(
         children: [
           Text(
-            'R\$ ',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+            'Valor do depósito',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
+                ),
           ),
-          Flexible(
-            child: Text(
-              _displayAmount,
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 64, fontFamily: 'JetBrainsMono', letterSpacing: -2),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            _displayAmount,
+            style: AppTypography.amountInput(
+              isBtc: _selectedCurrency == Currency.btc,
+              color: receiveFlowTextColor,
+            ).copyWith(
+              fontSize: _selectedCurrency == Currency.btc ? 42 : 46,
+              fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          if (quoteHint != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              quoteHint,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                  ),
+            ),
+          ],
         ],
       ),
     );
@@ -178,51 +237,45 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
-      ['', '0', '←'],
+      ['.', '0', '←'],
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    return ReceiveFlowPanel(
+      padding: const EdgeInsets.all(10),
       child: Column(
-        children: keys.map((row) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: row.map((key) => _buildKey(key)).toList(),
-            ),
-          );
-        }).toList(),
+        children: keys
+            .map(
+              (row) => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: row.map((key) => _buildKey(key)).toList(),
+              ),
+            )
+            .toList(),
       ),
     );
   }
 
   Widget _buildKey(String key) {
     if (key.isEmpty) return const Expanded(child: SizedBox());
-    
+
     final isBackspace = key == '←';
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onKeyTap(key),
-        child: Container(
-          height: 64,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
-          ),
-          child: Center(
-            child: isBackspace
-                ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 20)
-                : Text(
-                    key,
-                    style: Theme.of(context).textTheme.titleLarge!.copyWith(fontFamily: 'JetBrainsMono'),
+    return ReceiveFlowKeypadButton(
+      onTap: () => _onKeyTap(key),
+      child: isBackspace
+          ? const Icon(
+              LucideIcons.delete,
+              color: receiveFlowTextColor,
+              size: 18,
+            )
+          : Text(
+              key,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: receiveFlowTextColor,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w400,
                   ),
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

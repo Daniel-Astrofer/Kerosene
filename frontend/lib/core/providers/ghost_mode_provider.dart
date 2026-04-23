@@ -10,4 +10,5 @@ class GhostModeNotifier extends Notifier<bool> {
   void update(bool newValue) => state = newValue;
 }
 
-final ghostModeProvider = NotifierProvider<GhostModeNotifier, bool>(GhostModeNotifier.new);
+final ghostModeProvider =
+    NotifierProvider<GhostModeNotifier, bool>(GhostModeNotifier.new);

@@ -37,13 +37,17 @@ Esta documentacao foi montada a partir destes arquivos reais:
 
 ## Validacao Real
 
-Validacoes executadas durante a preparacao desta documentacao:
+Validacoes executadas neste passe de revisao da documentacao da API:
 
 | Verificacao | Resultado |
 | --- | --- |
-| `git diff --cached --check` no README, docs e `.gitignore` | OK. |
-| `docker compose -f backend/kerosene-infrastructure/docker-compose.local.yml config` | OK no working tree local. |
-| `./gradlew test` com Java padrao da maquina | Falhou porque o Gradle recebeu Java 25, enquanto o projeto usa Java 21. |
-| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test` | Falhou em `:compileJava` com erros pre-existentes no backend. |
+| Cobertura mecanica entre `@RestController` e `docs/API_REFERENCE.md` | OK apos documentar tambem `/transactions/network/*` e `/mining/*`. |
+| Revisao manual de contratos DTO/controller/service | OK apos alinhar retorno real de login, formato de `login/totp/verify`, corpo de `ledger/payment-request/{linkId}/pay`, estados de payment links/onboarding, pagamentos externos e alugueis de mineracao. |
+| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew compileJava` | OK. |
+| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test --tests source.auth.application.orchestrator.recovery.EmergencyRecoveryUseCaseTest --tests source.auth.dto.AccountSecurityProfileDTOTest` | OK. |
+| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test --tests source.transactions.service.ExternalPaymentsServiceTest --tests source.mining.service.MiningServiceTest` | OK. |
+| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test --tests source.wallet.service.WalletCardProfileServiceTest --tests source.wallet.orchestrator.WalletUseCaseTest --tests source.transactions.service.ExternalPaymentsServiceTest` | OK. |
+| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test --tests source.transactions.application.paymentlink.PaymentLinkConfirmerTest --tests source.transactions.infra.paymentlink.PaymentLinkWalletCreditAdapterTest` | OK. |
+| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test --tests source.transactions.service.PaymentLinkServiceRedisTest` | Falhou no ambiente de revisao por indisponibilidade de Redis (`RedisConnectionFailureException`); testes foram atualizados, mas nao houve execucao completa aqui. |
 
-Bloqueios de backend identificados: dependencia CBOR ausente, contratos divergentes em `PasskeyCredential`, `RedisServicer`, `UserDataBase`, `BlockchainClient`, `LedgerService`, `WalletEntity`, `WalletService` e `SignupState`.
+Observacao: este passe validou especificamente a referencia da API contra o backend atual, incluindo cartoes de wallet, taxa dinamica de deposito/saque e o breakdown `gross/depositFee/net` dos payment links. Nao houve reexecucao das verificacoes de infraestrutura desta pasta.

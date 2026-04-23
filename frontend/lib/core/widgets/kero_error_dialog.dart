@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 
 /// Kerosene Error Types — matches Figma error variants
 enum KeroErrorType {
@@ -131,7 +132,8 @@ Future<void> showKeroErrorDialog(
 }) {
   return showDialog(
     context: context,
-    barrierColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+    barrierColor:
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
     builder: (_) => KeroErrorDialog(
       errorType: errorType,
       onSecondaryAction: onSecondaryAction,
@@ -158,143 +160,39 @@ class KeroErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = errorType.accentColor;
     final description = customDescription ?? errorType.description;
+    final tone = errorType == KeroErrorType.ledgerPaymentReceived
+        ? AppNotificationTone.success
+        : AppNotificationTone.error;
+    final actions = <AppNotificationAction>[
+      AppNotificationAction(
+        label: 'Voltar',
+        icon: Icons.arrow_back_rounded,
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      if (onSecondaryAction != null)
+        AppNotificationAction(
+          label: secondaryLabel ?? 'Depositar',
+          icon: Icons.add_rounded,
+          onPressed: () {
+            Navigator.of(context).pop();
+            onSecondaryAction!();
+          },
+        ),
+    ];
 
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(24),
-      child: Container(
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0D0D0D),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: color.withOpacity(0.25), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.12),
-              blurRadius: 40,
-              spreadRadius: -4,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Error icon
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: color.withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: Icon(errorType.icon, color: color, size: 38),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Error code
-            Text(
-              errorType.code,
-              style: TextStyle(
-                color: color.withOpacity(0.6),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-                fontFamily: 'monospace',
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Title
-            Text(
-              errorType.title,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 14),
-
-            // Description
-            Text(
-              description,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.55),
-                fontSize: 14,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 32),
-
-            // Primary action: Back / Close
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color.withOpacity(0.12),
-                  foregroundColor: color,
-                  elevation: 0,
-                  side: BorderSide(color: color.withOpacity(0.4)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Voltar',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-
-            // Secondary action (optional)
-            if (onSecondaryAction != null) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onSecondaryAction!();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.06),
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    secondaryLabel ?? 'Depositar',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
+      child: AppNotificationSurface(
+        title: errorType.title,
+        message: description,
+        footerLabel: errorType.code,
+        tone: tone,
+        leadingIcon: errorType.icon,
+        maxMessageLines: 4,
+        onClose: () => Navigator.of(context).pop(),
+        actions: actions,
       ),
     );
   }

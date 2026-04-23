@@ -1,19 +1,25 @@
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
+import '../../domain/entities/account_security_profile.dart';
 
 abstract class SecurityRemoteDataSource {
   Future<Map<String, dynamic>> getSovereigntyStatus();
   Future<bool> pingSovereignty();
   Future<void> sendTelemetry(Map<String, dynamic> data);
   Future<Map<String, dynamic>> reattest();
-  
+
   // Audit Endpoints
   Future<Map<String, dynamic>> getAuditStats();
   Future<Map<String, dynamic>> getAuditSiphon();
   Future<Map<String, dynamic>> getLatestMerkleRoot();
   Future<List<dynamic>> getMerkleHistory();
   Future<Map<String, dynamic>> triggerAudit();
+
+  Future<Map<String, dynamic>> getAccountSecurityProfile();
+  Future<Map<String, dynamic>> updateAccountSecurityProfile(
+    AccountSecurityProfile profile,
+  );
 }
 
 class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
@@ -70,7 +76,8 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar estatísticas de auditoria: $e');
+      throw ServerException(
+          message: 'Erro ao buscar estatísticas de auditoria: $e');
     }
   }
 
@@ -115,6 +122,37 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao disparar auditoria: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAccountSecurityProfile() async {
+    try {
+      final response = await apiClient.get(AppConfig.authSecurityProfile);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+        message: 'Erro ao obter perfil de segurança da conta: $e',
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateAccountSecurityProfile(
+    AccountSecurityProfile profile,
+  ) async {
+    try {
+      final response = await apiClient.put(
+        AppConfig.authSecurityProfile,
+        data: profile.toUpdateJson(),
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+        message: 'Erro ao atualizar perfil de segurança da conta: $e',
+      );
     }
   }
 }

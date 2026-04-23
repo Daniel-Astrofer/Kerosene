@@ -10,7 +10,6 @@ import 'package:teste/core/presentation/widgets/recent_transaction_destinations_
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/providers/recent_transaction_destinations_provider.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
@@ -311,15 +310,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     _WithdrawDestinationAnalysis d,
   ) {
     if (d.type == _WithdrawDestinationType.empty) {
-      return Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.46);
+      return receiveFlowFaintTextColor;
     }
     if (d.isInvalid) {
-      return Theme.of(context).colorScheme.error;
+      return receiveFlowTextColor;
     }
     if (!_destinationMatchesFlow(d)) {
-      return AppColors.warning;
+      return receiveFlowMutedTextColor;
     }
-    return Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.74);
+    return receiveFlowTextColor.withValues(alpha: 0.82);
   }
 
   List<RecentTransactionDestination> _recentDestinationsForCurrentFlow() {
@@ -1073,7 +1072,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 ? 0
                 : (amountBtc / wallet.balance).clamp(0.0, 1.0),
             minHeight: 6,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(0),
             color: receiveFlowTextColor,
             backgroundColor: receiveFlowDividerColor,
           ),
@@ -1127,8 +1126,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         DecoratedBox(
           decoration: BoxDecoration(
             color: receiveFlowPanelColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: receiveFlowBorderColor),
+            borderRadius: BorderRadius.circular(0),
+            border: Border.all(color: receiveFlowBorderStrongColor),
           ),
           child: TextField(
             controller: _addressController,
@@ -1232,15 +1231,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               filled: true,
               fillColor: receiveFlowPanelAltColor,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: receiveFlowBorderColor),
+                borderRadius: BorderRadius.circular(0),
+                borderSide:
+                    const BorderSide(color: receiveFlowBorderStrongColor),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: receiveFlowBorderColor),
+                borderRadius: BorderRadius.circular(0),
+                borderSide:
+                    const BorderSide(color: receiveFlowBorderStrongColor),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(0),
                 borderSide: const BorderSide(color: receiveFlowMutedTextColor),
               ),
             ),
@@ -1461,20 +1462,14 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color:
-                    Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .error
-                      .withValues(alpha: 0.18),
-                ),
+                color: receiveFlowPanelAltColor,
+                borderRadius: BorderRadius.circular(0),
+                border: Border.all(color: receiveFlowBorderStrongColor),
               ),
               child: Text(
                 'Nao foi possivel estimar a taxa de rede no momento. Revise novamente em instantes antes de confirmar o envio.',
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context).colorScheme.error,
+                      color: receiveFlowTextColor,
                       height: 1.45,
                     ),
               ),
@@ -1485,8 +1480,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: receiveFlowPanelAltColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: receiveFlowBorderColor),
+                borderRadius: BorderRadius.circular(0),
+                border: Border.all(color: receiveFlowBorderStrongColor),
               ),
               child: Text(
                 !hasAmount

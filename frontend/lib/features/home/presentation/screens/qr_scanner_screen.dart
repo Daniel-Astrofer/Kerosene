@@ -32,7 +32,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_hasScanned) return; 
+    if (_hasScanned) return;
 
     for (final barcode in capture.barcodes) {
       if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
@@ -64,14 +64,21 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+              padding: const EdgeInsets.only(
+                  top: AppSpacing.xxl, bottom: AppSpacing.md),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.0),
+                    Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.8),
+                    Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -80,16 +87,24 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+                      icon: Icon(LucideIcons.chevronLeft,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          size: 24),
                       onPressed: () => Navigator.of(context).pop(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.1),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       'ESCANEIE QR CODE',
-                      style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium!
+                          .copyWith(letterSpacing: 2),
                     ),
                     const Spacer(),
                     ValueListenableBuilder(
@@ -107,18 +122,29 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                           ),
                           onPressed: () => _controller.toggleTorch(),
                           style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.1),
                           ),
-                        ).animate(target: state.torchState == TorchState.on ? 1 : 0)
-                         .tint(color: Theme.of(context).colorScheme.primary);
+                        )
+                            .animate(
+                                target:
+                                    state.torchState == TorchState.on ? 1 : 0)
+                            .tint(color: Theme.of(context).colorScheme.primary);
                       },
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     IconButton(
-                      icon: Icon(LucideIcons.refreshCcw, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+                      icon: Icon(LucideIcons.refreshCcw,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          size: 20),
                       onPressed: () => _controller.switchCamera(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.1),
                       ),
                     ),
                   ],
@@ -133,25 +159,38 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             left: AppSpacing.xl,
             right: AppSpacing.xl,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(AppSpacing.lg),
-                border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+                border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.1)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   Icon(LucideIcons.qrCode, color: Theme.of(context).colorScheme.primary, size: 24)
-                    .animate(onPlay: (c) => c.repeat())
-                    .shimmer(duration: 1500.ms),
+                  Icon(LucideIcons.qrCode,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24)
+                      .animate(onPlay: (c) => c.repeat())
+                      .shimmer(duration: 1500.ms),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Aponte a câmera para um código QR de pagamento',
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
-                      fontWeight: FontWeight.w600,
-                    ),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w600,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -166,9 +205,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   Widget _buildScanOverlay() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final scanAreaSize = (constraints.maxWidth < constraints.maxHeight 
-            ? constraints.maxWidth 
-            : constraints.maxHeight) * 0.7;
+        final scanAreaSize = (constraints.maxWidth < constraints.maxHeight
+                ? constraints.maxWidth
+                : constraints.maxHeight) *
+            0.7;
         final scanAreaTop = (constraints.maxHeight - scanAreaSize) / 2;
         final scanAreaLeft = (constraints.maxWidth - scanAreaSize) / 2;
 
@@ -177,7 +217,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             // Dark Overlay
             ColorFiltered(
               colorFilter: ColorFilter.mode(
-                Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 BlendMode.srcOut,
               ),
               child: Stack(
@@ -203,15 +243,19 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 ],
               ),
             ),
-            
+
             // Scanner Frame Corners
             _buildCorner(scanAreaTop, scanAreaLeft, true, true),
-            _buildCorner(scanAreaTop, scanAreaLeft + scanAreaSize - 40, true, false),
-            _buildCorner(scanAreaTop + scanAreaSize - 40, scanAreaLeft, false, true),
-            _buildCorner(scanAreaTop + scanAreaSize - 40, scanAreaLeft + scanAreaSize - 40, false, false),
+            _buildCorner(
+                scanAreaTop, scanAreaLeft + scanAreaSize - 40, true, false),
+            _buildCorner(
+                scanAreaTop + scanAreaSize - 40, scanAreaLeft, false, true),
+            _buildCorner(scanAreaTop + scanAreaSize - 40,
+                scanAreaLeft + scanAreaSize - 40, false, false),
 
             // Scanning Line Animation
-            _ScanningLine(top: scanAreaTop, left: scanAreaLeft, size: scanAreaSize),
+            _ScanningLine(
+                top: scanAreaTop, left: scanAreaLeft, size: scanAreaSize),
           ],
         );
       },
@@ -228,16 +272,20 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: isTop
-                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
             bottom: !isTop
-                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
             left: isLeft
-                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
             right: !isLeft
-                ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 4)
                 : BorderSide.none,
           ),
         ),
@@ -251,13 +299,15 @@ class _ScanningLine extends StatefulWidget {
   final double left;
   final double size;
 
-  const _ScanningLine({required this.top, required this.left, required this.size});
+  const _ScanningLine(
+      {required this.top, required this.left, required this.size});
 
   @override
   State<_ScanningLine> createState() => _ScanningLineState();
 }
 
-class _ScanningLineState extends State<_ScanningLine> with SingleTickerProviderStateMixin {
+class _ScanningLineState extends State<_ScanningLine>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -294,14 +344,17 @@ class _ScanningLineState extends State<_ScanningLine> with SingleTickerProviderS
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
                   Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.5),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),

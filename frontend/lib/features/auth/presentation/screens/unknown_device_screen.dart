@@ -144,10 +144,11 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                           vertical: AppSpacing.sm + AppSpacing.xs,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
+                          color: AppColors.warning.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(
+                              AppSpacing.sm + AppSpacing.xs),
                           border: Border.all(
-                            color: AppColors.warning.withOpacity(0.4),
+                            color: AppColors.warning.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
@@ -161,10 +162,14 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             Expanded(
                               child: Text(
                                 context.l10n.unknownDeviceBanner,
-                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                                  color: AppColors.warning.withOpacity(0.9),
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall!
+                                    .copyWith(
+                                      color: AppColors.warning
+                                          .withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w500,
+                                    ),
                               ),
                             ),
                           ],
@@ -187,14 +192,14 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                           height: 110,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.warning.withOpacity(0.08),
+                            color: AppColors.warning.withValues(alpha: 0.08),
                             border: Border.all(
-                              color: AppColors.warning.withOpacity(0.3),
+                              color: AppColors.warning.withValues(alpha: 0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.warning.withOpacity(0.2),
+                                color: AppColors.warning.withValues(alpha: 0.2),
                                 blurRadius: 40,
                                 spreadRadius: 5,
                               ),
@@ -223,9 +228,11 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                         context.l10n.unknownDeviceDesc,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.6,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              height: 1.6,
+                            ),
                       ),
 
                       SizedBox(height: AppSpacing.sm + AppSpacing.xs),
@@ -237,10 +244,16 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                           vertical: AppSpacing.sm,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.06),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(AppSpacing.xl),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.1),
                           ),
                         ),
                         child: Row(
@@ -254,10 +267,13 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             SizedBox(width: AppSpacing.xs + 2),
                             Text(
                               widget.username,
-                              style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                                color: AppColors.white70,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall!
+                                  .copyWith(
+                                    color: AppColors.white70,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                             ),
                           ],
                         ),
@@ -275,9 +291,12 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
                               autofocus: true,
-                              style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                                letterSpacing: 10,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge!
+                                  .copyWith(
+                                    letterSpacing: 10,
+                                  ),
                               maxLength: 6,
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
@@ -290,25 +309,37 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                               decoration: InputDecoration(
                                 counterText: "",
                                 hintText: context.l10n.unknownDeviceInputHint,
-                                hintStyle: Theme.of(context).textTheme.titleLarge!.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.08),
-                                  letterSpacing: 10,
-                                ),
+                                hintStyle: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                          .withValues(alpha: 0.08),
+                                      letterSpacing: 10,
+                                    ),
                                 filled: true,
-                                fillColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.05),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                                  borderRadius:
+                                      BorderRadius.circular(AppSpacing.md),
                                   borderSide: BorderSide.none,
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                                  borderRadius:
+                                      BorderRadius.circular(AppSpacing.md),
                                   borderSide: BorderSide(
                                     color: AppColors.warning,
                                     width: 1.5,
                                   ),
                                 ),
                                 errorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                                  borderRadius:
+                                      BorderRadius.circular(AppSpacing.md),
                                   borderSide: BorderSide(
                                     color: Theme.of(context).colorScheme.error,
                                     width: 1,
@@ -320,10 +351,12 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return context.l10n.unknownDeviceInputErrorEmpty;
+                                  return context
+                                      .l10n.unknownDeviceInputErrorEmpty;
                                 }
                                 if (value.length != 6) {
-                                  return context.l10n.unknownDeviceInputErrorLength;
+                                  return context
+                                      .l10n.unknownDeviceInputErrorLength;
                                 }
                                 return null;
                               },
@@ -334,9 +367,15 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             Text(
                               context.l10n.unknownDeviceHelper,
                               textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.35),
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall!
+                                  .copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimary
+                                        .withValues(alpha: 0.35),
+                                  ),
                             ),
 
                             SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
@@ -349,34 +388,46 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                                 onPressed: isLoading ? null : _handleVerify,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.warning,
-                                  foregroundColor: Theme.of(context).colorScheme.onSurface,
-                                  disabledBackgroundColor: AppColors.warning.withOpacity(0.4),
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  disabledBackgroundColor:
+                                      AppColors.warning.withValues(alpha: 0.4),
                                 ),
                                 child: isLoading
                                     ? SizedBox(
                                         width: 24,
                                         height: 24,
                                         child: CircularProgressIndicator(
-                                          color: Theme.of(context).colorScheme.onSurface,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
                                           strokeWidth: 2,
                                         ),
                                       )
                                     : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             LucideIcons.link,
                                             size: 20,
-                                            color: Theme.of(context).colorScheme.onSurface,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
                                           ),
                                           SizedBox(width: AppSpacing.sm),
                                           Text(
                                             context.l10n.unknownDeviceAction,
-                                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 0.8,
-                                              color: Theme.of(context).colorScheme.onSurface,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium!
+                                                .copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.8,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -392,10 +443,17 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                       Container(
                         padding: EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
-                          borderRadius: BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(
+                              AppSpacing.sm + AppSpacing.xs),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.06),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.06),
                           ),
                         ),
                         child: Row(
@@ -404,16 +462,25 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             Icon(
                               LucideIcons.info,
                               size: 16,
-                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimary
+                                  .withValues(alpha: 0.3),
                             ),
                             SizedBox(width: AppSpacing.sm + 2),
                             Expanded(
                               child: Text(
                                 context.l10n.unknownDeviceSecurityNote,
-                                style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-                                  height: 1.5,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                          .withValues(alpha: 0.3),
+                                      height: 1.5,
+                                    ),
                               ),
                             ),
                           ],
@@ -435,9 +502,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
   void _handleVerify() {
     if (_formKey.currentState!.validate()) {
       HapticFeedback.lightImpact();
-      ref
-          .read(authControllerProvider.notifier)
-          .verifyLoginTotp(
+      ref.read(authControllerProvider.notifier).verifyLoginTotp(
             username: widget.username,
             passphrase: widget.passphrase,
             totpCode: _codeController.text,

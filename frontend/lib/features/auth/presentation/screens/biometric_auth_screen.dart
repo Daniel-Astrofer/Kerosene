@@ -13,7 +13,8 @@ class BiometricAuthScreen extends StatefulWidget {
     final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
+      barrierColor:
+          Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.98),
       pageBuilder: (context, animation, secondaryAnimation) {
         return FadeTransition(
           opacity: animation,
@@ -89,7 +90,10 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.05),
                     ),
                     child: Icon(
                       LucideIcons.x,
@@ -112,8 +116,8 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                 context.l10n.secureAccess,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
               ),
 
               const SizedBox(height: 24),
@@ -138,7 +142,10 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                  Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.2),
                                   Colors.transparent,
                                 ],
                               ),
@@ -150,9 +157,15 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                           height: 110,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.1),
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.3),
                               width: 1,
                             ),
                           ),
@@ -176,17 +189,17 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                 context.l10n.biometricAuthDesc,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
               SizedBox(height: AppSpacing.sm),
               Text(
                 context.l10n.verifyingDevice,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
 
               SizedBox(height: AppSpacing.xxl + AppSpacing.xl),
@@ -199,10 +212,16 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                   width: double.infinity,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(AppSpacing.md),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.05),
                       width: 1,
                     ),
                   ),
@@ -218,8 +237,8 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                       Text(
                         context.l10n.changePassword,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                              fontWeight: FontWeight.w500,
+                            ),
                       ),
                     ],
                   ),
@@ -232,7 +251,10 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                   width: 100,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

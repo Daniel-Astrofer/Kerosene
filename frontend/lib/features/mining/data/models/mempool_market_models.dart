@@ -179,6 +179,11 @@ class MempoolBlock {
   final int size;
   final int weight;
   final double difficulty;
+  final double? medianFee;
+  final int? totalFees;
+  final int? reward;
+  final String? poolName;
+  final String? poolSlug;
 
   const MempoolBlock({
     required this.id,
@@ -188,9 +193,19 @@ class MempoolBlock {
     required this.size,
     required this.weight,
     required this.difficulty,
+    this.medianFee,
+    this.totalFees,
+    this.reward,
+    this.poolName,
+    this.poolSlug,
   });
 
   factory MempoolBlock.fromJson(Map<String, dynamic> json) {
+    final extras = (json['extras'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
+    final pool = (extras['pool'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
+
     return MempoolBlock(
       id: (json['id'] ?? '').toString(),
       height: _intOf(json['height']),
@@ -199,6 +214,17 @@ class MempoolBlock {
       size: _intOf(json['size']),
       weight: _intOf(json['weight']),
       difficulty: _doubleOf(json['difficulty']),
+      medianFee: _nullableDoubleOf(
+        extras['medianFeeRate'] ?? extras['medianFee'] ?? json['medianFee'],
+      ),
+      totalFees: _nullableIntOf(
+        extras['totalFees'] ?? extras['fee'] ?? json['totalFees'],
+      ),
+      reward: _nullableIntOf(extras['reward'] ?? json['reward']),
+      poolName: _nullableStringOf(
+        pool['name'] ?? extras['poolName'] ?? json['poolName'],
+      ),
+      poolSlug: _nullableStringOf(pool['slug'] ?? json['poolSlug']),
     );
   }
 }
@@ -331,4 +357,23 @@ double _doubleOf(dynamic value) {
     return double.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+int? _nullableIntOf(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  return _intOf(value);
+}
+
+double? _nullableDoubleOf(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  return _doubleOf(value);
+}
+
+String? _nullableStringOf(dynamic value) {
+  final normalized = value?.toString().trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }

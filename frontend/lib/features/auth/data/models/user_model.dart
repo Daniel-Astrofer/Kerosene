@@ -19,7 +19,8 @@ class UserModel extends User {
       id: (json['id'] ?? json['userId'] ?? '0').toString(),
       username: (json['username'] ?? json['name'] ?? '').toString(),
       testBalanceClaimed: json['testBalanceClaimed'] == true,
-      passkeyEnabledForTransactions: json['passkeyEnabledForTransactions'] == true,
+      passkeyEnabledForTransactions:
+          json['passkeyEnabledForTransactions'] == true,
       lastLogin: json['lastLogin'] != null
           ? DateTime.tryParse(json['lastLogin'].toString())
           : (json['last_login'] != null
@@ -87,7 +88,8 @@ class UserModel extends User {
       id: id ?? this.id,
       username: username ?? this.username,
       testBalanceClaimed: testBalanceClaimed ?? this.testBalanceClaimed,
-      passkeyEnabledForTransactions: passkeyEnabledForTransactions ?? this.passkeyEnabledForTransactions,
+      passkeyEnabledForTransactions:
+          passkeyEnabledForTransactions ?? this.passkeyEnabledForTransactions,
       lastLogin: lastLogin ?? this.lastLogin,
       photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,

@@ -51,10 +51,13 @@ class _NfcScanAnimationState extends State<NfcScanAnimation>
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.1),
               boxShadow: [
                 BoxShadow(
-                  color: widget.color.withOpacity(0.2),
+                  color: widget.color.withValues(alpha: 0.2),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -77,7 +80,7 @@ class _RadarPainter extends CustomPainter {
   final Color color;
 
   _RadarPainter({required this.animation, required this.color})
-    : super(repaint: animation);
+      : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -96,7 +99,7 @@ class _RadarPainter extends CustomPainter {
 
       // Opacity fades out as it grows
       final double opacity = (1.0 - progress).clamp(0.0, 1.0);
-      paint.color = color.withOpacity(opacity * 0.5);
+      paint.color = color.withValues(alpha: opacity * 0.5);
 
       // Radius grows
       final double radius = maxRadius * progress;

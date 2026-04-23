@@ -100,24 +100,24 @@ class _DraggableCard3DState extends State<DraggableCard3D>
       // Volta ao estado inicial
       _controller
           .animateBack(
-            0,
-            duration: const Duration(milliseconds: 400),
-            curve: widget.releaseCurve,
-          )
+        0,
+        duration: const Duration(milliseconds: 400),
+        curve: widget.releaseCurve,
+      )
           .then((_) {
-            widget.onDragCancel?.call();
-          });
+        widget.onDragCancel?.call();
+      });
     } else {
       // Completa a animação (vai para trás)
       _controller
           .animateTo(
-            1.0,
-            duration: const Duration(milliseconds: 500),
-            curve: widget.releaseCurve,
-          )
+        1.0,
+        duration: const Duration(milliseconds: 500),
+        curve: widget.releaseCurve,
+      )
           .then((_) {
-            widget.onDragComplete?.call();
-          });
+        widget.onDragComplete?.call();
+      });
     }
   }
 
@@ -237,7 +237,7 @@ class _Card3DTransform extends StatelessWidget {
 
   // Sombra estática otimizada - Constante para evitar realocação a cada frame
   static final BoxShadow _kOptimizedShadow = BoxShadow(
-    color: Colors.black.withOpacity(0.2), // Slightly darker
+    color: Colors.black.withValues(alpha: 0.2), // Slightly darker
     blurRadius: 8, // Reduced from 12
     spreadRadius: 0, // Reduced from -2 to 0 (simpler calculation)
     offset: const Offset(0, 4),
@@ -259,8 +259,7 @@ class _Card3DTransform extends StatelessWidget {
     if (progress < 0.5) {
       translateY = -220.0 * (progress / 0.5);
     } else {
-      translateY =
-          -220.0 +
+      translateY = -220.0 +
           (232.0 *
               (progress - 0.5) /
               0.5); // Ends slightly lower to match new stack top

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,44 +31,81 @@ class BalanceSettings {
 class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
   static const _hideKey = 'balance_hidden';
   static const _decimalsKey = 'balance_decimals';
-  late SharedPreferences _prefs;
+  static const List<int> supportedDecimalPlaces = [8, 4, 2];
+  static const int minDecimalPlaces = 2;
+  static const int maxDecimalPlaces = 8;
+  SharedPreferences? _prefs;
 
   @override
   BalanceSettings build() {
-    // We'll initialize from prefs asynchronously if possible, 
-    // but for now let's use a simpler approach or just return default and load later.
     _loadPrefs();
     return const BalanceSettings();
   }
 
-  Future<void> _loadPrefs() async {
+  Future<SharedPreferences> _ensurePrefs() async {
+    if (_prefs != null) {
+      return _prefs!;
+    }
     _prefs = await SharedPreferences.getInstance();
-    final isHidden = _prefs.getBool(_hideKey) ?? false;
-    final decimalPlaces = _prefs.getInt(_decimalsKey) ?? 8;
+    return _prefs!;
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await _ensurePrefs();
+    final isHidden = prefs.getBool(_hideKey) ?? false;
+    final decimalPlaces = _normalizeDecimalPlaces(prefs.getInt(_decimalsKey));
     state = BalanceSettings(isHidden: isHidden, decimalPlaces: decimalPlaces);
   }
 
   void toggleVisibility() {
     state = state.copyWith(isHidden: !state.isHidden);
-    _prefs.setBool(_hideKey, state.isHidden);
+    final isHidden = state.isHidden;
+    unawaited(
+        _ensurePrefs().then((prefs) => prefs.setBool(_hideKey, isHidden)));
   }
 
   void setDecimalPlaces(int value) {
-    state = state.copyWith(decimalPlaces: value);
-    _prefs.setInt(_decimalsKey, value);
+    final nextValue = _normalizeDecimalPlaces(value);
+    state = state.copyWith(decimalPlaces: nextValue);
+    unawaited(
+        _ensurePrefs().then((prefs) => prefs.setInt(_decimalsKey, nextValue)));
+  }
+
+  void increaseDecimals() {
+    _moveAcrossSupported(increase: true);
+  }
+
+  void decreaseDecimals() {
+    _moveAcrossSupported(increase: false);
   }
 
   void cycleDecimals() {
-    // Cycle between 8, 4, 2, 0
-    final current = state.decimalPlaces;
-    int next;
-    if (current == 8) next = 4;
-    else if (current == 4) next = 2;
-    else if (current == 2) next = 0;
-    else next = 8;
-    
-    setDecimalPlaces(next);
+    _moveAcrossSupported(increase: false);
+  }
+
+  int _normalizeDecimalPlaces(int? value) {
+    final rawValue = value ?? supportedDecimalPlaces.first;
+    if (rawValue >= 6) {
+      return 8;
+    }
+    if (rawValue >= 3) {
+      return 4;
+    }
+    return 2;
+  }
+
+  void _moveAcrossSupported({required bool increase}) {
+    final current = _normalizeDecimalPlaces(state.decimalPlaces);
+    final values = increase
+        ? supportedDecimalPlaces.reversed.toList(growable: false)
+        : supportedDecimalPlaces;
+    final currentIndex = values.indexOf(current);
+    final safeIndex = currentIndex == -1 ? 0 : currentIndex;
+    final nextIndex = (safeIndex + 1) % values.length;
+    setDecimalPlaces(values[nextIndex]);
   }
 }
 
-final balanceSettingsProvider = NotifierProvider<BalanceSettingsNotifier, BalanceSettings>(BalanceSettingsNotifier.new);
+final balanceSettingsProvider =
+    NotifierProvider<BalanceSettingsNotifier, BalanceSettings>(
+        BalanceSettingsNotifier.new);

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/cyber_button.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/providers/price_provider.dart';
@@ -14,6 +11,7 @@ import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/utils/qr_payment_parser.dart'; // [NEW]
+import '../../../auth/controller/auth_providers.dart';
 import '../../../transactions/domain/entities/payment_link.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../domain/entities/wallet.dart';
@@ -21,10 +19,12 @@ import '../../domain/entities/payment_request.dart';
 import '../../presentation/providers/wallet_provider.dart'
     hide transactionRepositoryProvider;
 import '../../presentation/state/wallet_state.dart';
+import '../../presentation/widgets/receive_flow_ui.dart';
+import 'deposit/deposit_amount_screen.dart';
 import 'nfc_interaction_screen.dart';
 import 'receive_payment_link_screen.dart';
 
-enum ReceiveFlowMode { qrCode, nfc, paymentLink }
+enum ReceiveFlowMode { qrCode, nfc, paymentLink, onChain, lightning }
 
 class ReceiveScreen extends ConsumerStatefulWidget {
   final Wallet? initialWallet;
@@ -103,6 +103,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         return LucideIcons.radio;
       case ReceiveFlowMode.paymentLink:
         return LucideIcons.link2;
+      case ReceiveFlowMode.onChain:
+        return LucideIcons.network;
+      case ReceiveFlowMode.lightning:
+        return LucideIcons.zap;
     }
   }
 
@@ -114,6 +118,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         return context.l10n.nfc.toUpperCase();
       case ReceiveFlowMode.paymentLink:
         return 'LINK DE PAGAMENTO';
+      case ReceiveFlowMode.onChain:
+        return 'ON-CHAIN';
+      case ReceiveFlowMode.lightning:
+        return 'LIGHTNING';
     }
   }
 
@@ -125,6 +133,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         return 'Prepare um payload NFC interno com destino travado.';
       case ReceiveFlowMode.paymentLink:
         return 'Crie um link rastreado que abre direto na confirmação.';
+      case ReceiveFlowMode.onChain:
+        return 'Gere um URI Bitcoin on-chain padrao com valor e rota predefinidos.';
+      case ReceiveFlowMode.lightning:
+        return 'Gere uma invoice Lightning Network de liquidacao instantanea.';
     }
   }
 
@@ -136,6 +148,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         return 'PREPARAR NFC';
       case ReceiveFlowMode.paymentLink:
         return 'CRIAR LINK';
+      case ReceiveFlowMode.onChain:
+        return 'GERAR QR ON-CHAIN';
+      case ReceiveFlowMode.lightning:
+        return 'GERAR INVOICE LN';
     }
   }
 
@@ -151,111 +167,101 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     });
   }
 
+  void _openDeposit() {
+    final wallet = _selectedWallet;
+    if (wallet == null) {
+      SnackbarHelper.showError('Selecione uma carteira para depositar.');
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => DepositAmountScreen(wallet: wallet),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CyberBackground.authenticated(
-      useScroll: true,
+    final activationAsync = ref.watch(activationStatusProvider);
+    final activationStatus = activationAsync.asData?.value;
+    final inboundBlocked = activationStatus?.canReceiveInbound != true;
+
+    return ReceiveFlowScaffold(
+      title: 'Receber',
+      subtitle: _screenSubtitle(context),
+      scrollable: inboundBlocked,
+      bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(context),
-          const SizedBox(height: AppSpacing.lg),
-          _buildFlowHero(context).animate().fade().slideY(begin: 0.08, end: 0),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-            child: Column(
-              children: [
-                _buildAmountDisplay()
-                    .animate()
-                    .scale(curve: Curves.easeOutBack),
-              ],
+          if (inboundBlocked) ...[
+            _buildInboundBlockedCard(activationAsync.asData?.value),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          _buildFlowHero(context),
+          const SizedBox(height: AppSpacing.md),
+          AbsorbPointer(
+            absorbing: inboundBlocked,
+            child: Opacity(
+              opacity: inboundBlocked ? 0.45 : 1,
+              child: Column(
+                children: [
+                  _buildAmountDisplay(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildKeypad(),
+                ],
+              ),
             ),
           ),
-          _buildKeypad()
-              .animate(delay: 200.ms)
-              .fade()
-              .slideY(begin: 0.1, end: 0),
-          const SizedBox(height: AppSpacing.xl),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: CyberButton(
-              text: _continueLabel(context),
-              isLoading: _isGenerating,
-              onTap: MoneyDisplay.parseEditableInput(_amount) > 0
-                  ? _generateAndNavigate
-                  : null,
-            ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0),
+          const SizedBox(height: AppSpacing.md),
+          ReceiveFlowPrimaryButton(
+            label: _continueLabel(context),
+            isLoading: _isGenerating,
+            onTap:
+                !inboundBlocked && MoneyDisplay.parseEditableInput(_amount) > 0
+                    ? _generateAndNavigate
+                    : null,
           ),
-          const SizedBox(height: AppSpacing.xl),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft,
-                color: Theme.of(context).colorScheme.onPrimary, size: 24),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
-              padding: const EdgeInsets.all(AppSpacing.sm),
-            ),
-          ),
-          const Spacer(),
-          Text(
-            context.l10n.receive.toUpperCase(),
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
-          ),
-          const Spacer(),
-          const SizedBox(width: 48),
-        ],
-      ),
-    ).animate().fade().slideY(begin: -0.2, end: 0);
+  String _screenSubtitle(BuildContext context) {
+    switch (widget.initialMode) {
+      case ReceiveFlowMode.qrCode:
+        return 'Defina o valor e gere um QR interno com destino bloqueado.';
+      case ReceiveFlowMode.nfc:
+        return 'Defina o valor e prepare uma cobrança por aproximação.';
+      case ReceiveFlowMode.paymentLink:
+        return 'Defina o valor e gere uma cobrança rastreada.';
+      case ReceiveFlowMode.onChain:
+        return 'Defina o valor e gere um payload Bitcoin compatível.';
+      case ReceiveFlowMode.lightning:
+        return 'Defina o valor e siga para uma invoice Lightning.';
+    }
   }
 
   Widget _buildFlowHero(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color:
-              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.08),
-        ),
-      ),
+    return ReceiveFlowPanel(
+      backgroundColor: receiveFlowPanelAltColor,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.18),
-              ),
+              color: receiveFlowPanelRaisedColor,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: receiveFlowBorderStrongColor),
             ),
             child: Icon(
               _flowIcon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 22,
+              color: receiveFlowTextColor,
+              size: 18,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -263,30 +269,100 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _flowEyebrow(context),
-                  style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.42),
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-                const SizedBox(height: 6),
+                ReceiveFlowSectionLabel(_flowEyebrow(context)),
+                const SizedBox(height: 4),
                 Text(
                   _flowDescription(context),
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.74),
-                        height: 1.4,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: receiveFlowMutedTextColor,
+                        height: 1.35,
                       ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInboundBlockedCard(dynamic activationStatus) {
+    final warning = activationStatus?.warningMessage?.toString() ??
+        'Para receber fundos dentro da plataforma, deposite algum valor primeiro.';
+
+    return ReceiveFlowPanel(
+      backgroundColor: receiveFlowPanelAltColor,
+      borderColor: receiveFlowBorderStrongColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: receiveFlowPanelRaisedColor,
+                  borderRadius: BorderRadius.circular(0),
+                  border: Border.all(
+                    color: receiveFlowBorderStrongColor,
+                  ),
+                ),
+                child: const Icon(
+                  LucideIcons.shieldOff,
+                  color: receiveFlowTextColor,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'RECEBIMENTO BLOQUEADO',
+                      style: TextStyle(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      warning,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: receiveFlowTextColor,
+                            height: 1.4,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: _openDeposit,
+                icon: const Icon(LucideIcons.download, size: 16),
+                label: const Text('Depositar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: receiveFlowMutedTextColor,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => ref.invalidate(activationStatusProvider),
+                icon: const Icon(LucideIcons.refreshCw, size: 16),
+                label: const Text('Atualizar status'),
+                style: TextButton.styleFrom(
+                  foregroundColor: receiveFlowMutedTextColor,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -309,106 +385,69 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           );
     final wallet = _selectedWallet;
 
-    return Column(
-      children: [
-        Text(
-          context.l10n.howMuchToReceive.toUpperCase(),
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.3),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 3.0,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          MoneyDisplay.formatEditableInput(
-            rawValue: _amount,
-            currency: _selectedCurrency,
-          ),
-          style: AppTypography.amountInput(
-            isBtc: _selectedCurrency == Currency.btc,
-            color: Theme.of(context).colorScheme.onPrimary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (_selectedCurrency != Currency.btc)
+    return ReceiveFlowPanel(
+      child: Column(
+        children: [
           Text(
-            'Equivale a ${MoneyDisplay.formatCompact(amount: btcEquivalent, currency: Currency.btc)}',
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.62),
+            context.l10n.howMuchToReceive,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
                 ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            MoneyDisplay.formatEditableInput(
+              rawValue: _amount,
+              currency: _selectedCurrency,
+            ),
+            style: AppTypography.amountInput(
+              isBtc: _selectedCurrency == Currency.btc,
+              color: receiveFlowTextColor,
+            ).copyWith(
+              fontSize: _selectedCurrency == Currency.btc ? 42 : 46,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
           ),
-        if (wallet != null && btcEquivalent > 0) ...[
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Destino bloqueado: hash publico da carteira ${wallet.name}',
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w700,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Quem pagar verá apenas o hash, o valor e o saldo antes da confirmação.',
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.54),
-                  height: 1.35,
-                ),
-            textAlign: TextAlign.center,
-          ),
+          if (_selectedCurrency != Currency.btc)
+            Text(
+              'Equivale a ${MoneyDisplay.formatCompact(amount: btcEquivalent, currency: Currency.btc)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          if (wallet != null && btcEquivalent > 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            ReceiveFlowTag(
+              label: 'Destino ${wallet.name}',
+              icon: LucideIcons.lock,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Quem pagar verá apenas hash público, valor e saldo antes da confirmação.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowFaintTextColor,
+                    height: 1.3,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
   Widget _buildKeypad() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    return ReceiveFlowPanel(
+      padding: const EdgeInsets.all(10),
       child: Column(
         children: [
-          Row(
-            children: [
-              _buildKey('1'),
-              _buildKey('2'),
-              _buildKey('3'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildKey('4'),
-              _buildKey('5'),
-              _buildKey('6'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildKey('7'),
-              _buildKey('8'),
-              _buildKey('9'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildKey('.'),
-              _buildKey('0'),
-              _buildKey('←'),
-            ],
-          ),
+          Row(children: [_buildKey('1'), _buildKey('2'), _buildKey('3')]),
+          Row(children: [_buildKey('4'), _buildKey('5'), _buildKey('6')]),
+          Row(children: [_buildKey('7'), _buildKey('8'), _buildKey('9')]),
+          Row(children: [_buildKey('.'), _buildKey('0'), _buildKey('←')]),
         ],
       ),
     );
@@ -416,39 +455,22 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   Widget _buildKey(String key) {
     final isBackspace = key == '←';
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onKeyTap(key),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 68,
-          margin: const EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
-              width: 1.5,
+    return ReceiveFlowKeypadButton(
+      onTap: () => _onKeyTap(key),
+      child: isBackspace
+          ? const Icon(
+              LucideIcons.delete,
+              color: receiveFlowTextColor,
+              size: 18,
+            )
+          : Text(
+              key,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: receiveFlowTextColor,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w400,
+                  ),
             ),
-          ),
-          alignment: Alignment.center,
-          child: isBackspace
-              ? Icon(LucideIcons.delete,
-                  color: Theme.of(context).colorScheme.onPrimary, size: 22)
-              : Text(
-                  key,
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.w300,
-                        fontFamily: 'JetBrainsMono',
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                ),
-        ),
-      ),
     );
   }
 
@@ -473,6 +495,56 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
       amount: amountBtc,
       currency: Currency.btc,
     );
+
+    if (widget.initialMode == ReceiveFlowMode.onChain ||
+        widget.initialMode == ReceiveFlowMode.lightning) {
+      setState(() => _isGenerating = false);
+      final isLightning = widget.initialMode == ReceiveFlowMode.lightning;
+      final queryParams = {
+        if (amountBtc > 0) 'amount': amountBtc.toString(),
+        'label': 'Kerosene',
+        'message':
+            'Pagamento Pedido #${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
+      };
+
+      final uriStr = Uri(
+        scheme: 'bitcoin',
+        path: selectedWallet.address,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      ).toString();
+
+      final paymentUri =
+          isLightning ? 'lightning:lnbc_mock_not_implemented' : uriStr;
+
+      final mockLink = PaymentLink(
+        id: 'external_${DateTime.now().millisecondsSinceEpoch}',
+        userId: 0,
+        amountBtc: amountBtc,
+        description: isLightning
+            ? 'Lightning Invoice (Em breve)'
+            : 'Recebimento On-chain',
+        depositAddress: selectedWallet.address,
+        paymentUri: paymentUri,
+        status: 'pending',
+        locked: false,
+        createdAt: DateTime.now(),
+      );
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReceivePaymentLinkScreen(
+            initialLink: mockLink,
+            requestedAmountLabel: requestedAmountLabel,
+            btcAmountLabel: btcAmountLabel,
+            walletLabel: selectedWallet.name,
+          ),
+        ),
+      );
+      return;
+    }
+
     PaymentLink link;
     try {
       final result =
@@ -544,6 +616,8 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         return;
       case ReceiveFlowMode.qrCode:
       case ReceiveFlowMode.paymentLink:
+      case ReceiveFlowMode.onChain:
+      case ReceiveFlowMode.lightning:
         Navigator.push(
           context,
           MaterialPageRoute(

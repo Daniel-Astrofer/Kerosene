@@ -34,6 +34,12 @@ class ErrorTranslator {
       }
     }
 
+    final internalCodeMatch =
+        RegExp(r'ERR_[A-Z0-9_]+').firstMatch(codeOrMessage);
+    if (internalCodeMatch != null) {
+      codeToTest = internalCodeMatch.group(0)!;
+    }
+
     // Check for exact known Error Codes explicitly
     switch (codeToTest) {
       // Auth Errors
@@ -60,13 +66,36 @@ class ErrorTranslator {
       case 'ERR_AUTH_TOTP_TIMEOUT':
         return l10n.errAuthTotpTimeout;
       case 'ERR_AUTH_PASSKEY_INVALID':
-        return l10n.passkeyErrorFinishing(l10n.errUnexpected); // Fallback to generic message
+        return l10n.passkeyErrorFinishing(
+            l10n.errUnexpected); // Fallback to generic message
       case 'ERR_AUTH_PASSKEY_TIMEOUT':
         return l10n.errTimeout;
       case 'ERR_AUTH_PASSKEY_ALREADY_REGISTERED':
         return l10n.errAuthUserAlreadyExists;
       case 'ERR_AUTH_SESSION_NOT_FOUND':
         return l10n.passkeySessionNotFound;
+      case 'ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS':
+        return l10n.passkeyNoBiometrics;
+      case 'ERR_AUTH_PASSKEY_AUTH_CANCELLED':
+        return l10n.passkeyAuthFailed;
+      case 'USER_NOT_FOUND':
+        return l10n.errAuthUserNotFound;
+      case 'AUTH_FAILED':
+      case 'INVALID_SIGNATURE':
+        return l10n.passkeyErrorFinishing(l10n.errAuthInvalidCredentials);
+      case 'CHALLENGE_EXPIRED':
+        return l10n.errTimeout;
+      case 'VERIFY_ERROR':
+      case 'MISSING_CREDENTIAL_ID':
+        return l10n.passkeyErrorFinishing(l10n.errUnexpected);
+      case 'RECOVERY_BAD_REQUEST':
+        return 'Dados de recuperação inválidos. Revise os códigos, a nova frase e o TOTP.';
+      case 'RECOVERY_REJECTED':
+        return 'A recuperação foi rejeitada. O backend não informa se o erro veio do usuário, dos códigos ou da prova criptográfica.';
+      case 'RECOVERY_SESSION_EXPIRED':
+        return 'A sessão de recuperação expirou ou já foi consumida. Reinicie o processo.';
+      case 'RECOVERY_RATE_LIMITED':
+        return 'A recuperação foi bloqueada temporariamente por excesso de tentativas.';
 
       // Ledger / Balance Errors
       case 'ERR_LEDGER_NOT_FOUND':
@@ -141,6 +170,16 @@ class ErrorTranslator {
     }
     if (lower.contains('too many signup attempts')) {
       return l10n.errTooManySignupAttempts;
+    }
+    if (lower.contains('localauthexception(code nocredentialsset') ||
+        lower.contains('localauthexception(code nobiometricsenrolled') ||
+        lower.contains('localauthexception(code nobiometrichardware')) {
+      return l10n.passkeyNoBiometrics;
+    }
+    if (lower.contains('localauthexception(code usercanceled') ||
+        lower.contains('localauthexception(code systemcanceled') ||
+        lower.contains('localauthexception(code userrequestedfallback')) {
+      return l10n.passkeyAuthFailed;
     }
     if (lower.contains('connection refused') ||
         lower.contains('network is unreachable')) {

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/services/passkey_service.dart';
-import '../../../../core/utils/snackbar_helper.dart';
 import '../../../auth/controller/auth_local_provider.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../../wallet/domain/entities/transaction.dart';
@@ -395,9 +394,6 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
           debugPrint(
               '>>> Notifier: Passkey challenge required. Challenge: $challenge');
 
-          SnackbarHelper.showSuccess(
-              'Assinatura biométrica necessária para esta transação.');
-
           final assertionJson = await _buildPasskeyAssertionJson(challenge);
 
           debugPrint('>>> Notifier: Challenge signed. Retrying transaction...');
@@ -608,9 +604,6 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
 
       debugPrint(
           '>>> Notifier: Passkey challenge required for payment link. Challenge: $challenge');
-      SnackbarHelper.showSuccess(
-          'Assinatura biométrica necessária para confirmar o pagamento.');
-
       final assertionJson = await _buildPasskeyAssertionJson(challenge);
       final result = await _ledgerRepository.payPaymentRequest(
         linkId: linkId,
@@ -708,9 +701,6 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
           }
           debugPrint(
               '>>> Notifier: Passkey challenge required for withdrawal. Challenge: $challenge');
-
-          SnackbarHelper.showSuccess(
-              'Assinatura biométrica necessária para confirmar o saque.');
 
           final assertionJson = await _buildPasskeyAssertionJson(challenge);
 

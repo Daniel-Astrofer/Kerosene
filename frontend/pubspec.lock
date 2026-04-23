@@ -603,6 +603,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  flutter_svg:
+    dependency: "direct main"
+    description:
+      name: flutter_svg
+      sha256: "1ded017b39c8e15c8948ea855070a5ff8ff8b3d5e83f3446e02d6bb12add7ad9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.4"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -957,70 +965,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
-  passkeys:
-    dependency: "direct main"
-    description:
-      name: passkeys
-      sha256: "8311b7fc3d2c4a8bff15d0e159aa8e92620b3a8889d6463fec1fe181e2f90ed7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.18.0"
-  passkeys_android:
-    dependency: transitive
-    description:
-      name: passkeys_android
-      sha256: "4286322398df7cc74b7503e9d638fab7885e56986689a2f683731da473f23f85"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.12.0"
-  passkeys_darwin:
-    dependency: transitive
-    description:
-      name: passkeys_darwin
-      sha256: cc5a1571417a73258cb84cbb7a6dcbdacf2eb5df6009fca8d7a8864aeaf15b43
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.0"
-  passkeys_doctor:
-    dependency: transitive
-    description:
-      name: passkeys_doctor
-      sha256: "6d8b772255e3d8ea75c150b6c6c191d9fbef4e07aefbe467ef210d9c19c4804f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.3.0"
-  passkeys_ios:
-    dependency: transitive
-    description:
-      name: passkeys_ios
-      sha256: "5c1423c3ce6c76ff181538e3bc1f66b5eaf9bc6f2d372dc85694f11a54e58d3f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.9.0"
-  passkeys_platform_interface:
-    dependency: transitive
-    description:
-      name: passkeys_platform_interface
-      sha256: "10fd4dd6779f6ca928adc2289e05ce0877250e68f2cc584abd2e3fcd6952e454"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.6.0"
-  passkeys_web:
-    dependency: transitive
-    description:
-      name: passkeys_web
-      sha256: "46fd7ad94ac8774e08723fca38b6f4211219d8c38b4282230f32bbc4921bdbe0"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.8.1"
-  passkeys_windows:
-    dependency: transitive
-    description:
-      name: passkeys_windows
-      sha256: acea5ff790a8c6de0366d1b87dd591c0d6e6770bf17d62efbd9fac7747724cc7
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
   path:
     dependency: transitive
     description:
@@ -1029,6 +973,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
+  path_parsing:
+    dependency: transitive
+    description:
+      name: path_parsing
+      sha256: "883402936929eac138ee0a45da5b0f2c80f89913e6dc3bf77eb65b84b409c6ca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   path_provider:
     dependency: "direct main"
     description:
@@ -1546,14 +1498,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  ua_client_hints:
-    dependency: transitive
-    description:
-      name: ua_client_hints
-      sha256: "1b8759a46bfeab355252881df27f2604c01bded86aa2b578869fb1b638b23118"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.4.1"
   universal_io:
     dependency: transitive
     description:
@@ -1578,6 +1522,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.5.3"
+  vector_graphics:
+    dependency: transitive
+    description:
+      name: vector_graphics
+      sha256: "81da85e9ca8885ade47f9685b953cb098970d11be4821ac765580a6607ea4373"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.21"
+  vector_graphics_codec:
+    dependency: transitive
+    description:
+      name: vector_graphics_codec
+      sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.13"
+  vector_graphics_compiler:
+    dependency: transitive
+    description:
+      name: vector_graphics_compiler
+      sha256: "5a88dd14c0954a5398af544651c7fb51b457a2a556949bfb25369b210ef73a74"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   vector_math:
     dependency: transitive
     description:
@@ -1634,6 +1602,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  webview_flutter:
+    dependency: "direct main"
+    description:
+      name: webview_flutter
+      sha256: a3da219916aba44947d3a5478b1927876a09781174b5a2b67fa5be0555154bf9
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.13.1"
+  webview_flutter_android:
+    dependency: transitive
+    description:
+      name: webview_flutter_android
+      sha256: f560f57d0f529c1dcdaf4edc3a3217b099560622f9f4a10b6bdbb566553c61ea
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.11.0"
+  webview_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: webview_flutter_platform_interface
+      sha256: "1221c1b12f5278791042f2ec2841743784cf25c5a644e23d6680e5d718824f04"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.15.1"
+  webview_flutter_wkwebview:
+    dependency: transitive
+    description:
+      name: webview_flutter_wkwebview
+      sha256: e15d8828e014291324a4d0cf6e272090167f4fa5673ffcf8fe446f4a4cd35861
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.24.3"
   win32:
     dependency: transitive
     description:

@@ -1,29 +1,117 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 
-class DepositOnchainInvoiceScreen extends ConsumerWidget {
+class DepositOnchainInvoiceScreen extends ConsumerStatefulWidget {
   final Wallet wallet;
-  final double amountFiat;
+  final double inputAmount;
+  final Currency inputCurrency;
   final String providerName;
 
   const DepositOnchainInvoiceScreen({
     super.key,
     required this.wallet,
-    required this.amountFiat,
+    required this.inputAmount,
+    required this.inputCurrency,
     required this.providerName,
   });
+
+  @override
+  ConsumerState<DepositOnchainInvoiceScreen> createState() =>
+      _DepositOnchainInvoiceScreenState();
+}
+
+class _DepositOnchainInvoiceScreenState
+    extends ConsumerState<DepositOnchainInvoiceScreen> {
+  String _depositAddress = '';
+  String? _errorMessage;
+  bool _isLoadingAddress = true;
+  bool _requestTriggered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    scheduleMicrotask(_loadOnchainDepositAddress);
+  }
+
+  Future<void> _loadOnchainDepositAddress() async {
+    if (_requestTriggered) {
+      return;
+    }
+    _requestTriggered = true;
+
+    setState(() {
+      _isLoadingAddress = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result =
+          await ref.read(transactionRepositoryProvider).getDepositAddress();
+
+      if (!mounted) {
+        return;
+      }
+
+      result.fold(
+        (failure) {
+          setState(() {
+            _isLoadingAddress = false;
+            _errorMessage = failure.message;
+            _depositAddress = '';
+          });
+          SnackbarHelper.showError(
+            failure.message,
+            title: 'Depósito on-chain',
+          );
+        },
+        (address) {
+          final normalized = address.trim();
+          if (normalized.isEmpty) {
+            const message = 'Endereço de depósito não retornado pelo backend.';
+            setState(() {
+              _isLoadingAddress = false;
+              _errorMessage = message;
+              _depositAddress = '';
+            });
+            SnackbarHelper.showError(
+              message,
+              title: 'Depósito on-chain',
+            );
+            return;
+          }
+
+          setState(() {
+            _depositAddress = normalized;
+            _isLoadingAddress = false;
+          });
+        },
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingAddress = false;
+        _errorMessage = error.toString();
+      });
+      SnackbarHelper.showError(
+        error.toString(),
+        title: 'Depósito on-chain',
+      );
+    }
+  }
 
   void _copyAddress(String address) {
     HapticFeedback.mediumImpact();
@@ -32,107 +120,154 @@ class DepositOnchainInvoiceScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final btcPriceAsync = ref.watch(btcPriceProvider);
-    final networkFeeFiat = 15.00;
-    final providerFeeFiat = amountFiat * 0.0099;
-    final totalFiat = amountFiat + networkFeeFiat + providerFeeFiat;
-    const btcAddress = 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
+  Widget build(BuildContext context) {
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: btcPriceAsync.when(
-                data: (price) {
-                  final receiveBtc = amountFiat / price;
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      children: [
-                        _buildMainCard(totalFiat).animate().fade().scale(),
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildQrCodeSection(btcAddress).animate(delay: 100.ms).fade().scale(curve: Curves.easeOutBack),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildAddressPill(btcAddress).animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          '~30-60 min (3 confirmações)',
-                          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3), fontWeight: FontWeight.bold),
-                        ).animate(delay: 300.ms).fade(),
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildDetailsBlock(price, networkFeeFiat, providerFeeFiat, receiveBtc).animate(delay: 400.ms).fade().slideY(begin: 0.1, end: 0),
-                        const SizedBox(height: AppSpacing.xl),
-                        _buildSecurityFooter().animate(delay: 500.ms).fade().slideY(begin: 0.1, end: 0),
-                        const SizedBox(height: AppSpacing.xxl),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
-                error: (e, _) => Center(child: Text('Erro: $e', style: TextStyle(color: Theme.of(context).colorScheme.error))),
-              ),
-            ),
-          ],
+    if (btcUsd == null && btcBrl == null) {
+      return const ReceiveFlowScaffold(
+        title: 'Depósito on-chain',
+        subtitle: 'Preparando dados do endereço.',
+        child: ReceiveFlowStatePanel(
+          icon: LucideIcons.loader2,
+          title: 'Carregando',
+          message: 'Buscando cotação para preparar o depósito on-chain.',
         ),
+      );
+    }
+
+    final receiveBtc = MoneyDisplay.convertToBtcAmount(
+      amount: widget.inputAmount,
+      currency: widget.inputCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final quoteLabel = MoneyDisplay.formatQuoteValue(
+      currency: widget.inputCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+
+    return ReceiveFlowScaffold(
+      title: 'Depósito on-chain',
+      subtitle: 'Mesmo design do fluxo, com QR e endereço Bitcoin.',
+      child: Builder(
+        builder: (context) {
+          if (_isLoadingAddress) {
+            return _buildAddressLoading();
+          }
+
+          if (_errorMessage != null) {
+            return _buildAddressError();
+          }
+
+          final address = _depositAddress;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildMainCard(widget.inputAmount),
+              const SizedBox(height: AppSpacing.sm),
+              _buildAwaitConfirmationBanner(),
+              const SizedBox(height: AppSpacing.md),
+              _buildQrCodeSection(address),
+              const SizedBox(height: AppSpacing.sm),
+              _buildAddressPill(address),
+              const SizedBox(height: AppSpacing.md),
+              _buildDetailsBlock(
+                receiveBtc,
+                quoteLabel,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildSecurityFooter(),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-              padding: const EdgeInsets.all(AppSpacing.sm),
-            ),
-          ),
-          Text(
-            'ENDEREÇO ON-CHAIN',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
-    ).animate().fade().slideY(begin: -0.2, end: 0);
+  Widget _buildAddressLoading() {
+    return const ReceiveFlowStatePanel(
+      icon: LucideIcons.network,
+      title: 'Obtendo endereço',
+      message:
+          'Após o pagamento na rede Bitcoin, o saldo será refletido quando as confirmações chegarem.',
+    );
   }
 
-  Widget _buildMainCard(double totalFiat) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      borderRadius: BorderRadius.circular(AppSpacing.xl),
+  Widget _buildAddressError() {
+    return ReceiveFlowStatePanel(
+      icon: LucideIcons.alertTriangle,
+      title: 'Não foi possível preparar o depósito',
+      message: _errorMessage ?? 'Erro desconhecido',
+      footer: ReceiveFlowSecondaryButton(
+        label: 'Tentar novamente',
+        icon: LucideIcons.refreshCw,
+        onTap: () {
+          _requestTriggered = false;
+          _loadOnchainDepositAddress();
+        },
+      ),
+    );
+  }
+
+  Widget _buildMainCard(double totalRequested) {
+    return ReceiveFlowPanel(
+      backgroundColor: receiveFlowPanelAltColor,
       child: Column(
         children: [
-          Text(
-            'VALOR DO DEPÓSITO',
-            style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.5), fontWeight: FontWeight.w900, letterSpacing: 2),
-          ),
+          const ReceiveFlowSectionLabel('Total a depositar'),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'R\$ ${totalFiat.toStringAsFixed(2).replaceAll('.', ',')}',
-            style: AppTypography.h1.copyWith(fontSize: 32, fontFamily: 'JetBrainsMono'),
+            MoneyDisplay.format(
+              amount: totalRequested,
+              currency: widget.inputCurrency,
+            ),
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontSize: 32,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           const SizedBox(height: AppSpacing.md),
+          ReceiveFlowTag(label: 'Via ${widget.providerName}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAwaitConfirmationBanner() {
+    return ReceiveFlowPanel(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              color: receiveFlowPanelRaisedColor,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: receiveFlowBorderStrongColor),
             ),
+            child: const Icon(
+              LucideIcons.clock3,
+              color: receiveFlowTextColor,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
             child: Text(
-              'VIA ${providerName.toUpperCase()}',
-              style: AppTypography.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w900, letterSpacing: 1),
+              'Envie BTC para o endereço abaixo. O histórico e o saldo serão atualizados após 3 confirmações na rede.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                    height: 1.35,
+                  ),
             ),
           ),
         ],
@@ -141,25 +276,29 @@ class DepositOnchainInvoiceScreen extends ConsumerWidget {
   }
 
   Widget _buildQrCodeSection(String address) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      borderRadius: BorderRadius.circular(AppSpacing.xxl),
+    return ReceiveFlowPanel(
       child: Column(
         children: [
-          Text(
-            'ENDEREÇO BTC',
-            style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.3), fontWeight: FontWeight.w900, letterSpacing: 1),
-          ),
+          const ReceiveFlowSectionLabel('Endereço BTC'),
           const SizedBox(height: AppSpacing.lg),
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(AppSpacing.lg)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(0),
+            ),
             child: QrImageView(
               data: 'bitcoin:$address',
               version: QrVersions.auto,
               size: 180,
-              eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
-              dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Colors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Colors.black,
+              ),
             ),
           ),
         ],
@@ -168,103 +307,93 @@ class DepositOnchainInvoiceScreen extends ConsumerWidget {
   }
 
   Widget _buildAddressPill(String address) {
-    return GlassContainer(
-      padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.xs, top: AppSpacing.xs, bottom: AppSpacing.xs),
-      borderRadius: BorderRadius.circular(100),
+    return ReceiveFlowPanel(
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
+          Expanded(
+            child: SelectableText(
               address,
-              style: AppTypography.caption.copyWith(fontFamily: 'JetBrainsMono', fontSize: 10, color: Colors.white60),
-              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowTextColor,
+                    fontFamily: 'JetBrainsMono',
+                  ),
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            onPressed: () => _copyAddress(address),
-            icon: Icon(LucideIcons.copy, color: Colors.white, size: 14),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.1),
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(32, 32),
-            ),
+          ReceiveFlowSecondaryButton(
+            label: 'Copiar',
+            icon: LucideIcons.copy,
+            fullWidth: false,
+            onTap: () => _copyAddress(address),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailsBlock(double btcPrice, double networkFee, double providerFee, double receiveBtc) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      borderRadius: BorderRadius.circular(AppSpacing.xl),
+  Widget _buildDetailsBlock(
+    double receiveBtc,
+    String? quoteLabel,
+  ) {
+    return ReceiveFlowPanel(
       child: Column(
         children: [
-          _buildDetailRow('Cotação BTC', 'R\$ ${btcPrice.toStringAsFixed(2).replaceAll('.', ',')}'),
-          const SizedBox(height: AppSpacing.sm),
-          _buildDetailRow('Taxa de Rede', 'R\$ ${networkFee.toStringAsFixed(2).replaceAll('.', ',')}'),
-          const SizedBox(height: AppSpacing.sm),
-          _buildDetailRow('Taxa de Serviço', 'R\$ ${providerFee.toStringAsFixed(2).replaceAll('.', ',')} (0.99%)'),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-            child: Divider(color: Colors.white, height: 1, thickness: 0.05),
+          if (quoteLabel != null) ...[
+            ReceiveFlowMetricRow(label: 'Cotação BTC', value: quoteLabel),
+            const ReceiveFlowDivider(),
+          ],
+          ReceiveFlowMetricRow(
+              label: 'Carteira de destino', value: widget.wallet.name),
+          const ReceiveFlowDivider(),
+          ReceiveFlowMetricRow(label: 'Provider', value: widget.providerName),
+          const ReceiveFlowDivider(),
+          ReceiveFlowMetricRow(
+            label: 'Crédito esperado',
+            value:
+                MoneyDisplay.format(amount: receiveBtc, currency: Currency.btc),
+            mono: true,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Total a Receber', style: AppTypography.bodySmall.copyWith(color: Colors.white60)),
-              Text(
-                '${receiveBtc.toStringAsFixed(8)} BTC',
-                style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold, fontFamily: 'JetBrainsMono'),
-              ),
-            ],
+          const ReceiveFlowDivider(),
+          const ReceiveFlowMetricRow(
+              label: 'Confirmações mínimas', value: '3 blocos'),
+          const ReceiveFlowDivider(),
+          const ReceiveFlowMetricRow(
+            label: 'Origem do endereço',
+            value: 'Sistema mestre',
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.5))),
-        Text(value, style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold, fontFamily: 'JetBrainsMono')),
-      ],
     );
   }
 
   Widget _buildSecurityFooter() {
-    return GlassContainer(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      borderRadius: BorderRadius.circular(AppSpacing.xl),
-      border: Border.all(color: AppColors.success.withOpacity(0.1)),
+    return ReceiveFlowPanel(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
-            child: const Icon(LucideIcons.shieldCheck, color: AppColors.success, size: 16),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: receiveFlowPanelRaisedColor,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: receiveFlowBorderStrongColor),
+            ),
+            child: const Icon(
+              LucideIcons.shieldCheck,
+              color: receiveFlowTextColor,
+              size: 16,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'TRANSAÇÃO PROTEGIDA',
-                  style: AppTypography.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.w900, letterSpacing: 1),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Este endereço foi gerado exclusivamente para você e é monitorado 24/7. Os fundos serão creditados automaticamente após confirmações.',
-                  style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.5), height: 1.4),
-                ),
-              ],
+            child: Text(
+              'O endereço foi carregado do backend autenticado. O saldo aparece no histórico quando a rede confirmar o depósito.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                    height: 1.35,
+                  ),
             ),
           ),
         ],

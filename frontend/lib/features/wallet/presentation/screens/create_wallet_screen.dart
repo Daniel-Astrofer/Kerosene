@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
@@ -10,6 +13,7 @@ import 'package:teste/core/presentation/widgets/cyber_button.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import '../providers/wallet_provider.dart';
 import '../state/create_wallet_state.dart';
+import '../state/wallet_state.dart';
 
 /// Premium Create Wallet Screen - Refactored
 class CreateWalletScreen extends ConsumerStatefulWidget {
@@ -46,7 +50,8 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
   Future<void> _handleCreate() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      SnackbarHelper.showError("INSIRA UM NOME PARA A CARTEIRA");
+      SnackbarHelper.showError(
+          AppCopy.createWalletNameRequired.resolve(context));
       return;
     }
 
@@ -62,21 +67,47 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         );
   }
 
+  Future<void> _handleCreateWalletState(CreateWalletState next) async {
+    if (next is CreateWalletError) {
+      SnackbarHelper.showError(next.message);
+      return;
+    }
+
+    if (next is! CreateWalletSuccess) {
+      return;
+    }
+
+    HapticFeedback.vibrate();
+    SnackbarHelper.showSuccess(AppCopy.createWalletSuccess.resolve(context));
+
+    await ref.read(walletProvider.notifier).refresh();
+
+    final createdWalletName = _nameController.text.trim();
+    final walletState = ref.read(walletProvider);
+    if (walletState is WalletLoaded) {
+      for (final wallet in walletState.wallets) {
+        if (wallet.name == createdWalletName) {
+          ref.read(walletProvider.notifier).selectWallet(wallet);
+          break;
+        }
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pop(context, true);
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(createWalletProvider, (previous, next) {
-      if (next is CreateWalletSuccess) {
-        HapticFeedback.vibrate();
-        SnackbarHelper.showSuccess("CARTEIRA CRIADA COM SUCESSO");
-        Navigator.pop(context);
-      } else if (next is CreateWalletError) {
-        SnackbarHelper.showError(next.message);
-      }
+      unawaited(_handleCreateWalletState(next));
     });
 
-    return CyberBackground(
+    return CyberBackground.authenticated(
       useScroll: true,
-      backgroundColor: const Color(0xFF050505),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -89,7 +120,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 Text(
-                  "NOVA CARTEIRA",
+                  AppCopy.createWalletScreenTitle.resolve(context),
                   style: Theme.of(context)
                       .textTheme
                       .displaySmall!
@@ -99,21 +130,22 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
             _buildHeader(),
+            const SizedBox(height: AppSpacing.lg),
+            _buildInternalWalletNotice(),
             const SizedBox(height: AppSpacing.xxl),
             if (!_hasGenerated) ...[
               _buildSettingsForm().animate().fade().slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSpacing.xxl),
-              _buildCreateButton("GERAR ESTRUTURA")
-                  .animate(delay: 200.ms)
-                  .fade()
-                  .slideY(begin: 0.2, end: 0),
+              _buildCreateButton(
+                AppCopy.createWalletGenerateStructure.resolve(context),
+              ).animate(delay: 200.ms).fade().slideY(begin: 0.2, end: 0),
             ] else ...[
               _buildMnemonicDisplay()
                   .animate()
                   .fade()
                   .scale(begin: const Offset(0.95, 0.95)),
               const SizedBox(height: AppSpacing.xxl),
-              _buildCreateButton("FINALIZAR CRIAÇÃO")
+              _buildCreateButton(AppCopy.createWalletFinish.resolve(context))
                   .animate(delay: 200.ms)
                   .fade()
                   .slideY(begin: 0.2, end: 0),
@@ -121,8 +153,10 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => setState(() => _hasGenerated = false),
-                  child: const Text("VOLTAR E ALTERAR",
-                      style: TextStyle(color: Colors.white54)),
+                  child: Text(
+                    AppCopy.createWalletBackAndEdit.resolve(context),
+                    style: const TextStyle(color: Colors.white54),
+                  ),
                 ),
               ).animate(delay: 400.ms).fade(),
             ],
@@ -138,7 +172,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -149,15 +183,19 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         ).animate().scale(delay: 100.ms),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          _hasGenerated ? "PROTEJA SUA SEED" : "DEFINA OS PARÂMETROS",
+          AppCopy.createWalletHeaderTitle(
+            context,
+            hasGenerated: _hasGenerated,
+          ),
           style: Theme.of(context).textTheme.displayMedium,
           textAlign: TextAlign.center,
         ).animate().fade(delay: 200.ms),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          _hasGenerated
-              ? "Anote estas palavras em ordem. Elas são a única chave para seus fundos."
-              : "Escolha o nível de criptografia e o nome da sua nova conta no Vault.",
+          AppCopy.createWalletHeaderBody(
+            context,
+            hasGenerated: _hasGenerated,
+          ),
           style: Theme.of(context)
               .textTheme
               .bodyMedium!
@@ -168,20 +206,56 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     );
   }
 
+  Widget _buildInternalWalletNotice() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            LucideIcons.shieldCheck,
+            color: Theme.of(context).colorScheme.primary,
+            size: 18,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              'A seed BIP39 existe apenas na carteira interna. Ela não faz parte do login da conta Kerosene.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white70,
+                    height: 1.45,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSettingsForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("NOME DA CARTEIRA", style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          AppCopy.createWalletNameLabel.resolve(context),
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
         const SizedBox(height: AppSpacing.sm),
         TextField(
           controller: _nameController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: "Ex: Economias, Trading...",
+            hintText: AppCopy.createWalletNameHint.resolve(context),
             prefixIcon: const Icon(LucideIcons.pencil, size: 18),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -189,8 +263,10 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        Text("TAMANHO DA PASSPHRASE",
-            style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          AppCopy.createWalletPassphraseSize.resolve(context),
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
@@ -205,8 +281,10 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           ],
         ),
         const SizedBox(height: AppSpacing.xl),
-        Text("SEGURANÇA DO PROTOCOLO",
-            style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          AppCopy.createWalletProtocolSecurity.resolve(context),
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
         const SizedBox(height: AppSpacing.md),
         _buildSecuritySelector(),
       ],
@@ -222,7 +300,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Colors.white.withOpacity(0.05),
+                : Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
                 color: isSelected ? Colors.transparent : Colors.white10),
@@ -244,16 +322,16 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     return Column(
       children: [
         _buildSecurityCard(
-          "STANDARD",
-          "Criptografia AES-256 padrão. Recomendado para uso diário.",
+          AppCopy.createWalletStandardTitle.resolve(context),
+          AppCopy.createWalletStandardBody.resolve(context),
           LucideIcons.checkCircle,
           _accountSecurity == 'STANDARD',
           () => setState(() => _accountSecurity = 'STANDARD'),
         ),
         const SizedBox(height: AppSpacing.md),
         _buildSecurityCard(
-          "SHAMIR",
-          "Divisão criptográfica de segredo (SSS). Segurança de nível militar.",
+          AppCopy.createWalletShamirTitle.resolve(context),
+          AppCopy.createWalletShamirBody.resolve(context),
           LucideIcons.lock,
           _accountSecurity == 'SHAMIR',
           () => setState(() => _accountSecurity = 'SHAMIR'),
@@ -271,8 +349,8 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: isSelected
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-              : Colors.white.withOpacity(0.02),
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
@@ -312,10 +390,11 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+            color:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -338,10 +417,12 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
               GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: _mnemonic));
-                  SnackbarHelper.showSuccess("COPIADO PARA O CLIPBOARD");
+                  SnackbarHelper.showSuccess(
+                    AppCopy.createWalletCopied.resolve(context),
+                  );
                 },
                 child: Text(
-                  "COPIAR TUDO",
+                  AppCopy.createWalletCopyAll.resolve(context),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -361,9 +442,9 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

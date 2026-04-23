@@ -9,7 +9,7 @@ class CyberTheme {
   static const Color bgCard = AppColors.surface;
   static const Color border = AppColors.darkGrey;
   static const Color textSecondary = AppColors.grey;
-  
+
   static const Color neonCyan = AppColors.primary;
   static const Color neonAmber = AppColors.warning;
   static const Color neonPurple = Color(0xFF9D00FF);
@@ -48,7 +48,7 @@ class CyberTheme {
   static List<BoxShadow> subtleGlow(Color color) {
     return [
       BoxShadow(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         blurRadius: 10,
         spreadRadius: 2,
       ),
@@ -58,7 +58,7 @@ class CyberTheme {
   static List<BoxShadow> glow(Color color, {double blur = 12}) {
     return [
       BoxShadow(
-        color: color.withOpacity(0.3),
+        color: color.withValues(alpha: 0.3),
         blurRadius: blur,
         spreadRadius: 1,
       ),
@@ -75,20 +75,20 @@ class CyberTheme {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: Icon(icon, color: neonCyan.withOpacity(0.7), size: 20),
+      prefixIcon: Icon(icon, color: neonCyan.withValues(alpha: 0.7), size: 20),
       suffixIcon: suffix,
       labelStyle: const TextStyle(color: Colors.white60, fontSize: 13),
       hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.03),
+      fillColor: Colors.white.withValues(alpha: 0.03),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: border.withOpacity(0.5)),
+        borderSide: BorderSide(color: border.withValues(alpha: 0.5)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: border.withOpacity(0.3)),
+        borderSide: BorderSide(color: border.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

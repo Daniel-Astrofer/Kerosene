@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/widgets/bouncing_button.dart';
-import '../../../../l10n/l10n_extension.dart';
+import 'package:teste/features/auth/presentation/widgets/auth_entry_ui.dart';
+
 
 class PresentationScreen extends ConsumerStatefulWidget {
   const PresentationScreen({super.key});
@@ -14,7 +14,6 @@ class PresentationScreen extends ConsumerStatefulWidget {
 }
 
 class _PresentationScreenState extends ConsumerState<PresentationScreen> {
-  final PageController _pageController = PageController();
   int _currentPage = 0;
 
   String _copy({
@@ -33,212 +32,181 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
     }
   }
 
-  List<_PresentationSlide> _getSlides(BuildContext context) {
+  List<_Slide> _getSlides(BuildContext context) {
     return [
-      _PresentationSlide(
+      _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'INFRAESTRUTURA PRIVADA',
-          en: 'PRIVATE INFRASTRUCTURE',
-          es: 'INFRAESTRUCTURA PRIVADA',
+          pt: 'INFRAESTRUTURA',
+          en: 'INFRASTRUCTURE',
+          es: 'INFRAESTRUCTURA',
         ),
         title: _copy(
           context: context,
-          pt: 'Privacidade e defesa desde o primeiro acesso',
-          en: 'Privacy and defense from the first access',
-          es: 'Privacidad y defensa desde el primer acceso',
+          pt: 'Conexão via rede anônima.',
+          en: 'Connection via onion network.',
+          es: 'Conexión vía red onion.',
         ),
-        summary: _copy(
+        body: _copy(
           context: context,
-          pt: 'A plataforma opera sobre rede onion e ambiente protegido para reduzir exposição, interferência externa e correlação indevida de tráfego.',
-          en: 'The platform operates over the onion network and a protected environment to reduce exposure, external interference, and improper traffic correlation.',
-          es: 'La plataforma opera sobre la red onion y un entorno protegido para reducir exposición, interferencia externa y correlación indebida de tráfico.',
+          pt: 'Todas as requisições passam por roteamento privado. Sem credenciais expostas.',
+          en: 'All requests go through onion routing. No exposed clearnet, no intermediate CDN.',
+          es: 'Todas las solicitudes pasan por enrutamiento onion. Sin clearnet expuesta, sin CDN intermediario.',
         ),
-        highlights: [
+        details: [
           _copy(
             context: context,
-            pt: 'Roteamento onion por padrão',
+            pt: 'Conexão anônima por  padrão',
             en: 'Onion routing by default',
             es: 'Enrutamiento onion por defecto',
           ),
           _copy(
             context: context,
-            pt: 'Superfície de ataque reduzida',
-            en: 'Reduced attack surface',
-            es: 'Superficie de ataque reducida',
+            pt: 'Sem dependência de infraestrutura exposta',
+            en: 'No dependence on exposed infrastructure',
+            es: 'Sin dependencia de infraestructura expuesta',
           ),
           _copy(
             context: context,
-            pt: 'Segurança tratada como arquitetura, não como recurso opcional',
-            en: 'Security treated as architecture, not as an optional feature',
-            es: 'La seguridad tratada como arquitectura, no como una función opcional',
+            pt: 'Privacidade como princípio, não opção',
+            en: 'Privacy as architecture, not an option',
+            es: 'Privacidad como arquitectura, no opción',
           ),
         ],
-        note: _copy(
-          context: context,
-          pt: 'Segurança não é um modo de uso. É a base operacional do sistema.',
-          en: 'Security is not a usage mode. It is the operational foundation of the system.',
-          es: 'La seguridad no es un modo de uso. Es la base operativa del sistema.',
-        ),
+        metricLabel: _copy(context: context, pt: 'Protocolo:', en: 'NETWORK', es: 'RED'),
+        metricValue: 'ONION',
         icon: LucideIcons.shield,
       ),
-      _PresentationSlide(
+      _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'ONBOARDING CONTROLADO',
-          en: 'CONTROLLED ONBOARDING',
-          es: 'ONBOARDING CONTROLADO',
+          pt: 'AUTENTICAÇÃO',
+          en: 'AUTHENTICATION',
+          es: 'AUTENTICACIÓN',
         ),
         title: _copy(
           context: context,
-          pt: 'Criação de conta com custo econômico verificável',
-          en: 'Account creation with a verifiable economic cost',
-          es: 'Creación de cuenta con costo económico verificable',
+          pt: 'Passkey.',
+          en: 'Passkey, TOTP, and seed.',
+          es: 'Passkey, TOTP y seed.',
         ),
-        summary: _copy(
+        body: _copy(
           context: context,
-          pt: 'O depósito inicial de 0.003 BTC permanece na sua conta. Apenas a taxa de rede necessária para confirmação é consumida no processo.',
-          en: 'The initial 0.003 BTC deposit remains in your account. Only the network fee required for confirmation is consumed during the process.',
-          es: 'El depósito inicial de 0.003 BTC permanece en tu cuenta. Solo se consume la tarifa de red necesaria para la confirmación.',
+          pt: 'O login prioriza passkey local. Fallback para senha forte + TOTP. Recuperação via seed BIP39.',
+          en: 'Login prioritizes local passkey. Fallback to strong password + TOTP. Recovery via BIP39 seed.',
+          es: 'El login prioriza passkey local. Respaldo con contraseña fuerte + TOTP. Recuperación vía seed BIP39.',
         ),
-        highlights: [
+        details: [
           _copy(
             context: context,
-            pt: 'Aumenta o custo de automação abusiva',
-            en: 'Raises the cost of abusive automation',
-            es: 'Aumenta el costo de la automatización abusiva',
+            pt: 'Passkey vincula este dispositivo',
+            en: 'Passkey binds this device',
+            es: 'Passkey vincula este dispositivo',
           ),
           _copy(
             context: context,
-            pt: 'Reduz criação massiva de contas',
-            en: 'Reduces mass account creation',
-            es: 'Reduce la creación masiva de cuentas',
+            pt: 'TOTP obrigatório como segunda camada',
+            en: 'TOTP required as second layer',
+            es: 'TOTP obligatorio como segunda capa',
           ),
           _copy(
             context: context,
-            pt: 'Protege estabilidade operacional para toda a base',
-            en: 'Protects operational stability for the whole user base',
-            es: 'Protege la estabilidad operativa de toda la base',
+            pt: 'Seed exibida uma vez para backup offline',
+            en: 'Seed shown once for offline backup',
+            es: 'Seed mostrada una vez para respaldo offline',
           ),
         ],
-        note: _copy(
-          context: context,
-          pt: 'Não é mensalidade nem assinatura. É uma barreira técnica contra abuso.',
-          en: 'It is not a subscription or monthly fee. It is a technical barrier against abuse.',
-          es: 'No es una suscripción ni una mensualidad. Es una barrera técnica contra el abuso.',
-        ),
-        icon: LucideIcons.wallet,
+        metricLabel: _copy(context: context, pt: 'ACESSO', en: 'ACCESS', es: 'ACCESO'),
+        metricValue: 'PASSKEY',
+        icon: LucideIcons.fingerprint,
       ),
-      _PresentationSlide(
+      _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'POLÍTICA OPERACIONAL',
-          en: 'OPERATING POLICY',
-          es: 'POLÍTICA OPERATIVA',
+          pt: 'OPERAÇÕES',
+          en: 'OPERATIONS',
+          es: 'OPERACIONES',
         ),
         title: _copy(
           context: context,
-          pt: 'Tarifas previsíveis e leitura financeira clara',
-          en: 'Predictable fees and clear financial reading',
-          es: 'Tarifas predecibles y lectura financiera clara',
+          pt: 'On-chain, Lightning e interno.',
+          en: 'On-chain, Lightning, and internal.',
+          es: 'On-chain, Lightning e interno.',
         ),
-        summary: _copy(
+        body: _copy(
           context: context,
-          pt: 'Depósitos e saques seguem uma política fixa. Transferências internas permanecem instantâneas e sem custo entre usuários da plataforma.',
-          en: 'Deposits and withdrawals follow a fixed policy. Internal transfers remain instant and free between platform users.',
-          es: 'Los depósitos y retiros siguen una política fija. Las transferencias internas siguen siendo instantáneas y gratuitas entre usuarios de la plataforma.',
+          pt: 'Depósito e saque via Bitcoin on-chain ou Lightning. Transferências internas entre contas sem taxa.',
+          en: 'Deposit and withdraw via Bitcoin on-chain or Lightning. Internal transfers between accounts with no fee.',
+          es: 'Depósito y retiro vía Bitcoin on-chain o Lightning. Transferencias internas entre cuentas sin comisión.',
         ),
-        highlights: [
+        details: [
           _copy(
             context: context,
-            pt: '0.9% em depósitos',
-            en: '0.9% on deposits',
-            es: '0.9% en depósitos',
+            pt: 'Depósito on-chain e Lightning',
+            en: 'On-chain and Lightning deposits',
+            es: 'Depósitos on-chain y Lightning',
           ),
           _copy(
             context: context,
-            pt: '0.9% em saques',
-            en: '0.9% on withdrawals',
-            es: '0.9% en retiros',
+            pt: 'Transferência interna sem custo',
+            en: 'Internal transfer with no cost',
+            es: 'Transferencia interna sin costo',
           ),
           _copy(
             context: context,
-            pt: '0% em transferências internas',
-            en: '0% on internal transfers',
-            es: '0% en transferencias internas',
+            pt: 'Primeiro depósito libera recebimentos',
+            en: 'First deposit enables receiving',
+            es: 'El primer depósito habilita recepciones',
           ),
         ],
-        note: _copy(
-          context: context,
-          pt: 'Sem tarifas ocultas e sem variações inesperadas no fluxo principal.',
-          en: 'No hidden fees and no unexpected variations in the main flow.',
-          es: 'Sin tarifas ocultas ni variaciones inesperadas en el flujo principal.',
-        ),
-        icon: LucideIcons.percent,
+        metricLabel: _copy(context: context, pt: 'MOEDA', en: 'CURRENCY', es: 'MONEDA'),
+        metricValue: 'BTC',
+        icon: LucideIcons.arrowLeftRight,
       ),
-      _PresentationSlide(
+      _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'COMPROMISSO DA PLATAFORMA',
-          en: 'PLATFORM COMMITMENT',
-          es: 'COMPROMISO DE LA PLATAFORMA',
+          pt: 'CADASTRO',
+          en: 'SIGNUP',
+          es: 'REGISTRO',
         ),
         title: _copy(
           context: context,
-          pt: 'Operação estável, auditável e construída para durar',
-          en: 'Stable, auditable operation built to last',
-          es: 'Operación estable, auditable y construida para durar',
+          pt: 'Sem e-mail. Sem telefone.',
+          en: 'No email. No phone.',
+          es: 'Sin email. Sin teléfono.',
         ),
-        summary: _copy(
+        body: _copy(
           context: context,
-          pt: 'A Kerosene prioriza estabilidade técnica, transparência operacional e previsibilidade de custo antes de crescimento superficial ou efeitos visuais.',
-          en: 'Kerosene prioritizes technical stability, operational transparency, and cost predictability before superficial growth or visual effects.',
-          es: 'Kerosene prioriza estabilidad técnica, transparencia operativa y previsibilidad de costos antes que crecimiento superficial o efectos visuales.',
+          pt: 'Você escolhe um username, gera a seed, configura TOTP e registra a passkey. Nenhum dado pessoal é solicitado.',
+          en: 'You choose a username, generate the seed, set up TOTP, and register the passkey. No personal data is requested.',
+          es: 'Eliges un username, generas la seed, configuras TOTP y registras la passkey. No se solicitan datos personales.',
         ),
-        highlights: [
+        details: [
           _copy(
             context: context,
-            pt: 'Processos desenhados para longo prazo',
-            en: 'Processes designed for the long term',
-            es: 'Procesos diseñados para el largo plazo',
+            pt: 'Username como única identidade',
+            en: 'Username as the only identity',
+            es: 'Username como única identidad',
           ),
           _copy(
             context: context,
-            pt: 'Leitura de risco e custo sempre explícita',
-            en: 'Risk and cost reading kept explicit',
-            es: 'Lectura de riesgo y costo siempre explícita',
+            pt: 'Proof-of-Work no registro para controle de spam',
+            en: 'Proof-of-Work at signup for spam control',
+            es: 'Proof-of-Work en el registro para control de spam',
           ),
           _copy(
             context: context,
-            pt: 'Infraestrutura sólida acima de retórica promocional',
-            en: 'Solid infrastructure above promotional rhetoric',
-            es: 'Infraestructura sólida por encima de la retórica promocional',
+            pt: 'Sem depósito obrigatório no cadastro',
+            en: 'No required deposit at signup',
+            es: 'Sin depósito obligatorio en el registro',
           ),
         ],
-        note: _copy(
-          context: context,
-          pt: 'A proposta é soberania operacional com previsibilidade, não espetáculo.',
-          en: 'The proposition is operational sovereignty with predictability, not spectacle.',
-          es: 'La propuesta es soberanía operativa con previsibilidad, no espectáculo.',
-        ),
-        icon: LucideIcons.trendingUp,
+        metricLabel: _copy(context: context, pt: 'DADOS', en: 'DATA', es: 'DATOS'),
+        metricValue: _copy(context: context, pt: 'ZERO', en: 'ZERO', es: 'CERO'),
+        icon: LucideIcons.userCheck,
       ),
     ];
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _nextPage(int totalSlides) {
-    if (_currentPage < totalSlides - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    }
   }
 
   void _finishPresentation() {
@@ -250,101 +218,34 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
     final slides = _getSlides(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Container(
+      backgroundColor: authEntryInk,
+      body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF07090E),
-              Color(0xFF0B1017),
-              Color(0xFF050608),
+              Color(0xFF0B0B0B),
+              Color(0xFF050505),
+              authEntryInk,
             ],
+            stops: [0, 0.42, 1],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.shieldCheck,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'KEROSENE',
-                            style: AppTypography.buttonText.copyWith(
-                              fontSize: 12,
-                              letterSpacing: 1.6,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: _finishPresentation,
-                      child: Text(
-                        context.l10n.presentationSkip,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.white70,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _copy(
-                      context: context,
-                      pt: 'Onboarding institucional',
-                      en: 'Institutional onboarding',
-                      es: 'Onboarding institucional',
-                    ),
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.white50,
-                      letterSpacing: 1.4,
-                    ),
-                  ),
-                ),
+              _Header(
+                currentPage: _currentPage,
+                totalPages: slides.length,
+                onSkip: _finishPresentation,
               ),
               Expanded(
                 child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                  },
+                  onPageChanged: (i) => setState(() => _currentPage = i),
                   itemCount: slides.length,
                   itemBuilder: (context, index) {
-                    return _buildSlide(
-                      context: context,
+                    return _SlideView(
                       slide: slides[index],
                       index: index,
                       totalSlides: slides.length,
@@ -353,87 +254,17 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _copy(
-                                context: context,
-                                pt: 'Etapa ${_currentPage + 1} de ${slides.length}',
-                                en: 'Step ${_currentPage + 1} of ${slides.length}',
-                                es: 'Paso ${_currentPage + 1} de ${slides.length}',
-                              ),
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.white50,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: List.generate(
-                                slides.length,
-                                (index) => Expanded(
-                                  child: Container(
-                                    margin: EdgeInsets.only(
-                                      right: index == slides.length - 1 ? 0 : 8,
-                                    ),
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: _currentPage >= index
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary
-                                          : Colors.white
-                                              .withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      BouncingButton(
-                        width: _currentPage == slides.length - 1 ? 190 : 128,
-                        text: _currentPage == slides.length - 1
-                            ? context.l10n.presentationStart
-                            : context.l10n.presentationNext,
-                        onPressed: () {
-                          if (_currentPage == slides.length - 1) {
-                            _finishPresentation();
-                          } else {
-                            _nextPage(slides.length);
-                          }
-                        },
-                        icon: _currentPage < slides.length - 1
-                            ? LucideIcons.arrowRight
-                            : null,
-                        color: _currentPage == slides.length - 1
-                            ? null
-                            : Colors.transparent,
-                        variant: _currentPage == slides.length - 1
-                            ? BouncingButtonVariant.solid
-                            : BouncingButtonVariant.outlined,
-                      ),
-                    ],
-                  ),
-                ),
+              _Footer(
+                currentPage: _currentPage,
+                totalPages: slides.length,
+                onNext: () {
+                  if (_currentPage == slides.length - 1) {
+                    _finishPresentation();
+                  } else {
+                    setState(() => _currentPage++);
+                  }
+                },
+                onFinish: _finishPresentation,
               ),
             ],
           ),
@@ -441,180 +272,332 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
       ),
     );
   }
+}
 
-  Widget _buildSlide({
-    required BuildContext context,
-    required _PresentationSlide slide,
-    required int index,
-    required int totalSlides,
-    required bool isActive,
-  }) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 500),
-      opacity: isActive ? 1.0 : 0.0,
-      child: AnimatedSlide(
-        duration: const Duration(milliseconds: 500),
-        offset: isActive ? Offset.zero : const Offset(0, 0.05),
-        curve: Curves.easeOutCubic,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxWidth: 680),
-                      padding: const EdgeInsets.all(28),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 52,
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.08),
-                                  ),
-                                ),
-                                child: Icon(
-                                  slide.icon,
-                                  size: 22,
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                _copy(
-                                  context: context,
-                                  pt: 'BLOCO ${index + 1}/$totalSlides',
-                                  en: 'BLOCK ${index + 1}/$totalSlides',
-                                  es: 'BLOQUE ${index + 1}/$totalSlides',
-                                ),
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.white50,
-                                  letterSpacing: 1.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            slide.eyebrow,
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.white50,
-                              letterSpacing: 1.6,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            slide.title,
-                            style: AppTypography.h1.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            slide.summary,
-                            style: AppTypography.bodyLarge.copyWith(
-                              color: AppColors.white70,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.02),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.06),
-                              ),
-                            ),
-                            child: Column(
-                              children: slide.highlights
-                                  .map(
-                                    (point) => Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 14),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            width: 8,
-                                            height: 8,
-                                            margin:
-                                                const EdgeInsets.only(top: 7),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .secondary
-                                                  .withValues(alpha: 0.9),
-                                              shape: BoxShape.circle,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              point,
-                                              style: AppTypography.bodyMedium
-                                                  .copyWith(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10161F),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.06),
-                              ),
-                            ),
-                            child: Text(
-                              slide.note,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+class _Header extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final VoidCallback onSkip;
+
+  const _Header({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 36,
+            height: 36,
+            child: Image.asset(
+              'assets/logo/kerosene-logo.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Text(
+            '${currentPage + 1} / $totalPages',
+            style: AppTypography.caption.copyWith(
+              fontFamily: 'JetBrainsMono',
+              color: authEntryFaint,
+              letterSpacing: 1.0,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: onSkip,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Text(
+                'SKIP',
+                style: AppTypography.caption.copyWith(
+                  fontFamily: 'HubotSansCondensed',
+                  color: authEntryFaint,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Footer extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final VoidCallback onNext;
+  final VoidCallback onFinish;
+
+  const _Footer({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onNext,
+    required this.onFinish,
+  });
+
+  String _copy(BuildContext context,
+      {required String pt, required String en, required String es}) {
+    switch (Localizations.localeOf(context).languageCode) {
+      case 'en':
+        return en;
+      case 'es':
+        return es;
+      default:
+        return pt;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLast = currentPage == totalPages - 1;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Column(
+        children: [
+          Row(
+            children: List.generate(totalPages, (index) {
+              return Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index == totalPages - 1 ? 0 : 6),
+                  height: 3,
+                  color: currentPage >= index
+                      ? authEntryText
+                      : Colors.white.withValues(alpha: 0.06),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            height: 54,
+            width: double.infinity,
+            child: Material(
+              color: isLast ? authEntryButton : Colors.transparent,
+              child: InkWell(
+                onTap: isLast ? onFinish : onNext,
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        isLast
+                            ? _copy(context,
+                                pt: 'CRIAR CONTA',
+                                en: 'CREATE ACCOUNT',
+                                es: 'CREAR CUENTA')
+                            : _copy(context,
+                                pt: 'CONTINUAR',
+                                en: 'CONTINUE',
+                                es: 'CONTINUAR'),
+                        style: AppTypography.buttonText.copyWith(
+                          fontFamily: 'HubotSansCondensed',
+                          color: isLast ? authEntryInk : authEntryText,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      if (!isLast) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Icon(
+                          LucideIcons.arrowRight,
+                          size: 16,
+                          color: authEntryText,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SlideView extends StatelessWidget {
+  final _Slide slide;
+  final int index;
+  final int totalSlides;
+  final bool isActive;
+
+  const _SlideView({
+    required this.slide,
+    required this.index,
+    required this.totalSlides,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: isActive ? 1.0 : 0.0,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: authEntrySurface,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Icon(
+                    slide.icon,
+                    size: 20,
+                    color: authEntryText,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  slide.eyebrow,
+                  style: AppTypography.caption.copyWith(
+                    fontFamily: 'HubotSansCondensed',
+                    color: authEntryFaint,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            Text(
+              slide.title,
+              style: AppTypography.h1.copyWith(
+                fontFamily: 'HubotSansCondensed',
+                color: authEntryText,
+                fontSize: 36,
+                fontWeight: FontWeight.w700,
+                height: 0.94,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              slide.body,
+              style: AppTypography.bodyMedium.copyWith(
+                color: authEntryMuted,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: authEntrySurface,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          slide.metricLabel,
+                          style: AppTypography.caption.copyWith(
+                            color: authEntryFaint,
+                            letterSpacing: 1.4,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          slide.metricValue,
+                          style: AppTypography.h2.copyWith(
+                            fontFamily: 'JetBrainsMono',
+                            color: authEntryText,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Text(
+                    '${index + 1}/$totalSlides',
+                    style: AppTypography.caption.copyWith(
+                      fontFamily: 'JetBrainsMono',
+                      color: authEntryFaint,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ...slide.details.asMap().entries.map((entry) {
+              final i = entry.key;
+              final detail = entry.value;
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: i < slide.details.length - 1 ? 0 : 0,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        width: 2,
+                      ),
+                      bottom: i < slide.details.length - 1
+                          ? BorderSide(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              width: 1,
+                            )
+                          : BorderSide.none,
+                    ),
+                  ),
+                  child: Text(
+                    detail,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: authEntryText,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -622,20 +605,22 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
   }
 }
 
-class _PresentationSlide {
+class _Slide {
   final String eyebrow;
   final String title;
-  final String summary;
-  final List<String> highlights;
-  final String note;
+  final String body;
+  final List<String> details;
+  final String metricLabel;
+  final String metricValue;
   final IconData icon;
 
-  _PresentationSlide({
+  _Slide({
     required this.eyebrow,
     required this.title,
-    required this.summary,
-    required this.highlights,
-    required this.note,
+    required this.body,
+    required this.details,
+    required this.metricLabel,
+    required this.metricValue,
     required this.icon,
   });
 }

@@ -787,7 +787,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeSlogan.
   ///
   /// In en, this message translates to:
-  /// **'The decentralized financial platform\nbuilt on Bitcoin.'**
+  /// **'The world\'s first privacy-focused international Bitcoin bank.'**
   String get welcomeSlogan;
 
   /// No description provided for @signIn.
@@ -2149,7 +2149,7 @@ abstract class AppLocalizations {
   /// No description provided for @presentationSlide3Body.
   ///
   /// In en, this message translates to:
-  /// **'Our policy is simple:\n\n• 0.9% on deposits\n• 0.9% on withdrawals\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.\nNo unexpected variations.'**
+  /// **'Our policy is simple:\n\n• External deposits and withdrawals use the wallet card fee\n• Bronze: 0.9%\n• White: 0.8%\n• Black: 0.7%\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.'**
   String get presentationSlide3Body;
 
   /// No description provided for @presentationSlide4Title.
@@ -2359,7 +2359,7 @@ abstract class AppLocalizations {
   /// No description provided for @passkeyNoBiometrics.
   ///
   /// In en, this message translates to:
-  /// **'No biometric hardware available on this device.'**
+  /// **'Set up biometrics or a screen lock on this device to use Sovereign Key.'**
   String get passkeyNoBiometrics;
 
   /// No description provided for @passkeyErrorStarting.

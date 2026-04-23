@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/usecases/login_usecase.dart';
 import '../domain/usecases/signup_usecase.dart';
 import '../domain/repositories/auth_repository.dart';
-import '../../notifications/application/notification_service.dart';
 import '../../../core/services/audio_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/passkey_service.dart';
@@ -22,7 +21,6 @@ class AuthController extends Notifier<AuthState> {
   late LoginUseCase loginUseCase;
   late SignupUseCase signupUseCase;
   late AuthRepository authRepository;
-  late NotificationService notificationService;
   final PasskeyService passkeyService = PasskeyService.instance;
   Timer? _onboardingPollTimer;
   bool _isPollingOnboarding = false;
@@ -60,7 +58,6 @@ class AuthController extends Notifier<AuthState> {
     loginUseCase = ref.watch(loginUseCaseProvider);
     signupUseCase = ref.watch(signupUseCaseProvider);
     authRepository = ref.watch(authRepositoryProvider);
-    notificationService = ref.watch(notificationServiceProvider);
     ref.onDispose(_stopOnboardingPolling);
 
     _checkAuthStatus();
@@ -84,8 +81,8 @@ class AuthController extends Notifier<AuthState> {
 
   void _startOnboardingPolling({
     required String linkId,
-    required String username,
-    required String password,
+    String? username,
+    String? password,
   }) {
     _stopOnboardingPolling();
     _onboardingPollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
@@ -98,8 +95,8 @@ class AuthController extends Notifier<AuthState> {
   }
 
   void _completeOnboardingAndLogin({
-    required String username,
-    required String password,
+    String? username,
+    String? password,
   }) {
     if (_isCompletingOnboarding) {
       return;
@@ -119,23 +116,22 @@ class AuthController extends Notifier<AuthState> {
 
   String _statusMessageForPaymentStatus(String status) {
     switch (status) {
-      case 'verifying_onboarding':
-        return 'Pagamento localizado. Agora faltam 3 confirmações na rede para ativar sua conta.';
+      case 'VERIFYING_ACTIVATION':
+      case 'verifying_activation':
+        return 'Depósito localizado. Agora faltam confirmações na rede para liberar o recebimento.';
       case 'completed':
-        return 'Pagamento confirmado. Finalizando sua conta...';
+        return 'Depósito confirmado. Sua conta agora pode receber fundos.';
       case 'expired':
-        return 'O link de pagamento expirou. Gere um novo para continuar.';
-      case 'paid':
-        return 'Pagamento identificado. Aguardando a liberação final.';
+        return 'O endereço de depósito expirou. Gere um novo depósito para continuar.';
       default:
-        return 'O link público continua em polling. Envie o valor exato e cole o TXID quando sua wallet mostrar a transação.';
+        return 'Para receber fundos dentro da plataforma, deposite algum valor primeiro.';
     }
   }
 
   Future<void> _pollOnboardingPaymentStatus({
     required String linkId,
-    required String username,
-    required String password,
+    String? username,
+    String? password,
   }) async {
     if (_isPollingOnboarding) {
       return;
@@ -149,7 +145,7 @@ class AuthController extends Notifier<AuthState> {
     }
 
     _isPollingOnboarding = true;
-    final result = await authRepository.getOnboardingPaymentLink(linkId);
+    final result = await authRepository.getActivationStatus();
     _isPollingOnboarding = false;
 
     result.fold(
@@ -163,7 +159,7 @@ class AuthController extends Notifier<AuthState> {
           );
         }
       },
-      (linkDto) {
+      (status) {
         final latestState = state;
         if (latestState is! AuthPaymentRequired ||
             latestState.paymentLinkId != linkId) {
@@ -172,20 +168,27 @@ class AuthController extends Notifier<AuthState> {
         }
 
         state = latestState.copyWith(
-          amountBtc: linkDto.amountBtc,
-          depositAddress: linkDto.depositAddress,
-          paymentStatus: linkDto.status,
-          statusMessage: _statusMessageForPaymentStatus(linkDto.status),
+          amountBtc:
+              status.amountBtc > 0 ? status.amountBtc : latestState.amountBtc,
+          depositAddress: status.depositAddress.isNotEmpty
+              ? status.depositAddress
+              : latestState.depositAddress,
+          paymentStatus: status.paymentStatus.isNotEmpty
+              ? status.paymentStatus
+              : latestState.paymentStatus,
+          statusMessage: status.warningMessage.isNotEmpty
+              ? status.warningMessage
+              : _statusMessageForPaymentStatus(status.paymentStatus),
           isSubmitting: false,
           clearError: true,
         );
 
-        if (linkDto.status == 'completed') {
+        if (status.activated) {
           _completeOnboardingAndLogin(
             username: username,
             password: password,
           );
-        } else if (linkDto.status == 'expired') {
+        } else if (status.paymentStatus == 'expired') {
           _stopOnboardingPolling();
         }
       },
@@ -209,7 +212,6 @@ class AuthController extends Notifier<AuthState> {
           },
           (user) {
             state = AuthAuthenticated(user);
-            notificationService.initializeAndRegister();
             unawaited(_syncBackgroundAlertsService());
           },
         );
@@ -279,9 +281,11 @@ class AuthController extends Notifier<AuthState> {
       (signupResult) => state = AuthRequiresTotpSetup(
         username: username,
         passphrase: password,
+        sessionId: signupResult.sessionId,
         totpSecret: signupResult.totpSecret,
         qrCodeUri: signupResult.qrCodeUri,
         backupCodes: signupResult.backupCodes,
+        totpOptional: signupResult.totpOptional,
       ),
     );
   }
@@ -292,17 +296,44 @@ class AuthController extends Notifier<AuthState> {
     required String totpSecret,
     required String totpCode,
   }) async {
+    final currentState = state;
+    if (currentState is! AuthRequiresTotpSetup) {
+      state = const AuthError(
+        'Sessão de cadastro inválida. Reinicie a criação da conta.',
+      );
+      return;
+    }
+
     state = const AuthLoading();
     final result = await authRepository.verifyTotp(
-      username: username,
-      passphrase: passphrase,
+      sessionId: currentState.sessionId,
       totpCode: totpCode,
-      totpSecret: totpSecret,
     );
 
     result.fold(
       (failure) => state = _mapFailureToAuthError(failure),
       (sessionId) => state = AuthTotpVerified(sessionId, username),
+    );
+  }
+
+  Future<void> skipTotpSetup() async {
+    final currentState = state;
+    if (currentState is! AuthRequiresTotpSetup) {
+      state = const AuthError(
+        'Sessão de cadastro inválida. Reinicie a criação da conta.',
+      );
+      return;
+    }
+
+    state = const AuthLoading();
+    final result = await authRepository.verifyTotp(
+      sessionId: currentState.sessionId,
+      totpCode: null,
+    );
+
+    result.fold(
+      (failure) => state = _mapFailureToAuthError(failure),
+      (sessionId) => state = AuthTotpVerified(sessionId, currentState.username),
     );
   }
 
@@ -322,7 +353,6 @@ class AuthController extends Notifier<AuthState> {
 
     result.fold((failure) => state = _mapFailureToAuthError(failure), (user) {
       state = AuthAuthenticated(user);
-      notificationService.initializeAndRegister();
       unawaited(_syncBackgroundAlertsService());
     });
   }
@@ -491,11 +521,13 @@ class AuthController extends Notifier<AuthState> {
             credential,
           );
 
-          finishResult.fold(
-            (failure) => state = _mapFailureToAuthError(failure),
-            (_) {
+          await finishResult.fold(
+            (failure) async {
+              state = _mapFailureToAuthError(failure);
+            },
+            (_) async {
               AudioService.instance.playTransaction();
-              state = const AuthHardwareVerified();
+              await _checkAuthStatus();
             },
           );
         } catch (e) {
@@ -508,6 +540,33 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
+  Future<void> _loadActivationDepositState({
+    required String sessionId,
+  }) async {
+    final result = await authRepository.createActivationDepositLink();
+    result.fold(
+      (failure) => state = _mapFailureToAuthError(failure),
+      (status) {
+        state = AuthPaymentRequired(
+          sessionId: sessionId,
+          paymentLinkId: status.paymentLinkId,
+          amountBtc: status.amountBtc,
+          depositAddress: status.depositAddress,
+          paymentStatus: status.paymentStatus.isNotEmpty
+              ? status.paymentStatus
+              : 'pending',
+          statusMessage: status.warningMessage.isNotEmpty
+              ? status.warningMessage
+              : _statusMessageForPaymentStatus(status.paymentStatus),
+        );
+
+        if (status.paymentLinkId.isNotEmpty) {
+          _startOnboardingPolling(linkId: status.paymentLinkId);
+        }
+      },
+    );
+  }
+
   Future<void> getOnboardingLink({
     required String sessionId,
     required String username,
@@ -515,26 +574,7 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     _stopOnboardingPolling();
     state = const AuthLoading();
-    final result = await authRepository.generateOnboardingLink(sessionId);
-    result.fold(
-      (failure) => state = _mapFailureToAuthError(failure),
-      (linkDto) {
-        state = AuthPaymentRequired(
-          sessionId: sessionId,
-          paymentLinkId: linkDto.linkId,
-          amountBtc: linkDto.amountBtc,
-          depositAddress: linkDto.depositAddress,
-          paymentStatus: linkDto.status,
-          statusMessage: _statusMessageForPaymentStatus(linkDto.status),
-        );
-
-        _startOnboardingPolling(
-          linkId: linkDto.linkId,
-          username: username,
-          password: password,
-        );
-      },
-    );
+    await _loadActivationDepositState(sessionId: sessionId);
   }
 
   Future<void> submitOnboardingPayment({
@@ -559,11 +599,11 @@ class AuthController extends Notifier<AuthState> {
     state = currentState.copyWith(
       isSubmitting: true,
       submittedTxid: cleanTxid,
-      statusMessage: 'Validando a transação na rede Bitcoin...',
+      statusMessage: 'Validando o depósito de ativação na rede Bitcoin...',
       clearError: true,
     );
 
-    final result = await authRepository.confirmOnboardingPayment(
+    final result = await authRepository.confirmActivationPayment(
       linkId: linkId,
       txid: cleanTxid,
     );
@@ -580,21 +620,25 @@ class AuthController extends Notifier<AuthState> {
           state = _mapFailureToAuthError(failure);
         }
       },
-      (linkDto) {
+      (status) {
         final latestState = state;
         if (latestState is! AuthPaymentRequired) {
           return;
         }
 
         state = latestState.copyWith(
-          paymentStatus: linkDto.status,
+          paymentStatus: status.paymentStatus.isNotEmpty
+              ? status.paymentStatus
+              : latestState.paymentStatus,
           submittedTxid: cleanTxid,
-          statusMessage: _statusMessageForPaymentStatus(linkDto.status),
+          statusMessage: status.warningMessage.isNotEmpty
+              ? status.warningMessage
+              : _statusMessageForPaymentStatus(status.paymentStatus),
           isSubmitting: false,
           clearError: true,
         );
 
-        if (linkDto.status == 'completed') {
+        if (status.activated) {
           _completeOnboardingAndLogin(
             username: username,
             password: password,
@@ -602,7 +646,7 @@ class AuthController extends Notifier<AuthState> {
           return;
         }
 
-        if (linkDto.status == 'expired') {
+        if (status.paymentStatus == 'expired') {
           _stopOnboardingPolling();
           return;
         }
@@ -622,10 +666,37 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> continueAfterOnboardingPayment({
-    required String username,
-    required String password,
+    String? username,
+    String? password,
   }) async {
-    await login(username: username, password: password);
+    _stopOnboardingPolling();
+    final result = await authRepository.getActivationStatus();
+    result.fold(
+      (failure) => state = _mapFailureToAuthError(failure),
+      (status) {
+        if (status.activated) {
+          unawaited(_checkAuthStatus());
+          return;
+        }
+
+        final currentState = state;
+        if (currentState is AuthPaymentRequired) {
+          state = currentState.copyWith(
+            paymentStatus: status.paymentStatus,
+            statusMessage: status.warningMessage.isNotEmpty
+                ? status.warningMessage
+                : _statusMessageForPaymentStatus(status.paymentStatus),
+            amountBtc: status.amountBtc > 0
+                ? status.amountBtc
+                : currentState.amountBtc,
+            depositAddress: status.depositAddress.isNotEmpty
+                ? status.depositAddress
+                : currentState.depositAddress,
+            clearError: true,
+          );
+        }
+      },
+    );
   }
 
   Future<void> mockConfirmOnboarding({

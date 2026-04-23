@@ -24,6 +24,7 @@ class SignupFlowState extends Equatable {
   final SeedSecurityOption seedSecurityOption;
   final int slip39TotalShares;
   final int slip39Threshold;
+  final int multisigThreshold;
   final String? passphrase;
   final String? totpSecret;
   final String? qrCodeUri; // ← new: full otpauth:// URI for QR display
@@ -45,6 +46,7 @@ class SignupFlowState extends Equatable {
     this.seedSecurityOption = SeedSecurityOption.standard,
     this.slip39TotalShares = 5,
     this.slip39Threshold = 3,
+    this.multisigThreshold = 2,
     this.passphrase,
     this.totpSecret,
     this.qrCodeUri,
@@ -64,6 +66,7 @@ class SignupFlowState extends Equatable {
     SeedSecurityOption? seedSecurityOption,
     int? slip39TotalShares,
     int? slip39Threshold,
+    int? multisigThreshold,
     String? passphrase,
     String? totpSecret,
     String? qrCodeUri,
@@ -83,6 +86,7 @@ class SignupFlowState extends Equatable {
       seedSecurityOption: seedSecurityOption ?? this.seedSecurityOption,
       slip39TotalShares: slip39TotalShares ?? this.slip39TotalShares,
       slip39Threshold: slip39Threshold ?? this.slip39Threshold,
+      multisigThreshold: multisigThreshold ?? this.multisigThreshold,
       passphrase: passphrase ?? this.passphrase,
       totpSecret: totpSecret ?? this.totpSecret,
       qrCodeUri: qrCodeUri ?? this.qrCodeUri,
@@ -104,6 +108,7 @@ class SignupFlowState extends Equatable {
       'seedSecurityOption': seedSecurityOption.name,
       'slip39TotalShares': slip39TotalShares,
       'slip39Threshold': slip39Threshold,
+      'multisigThreshold': multisigThreshold,
       'passphrase': passphrase,
       'totpSecret': totpSecret,
       'qrCodeUri': qrCodeUri,
@@ -129,6 +134,7 @@ class SignupFlowState extends Equatable {
       ),
       slip39TotalShares: json['slip39TotalShares'] ?? 5,
       slip39Threshold: json['slip39Threshold'] ?? 3,
+      multisigThreshold: json['multisigThreshold'] ?? 2,
       passphrase: json['passphrase'],
       totpSecret: json['totpSecret'],
       qrCodeUri: json['qrCodeUri'],
@@ -150,6 +156,7 @@ class SignupFlowState extends Equatable {
         seedSecurityOption,
         slip39TotalShares,
         slip39Threshold,
+        multisigThreshold,
         passphrase,
         totpSecret,
         qrCodeUri,
@@ -234,6 +241,10 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
     ));
   }
 
+  void setMultisigThreshold(int threshold) {
+    updateState(state.copyWith(multisigThreshold: threshold.clamp(2, 3)));
+  }
+
   void setPassphrase(String passphrase) {
     updateState(state.copyWith(passphrase: passphrase));
   }
@@ -274,13 +285,13 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
     if (state.sessionId == null) return;
 
     setLoading(true);
-    final result = await repo.generateOnboardingLink(state.sessionId!);
+    final result = await repo.createActivationDepositLink();
 
     result.fold((failure) => setError(failure.message), (dto) {
       setPaymentDetails(
         address: dto.depositAddress,
         amountBtc: dto.amountBtc,
-        linkId: dto.linkId,
+        linkId: dto.paymentLinkId,
       );
       updateState(state.copyWith(isLoading: false));
     });

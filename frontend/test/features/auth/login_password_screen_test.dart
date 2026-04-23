@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:teste/core/theme/app_theme.dart';
+import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
+import 'package:teste/storybook/storybook_mocks.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('manual login screen uses account password copy without BIP39 UI',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(
+            () => MockAuthController(
+              initialOverride: const AuthUnauthenticated(),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const LoginPassphraseScreen(username: 'alice'),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Senha da conta'), findsOneWidget);
+    expect(
+      find.textContaining('Seed, BIP39 e carteira interna ficam fora do login'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('18 palavras'), findsNothing);
+    expect(find.textContaining('SLIP-39'), findsNothing);
+  });
+}

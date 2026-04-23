@@ -10,11 +10,11 @@ class AppException implements Exception {
 
   @override
   String toString() => jsonEncode({
-    'type': 'AppException',
-    'message': message,
-    'statusCode': statusCode,
-    'errorCode': errorCode,
-  });
+        'type': 'AppException',
+        'message': message,
+        'statusCode': statusCode,
+        'errorCode': errorCode,
+      });
 }
 
 /// Exceção de servidor

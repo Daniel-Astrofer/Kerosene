@@ -1,10 +1,19 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/providers/currency_provider.dart';
+import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_typography.dart';
-import 'animated_tx_icon.dart';
+import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/features/mining/presentation/mining_explorer.dart';
+import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
+
 import '../../../wallet/domain/entities/transaction.dart';
 
-class TxDetailOverlay extends StatelessWidget {
+class TxDetailOverlay extends ConsumerWidget {
   final Transaction tx;
   final VoidCallback onClose;
 
@@ -15,204 +24,209 @@ class TxDetailOverlay extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final statusColor = _statusColor(tx.status);
-    final typeLabel = _typeLabel(tx.type);
-    final amountSign =
-        tx.type == TransactionType.send || tx.type == TransactionType.withdrawal
-            ? '-'
-            : '+';
-    final amountColor =
-        tx.type == TransactionType.send || tx.type == TransactionType.withdrawal
-            ? const Color(0xFFFF453A)
-            : const Color(0xFF00E5BC);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+    final explorer = MiningExplorerDescriptor.fromTransaction(tx);
+    final amountSign = _isOutgoing(tx) ? '-' : '+';
+    final primaryAmount = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: tx.amountBTC,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final feeAmount = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: tx.feeBTC,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final cryptoAmount = MoneyDisplay.format(
+      amount: tx.amountBTC,
+      currency: Currency.btc,
+    );
+    final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
-      backgroundColor:
-          Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
-      body: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: InkWell(
-          onTap: onClose,
-          highlightColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: InkWell(
-                onTap: () {}, // Prevent closing when tapping the card
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeOutBack,
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: 0.8 + 0.2 * value,
-                      child: Opacity(
-                        opacity: value.clamp(0.0, 1.0),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.85,
-                    ),
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF101B35).withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withOpacity(0.1),
-                          width: 1.5,
+      backgroundColor: Colors.black.withValues(alpha: 0.76),
+      body: GestureDetector(
+        onTap: onClose,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 32,
+            ),
+            child: GestureDetector(
+              onTap: () {},
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 340,
+                  maxHeight: size.height * 0.52,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: authenticatedSurfaceBackgroundColor,
+                    border: Border.all(color: const Color(0xFF2A3037)),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: _OverlayIconButton(
+                            icon: LucideIcons.x,
+                            onTap: onClose,
+                          ),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: amountColor.withOpacity(0.15),
-                            blurRadius: 40,
-                            spreadRadius: 5,
+                        const SizedBox(height: 4),
+                        Center(
+                          child: Container(
+                            width: 52,
+                            height: 52,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF111418),
+                              border: Border.all(
+                                color: const Color(0xFF2A3037),
+                              ),
+                            ),
+                            child: Icon(
+                              _iconForTransaction(tx, explorer),
+                              color: Colors.white.withValues(alpha: 0.84),
+                              size: 26,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _typeLabel(tx),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.labelMedium!.copyWith(
+                            color: Colors.white.withValues(alpha: 0.52),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$amountSign$primaryAmount',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.h2.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        if (selectedCurrency != Currency.btc) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            cryptoAmount,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall!.copyWith(
+                              color: Colors.white.withValues(alpha: 0.58),
+                              fontFamily: 'JetBrainsMono',
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0,
+                            ),
                           ),
                         ],
-                      ),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(height: 16),
+                        _DetailRow(
+                          icon: LucideIcons.clock3,
+                          label: 'Status',
+                          value: tx.status.displayName,
+                          valueColor: _statusColor(tx.status),
+                        ),
+                        _DetailRow(
+                          icon: LucideIcons.calendarClock,
+                          label: 'Data e hora',
+                          value: _formatTimestamp(tx.timestamp),
+                        ),
+                        _DetailRow(
+                          icon: _counterpartyIcon(tx),
+                          label: _counterpartyLabel(tx),
+                          value: _abbrevValue(_counterpartyValue(tx)),
+                        ),
+                        _DetailRow(
+                          icon: _railIcon(explorer),
+                          label: 'Rede',
+                          value: explorer.badgeLabel,
+                        ),
+                        _DetailRow(
+                          icon: LucideIcons.network,
+                          label: 'Referência',
+                          value: _abbrevValue(_primaryReference(tx, explorer)),
+                        ),
+                        if ((tx.description ?? '').trim().isNotEmpty)
+                          _DetailRow(
+                            icon: LucideIcons.fileText,
+                            label: 'Descrição',
+                            value: tx.description!.trim(),
+                          ),
+                        if (tx.feeSatoshis > 0)
+                          _DetailRow(
+                            icon: LucideIcons.receipt,
+                            label: 'Taxa',
+                            value: feeAmount,
+                          ),
+                        const SizedBox(height: 14),
+                        Row(
                           children: [
-                            // ── HEADER ICON ───────────────────────────────────
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: amountColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: amountColor.withOpacity(0.3),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Center(
-                                child: AnimatedTxIcon(
-                                  kind: _iconKindFor(tx),
-                                  color: amountColor,
-                                  size: 40,
+                            Expanded(
+                              child: _OverlayActionButton(
+                                label: 'Copiar dados',
+                                icon: LucideIcons.copy,
+                                onTap: () => _copyTransactionSummary(
+                                  context,
+                                  tx: tx,
+                                  explorer: explorer,
+                                  primaryAmount: primaryAmount,
+                                  cryptoAmount: cryptoAmount,
+                                  feeAmount: feeAmount,
+                                  amountSign: amountSign,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              typeLabel,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimary
-                                    .withOpacity(0.7),
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 1.2,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _OverlayActionButton(
+                                label: explorer.buttonLabel,
+                                icon: _railIcon(explorer),
+                                emphasis: true,
+                                onTap: () {
+                                  final navigator = Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  );
+                                  final route = MaterialPageRoute<void>(
+                                    builder: (_) => MiningScreen(
+                                      initialTransaction: tx,
+                                    ),
+                                  );
+
+                                  navigator.pop();
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    if (navigator.mounted) {
+                                      navigator.push(route);
+                                    }
+                                  });
+                                },
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$amountSign${tx.amountBTC.toStringAsFixed(8)} BTC',
-                              style: AppTypography.h1.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-
-                            // ── DETAILS GRID ──────────────────────────────────
-                            _buildDetailRow(
-                              context,
-                              kind: TxIconKind.pending,
-                              label: 'Status',
-                              value: tx.status.displayName,
-                              valueColor: statusColor,
-                            ),
-                            const Divider(height: 24, color: Colors.white10),
-                            _buildDetailRow(
-                              context,
-                              kind: TxIconKind.clock,
-                              label: 'Data e Hora',
-                              value:
-                                  '${tx.timestamp.day}/${tx.timestamp.month}/${tx.timestamp.year} ${tx.timestamp.hour.toString().padLeft(2, '0')}:${tx.timestamp.minute.toString().padLeft(2, '0')}',
-                            ),
-                            const Divider(height: 24, color: Colors.white10),
-                            _buildDetailRow(
-                              context,
-                              kind: TxIconKind.address,
-                              label: tx.type == TransactionType.send
-                                  ? 'Destinatário'
-                                  : 'Remetente',
-                              value: _abbrewAddress(
-                                  tx.type == TransactionType.send
-                                      ? tx.toAddress
-                                      : tx.fromAddress),
-                            ),
-                            const Divider(height: 24, color: Colors.white10),
-                            _buildDetailRow(
-                              context,
-                              kind: TxIconKind.network,
-                              label: 'ID da Transação',
-                              value: _abbrewAddress(tx.id),
-                            ),
-
-                            if (tx.feeSatoshis > 0) ...[
-                              const Divider(height: 24, color: Colors.white10),
-                              _buildDetailRow(
-                                context,
-                                kind: TxIconKind.fee,
-                                label: 'Taxa de Rede',
-                                value:
-                                    '${(tx.feeSatoshis / 100000000).toStringAsFixed(8)} BTC',
-                              ),
-                            ],
-
-                            if (tx.isInternal) ...[
-                              const Divider(height: 24, color: Colors.white10),
-                              _buildDetailRow(
-                                context,
-                                kind: TxIconKind.card,
-                                label: 'Método',
-                                value: 'Transferência Interna',
-                                valueColor: const Color(0xFF7B61FF),
-                              ),
-                            ],
-
-                            const SizedBox(height: 40),
-
-                            // ── ACTIONS ───────────────────────────────────────
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildButton(
-                                    label: 'Compartilhar',
-                                    icon: Icons.share_rounded,
-                                    onTap: () {},
-                                    isPrimary: false,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildButton(
-                                    label: 'Blockchain',
-                                    icon: Icons.open_in_new_rounded,
-                                    onTap: () {},
-                                    isPrimary: true,
-                                    color: amountColor,
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -224,121 +238,57 @@ class TxDetailOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(
+  Future<void> _copyTransactionSummary(
     BuildContext context, {
-    required TxIconKind kind,
-    required String label,
-    required String value,
-    Color? valueColor,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: AnimatedTxIcon(
-              kind: kind,
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-              size: 18,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: AppTypography.caption.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                color: valueColor ?? Theme.of(context).colorScheme.onPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+    required Transaction tx,
+    required MiningExplorerDescriptor explorer,
+    required String primaryAmount,
+    required String cryptoAmount,
+    required String feeAmount,
+    required String amountSign,
+  }) async {
+    final summary = <String>[
+      'Tipo: ${_typeLabel(tx)}',
+      'Status: ${tx.status.displayName}',
+      'Valor: $amountSign$primaryAmount',
+      'BTC: $cryptoAmount',
+      'Data: ${_formatTimestamp(tx.timestamp)}',
+      '${_counterpartyLabel(tx)}: ${_counterpartyValue(tx)}',
+      'Rede: ${explorer.badgeLabel}',
+      'Referência: ${_primaryReference(tx, explorer)}',
+      if ((tx.description ?? '').trim().isNotEmpty)
+        'Descrição: ${tx.description!.trim()}',
+      if (tx.feeSatoshis > 0) 'Taxa: $feeAmount',
+    ].join('\n');
 
-  Widget _buildButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool isPrimary,
-    Color? color,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: isPrimary
-              ? (color ?? const Color(0xFF00E5BC)).withOpacity(0.15)
-              : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isPrimary
-                ? (color ?? const Color(0xFF00E5BC)).withOpacity(0.3)
-                : Colors.white.withOpacity(0.1),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                color: isPrimary
-                    ? (color ?? const Color(0xFF00E5BC))
-                    : Colors.white70,
-                size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: isPrimary
-                    ? (color ?? const Color(0xFF00E5BC))
-                    : Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    await Clipboard.setData(ClipboardData(text: summary));
 
-  Color _statusColor(TransactionStatus status) {
-    switch (status) {
-      case TransactionStatus.pending:
-        return const Color(0xFFFF9F0A);
-      case TransactionStatus.confirming:
-        return const Color(0xFFFFCC00);
-      case TransactionStatus.confirmed:
-        return const Color(0xFF00C896);
-      case TransactionStatus.failed:
-        return const Color(0xFFFF453A);
+    if (!context.mounted) {
+      return;
     }
+
+    AppNotice.showSuccess(
+      context,
+      title: 'Dados copiados',
+      message: 'Resumo da transação copiado para a área de transferência.',
+    );
   }
 
-  String _typeLabel(TransactionType type) {
-    switch (type) {
+  static bool _isOutgoing(Transaction tx) {
+    return tx.type == TransactionType.send ||
+        tx.type == TransactionType.withdrawal;
+  }
+
+  static String _typeLabel(Transaction tx) {
+    if (tx.isLightning) {
+      return 'LIGHTNING';
+    }
+
+    if (tx.isInternal) {
+      return _isOutgoing(tx) ? 'CHEQUE ENVIADO' : 'CHEQUE RECEBIDO';
+    }
+
+    switch (tx.type) {
       case TransactionType.send:
         return 'ENVIO';
       case TransactionType.receive:
@@ -354,25 +304,259 @@ class TxDetailOverlay extends StatelessWidget {
     }
   }
 
-  TxIconKind _iconKindFor(Transaction tx) {
+  static IconData _iconForTransaction(
+    Transaction tx,
+    MiningExplorerDescriptor explorer,
+  ) {
+    if (tx.isLightning || explorer.rail == MiningExplorerRail.lightning) {
+      return LucideIcons.zap;
+    }
+
+    if (tx.isInternal || explorer.rail == MiningExplorerRail.internal) {
+      return LucideIcons.receipt;
+    }
+
     switch (tx.type) {
       case TransactionType.send:
-        return TxIconKind.send;
-      case TransactionType.receive:
-        return TxIconKind.receive;
-      case TransactionType.deposit:
-        return TxIconKind.deposit;
       case TransactionType.withdrawal:
-        return TxIconKind.withdrawal;
+        return LucideIcons.arrowUpFromLine;
+      case TransactionType.receive:
+      case TransactionType.deposit:
+        return LucideIcons.arrowDownToLine;
       case TransactionType.swap:
-        return TxIconKind.swap;
+        return LucideIcons.arrowLeftRight;
       case TransactionType.fee:
-        return TxIconKind.fee;
+        return LucideIcons.receipt;
     }
   }
 
-  String _abbrewAddress(String addr) {
-    if (addr.length <= 16) return addr;
-    return '${addr.substring(0, 8)}...${addr.substring(addr.length - 8)}';
+  static IconData _counterpartyIcon(Transaction tx) {
+    return _isOutgoing(tx)
+        ? LucideIcons.arrowUpRight
+        : LucideIcons.arrowDownLeft;
+  }
+
+  static String _counterpartyLabel(Transaction tx) {
+    return _isOutgoing(tx) ? 'Destinatário' : 'Remetente';
+  }
+
+  static String _counterpartyValue(Transaction tx) {
+    return _isOutgoing(tx) ? tx.toAddress : tx.fromAddress;
+  }
+
+  static IconData _railIcon(MiningExplorerDescriptor explorer) {
+    switch (explorer.rail) {
+      case MiningExplorerRail.blockchain:
+        return LucideIcons.network;
+      case MiningExplorerRail.lightning:
+        return LucideIcons.zap;
+      case MiningExplorerRail.internal:
+        return LucideIcons.receipt;
+    }
+  }
+
+  static String _primaryReference(
+    Transaction tx,
+    MiningExplorerDescriptor explorer,
+  ) {
+    return explorer.reference.trim().isNotEmpty
+        ? explorer.reference
+        : (tx.blockchainTxid ?? tx.id);
+  }
+
+  static String _abbrevValue(String value) {
+    final normalized = value.trim();
+    if (normalized.length <= 24) {
+      return normalized;
+    }
+    return '${normalized.substring(0, 12)}...${normalized.substring(normalized.length - 10)}';
+  }
+
+  static String _formatTimestamp(DateTime timestamp) {
+    return '${timestamp.day.toString().padLeft(2, '0')}/${timestamp.month.toString().padLeft(2, '0')}/${timestamp.year} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
+
+  static Color _statusColor(TransactionStatus status) {
+    switch (status) {
+      case TransactionStatus.pending:
+        return const Color(0xFFFF9F0A);
+      case TransactionStatus.confirming:
+        return const Color(0xFFFFCC00);
+      case TransactionStatus.confirmed:
+        return const Color(0xFFD4D8DD);
+      case TransactionStatus.failed:
+        return const Color(0xFFFF453A);
+    }
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 9,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111418),
+          border: Border.all(color: const Color(0xFF2A3037)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D1014),
+                border: Border.all(color: const Color(0xFF2A3037)),
+              ),
+              child: Icon(
+                icon,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall!.copyWith(
+                      color: Colors.white.withValues(alpha: 0.48),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: theme.textTheme.bodySmall!.copyWith(
+                      color: valueColor ?? Colors.white.withValues(alpha: 0.86),
+                      fontFamily: 'JetBrainsMono',
+                      fontWeight: FontWeight.w600,
+                      height: 1.28,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OverlayActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool emphasis;
+  final VoidCallback onTap;
+
+  const _OverlayActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.emphasis = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        overlayColor: WidgetStatePropertyAll(
+          Colors.white.withValues(alpha: 0.04),
+        ),
+        child: Ink(
+          height: 42,
+          decoration: BoxDecoration(
+            color: emphasis ? const Color(0xFF111418) : const Color(0xFF0D1014),
+            border: Border.all(color: const Color(0xFF2A3037)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                        color: Colors.white.withValues(alpha: 0.84),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OverlayIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _OverlayIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        overlayColor: WidgetStatePropertyAll(
+          Colors.white.withValues(alpha: 0.04),
+        ),
+        child: Ink(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xFF111418),
+            border: Border.all(color: const Color(0xFF2A3037)),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: Colors.white.withValues(alpha: 0.76),
+          ),
+        ),
+      ),
+    );
   }
 }

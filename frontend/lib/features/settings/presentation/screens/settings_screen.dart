@@ -1,24 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/constants/app_copy.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
+import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import '../../../../core/providers/alert_preferences_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/currency_provider.dart';
 import '../../../../core/providers/price_provider.dart';
 import '../../../../core/providers/biometric_provider.dart';
-import '../../../../core/providers/ghost_mode_provider.dart';
 import '../../../../core/providers/appearance_provider.dart';
+import '../../../../core/services/background_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../auth/controller/auth_providers.dart';
+import '../../../profile/presentation/screens/security_settings_screen.dart';
 import '../../../security/presentation/screens/sovereignty_status_screen.dart';
 import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 
 // ─── Screen Entry ─────────────────────────────────────────────────────────────
 
+final backupCodesProvider = FutureProvider<List<String>>((ref) async {
+  final result = await ref.read(authRepositoryProvider).getBackupCodes();
+  return result.fold(
+    (_) => const <String>[],
+    (codes) => codes,
+  );
+});
+
 class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({super.key});
+  final bool showPrimaryNavigation;
+
+  const SettingsScreen({
+    super.key,
+    this.showPrimaryNavigation = false,
+  });
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -69,104 +90,109 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appearanceProvider);
+    final bottomSectionPadding = widget.showPrimaryNavigation
+        ? AppPrimaryNavigationBar.scaffoldBottomClearance(context)
+        : 80.0;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF050505),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF070A10),
-              Color(0xFF0D1219),
-              Color(0xFF050607),
-            ],
+      backgroundColor: authenticatedSurfaceBackgroundColor,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AmbientSideGlowBackdrop.authenticated(),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              SlideTransition(
-                position: _headerSlide,
-                child: FadeTransition(
-                  opacity: _headerFade,
-                  child: _SettingsHeader(
-                    onBack: () => Navigator.pop(context),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: FadeTransition(
-                  opacity: CurvedAnimation(
-                    parent: _sectionsController,
-                    curve: Curves.easeOut,
-                  ),
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.sm,
+          SafeArea(
+            child: Column(
+              children: [
+                SlideTransition(
+                  position: _headerSlide,
+                  child: FadeTransition(
+                    opacity: _headerFade,
+                    child: _SettingsHeader(
+                      onBack: widget.showPrimaryNavigation
+                          ? () => AppPrimaryNavigationBar.backOrHome(context)
+                          : () => Navigator.maybePop(context),
                     ),
-                    physics: const BouncingScrollPhysics(),
-                    children: [
-                      const SizedBox(height: AppSpacing.md),
-                      const _SettingsOverviewCard(),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.shield_outlined,
-                        label: 'SEGURANÇA E ACESSO',
-                        color: const Color(0xFF7DD3A0),
-                        child: const _SecuritySection(),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.privacy_tip_outlined,
-                        label: 'PRIVACIDADE',
-                        color: const Color(0xFF7AA2F7),
-                        child: const _PrivacySection(),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.manage_accounts_outlined,
-                        label: 'CONTA E ACESSO',
-                        color: const Color(0xFFE5B97A),
-                        child: const _CredentialsSection(),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.notifications_outlined,
-                        label: 'NOTIFICAÇÕES',
-                        color: const Color(0xFFA78BFA),
-                        child: const _NotificationsSection(),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.palette_outlined,
-                        label: 'APARÊNCIA',
-                        color: const Color(0xFF9FB3C8),
-                        child: const _AppearanceSection(),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.language_rounded,
-                        label: 'IDIOMA E MOEDA',
-                        color: const Color(0xFF60A5FA),
-                        child: const _LocaleSection(),
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                      _buildSection(
-                        icon: Icons.power_settings_new_rounded,
-                        label: 'SESSÃO',
-                        color: AppColors.error,
-                        child: const _SessionSection(),
-                      ),
-                      const SizedBox(height: 80),
-                    ],
                   ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: FadeTransition(
+                    opacity: CurvedAnimation(
+                      parent: _sectionsController,
+                      curve: Curves.easeOut,
+                    ),
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        const SizedBox(height: AppSpacing.md),
+                        const _SettingsOverviewCard(),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.shield_outlined,
+                          label: 'SEGURANÇA E ACESSO',
+                          color: const Color(0xFF7DD3A0),
+                          child: const _SecuritySection(),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.privacy_tip_outlined,
+                          label: 'PRIVACIDADE',
+                          color: const Color(0xFF7AA2F7),
+                          child: const _PrivacySection(),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.manage_accounts_outlined,
+                          label: 'CONTA E ACESSO',
+                          color: const Color(0xFFE5B97A),
+                          child: const _CredentialsSection(),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.notifications_outlined,
+                          label: 'NOTIFICAÇÕES',
+                          color: const Color(0xFFA78BFA),
+                          child: const _NotificationsSection(),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.palette_outlined,
+                          label: 'APARÊNCIA',
+                          color: const Color(0xFF9FB3C8),
+                          child: const _AppearanceSection(),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.language_rounded,
+                          label: 'IDIOMA E MOEDA',
+                          color: const Color(0xFF60A5FA),
+                          child: const _LocaleSection(),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSection(
+                          icon: Icons.power_settings_new_rounded,
+                          label: 'SESSÃO',
+                          color: AppColors.error,
+                          child: const _SessionSection(),
+                        ),
+                        SizedBox(height: bottomSectionPadding),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          if (widget.showPrimaryNavigation)
+            AppPrimaryNavigationBar.overlay(
+              currentDestination: AppPrimaryDestination.settings,
+            ),
+        ],
       ),
     );
   }
@@ -232,7 +258,7 @@ class _SettingsHeader extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white10),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
             ),
             child:
                 const Icon(Icons.tune_rounded, color: Colors.white38, size: 18),
@@ -262,10 +288,11 @@ class _SettingsOverviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final biometricState = ref.watch(biometricProvider);
-    final ghostMode = ref.watch(ghostModeProvider);
+    final alerts = ref.watch(alertPreferencesProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
     final locale = ref.watch(localeProvider).locale;
     final currency = ref.watch(currencyProvider);
+    final appearance = ref.watch(appearanceProvider);
 
     final biometricLabel = biometricState.isLoading
         ? 'Verificando'
@@ -286,7 +313,7 @@ class _SettingsOverviewCard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Revise rapidamente a postura atual de acesso, privacidade e exibição antes de alterar detalhes finos.',
+                AppCopy.settingsOverviewSummary.resolve(context),
                 style: AppTypography.bodySmall.copyWith(
                   color: Colors.white54,
                   height: 1.6,
@@ -298,25 +325,34 @@ class _SettingsOverviewCard extends ConsumerWidget {
                 runSpacing: AppSpacing.sm,
                 children: [
                   _OverviewPill(
-                    label: 'Roteamento',
-                    value: ghostMode ? 'Onion ativo' : 'Conexão direta',
-                    color: const Color(0xFF7AA2F7),
+                    label: 'Alertas',
+                    value: alerts.backgroundAlertsEnabled
+                        ? 'Segundo plano ativo'
+                        : 'Desativados',
+                    color: const Color(0xFFA78BFA),
                   ),
                   _OverviewPill(
-                    label: 'Biometria',
+                    label: AppCopy.settingsBiometrics.resolve(context),
                     value: biometricLabel,
                     color: const Color(0xFFF2C94C),
                   ),
                   _OverviewPill(
-                    label: 'Saldo',
-                    value: balanceSettings.isHidden ? 'Oculto' : 'Visível',
+                    label: AppCopy.settingsBalance.resolve(context),
+                    value: balanceSettings.isHidden
+                        ? AppCopy.settingsHidden.resolve(context)
+                        : AppCopy.settingsVisible.resolve(context),
                     color: const Color(0xFF7DD3A0),
                   ),
                   _OverviewPill(
-                    label: 'Localização',
+                    label: AppCopy.settingsLocation.resolve(context),
                     value:
                         '${locale.languageCode.toUpperCase()} · ${_currencyLabel(currency)}',
                     color: const Color(0xFFE5B97A),
+                  ),
+                  _OverviewPill(
+                    label: 'Tema',
+                    value: appearance.themeVariant.label,
+                    color: const Color(0xFF9FB3C8),
                   ),
                 ],
               ),
@@ -347,9 +383,9 @@ class _OverviewPill extends StatelessWidget {
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.18)),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,10 +479,11 @@ class _AppearanceSection extends ConsumerWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E5BC).withOpacity(0.1),
+                      color: const Color(0xFF00E5BC).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: const Color(0xFF00E5BC).withOpacity(0.3)),
+                          color:
+                              const Color(0xFF00E5BC).withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       appearance.fontScale.label,
@@ -464,7 +501,7 @@ class _AppearanceSection extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white10),
                 ),
@@ -483,7 +520,7 @@ class _AppearanceSection extends ConsumerWidget {
                   activeTrackColor: const Color(0xFF00E5BC),
                   inactiveTrackColor: Colors.white10,
                   thumbColor: const Color(0xFF00E5BC),
-                  overlayColor: const Color(0xFF00E5BC).withOpacity(0.12),
+                  overlayColor: const Color(0xFF00E5BC).withValues(alpha: 0.12),
                   trackHeight: 2,
                   thumbShape:
                       const RoundSliderThumbShape(enabledThumbRadius: 8),
@@ -552,14 +589,7 @@ class _ThemeChip extends StatelessWidget {
   });
 
   Color get _previewBg {
-    switch (variant) {
-      case AppThemeVariant.dark:
-        return const Color(0xFF1A1A1B);
-      case AppThemeVariant.amoled:
-        return const Color(0xFF000000);
-      case AppThemeVariant.dimmed:
-        return const Color(0xFF232536);
-    }
+    return AppTheme.paletteFor(variant).background;
   }
 
   @override
@@ -574,12 +604,12 @@ class _ThemeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF00E5BC).withOpacity(0.08)
-              : Colors.white.withOpacity(0.03),
+              ? const Color(0xFF00E5BC).withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? const Color(0xFF00E5BC).withOpacity(0.5)
+                ? const Color(0xFF00E5BC).withValues(alpha: 0.5)
                 : Colors.white12,
             width: selected ? 1.5 : 1,
           ),
@@ -619,26 +649,10 @@ class _PrivacySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ghostMode = ref.watch(ghostModeProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
 
     return _Card(
       children: [
-        _SwitchTile(
-          icon: Icons.travel_explore_rounded,
-          iconColor: const Color(0xFF7AA2F7),
-          title: 'Roteamento onion',
-          subtitle: ghostMode
-              ? 'Todo o tráfego segue pela rede protegida da plataforma'
-              : 'Conexão direta com menor proteção de metadados',
-          value: ghostMode,
-          accentColor: const Color(0xFF7AA2F7),
-          onChanged: (value) {
-            HapticFeedback.mediumImpact();
-            ref.read(ghostModeProvider.notifier).update(value);
-          },
-        ),
-        _Divider(),
         _SwitchTile(
           icon: Icons.visibility_off_outlined,
           iconColor: const Color(0xFF7AA2F7),
@@ -691,6 +705,7 @@ class _LocaleSection extends ConsumerWidget {
     ];
 
     final currencies = [
+      _CurrItem(Currency.btc, '₿', 'BTC — Bitcoin'),
       _CurrItem(Currency.usd, '\$', 'USD — Dólar'),
       _CurrItem(Currency.brl, 'R\$', 'BRL — Real'),
       _CurrItem(Currency.eur, '€', 'EUR — Euro'),
@@ -774,9 +789,59 @@ class _SecuritySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bioState = ref.watch(biometricProvider);
+    final securityAsync = ref.watch(securityStatusProvider);
+    final securitySubtitle = securityAsync.when(
+      data: (security) => security.unprotected
+          ? 'Conta não protegida. Revise TOTP e backup codes.'
+          : 'Conta protegida com senha forte, passkey e fatores opcionais.',
+      loading: () => 'Consultando estado da conta',
+      error: (_, __) => 'Não foi possível consultar a segurança da conta',
+    );
+    final passkeySubtitle = securityAsync.when(
+      data: (security) => security.passkeyRegistered
+          ? 'Passkey já registrada para esta conta'
+          : 'Registrar uma passkey protegida por biometria',
+      loading: () => 'Consultando passkey',
+      error: (_, __) => 'Não foi possível consultar a passkey',
+    );
+    final showUnprotectedBanner = securityAsync.maybeWhen(
+      data: (security) => security.unprotected,
+      orElse: () => false,
+    );
 
     return _Card(
       children: [
+        if (showUnprotectedBanner) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.28),
+              ),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CONTA NÃO PROTEGIDA',
+                  style: TextStyle(
+                    color: Color(0xFFF59E0B),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'O TOTP está desligado. Abra a central de segurança para ativar o autenticador e revisar os backup codes.',
+                  style: TextStyle(color: Colors.white70, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          _Divider(),
+        ],
         if (bioState.isSupported)
           _SwitchTile(
             icon: Icons.fingerprint_rounded,
@@ -791,27 +856,29 @@ class _SecuritySection extends ConsumerWidget {
             },
           ),
         if (bioState.isSupported) _Divider(),
-        // Passkey Management
+        _ActionTile(
+          icon: Icons.security_rounded,
+          iconColor: const Color(0xFF7AA2F7),
+          title: 'Central de segurança',
+          subtitle: securitySubtitle,
+          trailing: Icons.chevron_right_rounded,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SecuritySettingsScreen(),
+            ),
+          ),
+        ),
+        _Divider(),
         _ActionTile(
           icon: Icons.key_rounded,
           iconColor: const Color(0xFFF59E0B),
-          title: 'Gerenciar passkey',
-          subtitle: 'Registrar ou atualizar chave de hardware',
+          title: 'Passkey',
+          subtitle: passkeySubtitle,
           trailing: Icons.chevron_right_rounded,
           onTap: () => _showPasskeySheet(context, ref),
         ),
         _Divider(),
-        // Backup Codes
-        _ActionTile(
-          icon: Icons.emergency_rounded,
-          iconColor: const Color(0xFFEF4444), // Vermelho para emergência
-          title: 'Códigos de backup',
-          subtitle: 'Códigos de recuperação para o 2FA',
-          trailing: Icons.chevron_right_rounded,
-          onTap: () => _showBackupCodesSheet(context, ref),
-        ),
-        _Divider(),
-        // Session Info
         _ActionTile(
           icon: Icons.devices_rounded,
           iconColor: Colors.white38,
@@ -844,133 +911,6 @@ class _SecuritySection extends ConsumerWidget {
         message:
             'O gerenciamento de sessão é feito automaticamente pelo servidor. Cada dispositivo é identificado por um X-Device-Hash exclusivo. Encerre a sessão para revogar o acesso atual.',
       ),
-    );
-  }
-
-  // ─── Backup Codes Sheet ───────────────────────────────────────────────────────
-  void _showBackupCodesSheet(BuildContext context, WidgetRef ref) async {
-    final repo = ref.read(authRepositoryProvider);
-    final result = await repo.getBackupCodes();
-
-    if (!context.mounted) return;
-
-    List<String> codes = [];
-    String error = '';
-    result.fold(
-      (failure) => error = failure.message,
-      (data) => codes = data,
-    );
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Text(
-                'CÓDIGOS DE BACKUP',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const Text(
-                'Guarde estes códigos em local seguro. Eles podem ser usados para entrar caso você perca acesso ao autenticador.',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              if (error.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    error,
-                    style: const TextStyle(color: Colors.redAccent),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.center,
-                    children: codes
-                        .map((code) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                code,
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                            ))
-                        .toList(),
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.xxl),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('JÁ GUARDEI',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-          ),
-        );
-      },
     );
   }
 }
@@ -1031,17 +971,6 @@ class _CredentialsSection extends ConsumerWidget {
         ),
         _Divider(),
 
-        // Change passphrase
-        _ActionTile(
-          icon: Icons.lock_outline_rounded,
-          iconColor: const Color(0xFFFF6B6B),
-          title: 'Alterar frase secreta',
-          subtitle: 'Exige a frase secreta atual para confirmar',
-          trailing: Icons.chevron_right_rounded,
-          onTap: () => _showChangePassphraseSheet(context, ref, username),
-        ),
-        _Divider(),
-
         // Danger zone: delete account
         _ActionTile(
           icon: Icons.delete_forever_rounded,
@@ -1053,16 +982,6 @@ class _CredentialsSection extends ConsumerWidget {
           onTap: () => _showDeleteConfirmDialog(context, ref),
         ),
       ],
-    );
-  }
-
-  void _showChangePassphraseSheet(
-      BuildContext context, WidgetRef ref, String username) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _ChangePassphraseSheet(username: username, ref: ref),
     );
   }
 
@@ -1097,65 +1016,138 @@ class _NotificationsSection extends ConsumerStatefulWidget {
 }
 
 class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
-  bool _transactionAlerts = true;
-  bool _securityAlerts = true;
-  bool _priceAlerts = false;
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
+    final alerts = ref.watch(alertPreferencesProvider);
+    final alertsEnabled = alerts.backgroundAlertsEnabled;
+
     return _Card(
       children: [
         _SwitchTile(
-          icon: Icons.swap_horiz_rounded,
+          icon: Icons.notifications_active_rounded,
           iconColor: const Color(0xFFA78BFA),
-          title: 'Alertas de transação',
-          subtitle: 'Avisar em cada envio e recebimento',
-          value: _transactionAlerts,
+          title: 'Alertas de transação e segurança',
+          subtitle: alertsEnabled
+              ? 'Ativo. O app permanece em segundo plano para mostrar transações e alertas de segurança.'
+              : 'Ative para manter o app em segundo plano e receber transações e alertas de segurança.',
+          value: alertsEnabled,
           accentColor: const Color(0xFFA78BFA),
-          onChanged: (v) => setState(() => _transactionAlerts = v),
+          onChanged: _isSaving ? (_) {} : _handleBackgroundAlertsToggle,
         ),
         _Divider(),
-        _SwitchTile(
-          icon: Icons.security_rounded,
-          iconColor: const Color(0xFFA78BFA),
-          title: 'Alertas de segurança',
-          subtitle: 'Tentativas de login e eventos de passkey',
-          value: _securityAlerts,
-          accentColor: const Color(0xFFA78BFA),
-          onChanged: (v) => setState(() => _securityAlerts = v),
-        ),
-        _Divider(),
-        _SwitchTile(
-          icon: Icons.show_chart_rounded,
-          iconColor: const Color(0xFFA78BFA),
-          title: 'Alertas de preço do BTC',
-          subtitle: 'Avisar em movimentos relevantes de preço',
-          value: _priceAlerts,
-          accentColor: const Color(0xFFA78BFA),
-          onChanged: (v) => setState(() => _priceAlerts = v),
-        ),
-        _Divider(),
-        _ActionTile(
-          icon: Icons.phonelink_rounded,
-          iconColor: Colors.white38,
-          title: 'Token push',
-          subtitle: 'Registrar este dispositivo novamente para push',
-          trailing: Icons.refresh_rounded,
-          onTap: () => _reRegisterToken(context),
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: const Color(0xFFA78BFA).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFA78BFA).withValues(alpha: 0.18),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  _isSaving ? Icons.sync_rounded : Icons.info_outline_rounded,
+                  color: const Color(0xFFA78BFA),
+                  size: 18,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    _isSaving
+                        ? 'Atualizando o monitoramento em segundo plano.'
+                        : 'Quando ativo, o Kerosene mantém um serviço em segundo plano para monitorar envios, recebimentos e eventos críticos de segurança. No Android, uma notificação persistente do sistema ficará visível enquanto o monitoramento estiver ligado.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Colors.white54,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 
-  void _reRegisterToken(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Atualização do token push solicitada...'),
-        backgroundColor: const Color(0xFF1A1A1B),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+  Future<void> _handleBackgroundAlertsToggle(bool enabled) async {
+    if (_isSaving) {
+      return;
+    }
+
+    if (enabled) {
+      final confirmed = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => const _BackgroundAlertsConsentSheet(),
+      );
+
+      if (confirmed != true || !mounted) {
+        return;
+      }
+
+      setState(() => _isSaving = true);
+      final permissionsGranted =
+          await NotificationService().requestPermissions();
+      if (!mounted) {
+        return;
+      }
+      if (!permissionsGranted) {
+        setState(() => _isSaving = false);
+        AppNotice.showWarning(
+          context,
+          title: 'Permissão necessária',
+          message:
+              'O sistema não liberou as notificações. Autorize o app para ativar o monitoramento em segundo plano.',
+        );
+        return;
+      }
+    } else {
+      setState(() => _isSaving = true);
+    }
+
+    try {
+      await ref
+          .read(alertPreferencesProvider.notifier)
+          .setBackgroundAlertsEnabled(enabled);
+      if (enabled) {
+        await startBackgroundService();
+      } else {
+        await stopBackgroundService();
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      AppNotice.showInfo(
+        context,
+        title: enabled ? 'Monitoramento ativo' : 'Monitoramento desativado',
+        message: enabled
+            ? 'O app continuará em segundo plano para mostrar transações e alertas de segurança.'
+            : 'O Kerosene não manterá mais o serviço em segundo plano para alertas.',
+      );
+    } catch (_) {
+      if (mounted) {
+        AppNotice.showError(
+          context,
+          title: 'Falha ao atualizar alertas',
+          message:
+              'Não foi possível alterar o monitoramento em segundo plano agora.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 }
 
@@ -1248,111 +1240,39 @@ class _PasskeySheet extends StatelessWidget {
   }
 }
 
-class _ChangePassphraseSheet extends StatefulWidget {
-  final String username;
-  final WidgetRef ref;
-  const _ChangePassphraseSheet({required this.username, required this.ref});
-
-  @override
-  State<_ChangePassphraseSheet> createState() => _ChangePassphraseSheetState();
-}
-
-class _ChangePassphraseSheetState extends State<_ChangePassphraseSheet> {
-  final _currentCtrl = TextEditingController();
-  final _newCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
-  bool _showCurrent = false;
-  bool _showNew = false;
-  bool _isLoading = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _currentCtrl.dispose();
-    _newCtrl.dispose();
-    _confirmCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (_newCtrl.text != _confirmCtrl.text) {
-      setState(() => _error = 'As novas frases secretas não coincidem.');
-      return;
-    }
-    if (_newCtrl.text.length < 8) {
-      setState(
-          () => _error = 'A frase secreta deve ter pelo menos 8 caracteres.');
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    // The API doesn't have a dedicated change-password endpoint exposed.
-    // Best practice: re-login with current credentials, then note the change.
-    // For now we simulate with a small delay and inform the user.
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              'A troca da frase secreta exige nova autenticação. Encerre a sessão e entre novamente usando a nova frase secreta.'),
-          backgroundColor: const Color(0xFF1A1A1B),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 5),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-  }
+class _BackgroundAlertsConsentSheet extends StatelessWidget {
+  const _BackgroundAlertsConsentSheet();
 
   @override
   Widget build(BuildContext context) {
     return _BottomSheetContainer(
-      title: 'Alterar frase secreta',
-      icon: Icons.lock_outline_rounded,
-      iconColor: const Color(0xFFFF6B6B),
+      title: 'Alertas em segundo plano',
+      icon: Icons.notifications_active_rounded,
+      iconColor: const Color(0xFFA78BFA),
       child: Column(
         children: [
-          _PassField(
-            controller: _currentCtrl,
-            label: 'Frase secreta atual',
-            obscure: !_showCurrent,
-            onToggle: () => setState(() => _showCurrent = !_showCurrent),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _PassField(
-            controller: _newCtrl,
-            label: 'Nova frase secreta',
-            obscure: !_showNew,
-            onToggle: () => setState(() => _showNew = !_showNew),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _PassField(
-            controller: _confirmCtrl,
-            label: 'Confirmar nova frase secreta',
-            obscure: !_showNew,
-            onToggle: () => setState(() => _showNew = !_showNew),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              _error!,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.error),
-              textAlign: TextAlign.center,
+          Text(
+            'Ao ativar esta opção, o Kerosene continuará rodando em segundo plano para mostrar transações recebidas, enviadas e alertas críticos de segurança. No Android, o sistema manterá uma notificação persistente enquanto o monitoramento estiver ativo.',
+            style: AppTypography.bodySmall.copyWith(
+              color: Colors.white54,
+              height: 1.7,
             ),
-          ],
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: _isLoading ? 'Processando...' : 'Atualizar frase secreta',
+            label: 'Ativar monitoramento',
             icon: Icons.check_rounded,
-            color: const Color(0xFFFF6B6B),
-            onTap: _isLoading ? null : _submit,
+            color: const Color(0xFFA78BFA),
+            onTap: () => Navigator.pop(context, true),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _SheetButton(
+            label: 'Cancelar',
+            icon: Icons.close_rounded,
+            color: Colors.white24,
+            isOutline: true,
+            onTap: () => Navigator.pop(context, false),
           ),
         ],
       ),
@@ -1445,7 +1365,7 @@ class _BottomSheetContainer extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1456,9 +1376,9 @@ class _BottomSheetContainer extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: iconColor.withOpacity(0.3)),
+              border: Border.all(color: iconColor.withValues(alpha: 0.3)),
             ),
             child: Icon(icon, color: iconColor, size: 26),
           ),
@@ -1505,9 +1425,10 @@ class _DangerDialog extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                border:
+                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Icon(
                 Icons.warning_amber_rounded,
@@ -1539,7 +1460,7 @@ class _DangerDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.white12),
                       ),
@@ -1560,10 +1481,10 @@ class _DangerDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.15),
+                        color: AppColors.error.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.error.withOpacity(0.5),
+                          color: AppColors.error.withValues(alpha: 0.5),
                         ),
                       ),
                       child: Text(
@@ -1605,7 +1526,7 @@ class _SectionLabel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 14, color: color),
@@ -1614,7 +1535,7 @@ class _SectionLabel extends StatelessWidget {
         Text(
           label,
           style: AppTypography.caption.copyWith(
-            color: color.withOpacity(0.8),
+            color: color.withValues(alpha: 0.8),
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
@@ -1633,9 +1554,9 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
@@ -1654,7 +1575,7 @@ class _Divider extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: Colors.white.withOpacity(0.06),
+      color: Colors.white.withValues(alpha: 0.06),
       indent: AppSpacing.lg,
     );
   }
@@ -1694,7 +1615,9 @@ class _SelectionTile extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: 14,
           ),
-          color: selected ? accentColor.withOpacity(0.05) : Colors.transparent,
+          color: selected
+              ? accentColor.withValues(alpha: 0.05)
+              : Colors.transparent,
           child: Row(
             children: [
               if (isPill)
@@ -1705,8 +1628,8 @@ class _SelectionTile extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selected
-                        ? accentColor.withOpacity(0.15)
-                        : Colors.white.withOpacity(0.05),
+                        ? accentColor.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -1783,8 +1706,8 @@ class _SwitchTile extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: value
-                  ? iconColor.withOpacity(0.12)
-                  : Colors.white.withOpacity(0.05),
+                  ? iconColor.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
@@ -1820,8 +1743,8 @@ class _SwitchTile extends StatelessWidget {
             value: value,
             onChanged: onChanged,
             activeThumbColor: accentColor,
-            activeTrackColor: accentColor.withOpacity(0.2),
-            inactiveThumbColor: Colors.white.withOpacity(0.15),
+            activeTrackColor: accentColor.withValues(alpha: 0.2),
+            inactiveThumbColor: Colors.white.withValues(alpha: 0.15),
             inactiveTrackColor: Colors.white10,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
@@ -1870,7 +1793,7 @@ class _ActionTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
@@ -1899,7 +1822,8 @@ class _ActionTile extends StatelessWidget {
                 ),
               ),
               if (trailing != null)
-                Icon(trailing, color: Colors.white.withOpacity(0.2), size: 20),
+                Icon(trailing,
+                    color: Colors.white.withValues(alpha: 0.2), size: 20),
             ],
           ),
         ),
@@ -1921,47 +1845,11 @@ class _IconButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white10),
         ),
         child: Icon(icon, color: Colors.white60, size: 18),
-      ),
-    );
-  }
-}
-
-// ─── Input Field for Sheets ───────────────────────────────────────────────────
-
-class _PassField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool obscure;
-  final VoidCallback onToggle;
-
-  const _PassField({
-    required this.controller,
-    required this.label,
-    required this.obscure,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      style: AppTypography.bodyMedium,
-      decoration: InputDecoration(
-        labelText: label,
-        suffixIcon: IconButton(
-          onPressed: onToggle,
-          icon: Icon(
-            obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-            color: Colors.white38,
-            size: 20,
-          ),
-        ),
       ),
     );
   }
@@ -1994,12 +1882,13 @@ class _SheetButton extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: isOutline ? Colors.transparent : color.withOpacity(0.12),
+            color:
+                isOutline ? Colors.transparent : color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isOutline
-                  ? Colors.white.withOpacity(0.2)
-                  : color.withOpacity(0.4),
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : color.withValues(alpha: 0.4),
             ),
           ),
           child: Row(

@@ -11,7 +11,10 @@ class SessionNotificationFeedNotifier
   void add(SessionNotificationItem item) {
     state = [
       item,
-      ...state.where((existing) => existing.id != item.id),
+      ...state.where(
+        (existing) =>
+            existing.id != item.id && existing.dedupeKey != item.dedupeKey,
+      ),
     ].take(_maxItems).toList();
   }
 

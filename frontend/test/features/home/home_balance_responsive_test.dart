@@ -134,6 +134,82 @@ void main() {
       );
       await disposeHarness(tester);
     });
+
+    testWidgets('decimal precision cycles through 8, 4 and 2 only', (
+      tester,
+    ) async {
+      final container = await pumpHarness(
+        tester,
+        size: compactPortrait,
+      );
+
+      final notifier = container.read(balanceSettingsProvider.notifier);
+
+      notifier.cycleDecimals();
+      await tester.pump();
+      expect(container.read(balanceSettingsProvider).decimalPlaces, 4);
+
+      notifier.cycleDecimals();
+      await tester.pump();
+      expect(container.read(balanceSettingsProvider).decimalPlaces, 2);
+
+      notifier.cycleDecimals();
+      await tester.pump();
+      expect(container.read(balanceSettingsProvider).decimalPlaces, 8);
+
+      expectNoLayoutExceptions(
+        tester,
+        label: 'Home balance harness after decimal cycling',
+      );
+      await tester.pump(const Duration(seconds: 2));
+      await disposeHarness(tester);
+    });
+
+    testWidgets('tapping the decimal area triggers the precision callback', (
+      tester,
+    ) async {
+      var tapCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            backgroundColor: const Color(0xFF02050C),
+            body: Center(
+              child: AnimatedBalanceDisplay(
+                balance: 1234.5678,
+                prefix: 'BTC ',
+                decimalPlaces: 4,
+                locale: 'pt_BR',
+                onDecimalTap: () => tapCount++,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 40,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AnimatedBalanceDisplay),
+          matching: find.byType(GestureDetector),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(tapCount, 1);
+      expectNoLayoutExceptions(
+        tester,
+        label: 'Animated balance decimal tap target',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
   });
 }
 
@@ -194,21 +270,20 @@ class _HomeBalanceHarness extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: SizedBox(
                       width: 303,
-                      height: 175,
+                      height: 191,
                       child: WalletCreditCard(
                         wallet: wallet,
                         colorIndex: 0,
                         isSelected: true,
                         showDetails: true,
-                        enableInteractiveMotion: false,
-                        allowConfigNavigationOnLongPress: false,
+                        onLongPress: () {},
                       ),
                     ),
                   ),

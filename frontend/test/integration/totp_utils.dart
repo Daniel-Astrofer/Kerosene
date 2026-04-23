@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
@@ -10,7 +9,7 @@ class TotpGenerator {
     final key = _base32Decode(secret);
     final time = timeMs ?? DateTime.now().millisecondsSinceEpoch;
     int counter = (time ~/ 30000); // Removido 'final' para permitir bit-shift
-    
+
     // Counter to 8-byte big-endian
     final msg = Uint8List(8);
     for (int i = 7; i >= 0; i--) {
@@ -25,9 +24,9 @@ class TotpGenerator {
     // Dynamic Truncation
     final offset = hash[hash.length - 1] & 0xf;
     final binary = ((hash[offset] & 0x7f) << 24) |
-                   ((hash[offset + 1] & 0xff) << 16) |
-                   ((hash[offset + 2] & 0xff) << 8) |
-                   (hash[offset + 3] & 0xff);
+        ((hash[offset + 1] & 0xff) << 16) |
+        ((hash[offset + 2] & 0xff) << 8) |
+        (hash[offset + 3] & 0xff);
 
     final otp = binary % 1000000;
     return otp.toString().padLeft(6, '0');
@@ -38,11 +37,11 @@ class TotpGenerator {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     final clean = base32.toUpperCase().replaceAll('=', '');
     final bits = clean.split('').map((c) => alphabet.indexOf(c)).toList();
-    
+
     final bytes = <int>[];
     int buffer = 0;
     int bitsLeft = 0;
-    
+
     for (final val in bits) {
       if (val == -1) continue;
       buffer = (buffer << 5) | val;

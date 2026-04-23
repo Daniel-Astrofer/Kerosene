@@ -57,17 +57,25 @@ class _CyberButtonState extends State<CyberButton> {
             gradient: isDisabled
                 ? null
                 : LinearGradient(
-                    colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary
+                    ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-            color: isDisabled ? Theme.of(context).colorScheme.surfaceContainerHighest : null,
+            color: isDisabled
+                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                : null,
             borderRadius: BorderRadius.circular(AppSpacing.md),
             boxShadow: isDisabled
                 ? null
                 : [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.35),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.35),
                       blurRadius: AppSpacing.md,
                       offset: const Offset(0, AppSpacing.xs),
                     ),
@@ -87,7 +95,10 @@ class _CyberButtonState extends State<CyberButton> {
                     widget.text,
                     style: AppTypography.buttonText.copyWith(
                       color: isDisabled
-                          ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)
+                          ? Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.3)
                           : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),

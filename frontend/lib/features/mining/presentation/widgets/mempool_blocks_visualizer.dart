@@ -31,8 +31,7 @@ class MempoolBlocksVisualizer extends StatelessWidget {
         children: [
           MiningSectionHeading(
             title: 'Blocos em formação',
-            subtitle:
-                'Fila projetada da mempool ao lado das confirmações mais recentes.',
+            subtitle: 'Fila projetada ao lado das confirmações recentes.',
             trailing: MiningStatusBadge(
               label: '${visibleProjected.length} NA FILA',
               tone: MiningStatusTone.info,
@@ -43,9 +42,9 @@ class MempoolBlocksVisualizer extends StatelessWidget {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: const [
-              _LegendChip(label: 'Projeção', color: miningAmber),
+              _LegendChip(label: 'Fila', color: miningAmber),
               _LegendChip(label: 'Confirmado', color: miningTeal),
-              _LegendChip(label: 'Novo bloco', color: miningBlue),
+              _LegendChip(label: 'Novo', color: miningBlue),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -106,22 +105,13 @@ class _ProjectedBlockCard extends StatelessWidget {
     final fillRatio = block.utilization.clamp(0.0, 1.0);
 
     return Container(
-      width: 164,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: miningBorder),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF15110B),
-            Color(0xFF110F0C),
-            Color(0xFF0A0D12),
-          ],
-        ),
+      width: 156,
+      decoration: miningInsetDecoration(
+        accent: fillColor,
+        emphasized: true,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(21),
+        borderRadius: miningInnerBorderRadius,
         child: Stack(
           children: [
             Positioned.fill(
@@ -135,8 +125,8 @@ class _ProjectedBlockCard extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          fillColor.withValues(alpha: 0.14),
-                          fillColor.withValues(alpha: 0.36),
+                          fillColor.withValues(alpha: 0.08),
+                          fillColor.withValues(alpha: 0.26),
                         ],
                       ),
                     ),
@@ -149,6 +139,12 @@ class _ProjectedBlockCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    width: 28,
+                    height: 2,
+                    color: fillColor.withValues(alpha: 0.78),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   MiningStatusBadge(
                     label: 'NEXT $blockNumber',
                     tone: MiningStatusTone.warning,
@@ -156,8 +152,11 @@ class _ProjectedBlockCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     MiningFormatters.feeRate(block.medianFeeRate),
-                    style:
-                        AppTypography.h2.copyWith(fontWeight: FontWeight.w700),
+                    style: miningMonoStyle(
+                      AppTypography.h2,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
@@ -202,36 +201,22 @@ class _ConfirmedBlockCard extends StatelessWidget {
       duration: const Duration(milliseconds: 450),
       curve: Curves.easeOutCubic,
       width: 208,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: accent.withValues(alpha: highlight ? 0.52 : 0.20),
-          width: highlight ? 1.3 : 1,
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            highlight ? const Color(0xFF12213A) : miningSurfaceRaised,
-            highlight ? const Color(0xFF0B1627) : miningSurface,
-            miningInk,
-          ],
-        ),
-        boxShadow: highlight
-            ? [
-                BoxShadow(
-                  color: miningBlue.withValues(alpha: 0.22),
-                  blurRadius: 28,
-                  spreadRadius: -6,
-                ),
-              ]
-            : null,
+      decoration: miningInsetDecoration(
+        accent: accent,
+        emphasized: highlight,
+        color: highlight ? miningSurfaceElevated : miningSurfaceRaised,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: 32,
+              height: 2,
+              color: accent.withValues(alpha: highlight ? 0.82 : 0.54),
+            ),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 MiningStatusBadge(
@@ -244,7 +229,10 @@ class _ConfirmedBlockCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   timeago.format(block.timestamp, locale: 'en_short'),
-                  style: AppTypography.caption.copyWith(color: miningMuted),
+                  style: miningMonoStyle(
+                    AppTypography.caption,
+                    color: miningMuted,
+                  ),
                 ),
               ],
             ),
@@ -315,9 +303,9 @@ class _TimelineDivider extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    miningAmber.withValues(alpha: 0.70),
-                    miningBlue.withValues(alpha: 0.70),
-                    miningTeal.withValues(alpha: 0.70),
+                    miningAmber.withValues(alpha: 0.65),
+                    miningBlue.withValues(alpha: 0.65),
+                    miningTeal.withValues(alpha: 0.65),
                   ],
                 ),
               ),
@@ -328,6 +316,7 @@ class _TimelineDivider extends StatelessWidget {
             'REDE',
             style: AppTypography.caption.copyWith(
               color: miningMuted,
+              fontFamily: 'HubotSansCondensed',
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
             ),
@@ -335,7 +324,10 @@ class _TimelineDivider extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             confirmedLabel,
-            style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+            style: miningMonoStyle(
+              AppTypography.bodySmall,
+              color: Colors.white70,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
@@ -364,9 +356,9 @@ class _LegendChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
+        color: miningSurface,
+        borderRadius: miningInnerBorderRadius,
+        border: Border.all(color: miningAccentBorder(color, emphasis: 0.24)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -376,7 +368,7 @@ class _LegendChip extends StatelessWidget {
             height: 8,
             decoration: BoxDecoration(
               color: color,
-              shape: BoxShape.circle,
+              borderRadius: miningInnerBorderRadius,
             ),
           ),
           const SizedBox(width: 8),
@@ -384,7 +376,9 @@ class _LegendChip extends StatelessWidget {
             label,
             style: AppTypography.caption.copyWith(
               color: color,
+              fontFamily: 'HubotSansCondensed',
               fontWeight: FontWeight.w700,
+              letterSpacing: 0.9,
             ),
           ),
         ],
@@ -409,7 +403,10 @@ class _MetricLine extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: AppTypography.caption.copyWith(color: miningMuted),
+            style: AppTypography.caption.copyWith(
+              color: miningMuted,
+              fontFamily: 'HubotSansCondensed',
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -417,9 +414,11 @@ class _MetricLine extends StatelessWidget {
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: AppTypography.bodySmall.copyWith(
+            style: miningMonoStyle(
+              AppTypography.bodySmall,
               color: Colors.white,
               fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -430,16 +429,8 @@ class _MetricLine extends StatelessWidget {
 }
 
 Color _feeAccent(double feeRate) {
-  if (feeRate >= 80) {
-    return miningRed;
-  }
-  if (feeRate >= 40) {
-    return miningAmber;
-  }
-  if (feeRate >= 15) {
-    return miningBlue;
-  }
-  return miningTeal;
+  final normalized = (feeRate / 90).clamp(0.0, 1.0);
+  return Color.lerp(miningRed, miningTeal, normalized) ?? miningBlue;
 }
 
 String _shortHash(String hash) {

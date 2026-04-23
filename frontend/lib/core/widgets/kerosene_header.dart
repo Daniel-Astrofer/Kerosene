@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 
 /// Glass-morphism top bar with blurred background.
@@ -24,7 +25,7 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
           child: SafeArea(
             bottom: false,
             child: SizedBox(
@@ -35,19 +36,25 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     if (showBackButton)
                       IconButton(
-                        onPressed: onBackPressed ?? () => Navigator.pop(context),
-                        icon: Icon(
-                          LucideIcons.arrowLeft,
+                        onPressed:
+                            onBackPressed ?? () => Navigator.pop(context),
+                        icon: AnimatedGlyphIcon(
+                          icon: LucideIcons.arrowLeft,
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 24,
                         ),
                         style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.05),
                           padding: const EdgeInsets.all(AppSpacing.sm),
                         ),
                       )
                     else
-                      const SizedBox(width: 48), // Spacer to balance title alignment if needed
+                      const SizedBox(
+                          width:
+                              48), // Spacer to balance title alignment if needed
 
                     const SizedBox(width: AppSpacing.sm),
 
@@ -57,19 +64,22 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
                               title!,
                               style: Theme.of(context).textTheme.titleMedium!,
                               textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             )
                           : const SizedBox.shrink(),
                     ),
 
                     const SizedBox(width: AppSpacing.sm),
-                    
+
                     if (actions != null)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: actions!,
                       )
                     else
-                      const SizedBox(width: 48), // Spacer to balance title alignment
+                      const SizedBox(
+                          width: 48), // Spacer to balance title alignment
                   ],
                 ),
               ),

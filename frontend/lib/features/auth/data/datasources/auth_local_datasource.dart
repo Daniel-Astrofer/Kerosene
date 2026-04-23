@@ -16,6 +16,9 @@ abstract class AuthLocalDataSource {
   /// Remover JWT token
   Future<void> removeToken();
 
+  /// Obter username do usuário logado
+  Future<String?> getUsername();
+
   /// Salvar dados do usuário
   Future<void> saveUser(UserModel user);
 
@@ -105,6 +108,16 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
       await secureStorage.delete(key: AppConfig.authTokenKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao remover token: $e');
+    }
+  }
+
+  @override
+  Future<String?> getUsername() async {
+    try {
+      final user = await getUser();
+      return user?.username;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -205,7 +218,17 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<bool> isAuthenticated() async {
     try {
       final token = await getToken();
-      return token != null && token.isNotEmpty;
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+
+      final looksLikeJwt = token.split('.').length == 3;
+      if (!looksLikeJwt) {
+        await removeToken();
+        return false;
+      }
+
+      return true;
     } catch (e) {
       return false;
     }

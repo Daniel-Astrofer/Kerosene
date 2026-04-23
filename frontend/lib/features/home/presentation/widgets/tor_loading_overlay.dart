@@ -1,10 +1,9 @@
-import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../wallet/presentation/providers/wallet_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
-import '../../../../core/providers/shader_provider.dart';
 
 class TorLoadingOverlay extends ConsumerStatefulWidget {
   final Future<void> Function() onComplete;
@@ -17,7 +16,7 @@ class TorLoadingOverlay extends ConsumerStatefulWidget {
 
 class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _timeController;
+  late final AnimationController _controller;
   bool _isTransitioning = false;
   double _transitionOpacity = 1.0;
   bool _minDurationReached = false;
@@ -25,9 +24,9 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
   @override
   void initState() {
     super.initState();
-    _timeController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(milliseconds: 1400),
     )..repeat();
 
     // Ensure we wait at least 3 seconds
@@ -46,7 +45,8 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
     // Check if data is already loaded immediately (for edge cases)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = ref.read(walletProvider);
-      if ((state is WalletLoaded || state is WalletError) && _minDurationReached) {
+      if ((state is WalletLoaded || state is WalletError) &&
+          _minDurationReached) {
         _finishLoading();
       }
     });
@@ -54,30 +54,21 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
 
   Future<void> _finishLoading() async {
     if (_isTransitioning) return;
-    
-    // Logic: Only finish if both conditions are met
-    // 1. Minimum duration (3s) reached
-    // 2. Data is loaded (handled by listener or callback)
     if (!_minDurationReached) return;
-
     if (!mounted) return;
 
-    // Trigger visual fade out
     setState(() {
       _isTransitioning = true;
       _transitionOpacity = 0.0;
     });
 
-    // Wait for fade animation to end
     await Future.delayed(const Duration(milliseconds: 1000));
-
-    // Unblock the main app UI
     widget.onComplete();
   }
 
   @override
   void dispose() {
-    _timeController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -89,68 +80,111 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
       }
     });
 
-    final shaderAsync = ref.watch(bitcoinShaderProvider);
-
     return AnimatedOpacity(
       opacity: _transitionOpacity,
       duration: const Duration(milliseconds: 1000),
-      curve: Curves.easeInOutBack,
+      curve: Curves.easeInOutQuad,
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.onSurface,
-        body: shaderAsync.when(
-          data: (program) => SizedBox.expand(
-            child: AnimatedBuilder(
-              animation: _timeController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: _BitcoinHodlPainter(
-                    program: program,
-                    time: _timeController.value * 6.28318,
-                    isDelayed: _minDurationReached,
-                  ),
-                );
-              },
-            ),
+        backgroundColor: const Color(0xFF020202), // Dark mode profundo
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _JumpingDots(controller: _controller),
+            ],
           ),
-          loading: () => const SizedBox.expand(),
-          error: (err, stack) => const SizedBox.expand(),
         ),
       ),
     );
   }
 }
 
-class _BitcoinHodlPainter extends CustomPainter {
-  final FragmentProgram program;
-  final double time;
-  final bool isDelayed;
+class _JumpingDots extends StatelessWidget {
+  final AnimationController controller;
 
-  _BitcoinHodlPainter({
-    required this.program,
-    required this.time,
-    required this.isDelayed,
+  const _JumpingDots({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    const dotSize = 10.0;
+    const spacing = 12.0;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: spacing / 2),
+          child: _SingleJumpingDot(
+            index: index,
+            controller: controller,
+            size: dotSize,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _SingleJumpingDot extends StatelessWidget {
+  final int index;
+  final AnimationController controller;
+  final double size;
+
+  const _SingleJumpingDot({
+    required this.index,
+    required this.controller,
+    required this.size,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final shader = program.fragmentShader();
+  Widget build(BuildContext context) {
+    // 0.0 to 1.0 cycle
+    // Stagger dots: 0.0, 0.2, 0.4 start times
+    final start = index * 0.15;
+    final end = start + 0.5;
 
-    // 1. iResolution
-    shader.setFloat(0, size.width);
-    shader.setFloat(1, size.height);
+    final animation = CurvedAnimation(
+      parent: controller,
+      curve: Interval(
+        start.clamp(0.0, 1.0),
+        end.clamp(0.0, 1.0),
+        curve: _BouncyCurve(),
+      ),
+    );
 
-    // 2. iTime
-    shader.setFloat(2, time);
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final double dy = -16.0 * animation.value; // Slightly higher jump
+        final double opacity = 0.2 + (0.8 * animation.value);
+        final double scale = 0.8 + (0.3 * animation.value); // Scale effect
 
-    // 3. uIsDelayed
-    shader.setFloat(3, isDelayed ? 1.0 : 0.0);
-
-    final paint = Paint()..shader = shader;
-    canvas.drawRect(Offset.zero & size, paint);
+        return Transform.translate(
+          offset: Offset(0, dy),
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: opacity),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
+}
 
+/// A curve that goes up and down (0 -> 1 -> 0)
+class _BouncyCurve extends Curve {
   @override
-  bool shouldRepaint(covariant _BitcoinHodlPainter oldDelegate) {
-    return oldDelegate.time != time;
+  double transformInternal(double t) {
+    // Basic sine wave segment for jump
+    return (t < 0.5)
+        ? Curves.easeOutCubic.transform(t * 2)
+        : Curves.easeInCubic.transform(1 - (t - 0.5) * 2);
   }
 }

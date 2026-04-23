@@ -11,6 +11,7 @@ Documento baseado nos arquivos Docker, compose, propriedades Spring e scripts ex
 | `backend/kerosene-infrastructure/images/app/Dockerfile` | Build do backend principal em Java 21 com runtime Distroless. |
 | `backend/kerosene-infrastructure/images/vault/Dockerfile` | Build do Vault Maven/Java 21 com runtime Distroless. |
 | `backend/kerosene/tor/Dockerfile` | Imagem Tor baseada em Debian Bookworm Slim. |
+| `backend/kerosene/tor/vanguards/Dockerfile` | Imagem sidecar do addon oficial Tor Vanguards para os shards. |
 | `backend/mpc-sidecar/Dockerfile` | Build Go/gRPC do sidecar MPC. |
 | `backend/kerosene-infrastructure/scripts/init-local.sh` | Bootstrap local: valida `.env`, tenta gerar certificados e reescreve `torrc`. |
 | `scripts/start-local.sh` | Wrapper local canonico para inicializar o backend via compose. |
@@ -46,6 +47,7 @@ Servicos definidos:
 | `mpc-sidecar-is`, `mpc-sidecar-ch`, `mpc-sidecar-sg` | Sidecars Go/gRPC usados por `MPC_SIDECAR_HOST`. |
 | `kerosene-app-is`, `kerosene-app-ch`, `kerosene-app-sg` | API principal por regiao. |
 | `kerosene-tor-is`, `kerosene-tor-ch`, `kerosene-tor-sg` | Hidden services Tor dos shards. |
+| `kerosene-vanguards-is`, `kerosene-vanguards-ch`, `kerosene-vanguards-sg` | Addon Vanguards preso ao `ControlSocket` do Tor por shard. |
 
 Redes definidas:
 
@@ -64,6 +66,9 @@ pg_data_is, pg_data_ch, pg_data_sg
 redis_data_is, redis_data_ch, redis_data_sg
 mpc_shards_is, mpc_shards_ch, mpc_shards_sg
 tor_socks_is, tor_socks_ch, tor_socks_sg
+tor_data_is, tor_data_ch, tor_data_sg
+tor_control_is, tor_control_ch, tor_control_sg
+vanguards_state_is, vanguards_state_ch, vanguards_state_sg
 tor_keys_vault, tor_keys_is, tor_keys_ch, tor_keys_sg
 shard_identity_is, shard_identity_ch, shard_identity_sg
 ```
@@ -79,6 +84,7 @@ flowchart TB
     AppIS --> RedisIS[(redis-is)]
     AppIS --> MpcIS[mpc-sidecar-is]
     TorIS[kerosene-tor-is] --> AppIS
+    VgIS[kerosene-vanguards-is] --> TorIS
   end
 
   subgraph CH[Shard CH]
@@ -86,6 +92,7 @@ flowchart TB
     AppCH --> RedisCH[(redis-ch)]
     AppCH --> MpcCH[mpc-sidecar-ch]
     TorCH[kerosene-tor-ch] --> AppCH
+    VgCH[kerosene-vanguards-ch] --> TorCH
   end
 
   subgraph SG[Shard SG]
@@ -93,6 +100,7 @@ flowchart TB
     AppSG --> RedisSG[(redis-sg)]
     AppSG --> MpcSG[mpc-sidecar-sg]
     TorSG[kerosene-tor-sg] --> AppSG
+    VgSG[kerosene-vanguards-sg] --> TorSG
   end
 
   TorVault[kerosene-tor-vault] --> Vault[kerosene-vault]
@@ -143,11 +151,17 @@ Arquivos:
 - `backend/kerosene/tor/torrc-ch`.
 - `backend/kerosene/tor/torrc-sg`.
 - `backend/kerosene/tor/torrc-vault`.
+- `backend/kerosene/tor/vanguards/Dockerfile`.
+- `backend/kerosene/tor/vanguards/entrypoint.sh`.
+- `backend/kerosene/tor/vanguards/vanguards.conf`.
 
 Configuracao real dos shards:
 
 ```text
 SocksPort unix:/var/run/tor/socks/tor.sock WorldWritable
+ControlSocket /var/run/tor/control/control
+CookieAuthentication 1
+CookieAuthFile /var/run/tor/control/control_auth_cookie
 HiddenServicePort 80 kerosene-app-<region>-local:8080
 ```
 
@@ -162,8 +176,40 @@ O entrypoint:
 
 - Verifica o hash do binario Tor se `EXPECTED_TOR_HASH` estiver definida.
 - Cria usuario `kerosene` com UID/GID `65532`.
-- Ajusta permissoes de `/var/run/tor/socks` e `/var/lib/tor/kerosene_service`.
+- Ajusta permissoes de `/var/run/tor/socks`, `/var/run/tor/control` e `/var/lib/tor/kerosene_service`.
 - Inicia `tor -f /etc/tor/torrc`.
+
+## Tor Vanguards
+
+Os shards IS, CH e SG executam um sidecar `vanguards` separado do processo Tor.
+
+Decisao de desenho:
+
+- o addon nao compartilha rede com nenhum outro servico; ele roda com `network_mode: none`;
+- o acoplamento com Tor acontece apenas por volume do `ControlSocket` e cookie;
+- o estado operacional fica em volume dedicado `vanguards_state_<region>`;
+- o backend principal monta esse estado como somente leitura para publicar health via Actuator.
+
+Volumes por shard:
+
+| Volume | Escritor | Leitor | Papel |
+| --- | --- | --- | --- |
+| `tor_data_<region>` | Tor | Vanguards | `DataDirectory` com consenso e caches necessarios para o addon. |
+| `tor_control_<region>` | Tor | Vanguards | `ControlSocket` e `control_auth_cookie`. |
+| `vanguards_state_<region>` | Vanguards | App | `vanguards.state` usado para health e auditoria operacional. |
+
+Healthchecks reais:
+
+- Tor: `test -f /tmp/tor-ready`
+- Vanguards: `test -f /tmp/vanguards-ready`
+
+Subida:
+
+1. `kerosene-tor-<region>` sobe e conclui bootstrap.
+2. `kerosene-vanguards-<region>` autentica no `ControlSocket`.
+3. O addon escreve `vanguards.state` e permanece supervisionando guard layers, bandguards e rendguard.
+
+Observacao: o Vault continua com hidden service Tor isolado, mas sem sidecar `vanguards` nesta implementacao. O requisito aplicado aqui foi exatamente nos 3 shards regionais.
 
 ## Banco de Dados
 
@@ -215,18 +261,31 @@ REDIS_PASSWORD
 AES_SECRET
 JWT_SECRET
 PASSWORD_PEPPER
-API_KEY
 FOUNDER_TOTP_SECRET
 HMAC_SECRET_KEY
 WEBAUTHN_RP_ID
 WEBAUTHN_RP_NAME
 WEBAUTHN_ORIGINS
+BITCOIN_ESPLORA_BASE_URL
+BITCOIN_PLATFORM_MASTER_XPUB
+BITCOIN_HOT_WALLET_ADDRESS
+BITCOIN_HOT_WALLET_XPUB
+BITCOIN_HOT_WALLET_XPUB_SCAN_RANGE
 EXPECTED_TOR_HASH
 REGION
 MPC_SIDECAR_HOST
 VAULT_ENABLED
 VAULT_ONION_FILE
 VAULT_PROXY_PATH
+CUSTODY_PROVIDER_NAME
+CUSTODY_BASE_URL
+CUSTODY_API_KEY
+CUSTODY_MOCK_MODE
+CUSTODY_ONCHAIN_ADDRESS_PATH
+CUSTODY_LIGHTNING_INVOICE_PATH
+CUSTODY_ONCHAIN_SEND_PATH
+CUSTODY_LIGHTNING_PAY_PATH
+TOR_HEALTH_VANGUARDS_STATE_FILE
 ```
 
 Variaveis com defaults no codigo:
@@ -235,6 +294,11 @@ Variaveis com defaults no codigo:
 - `bitcoin.min-confirmations`.
 - `bitcoin.payment-link-expiration-minutes`.
 - `bitcoin.mock-mode`.
+- `bitcoin.esplora.base-url`.
+- `bitcoin.platform.master-xpub`.
+- `bitcoin.hot-wallet.address`.
+- `bitcoin.hot-wallet.xpub`.
+- `bitcoin.hot-wallet.xpub-scan-range`.
 - `audit.merkle.interval-ms`.
 - `blockchain.monitor.interval.min`.
 - `blockchain.monitor.interval.max`.
@@ -243,6 +307,23 @@ Variaveis com defaults no codigo:
 - `onramp.bipa.url`.
 - `bitcoin.network`.
 - `bitcoin.derivation.salt`.
+- `transactions.external.fee-rate`.
+- `transactions.local-address-provider-name`.
+- `lightning.default-max-routing-fee-sats`.
+- `custody.provider-name`.
+- `custody.onchain-address-path`.
+- `custody.lightning-invoice-path`.
+- `custody.onchain-send-path`.
+- `custody.lightning-pay-path`.
+
+Configuracao nova de custodia/pagamentos externos:
+
+- `transactions.external.fee-rate`: taxa percentual aplicada em saidas externas; default real `0.009` (0.9%).
+- `lightning.default-max-routing-fee-sats`: reserva default de fee Lightning; default real `60` sats.
+- `custody.*`: define o adapter HTTP para provider externo de carteira/custodia. O nome default configurado no backend e `BCX`.
+- Se `custody.base-url` ou `custody.api-key` nao estiverem configurados, o backend entra em fallback:
+  - enderecos on-chain usam derivacao local a partir de uma branch por wallet da carteira principal da Kerosene (`bitcoin.platform.master-xpub` com fallback para `bitcoin.hot-wallet.xpub`).
+  - Lightning usa invoices/pagamentos mock deterministas para desenvolvimento.
 
 ## Validacao Antes de Deploy
 
@@ -262,5 +343,5 @@ Cuidados:
 - `docker compose config` imprime variaveis resolvidas; nao publique a saida se estiver usando `.env` real.
 - Confirme se os sidecars MPC estao definidos no compose usado em producao.
 - Confirme se os build contexts apontam para `backend/vault` e `backend/mpc-sidecar` no layout atual.
-- Confirme se `bitcoin.deposit-address` nao esta usando o default de desenvolvimento.
+- Confirme se `bitcoin.platform.master-xpub` ou `bitcoin.hot-wallet.xpub` estao configurados para a emissao dos enderecos custodiais on-chain.
 - Confirme se `WEBAUTHN_RP_ID` e `WEBAUTHN_ORIGINS` batem com o dominio/onion acessado pelo app.

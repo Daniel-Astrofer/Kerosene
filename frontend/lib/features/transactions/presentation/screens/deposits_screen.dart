@@ -14,6 +14,7 @@ import 'package:teste/features/notifications/presentation/widgets/session_notifi
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_activity_details_sheet.dart';
+import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/balance_websocket_provider.dart';
@@ -1005,6 +1006,7 @@ class _HistoryListRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final visual = TransactionVisualSpec.fromTransaction(transaction);
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
@@ -1024,7 +1026,13 @@ class _HistoryListRow extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           children: [
-            _MonoIconBox(icon: _historyTypeIcon(transaction)),
+            TransactionTypeIconBadge(
+              spec: visual,
+              size: 34,
+              iconSize: 16,
+              backgroundColor: _surfacePressed,
+              borderColor: _border,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1034,7 +1042,7 @@ class _HistoryListRow extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _historyTypeLabel(transaction),
+                          visual.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -1132,6 +1140,7 @@ class _HistoryTableRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final visual = TransactionVisualSpec.fromTransaction(transaction);
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
@@ -1154,12 +1163,17 @@ class _HistoryTableRow extends ConsumerWidget {
               width: 240,
               child: Row(
                 children: [
-                  _MonoIconBox(
-                      icon: _historyTypeIcon(transaction), small: true),
+                  TransactionTypeIconBadge(
+                    spec: visual,
+                    size: 28,
+                    iconSize: 14,
+                    backgroundColor: _surfacePressed,
+                    borderColor: _border,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      _historyTypeLabel(transaction),
+                      visual.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -1510,16 +1524,14 @@ class _NotificationButton extends StatelessWidget {
 
 class _MonoIconBox extends StatelessWidget {
   final IconData icon;
-  final bool small;
 
   const _MonoIconBox({
     required this.icon,
-    this.small = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final size = small ? 28.0 : 34.0;
+    const size = 34.0;
 
     return Container(
       width: size,
@@ -1529,7 +1541,7 @@ class _MonoIconBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _border),
       ),
-      child: Icon(icon, size: small ? 14 : 16, color: _iconMuted),
+      child: Icon(icon, size: 16, color: _iconMuted),
     );
   }
 }
@@ -1861,40 +1873,6 @@ String _counterpartyLabel(Transaction tx) {
     return 'Sem contraparte';
   }
   return _DepositsScreenState.shorten(value, head: 12, tail: 6);
-}
-
-String _historyTypeLabel(Transaction tx) {
-  switch (tx.type) {
-    case TransactionType.deposit:
-      return 'Depósito';
-    case TransactionType.withdrawal:
-      return 'Saque';
-    case TransactionType.send:
-      return tx.isInternal ? 'Envio interno' : 'Envio';
-    case TransactionType.receive:
-      return tx.isInternal ? 'Recebimento interno' : 'Recebimento';
-    case TransactionType.swap:
-      return 'Swap';
-    case TransactionType.fee:
-      return 'Taxa';
-  }
-}
-
-IconData _historyTypeIcon(Transaction tx) {
-  switch (tx.type) {
-    case TransactionType.deposit:
-      return LucideIcons.arrowDownToLine;
-    case TransactionType.receive:
-      return LucideIcons.arrowDownLeft;
-    case TransactionType.withdrawal:
-      return LucideIcons.arrowUpFromLine;
-    case TransactionType.send:
-      return LucideIcons.arrowUpRight;
-    case TransactionType.swap:
-      return LucideIcons.arrowLeftRight;
-    case TransactionType.fee:
-      return LucideIcons.receipt;
-  }
 }
 
 String _statusLabel(TransactionStatus status) {

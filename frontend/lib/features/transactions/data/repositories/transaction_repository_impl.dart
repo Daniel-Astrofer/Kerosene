@@ -76,10 +76,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     debugPrint('>>> Receiver: [REDACTED]');
 
     try {
-      final senderHint = (fromAddress != null && fromAddress.trim().isNotEmpty)
-          ? fromAddress.trim()
-          : (fromWalletId != null && fromWalletId.trim().isNotEmpty)
-              ? fromWalletId.trim()
+      final senderHint = (fromWalletId != null && fromWalletId.trim().isNotEmpty)
+          ? fromWalletId.trim()
+          : (fromAddress != null && fromAddress.trim().isNotEmpty)
+              ? fromAddress.trim()
               : '';
       final result = await remoteDataSource.sendTransaction(
         fromAddress: senderHint,

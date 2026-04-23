@@ -10,6 +10,8 @@ import 'package:teste/features/auth/presentation/screens/signup/signup_flow_scre
 import 'package:teste/features/auth/presentation/screens/totp_screen.dart';
 import 'package:teste/features/auth/presentation/screens/biometric_auth_screen.dart';
 import 'package:teste/features/auth/presentation/screens/unknown_device_screen.dart';
+import 'package:teste/features/auth/presentation/models/signup_seed_material.dart';
+import 'package:teste/features/auth/presentation/providers/signup_flow_provider.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_requirements_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_security_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_username_step.dart';
@@ -25,6 +27,11 @@ const _mockUsername = 'satoshi_storybook';
 const _mockPassphrase =
     'abandon ability able about above absent absorb abstract absurd abuse access accident';
 const _mockSessionId = 'mock_session_123';
+const _mockSeedMaterial = SignupSeedMaterial(
+  primaryMnemonic: _mockPassphrase,
+  securityOption: SeedSecurityOption.standard,
+  wordCount: 12,
+);
 
 /// Returns all authentication-related stories for the Storybook catalog.
 List<Story> authStories() {
@@ -32,7 +39,8 @@ List<Story> authStories() {
     // ─── Onboarding ─────────────────────────────────────
     Story(
       name: 'Auth/Welcome Screen',
-      description: 'Initial landing screen with logo animation and CTA buttons.',
+      description:
+          'Initial landing screen with logo animation and CTA buttons.',
       builder: (context) => const WelcomeScreen(),
     ),
 
@@ -80,7 +88,8 @@ List<Story> authStories() {
           passphrase: _mockPassphrase,
           isSetup: isSetup,
           totpSecret: 'JBSWY3DPEHPK3PXP',
-          qrCodeUri: 'otpauth://totp/Kerosene:storybook?secret=JBSWY3DPEHPK3PXP&issuer=Kerosene',
+          qrCodeUri:
+              'otpauth://totp/Kerosene:storybook?secret=JBSWY3DPEHPK3PXP&issuer=Kerosene',
         );
       },
     ),
@@ -103,7 +112,7 @@ List<Story> authStories() {
     // ─── Signup Flow (Integrated) ────────────────────────
     Story(
       name: 'Auth/Signup — Main Flow',
-      description: 'Top-level signup orchestrator screen (9 steps).',
+      description: 'Top-level signup orchestrator screen (10 steps).',
       builder: (context) => const SignupFlowScreen(),
     ),
 
@@ -125,12 +134,17 @@ List<Story> authStories() {
     ),
     Story(
       name: 'Auth/Signup/Steps — 4. Seed Phrase',
-      builder: (context) => SignupSeedStep(onNext: (s) {}),
+      builder: (context) => SignupSeedStep(
+        seedSecurityOption: SeedSecurityOption.standard,
+        slip39Threshold: 3,
+        slip39TotalShares: 5,
+        onNext: (s) {},
+      ),
     ),
     Story(
       name: 'Auth/Signup/Steps — 5. Seed Verification',
       builder: (context) => SignupVerificationStep(
-        mnemonic: _mockPassphrase,
+        seedMaterial: _mockSeedMaterial,
         onNext: () {},
       ),
     ),
@@ -139,6 +153,7 @@ List<Story> authStories() {
       builder: (context) => SignupPaymentStep(
         username: _mockUsername,
         mnemonic: _mockPassphrase,
+        onStartPow: (security) {},
       ),
     ),
     Story(

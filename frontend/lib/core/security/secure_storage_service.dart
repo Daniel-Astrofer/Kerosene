@@ -5,14 +5,13 @@ class SecureStorageService {
   final FlutterSecureStorage _storage;
 
   SecureStorageService({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+      : _storage = storage ?? const FlutterSecureStorage();
 
   /// Options for iOS: Key accessible only when the device is unlocked
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
-  AndroidOptions _getAndroidOptions() =>
-      const AndroidOptions();
+  AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
   /// Save a value securely
   Future<void> write({required String key, required String value}) async {

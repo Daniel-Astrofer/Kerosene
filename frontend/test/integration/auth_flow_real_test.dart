@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/network/api_client.dart';
 import 'package:teste/core/network/api_client_provider.dart';
 import 'package:teste/core/services/tor_service.dart';
 import 'package:teste/core/providers/tor_providers.dart';
@@ -47,22 +46,22 @@ void main() {
 
     setUpAll(() async {
       // 2. Mock Path Provider (for Cookies)
-      const MethodChannel('plugins.flutter.io/path_provider')
-          .setMockMethodCallHandler((MethodCall methodCall) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall methodCall) async {
         if (methodCall.method == 'getApplicationDocumentsDirectory') {
           return Directory.systemTemp.path;
         }
         return null;
-      });
+      },
+      );
 
       // 3. Mock SharedPreferences
       SharedPreferences.setMockInitialValues({});
       final sharedPrefs = await SharedPreferences.getInstance();
-      
+
       torService = TorService.instance;
-      
-      // Use a custom provider to match the one in main.dart
-      final sharedPrefsProvider = Provider<SharedPreferences>((ref) => sharedPrefs);
 
       container = ProviderContainer(
         overrides: [
@@ -75,13 +74,14 @@ void main() {
       final host = Uri.parse(AppConfig.onionBaseUrl).host;
       int relayPort;
       try {
-         // Try standard relay first (port 9050 fallback in TorService)
-         relayPort = await torService.startRelay(host, 80);
+        // Try standard relay first (port 9050 fallback in TorService)
+        relayPort = await torService.startRelay(host, 80);
       } catch (e) {
-         print('⚠️ [Setup] TorService.startRelay failed, using manual relay on port 9999...');
-         relayPort = await _manualStartRelay(9999, host, 80);
+        print(
+            '⚠️ [Setup] TorService.startRelay failed, using manual relay on port 9999...');
+        relayPort = await _manualStartRelay(9999, host, 80);
       }
-      
+
       final testApiUrl = 'http://127.0.0.1:$relayPort';
       AppConfig.apiUrl = testApiUrl;
       container.read(torApiUrlProvider.notifier).updateUrl(testApiUrl);
@@ -99,7 +99,7 @@ void main() {
       print('📡 [Auth] Requesting PoW Challenge...');
       final challengeRes = await apiClient.get(AppConfig.authPowChallenge);
       final challenge = challengeRes.data['challenge'];
-      
+
       print('🧠 [Auth] Solving PoW...');
       final nonce = solvePoW(challenge);
 
@@ -117,14 +117,16 @@ void main() {
 
       expect(signupRes.statusCode, anyOf([200, 201]));
       final body = signupRes.data;
-      
-      final otpUri = body['otpUri'] ?? body['qrCodeUri'] ?? body['data']?['otpUri'];
+
+      final otpUri =
+          body['otpUri'] ?? body['qrCodeUri'] ?? body['data']?['otpUri'];
       if (otpUri != null) {
         totpSecret = Uri.tryParse(otpUri.toString())?.queryParameters['secret'];
       }
       totpSecret ??= body['totpSecret'] ?? body['data']?['totpSecret'];
 
-      print('✅ [Auth] Signup successful. TOTP Secret: ${totpSecret?.substring(0, 4)}...');
+      print(
+          '✅ [Auth] Signup successful. TOTP Secret: ${totpSecret?.substring(0, 4)}...');
       expect(totpSecret, isNotNull);
     });
 
@@ -182,10 +184,10 @@ void main() {
       );
 
       expect(finalVerifyRes.statusCode, 200);
-      
+
       final raw = finalVerifyRes.data.toString();
       finalJwt = raw.contains(' ') ? raw.split(' ').last : raw;
-      
+
       print('✅ [Auth] Final JWT Obtained: ${finalJwt?.substring(0, 16)}...');
     });
 
@@ -201,29 +203,42 @@ void main() {
 
       expect(meRes.statusCode, 200);
       expect(meRes.data['username'], testUsername);
-      print('🎉 [Auth] Profile matched! User is authenticated as ${meRes.data['username']}');
+      print(
+          '🎉 [Auth] Profile matched! User is authenticated as ${meRes.data['username']}');
     });
   });
 }
 
 /// Manual SOCKS5 Relay tunnel for test environment
-Future<int> _manualStartRelay(int socksPort, String targetHost, int targetPort) async {
+Future<int> _manualStartRelay(
+    int socksPort, String targetHost, int targetPort) async {
   final relayServer = await ServerSocket.bind('127.0.0.1', 0);
   final relayPort = relayServer.port;
-  
+
   relayServer.listen((clientSocket) async {
     try {
       final torSocket = await Socket.connect('127.0.0.1', socksPort);
       torSocket.add([0x05, 0x01, 0x00]);
       await torSocket.flush();
-      
+
       final domainBytes = utf8.encode(targetHost);
-      final request = [0x05, 0x01, 0x00, 0x03, domainBytes.length, ...domainBytes, (targetPort >> 8) & 0xFF, targetPort & 0xFF];
+      final request = [
+        0x05,
+        0x01,
+        0x00,
+        0x03,
+        domainBytes.length,
+        ...domainBytes,
+        (targetPort >> 8) & 0xFF,
+        targetPort & 0xFF
+      ];
       torSocket.add(request);
       await torSocket.flush();
 
-      clientSocket.listen((d) => torSocket.add(d), onDone: () => torSocket.destroy());
-      torSocket.listen((d) => clientSocket.add(d), onDone: () => clientSocket.destroy());
+      clientSocket.listen((d) => torSocket.add(d),
+          onDone: () => torSocket.destroy());
+      torSocket.listen((d) => clientSocket.add(d),
+          onDone: () => clientSocket.destroy());
     } catch (e) {
       clientSocket.destroy();
     }

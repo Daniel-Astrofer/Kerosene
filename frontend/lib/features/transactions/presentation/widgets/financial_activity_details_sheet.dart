@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/features/mining/presentation/mining_explorer.dart';
+import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
+import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 
 String _financialCopy(
@@ -44,6 +48,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.78),
       builder: (_) => FinancialActivityDetailsSheet(
         transaction: transaction,
         paymentLink: paymentLink,
@@ -79,12 +84,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       btcBrl: btcBrl,
     );
     final secondaryAmount = selectedCurrency == Currency.btc
-        ? MoneyDisplay.formatQuote(
-            currency: Currency.brl,
-            btcUsd: btcUsd,
-            btcEur: btcEur,
-            btcBrl: btcBrl,
-          )
+        ? null
         : MoneyDisplay.format(
             amount: amountBtc,
             currency: Currency.btc,
@@ -100,8 +100,16 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       top: false,
       child: Container(
         margin: const EdgeInsets.only(top: 48),
-        decoration: const BoxDecoration(
-          color: Color(0xFF09111A),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFF131F2E),
+              Color(0xFF000000),
+              Color(0xFF0A1119),
+            ],
+          ),
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SingleChildScrollView(
@@ -185,6 +193,10 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                   ],
                 ),
               ],
+              if (transaction != null) ...[
+                const SizedBox(height: 12),
+                _NetworkExplorerButton(transaction: transaction!),
+              ],
             ],
           ),
         ),
@@ -200,20 +212,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       return 'Pagamento por link';
     }
 
-    switch (transaction!.type) {
-      case TransactionType.withdrawal:
-        return 'Saque';
-      case TransactionType.deposit:
-        return 'Depósito';
-      case TransactionType.send:
-        return 'Envio';
-      case TransactionType.receive:
-        return 'Recebimento';
-      case TransactionType.swap:
-        return 'Swap';
-      case TransactionType.fee:
-        return 'Taxa';
-    }
+    return TransactionVisualSpec.fromTransaction(transaction!).label;
   }
 
   String get _contextLabel {
@@ -319,8 +318,9 @@ class _ContextChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: const Color(0xFF0B1219),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Text(
         label,
@@ -328,6 +328,60 @@ class _ContextChip extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.74),
               fontWeight: FontWeight.w700,
             ),
+      ),
+    );
+  }
+}
+
+class _NetworkExplorerButton extends StatelessWidget {
+  final Transaction transaction;
+
+  const _NetworkExplorerButton({required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final explorer = MiningExplorerDescriptor.fromTransaction(transaction);
+    final accent = explorer.rail == MiningExplorerRail.lightning
+        ? const Color(0xFFFBBF24)
+        : const Color(0xFF67B5FF);
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: () {
+          final navigator = Navigator.of(context);
+          final route = MaterialPageRoute<void>(
+            builder: (_) => MiningScreen(initialTransaction: transaction),
+          );
+
+          navigator.pop();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (navigator.mounted) {
+              navigator.push(route);
+            }
+          });
+        },
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF0D151F),
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: accent.withValues(alpha: 0.26)),
+          ),
+        ),
+        icon: Icon(
+          explorer.rail == MiningExplorerRail.lightning
+              ? Icons.bolt_rounded
+              : Icons.open_in_new_rounded,
+          color: accent,
+        ),
+        label: Text(
+          'Abrir ${explorer.buttonLabel}',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+        ),
       ),
     );
   }
@@ -415,12 +469,7 @@ class _CopyablePanel extends StatelessWidget {
               if (!context.mounted) {
                 return;
               }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(copiedMessage),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              AppNotice.showSuccess(context, message: copiedMessage);
             },
             icon: const Icon(Icons.copy_rounded),
             color: Colors.white,
@@ -440,7 +489,7 @@ class _SummaryHero extends StatelessWidget {
   final String contextLabel;
   final String supportingText;
   final String primaryAmount;
-  final String secondaryAmount;
+  final String? secondaryAmount;
   final DateTime? createdAt;
 
   const _SummaryHero({
@@ -460,12 +509,12 @@ class _SummaryHero extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            statusMeta.color.withValues(alpha: 0.16),
-            const Color(0xFF0E1722),
+            const Color(0xFF111B28),
+            const Color(0xFF0B1219),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: statusMeta.color.withValues(alpha: 0.22)),
@@ -507,14 +556,16 @@ class _SummaryHero extends StatelessWidget {
                   height: 1,
                 ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            secondaryAmount,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.62),
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
+          if (secondaryAmount != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              secondaryAmount!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.62),
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
           if (createdAt != null) ...[
             const SizedBox(height: 10),
             Text(

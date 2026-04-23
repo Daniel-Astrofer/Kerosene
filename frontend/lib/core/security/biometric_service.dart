@@ -6,7 +6,7 @@ class BiometricService {
   final LocalAuthentication _localAuth;
 
   BiometricService({LocalAuthentication? localAuth})
-    : _localAuth = localAuth ?? LocalAuthentication();
+      : _localAuth = localAuth ?? LocalAuthentication();
 
   /// Check if biometric authentication or device PIN is available and enrolled.
   Future<bool> canAuthenticate() async {
@@ -16,8 +16,8 @@ class BiometricService {
 
       // If hardware is supported, check if any biometrics or PIN/Pattern are set up
       if (canCheckBiometrics || isDeviceSupported) {
-        final List<BiometricType> availableBiometrics = await _localAuth
-            .getAvailableBiometrics();
+        final List<BiometricType> availableBiometrics =
+            await _localAuth.getAvailableBiometrics();
 
         // Return true if hardware is supported AND (biometrics are enrolled OR we assume PIN is fallback)
         // local_auth doesn't have a direct "isPinSet" check, but authenticate() will fail

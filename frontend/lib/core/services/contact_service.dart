@@ -9,16 +9,16 @@ class Contact {
   Contact({required this.address, this.name, required this.lastUsed});
 
   Map<String, dynamic> toJson() => {
-    'address': address,
-    'name': name,
-    'lastUsed': lastUsed.toIso8601String(),
-  };
+        'address': address,
+        'name': name,
+        'lastUsed': lastUsed.toIso8601String(),
+      };
 
   factory Contact.fromJson(Map<String, dynamic> json) => Contact(
-    address: json['address'],
-    name: json['name'],
-    lastUsed: DateTime.parse(json['lastUsed']),
-  );
+        address: json['address'],
+        name: json['name'],
+        lastUsed: DateTime.parse(json['lastUsed']),
+      );
 }
 
 class ContactService {

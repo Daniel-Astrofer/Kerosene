@@ -17,8 +17,10 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
 
   @override
   AddFundsState build() {
-    createUnsignedTransactionUseCase = ref.watch(createUnsignedTransactionUseCaseProvider);
-    broadcastTransactionUseCase = ref.watch(broadcastTransactionUseCaseProvider);
+    createUnsignedTransactionUseCase =
+        ref.watch(createUnsignedTransactionUseCaseProvider);
+    broadcastTransactionUseCase =
+        ref.watch(broadcastTransactionUseCaseProvider);
     getDepositAddressUseCase = ref.watch(getDepositAddressUseCaseProvider);
     createPaymentLinkUseCase = ref.watch(createPaymentLinkUseCaseProvider);
     return const AddFundsInitial();
@@ -109,4 +111,5 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
   }
 }
 
-final addFundsProvider = NotifierProvider<AddFundsNotifier, AddFundsState>(AddFundsNotifier.new);
+final addFundsProvider =
+    NotifierProvider<AddFundsNotifier, AddFundsState>(AddFundsNotifier.new);

@@ -76,9 +76,8 @@ class WalletRepositoryImpl implements WalletRepository {
             final name = item['walletName'] ?? item['id'];
             final balance = item['balance'];
             if (name != null && balance != null) {
-              balances[name.toString()] = (balance is num)
-                  ? balance.toDouble()
-                  : 0.0;
+              balances[name.toString()] =
+                  (balance is num) ? balance.toDouble() : 0.0;
             }
           }
         }
@@ -193,7 +192,8 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     // This now logically belongs to LedgerRepository, but implementing for interface compatibility
     try {
-      final history = await ledgerRemoteDataSource.getHistory(page: (offset ?? 0) ~/ (limit ?? 50), size: limit ?? 50);
+      final history = await ledgerRemoteDataSource.getHistory(
+          page: (offset ?? 0) ~/ (limit ?? 50), size: limit ?? 50);
       return Right(history.map((e) => Transaction.fromJson(e)).toList());
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao buscar transações: $e'));
@@ -210,8 +210,9 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     // Internal transfer via Ledger
     try {
+      final username = await authLocalDataSource.getUsername();
       final result = await ledgerRemoteDataSource.sendInternalTransaction(
-        senderWalletName: fromWalletId,
+        senderWalletName: username ?? fromWalletId,
         receiverWalletName: toAddress,
         amount: amountSatoshis / 100000000.0,
         idempotencyKey: const Uuid().v4(),
@@ -238,7 +239,7 @@ class WalletRepositoryImpl implements WalletRepository {
     try {
       final btcAmount = amountSatoshis / 1e8;
       final estimate = await transactionRemoteDataSource.estimateFee(btcAmount);
-      
+
       return Right(
         FeeEstimate(
           fastSatoshisPerByte: estimate.fastSatPerByte.toInt(),
@@ -254,9 +255,10 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<Either<Failure, double>> getBTCtoUSDRate() async {
-    // In a real scenario, this might call a price API or return 
+    // In a real scenario, this might call a price API or return
     // the value from a cached provider. For repository layer consistency:
-    return const Right(65000.0); // Baseline production value if Socket is not ready
+    return const Right(
+        65000.0); // Baseline production value if Socket is not ready
   }
 
   @override
@@ -290,8 +292,6 @@ class WalletRepositoryImpl implements WalletRepository {
       return Left(UnknownFailure(message: 'Erro ao atualizar carteira: $e'));
     }
   }
-
-
 
   @override
   Future<Either<Failure, String>> deleteWallet({
@@ -341,4 +341,3 @@ class WalletRepositoryImpl implements WalletRepository {
     }
   }
 }
-

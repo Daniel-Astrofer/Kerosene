@@ -24,8 +24,7 @@ class MiningTransactionContextCard extends ConsumerWidget {
     if (descriptor.rail == MiningExplorerRail.internal) {
       return _ContextShell(
         title: 'Fluxo interno',
-        subtitle:
-            'Esta operação foi conciliada dentro do ecossistema Kerosene e não depende de inclusão on-chain.',
+        subtitle: 'Conciliação interna. Sem liquidação pública.',
         accent: miningTeal,
         children: [
           _ContextFact(
@@ -48,8 +47,7 @@ class MiningTransactionContextCard extends ConsumerWidget {
         !descriptor.canLookupOnchain) {
       return _ContextShell(
         title: 'Fluxo Lightning',
-        subtitle:
-            'O pagamento foi roteado fora da camada base. A tela mantém o contexto de estado sem tentar resolver bloco público.',
+        subtitle: 'Liquidação fora da camada base. Contexto local apenas.',
         accent: miningAmber,
         children: [
           _ContextFact(
@@ -77,8 +75,7 @@ class MiningTransactionContextCard extends ConsumerWidget {
         if (summary == null) {
           return _fallbackCard(
             title: 'Transação sem resumo público',
-            description:
-                'A rede respondeu sem um snapshot detalhado desta transação. Mantendo apenas o contexto local.',
+            description: 'A rede não retornou um snapshot detalhado.',
           );
         }
         return _OnchainContextCard(summary: summary);
@@ -131,8 +128,7 @@ class _OnchainContextCard extends StatelessWidget {
 
     return _ContextShell(
       title: 'Contexto on-chain',
-      subtitle:
-          'Resumo de inclusão, posição no bloco e custo efetivo da transação de origem.',
+      subtitle: 'Inclusão, posição e custo efetivo da transação.',
       accent: miningBlue,
       trailing: MiningStatusBadge(
         label: summary.confirmed ? 'CONFIRMADA' : 'PENDENTE',
@@ -150,7 +146,9 @@ class _OnchainContextCard extends StatelessWidget {
         ),
         _ContextFact(
           label: 'Bloco',
-          value: summary.blockHeight == null ? 'aguardando' : '#${summary.blockHeight}',
+          value: summary.blockHeight == null
+              ? 'aguardando'
+              : '#${summary.blockHeight}',
         ),
         _ContextFact(
           label: 'Posição',
@@ -175,7 +173,7 @@ class _ContextLoadingCard extends StatelessWidget {
         children: const [
           MiningSectionHeading(
             title: 'Contexto transacional',
-            subtitle: 'Resolvendo dados públicos da transação dentro da mempool.',
+            subtitle: 'Consultando dados públicos da transação.',
           ),
           SizedBox(height: AppSpacing.lg),
           MiningSkeletonBlock(height: 18),
@@ -221,7 +219,9 @@ class _ContextShell extends StatelessWidget {
             builder: (context, constraints) {
               final width = constraints.maxWidth >= 720
                   ? (constraints.maxWidth - AppSpacing.sm * 3) / 4
-                  : (constraints.maxWidth - AppSpacing.sm) / 2;
+                  : constraints.maxWidth < 420
+                      ? double.infinity
+                      : (constraints.maxWidth - AppSpacing.sm) / 2;
 
               return Wrap(
                 spacing: AppSpacing.sm,
@@ -229,7 +229,9 @@ class _ContextShell extends StatelessWidget {
                 children: children
                     .map(
                       (child) => SizedBox(
-                        width: constraints.maxWidth < 420 ? double.infinity : width,
+                        width: constraints.maxWidth < 420
+                            ? double.infinity
+                            : width,
                         child: child,
                       ),
                     )
@@ -255,11 +257,7 @@ class _ContextFact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
+      decoration: miningInsetDecoration(accent: miningBlue),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -269,15 +267,19 @@ class _ContextFact extends StatelessWidget {
               label.toUpperCase(),
               style: AppTypography.caption.copyWith(
                 color: miningMuted,
+                fontFamily: 'HubotSansCondensed',
                 fontWeight: FontWeight.w700,
+                letterSpacing: 0.9,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               value,
-              style: AppTypography.bodyMedium.copyWith(
+              style: miningMonoStyle(
+                AppTypography.bodyMedium,
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
             ),
           ],

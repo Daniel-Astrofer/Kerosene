@@ -29,19 +29,27 @@ class AuthRepositoryImpl implements AuthRepository {
         username: username,
         passphrase: passphrase,
       );
-      // Save the JWT (or preAuthToken) from the login response immediately 
-      // so it can be used for the TOTP verification step.
-      if (loginResult.jwt.isNotEmpty) {
+      // Persist only final JWTs. A pre_auth_token is temporary and must not be
+      // stored as the session token, otherwise the backend JWT filter will
+      // reject later requests with "invalid compact jwt".
+      if (!loginResult.requiresTotp &&
+          loginResult.jwt.isNotEmpty &&
+          loginResult.jwt.contains('.')) {
         await localDataSource.saveToken(loginResult.jwt);
+      } else {
+        await localDataSource.removeToken();
       }
-      
-      // Save the passphrase locally so it can be used for signing later
-      await localDataSource.saveMnemonic(passphrase);
       return Right(loginResult);
     } on AuthException catch (e) {
-      return Left(AuthFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(AuthFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -56,8 +64,18 @@ class AuthRepositoryImpl implements AuthRepository {
     String? preAuthToken,
   }) async {
     try {
-      final token = preAuthToken ?? await localDataSource.getToken() ?? '';
-      
+      final token = preAuthToken?.trim() ?? '';
+      if (token.isEmpty) {
+        return const Left(
+          AuthFailure(
+            message:
+                'Sessão de autenticação inválida. Faça login novamente para continuar.',
+            statusCode: 401,
+            errorCode: 'ERR_AUTH_INVALID_PREAUTH',
+          ),
+        );
+      }
+
       final jwt = await remoteDataSource.verifyLoginTotp(
         username: username,
         totpCode: totpCode,
@@ -65,8 +83,6 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       await localDataSource.saveToken(jwt);
-      // passphrase was already saved during login(); ensure it's current
-      await localDataSource.saveMnemonic(passphrase);
 
       final user = UserModel(
         id: '0',
@@ -76,7 +92,10 @@ class AuthRepositoryImpl implements AuthRepository {
       await localDataSource.saveUser(user);
       return Right(user);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -88,16 +107,26 @@ class AuthRepositoryImpl implements AuthRepository {
     required String username,
     required String passphrase,
     String accountSecurity = 'STANDARD',
-  }) async {
+    int? shamirTotalShares,
+    int? shamirThreshold,
+    int? multisigThreshold,
+    }) async {
     try {
       final result = await remoteDataSource.signup(
         username: username,
         passphrase: passphrase,
         accountSecurity: accountSecurity,
+        shamirTotalShares: shamirTotalShares,
+        shamirThreshold: shamirThreshold,
+        multisigThreshold: multisigThreshold,
       );
+      await localDataSource.saveBackupCodes(result.backupCodes);
       return Right(result);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -106,30 +135,21 @@ class AuthRepositoryImpl implements AuthRepository {
   // ─── Verify Signup TOTP — retorna sessionId (Redis, temporário) ──────────────
   @override
   Future<Either<Failure, String>> verifyTotp({
-    required String username,
-    required String passphrase,
-    required String totpCode,
-    String? totpSecret,
+    required String sessionId,
+    String? totpCode,
   }) async {
     try {
-      final sessionId = await remoteDataSource.verifySignupTotp(
-        username: username,
-        totpCode: totpCode, // passphrase NOT sent in new API
+      final verifiedSessionId = await remoteDataSource.verifySignupTotp(
+        sessionId: sessionId,
+        totpCode: totpCode,
       );
 
-      // Store totp secret locally if provided
-      if (totpSecret != null && totpSecret.isNotEmpty) {
-        await localDataSource.saveTotpSecret(totpSecret);
-      }
-
-      // According to API_REFERENCE.md Section 1.1: "Returns JWT"
-      // WRONG: Actual server log shows it returns a sessionId (hex), not a JWT.
-      // Saving it as a token causes the interceptor to send invalid Bearer headers.
-      // We do NOT save it as a token here.
-
-      return Right(sessionId);
+      return Right(verifiedSessionId);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao verificar TOTP: $e'));
     }
@@ -148,25 +168,34 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Right(opts);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, void>> passkeyRegisterOnboardingFinish(
+  Future<Either<Failure, LoginResult>> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   ) async {
     try {
-      await remoteDataSource.passkeyRegisterOnboardingFinish(
+      final loginResult = await remoteDataSource.passkeyRegisterOnboardingFinish(
         sessionId,
         credential,
       );
-      return const Right(null);
+      if (loginResult.jwt.isNotEmpty) {
+        await localDataSource.saveToken(loginResult.jwt);
+      }
+      return Right(loginResult);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -180,7 +209,10 @@ class AuthRepositoryImpl implements AuthRepository {
       final opts = await remoteDataSource.passkeyLoginStart(username);
       return Right(opts);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -211,7 +243,10 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return Right(loginResult);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -223,7 +258,10 @@ class AuthRepositoryImpl implements AuthRepository {
       final opts = await remoteDataSource.passkeyRegisterStart(username);
       return Right(opts);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -237,55 +275,215 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.passkeyRegisterFinish(credential);
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
-
-  // ─── Voucher onboarding link ──────────────────────────────────────────────────
   @override
-  Future<Either<Failure, OnboardingPaymentLinkDto>> generateOnboardingLink(
-    String sessionId,
-  ) async {
+  Future<Either<Failure, EmergencyRecoveryStartResult>> startEmergencyRecovery({
+    required String username,
+    required String newPassphrase,
+    required List<String> recoveryCodes,
+  }) async {
     try {
-      final dto = await remoteDataSource.generateOnboardingLink(sessionId);
+      final result = await remoteDataSource.startEmergencyRecovery(
+        username: username,
+        newPassphrase: newPassphrase,
+        recoveryCodes: recoveryCodes,
+      );
+      return Right(result);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+      ));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, EmergencyRecoveryFinishResult>>
+      finishEmergencyRecovery({
+    required String recoverySessionId,
+    required String totpCode,
+    required Map<String, dynamic> credential,
+  }) async {
+    try {
+      final result = await remoteDataSource.finishEmergencyRecovery(
+        recoverySessionId: recoverySessionId,
+        totpCode: totpCode,
+        credential: credential,
+      );
+      return Right(result);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+      ));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  // ─── Account activation deposit flow ─────────────────────────────────────────
+  @override
+  Future<Either<Failure, ActivationStatusResult>> getActivationStatus() async {
+    try {
+      final dto = await remoteDataSource.getActivationStatus();
       return Right(dto);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, OnboardingPaymentLinkDto>> confirmOnboardingPayment({
+  Future<Either<Failure, ActivationStatusResult>>
+      createActivationDepositLink() async {
+    try {
+      final dto = await remoteDataSource.createActivationDepositLink();
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ActivationStatusResult>> confirmActivationPayment({
     required String linkId,
     required String txid,
   }) async {
     try {
-      final dto = await remoteDataSource.confirmOnboardingPayment(
+      final dto = await remoteDataSource.confirmActivationPayment(
         linkId: linkId,
         txid: txid,
       );
       return Right(dto);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
-    String linkId,
-  ) async {
+  Future<Either<Failure, AccountSecurityStatusResult>> getSecurityStatus() async {
     try {
-      final dto = await remoteDataSource.getOnboardingPaymentLink(linkId);
+      final dto = await remoteDataSource.getSecurityStatus();
       return Right(dto);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, TotpSetupResult>> setupTotp() async {
+    try {
+      final dto = await remoteDataSource.setupTotp();
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, BackupCodesStatusResult>> verifyTotpSetup({
+    required String totpCode,
+  }) async {
+    try {
+      final dto = await remoteDataSource.verifyTotpSetup(totpCode: totpCode);
+      if (dto.newlyGeneratedCodes.isNotEmpty) {
+        await localDataSource.saveBackupCodes(dto.newlyGeneratedCodes);
+      }
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> disableTotp() async {
+    try {
+      await remoteDataSource.disableTotp();
+      await localDataSource.removeTotpSecret();
+      await localDataSource.removeBackupCodes();
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, BackupCodesStatusResult>> getBackupCodesStatus() async {
+    try {
+      final dto = await remoteDataSource.getBackupCodesStatus();
+      if (dto.newlyGeneratedCodes.isNotEmpty) {
+        await localDataSource.saveBackupCodes(dto.newlyGeneratedCodes);
+      }
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, BackupCodesStatusResult>> regenerateBackupCodes() async {
+    try {
+      final dto = await remoteDataSource.regenerateBackupCodes();
+      if (dto.newlyGeneratedCodes.isNotEmpty) {
+        await localDataSource.saveBackupCodes(dto.newlyGeneratedCodes);
+      }
+      return Right(dto);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -297,7 +495,10 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.mockConfirmOnboarding(sessionId);
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -312,7 +513,10 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.confirmVoucher(voucherId: voucherId, txid: txid);
       return const Right(null);
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -364,18 +568,24 @@ class AuthRepositoryImpl implements AuthRepository {
 
       // 2. Try remote if not in cache (requires valid token in intercepted headers)
       final remoteUser = await remoteDataSource.getCurrentUser();
-      
+
       // 3. Save locally and return
       await localDataSource.saveUser(remoteUser);
-      
+
       return Right(remoteUser as User);
     } on CacheException catch (e) {
       return Left(CacheFailure(message: e.message));
     } on AppException catch (e) {
       if (e.statusCode == 401 || e.statusCode == 403) {
-        return Left(AuthFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+        return Left(AuthFailure(
+            message: e.message,
+            statusCode: e.statusCode,
+            errorCode: e.errorCode));
       }
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
     }
@@ -389,8 +599,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (newToken.isNotEmpty) {
         await localDataSource.saveToken(newToken);
         final currentUser = await localDataSource.getUser();
-        final user =
-            currentUser ??
+        final user = currentUser ??
             UserModel(
               id: '0',
               username: 'User',
@@ -401,7 +610,10 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       return const Left(AuthFailure(message: 'Falha ao renovar token'));
     } on AppException catch (e) {
-      return Left(ServerFailure(message: e.message, statusCode: e.statusCode, errorCode: e.errorCode));
+      return Left(ServerFailure(
+          message: e.message,
+          statusCode: e.statusCode,
+          errorCode: e.errorCode));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao renovar token: $e'));
     }
@@ -431,9 +643,11 @@ class AuthRepositoryImpl implements AuthRepository {
       if (codes != null && codes.isNotEmpty) {
         return Right(codes);
       }
-      return const Left(CacheFailure(message: 'Nenhum código de backup encontrado'));
+      return const Left(
+          CacheFailure(message: 'Nenhum código de backup encontrado'));
     } catch (e) {
-      return Left(CacheFailure(message: 'Erro ao obter os códigos de backup: $e'));
+      return Left(
+          CacheFailure(message: 'Erro ao obter os códigos de backup: $e'));
     }
   }
 }

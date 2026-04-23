@@ -138,9 +138,16 @@ class FinancialStatusBadge extends StatelessWidget {
         vertical: compact ? 6 : 8,
       ),
       decoration: BoxDecoration(
-        color: meta.color.withValues(alpha: 0.12),
+        color: const Color(0xFF0B1219),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: meta.color.withValues(alpha: 0.24)),
+        boxShadow: [
+          BoxShadow(
+            color: meta.color.withValues(alpha: 0.10),
+            blurRadius: compact ? 10 : 14,
+            spreadRadius: -6,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

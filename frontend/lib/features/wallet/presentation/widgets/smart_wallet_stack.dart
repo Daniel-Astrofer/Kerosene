@@ -44,7 +44,7 @@ class _SmartWalletStackState extends State<SmartWalletStack>
   final Map<int, double> _peekDrag = {};
   int? _draggingRank;
 
-  static const double _cardHeight = 200.0;
+  static const double _cardHeight = 212.0;
   static const double _peekOffset = 35.0;
   static const int _maxPeek = 3;
 
@@ -94,7 +94,8 @@ class _SmartWalletStackState extends State<SmartWalletStack>
       if (now.difference(_lastShake) < _shakeCooldown) return;
 
       final absX = event.x.abs();
-      final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+      final magnitude =
+          sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
       final netAccel = (magnitude - 9.8).abs();
 
       if (_carouselOpen) {
@@ -103,11 +104,15 @@ class _SmartWalletStackState extends State<SmartWalletStack>
           final n = widget.wallets.length;
           if (event.x < 0) {
             final next = (_carouselPage + 1) % n;
-            _pageController.animateToPage(next, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+            _pageController.animateToPage(next,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic);
             setState(() => _carouselPage = next);
           } else {
             final prev = (_carouselPage - 1 + n) % n;
-            _pageController.animateToPage(prev, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+            _pageController.animateToPage(prev,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic);
             setState(() => _carouselPage = prev);
           }
           HapticFeedback.selectionClick();
@@ -137,7 +142,8 @@ class _SmartWalletStackState extends State<SmartWalletStack>
       _carouselPage = _topIndex;
     });
     _pageController.dispose();
-    _pageController = PageController(initialPage: _topIndex, viewportFraction: 0.88);
+    _pageController =
+        PageController(initialPage: _topIndex, viewportFraction: 0.88);
     _carouselController.forward(from: 0);
     HapticFeedback.lightImpact();
   }
@@ -213,11 +219,13 @@ class _SmartWalletStackState extends State<SmartWalletStack>
     for (int rank = peekCount; rank >= 1; rank--) {
       final idx = (_topIndex + rank) % n;
       final wallet = widget.wallets[idx];
-      final double fanAngle = (rank * (rank % 2 == 0 ? -1 : 1) * 0.06).toDouble();
+      final double fanAngle =
+          (rank * (rank % 2 == 0 ? -1 : 1) * 0.06).toDouble();
       final baseScale = 1.0 - (rank * 0.05);
       final basePeekY = -(rank * 35.0).toDouble();
 
-      final pullDelta = (_peekDrag[rank] ?? 0.0).clamp(-_cardHeight * 0.85, 0.0);
+      final pullDelta =
+          (_peekDrag[rank] ?? 0.0).clamp(-_cardHeight * 0.85, 0.0);
       final pullRatio = (-pullDelta / (_cardHeight * 0.85)).clamp(0.0, 1.0);
 
       final currentAngle = fanAngle * (1.0 - pullRatio);
@@ -241,7 +249,8 @@ class _SmartWalletStackState extends State<SmartWalletStack>
               if (_draggingRank == capturedRank) {
                 setState(() {
                   final prev = _peekDrag[capturedRank] ?? 0.0;
-                  _peekDrag[capturedRank] = (prev + d.delta.dy).clamp(-_cardHeight * 0.85, 20.0);
+                  _peekDrag[capturedRank] =
+                      (prev + d.delta.dy).clamp(-_cardHeight * 0.85, 20.0);
                 });
               }
             },
@@ -269,12 +278,17 @@ class _SmartWalletStackState extends State<SmartWalletStack>
               alignment: Alignment.bottomCenter,
               transform: Matrix4.identity()
                 ..setTranslationRaw(0.0, currentY, 0.0)
-                ..multiply(Matrix4.diagonal3Values(currentScale, currentScale, 1.0))
+                ..multiply(
+                    Matrix4.diagonal3Values(currentScale, currentScale, 1.0))
                 ..rotateZ(currentAngle),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  WalletCreditCard(wallet: wallet, colorIndex: idx, isSelected: false, onTap: _openCarousel),
+                  WalletCreditCard(
+                      wallet: wallet,
+                      colorIndex: idx,
+                      isSelected: false,
+                      onTap: _openCarousel),
                   if (pullRatio > 0.05)
                     Positioned(
                       top: 24,
@@ -282,12 +296,23 @@ class _SmartWalletStackState extends State<SmartWalletStack>
                         opacity: pullRatio.clamp(0.0, 1.0),
                         child: Text(
                           wallet.name.toUpperCase(),
-                          style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
+                          style:
+                              Theme.of(context).textTheme.titleMedium!.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.9),
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
-                            shadows: [Shadow(blurRadius: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8))],
+                            shadows: [
+                              Shadow(
+                                  blurRadius: 10,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.8))
+                            ],
                           ),
                         ),
                       ),
@@ -303,7 +328,8 @@ class _SmartWalletStackState extends State<SmartWalletStack>
     final swipeProgress = _swipeAnim.value;
     final swipeOffsetY = swipeProgress * (_cardHeight + 100);
     final swipeOpacity = (1.0 - swipeProgress).clamp(0.0, 1.0);
-    final dragOffsetY = _isDragging ? _dragDeltaY.clamp(-_cardHeight, 0.0) : 0.0;
+    final dragOffsetY =
+        _isDragging ? _dragDeltaY.clamp(-_cardHeight, 0.0) : 0.0;
 
     cards.add(
       Positioned(
