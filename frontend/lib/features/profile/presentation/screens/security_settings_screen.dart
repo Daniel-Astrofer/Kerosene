@@ -303,7 +303,7 @@ class _SecuritySettingsScreenState
                               height: 1.4,
                             ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -401,6 +401,76 @@ class _SecuritySettingsScreenState
           ],
         ),
       ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 24),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            inactiveThumbColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+            inactiveTrackColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+            ),
+            child: Icon(
+              Icons.arrow_back_rounded,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Text(
+          context.l10n.security.toUpperCase(),
+          style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+        ),
+      ],
     );
   }
 }

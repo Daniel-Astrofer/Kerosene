@@ -28,12 +28,10 @@ class DepositLightningInvoiceScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<DepositLightningInvoiceScreen> createState() =>
-      _DepositLightningInvoiceScreenState();
+  ConsumerState<DepositLightningInvoiceScreen> createState() => _DepositLightningInvoiceScreenState();
 }
 
-class _DepositLightningInvoiceScreenState
-    extends ConsumerState<DepositLightningInvoiceScreen> {
+class _DepositLightningInvoiceScreenState extends ConsumerState<DepositLightningInvoiceScreen> {
   Timer? _timer;
   LightningInvoice? _invoice;
   String? _errorMessage;
@@ -256,7 +254,7 @@ class _DepositLightningInvoiceScreenState
           _loadInvoice();
         },
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildMainCard(double requestedAmount, double receiveBtc) {

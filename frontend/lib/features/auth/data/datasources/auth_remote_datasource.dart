@@ -396,6 +396,15 @@ abstract class AuthRemoteDataSource {
 
   Future<BackupCodesStatusResult> regenerateBackupCodes();
 
+  /// Confirma a transação enviada para o payment link de onboarding
+  Future<OnboardingPaymentLinkDto> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  });
+
+  /// Consulta o estado atual do payment link de onboarding
+  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId);
+
   /// Mock de confirmação de onboarding (atalho para devs)
   Future<void> mockConfirmOnboarding(String sessionId);
 
@@ -746,6 +755,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         },
       );
       return LoginResult.fromResponseData(response.data);
+
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao finalizar login via passkey: $e');
@@ -1035,6 +1045,48 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao regenerar backup codes: $e');
+    }
+  }
+
+  @override
+  Future<OnboardingPaymentLinkDto> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        '${AppConfig.transactionsPaymentLink}/$linkId/confirm',
+        data: {
+          'txid': txid,
+        },
+      );
+      final body = response.data;
+      if (body is Map) {
+        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
+      }
+      throw const ServerException(
+        message: 'Resposta inválida ao confirmar pagamento de onboarding.',
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao confirmar pagamento de onboarding: $e');
+    }
+  }
+
+  @override
+  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId) async {
+    try {
+      final response = await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
+      final body = response.data;
+      if (body is Map) {
+        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
+      }
+      throw const ServerException(
+        message: 'Resposta inválida ao consultar status do onboarding.',
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao consultar status do onboarding: $e');
     }
   }
 

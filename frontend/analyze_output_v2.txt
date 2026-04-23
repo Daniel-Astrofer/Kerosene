@@ -1,0 +1,75 @@
+Analyzing frontend...
+
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/core/presentation/widgets/pin_dialog.dart:5:8 • unused_import
+warning • Unused import: '../widgets/cyber_icons.dart' • lib/core/presentation/widgets/pin_dialog.dart:10:8 • unused_import
+  error • Target of URI doesn't exist: '../../features/auth/presentation/providers/auth_provider.dart' • lib/core/providers/biometric_provider.dart:2:8 • uri_does_not_exist
+  error • Undefined name 'authLocalDataSourceProvider' • lib/core/providers/biometric_provider.dart:40:38 • undefined_identifier
+  error • Undefined name 'authLocalDataSourceProvider' • lib/core/providers/biometric_provider.dart:56:38 • undefined_identifier
+  error • Undefined name 'Secp256k1' • lib/core/services/wallet_security_service.dart:72:25 • undefined_identifier
+   info • The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/core/utils/snackbar_helper.dart:2:8 • unnecessary_import
+   info • 'BitcoinSigner' is deprecated and shouldn't be used. Use BitcoinKeySigner instead. This will be removed in future versions • lib/core/utils/transaction_signer.dart:56:25 • deprecated_member_use
+  error • The class 'BitcoinSigner' doesn't have an unnamed constructor • lib/core/utils/transaction_signer.dart:56:25 • new_with_undefined_constructor_default
+  error • The method 'sign' isn't defined for the type 'BitcoinSigner' • lib/core/utils/transaction_signer.dart:56:86 • undefined_method
+   info • Angle brackets will be interpreted as HTML • lib/features/auth/repository/auth_repository.dart:10:35 • unintended_html_in_doc_comment
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/views/_social_login_buttons.dart:65:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/views/user_authentication_view.dart:37:76 • deprecated_member_use
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/welcome_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:5:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/login_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:6:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/presentation_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:7:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_start_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:8:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_username_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:9:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_security_selection_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:10:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_seed_phrase_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:11:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_seed_verification_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:12:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_passkey_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:13:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/signup/signup_payment_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:14:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'package:teste/features/auth/presentation/screens/totp_setup_screen.dart' • lib/features/debug/presentation/screens/screen_gallery_screen.dart:15:8 • uri_does_not_exist
+  error • The name 'WelcomeScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:78:63 • creation_with_non_type
+  error • The name 'LoginScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:79:61 • creation_with_non_type
+  error • The name 'PresentationScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:80:68 • creation_with_non_type
+  error • The name 'SignupStartScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:81:61 • creation_with_non_type
+  error • The name 'SignupUsernameScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:82:64 • creation_with_non_type
+  error • The name 'SignupSecuritySelectionScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:83:74 • creation_with_non_type
+  error • The name 'SignupSeedPhraseScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:84:67 • creation_with_non_type
+  error • The name 'SignupSeedVerificationScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:85:73 • creation_with_non_type
+  error • The name 'SignupPasskeyScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:86:69 • creation_with_non_type
+  error • The name 'SignupPaymentScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:87:63 • creation_with_non_type
+  error • The name 'TotpSetupScreen' isn't a class • lib/features/debug/presentation/screens/screen_gallery_screen.dart:88:59 • creation_with_non_type
+  error • Target of URI doesn't exist: '../../../auth/presentation/providers/auth_provider.dart' • lib/features/profile/presentation/screens/personal_data_screen.dart:5:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../../auth/presentation/state/auth_state.dart' • lib/features/profile/presentation/screens/personal_data_screen.dart:6:8 • uri_does_not_exist
+  error • Undefined name 'authProvider' • lib/features/profile/presentation/screens/personal_data_screen.dart:13:33 • undefined_identifier
+  error • The name 'AuthAuthenticated' isn't defined, so it can't be used in an 'is' expression • lib/features/profile/presentation/screens/personal_data_screen.dart:17:22 • type_test_with_undefined_name
+  error • Target of URI doesn't exist: '../../../auth/presentation/providers/auth_provider.dart' • lib/features/profile/presentation/screens/profile_screen.dart:6:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../../auth/presentation/state/auth_state.dart' • lib/features/profile/presentation/screens/profile_screen.dart:7:8 • uri_does_not_exist
+  error • Undefined name 'authProvider' • lib/features/profile/presentation/screens/profile_screen.dart:26:33 • undefined_identifier
+  error • The name 'AuthAuthenticated' isn't defined, so it can't be used in an 'is' expression • lib/features/profile/presentation/screens/profile_screen.dart:28:22 • type_test_with_undefined_name
+  error • Undefined name 'authProvider' • lib/features/profile/presentation/screens/profile_screen.dart:219:34 • undefined_identifier
+  error • Target of URI doesn't exist: '../../../auth/presentation/providers/auth_provider.dart' • lib/features/security/presentation/providers/security_provider.dart:2:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../../auth/data/datasources/auth_local_datasource.dart' • lib/features/transactions/data/repositories/transaction_repository_impl.dart:5:8 • uri_does_not_exist
+  error • Undefined class 'AuthLocalDataSource' • lib/features/transactions/data/repositories/transaction_repository_impl.dart:16:9 • undefined_class
+  error • Target of URI doesn't exist: '../../../auth/data/datasources/auth_local_datasource.dart' • lib/features/wallet/data/repositories/wallet_repository_impl.dart:6:8 • uri_does_not_exist
+  error • Undefined class 'AuthLocalDataSource' • lib/features/wallet/data/repositories/wallet_repository_impl.dart:16:9 • undefined_class
+  error • Target of URI doesn't exist: '../../../auth/presentation/providers/auth_provider.dart' • lib/features/wallet/presentation/providers/balance_websocket_provider.dart:6:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../../auth/presentation/state/auth_state.dart' • lib/features/wallet/presentation/providers/balance_websocket_provider.dart:7:8 • uri_does_not_exist
+  error • Undefined name 'authProvider' • lib/features/wallet/presentation/providers/balance_websocket_provider.dart:39:31 • undefined_identifier
+  error • The name 'AuthAuthenticated' isn't defined, so it can't be used in an 'is' expression • lib/features/wallet/presentation/providers/balance_websocket_provider.dart:42:21 • type_test_with_undefined_name
+  error • Target of URI doesn't exist: '../../../auth/presentation/providers/auth_provider.dart' • lib/features/wallet/presentation/providers/wallet_provider.dart:4:8 • uri_does_not_exist
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart:8:8 • unused_import
+  error • Undefined name 'NdefRecord' • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:80:28 • undefined_identifier
+  error • The method 'NdefMessage' isn't defined for the type '_NfcInteractionScreenState' • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:81:29 • undefined_method
+  error • Undefined name 'NdefTypeNameFormat' • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:95:46 • undefined_identifier
+   info • The private field _lockedAmountBtc could be 'final' • lib/features/wallet/presentation/screens/send_money_screen.dart:43:10 • prefer_final_fields
+warning • Unused import: 'package:flutter_riverpod/flutter_riverpod.dart' • lib/features/wallet/presentation/screens/unified_transaction_screen.dart:4:8 • unused_import
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/wallet/presentation/screens/wallet_config_screen.dart:1:8 • unnecessary_import
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/features/wallet/presentation/widgets/amount_input_pad.dart:4:8 • unused_import
+warning • Unused import: 'package:teste/core/theme/app_spacing.dart' • lib/features/wallet/presentation/widgets/infinite_wallet_cards.dart:6:8 • unused_import
+warning • Unused import: 'package:teste/core/theme/app_typography.dart' • lib/features/wallet/presentation/widgets/infinite_wallet_cards.dart:7:8 • unused_import
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/features/wallet/presentation/widgets/quick_contact_list.dart:5:8 • unused_import
+warning • Unused import: 'package:teste/core/theme/app_spacing.dart' • lib/features/wallet/presentation/widgets/smart_wallet_stack.dart:7:8 • unused_import
+  error • Target of URI doesn't exist: 'features/auth/presentation/screens/welcome_screen.dart' • lib/main.dart:9:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'features/auth/presentation/screens/login_screen.dart' • lib/main.dart:10:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: 'features/auth/presentation/screens/signup/signup_start_screen.dart' • lib/main.dart:11:8 • uri_does_not_exist
+  error • The name 'WelcomeScreen' isn't a class • lib/main.dart:122:19 • creation_with_non_type
+  error • The name 'WelcomeScreen' isn't a class • lib/main.dart:124:40 • creation_with_non_type
+  error • The name 'LoginScreen' isn't a class • lib/main.dart:125:38 • creation_with_non_type
+  error • The name 'SignupStartScreen' isn't a class • lib/main.dart:126:39 • creation_with_non_type

@@ -60,6 +60,11 @@ class SovereignAuthService {
     return "CyberDevice ${DateTime.now().year}";
   }
 
+  /// Gets a human-readable device name for registration
+  Future<String> getDeviceName() async {
+    return "CyberDevice ${DateTime.now().year}";
+  }
+
   /// Signs a hex-encoded challenge using the stored private key.
   Future<String> signChallenge(String hexChallenge) async {
     final signatureBytes = await signBytes(_hexToBytes(hexChallenge));
@@ -78,6 +83,8 @@ class SovereignAuthService {
         biometricOnly: false,
         persistAcrossBackgrounding: true,
       );
+
+
 
       if (!didAuthenticate) {
         throw Exception(errorAuthCancelled);

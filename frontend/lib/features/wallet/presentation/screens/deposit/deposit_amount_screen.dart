@@ -19,8 +19,7 @@ class DepositAmountScreen extends ConsumerStatefulWidget {
   const DepositAmountScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<DepositAmountScreen> createState() =>
-      _DepositAmountScreenState();
+  ConsumerState<DepositAmountScreen> createState() => _DepositAmountScreenState();
 }
 
 class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
@@ -190,7 +189,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
           ),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildAmountDisplay(String? quoteHint) {

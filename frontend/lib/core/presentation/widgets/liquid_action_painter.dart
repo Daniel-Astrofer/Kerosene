@@ -80,7 +80,7 @@ class LiquidActionPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.04 * intensity)
+      ..color = color.withOpacity(0.04 * intensity)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 40 * intensity);
     canvas.drawPath(path, glowPaint);
   }

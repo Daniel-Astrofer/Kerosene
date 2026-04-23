@@ -37,8 +37,7 @@ class WalletCard extends StatefulWidget {
   }
 }
 
-class _WalletCardState extends State<WalletCard>
-    with SingleTickerProviderStateMixin {
+class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
 
   @override
@@ -383,7 +382,7 @@ class _NeonGlowPainter extends CustomPainter {
     final auraPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
-      ..color = color.withValues(alpha: 0.3 * intensity)
+      ..color = color.withOpacity(0.3 * intensity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
     canvas.drawRRect(rRect, auraPaint);
 

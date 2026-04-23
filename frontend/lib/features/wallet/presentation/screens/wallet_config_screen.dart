@@ -31,6 +31,7 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
 
   bool _isBlocked = false;
   bool _hideBalance = false;
+  int _materialIndex = 0; // 0=Metal, 1=Wood, 2=Diamond, 3=Ruby (Debug Only)
 
   WalletCardAppearance get _appearance {
     return WalletCardAppearance.fromCardType(widget.wallet.cardType);

@@ -131,6 +131,17 @@ abstract class AuthRepository {
 
   Future<Either<Failure, BackupCodesStatusResult>> regenerateBackupCodes();
 
+  /// Confirma a TX do onboarding e inicia monitoramento on-chain
+  Future<Either<Failure, OnboardingPaymentLinkDto>> confirmOnboardingPayment({
+    required String linkId,
+    required String txid,
+  });
+
+  /// Consulta o estado atual do payment link de onboarding
+  Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
+    String linkId,
+  );
+
   /// Mock Confirm Onboarding (Dev shortcut)
   Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId);
 

@@ -46,6 +46,7 @@ public class WatchdogService {
 
     // Tempo Limite de Resposta (Tolerância Zero-Trust)
     private static final long MAX_MISS_TIME_MS = 120000; // 2 minutos para tolerar latência extrema do Tor
+    private static final int REQUIRED_LIVE_QUORUM = 2;
 
     // Flag de Soft Quorum (Bloqueia novos provisionamentos mas não mata o Vault)
     private volatile boolean isLockedDown = false;
@@ -95,13 +96,21 @@ public class WatchdogService {
             }
         }
 
-        if (deadNodesCount >= 2 && !isLockedDown) {
-            log.error("[CRITICAL] ⚠️ Quorum Loss Detected (2+ nodes down). Entering SOFT QUORUM LOCKDOWN.");
-            enterSoftQuorumLockdown();
-        } else if (isLockedDown && liveNodesCount >= 2) {
+        // Prioritize current live quorum over stale dead entries so rolling restarts
+        // do not permanently poison the watchdog state.
+        if (isLockedDown && liveNodesCount >= REQUIRED_LIVE_QUORUM) {
             log.info("[WATCHDOG] NETWORK RECOVERED. Soft Quorum restored. Exiting Lockdown Mode.");
             activeShards.clear(); // Reseta para evitar bounces
             isLockedDown = false;
+            return;
+        }
+
+        int observedNodesCount = liveNodesCount + deadNodesCount;
+        if (!isLockedDown && liveNodesCount < REQUIRED_LIVE_QUORUM && observedNodesCount >= REQUIRED_LIVE_QUORUM
+                && deadNodesCount >= REQUIRED_LIVE_QUORUM) {
+            log.error("[CRITICAL] ⚠️ Quorum Loss Detected (live={}, dead={}). Entering SOFT QUORUM LOCKDOWN.",
+                    liveNodesCount, deadNodesCount);
+            enterSoftQuorumLockdown();
         }
     }
 

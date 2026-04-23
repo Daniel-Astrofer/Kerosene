@@ -34,8 +34,8 @@ class PendingPaymentLinkItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isCompleted
-                ? const Color(0xFF00FF94).withValues(alpha: 0.2)
-                : const Color(0xFFFFB800).withValues(alpha: 0.1),
+                ? const Color(0xFF00FF94).withOpacity(0.2)
+                : const Color(0xFFFFB800).withOpacity(0.1),
             width: 1.5,
           ),
           boxShadow: [
@@ -60,8 +60,8 @@ class PendingPaymentLinkItem extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isCompleted
-                        ? const Color(0xFF00FF94).withValues(alpha: 0.1)
-                        : const Color(0xFFFFB800).withValues(alpha: 0.1),
+                        ? const Color(0xFF00FF94).withOpacity(0.1)
+                        : const Color(0xFFFFB800).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(

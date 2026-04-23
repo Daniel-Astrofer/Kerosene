@@ -57,7 +57,7 @@ class _NfcScanAnimationState extends State<NfcScanAnimation>
                   .withValues(alpha: 0.1),
               boxShadow: [
                 BoxShadow(
-                  color: widget.color.withValues(alpha: 0.2),
+                  color: widget.color.withOpacity(0.2),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -99,7 +99,7 @@ class _RadarPainter extends CustomPainter {
 
       // Opacity fades out as it grows
       final double opacity = (1.0 - progress).clamp(0.0, 1.0);
-      paint.color = color.withValues(alpha: opacity * 0.5);
+      paint.color = color.withOpacity(opacity * 0.5);
 
       // Radius grows
       final double radius = maxRadius * progress;

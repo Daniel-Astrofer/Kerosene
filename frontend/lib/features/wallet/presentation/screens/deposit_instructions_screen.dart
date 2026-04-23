@@ -23,7 +23,7 @@ class DepositInstructionsScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildInstructionsCard(BuildContext context) {

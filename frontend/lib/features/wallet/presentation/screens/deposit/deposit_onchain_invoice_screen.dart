@@ -238,7 +238,7 @@ class _DepositOnchainInvoiceScreenState
           ReceiveFlowTag(label: 'Via ${widget.providerName}'),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildAwaitConfirmationBanner() {

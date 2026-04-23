@@ -202,8 +202,7 @@ class AppConfig {
   static const String transactionsConfirmDeposit =
       '/transactions/confirm-deposit';
   static const String transactionsDeposits = '/transactions/deposits';
-  static const String transactionsDepositBalance =
-      '/transactions/deposit-balance';
+  static const String transactionsDepositBalance = '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
 
   // 4.3 Mining Marketplace

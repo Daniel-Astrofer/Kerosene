@@ -2784,6 +2784,9 @@ class _QuickActionBtnState extends State<_QuickActionBtn>
                                 letterSpacing: 0,
                               ),
                             ),
+                            const SizedBox(height: AppSpacing.md),
+                            const _TransactionsList(),
+                            const SizedBox(height: 100),
                           ],
                         ),
                       ),
@@ -2925,7 +2928,615 @@ class _ActionPanelButton extends StatelessWidget {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class _SpinningArcPainter extends CustomPainter {
+  final Color color;
+  _SpinningArcPainter({this.color = AppColors.success});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+    const sweepAngle = 1.5;
+    canvas.drawArc(
+      Rect.fromLTWH(2, 2, size.width - 4, size.height - 4),
+      0,
+      sweepAngle,
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _TransactionsList extends ConsumerWidget {
+  const _TransactionsList();
+
+  static String _abbrevAddress(String addr) {
+    if (addr.length <= 12) return addr;
+    return '${addr.substring(0, 6)}…${addr.substring(addr.length - 4)}';
+  }
+
+  static String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'agora';
+    if (diff.inHours < 1) return '${diff.inMinutes}m atrás';
+    if (diff.inDays < 1) return '${diff.inHours}h atrás';
+    if (diff.inDays == 1) return 'Ontem ${_pad(dt.hour)}:${_pad(dt.minute)}';
+    return '${_pad(dt.day)}/${_pad(dt.month)} ${_pad(dt.hour)}:${_pad(dt.minute)}';
+  }
+
+  static String _pad(int v) => v.toString().padLeft(2, '0');
+
+  static String _formatBTC(double v) {
+    if (v < 0.00001) return '${(v * 1e8).toStringAsFixed(0)} sat';
+    return '${v.toStringAsFixed(6)} BTC';
+  }
+
+  static _TxStyle _styleFor(Transaction tx) {
+    switch (tx.type) {
+      case TransactionType.receive:
+        return const _TxStyle(
+            icon: LucideIcons.arrowDownLeft,
+            label: 'Recebido',
+            prefix: '+',
+            accent: AppColors.success,
+            bg: AppColors.success);
+      case TransactionType.send:
+        return const _TxStyle(
+            icon: LucideIcons.arrowUpRight,
+            label: 'Enviado',
+            prefix: '-',
+            accent: AppColors.error,
+            bg: AppColors.error);
+      case TransactionType.deposit:
+        return const _TxStyle(
+            icon: LucideIcons.arrowDownLeft,
+            label: 'Depósito',
+            prefix: '+',
+            accent: AppColors.success,
+            bg: AppColors.success);
+      case TransactionType.withdrawal:
+        return const _TxStyle(
+            icon: LucideIcons.arrowUpRight,
+            label: 'Saque',
+            prefix: '-',
+            accent: AppColors.warning,
+            bg: AppColors.warning);
+      case TransactionType.swap:
+        return const _TxStyle(
+            icon: LucideIcons.arrowLeftRight,
+            label: 'Swap',
+            prefix: '',
+            accent: AppColors.secondary,
+            bg: AppColors.secondary);
+      case TransactionType.fee:
+        return const _TxStyle(
+            icon: LucideIcons.zap,
+            label: 'Taxa',
+            prefix: '-',
+            accent: AppColors.grey,
+            bg: AppColors.grey);
+    }
+  }
+
+  static TxIconKind _iconKindFor(Transaction tx) {
+    switch (tx.type) {
+      case TransactionType.receive:
+        return TxIconKind.receive;
+      case TransactionType.send:
+        return TxIconKind.send;
+      case TransactionType.deposit:
+        return TxIconKind.deposit;
+      case TransactionType.withdrawal:
+        return TxIconKind.withdrawal;
+      case TransactionType.swap:
+        return TxIconKind.swap;
+      case TransactionType.fee:
+        return TxIconKind.fee;
+    }
+  }
+
+  static TxIconKind? _methodIconKind(Transaction tx) {
+    final desc = (tx.description ?? '').toLowerCase();
+    if (desc.contains('nfc')) return TxIconKind.nfc;
+    if (desc.contains('qr') || desc.contains('qrcode'))
+      return TxIconKind.qrCode;
+    return null;
+  }
+
+  static _StatusStyle _statusStyle(TransactionStatus s) {
+    switch (s) {
+      case TransactionStatus.pending:
+        return const _StatusStyle(
+            'Pendente', AppColors.warning, LucideIcons.clock);
+      case TransactionStatus.confirming:
+        return const _StatusStyle(
+            'Confirmando', AppColors.warning, LucideIcons.refreshCw);
+      case TransactionStatus.confirmed:
+        return const _StatusStyle(
+            'Confirmada', AppColors.success, LucideIcons.checkCircle);
+      case TransactionStatus.failed:
+        return const _StatusStyle(
+            'Falhou', AppColors.error, LucideIcons.alertCircle);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filteredtxsAsync = ref.watch(filteredTransactionsProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return filteredtxsAsync.when(
+      data: (txs) {
+        if (txs.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            child: StateFeedbackView.empty(
+              title: 'Sem transações',
+              description:
+                  'As tuas transações aparecerão aqui assim que realizares a primeira operação.',
+              actionLabel: 'Atualizar',
+              onAction: () => ref.refresh(transactionHistoryProvider),
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: txs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+          itemBuilder: (context, index) {
+            final tx = txs[index];
+            final style = _styleFor(tx);
+            final status = _statusStyle(tx.status);
+            final methodKind = _methodIconKind(tx);
+            final txIconKind = _iconKindFor(tx);
+            final counterparty = tx.type == TransactionType.send ||
+                    tx.type == TransactionType.withdrawal
+                ? tx.toAddress
+                : tx.fromAddress;
+
+            return InkWell(
+              onTap: () {
+                showGeneralDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  barrierLabel: '',
+                  barrierColor: colorScheme.onSurface.withOpacity(0.1),
+                  transitionDuration: const Duration(milliseconds: 400),
+                  pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
+                    tx: tx,
+                    onClose: () => Navigator.pop(context),
+                  ),
+                  transitionBuilder: (context, anim1, anim2, child) {
+                    return FadeTransition(
+                      opacity: anim1,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.88, end: 1.0).animate(
+                          CurvedAnimation(
+                              parent: anim1, curve: Curves.easeOutBack),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+                );
+              },
+              borderRadius:
+                  BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: style.bg.withOpacity(0.10),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: style.bg.withOpacity(0.22), width: 1),
+                          ),
+                          child: Center(
+                            child: AnimatedTxIcon(
+                              kind: txIconKind,
+                              color: style.accent,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                        if (methodKind != null)
+                          Positioned(
+                            right: -4,
+                            bottom: -4,
+                            child: Container(
+                              width: AppSpacing.lg,
+                              height: AppSpacing.lg,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: colorScheme.surface, width: 1.5),
+                              ),
+                              child: Center(
+                                child: AnimatedTxIcon(
+                                  kind: methodKind,
+                                  color: colorScheme.onPrimary.withOpacity(0.7),
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                style.label,
+                                style: theme.textTheme.bodyMedium!.copyWith(
+                                  color: colorScheme.onPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              if (tx.isInternal) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF7B61FF)
+                                        .withOpacity(0.18),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Interno',
+                                    style: AppTypography.caption.copyWith(
+                                      color: const Color(0xFF7B61FF),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _abbrevAddress(counterparty),
+                            style: theme.textTheme.labelSmall!.copyWith(
+                              color: colorScheme.onPrimary.withOpacity(0.38),
+                              letterSpacing: 0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            children: [
+                              Icon(status.icon, color: status.color, size: 10),
+                              const SizedBox(width: AppSpacing.xs - 1),
+                              Text(
+                                status.label,
+                                style: theme.textTheme.labelSmall!.copyWith(
+                                    color: status.color,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 10),
+                              ),
+                              if (tx.status ==
+                                  TransactionStatus.confirming) ...[
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  '${tx.confirmations}/6',
+                                  style: theme.textTheme.labelSmall!.copyWith(
+                                      color: colorScheme.onPrimary
+                                          .withOpacity(0.3),
+                                      fontSize: 9),
+                                ),
+                              ],
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                '·',
+                                style: theme.textTheme.labelSmall!.copyWith(
+                                    color:
+                                        colorScheme.onPrimary.withOpacity(0.2)),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                _formatDate(tx.timestamp),
+                                style: theme.textTheme.labelSmall!.copyWith(
+                                    color:
+                                        colorScheme.onPrimary.withOpacity(0.28),
+                                    fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${style.prefix}${_formatBTC(tx.amountBTC)}',
+                          style: theme.textTheme.bodyMedium!.copyWith(
+                            color: style.accent,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        if (tx.feeSatoshis > 0) ...[
+                          const SizedBox(height: AppSpacing.xs - 1),
+                          Text(
+                            'Taxa ${_formatBTC(tx.feeBTC)}',
+                            style: theme.textTheme.labelSmall!.copyWith(
+                                color: colorScheme.onPrimary.withOpacity(0.25),
+                                fontSize: 9),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+        child: StateFeedbackView(
+          state: FeedbackState.loading,
+          title: 'A carregar…',
+          description: 'A sincronizar as tuas transações com a rede.',
         ),
+      ),
+      error: (e, __) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: StateFeedbackView.networkError(
+          onAction: () => ref.refresh(transactionHistoryProvider),
+        ),
+      ),
+    );
+  }
+}
+
+class _TxStyle {
+  final IconData icon;
+  final String label;
+  final String prefix;
+  final Color accent;
+  final Color bg;
+  const _TxStyle(
+      {required this.icon,
+      required this.label,
+      required this.prefix,
+      required this.accent,
+      required this.bg});
+}
+
+class _StatusStyle {
+  final String label;
+  final Color color;
+  final IconData icon;
+  const _StatusStyle(this.label, this.color, this.icon);
+}
+
+String _formatAccountSecurityLabel(String rawValue) {
+  switch (rawValue.toUpperCase()) {
+    case 'SHAMIR':
+    case 'SHAMIR_SLIP39':
+    case 'SLIP39':
+      return 'Shamir SLIP-39';
+    case 'MULTISIG':
+    case 'MULTISIG_VAULT':
+    case '2FA_MULTISIG':
+      return 'Cofre multisig';
+    case 'STANDARD':
+    default:
+      return 'Semente padrao';
+  }
+}
+
+class _OperationalSummaryCard extends StatelessWidget {
+  final String accountStatus;
+  final String walletStatus;
+  final String protectionStatus;
+  final String privacyStatus;
+  final VoidCallback onOpenSovereignty;
+
+  const _OperationalSummaryCard({
+    required this.accountStatus,
+    required this.walletStatus,
+    required this.protectionStatus,
+    required this.privacyStatus,
+    required this.onOpenSovereignty,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Resumo operacional',
+            style: theme.textTheme.titleMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Conta, carteiras, privacidade e postura de custódia visíveis sem dados sintéticos.',
+            style: theme.textTheme.bodySmall!.copyWith(
+              color: AppColors.white.withOpacity(0.55),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _OperationalPill(label: 'Conta', value: accountStatus),
+              _OperationalPill(label: 'Carteiras', value: walletStatus),
+              _OperationalPill(label: 'Protecao', value: protectionStatus),
+              _OperationalPill(label: 'Privacidade', value: privacyStatus),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          InkWell(
+            onTap: onOpenSovereignty,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.02),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.white.withOpacity(0.06)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.shield,
+                    color: Theme.of(context).colorScheme.secondary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Abrir relatorio de soberania',
+                      style: theme.textTheme.bodyMedium!.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    LucideIcons.chevronRight,
+                    color: AppColors.white.withOpacity(0.4),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OperationalPill extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _OperationalPill({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.white.withOpacity(0.07)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: AppColors.white.withOpacity(0.5),
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Quick Action Button ────────────────────────────────────────────────────────
+class _QuickActionBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionBtn(
+      {required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          GlassContainer(
+            blur: 20,
+            opacity: 0.05,
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            child: SizedBox(
+              width: 64,
+              height: 64,
+              child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(label,
+              style: theme.textTheme.labelSmall!
+                  .copyWith(color: theme.colorScheme.onPrimary)),
+        ],
       ),
     );
   }

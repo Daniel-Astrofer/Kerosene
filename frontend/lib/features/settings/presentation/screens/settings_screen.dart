@@ -694,9 +694,8 @@ class _LocaleSection extends ConsumerWidget {
   const _LocaleSection();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final currentLocale = ref.watch(localeProvider).locale;
-    final currentCurrency = ref.watch(currencyProvider);
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
 
     final languages = [
       _LangItem('🇺🇸', 'English', 'EN', const Locale('en')),

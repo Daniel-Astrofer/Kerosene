@@ -1,0 +1,39 @@
+Analyzing frontend...
+
+   info • The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' • lib/core/services/wallet_security_service.dart:2:8 • unnecessary_import
+   info • 'BitcoinSigner' is deprecated and shouldn't be used. Use BitcoinKeySigner instead. This will be removed in future versions • lib/core/services/wallet_security_service.dart:72:22 • deprecated_member_use
+   info • 'BitcoinSigner' is deprecated and shouldn't be used. Use BitcoinKeySigner instead. This will be removed in future versions • lib/core/utils/transaction_signer.dart:56:22 • deprecated_member_use
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/auth/presentation/screens/login_passphrase_screen.dart:1:8 • unnecessary_import
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/auth/presentation/screens/login_screen.dart:1:8 • unnecessary_import
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/auth/presentation/screens/passkey_verification_screen.dart:2:8 • unnecessary_import
+  error • Target of URI doesn't exist: '../entities/security_status.dart' • lib/features/security/data/repositories/security_repository_impl.dart:5:8 • uri_does_not_exist
+  error • The name 'SecurityStatus' isn't a type, so it can't be used as a type argument • lib/features/security/data/repositories/security_repository_impl.dart:14:26 • non_type_as_type_argument
+  error • Undefined name 'SecurityStatus' • lib/features/security/data/repositories/security_repository_impl.dart:17:20 • undefined_identifier
+  error • Target of URI doesn't exist: '../data/datasources/security_remote_datasource.dart' • lib/features/security/presentation/providers/security_provider.dart:3:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../data/repositories/security_repository_impl.dart' • lib/features/security/presentation/providers/security_provider.dart:4:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../domain/repositories/security_repository.dart' • lib/features/security/presentation/providers/security_provider.dart:5:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../domain/entities/security_status.dart' • lib/features/security/presentation/providers/security_provider.dart:6:8 • uri_does_not_exist
+  error • The name 'SecurityRemoteDataSource' isn't a type, so it can't be used as a type argument • lib/features/security/presentation/providers/security_provider.dart:8:51 • non_type_as_type_argument
+  error • The function 'SecurityRemoteDataSourceImpl' isn't defined • lib/features/security/presentation/providers/security_provider.dart:10:10 • undefined_function
+  error • The name 'SecurityRepository' isn't a type, so it can't be used as a type argument • lib/features/security/presentation/providers/security_provider.dart:13:45 • non_type_as_type_argument
+  error • The function 'SecurityRepositoryImpl' isn't defined • lib/features/security/presentation/providers/security_provider.dart:15:10 • undefined_function
+  error • The name 'SecurityStatus' isn't a type, so it can't be used as a type argument • lib/features/security/presentation/providers/security_provider.dart:18:50 • non_type_as_type_argument
+  error • Target of URI doesn't exist: '../domain/entities/security_status.dart' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:6:8 • uri_does_not_exist
+  error • Undefined name 'sovereigntyProvider' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:46:22 • undefined_identifier
+  error • Undefined name 'sovereigntyProvider' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:60:35 • undefined_identifier
+  error • Undefined name 'sovereigntyProvider' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:148:41 • undefined_identifier
+  error • Undefined class 'SovereigntyStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:169:24 • undefined_class
+  error • Undefined class 'SovereigntyStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:191:29 • undefined_class
+  error • Undefined class 'TpmStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:270:24 • undefined_class
+  error • Undefined class 'QuorumStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:291:27 • undefined_class
+  error • Undefined class 'QuorumStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:313:25 • undefined_class
+  error • Undefined class 'MerkleStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:374:27 • undefined_class
+  error • Undefined class 'MemoryStatus' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:398:27 • undefined_class
+  error • Undefined name 'sovereigntyProvider' • lib/features/security/presentation/screens/sovereignty_status_screen.dart:549:43 • undefined_identifier
+warning • Unused import: '../../../wallet/domain/entities/transaction.dart' • lib/features/transactions/data/datasources/transaction_remote_datasource.dart:4:8 • unused_import
+warning • Unused import: '../../../wallet/domain/entities/transaction.dart' • lib/features/transactions/data/repositories/transaction_repository_impl.dart:11:8 • unused_import
+warning • Unused import: '../../presentation/providers/transaction_provider.dart' • lib/features/transactions/domain/providers/payment_link_providers.dart:3:8 • unused_import
+warning • Unused import: '../../../wallet/domain/entities/transaction.dart' • lib/features/transactions/domain/repositories/transaction_repository.dart:3:8 • unused_import
+warning • The value of the field '_repository' isn't used • lib/features/transactions/presentation/providers/transaction_provider.dart:433:30 • unused_field
+warning • Unused import: 'package:dio/dio.dart' • lib/features/wallet/data/datasources/ledger_remote_datasource.dart:1:8 • unused_import
+warning • Unused import: 'dart:math' • lib/features/wallet/presentation/screens/wallet_config_screen.dart:1:8 • unused_import

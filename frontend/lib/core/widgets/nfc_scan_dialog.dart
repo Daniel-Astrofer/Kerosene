@@ -136,7 +136,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
                   .withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
+              color: const Color(0xFF00D4FF).withOpacity(0.1),
               blurRadius: 20,
               spreadRadius: 5,
             ),

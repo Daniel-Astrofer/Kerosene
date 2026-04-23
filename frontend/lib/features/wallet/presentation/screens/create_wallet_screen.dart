@@ -336,6 +336,28 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           _accountSecurity == 'SHAMIR',
           () => setState(() => _accountSecurity = 'SHAMIR'),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSecuritySelector() {
+    return Column(
+      children: [
+        _buildSecurityCard(
+          "STANDARD",
+          "Criptografia AES-256 padrão. Recomendado para uso diário.",
+          LucideIcons.checkCircle,
+          _accountSecurity == 'STANDARD',
+          () => setState(() => _accountSecurity = 'STANDARD'),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _buildSecurityCard(
+          "SHAMIR",
+          "Divisão criptográfica de segredo (SSS). Segurança de nível militar.",
+          LucideIcons.lock,
+          _accountSecurity == 'SHAMIR',
+          () => setState(() => _accountSecurity = 'SHAMIR'),
+        ),
       ],
     );
   }

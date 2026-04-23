@@ -216,7 +216,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ),
         ],
       ),
-    );
+    ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
   Widget _buildRecipientSummaryPanel() {

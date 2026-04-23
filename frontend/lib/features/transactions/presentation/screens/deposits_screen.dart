@@ -606,9 +606,31 @@ class _StatementOverview extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0,
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Color(0xFF00FF94)),
+              ),
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading deposits',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 10),
                 _IconButtonShell(

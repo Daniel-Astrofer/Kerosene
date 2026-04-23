@@ -85,6 +85,24 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
     });
   }
 
+  void _handleVerify(String code) {
+    if (widget.isSetup) {
+      ref.read(authControllerProvider.notifier).verifyTotp(
+            username: widget.username,
+            passphrase: widget.passphrase,
+            totpSecret: widget.totpSecret ?? '',
+            totpCode: code,
+          );
+    } else {
+      ref.read(authControllerProvider.notifier).verifyLoginTotp(
+            username: widget.username,
+            passphrase: widget.passphrase,
+            totpCode: code,
+            preAuthToken: widget.preAuthToken,
+          );
+    }
+  }
+
   @override
   void dispose() {
     _codeController.dispose();

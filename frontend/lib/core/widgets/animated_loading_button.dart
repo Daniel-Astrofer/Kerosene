@@ -89,12 +89,12 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
       height: 56,
       decoration: BoxDecoration(
         color: _isLoading
-            ? widget.baseColor.withValues(alpha: 0.15)
+            ? widget.baseColor.withOpacity(0.15)
             : widget.baseColor,
         borderRadius: BorderRadius.circular(14),
         border: _isLoading
             ? Border.all(
-                color: widget.baseColor.withValues(alpha: 0.5),
+                color: widget.baseColor.withOpacity(0.5),
                 width: 1.5,
               )
             : null,
@@ -123,7 +123,7 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
-                color: widget.baseColor.withValues(alpha: _glowAnimation.value),
+                color: widget.baseColor.withOpacity(_glowAnimation.value),
                 strokeWidth: 2,
               ),
             ),

@@ -259,9 +259,10 @@ class _PhysicalCreditCardFace extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
+        textDirection: TextDirection.ltr,
+      );
+      addressPainter.layout();
+      addressPainter.paint(canvas, const Offset(24, 136));
 
   static String _balanceLabel(Wallet wallet, BalanceSettings settings) {
     if (settings.isHidden) {
@@ -286,7 +287,6 @@ class _PhysicalCreditCardFace extends StatelessWidget {
     final year = (expiryYear % 100).toString().padLeft(2, '0');
     return '$month/$year';
   }
-}
 
 class _EmptyCreditCardFace extends StatelessWidget {
   final _CreditCardPalette palette;

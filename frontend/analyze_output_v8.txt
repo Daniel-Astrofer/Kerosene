@@ -1,0 +1,30 @@
+Analyzing frontend...
+
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/core/presentation/widgets/pin_dialog.dart:5:8 • unused_import
+warning • Unused import: '../widgets/cyber_icons.dart' • lib/core/presentation/widgets/pin_dialog.dart:10:8 • unused_import
+   info • The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' • lib/core/services/wallet_security_service.dart:2:8 • unnecessary_import
+   info • 'BitcoinSigner' is deprecated and shouldn't be used. Use BitcoinKeySigner instead. This will be removed in future versions • lib/core/services/wallet_security_service.dart:72:25 • deprecated_member_use
+   info • The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/core/utils/snackbar_helper.dart:2:8 • unnecessary_import
+   info • 'BitcoinSigner' is deprecated and shouldn't be used. Use BitcoinKeySigner instead. This will be removed in future versions • lib/core/utils/transaction_signer.dart:57:25 • deprecated_member_use
+   info • Angle brackets will be interpreted as HTML • lib/features/auth/repository/auth_repository.dart:10:35 • unintended_html_in_doc_comment
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/views/_social_login_buttons.dart:65:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/auth/views/user_authentication_view.dart:37:76 • deprecated_member_use
+   info • The import of 'package:flutter_riverpod/flutter_riverpod.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/profile/presentation/screens/personal_data_screen.dart:2:8 • unnecessary_import
+   info • The import of 'package:teste/features/auth/controller/auth_controller.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/profile/presentation/screens/personal_data_screen.dart:6:8 • unnecessary_import
+   info • The import of 'package:flutter_riverpod/flutter_riverpod.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/profile/presentation/screens/profile_screen.dart:2:8 • unnecessary_import
+   info • The import of 'package:teste/features/auth/controller/auth_controller.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/profile/presentation/screens/profile_screen.dart:7:8 • unnecessary_import
+   info • The import of 'package:flutter_riverpod/flutter_riverpod.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/wallet/presentation/providers/balance_websocket_provider.dart:2:8 • unnecessary_import
+   info • The import of 'package:teste/features/auth/controller/auth_controller.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/wallet/presentation/providers/balance_websocket_provider.dart:7:8 • unnecessary_import
+   info • The import of 'package:flutter_riverpod/flutter_riverpod.dart' is unnecessary because all of the used elements are also provided by the import of 'package:teste/features/auth/controller/auth_providers.dart' • lib/features/wallet/presentation/providers/wallet_provider.dart:2:8 • unnecessary_import
+warning • Unused import: 'dart:convert' • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:1:8 • unused_import
+warning • Unused import: 'dart:typed_data' • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:2:8 • unused_import
+warning • The declaration '_handleSuccess' isn't referenced • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:138:8 • unused_element
+warning • The declaration '_handleSuccessRead' isn't referenced • lib/features/wallet/presentation/screens/nfc_interaction_screen.dart:147:8 • unused_element
+   info • The private field _lockedAmountBtc could be 'final' • lib/features/wallet/presentation/screens/send_money_screen.dart:43:10 • prefer_final_fields
+warning • Unused import: 'package:flutter_riverpod/flutter_riverpod.dart' • lib/features/wallet/presentation/screens/unified_transaction_screen.dart:4:8 • unused_import
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/wallet/presentation/screens/wallet_config_screen.dart:1:8 • unnecessary_import
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/features/wallet/presentation/widgets/amount_input_pad.dart:4:8 • unused_import
+warning • Unused import: 'package:teste/core/theme/app_spacing.dart' • lib/features/wallet/presentation/widgets/infinite_wallet_cards.dart:6:8 • unused_import
+warning • Unused import: 'package:teste/core/theme/app_typography.dart' • lib/features/wallet/presentation/widgets/infinite_wallet_cards.dart:7:8 • unused_import
+warning • Unused import: 'package:teste/core/presentation/widgets/glass_container.dart' • lib/features/wallet/presentation/widgets/quick_contact_list.dart:5:8 • unused_import
+warning • Unused import: 'package:teste/core/theme/app_spacing.dart' • lib/features/wallet/presentation/widgets/smart_wallet_stack.dart:7:8 • unused_import
