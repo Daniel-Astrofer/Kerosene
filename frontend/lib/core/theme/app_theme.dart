@@ -170,7 +170,6 @@ class AppTheme {
           ),
           textStyle: AppTypography.buttonText,
         ),
-        textStyle: AppTypography.buttonText,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

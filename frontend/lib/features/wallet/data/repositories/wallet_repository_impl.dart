@@ -32,6 +32,8 @@ class WalletRepositoryImpl implements WalletRepository {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
@@ -43,10 +45,13 @@ class WalletRepositoryImpl implements WalletRepository {
         name: name,
         passphrase: passphrase,
         accountSecurity: accountSecurity,
+        xpub: xpub,
+        walletMode: walletMode,
       );
 
-      // Persist mnemonic locally for secure access
-      await walletSecurityService.saveMnemonic(passphrase);
+      if (walletMode.trim().toUpperCase() != 'SELF_CUSTODY') {
+        await walletSecurityService.saveMnemonic(passphrase);
+      }
 
       return Right(result);
     } on ServerException catch (e) {
@@ -292,8 +297,6 @@ class WalletRepositoryImpl implements WalletRepository {
       return Left(UnknownFailure(message: 'Erro ao atualizar carteira: $e'));
     }
   }
-
-
 
   @override
   Future<Either<Failure, String>> deleteWallet({

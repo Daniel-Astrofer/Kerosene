@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:teste/core/constants/app_copy.dart';
+import 'package:teste/core/theme/monochrome_theme.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 
 class FinancialStatusMeta {
@@ -60,6 +61,16 @@ class FinancialStatusBadge extends StatelessWidget {
           ),
           color: errorColor,
           icon: Icons.cancel_outlined,
+        );
+      case 'CANCELLED':
+        return const FinancialStatusMeta(
+          label: LocalizedCopy(
+            en: 'Cancelled',
+            pt: 'Cancelado',
+            es: 'Cancelado',
+          ),
+          color: errorColor,
+          icon: Icons.block_rounded,
         );
       case 'VERIFYING_ONBOARDING':
         return const FinancialStatusMeta(
@@ -132,32 +143,28 @@ class FinancialStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderTone = Color.lerp(monoBorderStrongColor, meta.color, 0.08) ??
+        monoBorderStrongColor;
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 10 : 12,
         vertical: compact ? 6 : 8,
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1219),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: meta.color.withValues(alpha: 0.24)),
-        boxShadow: [
-          BoxShadow(
-            color: meta.color.withValues(alpha: 0.10),
-            blurRadius: compact ? 10 : 14,
-            spreadRadius: -6,
-          ),
-        ],
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: borderTone,
+        showShadow: false,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(meta.icon, size: compact ? 14 : 16, color: meta.color),
+          Icon(meta.icon, size: compact ? 14 : 16, color: monoTextColor),
           SizedBox(width: compact ? 6 : 8),
           Text(
             meta.label.resolve(context),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: meta.color,
+                  color: monoTextColor,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.1,
                 ),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/widgets/bouncing_button.dart';
@@ -52,7 +50,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     // Handles the case where _checkAuthStatus resolves after first frame
     ref.listen<AuthState>(authControllerProvider, (_, next) {
       if (next is AuthAuthenticated && mounted) {
-        Navigator.pushReplacementNamed(context, '/home_loading');
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home_loading',
+          (route) => false,
+        );
       }
     });
 

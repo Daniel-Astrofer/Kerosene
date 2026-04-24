@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/utils/transaction_address_display.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
@@ -157,8 +158,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     } else if (_typeFilter == 'lightning') {
       result = result.where((tx) => tx.isLightning).toList();
     } else if (_typeFilter == 'onchain') {
-      result =
-          result.where((tx) => !tx.isInternal && !tx.isLightning).toList();
+      result = result.where((tx) => !tx.isInternal && !tx.isLightning).toList();
     }
 
     // Status filter
@@ -173,18 +173,21 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               tx.status == TransactionStatus.confirming)
           .toList();
     } else if (_statusFilter == 'failed') {
-      result = result
-          .where((tx) => tx.status == TransactionStatus.failed)
-          .toList();
+      result =
+          result.where((tx) => tx.status == TransactionStatus.failed).toList();
     }
 
     // Search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result.where((tx) {
+        final primaryAddress =
+            resolvePrimaryTransactionAddress(tx).toLowerCase();
+        final secondaryAddress =
+            (resolveSecondaryTransactionAddress(tx) ?? '').toLowerCase();
         return tx.id.toLowerCase().contains(q) ||
-            tx.fromAddress.toLowerCase().contains(q) ||
-            tx.toAddress.toLowerCase().contains(q) ||
+            primaryAddress.contains(q) ||
+            secondaryAddress.contains(q) ||
             (tx.description?.toLowerCase().contains(q) ?? false);
       }).toList();
     }
@@ -276,20 +279,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         sortKey: (tx) => tx.timestamp.millisecondsSinceEpoch,
       ),
       AdminColumn<Transaction>(
-        header: 'From',
+        header: 'Source',
         cellBuilder: (tx) => SelectableText(
-          tx.fromAddress.length > 16
-              ? '${tx.fromAddress.substring(0, 16)}...'
-              : tx.fromAddress,
+          _truncateAddress(resolveSecondaryTransactionAddress(tx) ?? '—'),
           style: AdminTypography.tableCell,
         ),
       ),
       AdminColumn<Transaction>(
-        header: 'To',
+        header: 'Address',
         cellBuilder: (tx) => SelectableText(
-          tx.toAddress.length > 16
-              ? '${tx.toAddress.substring(0, 16)}...'
-              : tx.toAddress,
+          _truncateAddress(resolvePrimaryTransactionAddress(tx)),
           style: AdminTypography.tableCell,
         ),
       ),
@@ -311,5 +310,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   String _formatDate(DateTime dt) {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _truncateAddress(String value) {
+    return value.length > 16 ? '${value.substring(0, 16)}...' : value;
   }
 }

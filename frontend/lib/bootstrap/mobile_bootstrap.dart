@@ -16,6 +16,8 @@ import '../features/wallet/presentation/screens/create_wallet_screen.dart';
 import '../features/wallet/presentation/screens/wallet_card_screen.dart';
 import '../features/wallet/presentation/screens/receive_hub_screen.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart';
+import '../features/security/presentation/providers/security_provider.dart';
+import '../features/security/presentation/widgets/app_entry_pin_gate.dart';
 import '../features/mining/presentation/screens/mining_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../core/services/background_service.dart';
@@ -124,7 +126,9 @@ class MyApp extends ConsumerWidget {
             return const Scaffold(backgroundColor: Colors.black);
           }
           if (authState is AuthAuthenticated) {
-            return const HomeLoadingScreen();
+            return const AppEntryPinGate(
+              child: HomeLoadingScreen(),
+            );
           }
           if (authState is AuthServerUnavailable) {
             return const ServerUnavailableScreen();
@@ -175,7 +179,13 @@ class _AppRealtimeBootstrap extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
-    if (authState is AuthAuthenticated) {
+    final appPinStatus = ref.watch(appPinStatusProvider);
+    final appUnlocked = ref.watch(appEntryPinUnlockedProvider);
+    final appPinSatisfied = appPinStatus.maybeWhen(
+      data: (status) => !status.enabled || appUnlocked,
+      orElse: () => false,
+    );
+    if (authState is AuthAuthenticated && appPinSatisfied) {
       ref.watch(balanceWebSocketServiceProvider);
     }
     return child;

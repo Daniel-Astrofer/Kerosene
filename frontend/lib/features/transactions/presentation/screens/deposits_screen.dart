@@ -9,6 +9,7 @@ import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
 import 'package:teste/features/notifications/presentation/widgets/session_notification_sidebar.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
@@ -19,6 +20,7 @@ import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/balance_websocket_provider.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
+import 'package:teste/features/wallet/presentation/screens/receive_payment_link_screen.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
 
 const Color _background = authenticatedSurfaceBackgroundColor;
@@ -91,12 +93,62 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     AppNotice.showSuccess(context, message: successMessage);
   }
 
+  Future<void> _openPaymentLink(
+    PaymentLink link, {
+    required Wallet? wallet,
+    required Currency selectedCurrency,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) async {
+    await HapticFeedback.selectionClick();
+    if (!mounted) {
+      return;
+    }
+
+    final requestedAmountLabel = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: link.amountBtc,
+      currency: selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final btcAmountLabel = MoneyDisplay.format(
+      amount: link.amountBtc,
+      currency: Currency.btc,
+    );
+    final depositFeeLabel = link.depositFeeBtc > 0
+        ? MoneyDisplay.format(
+            amount: link.depositFeeBtc, currency: Currency.btc)
+        : null;
+    final netAmountLabel = link.netAmountBtc > 0
+        ? MoneyDisplay.format(amount: link.netAmountBtc, currency: Currency.btc)
+        : null;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ReceivePaymentLinkScreen(
+          initialLink: link,
+          requestedAmountLabel: requestedAmountLabel,
+          btcAmountLabel: btcAmountLabel,
+          walletLabel: wallet?.name,
+          cardTypeLabel: wallet?.cardType.label,
+          depositFeeLabel: depositFeeLabel,
+          netAmountLabel: netAmountLabel,
+        ),
+      ),
+    );
+    ref.invalidate(paymentLinksProvider);
+    ref.invalidate(transactionHistoryProvider);
+    ref.invalidate(pagedTransactionHistoryProvider);
+  }
+
   Future<void> _scrollToLinks() async {
+    HapticFeedback.selectionClick();
     final sectionContext = _linksSectionKey.currentContext;
     if (sectionContext == null) {
       return;
     }
-    await HapticFeedback.selectionClick();
     await Scrollable.ensureVisible(
       sectionContext,
       alignment: 0.10,
@@ -209,8 +261,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
         )
         .toList();
     final sidebarOpen = ref.watch(notificationSidebarProvider);
-    final notifications = ref.watch(sessionNotificationFeedProvider);
-    final notificationCount = notifications.length;
+    final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
 
     return Scaffold(
       backgroundColor: _background,
@@ -316,6 +367,15 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                               _copyValue(
                                             address,
                                             'Endereço copiado.',
+                                          ),
+                                          onOpenLink: (link) =>
+                                              _openPaymentLink(
+                                            link,
+                                            wallet: activeWallet,
+                                            selectedCurrency: selectedCurrency,
+                                            btcUsd: btcUsd,
+                                            btcEur: btcEur,
+                                            btcBrl: btcBrl,
                                           ),
                                         ),
                                       ),
@@ -606,31 +666,9 @@ class _StatementOverview extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0,
                         ),
-                      );
-                    },
-                  ),
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFF00FF94)),
-              ),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading deposits',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 10),
                 _IconButtonShell(
@@ -762,6 +800,7 @@ class _OpenLinksSection extends StatelessWidget {
   final double? btcEur;
   final double? btcBrl;
   final ValueChanged<String> onCopyAddress;
+  final ValueChanged<PaymentLink> onOpenLink;
 
   const _OpenLinksSection({
     required this.linksAsync,
@@ -771,6 +810,7 @@ class _OpenLinksSection extends StatelessWidget {
     required this.btcEur,
     required this.btcBrl,
     required this.onCopyAddress,
+    required this.onOpenLink,
   });
 
   @override
@@ -813,8 +853,13 @@ class _OpenLinksSection extends StatelessWidget {
                         btcEur: btcEur,
                         btcBrl: btcBrl,
                       ),
+                      btcAmount: MoneyDisplay.format(
+                        amount: links[index].amountBtc,
+                        currency: Currency.btc,
+                      ),
                       onCopyAddress: () =>
                           onCopyAddress(links[index].depositAddress),
+                      onOpenLink: () => onOpenLink(links[index]),
                     ),
                   ],
                 ],
@@ -830,12 +875,16 @@ class _OpenLinksSection extends StatelessWidget {
 class _PaymentLinkRow extends StatelessWidget {
   final PaymentLink link;
   final String amount;
+  final String btcAmount;
   final VoidCallback onCopyAddress;
+  final VoidCallback onOpenLink;
 
   const _PaymentLinkRow({
     required this.link,
     required this.amount,
+    required this.btcAmount,
     required this.onCopyAddress,
+    required this.onOpenLink,
   });
 
   @override
@@ -850,10 +899,7 @@ class _PaymentLinkRow extends StatelessWidget {
             : 'Agora';
 
     return InkWell(
-      onTap: () => FinancialActivityDetailsSheet.show(
-        context,
-        paymentLink: link,
-      ),
+      onTap: onOpenLink,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         child: Row(
@@ -900,28 +946,62 @@ class _PaymentLinkRow extends StatelessWidget {
                     letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 5),
-                GestureDetector(
-                  onTap: onCopyAddress,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        LucideIcons.copy,
-                        size: 12,
-                        color: _textMuted,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'copiar',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: _textMuted,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 3),
+                Text(
+                  btcAmount,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: _textMuted,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
                   ),
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: onCopyAddress,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            LucideIcons.copy,
+                            size: 12,
+                            color: _textMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'copiar',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: _textMuted,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          LucideIcons.arrowUpRight,
+                          size: 12,
+                          color: _textMuted,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'gerenciar',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: _textMuted,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1890,7 +1970,7 @@ String _transactionAmountLabel({
 }
 
 String _counterpartyLabel(Transaction tx) {
-  final value = (_isCredit(tx) ? tx.fromAddress : tx.toAddress).trim();
+  final value = resolvePrimaryTransactionAddress(tx).trim();
   if (value.isEmpty) {
     return 'Sem contraparte';
   }

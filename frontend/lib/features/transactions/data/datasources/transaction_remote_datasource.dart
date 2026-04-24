@@ -10,6 +10,7 @@ import '../../domain/entities/lightning_invoice.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
+import '../../domain/entities/onchain_address_allocation.dart';
 import '../../domain/entities/wallet_network_address.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
@@ -62,13 +63,23 @@ abstract class TransactionRemoteDataSource {
   Future<PaymentLink> createPaymentLink({
     required double amount,
     String? description,
+    int? expiresInMinutes,
+    String? visibility,
+    String? confirmationMode,
+    bool amountLocked = true,
+    String? referenceLabel,
+    Map<String, String>? metadata,
   });
   Future<PaymentLink> getPaymentLink(String linkId);
   Future<List<PaymentLink>> getPaymentLinks();
+  Future<PaymentLink> cancelPaymentLink({
+    required String linkId,
+    String? reason,
+  });
   Future<WalletNetworkAddress> getWalletNetworkProfile({
     required String walletName,
   });
-  Future<WalletNetworkAddress> issueOnchainAddress({
+  Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
     bool regenerate = false,
   });
@@ -80,6 +91,7 @@ abstract class TransactionRemoteDataSource {
   });
   Future<List<ExternalTransfer>> getExternalTransfers();
   Future<ExternalTransfer> getExternalTransfer(String transferId);
+  Future<ExternalTransfer> cancelInboundTransfer(String transferId);
 
   // Withdrawals
   Future<TxStatus> withdraw({
@@ -119,6 +131,72 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     return const [];
   }
 
+  Map<String, dynamic> _parseErrorPayload(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    if (data is String) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        return {'message': data};
+      }
+    }
+
+    return const {};
+  }
+
+  AppException _mapDioError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    final payload = _parseErrorPayload(error.response?.data);
+    final message = payload['message']?.toString().trim().isNotEmpty == true
+        ? payload['message']!.toString().trim()
+        : (payload['error']?.toString().trim().isNotEmpty == true
+            ? payload['error']!.toString().trim()
+            : (error.message?.trim().isNotEmpty == true
+                ? error.message!.trim()
+                : 'Erro no servidor'));
+    final rawCode = payload['errorCode']?.toString().trim();
+    final errorCode = rawCode == null || rawCode.isEmpty ? null : rawCode;
+    final errorData = payload['data'];
+
+    if (statusCode == 401 || statusCode == 403) {
+      return AuthException(
+        message: message,
+        statusCode: statusCode,
+        errorCode: errorCode,
+        data: errorData,
+      );
+    }
+
+    if (statusCode != null && statusCode >= 500) {
+      return ServerException(
+        message: message,
+        statusCode: statusCode,
+        errorCode: errorCode,
+        data: errorData,
+      );
+    }
+
+    return ValidationException(
+      message: message,
+      statusCode: statusCode ?? 400,
+      errorCode: errorCode,
+      data: errorData,
+    );
+  }
+
   // ==================== Fee & Status ====================
 
   @override
@@ -149,19 +227,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return UnsignedTransaction.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is DioException) {
-        final data = e.response?.data;
-        String? serverMsg;
-        try {
-          if (data is Map) {
-            serverMsg = data['message'] ?? data['error'];
-          } else if (data is String) {
-            serverMsg = data;
-          }
-        } catch (_) {}
-
-        if (serverMsg != null && serverMsg.isNotEmpty) {
-          throw ServerException(message: serverMsg);
-        }
+        throw _mapDioError(e);
       }
       if (e is AppException) rethrow;
       throw ServerException(
@@ -238,19 +304,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return TxStatus.fromJson(data);
     } catch (e) {
       if (e is DioException) {
-        final respData = e.response?.data;
-        String? serverMsg;
-        try {
-          if (respData is Map) {
-            serverMsg = respData['message']?.toString() ??
-                respData['error']?.toString();
-          } else if (respData is String) {
-            serverMsg = respData;
-          }
-        } catch (_) {}
-        if (serverMsg != null && serverMsg.isNotEmpty) {
-          throw ServerException(message: serverMsg);
-        }
+        throw _mapDioError(e);
       }
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao enviar transação: $e');
@@ -426,6 +480,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<PaymentLink> createPaymentLink({
     required double amount,
     String? description,
+    int? expiresInMinutes,
+    String? visibility,
+    String? confirmationMode,
+    bool amountLocked = true,
+    String? referenceLabel,
+    Map<String, String>? metadata,
   }) async {
     try {
       final response = await apiClient.post(
@@ -433,6 +493,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         data: {
           'amount': amount,
           'description': description ?? 'Recebimento via QR',
+          if (expiresInMinutes != null) 'expiresInMinutes': expiresInMinutes,
+          if (visibility != null) 'visibility': visibility,
+          if (confirmationMode != null) 'confirmationMode': confirmationMode,
+          'amountLocked': amountLocked,
+          if (referenceLabel != null) 'referenceLabel': referenceLabel,
+          if (metadata != null && metadata.isNotEmpty) 'metadata': metadata,
         },
       );
 
@@ -487,6 +553,25 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   }
 
   @override
+  Future<PaymentLink> cancelPaymentLink({
+    required String linkId,
+    String? reason,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        '${AppConfig.transactionsPaymentLink}/$linkId/cancel',
+        data: {
+          if (reason != null) 'reason': reason,
+        },
+      );
+      return PaymentLink.fromJson(_parseJsonResponse(response.data));
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao cancelar payment link: $e');
+    }
+  }
+
+  @override
   Future<WalletNetworkAddress> getWalletNetworkProfile({
     required String walletName,
   }) async {
@@ -505,7 +590,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   }
 
   @override
-  Future<WalletNetworkAddress> issueOnchainAddress({
+  Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
     bool regenerate = false,
   }) async {
@@ -517,7 +602,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           'regenerate': regenerate,
         },
       );
-      return WalletNetworkAddress.fromJson(_parseJsonResponse(response.data));
+      return OnchainAddressAllocation.fromJson(
+          _parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -581,6 +667,24 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     }
   }
 
+  @override
+  Future<ExternalTransfer> cancelInboundTransfer(String transferId) async {
+    try {
+      final response = await apiClient.post(
+        '${AppConfig.depositRoot}/$transferId/cancel',
+      );
+      return ExternalTransfer.fromJson(_parseJsonResponse(response.data));
+    } catch (e) {
+      if (e is DioException) {
+        throw _mapDioError(e);
+      }
+      if (e is AppException) rethrow;
+      throw ServerException(
+        message: 'Erro ao cancelar depósito externo: $e',
+      );
+    }
+  }
+
   // ==================== Withdrawals ====================
 
   @override
@@ -629,19 +733,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is DioException) {
-        final data = e.response?.data;
-        String? serverMsg;
-        try {
-          if (data is Map) {
-            serverMsg = data['message'] ?? data['error'];
-          } else if (data is String) {
-            serverMsg = data;
-          }
-        } catch (_) {}
-
-        if (serverMsg != null && serverMsg.isNotEmpty) {
-          throw ServerException(message: serverMsg);
-        }
+        throw _mapDioError(e);
       }
       if (e is AppException) rethrow;
       throw ServerException(

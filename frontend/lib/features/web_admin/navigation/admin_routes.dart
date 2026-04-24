@@ -26,6 +26,7 @@ enum AdminRoute {
   volatility('Volatility', Icons.show_chart),
   companies('Accounts', Icons.business_outlined),
   audit('Audit & Security', Icons.security_outlined),
+  notifications('Notifications', Icons.notifications_none_outlined),
   settings('Settings', Icons.settings_outlined);
 
   final String label;

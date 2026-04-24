@@ -409,10 +409,7 @@ abstract class AuthRemoteDataSource {
   Future<void> mockConfirmOnboarding(String sessionId);
 
   /// Confirmação de voucher (com suporte a mock_tx_)
-  Future<void> confirmVoucher({
-    required String voucherId,
-    required String txid,
-  });
+
 
   /// Refresh token (usando cookie)
   Future<String> refreshToken();
@@ -1092,37 +1089,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> mockConfirmOnboarding(String sessionId) async {
-    try {
-      await apiClient.post(
-        AppConfig.voucherOnboardingMockConfirm,
-        queryParameters: {'sessionId': sessionId},
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao forçar confirmação: $e');
-    }
-  }
-
-  @override
-  Future<void> confirmVoucher({
-    required String voucherId,
-    required String txid,
-  }) async {
-    try {
-      final cleanVoucherId =
-          voucherId.startsWith('pay_') ? voucherId.substring(4) : voucherId;
-
-      await apiClient.post(
-        AppConfig.voucherConfirm,
-        queryParameters: {
-          'pendingVoucherId': cleanVoucherId,
-          'txid': txid,
-        },
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao confirmar voucher: $e');
-    }
+    debugPrint(
+      '⚠️ mockConfirmOnboarding sem endpoint backend. Ignorando atalho local para sessionId=$sessionId',
+    );
   }
 
   // ─── Refresh / Logout / CurrentUser ──────────────────────────────────────────

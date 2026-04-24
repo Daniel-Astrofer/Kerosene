@@ -9,6 +9,7 @@ import '../../data/datasources/auth_remote_datasource.dart'
         BackupCodesStatusResult,
         LoginResult,
         TotpSetupResult,
+        OnboardingPaymentLinkDto,
         EmergencyRecoveryStartResult,
         EmergencyRecoveryFinishResult;
 
@@ -146,8 +147,5 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId);
 
   /// Confirm Voucher payment
-  Future<Either<Failure, void>> confirmVoucher({
-    required String voucherId,
-    required String txid,
-  });
+
 }

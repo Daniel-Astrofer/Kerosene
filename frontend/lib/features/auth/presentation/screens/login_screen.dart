@@ -94,7 +94,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         if (context.mounted) {
           HomeScreen.skipNextAuth = true;
-          Navigator.pushReplacementNamed(context, '/home_loading');
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/home_loading',
+            (route) => false,
+          );
         }
       } else if (next is AuthRequiresLoginTotp) {
         Navigator.push(
@@ -112,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (context.mounted) {
           showCustomErrorDialog(
             context,
-            ErrorTranslator.translate(context.l10n, next.message),
+            ErrorTranslator.translate(context.l10n, next.toString()),
             onRetry: () {
               ref.read(authControllerProvider.notifier).clearError();
               if (_usernameController.text.isNotEmpty &&

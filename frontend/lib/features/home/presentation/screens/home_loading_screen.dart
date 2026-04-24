@@ -10,8 +10,6 @@ import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
-import 'package:teste/l10n/l10n_extension.dart';
-import '../widgets/tor_loading_overlay.dart'; // I already put the dot logic there, wait...
 
 enum _TorBootstrapVisualState {
   booting,
@@ -117,17 +115,23 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
 
   String _retryHintText(BuildContext context) {
     switch (Localizations.localeOf(context).languageCode) {
-      case 'en': return 'Tap to try again';
-      case 'es': return 'Toca para reintentar';
-      default: return 'Toque para tentar novamente';
+      case 'en':
+        return 'Tap to try again';
+      case 'es':
+        return 'Toca para reintentar';
+      default:
+        return 'Toque para tentar novamente';
     }
   }
 
   String _genericConnectionFailureText(BuildContext context) {
     switch (Localizations.localeOf(context).languageCode) {
-      case 'en': return 'Could not reach the server or establish an internet connection.';
-      case 'es': return 'No fue posible alcanzar el servidor ni establecer conexión a internet.';
-      default: return 'Não foi possível alcançar o servidor ou estabelecer conexão com a internet.';
+      case 'en':
+        return 'Could not reach the server or establish an internet connection.';
+      case 'es':
+        return 'No fue posible alcanzar el servidor ni establecer conexión a internet.';
+      default:
+        return 'Não foi possível alcançar o servidor ou estabelecer conexão com a internet.';
     }
   }
 
@@ -160,7 +164,9 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
   }
 
   Future<void> _handleRetryTap() async {
-    if (_visualState != _TorBootstrapVisualState.retryReady || _isNavigating) return;
+    if (_visualState != _TorBootstrapVisualState.retryReady || _isNavigating) {
+      return;
+    }
 
     setState(() {
       _visualState = _TorBootstrapVisualState.retrying;
@@ -186,7 +192,8 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
 
     final walletState = ref.read(walletProvider);
     final btcUsd = ref.read(latestBtcPriceProvider);
-    if (walletState is WalletError && !_isAuthFailureMessage(walletState.message)) {
+    if (walletState is WalletError &&
+        !_isAuthFailureMessage(walletState.message)) {
       _navigateToFallback(message: _fallbackMessageFrom(walletState));
       return;
     }
@@ -230,8 +237,10 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => FadeTransition(opacity: animation, child: child),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const HomeScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 1000),
         ),
         (route) => false,
@@ -243,11 +252,16 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
     if (_isNavigating || !mounted) return;
     _isNavigating = true;
     _cancelRetryTimers();
-    final fallbackMessage = message?.trim().isNotEmpty == true ? message!.trim() : _genericConnectionFailureText(context);
+    final fallbackMessage = message?.trim().isNotEmpty == true
+        ? message!.trim()
+        : _genericConnectionFailureText(context);
     Navigator.of(context).pushAndRemoveUntil(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => ServerUnavailableScreen(message: fallbackMessage, retryRouteName: '/home_loading'),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) => FadeTransition(opacity: animation, child: child),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ServerUnavailableScreen(
+                message: fallbackMessage, retryRouteName: '/home_loading'),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+            FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 360),
       ),
       (route) => false,
@@ -354,7 +368,8 @@ class _SingleDot extends StatelessWidget {
     final start = index * 0.15;
     final animation = CurvedAnimation(
       parent: controller,
-      curve: Interval(start, (start + 0.5).clamp(0.0, 1.0), curve: _BounceCurve()),
+      curve:
+          Interval(start, (start + 0.5).clamp(0.0, 1.0), curve: _BounceCurve()),
     );
 
     return AnimatedBuilder(
@@ -385,6 +400,8 @@ class _SingleDot extends StatelessWidget {
 class _BounceCurve extends Curve {
   @override
   double transformInternal(double t) {
-    return (t < 0.5) ? Curves.easeOutCubic.transform(t * 2) : Curves.easeInCubic.transform(1 - (t - 0.5) * 2);
+    return (t < 0.5)
+        ? Curves.easeOutCubic.transform(t * 2)
+        : Curves.easeInCubic.transform(1 - (t - 0.5) * 2);
   }
 }

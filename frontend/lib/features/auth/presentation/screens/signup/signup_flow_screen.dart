@@ -4,9 +4,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/widgets/auth_entry_ui.dart';
 import 'package:teste/features/auth/presentation/widgets/modern_auth_text_field.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class SignupFlowScreen extends ConsumerStatefulWidget {
   const SignupFlowScreen({super.key});
@@ -68,7 +70,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         AppNotice.showError(
           context,
           title: 'Fluxo interrompido',
-          message: next.message,
+          message: ErrorTranslator.translate(context.l10n, next.toString()),
         );
       }
     });
@@ -333,7 +335,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
             icon: LucideIcons.shield,
             title: 'Custódia',
             body:
-                'Perder a senha pode significar perder a conta se não possuir o backup dos códigos.',
+                'Perder a senha pode significar perder a conta se não possuir o backup dos códigos. BIP39 fica apenas na carteira interna, fora do login da conta.',
           ),
           const SizedBox(height: AppSpacing.xl),
           AuthEntryButton(
@@ -353,8 +355,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         children: [
           const _StepTitle(
             title: 'Senha forte',
-            body:
-                'Use uma senha longa e única.',
+            body: 'Use uma senha longa e única.',
           ),
           const SizedBox(height: AppSpacing.xl),
           ModernAuthTextField(

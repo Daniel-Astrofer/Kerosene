@@ -85,24 +85,6 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
     });
   }
 
-  void _handleVerify(String code) {
-    if (widget.isSetup) {
-      ref.read(authControllerProvider.notifier).verifyTotp(
-            username: widget.username,
-            passphrase: widget.passphrase,
-            totpSecret: widget.totpSecret ?? '',
-            totpCode: code,
-          );
-    } else {
-      ref.read(authControllerProvider.notifier).verifyLoginTotp(
-            username: widget.username,
-            passphrase: widget.passphrase,
-            totpCode: code,
-            preAuthToken: widget.preAuthToken,
-          );
-    }
-  }
-
   @override
   void dispose() {
     _codeController.dispose();
@@ -200,7 +182,7 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
   _TotpIssueData _issueFromError(AuthError error) {
     final translated = ErrorTranslator.translate(
       context.l10n,
-      error.errorCode ?? error.message,
+      error.toString(),
     );
     final code = error.errorCode ?? '';
 

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/core/providers/alert_preferences_provider.dart';
 import 'package:teste/features/auth/controller/auth_local_provider.dart';
 import '../../../../core/services/balance_websocket_service.dart';
 import '../../../../core/providers/tor_providers.dart';
@@ -229,6 +230,11 @@ final balanceWebSocketServiceProvider =
         metadata: event.metadata,
       );
 
+      final alertPreferences = ref.read(alertPreferencesProvider);
+      if (!_shouldKeepNotification(notification, alertPreferences)) {
+        return;
+      }
+
       ref.read(sessionNotificationFeedProvider.notifier).add(notification);
       ref.invalidate(paymentLinksProvider);
       ref.invalidate(transactionHistoryProvider);
@@ -237,7 +243,9 @@ final balanceWebSocketServiceProvider =
       ref.invalidate(depositBalanceProvider);
       unawaited(ref.read(walletProvider.notifier).refresh());
 
-      SnackbarHelper.showPushNotification(notification);
+      if (alertPreferences.inAppBannersEnabled) {
+        SnackbarHelper.showPushNotification(notification);
+      }
     },
   );
 
@@ -269,4 +277,40 @@ String _buildReceivedEventId({
     update.receiver ?? '',
     update.context,
   ].join('|');
+}
+
+bool _shouldKeepNotification(
+  SessionNotificationItem notification,
+  AlertPreferencesState preferences,
+) {
+  if (_isSecurityNotification(notification)) {
+    return preferences.securityAlertsEnabled;
+  }
+
+  if (_isTransactionNotification(notification)) {
+    return preferences.transactionAlertsEnabled;
+  }
+
+  return true;
+}
+
+bool _isSecurityNotification(SessionNotificationItem notification) {
+  return notification.kind == SessionNotificationItem.kindSecurityLoginDetected ||
+      notification.kind ==
+          SessionNotificationItem.kindSecurityRecoveryCompleted;
+}
+
+bool _isTransactionNotification(SessionNotificationItem notification) {
+  return {
+    SessionNotificationItem.kindTransferReceived,
+    SessionNotificationItem.kindTransferSent,
+    SessionNotificationItem.kindPaymentRequestCreated,
+    SessionNotificationItem.kindPaymentRequestPaid,
+    SessionNotificationItem.kindDepositDetected,
+    SessionNotificationItem.kindDepositConfirmed,
+    SessionNotificationItem.kindPaymentSent,
+    SessionNotificationItem.kindMiningStarted,
+    SessionNotificationItem.kindMiningCompleted,
+    SessionNotificationItem.kindMiningCancelled,
+  }.contains(notification.kind);
 }

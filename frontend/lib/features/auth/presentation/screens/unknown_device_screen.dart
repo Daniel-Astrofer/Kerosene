@@ -84,7 +84,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
       } else if (next is AuthError) {
         showCustomErrorDialog(
           context,
-          ErrorTranslator.translate(context.l10n, next.message),
+          ErrorTranslator.translate(context.l10n, next.toString()),
           onRetry: () {
             ref.read(authControllerProvider.notifier).clearError();
             if (_codeController.text.length == 6) {

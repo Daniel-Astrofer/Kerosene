@@ -6,6 +6,7 @@ import '../entities/deposit.dart';
 import '../entities/payment_link.dart';
 import '../entities/external_transfer.dart';
 import '../entities/lightning_invoice.dart';
+import '../entities/onchain_address_allocation.dart';
 import '../entities/wallet_network_address.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
@@ -58,14 +59,24 @@ abstract class TransactionRepository {
   Future<PaymentLink> createPaymentLink({
     required double amount,
     String? description,
+    int? expiresInMinutes,
+    String? visibility,
+    String? confirmationMode,
+    bool amountLocked = true,
+    String? referenceLabel,
+    Map<String, String>? metadata,
   });
   Future<PaymentLink> getPaymentLink(String linkId);
   Future<List<PaymentLink>> getPaymentLinks();
+  Future<PaymentLink> cancelPaymentLink({
+    required String linkId,
+    String? reason,
+  });
 
   Future<WalletNetworkAddress> getWalletNetworkProfile({
     required String walletName,
   });
-  Future<WalletNetworkAddress> issueOnchainAddress({
+  Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
     bool regenerate = false,
   });
@@ -77,6 +88,7 @@ abstract class TransactionRepository {
   });
   Future<List<ExternalTransfer>> getExternalTransfers();
   Future<ExternalTransfer> getExternalTransfer(String transferId);
+  Future<ExternalTransfer> cancelInboundTransfer(String transferId);
 
   // Withdrawals
   Future<TxStatus> withdraw({

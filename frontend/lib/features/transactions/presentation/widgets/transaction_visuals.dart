@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 
@@ -11,8 +9,14 @@ enum TransactionVisualFamily {
   qrCode,
   nfc,
   deposit,
+  withdrawal,
+  mining,
+  refund,
   swap,
   fee,
+  failed,
+  cancelled,
+  unknown,
 }
 
 enum TransactionVisualDirection {
@@ -30,6 +34,7 @@ class TransactionVisualSpec {
   final TransactionVisualDirection direction;
   final String label;
   final String prefix;
+  final IconData icon;
   final Color iconColor;
   final Color amountColor;
 
@@ -38,6 +43,7 @@ class TransactionVisualSpec {
     required this.direction,
     required this.label,
     required this.prefix,
+    required this.icon,
     required this.iconColor,
     required this.amountColor,
   });
@@ -48,6 +54,54 @@ class TransactionVisualSpec {
   static TransactionVisualSpec fromTransaction(Transaction transaction) {
     final isOutgoing = transaction.type == TransactionType.send ||
         transaction.type == TransactionType.withdrawal;
+    final description = (transaction.description ?? '').toLowerCase();
+
+    if (_looksCancelled(transaction)) {
+      return const TransactionVisualSpec(
+        family: TransactionVisualFamily.cancelled,
+        direction: TransactionVisualDirection.neutral,
+        label: 'Cancelado',
+        prefix: '',
+        icon: Icons.block_rounded,
+        iconColor: Color(0xFFB38A8A),
+        amountColor: _neutralAmountColor,
+      );
+    }
+
+    if (_looksRefund(transaction)) {
+      return _pair(
+        family: TransactionVisualFamily.refund,
+        isOutgoing: false,
+        incomingLabel: 'Estorno',
+        outgoingLabel: 'Estorno',
+        icon: Icons.undo_rounded,
+        iconColor: const Color(0xFFA9B3C3),
+      );
+    }
+
+    if (transaction.status == TransactionStatus.failed) {
+      return const TransactionVisualSpec(
+        family: TransactionVisualFamily.failed,
+        direction: TransactionVisualDirection.neutral,
+        label: 'Falha',
+        prefix: '',
+        icon: Icons.error_outline_rounded,
+        iconColor: Color(0xFFD59A9A),
+        amountColor: _debitColor,
+      );
+    }
+
+    if (_looksLikeMining(transaction)) {
+      return const TransactionVisualSpec(
+        family: TransactionVisualFamily.mining,
+        direction: TransactionVisualDirection.incoming,
+        label: 'Mineração',
+        prefix: '+',
+        icon: Icons.auto_awesome_rounded,
+        iconColor: Color(0xFFE3B85A),
+        amountColor: _creditColor,
+      );
+    }
 
     switch (transaction.type) {
       case TransactionType.swap:
@@ -56,6 +110,7 @@ class TransactionVisualSpec {
           direction: TransactionVisualDirection.neutral,
           label: 'Swap',
           prefix: '',
+          icon: Icons.swap_horiz_rounded,
           iconColor: Color(0xFF8FA7C2),
           amountColor: _neutralAmountColor,
         );
@@ -65,21 +120,53 @@ class TransactionVisualSpec {
           direction: TransactionVisualDirection.neutral,
           label: 'Taxa',
           prefix: '-',
+          icon: Icons.receipt_long_rounded,
           iconColor: Color(0xFF9AA3AE),
           amountColor: _debitColor,
         );
       case TransactionType.deposit:
-        return const TransactionVisualSpec(
+        if (_looksLikeLightning(transaction)) {
+          return _pair(
+            family: TransactionVisualFamily.lightning,
+            isOutgoing: false,
+            incomingLabel: 'Depósito Lightning',
+            outgoingLabel: 'Pagamento Lightning',
+            icon: Icons.flash_on_rounded,
+            iconColor: const Color(0xFFE3B85A),
+          );
+        }
+        return _pair(
           family: TransactionVisualFamily.deposit,
-          direction: TransactionVisualDirection.incoming,
-          label: 'Depósito',
-          prefix: '+',
-          iconColor: Color(0xFF9EB3A4),
-          amountColor: _creditColor,
+          isOutgoing: false,
+          incomingLabel: 'Depósito',
+          outgoingLabel: 'Depósito',
+          icon: Icons.download_for_offline_rounded,
+          iconColor: const Color(0xFF9EB3A4),
         );
+      case TransactionType.withdrawal:
+        if (_looksLikeLightning(transaction)) {
+          return _pair(
+            family: TransactionVisualFamily.lightning,
+            isOutgoing: true,
+            incomingLabel: 'Recebimento Lightning',
+            outgoingLabel: 'Pagamento Lightning',
+            icon: Icons.flash_on_rounded,
+            iconColor: const Color(0xFFE3B85A),
+          );
+        }
+        if (_looksLikeCashWithdrawal(transaction)) {
+          return _pair(
+            family: TransactionVisualFamily.withdrawal,
+            isOutgoing: true,
+            incomingLabel: 'Saque',
+            outgoingLabel: 'Saque',
+            icon: Icons.upload_rounded,
+            iconColor: const Color(0xFFB9A08A),
+          );
+        }
+        break;
       case TransactionType.send:
       case TransactionType.receive:
-      case TransactionType.withdrawal:
         break;
     }
 
@@ -89,6 +176,7 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabel: 'Recebimento por NFC',
         outgoingLabel: 'Pagamento por NFC',
+        icon: Icons.nfc_rounded,
         iconColor: const Color(0xFF93A5B5),
       );
     }
@@ -99,6 +187,7 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabel: 'Recebimento via QR',
         outgoingLabel: 'Pagamento via QR',
+        icon: Icons.qr_code_2_rounded,
         iconColor: const Color(0xFF9AA6B2),
       );
     }
@@ -109,6 +198,7 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabel: 'Recebimento por link',
         outgoingLabel: 'Pagamento por link',
+        icon: Icons.link_rounded,
         iconColor: const Color(0xFF9FA8B3),
       );
     }
@@ -119,6 +209,7 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabel: 'Recebimento interno',
         outgoingLabel: 'Envio interno',
+        icon: Icons.compare_arrows_rounded,
         iconColor: const Color(0xFF8794A3),
       );
     }
@@ -129,7 +220,22 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabel: 'Recebimento Lightning',
         outgoingLabel: 'Pagamento Lightning',
+        icon: Icons.flash_on_rounded,
         iconColor: const Color(0xFFB89B64),
+      );
+    }
+
+    if (description.trim().isEmpty &&
+        transaction.fromAddress.trim().isEmpty &&
+        transaction.toAddress.trim().isEmpty) {
+      return const TransactionVisualSpec(
+        family: TransactionVisualFamily.unknown,
+        direction: TransactionVisualDirection.neutral,
+        label: 'Evento',
+        prefix: '',
+        icon: Icons.help_outline_rounded,
+        iconColor: Color(0xFF9CA8B4),
+        amountColor: _neutralAmountColor,
       );
     }
 
@@ -138,6 +244,7 @@ class TransactionVisualSpec {
       isOutgoing: isOutgoing,
       incomingLabel: 'Recebimento on-chain',
       outgoingLabel: 'Envio on-chain',
+      icon: Icons.hub_rounded,
       iconColor: const Color(0xFF9CA8B4),
     );
   }
@@ -147,6 +254,7 @@ class TransactionVisualSpec {
     required bool isOutgoing,
     required String incomingLabel,
     required String outgoingLabel,
+    required IconData icon,
     required Color iconColor,
   }) {
     return TransactionVisualSpec(
@@ -156,6 +264,7 @@ class TransactionVisualSpec {
           : TransactionVisualDirection.incoming,
       label: isOutgoing ? outgoingLabel : incomingLabel,
       prefix: isOutgoing ? '-' : '+',
+      icon: icon,
       iconColor: iconColor,
       amountColor: isOutgoing ? _debitColor : _creditColor,
     );
@@ -223,6 +332,41 @@ class TransactionVisualSpec {
           value.contains('@');
     });
   }
+
+  static bool _looksLikeMining(Transaction transaction) {
+    final description = (transaction.description ?? '').toLowerCase();
+    return description.contains('mining') ||
+        description.contains('mineracao') ||
+        description.contains('mineração') ||
+        description.contains('hashrate') ||
+        description.contains('block reward');
+  }
+
+  static bool _looksRefund(Transaction transaction) {
+    final description = (transaction.description ?? '').toLowerCase();
+    return description.contains('estorno') ||
+        description.contains('refund') ||
+        description.contains('reversal') ||
+        description.contains('chargeback');
+  }
+
+  static bool _looksCancelled(Transaction transaction) {
+    final description = (transaction.description ?? '').toLowerCase();
+    return description.contains('cancelado') ||
+        description.contains('cancelled') ||
+        description.contains('canceled') ||
+        description.contains('expirado') ||
+        description.contains('expired');
+  }
+
+  static bool _looksLikeCashWithdrawal(Transaction transaction) {
+    final description = (transaction.description ?? '').toLowerCase();
+    return description.contains('saque') ||
+        description.contains('cashout') ||
+        description.contains('cash out') ||
+        description.contains('atm') ||
+        description.contains('retirada');
+  }
 }
 
 class TransactionTypeIconBadge extends StatelessWidget {
@@ -254,407 +398,11 @@ class TransactionTypeIconBadge extends StatelessWidget {
         border: Border.all(color: borderColor),
       ),
       alignment: Alignment.center,
-      child: SizedBox(
-        width: iconSize,
-        height: iconSize,
-        child: CustomPaint(
-          painter: _TransactionGlyphPainter(spec: spec),
-        ),
+      child: Icon(
+        spec.icon,
+        size: iconSize,
+        color: spec.iconColor,
       ),
     );
-  }
-}
-
-class _TransactionGlyphPainter extends CustomPainter {
-  final TransactionVisualSpec spec;
-
-  const _TransactionGlyphPainter({required this.spec});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = spec.iconColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = math.max(1.45, size.width * 0.1)
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    switch (spec.family) {
-      case TransactionVisualFamily.onChain:
-        _drawOnChain(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.lightning:
-        _drawLightning(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.internalTransfer:
-        _drawInternal(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.paymentLink:
-        _drawPaymentLink(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.qrCode:
-        _drawQr(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.nfc:
-        _drawNfc(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.deposit:
-        _drawDeposit(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.swap:
-        _drawSwap(canvas, size, paint);
-        break;
-      case TransactionVisualFamily.fee:
-        _drawFee(canvas, size, paint);
-        break;
-    }
-
-    if (_shouldDrawDirectionOverlay(spec.family, spec.direction)) {
-      _drawDirectionOverlay(canvas, size, paint, spec.direction);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _TransactionGlyphPainter oldDelegate) {
-    return oldDelegate.spec != spec;
-  }
-
-  bool _shouldDrawDirectionOverlay(
-    TransactionVisualFamily family,
-    TransactionVisualDirection direction,
-  ) {
-    if (direction == TransactionVisualDirection.neutral) {
-      return false;
-    }
-
-    return family == TransactionVisualFamily.onChain ||
-        family == TransactionVisualFamily.lightning ||
-        family == TransactionVisualFamily.paymentLink ||
-        family == TransactionVisualFamily.qrCode ||
-        family == TransactionVisualFamily.nfc;
-  }
-
-  void _drawOnChain(Canvas canvas, Size size, Paint paint) {
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.18,
-        size.height * 0.24,
-        size.width * 0.34,
-        size.height * 0.34,
-      ),
-      Radius.circular(size.width * 0.06),
-    );
-    canvas.drawRRect(rect, paint);
-
-    canvas.drawLine(
-      Offset(size.width * 0.26, size.height * 0.16),
-      Offset(size.width * 0.26, size.height * 0.24),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.44, size.height * 0.16),
-      Offset(size.width * 0.44, size.height * 0.24),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.52, size.height * 0.32),
-      Offset(size.width * 0.64, size.height * 0.32),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.52, size.height * 0.50),
-      Offset(size.width * 0.64, size.height * 0.50),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.26, size.height * 0.58),
-      Offset(size.width * 0.26, size.height * 0.66),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.44, size.height * 0.58),
-      Offset(size.width * 0.44, size.height * 0.66),
-      paint,
-    );
-  }
-
-  void _drawLightning(Canvas canvas, Size size, Paint paint) {
-    final path = Path()
-      ..moveTo(size.width * 0.48, size.height * 0.10)
-      ..lineTo(size.width * 0.28, size.height * 0.44)
-      ..lineTo(size.width * 0.46, size.height * 0.44)
-      ..lineTo(size.width * 0.38, size.height * 0.82)
-      ..lineTo(size.width * 0.68, size.height * 0.38)
-      ..lineTo(size.width * 0.50, size.height * 0.38);
-    canvas.drawPath(path, paint);
-  }
-
-  void _drawInternal(Canvas canvas, Size size, Paint paint) {
-    final top = Path()
-      ..moveTo(size.width * 0.18, size.height * 0.36)
-      ..quadraticBezierTo(
-        size.width * 0.40,
-        size.height * 0.14,
-        size.width * 0.66,
-        size.height * 0.28,
-      );
-    canvas.drawPath(top, paint);
-    _drawArrowHead(
-      canvas,
-      paint,
-      tip: Offset(size.width * 0.72, size.height * 0.30),
-      angle: -0.15,
-      length: size.width * 0.10,
-    );
-
-    final bottom = Path()
-      ..moveTo(size.width * 0.82, size.height * 0.64)
-      ..quadraticBezierTo(
-        size.width * 0.60,
-        size.height * 0.86,
-        size.width * 0.34,
-        size.height * 0.72,
-      );
-    canvas.drawPath(bottom, paint);
-    _drawArrowHead(
-      canvas,
-      paint,
-      tip: Offset(size.width * 0.28, size.height * 0.70),
-      angle: math.pi - 0.15,
-      length: size.width * 0.10,
-    );
-  }
-
-  void _drawPaymentLink(Canvas canvas, Size size, Paint paint) {
-    final path = Path()
-      ..moveTo(size.width * 0.22, size.height * 0.16)
-      ..lineTo(size.width * 0.56, size.height * 0.16)
-      ..lineTo(size.width * 0.70, size.height * 0.30)
-      ..lineTo(size.width * 0.70, size.height * 0.72)
-      ..lineTo(size.width * 0.22, size.height * 0.72)
-      ..close();
-    canvas.drawPath(path, paint);
-
-    canvas.drawLine(
-      Offset(size.width * 0.56, size.height * 0.16),
-      Offset(size.width * 0.56, size.height * 0.30),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.56, size.height * 0.30),
-      Offset(size.width * 0.70, size.height * 0.30),
-      paint,
-    );
-
-    final leftLink = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.28,
-        size.height * 0.42,
-        size.width * 0.16,
-        size.height * 0.10,
-      ),
-      Radius.circular(size.width * 0.06),
-    );
-    final rightLink = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.42,
-        size.height * 0.42,
-        size.width * 0.16,
-        size.height * 0.10,
-      ),
-      Radius.circular(size.width * 0.06),
-    );
-    canvas.drawRRect(leftLink, paint);
-    canvas.drawRRect(rightLink, paint);
-  }
-
-  void _drawQr(Canvas canvas, Size size, Paint paint) {
-    final unit = size.width * 0.18;
-    _drawQrFinder(
-        canvas, paint, Offset(size.width * 0.12, size.height * 0.14), unit);
-    _drawQrFinder(
-        canvas, paint, Offset(size.width * 0.54, size.height * 0.14), unit);
-    _drawQrFinder(
-        canvas, paint, Offset(size.width * 0.12, size.height * 0.56), unit);
-
-    canvas.drawRect(
-      Rect.fromLTWH(
-          size.width * 0.50, size.height * 0.56, unit * 0.38, unit * 0.38),
-      paint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(
-          size.width * 0.62, size.height * 0.66, unit * 0.24, unit * 0.24),
-      paint,
-    );
-  }
-
-  void _drawQrFinder(Canvas canvas, Paint paint, Offset origin, double size) {
-    canvas.drawRect(Rect.fromLTWH(origin.dx, origin.dy, size, size), paint);
-    canvas.drawRect(
-      Rect.fromLTWH(
-        origin.dx + size * 0.28,
-        origin.dy + size * 0.28,
-        size * 0.44,
-        size * 0.44,
-      ),
-      paint,
-    );
-  }
-
-  void _drawNfc(Canvas canvas, Size size, Paint paint) {
-    final card = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.16,
-        size.height * 0.44,
-        size.width * 0.34,
-        size.height * 0.22,
-      ),
-      Radius.circular(size.width * 0.06),
-    );
-    canvas.drawRRect(card, paint);
-
-    _drawWave(
-      canvas,
-      size,
-      paint,
-      radius: size.width * 0.14,
-      center: Offset(size.width * 0.52, size.height * 0.54),
-    );
-    _drawWave(
-      canvas,
-      size,
-      paint,
-      radius: size.width * 0.22,
-      center: Offset(size.width * 0.52, size.height * 0.54),
-    );
-  }
-
-  void _drawWave(
-    Canvas canvas,
-    Size size,
-    Paint paint, {
-    required double radius,
-    required Offset center,
-  }) {
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawArc(rect, -math.pi / 3, math.pi * 2 / 3, false, paint);
-  }
-
-  void _drawDeposit(Canvas canvas, Size size, Paint paint) {
-    final tray = Path()
-      ..moveTo(size.width * 0.18, size.height * 0.60)
-      ..lineTo(size.width * 0.30, size.height * 0.76)
-      ..lineTo(size.width * 0.70, size.height * 0.76)
-      ..lineTo(size.width * 0.82, size.height * 0.60);
-    canvas.drawPath(tray, paint);
-
-    canvas.drawLine(
-      Offset(size.width * 0.50, size.height * 0.18),
-      Offset(size.width * 0.50, size.height * 0.54),
-      paint,
-    );
-    _drawArrowHead(
-      canvas,
-      paint,
-      tip: Offset(size.width * 0.50, size.height * 0.60),
-      angle: math.pi / 2,
-      length: size.width * 0.12,
-    );
-  }
-
-  void _drawSwap(Canvas canvas, Size size, Paint paint) {
-    canvas.drawLine(
-      Offset(size.width * 0.18, size.height * 0.34),
-      Offset(size.width * 0.70, size.height * 0.34),
-      paint,
-    );
-    _drawArrowHead(
-      canvas,
-      paint,
-      tip: Offset(size.width * 0.78, size.height * 0.34),
-      angle: 0,
-      length: size.width * 0.10,
-    );
-
-    canvas.drawLine(
-      Offset(size.width * 0.82, size.height * 0.66),
-      Offset(size.width * 0.30, size.height * 0.66),
-      paint,
-    );
-    _drawArrowHead(
-      canvas,
-      paint,
-      tip: Offset(size.width * 0.22, size.height * 0.66),
-      angle: math.pi,
-      length: size.width * 0.10,
-    );
-  }
-
-  void _drawFee(Canvas canvas, Size size, Paint paint) {
-    final receipt = Path()
-      ..moveTo(size.width * 0.22, size.height * 0.18)
-      ..lineTo(size.width * 0.68, size.height * 0.18)
-      ..lineTo(size.width * 0.68, size.height * 0.74)
-      ..lineTo(size.width * 0.58, size.height * 0.68)
-      ..lineTo(size.width * 0.48, size.height * 0.74)
-      ..lineTo(size.width * 0.38, size.height * 0.68)
-      ..lineTo(size.width * 0.28, size.height * 0.74)
-      ..lineTo(size.width * 0.22, size.height * 0.68)
-      ..close();
-    canvas.drawPath(receipt, paint);
-
-    canvas.drawLine(
-      Offset(size.width * 0.32, size.height * 0.34),
-      Offset(size.width * 0.58, size.height * 0.34),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.32, size.height * 0.48),
-      Offset(size.width * 0.52, size.height * 0.48),
-      paint,
-    );
-  }
-
-  void _drawDirectionOverlay(
-    Canvas canvas,
-    Size size,
-    Paint paint,
-    TransactionVisualDirection direction,
-  ) {
-    final start = direction == TransactionVisualDirection.incoming
-        ? Offset(size.width * 0.86, size.height * 0.24)
-        : Offset(size.width * 0.58, size.height * 0.56);
-    final end = direction == TransactionVisualDirection.incoming
-        ? Offset(size.width * 0.58, size.height * 0.52)
-        : Offset(size.width * 0.86, size.height * 0.24);
-
-    canvas.drawLine(start, end, paint);
-    _drawArrowHead(
-      canvas,
-      paint,
-      tip: end,
-      angle: math.atan2(end.dy - start.dy, end.dx - start.dx),
-      length: size.width * 0.10,
-    );
-  }
-
-  void _drawArrowHead(
-    Canvas canvas,
-    Paint paint, {
-    required Offset tip,
-    required double angle,
-    required double length,
-  }) {
-    final left = Offset(
-      tip.dx - length * math.cos(angle - math.pi / 6),
-      tip.dy - length * math.sin(angle - math.pi / 6),
-    );
-    final right = Offset(
-      tip.dx - length * math.cos(angle + math.pi / 6),
-      tip.dy - length * math.sin(angle + math.pi / 6),
-    );
-    canvas.drawLine(tip, left, paint);
-    canvas.drawLine(tip, right, paint);
   }
 }

@@ -10,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/monochrome_theme.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/currency_provider.dart';
 import '../../../../core/providers/price_provider.dart';
@@ -20,6 +21,7 @@ import '../../../../core/services/notification_service.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../auth/controller/auth_providers.dart';
 import '../../../profile/presentation/screens/security_settings_screen.dart';
+import '../../../notifications/presentation/providers/session_notification_provider.dart';
 import '../../../security/presentation/screens/sovereignty_status_screen.dart';
 import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 
@@ -135,49 +137,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         _buildSection(
                           icon: Icons.shield_outlined,
                           label: 'SEGURANÇA E ACESSO',
-                          color: const Color(0xFF7DD3A0),
+                          color: Colors.white70,
                           child: const _SecuritySection(),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         _buildSection(
                           icon: Icons.privacy_tip_outlined,
                           label: 'PRIVACIDADE',
-                          color: const Color(0xFF7AA2F7),
+                          color: Colors.white70,
                           child: const _PrivacySection(),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         _buildSection(
                           icon: Icons.manage_accounts_outlined,
                           label: 'CONTA E ACESSO',
-                          color: const Color(0xFFE5B97A),
+                          color: Colors.white70,
                           child: const _CredentialsSection(),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         _buildSection(
                           icon: Icons.notifications_outlined,
                           label: 'NOTIFICAÇÕES',
-                          color: const Color(0xFFA78BFA),
+                          color: Colors.white70,
                           child: const _NotificationsSection(),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         _buildSection(
                           icon: Icons.palette_outlined,
                           label: 'APARÊNCIA',
-                          color: const Color(0xFF9FB3C8),
+                          color: Colors.white70,
                           child: const _AppearanceSection(),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         _buildSection(
                           icon: Icons.language_rounded,
                           label: 'IDIOMA E MOEDA',
-                          color: const Color(0xFF60A5FA),
+                          color: Colors.white70,
                           child: const _LocaleSection(),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         _buildSection(
                           icon: Icons.power_settings_new_rounded,
                           label: 'SESSÃO',
-                          color: AppColors.error,
+                          color: Colors.white54,
                           child: const _SessionSection(),
                         ),
                         SizedBox(height: bottomSectionPadding),
@@ -255,13 +257,16 @@ class _SettingsHeader extends StatelessWidget {
           const Spacer(),
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white10),
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.white.withValues(alpha: 0.04),
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceAltColor,
+              borderColor: monoBorderStrongColor,
+              showShadow: false,
             ),
-            child:
-                const Icon(Icons.tune_rounded, color: Colors.white38, size: 18),
+            child: const Icon(
+              Icons.tune_rounded,
+              color: monoMutedTextColor,
+              size: 18,
+            ),
           )
         ],
       ),
@@ -329,30 +334,30 @@ class _SettingsOverviewCard extends ConsumerWidget {
                     value: alerts.backgroundAlertsEnabled
                         ? 'Segundo plano ativo'
                         : 'Desativados',
-                    color: const Color(0xFFA78BFA),
+                    color: Colors.white70,
                   ),
                   _OverviewPill(
                     label: AppCopy.settingsBiometrics.resolve(context),
                     value: biometricLabel,
-                    color: const Color(0xFFF2C94C),
+                    color: Colors.white70,
                   ),
                   _OverviewPill(
                     label: AppCopy.settingsBalance.resolve(context),
                     value: balanceSettings.isHidden
                         ? AppCopy.settingsHidden.resolve(context)
                         : AppCopy.settingsVisible.resolve(context),
-                    color: const Color(0xFF7DD3A0),
+                    color: Colors.white70,
                   ),
                   _OverviewPill(
                     label: AppCopy.settingsLocation.resolve(context),
                     value:
                         '${locale.languageCode.toUpperCase()} · ${_currencyLabel(currency)}',
-                    color: const Color(0xFFE5B97A),
+                    color: Colors.white70,
                   ),
                   _OverviewPill(
                     label: 'Tema',
                     value: appearance.themeVariant.label,
-                    color: const Color(0xFF9FB3C8),
+                    color: Colors.white70,
                   ),
                 ],
               ),
@@ -377,15 +382,18 @@ class _OverviewPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderTone =
+        Color.lerp(monoBorderStrongColor, color, 0.08) ?? monoBorderStrongColor;
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 10,
       ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: borderTone,
+        showShadow: false,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +401,7 @@ class _OverviewPill extends StatelessWidget {
           Text(
             label,
             style: AppTypography.caption.copyWith(
-              color: Colors.white54,
+              color: monoMutedTextColor,
               letterSpacing: 1,
             ),
           ),
@@ -401,7 +409,7 @@ class _OverviewPill extends StatelessWidget {
           Text(
             value,
             style: AppTypography.bodySmall.copyWith(
-              color: color,
+              color: monoTextColor,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -478,17 +486,15 @@ class _AppearanceSection extends ConsumerWidget {
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00E5BC).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color:
-                              const Color(0xFF00E5BC).withValues(alpha: 0.3)),
+                    decoration: monochromePanelDecoration(
+                      color: monoSurfaceAltColor,
+                      borderColor: monoBorderStrongColor,
+                      showShadow: false,
                     ),
                     child: Text(
                       appearance.fontScale.label,
                       style: AppTypography.caption.copyWith(
-                        color: const Color(0xFF00E5BC),
+                        color: monoTextColor,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1,
                       ),
@@ -500,10 +506,10 @@ class _AppearanceSection extends ConsumerWidget {
               // Preview text
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white10),
+                decoration: monochromePanelDecoration(
+                  color: monoSurfaceAltColor,
+                  borderColor: monoBorderStrongColor,
+                  showShadow: false,
                 ),
                 child: Text(
                   'Pré-visualização: ₿ 0.00042100',
@@ -517,10 +523,10 @@ class _AppearanceSection extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: const Color(0xFF00E5BC),
+                  activeTrackColor: Colors.white70,
                   inactiveTrackColor: Colors.white10,
-                  thumbColor: const Color(0xFF00E5BC),
-                  overlayColor: const Color(0xFF00E5BC).withValues(alpha: 0.12),
+                  thumbColor: Colors.white,
+                  overlayColor: Colors.white.withValues(alpha: 0.12),
                   trackHeight: 2,
                   thumbShape:
                       const RoundSliderThumbShape(enabledThumbRadius: 8),
@@ -546,7 +552,7 @@ class _AppearanceSection extends ConsumerWidget {
                         s.label,
                         style: AppTypography.caption.copyWith(
                           color: appearance.fontScale == s
-                              ? const Color(0xFF00E5BC)
+                              ? Colors.white
                               : Colors.white24,
                           fontWeight: appearance.fontScale == s
                               ? FontWeight.w700
@@ -563,7 +569,7 @@ class _AppearanceSection extends ConsumerWidget {
         // Balance Decimals
         _ActionTile(
           icon: Icons.onetwothree_rounded,
-          iconColor: const Color(0xFF00E5BC),
+          iconColor: Colors.white70,
           title: 'Precisão decimal',
           subtitle: 'Exibindo ${balanceSettings.decimalPlaces} casas decimais',
           trailing: Icons.refresh_rounded,
@@ -602,28 +608,20 @@ class _ThemeChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF00E5BC).withValues(alpha: 0.08)
-              : Colors.white.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF00E5BC).withValues(alpha: 0.5)
-                : Colors.white12,
-            width: selected ? 1.5 : 1,
-          ),
+        decoration: monochromePanelDecoration(
+          color: selected ? monoSurfaceRaisedColor : monoSurfaceAltColor,
+          borderColor: selected ? monoTextColor : monoBorderStrongColor,
+          showShadow: false,
         ),
         child: Column(
           children: [
-            // Mini preview circle
             Container(
               width: 28,
               height: 28,
-              decoration: BoxDecoration(
+              decoration: monochromePanelDecoration(
                 color: _previewBg,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white24, width: 0.5),
+                borderColor: monoBorderStrongColor,
+                showShadow: false,
               ),
             ),
             const SizedBox(height: 6),
@@ -631,7 +629,7 @@ class _ThemeChip extends StatelessWidget {
               variant.label,
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(
-                color: selected ? const Color(0xFF00E5BC) : Colors.white38,
+                color: selected ? monoTextColor : monoMutedTextColor,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                 fontSize: 10,
                 letterSpacing: 0.3,
@@ -655,13 +653,13 @@ class _PrivacySection extends ConsumerWidget {
       children: [
         _SwitchTile(
           icon: Icons.visibility_off_outlined,
-          iconColor: const Color(0xFF7AA2F7),
+          iconColor: Colors.white70,
           title: 'Ocultar saldo',
           subtitle: balanceSettings.isHidden
               ? 'Valores mascarados na interface principal'
               : 'Valores visíveis em telas operacionais',
           value: balanceSettings.isHidden,
-          accentColor: const Color(0xFF7AA2F7),
+          accentColor: Colors.white70,
           onChanged: (_) {
             HapticFeedback.mediumImpact();
             ref.read(balanceSettingsProvider.notifier).toggleVisibility();
@@ -670,7 +668,7 @@ class _PrivacySection extends ConsumerWidget {
         _Divider(),
         _ActionTile(
           icon: Icons.verified_user_outlined,
-          iconColor: const Color(0xFF7AA2F7),
+          iconColor: Colors.white70,
           title: 'Relatório de soberania',
           subtitle:
               'Abrir o painel de atestação, consenso e integridade operacional',
@@ -694,8 +692,9 @@ class _LocaleSection extends ConsumerWidget {
   const _LocaleSection();
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentLocale = ref.watch(localeProvider).locale;
+    final currentCurrency = ref.watch(currencyProvider);
 
     final languages = [
       _LangItem('🇺🇸', 'English', 'EN', const Locale('en')),
@@ -731,7 +730,7 @@ class _LocaleSection extends ConsumerWidget {
             title: lang.name,
             trailing: lang.code,
             selected: currentLocale.languageCode == lang.locale.languageCode,
-            accentColor: const Color(0xFF60A5FA),
+            accentColor: Colors.white70,
             onTap: () =>
                 ref.read(localeProvider.notifier).setLocale(lang.locale),
           ),
@@ -756,7 +755,7 @@ class _LocaleSection extends ConsumerWidget {
             leading: curr.symbol,
             title: curr.label,
             selected: currentCurrency == curr.currency,
-            accentColor: const Color(0xFFF7931A),
+            accentColor: Colors.white70,
             onTap: () =>
                 ref.read(currencyProvider.notifier).setCurrency(curr.currency),
             isPill: true,
@@ -813,12 +812,10 @@ class _SecuritySection extends ConsumerWidget {
         if (showUnprotectedBanner) ...[
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.28),
-              ),
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceAltColor,
+              borderColor: monoBorderStrongColor,
+              showShadow: false,
             ),
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -826,7 +823,7 @@ class _SecuritySection extends ConsumerWidget {
                 Text(
                   'CONTA NÃO PROTEGIDA',
                   style: TextStyle(
-                    color: Color(0xFFF59E0B),
+                    color: monoTextColor,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
                   ),
@@ -834,7 +831,7 @@ class _SecuritySection extends ConsumerWidget {
                 SizedBox(height: 6),
                 Text(
                   'O TOTP está desligado. Abra a central de segurança para ativar o autenticador e revisar os backup codes.',
-                  style: TextStyle(color: Colors.white70, height: 1.4),
+                  style: TextStyle(color: monoMutedTextColor, height: 1.4),
                 ),
               ],
             ),
@@ -934,11 +931,10 @@ class _CredentialsSection extends ConsumerWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF6B6B), Color(0xFFFF3E3E)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+                decoration: monochromePanelDecoration(
+                  color: monoSurfaceAltColor,
+                  borderColor: monoBorderStrongColor,
+                  showShadow: false,
                 ),
                 child: Center(
                   child: Text(
@@ -959,7 +955,7 @@ class _CredentialsSection extends ConsumerWidget {
                   Text(
                     'Autenticado',
                     style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.success,
+                      color: monoMutedTextColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1020,6 +1016,7 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
   @override
   Widget build(BuildContext context) {
     final alerts = ref.watch(alertPreferencesProvider);
+    final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
     final alertsEnabled = alerts.backgroundAlertsEnabled;
 
     return _Card(
@@ -1036,23 +1033,63 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
           onChanged: _isSaving ? (_) {} : _handleBackgroundAlertsToggle,
         ),
         _Divider(),
+        _SwitchTile(
+          icon: Icons.bolt_rounded,
+          iconColor: const Color(0xFF60A5FA),
+          title: 'Banners dentro do app',
+          subtitle: alerts.inAppBannersEnabled
+              ? 'Mostra alertas contextuais na sessão atual.'
+              : 'Mantém o feed, mas não interrompe a navegação com banners.',
+          value: alerts.inAppBannersEnabled,
+          accentColor: const Color(0xFF60A5FA),
+          onChanged: (value) => ref
+              .read(alertPreferencesProvider.notifier)
+              .setInAppBannersEnabled(value),
+        ),
+        _Divider(),
+        _SwitchTile(
+          icon: Icons.swap_vert_rounded,
+          iconColor: const Color(0xFF7DD3A0),
+          title: 'Eventos financeiros',
+          subtitle: alerts.transactionAlertsEnabled
+              ? 'Recebimentos, envios, depósitos, links e mineração entram no feed.'
+              : 'Oculta alertas de operação financeira no feed da sessão.',
+          value: alerts.transactionAlertsEnabled,
+          accentColor: const Color(0xFF7DD3A0),
+          onChanged: (value) => ref
+              .read(alertPreferencesProvider.notifier)
+              .setTransactionAlertsEnabled(value),
+        ),
+        _Divider(),
+        _SwitchTile(
+          icon: Icons.gpp_maybe_rounded,
+          iconColor: const Color(0xFFF59E0B),
+          title: 'Eventos de segurança',
+          subtitle: alerts.securityAlertsEnabled
+              ? 'Logins, recuperação e eventos sensíveis continuam destacados.'
+              : 'Oculta apenas alertas de segurança da inbox da sessão.',
+          value: alerts.securityAlertsEnabled,
+          accentColor: const Color(0xFFF59E0B),
+          onChanged: (value) => ref
+              .read(alertPreferencesProvider.notifier)
+              .setSecurityAlertsEnabled(value),
+        ),
+        _Divider(),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: const Color(0xFFA78BFA).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFFA78BFA).withValues(alpha: 0.18),
-              ),
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceAltColor,
+              borderColor: monoBorderStrongColor,
+              showShadow: false,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   _isSaving ? Icons.sync_rounded : Icons.info_outline_rounded,
-                  color: const Color(0xFFA78BFA),
+                  color: monoTextColor,
                   size: 18,
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -1060,9 +1097,9 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
                   child: Text(
                     _isSaving
                         ? 'Atualizando o monitoramento em segundo plano.'
-                        : 'Quando ativo, o Kerosene mantém um serviço em segundo plano para monitorar envios, recebimentos e eventos críticos de segurança. No Android, uma notificação persistente do sistema ficará visível enquanto o monitoramento estiver ligado.',
+                        : 'Quando ativo, o Kerosene mantém um serviço em segundo plano para monitorar envios, recebimentos e eventos críticos de segurança. No Android, uma notificação persistente do sistema ficará visível enquanto o monitoramento estiver ligado. $notificationCount alerta(s) ainda não foram lidos nesta sessão.',
                     style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white54,
+                      color: monoMutedTextColor,
                       height: 1.5,
                     ),
                   ),
@@ -1339,6 +1376,9 @@ class _BottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderTone = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
+        monoBorderStrongColor;
+
     return Container(
       margin: const EdgeInsets.only(top: 60),
       padding: EdgeInsets.only(
@@ -1347,44 +1387,35 @@ class _BottomSheetContainer extends StatelessWidget {
         top: AppSpacing.xl,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xxl,
       ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E0E0F),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(
-          top: BorderSide(color: Colors.white12, width: 0.5),
-          left: BorderSide(color: Colors.white12, width: 0.5),
-          right: BorderSide(color: Colors.white12, width: 0.5),
-        ),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceColor,
+        borderColor: monoBorderStrongColor,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(2),
-            ),
+            width: 48,
+            height: 1,
+            color: monoBorderStrongColor,
           ),
           const SizedBox(height: AppSpacing.xl),
-
-          // Icon header
           Container(
             width: 56,
             height: 56,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: iconColor.withValues(alpha: 0.3)),
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceAltColor,
+              borderColor: borderTone,
+              showShadow: false,
             ),
-            child: Icon(icon, color: iconColor, size: 26),
+            child: Icon(icon, color: monoTextColor, size: 26),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(title, style: AppTypography.h3),
+          Text(
+            title,
+            style: AppTypography.h3.copyWith(color: monoTextColor),
+          ),
           const SizedBox(height: AppSpacing.xl),
-
           child,
         ],
       ),
@@ -1410,10 +1441,10 @@ class _DangerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF0E0E0F),
+      backgroundColor: monoSurfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Colors.white12),
+        borderRadius: BorderRadius.zero,
+        side: const BorderSide(color: monoBorderStrongColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -1423,29 +1454,28 @@ class _DangerDialog extends StatelessWidget {
             Container(
               width: 52,
               height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-                border:
-                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              decoration: monochromePanelDecoration(
+                color: monoSurfaceAltColor,
+                borderColor: monoBorderStrongColor,
+                showShadow: false,
               ),
               child: Icon(
                 Icons.warning_amber_rounded,
-                color: AppColors.error,
+                color: monoTextColor,
                 size: 26,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
-              style: AppTypography.h3.copyWith(color: Colors.white),
+              style: AppTypography.h3.copyWith(color: monoTextColor),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
               style: AppTypography.bodySmall.copyWith(
-                color: Colors.white54,
+                color: monoMutedTextColor,
                 height: 1.6,
               ),
               textAlign: TextAlign.center,
@@ -1458,16 +1488,16 @@ class _DangerDialog extends StatelessWidget {
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white12),
+                      decoration: monochromePanelDecoration(
+                        color: monoSurfaceAltColor,
+                        borderColor: monoBorderStrongColor,
+                        showShadow: false,
                       ),
                       child: Text(
                         'Cancelar',
                         textAlign: TextAlign.center,
                         style: AppTypography.buttonText.copyWith(
-                          color: Colors.white54,
+                          color: monoMutedTextColor,
                         ),
                       ),
                     ),
@@ -1479,18 +1509,16 @@ class _DangerDialog extends StatelessWidget {
                     onTap: onConfirm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.5),
-                        ),
+                      decoration: monochromePanelDecoration(
+                        color: monoTextColor,
+                        borderColor: monoBorderStrongColor,
+                        showShadow: false,
                       ),
                       child: Text(
                         confirmLabel,
                         textAlign: TextAlign.center,
                         style: AppTypography.buttonText.copyWith(
-                          color: AppColors.error,
+                          color: Colors.black,
                         ),
                       ),
                     ),
@@ -1520,21 +1548,25 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderTone =
+        Color.lerp(monoBorderStrongColor, color, 0.08) ?? monoBorderStrongColor;
+
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+          decoration: monochromePanelDecoration(
+            color: monoSurfaceAltColor,
+            borderColor: borderTone,
+            showShadow: false,
           ),
-          child: Icon(icon, size: 14, color: color),
+          child: Icon(icon, size: 14, color: monoTextColor),
         ),
         const SizedBox(width: AppSpacing.sm),
         Text(
           label,
           style: AppTypography.caption.copyWith(
-            color: color.withValues(alpha: 0.8),
+            color: monoMutedTextColor,
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
@@ -1552,17 +1584,13 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceColor,
+        borderColor: monoBorderStrongColor,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
       ),
     );
   }
@@ -1574,7 +1602,7 @@ class _Divider extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: Colors.white.withValues(alpha: 0.06),
+      color: monoDividerColor,
       indent: AppSpacing.lg,
     );
   }
@@ -1601,6 +1629,9 @@ class _SelectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedBorder =
+        Color.lerp(monoTextColor, accentColor, 0.08) ?? monoTextColor;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1614,9 +1645,7 @@ class _SelectionTile extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: 14,
           ),
-          color: selected
-              ? accentColor.withValues(alpha: 0.05)
-              : Colors.transparent,
+          color: selected ? monoSurfaceAltColor : Colors.transparent,
           child: Row(
             children: [
               if (isPill)
@@ -1625,16 +1654,17 @@ class _SelectionTile extends StatelessWidget {
                   width: 38,
                   height: 38,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? accentColor.withValues(alpha: 0.15)
-                        : Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(10),
+                  decoration: monochromePanelDecoration(
+                    color:
+                        selected ? monoSurfaceRaisedColor : monoSurfaceAltColor,
+                    borderColor:
+                        selected ? selectedBorder : monoBorderStrongColor,
+                    showShadow: false,
                   ),
                   child: Text(
                     leading,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: selected ? accentColor : Colors.white54,
+                      color: selected ? monoTextColor : monoMutedTextColor,
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
                     ),
@@ -1647,7 +1677,7 @@ class _SelectionTile extends StatelessWidget {
                 child: Text(
                   title,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: selected ? accentColor : Colors.white70,
+                    color: selected ? monoTextColor : monoMutedTextColor,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
@@ -1655,12 +1685,13 @@ class _SelectionTile extends StatelessWidget {
               if (trailing != null && !selected)
                 Text(
                   trailing!,
-                  style: AppTypography.caption.copyWith(color: Colors.white24),
+                  style:
+                      AppTypography.caption.copyWith(color: monoFaintTextColor),
                 ),
               if (selected)
                 Icon(
                   Icons.check_circle_rounded,
-                  color: accentColor,
+                  color: monoTextColor,
                   size: 18,
                 ),
             ],
@@ -1692,6 +1723,11 @@ class _SwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final activeBorder =
+        Color.lerp(monoTextColor, iconColor, 0.08) ?? monoTextColor;
+    final activeTrack = Color.lerp(monoSurfaceRaisedColor, accentColor, 0.08) ??
+        monoSurfaceRaisedColor;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -1703,15 +1739,14 @@ class _SwitchTile extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: value
-                  ? iconColor.withValues(alpha: 0.12)
-                  : Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(11),
+            decoration: monochromePanelDecoration(
+              color: value ? monoSurfaceRaisedColor : monoSurfaceAltColor,
+              borderColor: value ? activeBorder : monoBorderStrongColor,
+              showShadow: false,
             ),
             child: Icon(
               icon,
-              color: value ? iconColor : Colors.white30,
+              color: value ? monoTextColor : monoMutedTextColor,
               size: 20,
             ),
           ),
@@ -1723,7 +1758,7 @@ class _SwitchTile extends StatelessWidget {
                 Text(
                   title,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: value ? Colors.white : Colors.white70,
+                    color: value ? monoTextColor : monoMutedTextColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1731,7 +1766,7 @@ class _SwitchTile extends StatelessWidget {
                 Text(
                   subtitle,
                   style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white30,
+                    color: monoFaintTextColor,
                     fontSize: 11,
                   ),
                 ),
@@ -1741,10 +1776,10 @@ class _SwitchTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: accentColor,
-            activeTrackColor: accentColor.withValues(alpha: 0.2),
+            activeThumbColor: monoTextColor,
+            activeTrackColor: activeTrack,
             inactiveThumbColor: Colors.white.withValues(alpha: 0.15),
-            inactiveTrackColor: Colors.white10,
+            inactiveTrackColor: monoSurfaceAltColor,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
@@ -1774,6 +1809,12 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconBorder = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
+        monoBorderStrongColor;
+    final effectiveTitleColor = titleColor == null
+        ? monoTextColor
+        : (Color.lerp(monoTextColor, titleColor, 0.08) ?? monoTextColor);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1791,11 +1832,12 @@ class _ActionTile extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(11),
+                decoration: monochromePanelDecoration(
+                  color: monoSurfaceAltColor,
+                  borderColor: iconBorder,
+                  showShadow: false,
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
+                child: Icon(icon, color: monoTextColor, size: 20),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -1805,7 +1847,7 @@ class _ActionTile extends StatelessWidget {
                     Text(
                       title,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: titleColor ?? Colors.white,
+                        color: effectiveTitleColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1813,7 +1855,7 @@ class _ActionTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white30,
+                        color: monoFaintTextColor,
                         fontSize: 11,
                       ),
                     ),
@@ -1821,8 +1863,7 @@ class _ActionTile extends StatelessWidget {
                 ),
               ),
               if (trailing != null)
-                Icon(trailing,
-                    color: Colors.white.withValues(alpha: 0.2), size: 20),
+                Icon(trailing, color: monoMutedTextColor, size: 20),
             ],
           ),
         ),
@@ -1843,12 +1884,12 @@ class _IconButton extends StatelessWidget {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
+        decoration: monochromePanelDecoration(
+          color: monoSurfaceAltColor,
+          borderColor: monoBorderStrongColor,
+          showShadow: false,
         ),
-        child: Icon(icon, color: Colors.white60, size: 18),
+        child: Icon(icon, color: monoTextColor, size: 18),
       ),
     );
   }
@@ -1873,6 +1914,8 @@ class _SheetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final filledColor = Color.lerp(monoTextColor, color, 0.05) ?? monoTextColor;
+
     return SizedBox(
       width: double.infinity,
       child: GestureDetector(
@@ -1880,29 +1923,24 @@ class _SheetButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: BoxDecoration(
-            color:
-                isOutline ? Colors.transparent : color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isOutline
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : color.withValues(alpha: 0.4),
-            ),
+          decoration: monochromePanelDecoration(
+            color: isOutline ? monoSurfaceColor : filledColor,
+            borderColor: monoBorderStrongColor,
+            showShadow: false,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                color: isOutline ? Colors.white38 : color,
+                color: isOutline ? monoMutedTextColor : Colors.black,
                 size: 18,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: AppTypography.buttonText.copyWith(
-                  color: isOutline ? Colors.white38 : color,
+                  color: isOutline ? monoMutedTextColor : Colors.black,
                   letterSpacing: 0.5,
                 ),
               ),

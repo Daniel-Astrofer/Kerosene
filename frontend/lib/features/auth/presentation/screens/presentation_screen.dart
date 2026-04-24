@@ -5,7 +5,6 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/features/auth/presentation/widgets/auth_entry_ui.dart';
 
-
 class PresentationScreen extends ConsumerStatefulWidget {
   const PresentationScreen({super.key});
 
@@ -14,7 +13,14 @@ class PresentationScreen extends ConsumerStatefulWidget {
 }
 
 class _PresentationScreenState extends ConsumerState<PresentationScreen> {
+  final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   String _copy({
     required BuildContext context,
@@ -37,173 +43,181 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
       _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'INFRAESTRUTURA',
-          en: 'INFRASTRUCTURE',
-          es: 'INFRAESTRUCTURA',
+          pt: 'SEGURANÇA INSTITUCIONAL',
+          en: 'INSTITUTIONAL SECURITY',
+          es: 'SEGURIDAD INSTITUCIONAL',
         ),
         title: _copy(
           context: context,
-          pt: 'Conexão via rede anônima.',
-          en: 'Connection via onion network.',
-          es: 'Conexión vía red onion.',
+          pt: 'Privacidade absoluta.',
+          en: 'Absolute privacy.',
+          es: 'Privacidad absoluta.',
         ),
         body: _copy(
           context: context,
-          pt: 'Todas as requisições passam por roteamento privado. Sem credenciais expostas.',
-          en: 'All requests go through onion routing. No exposed clearnet, no intermediate CDN.',
-          es: 'Todas las solicitudes pasan por enrutamiento onion. Sin clearnet expuesta, sin CDN intermediario.',
+          pt: 'Sua conexão é protegida por roteamento anônimo avançado. Uma infraestrutura robusta desenvolvida para garantir sigilo e estabilidade em todas as operações.',
+          en: 'Your connection is protected by advanced anonymous routing. A robust infrastructure developed to guarantee confidentiality and stability in all operations.',
+          es: 'Su conexión está protegida por enrutamiento anónimo avanzado. Una infraestructura robusta desarrollada para garantizar confidencialidad y estabilidad en todas las operaciones.',
         ),
         details: [
           _copy(
             context: context,
-            pt: 'Conexão anônima por  padrão',
-            en: 'Onion routing by default',
-            es: 'Enrutamiento onion por defecto',
+            pt: 'Conexão anônima por padrão',
+            en: 'Anonymous connection by default',
+            es: 'Conexión anónima por defecto',
           ),
           _copy(
             context: context,
-            pt: 'Sem dependência de infraestrutura exposta',
-            en: 'No dependence on exposed infrastructure',
-            es: 'Sin dependencia de infraestructura expuesta',
+            pt: 'Sem exposição a intermediários',
+            en: 'No exposure to intermediaries',
+            es: 'Sin exposición a intermediarios',
           ),
           _copy(
             context: context,
-            pt: 'Privacidade como princípio, não opção',
-            en: 'Privacy as architecture, not an option',
-            es: 'Privacidad como arquitectura, no opción',
+            pt: 'Privacidade como pilar estrutural',
+            en: 'Privacy as a structural pillar',
+            es: 'Privacidad como pilar estructural',
           ),
         ],
-        metricLabel: _copy(context: context, pt: 'Protocolo:', en: 'NETWORK', es: 'RED'),
+        metricLabel: _copy(
+            context: context,
+            pt: 'INFRAESTRUTURA',
+            en: 'INFRASTRUCTURE',
+            es: 'INFRAESTRUCTURA'),
         metricValue: 'ONION',
         icon: LucideIcons.shield,
       ),
       _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'AUTENTICAÇÃO',
-          en: 'AUTHENTICATION',
-          es: 'AUTENTICACIÓN',
+          pt: 'ACESSO RESTRITO',
+          en: 'RESTRICTED ACCESS',
+          es: 'ACCESO RESTRINGIDO',
         ),
         title: _copy(
           context: context,
-          pt: 'Passkey.',
-          en: 'Passkey, TOTP, and seed.',
-          es: 'Passkey, TOTP y seed.',
+          pt: 'Autenticação de ponta.',
+          en: 'State-of-the-art authentication.',
+          es: 'Autenticación de vanguardia.',
         ),
         body: _copy(
           context: context,
-          pt: 'O login prioriza passkey local. Fallback para senha forte + TOTP. Recuperação via seed BIP39.',
-          en: 'Login prioritizes local passkey. Fallback to strong password + TOTP. Recovery via BIP39 seed.',
-          es: 'El login prioriza passkey local. Respaldo con contraseña fuerte + TOTP. Recuperación vía seed BIP39.',
+          pt: 'Proteja seu patrimônio com o que há de mais seguro. Login via Passkey biométrica e verificação em duas etapas, com recuperação via frase semente criptográfica.',
+          en: 'Protect your assets with the highest security standards. Login via biometric Passkey and two-step verification, with recovery via cryptographic seed phrase.',
+          es: 'Proteja sus activos con los más altos estándares de seguridad. Inicio de sesión mediante Passkey biométrica y verificación en dos pasos, con recuperación vía frase semilla criptográfica.',
         ),
         details: [
           _copy(
             context: context,
-            pt: 'Passkey vincula este dispositivo',
-            en: 'Passkey binds this device',
-            es: 'Passkey vincula este dispositivo',
+            pt: 'Biometria vinculada ao dispositivo',
+            en: 'Biometrics bound to device',
+            es: 'Biometría vinculada al dispositivo',
           ),
           _copy(
             context: context,
-            pt: 'TOTP obrigatório como segunda camada',
-            en: 'TOTP required as second layer',
-            es: 'TOTP obligatorio como segunda capa',
+            pt: 'Camada adicional com TOTP',
+            en: 'Additional layer with TOTP',
+            es: 'Capa adicional con TOTP',
           ),
           _copy(
             context: context,
-            pt: 'Seed exibida uma vez para backup offline',
-            en: 'Seed shown once for offline backup',
-            es: 'Seed mostrada una vez para respaldo offline',
+            pt: 'Recuperação offline segura',
+            en: 'Secure offline recovery',
+            es: 'Recuperación offline segura',
           ),
         ],
-        metricLabel: _copy(context: context, pt: 'ACESSO', en: 'ACCESS', es: 'ACCESO'),
+        metricLabel:
+            _copy(context: context, pt: 'ACESSO', en: 'ACCESS', es: 'ACCESO'),
         metricValue: 'PASSKEY',
         icon: LucideIcons.fingerprint,
       ),
       _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'OPERAÇÕES',
-          en: 'OPERATIONS',
-          es: 'OPERACIONES',
+          pt: 'TRANSAÇÕES',
+          en: 'TRANSACTIONS',
+          es: 'TRANSACCIONES',
         ),
         title: _copy(
           context: context,
-          pt: 'On-chain, Lightning e interno.',
-          en: 'On-chain, Lightning, and internal.',
-          es: 'On-chain, Lightning e interno.',
+          pt: 'Mobilidade financeira.',
+          en: 'Financial mobility.',
+          es: 'Movilidad financiera.',
         ),
         body: _copy(
           context: context,
-          pt: 'Depósito e saque via Bitcoin on-chain ou Lightning. Transferências internas entre contas sem taxa.',
-          en: 'Deposit and withdraw via Bitcoin on-chain or Lightning. Internal transfers between accounts with no fee.',
-          es: 'Depósito y retiro vía Bitcoin on-chain o Lightning. Transferencias internas entre cuentas sin comisión.',
+          pt: 'Movimente seus recursos com liberdade e velocidade. Suporte nativo à rede Bitcoin, Lightning Network e transferências instantâneas e gratuitas entre clientes Kerosene.',
+          en: 'Move your resources with freedom and speed. Native support for the Bitcoin network, Lightning Network, and instant, free transfers between Kerosene clients.',
+          es: 'Mueva sus recursos con libertad y velocidad. Soporte nativo para la red Bitcoin, Lightning Network y transferencias instantáneas y gratuitas entre clientes de Kerosene.',
         ),
         details: [
           _copy(
             context: context,
-            pt: 'Depósito on-chain e Lightning',
-            en: 'On-chain and Lightning deposits',
-            es: 'Depósitos on-chain y Lightning',
+            pt: 'Depósitos e saques globais',
+            en: 'Global deposits and withdrawals',
+            es: 'Depósitos y retiros globales',
           ),
           _copy(
             context: context,
-            pt: 'Transferência interna sem custo',
-            en: 'Internal transfer with no cost',
-            es: 'Transferencia interna sin costo',
+            pt: 'Transferências internas sem custo',
+            en: 'Internal transfers at no cost',
+            es: 'Transferencias internas sin costo',
           ),
           _copy(
             context: context,
-            pt: 'Primeiro depósito libera recebimentos',
-            en: 'First deposit enables receiving',
-            es: 'El primer depósito habilita recepciones',
+            pt: 'Liquidez imediata',
+            en: 'Immediate liquidity',
+            es: 'Liquidez inmediata',
           ),
         ],
-        metricLabel: _copy(context: context, pt: 'MOEDA', en: 'CURRENCY', es: 'MONEDA'),
-        metricValue: 'BTC',
+        metricLabel:
+            _copy(context: context, pt: 'REDE', en: 'NETWORK', es: 'RED'),
+        metricValue: 'BITCOIN',
         icon: LucideIcons.arrowLeftRight,
       ),
       _Slide(
         eyebrow: _copy(
           context: context,
-          pt: 'CADASTRO',
-          en: 'SIGNUP',
-          es: 'REGISTRO',
+          pt: 'PRIVACIDADE',
+          en: 'PRIVACY',
+          es: 'PRIVACIDAD',
         ),
         title: _copy(
           context: context,
-          pt: 'Sem e-mail. Sem telefone.',
-          en: 'No email. No phone.',
-          es: 'Sin email. Sin teléfono.',
+          pt: 'Cadastro soberano.',
+          en: 'Sovereign registration.',
+          es: 'Registro soberano.',
         ),
         body: _copy(
           context: context,
-          pt: 'Você escolhe um username, gera a seed, configura TOTP e registra a passkey. Nenhum dado pessoal é solicitado.',
-          en: 'You choose a username, generate the seed, set up TOTP, and register the passkey. No personal data is requested.',
-          es: 'Eliges un username, generas la seed, configuras TOTP y registras la passkey. No se solicitan datos personales.',
+          pt: 'Nenhuma informação pessoal é exigida. Seu acesso é baseado em um nome de usuário único e credenciais locais, garantindo anonimato desde o primeiro momento.',
+          en: 'No personal information is required. Your access is based on a unique username and local credentials, ensuring anonymity from the very beginning.',
+          es: 'No se requiere información personal. Su acceso se basa en un nombre de usuario único y credenciales locales, garantizando el anonimato desde el primer momento.',
         ),
         details: [
           _copy(
             context: context,
-            pt: 'Username como única identidade',
-            en: 'Username as the only identity',
-            es: 'Username como única identidad',
+            pt: 'Identidade digital independente',
+            en: 'Independent digital identity',
+            es: 'Identidad digital independiente',
           ),
           _copy(
             context: context,
-            pt: 'Proof-of-Work no registro para controle de spam',
-            en: 'Proof-of-Work at signup for spam control',
-            es: 'Proof-of-Work en el registro para control de spam',
+            pt: 'Proteção contra spam via PoW',
+            en: 'Spam protection via PoW',
+            es: 'Protección contra spam vía PoW',
           ),
           _copy(
             context: context,
-            pt: 'Sem depósito obrigatório no cadastro',
-            en: 'No required deposit at signup',
-            es: 'Sin depósito obligatorio en el registro',
+            pt: 'Total controle sobre seus dados',
+            en: 'Total control over your data',
+            es: 'Control total sobre sus datos',
           ),
         ],
-        metricLabel: _copy(context: context, pt: 'DADOS', en: 'DATA', es: 'DATOS'),
-        metricValue: _copy(context: context, pt: 'ZERO', en: 'ZERO', es: 'CERO'),
+        metricLabel:
+            _copy(context: context, pt: 'DADOS', en: 'DATA', es: 'DATOS'),
+        metricValue:
+            _copy(context: context, pt: 'ZERO', en: 'ZERO', es: 'CERO'),
         icon: LucideIcons.userCheck,
       ),
     ];
@@ -242,6 +256,7 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
               ),
               Expanded(
                 child: PageView.builder(
+                  controller: _pageController,
                   onPageChanged: (i) => setState(() => _currentPage = i),
                   itemCount: slides.length,
                   itemBuilder: (context, index) {
@@ -261,7 +276,10 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
                   if (_currentPage == slides.length - 1) {
                     _finishPresentation();
                   } else {
-                    setState(() => _currentPage++);
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
                   }
                 },
                 onFinish: _finishPresentation,
@@ -318,8 +336,9 @@ class _Header extends StatelessWidget {
                 vertical: AppSpacing.xs,
               ),
               decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: Colors.white.withValues(alpha: 0.12),
                 ),
               ),
               child: Text(
@@ -375,56 +394,63 @@ class _Footer extends StatelessWidget {
           Row(
             children: List.generate(totalPages, (index) {
               return Expanded(
-                child: Container(
-                  margin: EdgeInsets.only(right: index == totalPages - 1 ? 0 : 6),
-                  height: 3,
-                  color: currentPage >= index
-                      ? authEntryText
-                      : Colors.white.withValues(alpha: 0.06),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin:
+                      EdgeInsets.only(right: index == totalPages - 1 ? 0 : 8),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: currentPage >= index
+                        ? authEntryText
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
                 ),
               );
             }),
           ),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
-            height: 54,
+            height: 56,
             width: double.infinity,
-            child: Material(
-              color: isLast ? authEntryButton : Colors.transparent,
-              child: InkWell(
-                onTap: isLast ? onFinish : onNext,
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isLast
-                            ? _copy(context,
-                                pt: 'CRIAR CONTA',
-                                en: 'CREATE ACCOUNT',
-                                es: 'CREAR CUENTA')
-                            : _copy(context,
-                                pt: 'CONTINUAR',
-                                en: 'CONTINUE',
-                                es: 'CONTINUAR'),
-                        style: AppTypography.buttonText.copyWith(
-                          fontFamily: 'HubotSansCondensed',
-                          color: isLast ? authEntryInk : authEntryText,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      if (!isLast) ...[
-                        const SizedBox(width: AppSpacing.sm),
-                        Icon(
-                          LucideIcons.arrowRight,
-                          size: 16,
-                          color: authEntryText,
-                        ),
-                      ],
-                    ],
-                  ),
+            child: ElevatedButton(
+              onPressed: isLast ? onFinish : onNext,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isLast ? authEntryButton : authEntrySurface,
+                foregroundColor: isLast ? authEntryInk : authEntryText,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: isLast
+                      ? BorderSide.none
+                      : BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                 ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isLast
+                        ? _copy(context,
+                            pt: 'CRIAR CONTA',
+                            en: 'CREATE ACCOUNT',
+                            es: 'CREAR CUENTA')
+                        : _copy(context,
+                            pt: 'CONTINUAR', en: 'CONTINUE', es: 'CONTINUAR'),
+                    style: AppTypography.buttonText.copyWith(
+                      fontFamily: 'HubotSansCondensed',
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  if (!isLast) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    const Icon(
+                      LucideIcons.arrowRight,
+                      size: 18,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -450,7 +476,7 @@ class _SlideView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedOpacity(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 300),
       opacity: isActive ? 1.0 : 0.0,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -461,12 +487,13 @@ class _SlideView extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: authEntrySurface,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: Colors.white.withValues(alpha: 0.12),
                     ),
                   ),
                   child: Icon(
@@ -493,27 +520,28 @@ class _SlideView extends StatelessWidget {
               style: AppTypography.h1.copyWith(
                 fontFamily: 'HubotSansCondensed',
                 color: authEntryText,
-                fontSize: 36,
+                fontSize: 34,
                 fontWeight: FontWeight.w700,
-                height: 0.94,
+                height: 1.0,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: 16),
             Text(
               slide.body,
               style: AppTypography.bodyMedium.copyWith(
                 color: authEntryMuted,
-                height: 1.45,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: authEntrySurface,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
               child: Row(
@@ -530,14 +558,14 @@ class _SlideView extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           slide.metricValue,
                           style: AppTypography.h2.copyWith(
                             fontFamily: 'JetBrainsMono',
                             color: authEntryText,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 2.0,
+                            letterSpacing: 1.5,
                           ),
                         ),
                       ],
@@ -546,7 +574,7 @@ class _SlideView extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 36,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: Colors.white.withValues(alpha: 0.12),
                   ),
                   const SizedBox(width: AppSpacing.lg),
                   Text(
@@ -560,44 +588,45 @@ class _SlideView extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            ...slide.details.asMap().entries.map((entry) {
-              final i = entry.key;
-              final detail = entry.value;
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: i < slide.details.length - 1 ? 0 : 0,
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
                 ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        width: 2,
-                      ),
-                      bottom: i < slide.details.length - 1
-                          ? BorderSide(
-                              color: Colors.white.withValues(alpha: 0.04),
-                              width: 1,
-                            )
-                          : BorderSide.none,
+              ),
+              child: Column(
+                children: slide.details.map((detail) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
-                  ),
-                  child: Text(
-                    detail,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: authEntryText,
-                      height: 1.35,
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.checkCircle2,
+                          size: 18,
+                          color: authEntryButton,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            detail,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: authEntryText,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              );
-            }),
+                  );
+                }).toList(),
+              ),
+            ),
           ],
         ),
       ),

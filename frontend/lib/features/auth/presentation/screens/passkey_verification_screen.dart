@@ -8,6 +8,7 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/presentation/widgets/auth_entry_ui.dart';
+import 'package:teste/features/security/domain/entities/passkey_action_required.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 
 import '../../controller/auth_controller.dart';
@@ -132,10 +133,26 @@ class _PasskeyVerificationScreenState
     );
   }
 
+  String _copy({
+    required String pt,
+    required String en,
+    required String es,
+  }) {
+    switch (Localizations.localeOf(context).languageCode) {
+      case 'en':
+        return en;
+      case 'es':
+        return es;
+      default:
+        return pt;
+    }
+  }
+
   _IssueInfo _issueFromError(AuthError error) {
+    final actionRequired = PasskeyActionRequired.fromDynamic(error.data);
     final translated = ErrorTranslator.translate(
       context.l10n,
-      error.errorCode ?? error.message,
+      error.toString(),
     );
     final code = error.errorCode ?? '';
 
@@ -151,7 +168,9 @@ class _PasskeyVerificationScreenState
       );
     }
 
-    if (code == 'ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS') {
+    if (code == 'ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS' ||
+        code == 'ERR_AUTH_PASSKEY_NOT_REGISTERED' ||
+        code == 'ERR_AUTH_PASSKEY_CORRUPTED_KEY_MATERIAL') {
       return _IssueInfo(
         icon: LucideIcons.keyRound,
         title: AppCopy.passkeyVerificationNoLocal.resolve(context),
@@ -177,12 +196,30 @@ class _PasskeyVerificationScreenState
 
     if (code == 'AUTH_FAILED' ||
         code == 'INVALID_SIGNATURE' ||
+        code == 'AUTH_012' ||
+        code == 'AUTH_015' ||
         code == 'VERIFY_ERROR' ||
         code == 'MISSING_CREDENTIAL_ID') {
       return _IssueInfo(
         icon: LucideIcons.shieldOff,
         title: AppCopy.passkeyVerificationRejected.resolve(context),
         message: translated,
+        allowRetry: actionRequired?.canRetryAssertion ?? true,
+        allowManualFallback: actionRequired?.totpFallbackAvailable ?? true,
+      );
+    }
+
+    if (code == 'AUTH_014' || code == 'AUTH_016' || code == 'AUTH_017') {
+      return _IssueInfo(
+        icon: LucideIcons.link2Off,
+        title: _copy(
+          pt: 'Vincule uma nova passkey',
+          en: 'Link a new passkey',
+          es: 'Vincula una nueva passkey',
+        ),
+        message: translated,
+        allowRetry: false,
+        allowManualFallback: actionRequired?.totpFallbackAvailable ?? true,
       );
     }
 
@@ -260,6 +297,8 @@ class _PasskeyVerificationScreenState
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authControllerProvider, (previous, next) async {
+      final navigator = Navigator.of(context);
+
       if (next is AuthAuthenticated) {
         _cancelSequenceWait();
         _isRunningSequence = false;
@@ -270,11 +309,11 @@ class _PasskeyVerificationScreenState
           });
         }
         await Future<void>.delayed(const Duration(milliseconds: 1200));
-        if (mounted) {
-          HomeScreen.skipNextAuth = true;
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil('/home_loading', (route) => false);
+        if (!context.mounted) {
+          return;
         }
+        HomeScreen.skipNextAuth = true;
+        navigator.pushNamedAndRemoveUntil('/home_loading', (route) => false);
       } else if (next is AuthRequiresLoginTotp) {
         _cancelSequenceWait();
         _isRunningSequence = false;
@@ -285,19 +324,19 @@ class _PasskeyVerificationScreenState
           });
         }
         await Future<void>.delayed(const Duration(milliseconds: 1100));
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TotpScreen(
-                username: next.username,
-                passphrase: next.passphrase,
-                isSetup: false,
-                preAuthToken: next.preAuthToken,
-              ),
-            ),
-          );
+        if (!context.mounted) {
+          return;
         }
+        navigator.pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => TotpScreen(
+              username: next.username,
+              passphrase: next.passphrase,
+              isSetup: false,
+              preAuthToken: next.preAuthToken,
+            ),
+          ),
+        );
       } else if (next is AuthError) {
         _cancelSequenceWait();
         _isRunningSequence = false;

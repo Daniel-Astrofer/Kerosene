@@ -9,6 +9,7 @@ Ela deve permanecer enxuta: mantenha aqui somente documentos canonicos, versiona
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura por componente, fluxo de dados, seguranca e limites atuais. |
 | [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Docker Compose, Tor hidden services, PostgreSQL, Redis, Vault, redes, volumes e scripts operacionais. |
 | [API_REFERENCE.md](API_REFERENCE.md) | API REST, WebSocket/STOMP e API interna do Vault derivadas dos controllers reais. |
+| [FEATURES_AND_STATES.md](FEATURES_AND_STATES.md) | Mapa funcional do app, estados expostos ao frontend, implementacao atual e gaps para proximas iteracoes. |
 | [APK.md](APK.md) | Metadados, checksums e processo profissional de publicacao do APK. |
 
 ## Escopo

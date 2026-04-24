@@ -153,6 +153,8 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   }) async {
     state = const CreateWalletLoading();
 
@@ -160,6 +162,8 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
       name: name,
       passphrase: passphrase,
       accountSecurity: accountSecurity,
+      xpub: xpub,
+      walletMode: walletMode,
     );
 
     result.fold(

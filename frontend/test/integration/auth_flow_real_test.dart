@@ -1,18 +1,22 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/core/services/tor_service.dart';
-import 'package:teste/core/providers/tor_providers.dart';
-import 'package:crypto/crypto.dart' as crypto;
 import 'dart:convert';
 import 'dart:io';
-import 'package:uuid/uuid.dart';
-import 'package:teste/main.dart'; // Import central para pegar o provider correto
-import 'totp_utils.dart';
+
+import 'package:crypto/crypto.dart' as crypto;
+import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:teste/core/config/app_config.dart';
+import 'package:teste/core/network/api_client_provider.dart';
+import 'package:teste/core/providers/tor_providers.dart';
+import 'package:teste/core/services/tor_service.dart';
+import 'package:teste/main.dart' show sharedPreferencesProvider;
+import 'package:uuid/uuid.dart';
+import 'totp_utils.dart';
+
+const _runRealOnionTests = bool.fromEnvironment('RUN_REAL_ONION_TESTS');
 
 // Helper de PoW
 String solvePoW(String challenge) {
@@ -32,8 +36,11 @@ String solvePoW(String challenge) {
 }
 
 void main() {
-  // 1. MANDATORY: Initialize Flutter Test Binding
-  TestWidgetsFlutterBinding.ensureInitialized();
+  if (_runRealOnionTests) {
+    IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  } else {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  }
 
   group('Full Auth Integration: PoW -> Signup -> TOTP -> Login -> JWT', () {
     late ProviderContainer container;
@@ -50,11 +57,11 @@ void main() {
           .setMockMethodCallHandler(
         const MethodChannel('plugins.flutter.io/path_provider'),
         (MethodCall methodCall) async {
-        if (methodCall.method == 'getApplicationDocumentsDirectory') {
-          return Directory.systemTemp.path;
-        }
-        return null;
-      },
+          if (methodCall.method == 'getApplicationDocumentsDirectory') {
+            return Directory.systemTemp.path;
+          }
+          return null;
+        },
       );
 
       // 3. Mock SharedPreferences
@@ -206,7 +213,10 @@ void main() {
       print(
           '🎉 [Auth] Profile matched! User is authenticated as ${meRes.data['username']}');
     });
-  });
+  },
+      skip: !_runRealOnionTests
+          ? 'Set RUN_REAL_ONION_TESTS=true para executar integrações reais com Tor/.onion.'
+          : false);
 }
 
 /// Manual SOCKS5 Relay tunnel for test environment

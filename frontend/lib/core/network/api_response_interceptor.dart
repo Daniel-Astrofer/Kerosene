@@ -45,6 +45,7 @@ class ApiResponseInterceptor extends Interceptor {
             error: {
               'message': errMsg,
               'errorCode': errCode,
+              'data': data['data'],
             }, // Pass as Map so ApiClient catches it cleanly
           );
         }

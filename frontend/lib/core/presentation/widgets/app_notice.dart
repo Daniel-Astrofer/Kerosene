@@ -128,6 +128,10 @@ class AppNotice {
         tone: _toneFor(type),
         title: title ?? _defaultTitle(context, type),
         message: message,
+        maxMessageLines:
+            type == AppNoticeType.error || type == AppNoticeType.warning
+                ? 5
+                : 4,
         onClose: onClose,
       ),
     );

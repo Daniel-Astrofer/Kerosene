@@ -222,7 +222,7 @@ class _PhysicalCreditCardFace extends StatelessWidget {
                   Expanded(
                     child: _CardTextField(
                       label: 'CARD HOLDER',
-                      value: wallet.name.toUpperCase(),
+                      value: wallet.effectiveCardHolderName.toUpperCase(),
                       palette: palette,
                     ),
                   ),
@@ -259,10 +259,9 @@ class _PhysicalCreditCardFace extends StatelessWidget {
             ),
           ),
         ),
-        textDirection: TextDirection.ltr,
-      );
-      addressPainter.layout();
-      addressPainter.paint(canvas, const Offset(24, 136));
+      ],
+    );
+  }
 
   static String _balanceLabel(Wallet wallet, BalanceSettings settings) {
     if (settings.isHidden) {
@@ -272,21 +271,16 @@ class _PhysicalCreditCardFace extends StatelessWidget {
   }
 
   static String _maskedCardNumber(Wallet wallet) {
-    final source = (wallet.address.isNotEmpty ? wallet.address : wallet.id)
-        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
-        .toUpperCase();
-    final last4 = source.length >= 4
-        ? source.substring(source.length - 4)
-        : source.padLeft(4, '0');
-    return '****  ****  ****  $last4';
+    return wallet.effectiveMaskedCardNumber.replaceAll(' ', '  ');
   }
 
   static String _expiryLabel(Wallet wallet) {
-    final expiryYear = wallet.createdAt.year + 4;
-    final month = wallet.createdAt.month.toString().padLeft(2, '0');
-    final year = (expiryYear % 100).toString().padLeft(2, '0');
+    final expiry = wallet.cardExpiresAt ?? wallet.createdAt;
+    final month = expiry.month.toString().padLeft(2, '0');
+    final year = (expiry.year % 100).toString().padLeft(2, '0');
     return '$month/$year';
   }
+}
 
 class _EmptyCreditCardFace extends StatelessWidget {
   final _CreditCardPalette palette;

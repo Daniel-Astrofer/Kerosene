@@ -31,6 +31,7 @@ class AuthController extends Notifier<AuthState> {
       failure.message,
       statusCode: failure.statusCode,
       errorCode: failure.errorCode,
+      data: failure.data,
     );
   }
 
@@ -40,7 +41,7 @@ class AuthController extends Notifier<AuthState> {
   }) {
     final raw = error.toString().trim();
     final knownCode = RegExp(
-      r'(ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS|ERR_AUTH_PASSKEY_AUTH_CANCELLED)',
+      r'(ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS|ERR_AUTH_PASSKEY_AUTH_CANCELLED|ERR_AUTH_PASSKEY_NOT_REGISTERED|ERR_AUTH_PASSKEY_CORRUPTED_KEY_MATERIAL)',
     ).firstMatch(raw);
 
     if (knownCode != null) {

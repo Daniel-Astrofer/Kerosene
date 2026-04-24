@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
@@ -774,7 +775,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           label: 'Valor em BTC',
           value: btcAmountLabel,
           icon: LucideIcons.coins,
-          monospace: true,
         ),
       PaymentConfirmationDetail(
         label: context.l10n.networkFee,
@@ -793,7 +793,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           label: 'Total em BTC',
           value: btcTotalLabel,
           icon: LucideIcons.equal,
-          monospace: true,
         ),
       PaymentConfirmationDetail(
         label: 'Saldo antes do envio',
@@ -993,7 +992,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
 
     result.fold((failure) {
-      SnackbarHelper.showError(failure.message);
+      SnackbarHelper.showError(
+        ErrorTranslator.translate(
+          context.l10n,
+          failure.errorCode ?? failure.message,
+        ),
+      );
     }, (data) {
       final payload = data['data'] is Map
           ? Map<String, dynamic>.from(data['data'] as Map)

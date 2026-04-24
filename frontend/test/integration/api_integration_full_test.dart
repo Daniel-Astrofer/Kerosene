@@ -1,18 +1,41 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teste/core/config/app_config.dart';
 import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/core/services/tor_service.dart';
 import 'package:teste/core/providers/tor_providers.dart';
-import 'dart:io';
+import 'package:teste/core/services/tor_service.dart';
+import 'package:teste/main.dart' show sharedPreferencesProvider;
+
+const _runRealOnionTests = bool.fromEnvironment('RUN_REAL_ONION_TESTS');
 
 void main() {
+  if (_runRealOnionTests) {
+    IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  } else {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  }
+
   group('API Integration & Contract Tests (Real Onion Data)', () {
     late ProviderContainer container;
     late TorService torService;
 
     setUpAll(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'getApplicationDocumentsDirectory') {
+            return Directory.systemTemp.path;
+          }
+          return null;
+        },
+      );
+
       // Mock SharedPreferences
       SharedPreferences.setMockInitialValues({});
       final sharedPrefs = await SharedPreferences.getInstance();
@@ -95,8 +118,13 @@ void main() {
         expect(response.statusCode, 200);
         final data = response.data;
 
-        expect(data['status'], anyOf(['OK', 'HEALTHY', 'UP']));
-        print('✅ [Integration] Node is ${data['status']}');
+        expect(data, isA<Map<String, dynamic>>());
+        expect(data['hardwareAttestation'], isA<Map<String, dynamic>>());
+        expect(data['networkConsensus'], isA<Map<String, dynamic>>());
+        expect(data['ledgerIntegrity'], isA<Map<String, dynamic>>());
+        expect(data['memoryProtection'], isA<Map<String, dynamic>>());
+        print(
+            '✅ [Integration] Sovereignty payload retornou as seções esperadas.');
       } catch (e) {
         print('⚠️ Skipping detailed sovereignty check (Optional endpoint)');
       }
@@ -119,10 +147,8 @@ void main() {
         fail('WebSocket Relay Tunnel is unreachable: $e');
       }
     });
-  });
+  },
+      skip: !_runRealOnionTests
+          ? 'Set RUN_REAL_ONION_TESTS=true para executar integrações reais com Tor/.onion.'
+          : false);
 }
-
-// Re-declaring the provider to avoid import issues in pure test mode
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError();
-});

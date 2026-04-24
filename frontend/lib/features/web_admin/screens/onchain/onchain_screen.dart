@@ -28,46 +28,160 @@ class OnchainScreen extends ConsumerWidget {
           transfersAsync.when(
             data: (transfers) {
               final onchain = transfers.where((t) => t.isOnchain).toList();
-              final totalVolume = onchain.fold<double>(0, (s, t) => s + t.amountBtc.abs());
-              final totalFees = onchain.fold<double>(0, (s, t) => s + t.networkFeeBtc);
-              final completed = onchain.where((t) => t.status.toUpperCase() == 'COMPLETED' || t.status.toUpperCase() == 'SETTLED').length;
-              final pending = onchain.where((t) => t.status.toUpperCase() == 'PENDING' || t.status.toUpperCase() == 'PROCESSING').length;
+              final totalVolume =
+                  onchain.fold<double>(0, (s, t) => s + t.amountBtc.abs());
+              final totalFees =
+                  onchain.fold<double>(0, (s, t) => s + t.networkFeeBtc);
+              final completed = onchain
+                  .where((t) =>
+                      t.status.toUpperCase() == 'COMPLETED' ||
+                      t.status.toUpperCase() == 'SETTLED')
+                  .length;
+              final pending = onchain
+                  .where((t) =>
+                      t.status.toUpperCase() == 'PENDING' ||
+                      t.status.toUpperCase() == 'PROCESSING')
+                  .length;
 
               return Column(
                 children: [
                   Row(
                     children: [
-                      Expanded(child: AdminMetricCard(label: 'Total Operations', value: '${onchain.length}', icon: Icons.link, accentColor: AdminColors.accent)),
+                      Expanded(
+                          child: AdminMetricCard(
+                              label: 'Total Operations',
+                              value: '${onchain.length}',
+                              icon: Icons.link,
+                              accentColor: AdminColors.accent)),
                       const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(child: AdminMetricCard(label: 'Volume', value: '${totalVolume.toStringAsFixed(8)} BTC', icon: Icons.swap_horiz)),
+                      Expanded(
+                          child: AdminMetricCard(
+                              label: 'Volume',
+                              value: '${totalVolume.toStringAsFixed(8)} BTC',
+                              icon: Icons.swap_horiz)),
                       const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(child: AdminMetricCard(label: 'Network Fees', value: '${totalFees.toStringAsFixed(8)} BTC', icon: Icons.payments_outlined, accentColor: AdminColors.warning)),
+                      Expanded(
+                          child: AdminMetricCard(
+                              label: 'Network Fees',
+                              value: '${totalFees.toStringAsFixed(8)} BTC',
+                              icon: Icons.payments_outlined,
+                              accentColor: AdminColors.warning)),
                       const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(child: AdminMetricCard(label: 'Status', value: '$completed confirmed', subtitle: '$pending pending', icon: Icons.check_circle_outline, accentColor: AdminColors.positive)),
+                      Expanded(
+                          child: AdminMetricCard(
+                              label: 'Status',
+                              value: '$completed confirmed',
+                              subtitle: '$pending pending',
+                              icon: Icons.check_circle_outline,
+                              accentColor: AdminColors.positive)),
                     ],
                   ),
                   const SizedBox(height: AdminTheme.spacingXl),
                   AdminDataTable<ExternalTransfer>(
                     data: onchain,
                     columns: [
-                      AdminColumn(header: 'Ref', cellBuilder: (t) => SelectableText(t.externalReference.isNotEmpty ? (t.externalReference.length > 12 ? '${t.externalReference.substring(0, 12)}...' : t.externalReference) : t.id.length > 12 ? '${t.id.substring(0, 12)}...' : t.id, style: AdminTypography.tableCellMono)),
-                      AdminColumn(header: 'Direction', cellBuilder: (t) => Row(mainAxisSize: MainAxisSize.min, children: [Icon(t.isOutbound ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: t.isOutbound ? AdminColors.negative : AdminColors.positive), const SizedBox(width: 4), Text(t.isOutbound ? 'Sent' : 'Received', style: AdminTypography.tableCell)])),
-                      AdminColumn(header: 'Amount', isNumeric: true, cellBuilder: (t) => Text(t.amountBtc.abs().toStringAsFixed(8), style: AdminTypography.tableCellMono), sortKey: (t) => t.amountBtc.abs()),
-                      AdminColumn(header: 'Fee', isNumeric: true, cellBuilder: (t) => Text(t.networkFeeBtc.toStringAsFixed(8), style: AdminTypography.tableCellMono)),
-                      AdminColumn(header: 'Status', cellBuilder: (t) {
-                        final v = switch (t.status.toUpperCase()) { 'COMPLETED' || 'SETTLED' => AdminBadgeVariant.positive, 'CANCELLED' => AdminBadgeVariant.negative, _ => AdminBadgeVariant.warning };
-                        return AdminStatusBadge(label: t.status, variant: v);
-                      }),
-                      AdminColumn(header: 'Wallet', cellBuilder: (t) => Text(t.walletName, style: AdminTypography.tableCell)),
-                      AdminColumn(header: 'Date', cellBuilder: (t) => Text(t.createdAt != null ? '${t.createdAt!.year}-${t.createdAt!.month.toString().padLeft(2, '0')}-${t.createdAt!.day.toString().padLeft(2, '0')}' : '—', style: AdminTypography.tableCell), sortKey: (t) => t.createdAt?.millisecondsSinceEpoch ?? 0),
+                      AdminColumn(
+                          header: 'Ref',
+                          cellBuilder: (t) => SelectableText(
+                              t.externalReference.isNotEmpty
+                                  ? (t.externalReference.length > 12
+                                      ? '${t.externalReference.substring(0, 12)}...'
+                                      : t.externalReference)
+                                  : t.id.length > 12
+                                      ? '${t.id.substring(0, 12)}...'
+                                      : t.id,
+                              style: AdminTypography.tableCellMono)),
+                      AdminColumn(
+                          header: 'Direction',
+                          cellBuilder: (t) =>
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(
+                                    t.isOutbound
+                                        ? Icons.arrow_upward
+                                        : Icons.arrow_downward,
+                                    size: 14,
+                                    color: t.isOutbound
+                                        ? AdminColors.negative
+                                        : AdminColors.positive),
+                                const SizedBox(width: 4),
+                                Text(t.isOutbound ? 'Sent' : 'Received',
+                                    style: AdminTypography.tableCell)
+                              ])),
+                      AdminColumn(
+                          header: 'Amount',
+                          isNumeric: true,
+                          cellBuilder: (t) => Text(
+                              t.amountBtc.abs().toStringAsFixed(8),
+                              style: AdminTypography.tableCellMono),
+                          sortKey: (t) => t.amountBtc.abs()),
+                      AdminColumn(
+                          header: 'Fee',
+                          isNumeric: true,
+                          cellBuilder: (t) => Text(
+                              t.networkFeeBtc.toStringAsFixed(8),
+                              style: AdminTypography.tableCellMono)),
+                      AdminColumn(
+                        header: 'Address',
+                        cellBuilder: (t) => SelectableText(
+                          t.destination.isNotEmpty
+                              ? (t.destination.length > 18
+                                  ? '${t.destination.substring(0, 18)}...'
+                                  : t.destination)
+                              : '—',
+                          style: AdminTypography.tableCellMono,
+                        ),
+                      ),
+                      AdminColumn(
+                        header: 'TXID',
+                        cellBuilder: (t) => SelectableText(
+                          t.blockchainTxid.isNotEmpty
+                              ? (t.blockchainTxid.length > 18
+                                  ? '${t.blockchainTxid.substring(0, 18)}...'
+                                  : t.blockchainTxid)
+                              : '—',
+                          style: AdminTypography.tableCellMono,
+                        ),
+                      ),
+                      AdminColumn(
+                          header: 'Status',
+                          cellBuilder: (t) {
+                            final v = switch (t.status.toUpperCase()) {
+                              'COMPLETED' ||
+                              'SETTLED' =>
+                                AdminBadgeVariant.positive,
+                              'CANCELLED' => AdminBadgeVariant.negative,
+                              _ => AdminBadgeVariant.warning
+                            };
+                            return AdminStatusBadge(
+                                label: t.status, variant: v);
+                          }),
+                      AdminColumn(
+                          header: 'Wallet',
+                          cellBuilder: (t) => Text(t.walletName,
+                              style: AdminTypography.tableCell)),
+                      AdminColumn(
+                          header: 'Date',
+                          cellBuilder: (t) => Text(
+                              t.createdAt != null
+                                  ? '${t.createdAt!.year}-${t.createdAt!.month.toString().padLeft(2, '0')}-${t.createdAt!.day.toString().padLeft(2, '0')}'
+                                  : '—',
+                              style: AdminTypography.tableCell),
+                          sortKey: (t) =>
+                              t.createdAt?.millisecondsSinceEpoch ?? 0),
                     ],
                     emptyMessage: 'No on-chain operations found',
                   ),
                 ],
               );
             },
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(AdminTheme.spacing3xl), child: CircularProgressIndicator(color: AdminColors.textTertiary))),
-            error: (e, _) => AdminErrorState(message: 'Failed to load on-chain data: $e', onRetry: () => ref.invalidate(adminExternalTransfersProvider)),
+            loading: () => const Center(
+                child: Padding(
+                    padding: EdgeInsets.all(AdminTheme.spacing3xl),
+                    child: CircularProgressIndicator(
+                        color: AdminColors.textTertiary))),
+            error: (e, _) => AdminErrorState(
+                message: 'Failed to load on-chain data: $e',
+                onRetry: () => ref.invalidate(adminExternalTransfersProvider)),
           ),
         ],
       ),

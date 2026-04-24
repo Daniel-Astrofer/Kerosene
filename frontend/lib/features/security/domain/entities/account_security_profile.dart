@@ -1,5 +1,8 @@
 import 'package:equatable/equatable.dart';
 
+import 'app_pin_status.dart';
+import 'passkey_inventory.dart';
+
 enum AccountSecurityMode { standard, shamir, multisig2fa, passkey }
 
 AccountSecurityMode accountSecurityModeFromApi(String? raw) {
@@ -35,7 +38,9 @@ class AccountSecurityProfile extends Equatable {
   final int multisigThreshold;
   final bool passkeyAvailable;
   final bool passkeyEnabledForTransactions;
+  final AppPinStatus appPin;
   final List<String> requiredFactors;
+  final PasskeyInventory? passkeys;
 
   const AccountSecurityProfile({
     required this.mode,
@@ -44,7 +49,9 @@ class AccountSecurityProfile extends Equatable {
     this.multisigThreshold = 2,
     this.passkeyAvailable = false,
     this.passkeyEnabledForTransactions = false,
+    this.appPin = const AppPinStatus(),
     this.requiredFactors = const [],
+    this.passkeys,
   });
 
   factory AccountSecurityProfile.fromJson(Map<String, dynamic> json) {
@@ -57,9 +64,19 @@ class AccountSecurityProfile extends Equatable {
       passkeyAvailable: json['passkeyAvailable'] == true,
       passkeyEnabledForTransactions:
           json['passkeyEnabledForTransactions'] == true,
+      appPin: json['appPin'] is Map
+          ? AppPinStatus.fromJson(
+              Map<String, dynamic>.from(json['appPin'] as Map),
+            )
+          : const AppPinStatus(),
       requiredFactors: requiredFactorsRaw is List
           ? requiredFactorsRaw.map((item) => item.toString()).toList()
           : const [],
+      passkeys: json['passkeys'] is Map
+          ? PasskeyInventory.fromJson(
+              Map<String, dynamic>.from(json['passkeys'] as Map),
+            )
+          : null,
     );
   }
 
@@ -93,7 +110,9 @@ class AccountSecurityProfile extends Equatable {
     int? multisigThreshold,
     bool? passkeyAvailable,
     bool? passkeyEnabledForTransactions,
+    AppPinStatus? appPin,
     List<String>? requiredFactors,
+    PasskeyInventory? passkeys,
   }) {
     return AccountSecurityProfile(
       mode: mode ?? this.mode,
@@ -103,7 +122,9 @@ class AccountSecurityProfile extends Equatable {
       passkeyAvailable: passkeyAvailable ?? this.passkeyAvailable,
       passkeyEnabledForTransactions:
           passkeyEnabledForTransactions ?? this.passkeyEnabledForTransactions,
+      appPin: appPin ?? this.appPin,
       requiredFactors: requiredFactors ?? this.requiredFactors,
+      passkeys: passkeys ?? this.passkeys,
     );
   }
 
@@ -115,6 +136,8 @@ class AccountSecurityProfile extends Equatable {
         multisigThreshold,
         passkeyAvailable,
         passkeyEnabledForTransactions,
+        appPin,
         requiredFactors,
+        passkeys,
       ];
 }

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 
 /// 6-digit TOTP input using absolute CustomPaint fidelity and a hidden TextField.
@@ -303,7 +305,6 @@ class _TotpInputContainerState extends State<TotpInputContainer>
   }
 }
 
-
 class _TotpGridPainter extends CustomPainter {
   final String text;
   final bool isFocused;
@@ -321,7 +322,8 @@ class _TotpGridPainter extends CustomPainter {
     const double spacing = 12.0;
 
     // Calculate dynamic cell width to fit available width perfectly
-    final double cellWidth = (size.width - (spacing * (numCells - 1))) / numCells;
+    final double cellWidth =
+        (size.width - (spacing * (numCells - 1))) / numCells;
     final double cellHeight = size.height;
 
     final Paint bgPaint = Paint()..color = AppColors.surfaceLight;

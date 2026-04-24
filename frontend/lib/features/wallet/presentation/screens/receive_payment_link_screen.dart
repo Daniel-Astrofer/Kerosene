@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/constants/app_copy.dart';
+import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/qr_payment_parser.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
@@ -101,6 +102,9 @@ class _ReceivePaymentLinkScreenState
   }
 
   bool get _shouldKeepPolling => _link.isPending || _link.isVerifyingOnboarding;
+  bool get _canCancelLink =>
+      !_isLockedPaymentRequest &&
+      (_link.isPending || _link.isVerifyingOnboarding);
 
   void _startTicker() {
     _ticker?.cancel();
@@ -162,6 +166,106 @@ class _ReceivePaymentLinkScreenState
     SnackbarHelper.showSuccess(message);
   }
 
+  Future<void> _cancelLink() async {
+    final reason = await _showCancelReasonSheet();
+    if (reason == null) {
+      return;
+    }
+
+    setState(() => _isRefreshing = true);
+    try {
+      final cancelled =
+          await ref.read(transactionRepositoryProvider).cancelPaymentLink(
+                linkId: _link.id,
+                reason: reason.trim().isEmpty ? null : reason.trim(),
+              );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _link = cancelled;
+      });
+      ref.invalidate(paymentLinksProvider);
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(pagedTransactionHistoryProvider);
+      SnackbarHelper.showSuccess('Link de pagamento cancelado.');
+    } catch (error) {
+      if (mounted) {
+        SnackbarHelper.showError('Nao foi possivel cancelar o link: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  Future<String?> _showCancelReasonSheet() {
+    final controller = TextEditingController();
+
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: receiveFlowPanelColor,
+              border: Border.all(color: receiveFlowBorderStrongColor),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Cancelar link',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Opcionalmente registre o motivo para manter o histórico operacional coerente.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: receiveFlowMutedTextColor,
+                        height: 1.4,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Motivo do cancelamento',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => Navigator.of(context).pop(controller.text),
+                  icon: const Icon(LucideIcons.xCircle, size: 16),
+                  label: const Text('Confirmar cancelamento'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
@@ -189,6 +293,9 @@ class _ReceivePaymentLinkScreenState
     if (_link.isPaid || _link.isCompleted) {
       return 'Pagamento recebido';
     }
+    if (_link.isCancelled) {
+      return 'Link cancelado';
+    }
     if (_link.isExpired) {
       return 'Link expirado';
     }
@@ -201,6 +308,11 @@ class _ReceivePaymentLinkScreenState
     }
     if (_link.isPaid || _link.isCompleted) {
       return 'O valor deste link ja foi recebido. O historico do criador reflete esse estado automaticamente.';
+    }
+    if (_link.isCancelled) {
+      return _link.cancelReason?.trim().isNotEmpty == true
+          ? 'Este link foi cancelado: ${_link.cancelReason}.'
+          : 'Este link foi cancelado e nao aceita mais pagamentos.';
     }
     if (_link.isExpired) {
       return 'Este link nao aceita mais pagamentos. Gere um novo QR para continuar a receber.';
@@ -245,6 +357,8 @@ class _ReceivePaymentLinkScreenState
           _buildQrCard(context),
           const SizedBox(height: 16),
           _buildLinkDetails(context),
+          const SizedBox(height: 16),
+          _buildConfigurationCard(context),
           const SizedBox(height: 16),
           _buildActions(context),
         ],
@@ -356,6 +470,11 @@ class _ReceivePaymentLinkScreenState
                   title: 'TXID',
                   value: _link.txid!,
                 ),
+              if (_link.isCancelled)
+                _DetailTag(
+                  title: 'Estado',
+                  value: 'Cancelado',
+                ),
             ],
           ),
         ],
@@ -465,25 +584,148 @@ class _ReceivePaymentLinkScreenState
   }
 
   Widget _buildActions(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final actions = <Widget>[
+          _ActionButton(
             onTap: () => _refreshLink(),
             icon: LucideIcons.refreshCw,
             label: 'Atualizar',
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionButton(
+          _ActionButton(
             onTap: () => Navigator.pushNamed(context, '/history'),
             icon: LucideIcons.history,
             label: 'Histórico',
           ),
-        ),
-      ],
+          if (_canCancelLink)
+            _ActionButton(
+              onTap: _cancelLink,
+              icon: LucideIcons.xCircle,
+              label: 'Cancelar',
+            ),
+        ];
+
+        if (constraints.maxWidth < 540) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < actions.length; index++) ...[
+                actions[index],
+                if (index != actions.length - 1) const SizedBox(height: 12),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            for (var index = 0; index < actions.length; index++) ...[
+              Expanded(child: actions[index]),
+              if (index != actions.length - 1) const SizedBox(width: 12),
+            ],
+          ],
+        );
+      },
     );
+  }
+
+  Widget _buildConfigurationCard(BuildContext context) {
+    final metadataEntries = _link.metadata.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return ReceiveFlowPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Configuracao do link',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _DetailTag(
+                title: 'Visibilidade',
+                value: _humanizeFlag(_link.visibility),
+              ),
+              _DetailTag(
+                title: 'Fechamento',
+                value: _humanizeFlag(_link.confirmationMode),
+              ),
+              _DetailTag(
+                title: 'Valor',
+                value: _link.amountLocked ? 'Travado' : 'Flexivel',
+              ),
+              if (_link.referenceLabel != null &&
+                  _link.referenceLabel!.trim().isNotEmpty)
+                _DetailTag(
+                  title: 'Referencia',
+                  value: _link.referenceLabel!,
+                ),
+              if (_link.createdAt != null)
+                _DetailTag(
+                  title: 'Criado em',
+                  value: _formatDateTime(_link.createdAt),
+                ),
+              if (_link.paidAt != null)
+                _DetailTag(
+                  title: 'Pago em',
+                  value: _formatDateTime(_link.paidAt),
+                ),
+              if (_link.completedAt != null)
+                _DetailTag(
+                  title: 'Liquidado em',
+                  value: _formatDateTime(_link.completedAt),
+                ),
+              if (_link.cancelledAt != null)
+                _DetailTag(
+                  title: 'Cancelado em',
+                  value: _formatDateTime(_link.cancelledAt),
+                ),
+            ],
+          ),
+          if (metadataEntries.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Metadados',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: metadataEntries
+                  .map(
+                    (entry) => _DetailTag(
+                      title: entry.key,
+                      value: entry.value,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _humanizeFlag(String value) {
+    return value
+        .split('_')
+        .where((segment) => segment.trim().isNotEmpty)
+        .map(
+          (segment) =>
+              '${segment[0].toUpperCase()}${segment.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 }
 
@@ -530,11 +772,13 @@ class _CopyFieldCard extends StatelessWidget {
           const SizedBox(height: 8),
           SelectableText(
             value,
-            style: const TextStyle(
-              color: receiveFlowTextColor,
-              fontSize: 13,
-              height: 1.45,
-              fontWeight: FontWeight.w400,
+            style: AppTypography.technicalMono(
+              textStyle: const TextStyle(
+                color: receiveFlowTextColor,
+                fontSize: 13,
+                height: 1.45,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -620,6 +864,11 @@ class _DetailTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedTitle = title.trim().toUpperCase();
+    final isTechnicalValue = normalizedTitle == 'ID' ||
+        normalizedTitle == 'TXID' ||
+        normalizedTitle == 'DESTINO';
+
     return Container(
       constraints: const BoxConstraints(minWidth: 96),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -642,10 +891,17 @@ class _DetailTag extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: receiveFlowTextColor,
-                  fontWeight: FontWeight.w500,
-                ),
+            style: isTechnicalValue
+                ? AppTypography.technicalMono(
+                    textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: receiveFlowTextColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  )
+                : Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: receiveFlowTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
           ),
         ],
       ),

@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/theme/monochrome_theme.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/features/mining/presentation/mining_explorer.dart';
 import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
@@ -91,26 +93,24 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
           );
     final createdAt =
         paymentLink?.createdAt ?? paymentLink?.paidAt ?? transaction?.timestamp;
-    final hasAdvancedDetails =
-        (_secondaryAddress != null && _secondaryAddress!.trim().isNotEmpty) ||
-            (_referenceId != null && _referenceId!.trim().isNotEmpty) ||
-            (_description != null && _description!.trim().isNotEmpty);
+    final hasAdvancedDetails = (_secondaryAddress != null &&
+            _secondaryAddress!.trim().isNotEmpty) ||
+        (_referenceId != null && _referenceId!.trim().isNotEmpty) ||
+        (_invoiceId != null && _invoiceId!.trim().isNotEmpty) ||
+        (_paymentHash != null && _paymentHash!.trim().isNotEmpty) ||
+        (_lightningInvoice != null && _lightningInvoice!.trim().isNotEmpty) ||
+        (_description != null && _description!.trim().isNotEmpty);
+    final leadingIcon = paymentLink != null
+        ? Icons.link_rounded
+        : TransactionVisualSpec.fromTransaction(transaction!).icon;
 
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.only(top: 48),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Color(0xFF131F2E),
-              Color(0xFF000000),
-              Color(0xFF0A1119),
-            ],
-          ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: monochromePanelDecoration(
+          color: monoSurfaceColor,
+          borderColor: monoBorderStrongColor,
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
@@ -120,16 +120,14 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
               Center(
                 child: Container(
                   width: 56,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+                  height: 1,
+                  color: monoBorderStrongColor,
                 ),
               ),
               const SizedBox(height: 20),
               _SummaryHero(
                 statusMeta: statusMeta,
+                leadingIcon: leadingIcon,
                 headline: _headline,
                 contextLabel: _contextLabel,
                 supportingText: _summaryMessage,
@@ -150,7 +148,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                   child: Text(
                     DateFormat('dd/MM/yyyy • HH:mm').format(createdAt),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
+                          color: monoTextColor,
                           fontWeight: FontWeight.w700,
                         ),
                   ),
@@ -177,6 +175,30 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                     ],
+                    if (_invoiceId != null) ...[
+                      _CopyablePanel(
+                        title: 'Invoice ID',
+                        value: _invoiceId!,
+                        compact: true,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_paymentHash != null) ...[
+                      _CopyablePanel(
+                        title: 'Payment hash',
+                        value: _paymentHash!,
+                        compact: true,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_lightningInvoice != null) ...[
+                      _CopyablePanel(
+                        title: 'Invoice Lightning',
+                        value: _lightningInvoice!,
+                        compact: true,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     if (_description != null && _description!.trim().isNotEmpty)
                       _DetailPanel(
                         title: contextTitle,
@@ -185,7 +207,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                           _description!,
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.86),
+                                    color: monoTextColor,
                                     height: 1.45,
                                   ),
                         ),
@@ -232,40 +254,35 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
     if (paymentLink != null) {
       return paymentLink!.depositAddress;
     }
-    return transaction!.toAddress;
+    final value = resolvePrimaryTransactionAddress(transaction!).trim();
+    return value.isEmpty ? null : value;
   }
 
   String get _primaryAddressLabel {
     if (paymentLink != null) {
       return 'Endereço de depósito';
     }
-    if (transaction!.type == TransactionType.withdrawal ||
-        transaction!.type == TransactionType.send) {
-      return 'Destino';
-    }
-    return 'Recebedor';
+    return resolvePrimaryTransactionAddressLabel(transaction!);
   }
 
   String? get _secondaryAddress {
     if (paymentLink != null) {
       return null;
     }
-    return transaction!.fromAddress;
+    return resolveSecondaryTransactionAddress(transaction!);
   }
 
   String get _secondaryAddressLabel {
-    if (transaction!.type == TransactionType.withdrawal ||
-        transaction!.type == TransactionType.send) {
-      return 'Origem';
-    }
-    return 'Remetente';
+    return resolveSecondaryTransactionAddressLabel(transaction!);
   }
 
   String? get _referenceId {
     if (paymentLink != null) {
       return paymentLink!.txid ?? paymentLink!.id;
     }
-    return transaction!.blockchainTxid ?? transaction!.id;
+    return transaction!.blockchainTxid ??
+        transaction!.externalReference ??
+        transaction!.id;
   }
 
   String get _referenceLabel {
@@ -273,6 +290,30 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       return 'TXID';
     }
     return 'Referência';
+  }
+
+  String? get _invoiceId {
+    if (paymentLink != null) {
+      return null;
+    }
+    final value = transaction!.invoiceId?.trim() ?? '';
+    return value.isEmpty ? null : value;
+  }
+
+  String? get _paymentHash {
+    if (paymentLink != null) {
+      return null;
+    }
+    final value = transaction!.paymentHash?.trim() ?? '';
+    return value.isEmpty ? null : value;
+  }
+
+  String? get _lightningInvoice {
+    if (paymentLink != null) {
+      return null;
+    }
+    final value = transaction!.lightningInvoice?.trim() ?? '';
+    return value.isEmpty ? null : value;
   }
 
   String? get _description {
@@ -317,15 +358,15 @@ class _ContextChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1219),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: monoBorderStrongColor,
+        showShadow: false,
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.74),
+              color: monoTextColor,
               fontWeight: FontWeight.w700,
             ),
       ),
@@ -341,9 +382,6 @@ class _NetworkExplorerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final explorer = MiningExplorerDescriptor.fromTransaction(transaction);
-    final accent = explorer.rail == MiningExplorerRail.lightning
-        ? const Color(0xFFFBBF24)
-        : const Color(0xFF67B5FF);
 
     return SizedBox(
       width: double.infinity,
@@ -362,19 +400,17 @@ class _NetworkExplorerButton extends StatelessWidget {
           });
         },
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF0D151F),
-          foregroundColor: Colors.white,
+          backgroundColor: monoTextColor,
+          foregroundColor: Colors.black,
           minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: accent.withValues(alpha: 0.26)),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          side: const BorderSide(color: monoBorderStrongColor),
         ),
         icon: Icon(
           explorer.rail == MiningExplorerRail.lightning
               ? Icons.bolt_rounded
               : Icons.open_in_new_rounded,
-          color: accent,
+          color: Colors.black,
         ),
         label: Text(
           'Abrir ${explorer.buttonLabel}',
@@ -403,10 +439,10 @@ class _DetailPanel extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(compact ? 14 : 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111A24),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: monoBorderStrongColor,
+        showShadow: false,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +450,7 @@ class _DetailPanel extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.54),
+                  color: monoMutedTextColor,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -455,7 +491,7 @@ class _CopyablePanel extends StatelessWidget {
             child: SelectableText(
               value,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.white,
+                    color: monoTextColor,
                     fontWeight: FontWeight.w700,
                     height: 1.35,
                   ),
@@ -472,9 +508,13 @@ class _CopyablePanel extends StatelessWidget {
               AppNotice.showSuccess(context, message: copiedMessage);
             },
             icon: const Icon(Icons.copy_rounded),
-            color: Colors.white,
+            color: monoTextColor,
             style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.06),
+              backgroundColor: monoSurfaceRaisedColor,
+              side: const BorderSide(color: monoBorderStrongColor),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
             ),
           ),
         ],
@@ -485,6 +525,7 @@ class _CopyablePanel extends StatelessWidget {
 
 class _SummaryHero extends StatelessWidget {
   final FinancialStatusMeta statusMeta;
+  final IconData leadingIcon;
   final String headline;
   final String contextLabel;
   final String supportingText;
@@ -494,6 +535,7 @@ class _SummaryHero extends StatelessWidget {
 
   const _SummaryHero({
     required this.statusMeta,
+    required this.leadingIcon,
     required this.headline,
     required this.contextLabel,
     required this.supportingText,
@@ -507,21 +549,26 @@ class _SummaryHero extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF111B28),
-            const Color(0xFF0B1219),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: statusMeta.color.withValues(alpha: 0.22)),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: monoBorderStrongColor,
+        showShadow: false,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            width: 52,
+            height: 52,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceRaisedColor,
+              borderColor: monoBorderStrongColor,
+              showShadow: false,
+            ),
+            alignment: Alignment.center,
+            child: Icon(leadingIcon, color: monoTextColor, size: 24),
+          ),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -535,7 +582,7 @@ class _SummaryHero extends StatelessWidget {
           Text(
             headline,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
+                  color: monoTextColor,
                   fontWeight: FontWeight.w800,
                 ),
           ),
@@ -543,7 +590,7 @@ class _SummaryHero extends StatelessWidget {
           Text(
             supportingText,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.74),
+                  color: monoMutedTextColor,
                   height: 1.45,
                 ),
           ),
@@ -551,7 +598,7 @@ class _SummaryHero extends StatelessWidget {
           Text(
             primaryAmount,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: monoTextColor,
                   fontWeight: FontWeight.w800,
                   height: 1,
                 ),
@@ -561,7 +608,7 @@ class _SummaryHero extends StatelessWidget {
             Text(
               secondaryAmount!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: monoMutedTextColor,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -571,7 +618,7 @@ class _SummaryHero extends StatelessWidget {
             Text(
               DateFormat('dd/MM/yyyy • HH:mm').format(createdAt!),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: monoMutedTextColor,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -594,10 +641,10 @@ class _DisclosurePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111A24),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: monoBorderStrongColor,
+        showShadow: false,
       ),
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -608,19 +655,19 @@ class _DisclosurePanel extends StatelessWidget {
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          iconColor: Colors.white,
-          collapsedIconColor: Colors.white,
+          iconColor: monoTextColor,
+          collapsedIconColor: monoTextColor,
           title: Text(
             title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Colors.white,
+                  color: monoTextColor,
                   fontWeight: FontWeight.w700,
                 ),
           ),
           subtitle: Text(
             'Mostramos só o essencial primeiro.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.54),
+                  color: monoMutedTextColor,
                 ),
           ),
           children: children,

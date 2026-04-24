@@ -57,7 +57,13 @@ ensure_docker_service_started() {
   if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     systemctl start docker >/dev/null 2>&1 || fail "Failed to start Docker service with systemctl."
   elif command -v sudo >/dev/null 2>&1; then
-    sudo systemctl start docker >/dev/null || fail "Failed to start Docker service with sudo systemctl."
+    if sudo -n true 2>/dev/null; then
+      sudo -n systemctl start docker >/dev/null || fail "Failed to start Docker service with sudo systemctl."
+    elif [[ -t 0 ]]; then
+      sudo systemctl start docker >/dev/null || fail "Failed to start Docker service with sudo systemctl."
+    else
+      fail "Docker is not running and sudo requires a password in this non-interactive session. Run 'sudo systemctl start docker' and retry."
+    fi
   else
     fail "Docker is not running and sudo was not found. Start Docker manually and retry."
   fi

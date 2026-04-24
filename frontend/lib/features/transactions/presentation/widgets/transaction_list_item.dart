@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
@@ -41,16 +42,12 @@ class TransactionListItem extends ConsumerWidget {
       btcBrl: btcBrl,
     );
 
-    final counterparty = switch (visual.direction) {
-      TransactionVisualDirection.incoming => transaction.fromAddress,
-      TransactionVisualDirection.outgoing => transaction.toAddress,
-      TransactionVisualDirection.neutral => transaction.toAddress.isNotEmpty
-          ? transaction.toAddress
-          : transaction.fromAddress,
-    };
-    final displayAddress = counterparty.length > 12
-        ? '${counterparty.substring(0, 6)}…${counterparty.substring(counterparty.length - 4)}'
-        : counterparty;
+    final counterparty = resolvePrimaryTransactionAddress(transaction).trim();
+    final safeCounterparty =
+        counterparty.isEmpty ? 'Endereço indisponível' : counterparty;
+    final displayAddress = safeCounterparty.length > 12
+        ? '${safeCounterparty.substring(0, 6)}…${safeCounterparty.substring(safeCounterparty.length - 4)}'
+        : safeCounterparty;
     final cardGradient = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,

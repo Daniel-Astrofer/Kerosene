@@ -17,12 +17,9 @@ import 'package:teste/features/auth/presentation/screens/signup/steps/signup_sec
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_username_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_seed_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_verification_step.dart';
-import 'package:teste/features/auth/presentation/screens/signup/steps/signup_payment_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_totp_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_hardware_step.dart';
-import 'package:teste/features/auth/presentation/screens/signup/steps/signup_final_payment_step.dart';
 
-/// Mock username for stories that require auth context.
 const _mockUsername = 'satoshi_storybook';
 const _mockPassphrase =
     'abandon ability able about above absent absorb abstract absurd abuse access accident';
@@ -149,14 +146,6 @@ List<Story> authStories() {
       ),
     ),
     Story(
-      name: 'Auth/Signup/Steps — 6. Forge (Finalize)',
-      builder: (context) => SignupPaymentStep(
-        username: _mockUsername,
-        mnemonic: _mockPassphrase,
-        onStartPow: (security) {},
-      ),
-    ),
-    Story(
       name: 'Auth/Signup/Steps — 7. TOTP Setup',
       builder: (context) => SignupTotpStep(
         username: _mockUsername,
@@ -171,14 +160,6 @@ List<Story> authStories() {
       builder: (context) => SignupHardwareStep(
         sessionId: _mockSessionId,
         onVerified: () {},
-      ),
-    ),
-    Story(
-      name: 'Auth/Signup/Steps — 9. Final Payment',
-      builder: (context) => SignupFinalPaymentStep(
-        sessionId: _mockSessionId,
-        username: _mockUsername,
-        password: _mockPassphrase,
       ),
     ),
   ];

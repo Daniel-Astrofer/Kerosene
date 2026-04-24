@@ -148,7 +148,9 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
     }
 
     return _WalletCardCarouselExperience(
-      key: ValueKey('${wallet.id}:${wallet.cardType.name}'),
+      key: ValueKey(
+        '${wallet.id}:${wallet.cardType.name}:${wallet.cardSequence}:${wallet.cardRotationStatus}',
+      ),
       wallet: wallet,
     );
   }
@@ -225,6 +227,19 @@ class _WalletCardCarouselExperienceState
               label: 'Upgrade',
               value: 'Automático',
             ),
+            _InfoChip(
+              label: 'Validade',
+              value: _expiryLabel(widget.wallet.cardExpiresAt),
+            ),
+            _InfoChip(
+              label: 'Rotação',
+              value: _rotationLabel(widget.wallet),
+            ),
+            if (widget.wallet.hasPreviousCard)
+              _InfoChip(
+                label: 'Anterior',
+                value: '****${widget.wallet.previousCardNumberSuffix}',
+              ),
           ],
         ),
         const SizedBox(height: AppSpacing.xl),
@@ -249,7 +264,7 @@ class _WalletCardCarouselExperienceState
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: _ShowcaseCard(
                     spec: spec,
-                    walletName: widget.wallet.name,
+                    wallet: widget.wallet,
                     isCurrent: isCurrent,
                     isSelected: isSelected,
                   ),
@@ -280,6 +295,11 @@ class _WalletCardCarouselExperienceState
                       currentCard.walletCardType == widget.wallet.cardType,
                 ),
         ),
+        if (widget.wallet.cardLastRotatedAt != null ||
+            widget.wallet.hasPreviousCard) ...[
+          const SizedBox(height: AppSpacing.lg),
+          _RotationTimelinePanel(wallet: widget.wallet),
+        ],
         const SizedBox(height: AppSpacing.xl),
         const _UpgradeRulesPanel(),
       ],
@@ -300,17 +320,34 @@ class _WalletCardCarouselExperienceState
       orElse: () => _cardShowcases.first,
     );
   }
+
+  String _rotationLabel(Wallet wallet) {
+    if (wallet.isCardRotating) {
+      return 'Em rotação';
+    }
+    if (wallet.isCardExpiring) {
+      return 'Expirando';
+    }
+    return 'Ativo';
+  }
+
+  String _expiryLabel(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'Nao informado';
+    }
+    return '${dateTime.month.toString().padLeft(2, '0')}/${(dateTime.year % 100).toString().padLeft(2, '0')}';
+  }
 }
 
 class _ShowcaseCard extends StatelessWidget {
   final _CardShowcaseSpec spec;
-  final String walletName;
+  final Wallet wallet;
   final bool isCurrent;
   final bool isSelected;
 
   const _ShowcaseCard({
     required this.spec,
-    required this.walletName,
+    required this.wallet,
     required this.isCurrent,
     required this.isSelected,
   });
@@ -467,7 +504,10 @@ class _ShowcaseCard extends StatelessWidget {
                             Expanded(
                               child: _ShowcaseCardField(
                                 label: 'CARD HOLDER',
-                                value: walletName.toUpperCase(),
+                                value: (isCurrent
+                                        ? wallet.effectiveCardHolderName
+                                        : wallet.name)
+                                    .toUpperCase(),
                                 textColor: spec.textColor,
                                 mutedTextColor: spec.mutedTextColor,
                               ),
@@ -492,6 +532,9 @@ class _ShowcaseCard extends StatelessWidget {
   }
 
   String _displayNumber() {
+    if (isCurrent) {
+      return wallet.effectiveMaskedCardNumber;
+    }
     final suffix = switch (spec.walletCardType) {
       WalletCardType.bronze => '1001',
       WalletCardType.white => '2002',
@@ -502,8 +545,125 @@ class _ShowcaseCard extends StatelessWidget {
   }
 
   String _validThru() {
+    if (isCurrent && wallet.cardExpiresAt != null) {
+      final expiry = wallet.cardExpiresAt!;
+      return '${expiry.month.toString().padLeft(2, '0')}/${(expiry.year % 100).toString().padLeft(2, '0')}';
+    }
     final year = DateTime.now().year + 4;
     return '12/${(year % 100).toString().padLeft(2, '0')}';
+  }
+}
+
+class _RotationTimelinePanel extends StatelessWidget {
+  final Wallet wallet;
+
+  const _RotationTimelinePanel({required this.wallet});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: _walletCardPanelBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _walletCardPanelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Rotação do cartão',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: _walletCardText,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'A validade do cartão agora é real e a próxima emissão acontece automaticamente quando a janela expira.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: _walletCardMutedText,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _TimelineRow(
+            label: 'Atual',
+            value:
+                '${wallet.effectiveMaskedCardNumber} • vence ${_formatDate(wallet.cardExpiresAt)}',
+          ),
+          if (wallet.cardLastRotatedAt != null)
+            _TimelineRow(
+              label: 'Última rotação',
+              value: _formatDateTime(wallet.cardLastRotatedAt),
+            ),
+          if (wallet.hasPreviousCard)
+            _TimelineRow(
+              label: 'Anterior',
+              value:
+                  '****${wallet.previousCardNumberSuffix} • expirou ${_formatDate(wallet.previousCardExpiresAt)}',
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime? value) {
+    if (value == null) {
+      return 'nao informado';
+    }
+    return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+  }
+
+  String _formatDateTime(DateTime? value) {
+    if (value == null) {
+      return 'nao informado';
+    }
+    return '${_formatDate(value)} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TimelineRow({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 104,
+            child: Text(
+              label.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: _walletCardFaintText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _walletCardText,
+                    fontFamily: 'JetBrainsMono',
+                    height: 1.35,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

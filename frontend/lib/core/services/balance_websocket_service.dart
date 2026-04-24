@@ -31,20 +31,7 @@ class BalanceWebSocketService {
       return;
     }
 
-    var fullUrl = '$baseUrl/ws/balance';
-
-    // Pass auth credentials as query params — more reliable across the relay tunnel.
-    final queryParams = <String>[];
-    if (authToken != null && authToken!.isNotEmpty) {
-      queryParams.add('token=${Uri.encodeComponent(authToken!)}');
-    }
-    if (deviceHash != null && deviceHash!.isNotEmpty) {
-      queryParams.add('X-Device-Hash=${Uri.encodeComponent(deviceHash!)}');
-    }
-
-    if (queryParams.isNotEmpty) {
-      fullUrl += '?${queryParams.join('&')}';
-    }
+    final fullUrl = '$baseUrl/ws/balance';
 
     debugPrint('🔌 Conectando STOMP SockJS: $fullUrl');
 

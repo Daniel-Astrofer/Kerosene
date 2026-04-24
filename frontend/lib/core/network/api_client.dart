@@ -269,11 +269,13 @@ class ApiClient {
           final statusCode = error.response?.statusCode;
           var message = 'Erro no servidor';
           String? errorCode;
+          Object? errorData;
 
           final data = error.response?.data;
           if (data is Map) {
             if (data.containsKey('message')) message = data['message'];
             if (data.containsKey('errorCode')) errorCode = data['errorCode'];
+            if (data.containsKey('data')) errorData = data['data'];
           } else if (data is String) {
             try {
               final json = jsonDecode(data);
@@ -281,6 +283,9 @@ class ApiClient {
                 if (json.containsKey('message')) message = json['message'];
                 if (json.containsKey('errorCode')) {
                   errorCode = json['errorCode'];
+                }
+                if (json.containsKey('data')) {
+                  errorData = json['data'];
                 }
               } else {
                 message = data.length > 100 ? data.substring(0, 100) : data;
@@ -299,6 +304,9 @@ class ApiClient {
               if (errMap.containsKey('errorCode')) {
                 errorCode = errMap['errorCode'];
               }
+              if (errMap.containsKey('data')) {
+                errorData = errMap['data'];
+              }
             }
           }
 
@@ -307,6 +315,7 @@ class ApiClient {
               message: message,
               statusCode: statusCode,
               errorCode: errorCode,
+              data: errorData,
             );
           }
 
@@ -315,6 +324,7 @@ class ApiClient {
               message: message,
               statusCode: statusCode,
               errorCode: errorCode,
+              data: errorData,
             );
           }
 
@@ -322,6 +332,7 @@ class ApiClient {
             message: message,
             statusCode: statusCode,
             errorCode: errorCode,
+            data: errorData,
           );
 
         default:

@@ -4,9 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'deposit_provider_screen.dart';
 import 'deposit_lightning_invoice_screen.dart';
 import 'deposit_onchain_invoice_screen.dart';
 
@@ -47,18 +47,6 @@ class DepositMethodScreen extends ConsumerWidget {
           ),
         ),
       );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DepositProviderScreen(
-            wallet: wallet,
-            inputAmount: inputAmount,
-            inputCurrency: inputCurrency,
-            method: method,
-          ),
-        ),
-      );
     }
   }
 
@@ -67,6 +55,8 @@ class DepositMethodScreen extends ConsumerWidget {
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
+    final walletProfileAsync =
+        ref.watch(walletNetworkProfileProvider(wallet.name));
     final btcAmount = MoneyDisplay.convertToBtcAmount(
       amount: inputAmount,
       currency: inputCurrency,
@@ -74,10 +64,56 @@ class DepositMethodScreen extends ConsumerWidget {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
+    final lightningEnabled = walletProfileAsync.maybeWhen(
+      data: (profile) => profile.lightningEnabled,
+      orElse: () => false,
+    );
+    final lightningSubtitle = walletProfileAsync.when(
+      data: (profile) {
+        if (profile.lightningEnabled) {
+          return 'Invoice BOLT11 com expiração e cópia rápida';
+        }
+        final reason = profile.lightningUnavailableReason.trim();
+        if (reason.isNotEmpty) {
+          return reason;
+        }
+        return 'Lightning indisponível neste ambiente.';
+      },
+      loading: () => 'Validando disponibilidade operacional do backend.',
+      error: (_, __) =>
+          'Não foi possível validar a rota Lightning nesta tentativa.',
+    );
+    final lightningTag = walletProfileAsync.when(
+      data: (profile) =>
+          profile.lightningEnabled ? 'Instantâneo' : 'Indisponível',
+      loading: () => 'Validando',
+      error: (_, __) => 'Indisponível',
+    );
+    final onchainTitle = walletProfileAsync.maybeWhen(
+      data: (profile) => profile.isSelfCustody
+          ? 'On-chain (wallet própria)'
+          : 'On-chain (Kerosene)',
+      orElse: () => wallet.isSelfCustody
+          ? 'On-chain (wallet própria)'
+          : 'On-chain (Kerosene)',
+    );
+    final onchainSubtitle = walletProfileAsync.maybeWhen(
+      data: (profile) => profile.isSelfCustody
+          ? 'Endereço derivado do seu XPUB. O backend apenas monitora o recebimento.'
+          : 'Endereço Bitcoin custodial com monitoramento até a confirmação.',
+      orElse: () => wallet.isSelfCustody
+          ? 'Endereço derivado do seu XPUB. O backend apenas monitora o recebimento.'
+          : 'Endereço Bitcoin custodial com monitoramento até a confirmação.',
+    );
+    final onchainTag = walletProfileAsync.maybeWhen(
+      data: (profile) =>
+          profile.isSelfCustody ? 'XPUB auditado' : '3 confirmações',
+      orElse: () => wallet.isSelfCustody ? 'XPUB auditado' : '3 confirmações',
+    );
 
     return ReceiveFlowScaffold(
       title: 'Método de depósito',
-      subtitle: 'Mesmo fluxo visual, com opções compatíveis com cada rota.',
+      subtitle: 'Depósito direto por Bitcoin on-chain ou Lightning.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -108,32 +144,24 @@ class DepositMethodScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          const ReceiveFlowSectionLabel('Gateway fiat'),
-          const SizedBox(height: AppSpacing.sm),
-          _buildMethodCard(
-            icon: LucideIcons.wallet,
-            title: 'Pix e cartão',
-            subtitle: 'Fluxo via provedores externos com checkout interno',
-            badgeText: 'Onramp',
-            onTap: () => _navigateToProvider(context, 'Fiat'),
-          ),
-          const SizedBox(height: AppSpacing.lg),
           const ReceiveFlowSectionLabel('Depósito direto'),
           const SizedBox(height: AppSpacing.sm),
           _buildMethodCard(
             icon: LucideIcons.zap,
             title: 'Lightning Network',
-            subtitle: 'Invoice BOLT11 com expiração e cópia rápida',
-            badgeText: 'Instantâneo',
-            onTap: () => _navigateToProvider(context, 'Lightning'),
+            subtitle: lightningSubtitle,
+            badgeText: lightningTag,
+            enabled: lightningEnabled,
+            onTap: lightningEnabled
+                ? () => _navigateToProvider(context, 'Lightning')
+                : null,
           ),
           const SizedBox(height: AppSpacing.sm),
           _buildMethodCard(
             icon: LucideIcons.coins,
-            title: 'On-chain BTC',
-            subtitle: 'Endereço Bitcoin para depósito com confirmações',
-            badgeText: '3 confirmações',
+            title: onchainTitle,
+            subtitle: onchainSubtitle,
+            badgeText: onchainTag,
             onTap: () => _navigateToProvider(context, 'On-chain'),
           ),
         ],
@@ -146,7 +174,8 @@ class DepositMethodScreen extends ConsumerWidget {
     required String title,
     required String subtitle,
     required String badgeText,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
+    bool enabled = true,
   }) {
     return ReceiveFlowActionTile(
       icon: icon,
@@ -154,6 +183,7 @@ class DepositMethodScreen extends ConsumerWidget {
       subtitle: subtitle,
       tag: badgeText,
       onTap: onTap,
+      enabled: enabled,
     );
   }
 }

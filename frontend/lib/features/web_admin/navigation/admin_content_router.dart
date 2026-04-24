@@ -12,6 +12,7 @@ import '../screens/volatility/volatility_screen.dart';
 import '../screens/companies/companies_screen.dart';
 import '../screens/audit/audit_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 
 /// Routes the content area based on the selected admin module.
 class AdminContentRouter extends ConsumerWidget {
@@ -32,6 +33,7 @@ class AdminContentRouter extends ConsumerWidget {
       AdminRoute.volatility => const VolatilityScreen(),
       AdminRoute.companies => const CompaniesScreen(),
       AdminRoute.audit => const AuditScreen(),
+      AdminRoute.notifications => const NotificationsScreen(),
       AdminRoute.settings => const SettingsScreen(),
     };
   }

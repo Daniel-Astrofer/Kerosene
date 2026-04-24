@@ -95,10 +95,7 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
       if (next is AuthError) {
         showCustomErrorDialog(
           context,
-          ErrorTranslator.translate(
-            context.l10n,
-            next.errorCode ?? next.message,
-          ),
+          ErrorTranslator.translate(context.l10n, next.toString()),
           onRetry: () {
             ref.read(authControllerProvider.notifier).clearError();
             _submit();

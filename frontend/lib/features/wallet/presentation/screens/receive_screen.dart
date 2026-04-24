@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/theme/monochrome_theme.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/utils/currency_logic.dart';
@@ -22,6 +23,8 @@ import '../../presentation/providers/wallet_provider.dart'
 import '../../presentation/state/wallet_state.dart';
 import '../../presentation/widgets/receive_flow_ui.dart';
 import 'deposit/deposit_amount_screen.dart';
+import 'deposit/deposit_lightning_invoice_screen.dart';
+import 'deposit/deposit_onchain_invoice_screen.dart';
 import 'nfc_interaction_screen.dart';
 import 'receive_payment_link_screen.dart';
 
@@ -500,81 +503,78 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     if (widget.initialMode == ReceiveFlowMode.onChain ||
         widget.initialMode == ReceiveFlowMode.lightning) {
       setState(() => _isGenerating = false);
-      final isLightning = widget.initialMode == ReceiveFlowMode.lightning;
-      final queryParams = {
-        if (amountBtc > 0) 'amount': amountBtc.toString(),
-        'label': 'Kerosene',
-        'message':
-            'Pagamento Pedido #${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
-      };
+      if (!mounted) {
+        return;
+      }
 
-      final uriStr = Uri(
-        scheme: 'bitcoin',
-        path: selectedWallet.address,
-        queryParameters: queryParams.isEmpty ? null : queryParams,
-      ).toString();
-
-      final paymentUri =
-          isLightning ? 'lightning:lnbc_mock_not_implemented' : uriStr;
-
-      final mockLink = PaymentLink(
-        id: 'external_${DateTime.now().millisecondsSinceEpoch}',
-        userId: 0,
-        amountBtc: amountBtc,
-        description: isLightning
-            ? 'Lightning Invoice (Em breve)'
-            : 'Recebimento On-chain',
-        depositAddress: selectedWallet.address,
-        paymentUri: paymentUri,
-        status: 'pending',
-        locked: false,
-        createdAt: DateTime.now(),
+      final route = MaterialPageRoute<void>(
+        builder: (_) => widget.initialMode == ReceiveFlowMode.lightning
+            ? DepositLightningInvoiceScreen(
+                wallet: selectedWallet,
+                inputAmount: typedAmount,
+                inputCurrency: _selectedCurrency,
+                providerName: 'Kerosene',
+              )
+            : DepositOnchainInvoiceScreen(
+                wallet: selectedWallet,
+                inputAmount: typedAmount,
+                inputCurrency: _selectedCurrency,
+                providerName: 'Kerosene',
+              ),
       );
-
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ReceivePaymentLinkScreen(
-            initialLink: mockLink,
-            requestedAmountLabel: requestedAmountLabel,
-            btcAmountLabel: btcAmountLabel,
-            walletLabel: selectedWallet.name,
-          ),
-        ),
-      );
+      Navigator.push(context, route);
       return;
     }
 
     PaymentLink link;
     try {
-      final result =
-          await ref.read(ledgerRepositoryProvider).createPaymentRequest(
-                amount: amountBtc,
-                receiverWalletName: selectedWallet.name,
-              );
+      if (widget.initialMode == ReceiveFlowMode.paymentLink) {
+        final config = await _showPaymentLinkConfigSheet();
+        if (config == null) {
+          if (mounted) {
+            setState(() => _isGenerating = false);
+          }
+          return;
+        }
+        link = await ref.read(transactionRepositoryProvider).createPaymentLink(
+              amount: amountBtc,
+              description: config.description,
+              expiresInMinutes: config.expiresInMinutes,
+              visibility: config.visibility,
+              confirmationMode: config.confirmationMode,
+              amountLocked: true,
+              referenceLabel: config.referenceLabel,
+              metadata: config.metadata,
+            );
+      } else {
+        final result =
+            await ref.read(ledgerRepositoryProvider).createPaymentRequest(
+                  amount: amountBtc,
+                  receiverWalletName: selectedWallet.name,
+                );
 
-      String? failureMessage;
-      PaymentLink? createdLink;
-      result.fold(
-        (failure) => failureMessage = failure.message,
-        (data) {
-          final normalized = Map<String, dynamic>.from(data);
-          final id = normalized['id']?.toString() ?? '';
-          normalized['paymentUri'] = QrPaymentParser.encodePaymentLink(id);
-          normalized['locked'] = true;
-          createdLink = PaymentLink.fromJson(normalized);
-        },
-      );
+        String? failureMessage;
+        PaymentLink? createdLink;
+        result.fold(
+          (failure) => failureMessage = failure.message,
+          (data) {
+            final normalized = Map<String, dynamic>.from(data);
+            final id = normalized['id']?.toString() ?? '';
+            normalized['paymentUri'] = QrPaymentParser.encodePaymentLink(id);
+            normalized['locked'] = true;
+            createdLink = PaymentLink.fromJson(normalized);
+          },
+        );
 
-      if (failureMessage != null) {
-        throw failureMessage!;
+        if (failureMessage != null) {
+          throw failureMessage!;
+        }
+        if (createdLink == null || createdLink!.id.isEmpty) {
+          throw 'Link de pagamento inválido retornado pelo servidor.';
+        }
+
+        link = createdLink!;
       }
-      if (createdLink == null || createdLink!.id.isEmpty) {
-        throw 'Link de pagamento inválido retornado pelo servidor.';
-      }
-
-      link = createdLink!;
 
       ref.invalidate(paymentLinksProvider);
       ref.invalidate(transactionHistoryProvider);
@@ -633,4 +633,221 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
         return;
     }
   }
+
+  Future<_PaymentLinkConfig?> _showPaymentLinkConfigSheet() {
+    final descriptionController = TextEditingController(
+      text: 'Recebimento ${_selectedWallet?.name ?? 'Kerosene'}',
+    );
+    final referenceController = TextEditingController();
+    final customerController = TextEditingController();
+    final noteController = TextEditingController();
+    int expiresInMinutes = 60;
+    String visibility = 'PRIVATE';
+    String confirmationMode = 'MANUAL_REVIEW';
+
+    return showModalBottomSheet<_PaymentLinkConfig>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                bottom:
+                    MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: monochromePanelDecoration(
+                  color: monoSurfaceColor,
+                  borderColor: monoBorderStrongColor,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        height: 1,
+                        width: 52,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        color: monoBorderStrongColor,
+                      ),
+                      Text(
+                        'CONFIGURAR LINK',
+                        style: AppTypography.caption.copyWith(
+                          color: monoMutedTextColor,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.8,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Link de pagamento',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: monoTextColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Defina validade, visibilidade e identificadores antes de gerar o link.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: monoMutedTextColor,
+                              height: 1.45,
+                            ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      TextField(
+                        controller: descriptionController,
+                        style: const TextStyle(color: monoTextColor),
+                        decoration: monochromeInputDecoration(
+                          label: 'Descricao',
+                        ),
+                      ),
+                      TextField(
+                        controller: referenceController,
+                        style: const TextStyle(color: monoTextColor),
+                        decoration: monochromeInputDecoration(
+                          label: 'Referencia',
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      DropdownButtonFormField<int>(
+                        initialValue: expiresInMinutes,
+                        dropdownColor: monoSurfaceAltColor,
+                        style: const TextStyle(color: monoTextColor),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 15, child: Text('15 minutos')),
+                          DropdownMenuItem(value: 60, child: Text('1 hora')),
+                          DropdownMenuItem(value: 180, child: Text('3 horas')),
+                          DropdownMenuItem(
+                              value: 1440, child: Text('24 horas')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => expiresInMinutes = value);
+                          }
+                        },
+                        decoration: monochromeInputDecoration(
+                          label: 'Validade',
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      DropdownButtonFormField<String>(
+                        initialValue: visibility,
+                        dropdownColor: monoSurfaceAltColor,
+                        style: const TextStyle(color: monoTextColor),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'PRIVATE',
+                            child: Text('Privado'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'PUBLIC',
+                            child: Text('Público'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => visibility = value);
+                          }
+                        },
+                        decoration: monochromeInputDecoration(
+                          label: 'Visibilidade',
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      DropdownButtonFormField<String>(
+                        initialValue: confirmationMode,
+                        dropdownColor: monoSurfaceAltColor,
+                        style: const TextStyle(color: monoTextColor),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'MANUAL_REVIEW',
+                            child: Text('Confirmação manual'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'AUTO_COMPLETE',
+                            child: Text('Completar automaticamente'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => confirmationMode = value);
+                          }
+                        },
+                        decoration: monochromeInputDecoration(
+                          label: 'Fechamento',
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      TextField(
+                        controller: customerController,
+                        style: const TextStyle(color: monoTextColor),
+                        decoration: monochromeInputDecoration(
+                          label: 'Cliente',
+                        ),
+                      ),
+                      TextField(
+                        controller: noteController,
+                        style: const TextStyle(color: monoTextColor),
+                        decoration: monochromeInputDecoration(
+                          label: 'Nota',
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      FilledButton(
+                        style: monochromeFilledButtonStyle(),
+                        onPressed: () {
+                          Navigator.of(context).pop(
+                            _PaymentLinkConfig(
+                              description: descriptionController.text.trim(),
+                              referenceLabel: referenceController.text.trim(),
+                              expiresInMinutes: expiresInMinutes,
+                              visibility: visibility,
+                              confirmationMode: confirmationMode,
+                              metadata: {
+                                if (customerController.text.trim().isNotEmpty)
+                                  'customer': customerController.text.trim(),
+                                if (noteController.text.trim().isNotEmpty)
+                                  'note': noteController.text.trim(),
+                              },
+                            ),
+                          );
+                        },
+                        child: const Text('GERAR LINK'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PaymentLinkConfig {
+  final String description;
+  final String referenceLabel;
+  final int expiresInMinutes;
+  final String visibility;
+  final String confirmationMode;
+  final Map<String, String> metadata;
+
+  const _PaymentLinkConfig({
+    required this.description,
+    required this.referenceLabel,
+    required this.expiresInMinutes,
+    required this.visibility,
+    required this.confirmationMode,
+    required this.metadata,
+  });
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Kerosene — Typography System
 /// Refactored for better visibility and cyber-minimalist UI using project fonts.
 class AppTypography {
   static const String fontFamily = 'HubotSans';
-  static const String numericFontFamily = 'JetBrainsMono';
+  static const String spaceGroteskVariableFamily = 'SpaceGroteskVariable';
+  static const String numericFontFamily = spaceGroteskVariableFamily;
 
   static final TextStyle h1 = TextStyle(
     fontFamily: fontFamily,
@@ -15,9 +17,9 @@ class AppTypography {
   );
 
   static final TextStyle h2 = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: spaceGroteskVariableFamily,
     fontSize: 24,
-    fontWeight: FontWeight.w600, // SemiBold
+    fontWeight: FontWeight.w400, // Regular
     color: Colors.white,
     letterSpacing: -0.5,
   );
@@ -70,9 +72,10 @@ class AppTypography {
   );
 
   static final TextStyle number = TextStyle(
-    fontFamily: fontFamily,
+    fontFamily: numericFontFamily,
     fontSize: 18,
-    fontWeight: FontWeight.w600, // SemiBold
+    fontWeight:
+        FontWeight.w300, // Lightest weight supported by Space Grotesk VF
     color: Colors.white,
     letterSpacing: 1.0,
   );
@@ -84,10 +87,30 @@ class AppTypography {
     return TextStyle(
       fontFamily: numericFontFamily,
       fontSize: isBtc ? 48 : 56,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w300,
       color: color,
       letterSpacing: -1.8,
       height: 1.0,
+    );
+  }
+
+  static TextStyle technicalMono({
+    TextStyle? textStyle,
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? height,
+    double? letterSpacing,
+  }) {
+    return GoogleFonts.geistMono(
+      textStyle: textStyle,
+      color: color ?? textStyle?.color,
+      fontSize: fontSize ?? textStyle?.fontSize,
+      fontWeight: fontWeight ?? textStyle?.fontWeight,
+      height: height ?? textStyle?.height,
+      letterSpacing: letterSpacing ?? textStyle?.letterSpacing,
+    ).copyWith(
+      fontFamilyFallback: const ['JetBrainsMono', 'monospace'],
     );
   }
 }

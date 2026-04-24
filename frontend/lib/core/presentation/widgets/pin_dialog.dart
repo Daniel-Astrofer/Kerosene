@@ -120,16 +120,16 @@ class _PinDialogState extends State<PinDialog> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: 64.0),
               _buildVisualIndicator().animate().scale().fade(),
               const SizedBox(height: AppSpacing.xl),
               Text(
                 _title,
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .displayLarge!
-                    .copyWith(letterSpacing: 4),
+                style: AppTypography.caption.copyWith(
+                  color: Colors.white54,
+                  letterSpacing: 2,
+                ),
               ).animate().fade().slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSpacing.sm),
               Padding(
@@ -138,15 +138,13 @@ class _PinDialogState extends State<PinDialog> {
                   _subtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onPrimary
-                          .withValues(alpha: 0.5)),
+                        color: Colors.white38,
+                      ),
                 ),
               ).animate(delay: 100.ms).fade(),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.xxl),
               _buildDots().animate().fade(),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.lg),
               _buildErrorMessage(),
               const Spacer(),
               _buildModernKeypad()
@@ -155,22 +153,17 @@ class _PinDialogState extends State<PinDialog> {
                   .slideY(begin: 0.2, end: 0),
               if (!widget.isSetup)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xl, top: AppSpacing.xxl),
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(
-                      'CANCELAR OPERAÇÃO',
-                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimary
-                                .withValues(alpha: 0.3),
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
+                      'CANCELAR',
+                      style: AppTypography.caption.copyWith(color: Colors.white38),
                     ),
                   ),
-                ).animate(delay: 400.ms).fade(),
+                ).animate(delay: 400.ms).fade()
+              else
+                const SizedBox(height: AppSpacing.xxl + 48), // Padding if no button
             ],
           ),
         ),
@@ -179,27 +172,10 @@ class _PinDialogState extends State<PinDialog> {
   }
 
   Widget _buildVisualIndicator() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-        border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-            width: 2),
-        boxShadow: [
-          BoxShadow(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              blurRadius: 30,
-              spreadRadius: 5),
-        ],
-      ),
-      child: Center(
-        child: Icon(LucideIcons.shieldCheck,
-            color: Theme.of(context).colorScheme.primary, size: 48),
-      ),
+    return const Icon(
+      LucideIcons.lock,
+      color: Colors.white38,
+      size: 24,
     );
   }
 
@@ -208,41 +184,14 @@ class _PinDialogState extends State<PinDialog> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(_pinLength, (i) {
         final filled = i < _entered.length;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          width: 16,
-          height: 16,
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: filled
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.05),
-            border: Border.all(
-              color: filled
-                  ? Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.3)
-                  : Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.1),
-              width: 2,
-            ),
-            boxShadow: [
-              if (filled)
-                BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    spreadRadius: 1),
-            ],
+            color: filled ? Colors.white54 : Colors.transparent,
+            border: Border.all(color: filled ? Colors.transparent : Colors.white24),
           ),
         );
       }),
@@ -253,14 +202,14 @@ class _PinDialogState extends State<PinDialog> {
     return SizedBox(
       height: 24,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 180),
         child: _error != null
             ? Text(
-                _error!,
+                _error!.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1),
+                    color: Colors.white54,
+                    letterSpacing: 1,
+                  ),
                 key: ValueKey(_error),
               )
             : const SizedBox.shrink(),
@@ -282,7 +231,7 @@ class _PinDialogState extends State<PinDialog> {
         children: keys.map((row) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: row.map((key) => _buildKey(key)).toList(),
+            children: row.map((key) => Expanded(child: _buildKey(key))).toList(),
           );
         }).toList(),
       ),
@@ -309,34 +258,22 @@ class _PinDialogState extends State<PinDialog> {
           }
         },
         child: Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
-            border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.05),
-                width: 1.5),
+          height: 58,
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
           ),
           alignment: Alignment.center,
           child: isSpecial && key == '←'
-              ? Icon(LucideIcons.delete,
-                  color: Theme.of(context).colorScheme.onPrimary, size: 24)
+              ? const Icon(LucideIcons.delete, color: Colors.white38, size: 18)
               : Text(
                   key,
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
                         color: isSpecial && key == 'C'
-                            ? Theme.of(context)
-                                .colorScheme
-                                .error
-                                .withValues(alpha: 0.7)
-                            : Theme.of(context).colorScheme.onPrimary,
+                            ? Colors.white38
+                            : Colors.white54,
                         fontFamily: 'JetBrainsMono',
-                        fontWeight: FontWeight.w300,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 24,
                       ),
                 ),
         ),

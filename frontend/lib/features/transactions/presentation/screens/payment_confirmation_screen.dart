@@ -4,8 +4,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/presentation/widgets/totp_input_container.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 typedef PaymentConfirmationAction<T> = Future<T?> Function(
   BuildContext context,
@@ -131,7 +133,7 @@ class _PaymentConfirmationScreenState<T>
       AppNotice.showError(
         context,
         title: 'Não foi possível confirmar',
-        message: error.toString(),
+        message: ErrorTranslator.translate(context.l10n, error.toString()),
       );
     } finally {
       if (mounted) {
@@ -227,25 +229,37 @@ class _AmountHero extends StatelessWidget {
             label: eyebrow.toUpperCase(),
             icon: LucideIcons.shieldCheck,
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Valor a autorizar',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: receiveFlowFaintTextColor,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             amountPrimary,
             textAlign: TextAlign.center,
             style: AppTypography.number.copyWith(
               color: receiveFlowTextColor,
-              fontSize: 40,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -1.2,
+              fontSize: 46,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1.8,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             amountSecondary,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: receiveFlowMutedTextColor,
-                  fontFamily: 'JetBrainsMono',
-                ),
+            style: AppTypography.number.copyWith(
+              color: receiveFlowMutedTextColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
           ),
         ],
       ),
@@ -265,6 +279,30 @@ class _FlowEndpointRow extends StatelessWidget {
     required this.value,
     this.subtitle,
   });
+
+  bool _usesTechnicalFont(String text) {
+    final normalized = text.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    if (normalized.startsWith('lnbc') ||
+        normalized.startsWith('lntb') ||
+        normalized.startsWith('lnurl') ||
+        normalized.startsWith('bc1') ||
+        normalized.startsWith('tb1') ||
+        normalized.startsWith('bcrt1') ||
+        normalized.startsWith('0x')) {
+      return true;
+    }
+
+    if (!normalized.contains(' ') &&
+        RegExp(r'^[a-f0-9]{16,}$', caseSensitive: false).hasMatch(normalized)) {
+      return true;
+    }
+
+    return !normalized.contains(' ') && normalized.length >= 28;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,24 +328,32 @@ class _FlowEndpointRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: receiveFlowTextColor,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'JetBrainsMono',
-                      height: 1.25,
-                    ),
+                style: _usesTechnicalFont(value)
+                    ? AppTypography.technicalMono(
+                        textStyle:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  color: receiveFlowTextColor,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.28,
+                                ),
+                      )
+                    : Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: receiveFlowTextColor,
+                          fontWeight: FontWeight.w700,
+                          height: 1.28,
+                        ),
               ),
               if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: 5),
                 Text(
                   subtitle!,
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: receiveFlowMutedTextColor,
-                        height: 1.3,
+                        height: 1.4,
                       ),
                 ),
               ],
@@ -343,11 +389,34 @@ class _ReceiptCard extends StatelessWidget {
     final now = DateTime.now();
     final dateStr =
         "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} às ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    final hasTimeDetail = details.any(
+      (detail) =>
+          detail.label.toLowerCase().contains('data') ||
+          detail.label.toLowerCase().contains('hora'),
+    );
+    final hasNetworkDetail = details.any(
+      (detail) => detail.label.toLowerCase() == 'rede',
+    );
 
     return ReceiveFlowPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _InlineMetaPill(
+                icon: LucideIcons.network,
+                label: networkLabel,
+              ),
+              _InlineMetaPill(
+                icon: LucideIcons.calendarClock,
+                label: dateStr,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _FlowEndpointRow(
             icon: LucideIcons.arrowUpRight,
             label: destinationLabel,
@@ -360,21 +429,23 @@ class _ReceiptCard extends StatelessWidget {
             label: sourceLabel,
             value: sourceValue,
           ),
-          const ReceiveFlowDivider(),
-          _ReceiptDetailRow(
-            detail: PaymentConfirmationDetail(
-              label: 'Data e Hora',
-              value: dateStr,
-              icon: LucideIcons.calendarClock,
+          if (!hasTimeDetail || !hasNetworkDetail) const ReceiveFlowDivider(),
+          if (!hasTimeDetail)
+            _ReceiptDetailRow(
+              detail: PaymentConfirmationDetail(
+                label: 'Data e Hora',
+                value: dateStr,
+                icon: LucideIcons.calendarClock,
+              ),
             ),
-          ),
-          _ReceiptDetailRow(
-            detail: PaymentConfirmationDetail(
-              label: 'Rede',
-              value: networkLabel,
-              icon: LucideIcons.network,
+          if (!hasNetworkDetail)
+            _ReceiptDetailRow(
+              detail: PaymentConfirmationDetail(
+                label: 'Rede',
+                value: networkLabel,
+                icon: LucideIcons.network,
+              ),
             ),
-          ),
           ...details.map((d) => _ReceiptDetailRow(detail: d)),
         ],
       ),
@@ -405,13 +476,15 @@ class _ReceiptDetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final valueColor = detail.valueColor ?? receiveFlowTextColor;
-    final valueStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
+    final baseValueStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
           color: valueColor,
           fontWeight: detail.emphasized ? FontWeight.w700 : FontWeight.w500,
-          fontFamily: detail.monospace ? 'JetBrainsMono' : null,
           letterSpacing: 0,
           height: 1.35,
         );
+    final valueStyle = detail.monospace
+        ? AppTypography.technicalMono(textStyle: baseValueStyle)
+        : baseValueStyle;
 
     if (detail.copyable) {
       return Padding(
@@ -471,6 +544,52 @@ class _ReceiptDetailRow extends StatelessWidget {
       );
     }
 
+    if (detail.emphasized) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: receiveFlowPanelAltColor,
+            border: Border.all(color: receiveFlowBorderStrongColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    detail.icon,
+                    size: 16,
+                    color: receiveFlowFaintTextColor,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      detail.label,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            color: receiveFlowMutedTextColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                detail.value,
+                style: valueStyle.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Row(
@@ -499,6 +618,41 @@ class _ReceiptDetailRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: valueStyle,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineMetaPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _InlineMetaPill({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: receiveFlowPanelRaisedColor,
+        border: Border.all(color: receiveFlowBorderStrongColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: receiveFlowMutedTextColor),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

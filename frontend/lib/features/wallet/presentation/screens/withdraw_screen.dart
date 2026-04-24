@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/presentation/widgets/cyber_button.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
@@ -400,7 +401,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       } else {
         final error = ref.read(withdrawProvider).error;
         if (error != null) {
-          SnackbarHelper.showError(error);
+          SnackbarHelper.showError(
+            ErrorTranslator.translate(context.l10n, error),
+          );
         }
       }
     }

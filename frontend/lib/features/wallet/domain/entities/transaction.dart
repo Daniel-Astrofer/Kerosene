@@ -39,6 +39,18 @@ final class Transaction extends Equatable {
   /// TXID on-chain quando a entrada do ledger referencia uma transação externa.
   final String? blockchainTxid;
 
+  /// Referência externa do provedor ou invoice.
+  final String? externalReference;
+
+  /// Identificador do invoice no provedor.
+  final String? invoiceId;
+
+  /// BOLT11 ou payload do invoice Lightning.
+  final String? lightningInvoice;
+
+  /// Payment hash Lightning.
+  final String? paymentHash;
+
   /// Descrição/nota da transação
   final String? description;
 
@@ -61,6 +73,10 @@ final class Transaction extends Equatable {
     this.blockHash,
     this.blockHeight,
     this.blockchainTxid,
+    this.externalReference,
+    this.invoiceId,
+    this.lightningInvoice,
+    this.paymentHash,
     this.description,
     this.isInternal = false,
     this.isLightning = false,
@@ -95,6 +111,10 @@ final class Transaction extends Equatable {
       'blockHash': blockHash,
       'blockHeight': blockHeight,
       'blockchainTxid': blockchainTxid,
+      'externalReference': externalReference,
+      'invoiceId': invoiceId,
+      'lightningInvoice': lightningInvoice,
+      'paymentHash': paymentHash,
       'description': description,
       'isInternal': isInternal,
       'isLightning': isLightning,
@@ -125,6 +145,10 @@ final class Transaction extends Equatable {
         blockHash: json['blockHash'],
         blockHeight: json['blockHeight'],
         blockchainTxid: json['blockchainTxid']?.toString(),
+        externalReference: json['externalReference']?.toString(),
+        invoiceId: json['invoiceId']?.toString(),
+        lightningInvoice: json['lightningInvoice']?.toString(),
+        paymentHash: json['paymentHash']?.toString(),
         description: json['description'],
         isInternal: json['isInternal'] ?? false,
         isLightning: json['isLightning'] ?? false,
@@ -195,6 +219,10 @@ final class Transaction extends Equatable {
       description:
           json['context']?.toString() ?? json['description']?.toString(),
       blockchainTxid: json['blockchainTxid']?.toString(),
+      externalReference: json['externalReference']?.toString(),
+      invoiceId: json['invoiceId']?.toString(),
+      lightningInvoice: json['lightningInvoice']?.toString(),
+      paymentHash: json['paymentHash']?.toString(),
       isInternal: typeField == 'INTERNAL' ||
           typeField == 'TRANSFER' ||
           typeField == 'TRANSACTION_SEND' ||
@@ -203,8 +231,13 @@ final class Transaction extends Equatable {
           (json['description']?.toString().toLowerCase().contains('transfer') ??
               false),
       isLightning: typeField.contains('LIGHTNING') ||
-          (json['description']?.toString().toUpperCase().contains('LIGHTNING') ?? false) ||
-          (json['context']?.toString().toUpperCase().contains('LIGHTNING') ?? false),
+          (json['description']
+                  ?.toString()
+                  .toUpperCase()
+                  .contains('LIGHTNING') ??
+              false) ||
+          (json['context']?.toString().toUpperCase().contains('LIGHTNING') ??
+              false),
     );
   }
 
@@ -307,6 +340,10 @@ final class Transaction extends Equatable {
         blockHash,
         blockHeight,
         blockchainTxid,
+        externalReference,
+        invoiceId,
+        lightningInvoice,
+        paymentHash,
         description,
         isInternal,
         isLightning,

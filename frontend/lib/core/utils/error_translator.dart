@@ -7,13 +7,17 @@ class ErrorTranslator {
 
     String codeToTest = codeOrMessage;
     String? extractedMessage;
+    Map<String, dynamic>? extractedData;
 
     // Try to parse JSON from AppException.toString()
     try {
       final decoded = jsonDecode(codeOrMessage);
       if (decoded is Map<String, dynamic> &&
-          (decoded['type'] == 'AppException' || decoded['type'] == 'Failure')) {
+          (decoded.containsKey('message') ||
+              decoded.containsKey('errorCode') ||
+              decoded.containsKey('data'))) {
         extractedMessage = decoded['message']?.toString();
+        extractedData = _mapFromDynamic(decoded['data']);
         final code = decoded['errorCode']?.toString();
         if (code != null && code.isNotEmpty && code != 'null') {
           codeToTest = code;
@@ -34,9 +38,10 @@ class ErrorTranslator {
       }
     }
 
-    final internalCodeMatch =
-        RegExp(r'ERR_[A-Z0-9_]+').firstMatch(codeOrMessage);
-    if (internalCodeMatch != null) {
+    final internalCodeMatch = RegExp(
+      r'(ERR_[A-Z0-9_]+|[A-Z]+_\d{3}|USER_NOT_FOUND|AUTH_FAILED|INVALID_SIGNATURE|VERIFY_ERROR|MISSING_CREDENTIAL_ID|CHALLENGE_EXPIRED)',
+    ).firstMatch(codeOrMessage);
+    if (internalCodeMatch != null && internalCodeMatch.group(0) != null) {
       codeToTest = internalCodeMatch.group(0)!;
     }
 
@@ -62,9 +67,11 @@ class ErrorTranslator {
       case 'ERR_AUTH_INVALID_CREDENTIALS':
         return l10n.errAuthInvalidCredentials;
       case 'ERR_AUTH_UNRECOGNIZED_DEVICE':
-        return l10n.errAuthUnrecognizedDevice;
+        return _passkeyDeviceNotLinkedMessage(l10n);
       case 'ERR_AUTH_TOTP_TIMEOUT':
         return l10n.errAuthTotpTimeout;
+      case 'ERR_AUTH_INVALID_PREAUTH':
+        return l10n.errSessionExpired;
       case 'ERR_AUTH_PASSKEY_INVALID':
         return l10n.passkeyErrorFinishing(
             l10n.errUnexpected); // Fallback to generic message
@@ -76,6 +83,44 @@ class ErrorTranslator {
         return l10n.passkeySessionNotFound;
       case 'ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS':
         return l10n.passkeyNoBiometrics;
+      case 'ERR_AUTH_PASSKEY_NOT_REGISTERED':
+      case 'ERR_AUTH_PASSKEY_CORRUPTED_KEY_MATERIAL':
+        return _passkeyDeviceNotLinkedMessage(l10n);
+      case 'AUTH_012':
+        return _passkeyActionMessage(
+          l10n,
+          extractedData,
+          fallbackPt:
+              'Uma passkey compatível com este login é obrigatória para concluir a operação.',
+          fallbackEn:
+              'A passkey compatible with this login is required to finish this operation.',
+          fallbackEs:
+              'Se requiere una passkey compatible con este acceso para completar esta operación.',
+        );
+      case 'AUTH_014':
+      case 'AUTH_017':
+        return _passkeyActionMessage(
+          l10n,
+          extractedData,
+          fallbackPt:
+              'Esta passkey não serve para este login. Entre com senha + TOTP e vincule uma nova passkey neste dispositivo.',
+          fallbackEn:
+              'This passkey cannot be used for this login. Sign in with passphrase + TOTP and link a new passkey on this device.',
+          fallbackEs:
+              'Esta passkey no sirve para este acceso. Entra con frase secreta + TOTP y vincula una nueva passkey en este dispositivo.',
+        );
+      case 'AUTH_015':
+      case 'AUTH_016':
+        return _passkeyActionMessage(
+          l10n,
+          extractedData,
+          fallbackPt:
+              'A passkey foi rejeitada nesta operação. Se o problema persistir, vincule outra passkey compatível.',
+          fallbackEn:
+              'This passkey was rejected for the operation. If the problem persists, link another compatible passkey.',
+          fallbackEs:
+              'La passkey fue rechazada en esta operación. Si el problema persiste, vincula otra passkey compatible.',
+        );
       case 'ERR_AUTH_PASSKEY_AUTH_CANCELLED':
         return l10n.passkeyAuthFailed;
       case 'USER_NOT_FOUND':
@@ -107,7 +152,7 @@ class ErrorTranslator {
       case 'ERR_LEDGER_INVALID_OPERATION':
         return l10n.errLedgerInvalidOperation;
       case 'ERR_LEDGER_RECEIVER_NOT_FOUND':
-        return l10n.errLedgerReceiverNotFound;
+        return l10n.addressNotAvailable;
       case 'ERR_LEDGER_GENERIC':
         return l10n.errLedgerGeneric;
       case 'ERR_LEDGER_PAYMENT_REQUEST_NOT_FOUND':
@@ -126,6 +171,10 @@ class ErrorTranslator {
         return l10n.errWalletNotFound;
       case 'ERR_WALLET_GENERIC':
         return l10n.errWalletGeneric;
+      case 'ERR_INVALID_NETWORK_ADDRESS':
+        return 'O endereço Bitcoin não pertence à rede configurada para esta carteira ou é inválido.';
+      case 'ERR_CUSTODY_PROVIDER_UNAVAILABLE':
+        return 'A rota externa necessária não está operacional neste ambiente no momento.';
 
       // Notifications & System Errors
       case 'ERR_NOTIF_MISSING_TOKEN':
@@ -153,9 +202,6 @@ class ErrorTranslator {
     if (lower.contains('already exists')) {
       return l10n.errAuthUserAlreadyExists;
     }
-    if (lower.contains('not found')) {
-      return l10n.errLedgerNotFound;
-    }
     if (lower.contains('insufficient balance') ||
         lower.contains('not enough funds')) {
       return l10n.errLedgerInsufficientBalance;
@@ -164,6 +210,11 @@ class ErrorTranslator {
         lower.contains('token expired') ||
         lower.contains('invalid token')) {
       return l10n.errSessionExpired;
+    }
+    if (lower.contains('unrecognized device') ||
+        lower.contains('device has not been linked') ||
+        lower.contains('device not linked')) {
+      return _passkeyDeviceNotLinkedMessage(l10n);
     }
     if (lower.contains('forbidden') || lower.contains('access denied')) {
       return l10n.errForbidden;
@@ -188,9 +239,40 @@ class ErrorTranslator {
     if (lower.contains('timeout') || lower.contains('deadline exceeded')) {
       return l10n.errTimeout;
     }
+    if (lower.contains('challenge expired')) {
+      return l10n.errTimeout;
+    }
     if (lower.contains('format exception') ||
         lower.contains('unexpected character')) {
       return l10n.errCommFailure;
+    }
+    if (lower.contains('no sovereign key is registered') ||
+        lower.contains('register the device first') ||
+        lower.contains('invalid passkey signature') ||
+        lower.contains('proof of possession failed')) {
+      return _passkeyDeviceNotLinkedMessage(l10n);
+    }
+    if (lower.contains('passkey enviada nao esta vinculada') ||
+        lower.contains('passkey foi vinculada a outro login') ||
+        lower.contains('contador do autenticador nao avancou')) {
+      return _passkeyActionMessage(
+        l10n,
+        extractedData,
+        fallbackPt:
+            'Entre com senha + TOTP e vincule uma passkey compatível com este dispositivo.',
+        fallbackEn:
+            'Sign in with passphrase + TOTP and link a passkey compatible with this device.',
+        fallbackEs:
+            'Entra con frase secreta + TOTP y vincula una passkey compatible con este dispositivo.',
+      );
+    }
+    if ((lower.contains('receiver') && lower.contains('not found')) ||
+        lower.contains('wallet, username, or address') ||
+        (lower.contains('destination') && lower.contains('does not exist'))) {
+      return l10n.addressNotAvailable;
+    }
+    if (lower.contains('not found')) {
+      return l10n.errLedgerNotFound;
     }
     if (lower.contains('invalid address') ||
         lower.contains('bitcoin address')) {
@@ -213,5 +295,48 @@ class ErrorTranslator {
         .replaceFirst('Exception:', '')
         .replaceFirst('Erro:', '')
         .trim();
+  }
+
+  static String _passkeyDeviceNotLinkedMessage(AppLocalizations l10n) {
+    switch (l10n.localeName) {
+      case 'en':
+        return 'This device is not linked to your account for passkey confirmation. Link this device and try again.';
+      case 'es':
+        return 'Este dispositivo no está vinculado a tu cuenta para confirmar con passkey. Vincula este dispositivo e inténtalo de nuevo.';
+      default:
+        return 'Este dispositivo não está vinculado à sua conta para confirmar com passkey. Vincule este aparelho e tente novamente.';
+    }
+  }
+
+  static String _passkeyActionMessage(
+    AppLocalizations l10n,
+    Map<String, dynamic>? data, {
+    required String fallbackPt,
+    required String fallbackEn,
+    required String fallbackEs,
+  }) {
+    final guidance = data?['guidance']?.toString().trim();
+    if (guidance != null && guidance.isNotEmpty) {
+      return guidance;
+    }
+
+    switch (l10n.localeName) {
+      case 'en':
+        return fallbackEn;
+      case 'es':
+        return fallbackEs;
+      default:
+        return fallbackPt;
+    }
+  }
+
+  static Map<String, dynamic>? _mapFromDynamic(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return null;
   }
 }

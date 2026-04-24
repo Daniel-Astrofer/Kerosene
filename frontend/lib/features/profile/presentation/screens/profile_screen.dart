@@ -56,8 +56,10 @@ class ProfileScreen extends ConsumerWidget {
             : 'Biometria indisponível';
 
     final routingLabel = alertPreferences.backgroundAlertsEnabled
-        ? 'Monitoramento em segundo plano'
-        : 'Alertas locais desativados';
+        ? (alertPreferences.inAppBannersEnabled
+            ? 'Alertas e monitoramento ativos'
+            : 'Monitoramento ativo sem banners')
+        : 'Alertas em tempo real desativados';
 
     return Scaffold(
       backgroundColor: authenticatedSurfaceBackgroundColor,

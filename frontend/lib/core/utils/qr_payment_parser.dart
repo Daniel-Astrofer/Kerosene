@@ -23,10 +23,10 @@ class PaymentData {
 /// Encodes and decodes payment request URIs used in QR codes and NFC tags.
 ///
 /// Supported formats:
-///   bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>
-///   kerosene:pay?address=<address>&amount=<btc>&label=<label>
-///   kerosene://pay/<id>
-///   kerosene:link:<id>
+///   `bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>`
+///   `kerosene:pay?address=<address>&amount=<btc>&label=<label>`
+///   `kerosene://pay/<id>`
+///   `kerosene:link:<id>`
 class QrPaymentParser {
   /// Encodes a payment request into a bitcoin: BIP-21 URI.
   static String encode({
@@ -230,8 +230,9 @@ class QrPaymentParser {
 
   static bool _looksLikeBitcoinAddress(String s) {
     // Mainnet: start with 1, 3, or bc1
-    // Testnet: start with m, n, 2, or tb1
-    return RegExp(r'^(1|3|bc1|m|n|2|tb1)[a-zA-HJ-NP-Z0-9]{20,90}$').hasMatch(s);
+    // Testnet/regtest: start with m, n, 2, tb1, or bcrt1
+    return RegExp(r'^(1|3|bc1|m|n|2|tb1|bcrt1)[a-zA-HJ-NP-Z0-9]{20,90}$')
+        .hasMatch(s);
   }
 
   static bool _looksLikeUsername(String s) {

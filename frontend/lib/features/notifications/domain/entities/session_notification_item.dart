@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'dart:convert';
 
 class SessionNotificationItem extends Equatable {
   static const severityInfo = 'info';
@@ -31,6 +32,7 @@ class SessionNotificationItem extends Equatable {
   final String? entityType;
   final String? entityId;
   final Map<String, String> metadata;
+  final bool read;
 
   const SessionNotificationItem({
     required this.id,
@@ -43,7 +45,27 @@ class SessionNotificationItem extends Equatable {
     this.entityType,
     this.entityId,
     this.metadata = const {},
+    this.read = false,
   });
+
+  factory SessionNotificationItem.fromJson(Map<String, dynamic> json) {
+    return SessionNotificationItem(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      timestamp: _parseDateTime(
+            json['timestamp'] ?? json['createdAt'],
+          ) ??
+          DateTime.now(),
+      kind: json['kind']?.toString() ?? kindSystemInfo,
+      severity: json['severity']?.toString() ?? severityInfo,
+      deeplink: json['deeplink']?.toString(),
+      entityType: json['entityType']?.toString(),
+      entityId: json['entityId']?.toString(),
+      metadata: _parseMetadata(json['metadata']),
+      read: json['read'] == true || json['isRead'] == true,
+    );
+  }
 
   String get dedupeKey {
     final explicitDedupe = metadata['dedupeKey'];
@@ -61,6 +83,7 @@ class SessionNotificationItem extends Equatable {
   }
 
   bool get isActionable => deeplink != null && deeplink!.trim().isNotEmpty;
+  bool get canSyncRead => int.tryParse(id) != null;
 
   SessionNotificationItem copyWith({
     String? id,
@@ -73,6 +96,7 @@ class SessionNotificationItem extends Equatable {
     String? entityType,
     String? entityId,
     Map<String, String>? metadata,
+    bool? read,
   }) {
     return SessionNotificationItem(
       id: id ?? this.id,
@@ -85,7 +109,52 @@ class SessionNotificationItem extends Equatable {
       entityType: entityType ?? this.entityType,
       entityId: entityId ?? this.entityId,
       metadata: metadata ?? this.metadata,
+      read: read ?? this.read,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'body': body,
+      'timestamp': timestamp.toIso8601String(),
+      'kind': kind,
+      'severity': severity,
+      'deeplink': deeplink,
+      'entityType': entityType,
+      'entityId': entityId,
+      'metadata': metadata,
+      'read': read,
+    };
+  }
+
+  static Map<String, String> _parseMetadata(Object? value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value).map(
+        (key, item) => MapEntry(key.toString(), item?.toString() ?? ''),
+      );
+    }
+
+    if (value is String && value.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded).map(
+            (key, item) => MapEntry(key.toString(), item?.toString() ?? ''),
+          );
+        }
+      } catch (_) {}
+    }
+
+    return const {};
+  }
+
+  static DateTime? _parseDateTime(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    return DateTime.tryParse(value.toString())?.toLocal();
   }
 
   @override
@@ -100,5 +169,6 @@ class SessionNotificationItem extends Equatable {
         entityType,
         entityId,
         metadata.toString(),
+        read,
       ];
 }

@@ -67,6 +67,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   mockito: ^5.4.4
@@ -96,6 +98,14 @@ flutter:
     - 'assets/shaders/hydra_logo.frag'
 
   fonts:
+
+    - family: "SpaceGroteskVariable"
+      fonts:
+        - asset: "assets/fonts/SpaceGrotesk[wght].ttf"
+
+    - family: "JetBrainsMono"
+      fonts:
+        - asset: "assets/fonts/SpaceGrotesk[wght].ttf"
 
     - family: "HubotSans"
       fonts:

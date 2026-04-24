@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/utils/transaction_address_display.dart';
 import '../../../../core/services/passkey_service.dart';
 import '../../../auth/controller/auth_local_provider.dart';
 import '../../../../core/network/api_client_provider.dart';
@@ -15,9 +16,11 @@ import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/external_transfer.dart';
 import '../../domain/entities/payment_link.dart';
+import '../../domain/entities/wallet_network_address.dart';
 import '../../../wallet/domain/repositories/ledger_repository.dart'; // Add this
 import '../../../wallet/presentation/providers/wallet_provider.dart'
     show ledgerRepositoryProvider, walletProvider;
+import '../../../wallet/presentation/state/wallet_state.dart';
 
 // ==================== Filter Logic ====================
 
@@ -58,6 +61,13 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   );
 });
 
+final walletNetworkProfileProvider =
+    FutureProvider.family<WalletNetworkAddress, String>(
+        (ref, walletName) async {
+  final repo = ref.watch(transactionRepositoryProvider);
+  return repo.getWalletNetworkProfile(walletName: walletName);
+});
+
 List<Transaction> _mergeExternalHistory({
   required List<Transaction> ledgerTransactions,
   required List<ExternalTransfer> externalTransfers,
@@ -94,6 +104,11 @@ String _transactionHistoryKey(Transaction transaction) {
 }
 
 bool _shouldReplaceHistoryEntry(Transaction current, Transaction candidate) {
+  final currentScore = _historyCompletenessScore(current);
+  final candidateScore = _historyCompletenessScore(candidate);
+  if (candidateScore != currentScore) {
+    return candidateScore > currentScore;
+  }
   if (current.isInternal && !candidate.isInternal) {
     return true;
   }
@@ -104,6 +119,33 @@ bool _shouldReplaceHistoryEntry(Transaction current, Transaction candidate) {
     return true;
   }
   return false;
+}
+
+int _historyCompletenessScore(Transaction transaction) {
+  var score = 0;
+
+  if (!transaction.isInternal) {
+    score += 2;
+  }
+  if ((transaction.blockchainTxid ?? '').trim().isNotEmpty) {
+    score += 6;
+  }
+  if ((transaction.paymentHash ?? '').trim().isNotEmpty) {
+    score += 5;
+  }
+  if ((transaction.invoiceId ?? '').trim().isNotEmpty) {
+    score += 4;
+  }
+  if ((transaction.externalReference ?? '').trim().isNotEmpty) {
+    score += 2;
+  }
+  if (transaction.feeSatoshis > 0) {
+    score += 1;
+  }
+
+  score += transactionAddressInformationScore(transaction);
+
+  return score;
 }
 
 Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
@@ -227,11 +269,27 @@ final txStatusProvider = FutureProvider.family<TxStatus, String>((
 
 final depositAddressProvider = FutureProvider<String>((ref) async {
   final repo = ref.watch(transactionRepositoryProvider);
-  final result = await repo.getDepositAddress();
-  return result.fold(
-    (failure) => throw Exception(failure.message),
-    (address) => address,
-  );
+  final walletState = ref.watch(walletProvider);
+
+  if (walletState is WalletLoaded && walletState.wallets.isNotEmpty) {
+    final walletName = walletState.wallets.first.name.trim();
+    if (walletName.isNotEmpty) {
+      try {
+        final profile =
+            await repo.getWalletNetworkProfile(walletName: walletName);
+        final onchainAddress = profile.onchainAddress.trim();
+        if (onchainAddress.isNotEmpty) {
+          return onchainAddress;
+        }
+      } catch (error) {
+        throw Exception(
+            'Nao foi possivel carregar o endereco on-chain real: $error');
+      }
+    }
+  }
+
+  throw Exception(
+      'Nenhuma carteira com perfil de rede disponivel para deposito.');
 });
 
 // ==================== Deposits ====================

@@ -14,6 +14,13 @@ class ExternalTransfer extends Equatable {
   final double platformFeeBtc;
   final double totalDebitedBtc;
   final String externalReference;
+  final String invoiceId;
+  final String blockchainTxid;
+  final String paymentHash;
+  final String invoiceData;
+  final int confirmations;
+  final DateTime? detectedAt;
+  final DateTime? settledAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String context;
@@ -31,6 +38,13 @@ class ExternalTransfer extends Equatable {
     required this.platformFeeBtc,
     required this.totalDebitedBtc,
     required this.externalReference,
+    required this.invoiceId,
+    required this.blockchainTxid,
+    required this.paymentHash,
+    required this.invoiceData,
+    required this.confirmations,
+    required this.detectedAt,
+    required this.settledAt,
     required this.createdAt,
     required this.updatedAt,
     required this.context,
@@ -44,21 +58,39 @@ class ExternalTransfer extends Equatable {
   Transaction toTransaction() {
     final normalizedStatus = status.toUpperCase();
     final txStatus = switch (normalizedStatus) {
-      'COMPLETED' || 'SETTLED' => TransactionStatus.confirmed,
-      'CANCELLED' => TransactionStatus.failed,
-      _ => TransactionStatus.pending,
+      'COMPLETED' ||
+      'SETTLED' ||
+      'CONFIRMED' ||
+      'PAID' =>
+        TransactionStatus.confirmed,
+      'CANCELLED' || 'EXPIRED' || 'FAILED' => TransactionStatus.failed,
+      _ => confirmations > 0
+          ? TransactionStatus.confirming
+          : TransactionStatus.pending,
     };
+    final transactionId = [
+      blockchainTxid,
+      paymentHash,
+      externalReference,
+      invoiceId,
+      id,
+    ].firstWhere((value) => value.trim().isNotEmpty, orElse: () => id);
     return Transaction(
-      id: externalReference.isNotEmpty ? externalReference : id,
-      fromAddress: isOutbound ? walletName : 'Rede Bitcoin',
+      id: transactionId,
+      fromAddress: isOutbound ? walletName : '',
       toAddress: destination.isNotEmpty ? destination : walletName,
       amountSatoshis: (amountBtc.abs() * 100000000).round(),
       feeSatoshis: (networkFeeBtc.abs() * 100000000).round(),
       status: txStatus,
       type: isOutbound ? TransactionType.withdrawal : TransactionType.deposit,
-      confirmations: 0,
-      timestamp: createdAt ?? DateTime.now(),
-      blockchainTxid: externalReference.isNotEmpty ? externalReference : null,
+      confirmations: confirmations,
+      timestamp: settledAt ?? detectedAt ?? createdAt ?? DateTime.now(),
+      blockchainTxid: blockchainTxid.isNotEmpty ? blockchainTxid : null,
+      externalReference:
+          externalReference.isNotEmpty ? externalReference : null,
+      invoiceId: invoiceId.isNotEmpty ? invoiceId : null,
+      lightningInvoice: invoiceData.isNotEmpty ? invoiceData : null,
+      paymentHash: paymentHash.isNotEmpty ? paymentHash : null,
       description: context,
       isInternal: false,
       isLightning: isLightning,
@@ -79,6 +111,15 @@ class ExternalTransfer extends Equatable {
       platformFeeBtc: (json['platformFeeBtc'] as num?)?.toDouble() ?? 0,
       totalDebitedBtc: (json['totalDebitedBtc'] as num?)?.toDouble() ?? 0,
       externalReference: json['externalReference']?.toString() ?? '',
+      invoiceId: json['invoiceId']?.toString() ?? '',
+      blockchainTxid: json['blockchainTxid']?.toString() ?? '',
+      paymentHash: json['paymentHash']?.toString() ?? '',
+      invoiceData: json['invoiceData']?.toString() ?? '',
+      confirmations: (json['confirmations'] as num?)?.toInt() ?? 0,
+      detectedAt:
+          DateTime.tryParse(json['detectedAt']?.toString() ?? '')?.toLocal(),
+      settledAt:
+          DateTime.tryParse(json['settledAt']?.toString() ?? '')?.toLocal(),
       createdAt:
           DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toLocal(),
       updatedAt:
@@ -101,6 +142,13 @@ class ExternalTransfer extends Equatable {
         platformFeeBtc,
         totalDebitedBtc,
         externalReference,
+        invoiceId,
+        blockchainTxid,
+        paymentHash,
+        invoiceData,
+        confirmations,
+        detectedAt,
+        settledAt,
         createdAt,
         updatedAt,
         context,

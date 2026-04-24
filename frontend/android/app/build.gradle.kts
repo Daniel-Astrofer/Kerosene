@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.teste.kersosene"
     compileSdk = 36 // ATUALIZADO PARA 36 (exigido pelos seus plugins)
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     sourceSets {
         getByName("main").java.srcDirs("src/main/kotlin")

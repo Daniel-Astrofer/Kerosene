@@ -12,6 +12,11 @@ class PaymentLink extends Equatable {
   final double netAmountBtc;
   final String description;
   final String depositAddress;
+  final String visibility;
+  final String confirmationMode;
+  final bool amountLocked;
+  final String? referenceLabel;
+  final Map<String, String> metadata;
   final String? destinationHash;
   final String? paymentUri;
   final bool locked;
@@ -21,6 +26,8 @@ class PaymentLink extends Equatable {
   final DateTime? createdAt;
   final DateTime? paidAt;
   final DateTime? completedAt;
+  final DateTime? cancelledAt;
+  final String? cancelReason;
 
   const PaymentLink({
     required this.id,
@@ -32,6 +39,11 @@ class PaymentLink extends Equatable {
     this.netAmountBtc = 0,
     required this.description,
     required this.depositAddress,
+    this.visibility = 'PRIVATE',
+    this.confirmationMode = 'MANUAL_REVIEW',
+    this.amountLocked = true,
+    this.referenceLabel,
+    this.metadata = const {},
     this.destinationHash,
     this.paymentUri,
     this.locked = false,
@@ -41,12 +53,15 @@ class PaymentLink extends Equatable {
     this.createdAt,
     this.paidAt,
     this.completedAt,
+    this.cancelledAt,
+    this.cancelReason,
   });
 
   bool get isPending => status == 'pending';
   bool get isPaid => status == 'paid';
   bool get isCompleted => status == 'completed';
   bool get isVerifyingOnboarding => status == 'verifying_onboarding';
+  bool get isCancelled => status == 'cancelled';
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
   bool get isInternalPaymentRequest =>
       locked || (destinationHash != null && destinationHash!.isNotEmpty);
@@ -83,6 +98,13 @@ class PaymentLink extends Equatable {
       depositAddress: data['depositAddress']?.toString() ??
           data['address']?.toString() ??
           '',
+      visibility: data['visibility']?.toString().toUpperCase() ?? 'PRIVATE',
+      confirmationMode:
+          data['confirmationMode']?.toString().toUpperCase() ??
+              'MANUAL_REVIEW',
+      amountLocked: _parseBool(data['amountLocked'], fallback: true),
+      referenceLabel: data['referenceLabel']?.toString(),
+      metadata: _parseMetadata(data['metadata']),
       destinationHash: _readString(data, const [
         'destinationHash',
         'destination_hash',
@@ -107,6 +129,10 @@ class PaymentLink extends Equatable {
       completedAt: data['completedAt'] != null
           ? DateTime.tryParse(data['completedAt'].toString())
           : null,
+      cancelledAt: data['cancelledAt'] != null
+          ? DateTime.tryParse(data['cancelledAt'].toString())
+          : null,
+      cancelReason: data['cancelReason']?.toString(),
     );
   }
 
@@ -121,6 +147,11 @@ class PaymentLink extends Equatable {
         netAmountBtc,
         description,
         depositAddress,
+        visibility,
+        confirmationMode,
+        amountLocked,
+        referenceLabel,
+        metadata,
         destinationHash,
         paymentUri,
         locked,
@@ -130,35 +161,56 @@ class PaymentLink extends Equatable {
         createdAt,
         paidAt,
         completedAt,
+        cancelledAt,
+        cancelReason,
       ];
 
   /// Converte PaymentLink para Transaction para exibição no histórico unificado
   Transaction toTransaction() {
     final bool isCompleted = status == 'completed' || status == 'paid';
+    final bool isFailed = status == 'cancelled' || isExpired;
+    final transactionDescription = isCancelled
+        ? 'Link de pagamento cancelado'
+        : isExpired
+            ? 'Link de pagamento expirado'
+            : (description.isNotEmpty ? description : 'Link de Pagamento');
+
     return Transaction(
       id: "pl_$id",
       fromAddress: 'Rede Bitcoin',
       toAddress: depositAddress,
       amountSatoshis: (amountBtc * 100000000).round(),
       feeSatoshis: 0,
-      status:
-          isCompleted ? TransactionStatus.confirmed : TransactionStatus.pending,
+      status: isCompleted
+          ? TransactionStatus.confirmed
+          : isFailed
+              ? TransactionStatus.failed
+              : TransactionStatus.pending,
       type: TransactionType.receive,
       confirmations: isCompleted ? 6 : 0,
       timestamp: createdAt ?? DateTime.now(),
-      description: description.isNotEmpty ? description : "Link de Pagamento",
+      description: transactionDescription,
       isInternal: false,
     );
   }
 
-  static bool _parseBool(Object? value) {
+  static bool _parseBool(Object? value, {bool fallback = false}) {
     if (value is bool) {
       return value;
     }
     if (value is String) {
       return value.trim().toLowerCase() == 'true';
     }
-    return false;
+    return fallback;
+  }
+
+  static Map<String, String> _parseMetadata(Object? value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value).map(
+        (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+      );
+    }
+    return const {};
   }
 
   static String? _readString(Map<String, dynamic> json, List<String> keys) {

@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/theme/monochrome_theme.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'tx_detail_overlay.dart';
@@ -78,6 +78,14 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
       data: (txs) {
         if (txs.isEmpty) return const SizedBox.shrink();
         final latestTx = txs.first;
+        final visual = TransactionVisualSpec.fromTransaction(latestTx);
+
+        // Seed with the current history entry so the popup is only used for
+        // transactions that arrive after the screen is already mounted.
+        if (_lastShownTx == null) {
+          _lastShownTx = latestTx;
+          return const SizedBox.shrink();
+        }
 
         if (widget.suppressed) {
           if (_controller.status != AnimationStatus.dismissed) {
@@ -92,7 +100,7 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
         }
 
         // Auto-show when new transaction detected
-        if (_lastShownTx == null || _lastShownTx!.id != latestTx.id) {
+        if (_lastShownTx!.id != latestTx.id) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _lastShownTx = latestTx;
             _show();
@@ -112,19 +120,9 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 380),
                     child: Container(
-                      decoration: BoxDecoration(
-                        color: AppNotificationStyle.surfaceColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.07),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.18),
-                            blurRadius: 18,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+                      decoration: monochromePanelDecoration(
+                        color: monoSurfaceColor,
+                        borderColor: monoBorderStrongColor,
                       ),
                       child: GestureDetector(
                         onTap: () {
@@ -157,7 +155,7 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                           color: Colors.transparent,
                           child: Row(
                             children: [
-                              _buildIconBadge(latestTx),
+                              _buildIconBadge(visual),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
@@ -165,12 +163,12 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _getLabelFor(latestTx.type).toUpperCase(),
+                                      visual.label.toUpperCase(),
                                       style: AppTypography.caption.copyWith(
-                                        color: _getColorFor(latestTx.type),
+                                        color: monoMutedTextColor,
                                         fontWeight: FontWeight.w800,
                                         fontSize: 10,
-                                        letterSpacing: 0,
+                                        letterSpacing: 1.0,
                                       ),
                                     ),
                                     const SizedBox(height: 3),
@@ -183,9 +181,7 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                                         btcBrl: btcBrl,
                                       ),
                                       style: AppTypography.number.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary,
+                                        color: monoTextColor,
                                         fontSize: 16,
                                         letterSpacing: 0,
                                       ),
@@ -195,10 +191,7 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                                       Text(
                                         _formatBTC(latestTx.amountBTC),
                                         style: AppTypography.caption.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary
-                                              .withValues(alpha: 0.52),
+                                          color: monoMutedTextColor,
                                           fontSize: 10,
                                           letterSpacing: 0,
                                         ),
@@ -214,10 +207,7 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                                   Text(
                                     _formatDate(latestTx.timestamp),
                                     style: AppTypography.caption.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary
-                                          .withValues(alpha: 0.4),
+                                      color: monoFaintTextColor,
                                       fontSize: 10,
                                       letterSpacing: 0,
                                     ),
@@ -228,20 +218,17 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                                       horizontal: 6,
                                       vertical: 2,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF070B10),
-                                      borderRadius: BorderRadius.circular(5),
-                                      border: Border.all(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.08),
-                                      ),
+                                    decoration: monochromePanelDecoration(
+                                      color: monoSurfaceAltColor,
+                                      borderColor: monoBorderStrongColor,
+                                      showShadow: false,
                                     ),
                                     child: Text(
                                       _getStatusLabel(latestTx.status),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFC7CDD6),
+                                        color: monoTextColor,
                                       ),
                                     ),
                                   ),
@@ -264,21 +251,22 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
     );
   }
 
-  Widget _buildIconBadge(Transaction tx) {
+  Widget _buildIconBadge(TransactionVisualSpec visual) {
     return Stack(
       alignment: Alignment.center,
       children: [
         Container(
           width: 34,
           height: 34,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.08),
+          decoration: monochromePanelDecoration(
+            color: monoSurfaceAltColor,
+            borderColor: monoBorderStrongColor,
+            showShadow: false,
           ),
         ),
         Icon(
-          _getIconFor(tx.type),
-          color: _getColorFor(tx.type),
+          visual.icon,
+          color: monoTextColor,
           size: 16,
         ),
         Positioned(
@@ -287,65 +275,35 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
           child: Container(
             width: 18,
             height: 18,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context).scaffoldBackgroundColor,
-              border: Border.all(
-                  color: _getColorFor(tx.type).withValues(alpha: 0.5),
-                  width: 1),
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceRaisedColor,
+              borderColor: monoBorderStrongColor,
+              showShadow: false,
             ),
-            child: Icon(
-              LucideIcons.bitcoin,
-              color: AppColors.warning,
-              size: 8,
-            ),
+            child: Icon(_secondaryIconFor(visual),
+                color: monoMutedTextColor, size: 8),
           ),
         ),
       ],
     );
   }
 
-  IconData _getIconFor(TransactionType type) {
-    switch (type) {
-      case TransactionType.receive:
-        return LucideIcons.arrowDownLeft;
-      case TransactionType.send:
-        return LucideIcons.arrowUpRight;
-      case TransactionType.deposit:
-        return LucideIcons.download;
-      case TransactionType.withdrawal:
-        return LucideIcons.upload;
+  IconData _secondaryIconFor(TransactionVisualSpec visual) {
+    switch (visual.family) {
+      case TransactionVisualFamily.paymentLink:
+        return LucideIcons.link;
+      case TransactionVisualFamily.qrCode:
+        return LucideIcons.scanLine;
+      case TransactionVisualFamily.nfc:
+        return LucideIcons.smartphoneNfc;
+      case TransactionVisualFamily.lightning:
+        return LucideIcons.zap;
+      case TransactionVisualFamily.internalTransfer:
+        return LucideIcons.receipt;
       default:
-        return LucideIcons.arrowRight;
-    }
-  }
-
-  Color _getColorFor(TransactionType type) {
-    switch (type) {
-      case TransactionType.receive:
-      case TransactionType.deposit:
-        return AppColors.success;
-      case TransactionType.send:
-        return AppColors.error;
-      case TransactionType.withdrawal:
-        return AppColors.warning;
-      default:
-        return AppColors.secondary;
-    }
-  }
-
-  String _getLabelFor(TransactionType type) {
-    switch (type) {
-      case TransactionType.receive:
-        return 'Recebido';
-      case TransactionType.send:
-        return 'Enviado';
-      case TransactionType.deposit:
-        return 'Depósito';
-      case TransactionType.withdrawal:
-        return 'Saque';
-      default:
-        return 'Transação';
+        return visual.isOutgoing
+            ? LucideIcons.arrowUpRight
+            : LucideIcons.arrowDownLeft;
     }
   }
 

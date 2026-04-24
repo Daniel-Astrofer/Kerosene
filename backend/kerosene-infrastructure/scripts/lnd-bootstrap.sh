@@ -1,0 +1,98 @@
+#!/bin/sh
+set -eu
+
+lnd_host="${LND_HOST:-lnd-neutrino}"
+rest_port="${LND_REST_PORT:-8080}"
+lnd_dir="${LND_DATA_DIR:-/lnd}"
+timeout_seconds="${LND_BOOTSTRAP_TIMEOUT_SECONDS:-180}"
+wallet_password="${LND_WALLET_PASSWORD:-}"
+network="${BITCOIN_NETWORK:-testnet}"
+
+if [ -z "$wallet_password" ]; then
+  echo "LND_WALLET_PASSWORD must be configured for bootstrap." >&2
+  exit 1
+fi
+
+if [ "${#wallet_password}" -lt 8 ]; then
+  echo "LND_WALLET_PASSWORD must be at least 8 characters long." >&2
+  exit 1
+fi
+
+tls_cert="${lnd_dir}/tls.cert"
+macaroon_path="${lnd_dir}/data/chain/bitcoin/${network}/admin.macaroon"
+state_url="https://${lnd_host}:${rest_port}/v1/state"
+password_b64="$(printf '%s' "$wallet_password" | base64 | tr -d '\n')"
+
+deadline=$(( $(date +%s) + timeout_seconds ))
+
+read_state() {
+  if [ ! -f "$tls_cert" ]; then
+    return 1
+  fi
+
+  curl -sS --cacert "$tls_cert" "$state_url" 2>/dev/null || return 1
+}
+
+wait_for_state() {
+  while :; do
+    if state_json="$(read_state)"; then
+      printf '%s' "$state_json"
+      return 0
+    fi
+
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      echo "Timed out waiting for LND state endpoint." >&2
+      return 1
+    fi
+
+    sleep 2
+  done
+}
+
+wait_for_wallet_ready() {
+  while :; do
+    state_json="$(wait_for_state)"
+
+    case "$state_json" in
+      *SERVER_ACTIVE*|*RPC_ACTIVE*)
+        if [ -f "$macaroon_path" ]; then
+          return 0
+        fi
+        ;;
+    esac
+
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      echo "Timed out waiting for LND wallet to become ready." >&2
+      return 1
+    fi
+
+    sleep 2
+  done
+}
+
+state_json="$(wait_for_state)"
+
+case "$state_json" in
+  *NON_EXISTING*)
+    curl -sS -X POST \
+      --cacert "$tls_cert" \
+      -H "Content-Type: application/json" \
+      -d "{\"wallet_password\":\"${password_b64}\"}" \
+      "https://${lnd_host}:${rest_port}/v1/initwallet" >/dev/null
+    ;;
+  *LOCKED*)
+    curl -sS -X POST \
+      --cacert "$tls_cert" \
+      -H "Content-Type: application/json" \
+      -d "{\"wallet_password\":\"${password_b64}\"}" \
+      "https://${lnd_host}:${rest_port}/v1/unlockwallet" >/dev/null
+    ;;
+  *UNLOCKED*|*RPC_ACTIVE*|*SERVER_ACTIVE*)
+    ;;
+  *)
+    echo "Unexpected LND state payload: $state_json" >&2
+    exit 1
+    ;;
+esac
+
+wait_for_wallet_ready

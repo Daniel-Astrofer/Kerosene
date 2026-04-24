@@ -20,6 +20,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifications = ref.watch(sessionNotificationFeedProvider);
+    final unreadCount = ref.watch(sessionNotificationUnreadCountProvider);
     final headerTitle = _copy(
       context,
       pt: 'Notificações',
@@ -52,9 +53,9 @@ class SessionNotificationSidebar extends ConsumerWidget {
     );
     final alertLabel = _copy(
       context,
-      pt: notifications.length == 1 ? 'alerta' : 'alertas',
-      en: notifications.length == 1 ? 'alert' : 'alerts',
-      es: notifications.length == 1 ? 'alerta' : 'alertas',
+      pt: unreadCount == 1 ? 'não lida' : 'não lidas',
+      en: unreadCount == 1 ? 'unread' : 'unread',
+      es: unreadCount == 1 ? 'sin leer' : 'sin leer',
     );
 
     return Container(
@@ -126,7 +127,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
                       ),
                     ),
                     child: Text(
-                      '${notifications.length} $alertLabel',
+                      '$unreadCount $alertLabel',
                       style: AppTypography.bodySmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.74),
                         fontWeight: FontWeight.w700,
@@ -136,6 +137,28 @@ class SessionNotificationSidebar extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(),
+                  TextButton(
+                    onPressed: unreadCount == 0
+                        ? null
+                        : () => ref
+                            .read(sessionNotificationFeedProvider.notifier)
+                            .markAllRead(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white.withValues(
+                        alpha: unreadCount == 0 ? 0.22 : 0.7,
+                      ),
+                      shape: const RoundedRectangleBorder(),
+                      textStyle: AppTypography.bodySmall.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    child: Text(_copy(
+                      context,
+                      pt: 'Ler tudo',
+                      en: 'Read all',
+                      es: 'Leer todo',
+                    )),
+                  ),
                   TextButton(
                     onPressed: notifications.isEmpty
                         ? null
@@ -181,28 +204,61 @@ class SessionNotificationSidebar extends ConsumerWidget {
                         final item = notifications[index];
                         final visuals =
                             resolveNotificationVisuals(context, item);
-                        return PushNotificationCard(
-                          title: item.title,
-                          message: item.body,
-                          footerLabel: buildNotificationFooterLabel(
-                            context,
-                            item,
-                            _footerLabel(context, item.timestamp),
+                        return Container(
+                          decoration: BoxDecoration(
+                            border: item.read
+                                ? null
+                                : Border.all(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
                           ),
-                          tone: visuals.tone,
-                          leadingIcon: visuals.icon,
-                          padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-                          borderRadius: 0,
-                          maxMessageLines: 3,
-                          onTap: item.isActionable
-                              ? () {
-                                  onClose?.call();
-                                  NotificationNavigation.openFromContext(
-                                    context,
-                                    item,
-                                  );
-                                }
-                              : null,
+                          child: Stack(
+                            children: [
+                              PushNotificationCard(
+                                title: item.title,
+                                message: item.body,
+                                footerLabel: buildNotificationFooterLabel(
+                                  context,
+                                  item,
+                                  _footerLabel(context, item.timestamp),
+                                ),
+                                tone: visuals.tone,
+                                leadingIcon: visuals.icon,
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                                borderRadius: 0,
+                                maxMessageLines: 3,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                        sessionNotificationFeedProvider.notifier,
+                                      )
+                                      .markRead(item.id);
+
+                                  if (item.isActionable) {
+                                    onClose?.call();
+                                    NotificationNavigation.openFromContext(
+                                      context,
+                                      item,
+                                    );
+                                  }
+                                },
+                              ),
+                              if (!item.read)
+                                Positioned(
+                                  top: 10,
+                                  right: 10,
+                                  child: Container(
+                                    width: 9,
+                                    height: 9,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF4C430),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         );
                       },
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -145,48 +146,6 @@ class _ActionIconButton extends StatelessWidget {
       onTap: onTap,
       icon: icon,
       label: label,
-    );
-  }
-}
-
-class _ActionIconButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final IconData icon;
-  final String label;
-
-  const _ActionIconButton({
-    required this.onTap,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.md),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
-          borderRadius: BorderRadius.circular(AppSpacing.md),
-          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05), width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 18),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

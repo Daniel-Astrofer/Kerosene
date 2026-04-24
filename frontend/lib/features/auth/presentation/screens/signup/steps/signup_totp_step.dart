@@ -94,7 +94,7 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
       } else if (next is AuthError) {
         showCustomErrorDialog(
           context,
-          ErrorTranslator.translate(context.l10n, next.message),
+          ErrorTranslator.translate(context.l10n, next.toString()),
           onRetry: () {
             ref.read(authControllerProvider.notifier).clearError();
             if (_currentCode.length == 6) {

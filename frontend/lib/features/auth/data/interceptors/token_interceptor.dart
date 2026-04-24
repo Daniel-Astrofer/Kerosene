@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/device_helper.dart';
 import '../../../../core/utils/snackbar_helper.dart';
 import '../datasources/auth_local_datasource.dart';
 
@@ -51,6 +52,13 @@ class TokenInterceptor extends QueuedInterceptor {
 
       // 2. Mask the Host header para o Spring Boot aceitar o request via relay TCP
       options.headers['Host'] = Uri.parse(AppConfig.onionBaseUrl).host;
+
+      if (options.headers['X-Device-Hash'] == null) {
+        final deviceHash = await DeviceHelper.getDeviceHash();
+        if (deviceHash.isNotEmpty) {
+          options.headers['X-Device-Hash'] = deviceHash;
+        }
+      }
     } catch (e) {
       debugPrint('⚠️ TokenInterceptor error: $e');
     }

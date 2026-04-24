@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/monochrome_theme.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -49,9 +50,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSurface,
+      backgroundColor: monoBackgroundColor,
       body: Stack(
         children: [
+          const Positioned.fill(
+            child: ColoredBox(color: monoBackgroundColor),
+          ),
           // ── Camera View ───────────────────────────────────────────────────
           MobileScanner(controller: _controller, onDetect: _onDetect),
 
@@ -71,14 +75,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.8),
-                    Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.0),
+                    Colors.black.withValues(alpha: 0.88),
+                    Colors.black.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -88,23 +86,23 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   children: [
                     IconButton(
                       icon: Icon(LucideIcons.chevronLeft,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          size: 24),
+                          color: monoTextColor, size: 24),
                       onPressed: () => Navigator.of(context).pop(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.1),
+                        backgroundColor: monoSurfaceAltColor,
+                        side: const BorderSide(color: monoBorderStrongColor),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       'ESCANEIE QR CODE',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium!
-                          .copyWith(letterSpacing: 2),
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                            letterSpacing: 2,
+                            color: monoTextColor,
+                          ),
                     ),
                     const Spacer(),
                     ValueListenableBuilder(
@@ -116,35 +114,37 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                                 ? LucideIcons.zap
                                 : LucideIcons.zapOff,
                             color: state.torchState == TorchState.on
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onPrimary,
+                                ? monoTextColor
+                                : monoMutedTextColor,
                             size: 20,
                           ),
                           onPressed: () => _controller.toggleTorch(),
                           style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .onPrimary
-                                .withValues(alpha: 0.1),
+                            backgroundColor: monoSurfaceAltColor,
+                            side:
+                                const BorderSide(color: monoBorderStrongColor),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                            ),
                           ),
                         )
                             .animate(
                                 target:
                                     state.torchState == TorchState.on ? 1 : 0)
-                            .tint(color: Theme.of(context).colorScheme.primary);
+                            .tint(color: monoTextColor);
                       },
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     IconButton(
                       icon: Icon(LucideIcons.refreshCcw,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          size: 20),
+                          color: monoTextColor, size: 20),
                       onPressed: () => _controller.switchCamera(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.1),
+                        backgroundColor: monoSurfaceAltColor,
+                        side: const BorderSide(color: monoBorderStrongColor),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
                       ),
                     ),
                   ],
@@ -161,34 +161,26 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(AppSpacing.lg),
-                border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.1)),
+              decoration: monochromePanelDecoration(
+                color: monoSurfaceColor.withValues(alpha: 0.84),
+                borderColor: monoBorderStrongColor,
+                showShadow: false,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.qrCode,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24)
+                  const Icon(
+                    LucideIcons.scanLine,
+                    color: monoTextColor,
+                    size: 24,
+                  )
                       .animate(onPlay: (c) => c.repeat())
                       .shimmer(duration: 1500.ms),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Aponte a câmera para um código QR de pagamento',
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.8),
+                          color: monoTextColor,
                           fontWeight: FontWeight.w600,
                         ),
                     textAlign: TextAlign.center,
@@ -217,14 +209,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             // Dark Overlay
             ColorFiltered(
               colorFilter: ColorFilter.mode(
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                Colors.black.withValues(alpha: 0.72),
                 BlendMode.srcOut,
               ),
               child: Stack(
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Colors.black,
                       backgroundBlendMode: BlendMode.dstOut,
                     ),
                   ),
@@ -235,8 +227,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                       width: scanAreaSize,
                       height: scanAreaSize,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        borderRadius: BorderRadius.circular(AppSpacing.lg),
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -272,20 +263,16 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: isTop
-                ? BorderSide(
-                    color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(color: monoTextColor, width: 4)
                 : BorderSide.none,
             bottom: !isTop
-                ? BorderSide(
-                    color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(color: monoTextColor, width: 4)
                 : BorderSide.none,
             left: isLeft
-                ? BorderSide(
-                    color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(color: monoTextColor, width: 4)
                 : BorderSide.none,
             right: !isLeft
-                ? BorderSide(
-                    color: Theme.of(context).colorScheme.primary, width: 4)
+                ? BorderSide(color: monoTextColor, width: 4)
                 : BorderSide.none,
           ),
         ),
@@ -344,17 +331,14 @@ class _ScanningLineState extends State<_ScanningLine>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
+                  monoTextColor.withValues(alpha: 0.0),
+                  monoTextColor,
+                  monoTextColor.withValues(alpha: 0.0),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.5),
+                  color: monoTextColor.withValues(alpha: 0.34),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),

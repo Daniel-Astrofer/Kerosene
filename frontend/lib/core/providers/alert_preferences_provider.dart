@@ -3,23 +3,41 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AlertPreferencesState {
   final bool backgroundAlertsEnabled;
+  final bool inAppBannersEnabled;
+  final bool transactionAlertsEnabled;
+  final bool securityAlertsEnabled;
 
   const AlertPreferencesState({
     this.backgroundAlertsEnabled = false,
+    this.inAppBannersEnabled = true,
+    this.transactionAlertsEnabled = true,
+    this.securityAlertsEnabled = true,
   });
 
   AlertPreferencesState copyWith({
     bool? backgroundAlertsEnabled,
+    bool? inAppBannersEnabled,
+    bool? transactionAlertsEnabled,
+    bool? securityAlertsEnabled,
   }) {
     return AlertPreferencesState(
       backgroundAlertsEnabled:
           backgroundAlertsEnabled ?? this.backgroundAlertsEnabled,
+      inAppBannersEnabled:
+          inAppBannersEnabled ?? this.inAppBannersEnabled,
+      transactionAlertsEnabled:
+          transactionAlertsEnabled ?? this.transactionAlertsEnabled,
+      securityAlertsEnabled:
+          securityAlertsEnabled ?? this.securityAlertsEnabled,
     );
   }
 }
 
 class AlertPreferencesNotifier extends Notifier<AlertPreferencesState> {
   static const String backgroundAlertsKey = 'background_alerts_enabled';
+  static const String inAppBannersKey = 'in_app_banners_enabled';
+  static const String transactionAlertsKey = 'transaction_alerts_enabled';
+  static const String securityAlertsKey = 'security_alerts_enabled';
 
   @override
   AlertPreferencesState build() {
@@ -31,6 +49,9 @@ class AlertPreferencesNotifier extends Notifier<AlertPreferencesState> {
     final prefs = await SharedPreferences.getInstance();
     state = state.copyWith(
       backgroundAlertsEnabled: prefs.getBool(backgroundAlertsKey) ?? false,
+      inAppBannersEnabled: prefs.getBool(inAppBannersKey) ?? true,
+      transactionAlertsEnabled: prefs.getBool(transactionAlertsKey) ?? true,
+      securityAlertsEnabled: prefs.getBool(securityAlertsKey) ?? true,
     );
   }
 
@@ -38,6 +59,24 @@ class AlertPreferencesNotifier extends Notifier<AlertPreferencesState> {
     state = state.copyWith(backgroundAlertsEnabled: enabled);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(backgroundAlertsKey, enabled);
+  }
+
+  Future<void> setInAppBannersEnabled(bool enabled) async {
+    state = state.copyWith(inAppBannersEnabled: enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(inAppBannersKey, enabled);
+  }
+
+  Future<void> setTransactionAlertsEnabled(bool enabled) async {
+    state = state.copyWith(transactionAlertsEnabled: enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(transactionAlertsKey, enabled);
+  }
+
+  Future<void> setSecurityAlertsEnabled(bool enabled) async {
+    state = state.copyWith(securityAlertsEnabled: enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(securityAlertsKey, enabled);
   }
 }
 

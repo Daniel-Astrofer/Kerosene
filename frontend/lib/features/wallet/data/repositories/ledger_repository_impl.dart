@@ -22,7 +22,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       final result = await remoteDataSource.getAllLedgers();
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -35,7 +40,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       final result = await remoteDataSource.findLedger(walletName: walletName);
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -47,7 +57,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       final result = await remoteDataSource.getBalance(walletName: walletName);
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -69,7 +84,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       }).toList();
       return Right(transactions);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -91,7 +111,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       );
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -109,7 +134,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       );
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -122,7 +152,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
       final result = await remoteDataSource.getPaymentRequest(linkId);
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -150,6 +185,7 @@ class LedgerRepositoryImpl implements LedgerRepository {
         message: e.message,
         statusCode: e.statusCode,
         errorCode: e.errorCode,
+        data: e.data,
       ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -163,7 +199,12 @@ class LedgerRepositoryImpl implements LedgerRepository {
           await remoteDataSource.deleteLedger(walletName: walletName);
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao deletar ledger: $e'));
     }

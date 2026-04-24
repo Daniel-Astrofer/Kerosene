@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:teste/core/config/app_config.dart';
 import 'package:teste/core/providers/tor_providers.dart';
+import 'package:teste/core/services/balance_websocket_service.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/web_admin/theme/admin_theme.dart';
 import 'package:teste/features/web_admin/shell/admin_shell.dart';

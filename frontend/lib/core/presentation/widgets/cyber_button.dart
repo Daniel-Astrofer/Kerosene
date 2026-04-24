@@ -32,6 +32,9 @@ class _CyberButtonState extends State<CyberButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onTap == null || widget.isLoading;
+    final foregroundColor = isDisabled
+        ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)
+        : Theme.of(context).colorScheme.onPrimary;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -87,19 +90,14 @@ class _CyberButtonState extends State<CyberButton> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
+                      color: foregroundColor,
                       strokeWidth: 2,
                     ),
                   )
                 : Text(
                     widget.text,
                     style: AppTypography.buttonText.copyWith(
-                      color: isDisabled
-                          ? Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.3)
-                          : Theme.of(context).colorScheme.onSurface,
+                      color: foregroundColor,
                     ),
                   ),
           ),

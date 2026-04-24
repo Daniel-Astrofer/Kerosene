@@ -8,6 +8,7 @@ import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/external_transfer.dart';
 import '../../domain/entities/lightning_invoice.dart';
+import '../../domain/entities/onchain_address_allocation.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../domain/entities/wallet_network_address.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
@@ -76,10 +77,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     debugPrint('>>> Receiver: [REDACTED]');
 
     try {
-      final senderHint = (fromWalletId != null && fromWalletId.trim().isNotEmpty)
-          ? fromWalletId.trim()
-          : (fromAddress != null && fromAddress.trim().isNotEmpty)
-              ? fromAddress.trim()
+      final senderHint = (fromAddress != null && fromAddress.trim().isNotEmpty)
+          ? fromAddress.trim()
+          : (fromWalletId != null && fromWalletId.trim().isNotEmpty)
+              ? fromWalletId.trim()
               : '';
       final result = await remoteDataSource.sendTransaction(
         fromAddress: senderHint,
@@ -117,7 +118,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
       );
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao transmitir transação: $e'));
     }
@@ -138,7 +144,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
       );
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao criar transação: $e'));
     }
@@ -153,7 +164,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
       final result = await remoteDataSource.getDepositAddress();
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao obter endereço: $e'));
     }
@@ -166,7 +182,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
       final result = await remoteDataSource.getOnrampUrls();
       return Right(result);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(
         UnknownFailure(message: 'Erro ao obter links de onramp: $e'),
@@ -210,11 +231,23 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<PaymentLink> createPaymentLink({
     required double amount,
     String? description,
+    int? expiresInMinutes,
+    String? visibility,
+    String? confirmationMode,
+    bool amountLocked = true,
+    String? referenceLabel,
+    Map<String, String>? metadata,
   }) async {
     await _checkAuth();
     return remoteDataSource.createPaymentLink(
       amount: amount,
       description: description,
+      expiresInMinutes: expiresInMinutes,
+      visibility: visibility,
+      confirmationMode: confirmationMode,
+      amountLocked: amountLocked,
+      referenceLabel: referenceLabel,
+      metadata: metadata,
     );
   }
 
@@ -231,6 +264,18 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
+  Future<PaymentLink> cancelPaymentLink({
+    required String linkId,
+    String? reason,
+  }) async {
+    await _checkAuth();
+    return remoteDataSource.cancelPaymentLink(
+      linkId: linkId,
+      reason: reason,
+    );
+  }
+
+  @override
   Future<WalletNetworkAddress> getWalletNetworkProfile({
     required String walletName,
   }) async {
@@ -239,7 +284,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<WalletNetworkAddress> issueOnchainAddress({
+  Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
     bool regenerate = false,
   }) async {
@@ -276,6 +321,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<ExternalTransfer> getExternalTransfer(String transferId) async {
     await _checkAuth();
     return remoteDataSource.getExternalTransfer(transferId);
+  }
+
+  @override
+  Future<ExternalTransfer> cancelInboundTransfer(String transferId) async {
+    await _checkAuth();
+    return remoteDataSource.cancelInboundTransfer(transferId);
   }
 
   @override

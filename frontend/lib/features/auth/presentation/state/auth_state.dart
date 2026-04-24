@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../domain/entities/user.dart';
 
 /// Estado de autenticação
@@ -59,11 +61,13 @@ class AuthError extends AuthState {
   final String message;
   final int? statusCode;
   final String? errorCode;
+  final Object? data;
 
   const AuthError(
     this.message, {
     this.statusCode,
     this.errorCode,
+    this.data,
   });
 
   @override
@@ -72,12 +76,25 @@ class AuthError extends AuthState {
     return other is AuthError &&
         other.message == message &&
         other.statusCode == statusCode &&
-        other.errorCode == errorCode;
+        other.errorCode == errorCode &&
+        other.data == data;
   }
 
   @override
   int get hashCode =>
-      message.hashCode ^ statusCode.hashCode ^ errorCode.hashCode;
+      message.hashCode ^
+      statusCode.hashCode ^
+      errorCode.hashCode ^
+      data.hashCode;
+
+  @override
+  String toString() => jsonEncode({
+        'type': 'AuthError',
+        'message': message,
+        'statusCode': statusCode,
+        'errorCode': errorCode,
+        'data': data,
+      });
 }
 
 /// Estado indicando que o signup foi iniciado e requer setup de TOTP

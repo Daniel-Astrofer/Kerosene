@@ -97,6 +97,8 @@ class AppConfig {
   // 1.3 Profile
   static const String authMe = '/auth/me';
   static const String authSecurityProfile = '/auth/security/profile';
+  static const String authAppPin = '/auth/security/app-pin';
+  static const String authAppPinVerify = '/auth/security/app-pin/verify';
   static const String authSecurityStatus = '/auth/security-status';
   static const String authActivationStatus = '/auth/activation-status';
   static const String authActivationDepositLink =
@@ -149,6 +151,8 @@ class AppConfig {
       '/transactions/network/lightning/pay';
   static const String transactionsNetworkTransfers =
       '/transactions/network/transfers';
+  static const String depositRoot = '/deposit';
+  static const String treasuryOverview = '/treasury/overview';
 
   // 4.1 Payment Links (External BTC)
   static const String transactionsCreatePaymentLink =
@@ -163,19 +167,9 @@ class AppConfig {
       '/transactions/payment-links';
   static const String transactionsOnrampUrls = '/api/onramp/urls';
 
-  // 5. Vouchers (legacy / transitional)
-  static const String voucherRequest = '/voucher/request';
-  static const String voucherConfirm = '/voucher/confirm';
-  static const String voucherOnboardingLink = '/voucher/onboarding-link';
-  static const String voucherOnboardingLinkStatus =
-      '/voucher/onboarding-link/{linkId}';
-  static const String voucherOnboardingLinkConfirm =
-      '/voucher/onboarding-link/{linkId}/confirm';
-  static const String voucherOnboardingMockConfirm =
-      '/voucher/onboarding-mock-confirm';
-  static const String voucherTestClaim = '/voucher/test-claim';
-
   // 6. Notifications
+  static const String notificationsList = '/notifications';
+  static const String notificationsRead = '/notifications/{id}/read';
   static const String notificationsSend = '/notifications/send';
   static const String notificationRegisterToken =
       '/notifications/register-token';
@@ -202,7 +196,8 @@ class AppConfig {
   static const String transactionsConfirmDeposit =
       '/transactions/confirm-deposit';
   static const String transactionsDeposits = '/transactions/deposits';
-  static const String transactionsDepositBalance = '/transactions/deposit-balance';
+  static const String transactionsDepositBalance =
+      '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
 
   // 4.3 Mining Marketplace

@@ -8,6 +8,8 @@ abstract class WalletRemoteDataSource {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   });
 
   Future<List<dynamic>> getWallets();
@@ -37,6 +39,8 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   }) async {
     try {
       final response = await apiClient.post(
@@ -45,6 +49,8 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
           'name': name,
           'passphrase': passphrase,
           'accountSecurity': accountSecurity,
+          'xpub': xpub,
+          'walletMode': walletMode,
         },
         options: Options(contentType: 'application/json'),
       );
