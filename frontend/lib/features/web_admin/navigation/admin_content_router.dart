@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../navigation/admin_routes.dart';
 import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/monitoring/monitoring_screen.dart';
 import '../screens/transactions/transactions_screen.dart';
 import '../screens/lightning/lightning_screen.dart';
 import '../screens/onchain/onchain_screen.dart';
@@ -11,6 +12,7 @@ import '../screens/analytics/analytics_screen.dart';
 import '../screens/volatility/volatility_screen.dart';
 import '../screens/companies/companies_screen.dart';
 import '../screens/audit/audit_screen.dart';
+import '../screens/authenticated_devices/authenticated_devices_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 
@@ -24,6 +26,7 @@ class AdminContentRouter extends ConsumerWidget {
 
     return switch (route) {
       AdminRoute.dashboard => const DashboardScreen(),
+      AdminRoute.monitoring => const MonitoringScreen(),
       AdminRoute.transactions => const TransactionsScreen(),
       AdminRoute.lightning => const LightningScreen(),
       AdminRoute.onchain => const OnchainScreen(),
@@ -33,6 +36,7 @@ class AdminContentRouter extends ConsumerWidget {
       AdminRoute.volatility => const VolatilityScreen(),
       AdminRoute.companies => const CompaniesScreen(),
       AdminRoute.audit => const AuditScreen(),
+      AdminRoute.authenticatedDevices => const AuthenticatedDevicesScreen(),
       AdminRoute.notifications => const NotificationsScreen(),
       AdminRoute.settings => const SettingsScreen(),
     };

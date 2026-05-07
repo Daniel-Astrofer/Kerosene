@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/widgets/bouncing_button.dart';
@@ -40,9 +41,9 @@ class SignupStepLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final horizontalPadding =
-            constraints.maxWidth < 380 ? AppSpacing.md : AppSpacing.lg;
+      builder: (context, _) {
+        final responsive = context.responsive;
+        final horizontalPadding = responsive.horizontalPadding;
 
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -54,7 +55,9 @@ class SignupStepLayout extends StatelessWidget {
           ),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 820),
+              constraints: BoxConstraints(
+                maxWidth: math.min(820, responsive.maxReadableWidth),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -85,10 +88,7 @@ class SignupStepLayout extends StatelessWidget {
                           AppSpacing.lg,
                           AppSpacing.md,
                         ),
-                        child: SafeArea(
-                          top: false,
-                          child: footer!,
-                        ),
+                        child: SafeArea(top: false, child: footer!),
                       ),
                     ),
                   ],
@@ -181,7 +181,13 @@ class SignupHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _toneColor(context, tone);
-    final isCompact = MediaQuery.sizeOf(context).width < 380;
+    final responsive = context.responsive;
+    final isCompact = responsive.isCompact;
+    final titleSize = responsive.size.width < 340
+        ? 23.0
+        : isCompact
+        ? 26.0
+        : 29.0;
 
     return SignupGlassSurface(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -231,18 +237,20 @@ class SignupHeroCard extends StatelessWidget {
                     Text(
                       eyebrow.toUpperCase(),
                       style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color: accent,
-                            letterSpacing: 1.0,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: accent,
+                        letterSpacing: 1.0,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       title,
                       style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                            fontSize: isCompact ? 25 : 29,
-                            height: 1.02,
-                          ),
+                        fontSize: titleSize,
+                        height: 1.02,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -253,9 +261,9 @@ class SignupHeroCard extends StatelessWidget {
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
           ),
           if (highlightValue != null) ...[
             const SizedBox(height: AppSpacing.lg),
@@ -274,33 +282,32 @@ class SignupHeroCard extends StatelessWidget {
                       Text(
                         highlightLabel!.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                              color: Theme.of(context).colorScheme.secondary,
-                              letterSpacing: 1.0,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          color: Theme.of(context).colorScheme.secondary,
+                          letterSpacing: 1.0,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     if (highlightLabel != null)
                       const SizedBox(height: AppSpacing.xs),
                     Text(
                       highlightValue!,
-                      style: (isCompact
-                              ? Theme.of(context).textTheme.headlineSmall
-                              : Theme.of(context).textTheme.displaySmall)!
-                          .copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style:
+                          (isCompact
+                                  ? Theme.of(context).textTheme.headlineSmall
+                                  : Theme.of(context).textTheme.displaySmall)!
+                              .copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
                     ),
                     if (highlightHint != null) ...[
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         highlightHint!,
                         style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                              height: 1.45,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.45,
+                        ),
                       ),
                     ],
                   ],
@@ -388,11 +395,7 @@ class SignupInlineNotice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AnimatedGlyphIcon(
-            icon: icon,
-            color: accent,
-            size: 18,
-          ),
+          AnimatedGlyphIcon(icon: icon, color: accent, size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -401,16 +404,16 @@ class SignupInlineNotice extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   message,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        height: 1.45,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),
@@ -449,11 +452,7 @@ class SignupBulletLine extends StatelessWidget {
             color: accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: AnimatedGlyphIcon(
-            icon: icon,
-            size: 18,
-            color: accent,
-          ),
+          child: AnimatedGlyphIcon(icon: icon, size: 18, color: accent),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
@@ -463,16 +462,16 @@ class SignupBulletLine extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      height: 1.45,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
               ),
             ],
           ),
@@ -498,10 +497,7 @@ class SignupTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = _toneColor(context, tone);
     final maxTagWidth = math
-        .min(
-          MediaQuery.sizeOf(context).width * 0.72,
-          260,
-        )
+        .min(MediaQuery.sizeOf(context).width * 0.72, 260)
         .toDouble();
 
     return ConstrainedBox(
@@ -535,9 +531,9 @@ class SignupTag extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 0.4,
-                    ),
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  letterSpacing: 0.4,
+                ),
               ),
             ),
           ],
@@ -581,9 +577,9 @@ class SignupPrimaryFooter extends StatelessWidget {
           Text(
             caption!,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.4,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

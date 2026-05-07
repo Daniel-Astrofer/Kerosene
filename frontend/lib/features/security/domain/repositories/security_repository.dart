@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/app_pin_status.dart';
 import '../entities/account_security_profile.dart';
+import '../entities/admin_access.dart';
 import '../entities/security_status.dart';
 import '../entities/treasury_overview.dart';
 
@@ -32,4 +33,18 @@ abstract class SecurityRepository {
   Future<Either<Failure, AppPinStatus>> verifyAppPin({
     required String pin,
   });
+  Future<Either<Failure, AdminKeyStatus>> getAdminKeyStatus();
+  Future<Either<Failure, AdminKeyStatus>> createAdminKey({
+    required String keyMaterialHash,
+    required String deviceInstallId,
+  });
+  Future<Either<Failure, AdminKeyStatus>> revokeAdminKey();
+  Future<Either<Failure, List<AdminAccessAttempt>>> getPendingAdminAttempts();
+  Future<Either<Failure, AdminAccessAttempt>> decideAdminAttempt({
+    required String attemptId,
+    required bool approve,
+  });
+  Future<Either<Failure, List<AdminAuthenticatedDevice>>> getAdminDevices();
+  Future<Either<Failure, void>> blockAdminDevice(String deviceId);
+  Future<Either<Failure, void>> revokeAdminDevice(String deviceId);
 }

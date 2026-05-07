@@ -1,11 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:slip39/slip39.dart';
 import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
@@ -122,15 +122,6 @@ class _SignupSeedStepState extends State<SignupSeedStep>
       _wordCount = primaryWordCount;
       _confirmedWritten = false;
     });
-  }
-
-  void _copyShare(String share) {
-    Clipboard.setData(ClipboardData(text: share));
-    AppNotice.showSuccess(
-      context,
-      title: AppCopy.signupSeedShareCopiedTitle.resolve(context),
-      message: AppCopy.signupSeedShareCopiedBody.resolve(context),
-    );
   }
 
   void _submit() {
@@ -617,7 +608,6 @@ class _SignupSeedStepState extends State<SignupSeedStep>
                                 _slip39Shares.length,
                               ),
                               share: share,
-                              onCopy: () => _copyShare(share),
                             ),
                           );
                         }),
@@ -761,12 +751,10 @@ class _SignupSeedStepState extends State<SignupSeedStep>
 class _Slip39ShareCard extends StatelessWidget {
   final String label;
   final String share;
-  final VoidCallback onCopy;
 
   const _Slip39ShareCard({
     required this.label,
     required this.share,
-    required this.onCopy,
   });
 
   @override
@@ -790,14 +778,6 @@ class _Slip39ShareCard extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         letterSpacing: 1.2,
                       ),
-                ),
-              ),
-              IconButton(
-                onPressed: onCopy,
-                icon: AnimatedGlyphIcon(
-                  icon: LucideIcons.copy,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.secondary,
                 ),
               ),
             ],

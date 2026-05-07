@@ -27,7 +27,7 @@ class AppConstants {
   // Error Messages
   static const String networkErrorMessage = 'Sem conexão com a internet';
   static const String serverErrorMessage =
-      'Erro no servidor. Tente novamente mais tarde';
+      'Não conseguimos concluir agora. Tente novamente mais tarde';
   static const String unknownErrorMessage =
       'Erro desconhecido. Tente novamente';
   static const String authErrorMessage = 'Credenciais inválidas';

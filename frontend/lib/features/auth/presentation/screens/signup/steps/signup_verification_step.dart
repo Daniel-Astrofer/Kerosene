@@ -119,15 +119,11 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
   }
 
   String _progressText() {
-    return _filledCount.toString() +
-        '/' +
-        _verificationIndices.length.toString();
+    return '$_filledCount/${_verificationIndices.length}';
   }
 
   String _slip39QuorumText(SignupSeedMaterial seedMaterial) {
-    return seedMaterial.slip39Threshold.toString() +
-        '/' +
-        seedMaterial.slip39TotalShares.toString();
+    return '${seedMaterial.slip39Threshold}/${seedMaterial.slip39TotalShares}';
   }
 
   int get _filledCount {
@@ -453,12 +449,12 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
             )
           : AppCopy.signupVerificationFillHighlighted.resolve(context),
       chips: _chipsForSeed(seedMaterial),
-      children: _buildChildren(seedMaterial),
       footer: SignupPrimaryFooter(
         text: AppCopy.signupVerificationContinue.resolve(context),
         onPressed: _canContinue(seedMaterial) ? _submit : null,
         icon: LucideIcons.arrowRight,
       ),
+      children: _buildChildren(seedMaterial),
     );
   }
 }

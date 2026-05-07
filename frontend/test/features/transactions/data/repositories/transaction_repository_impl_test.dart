@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:teste/core/errors/exceptions.dart';
 import 'package:teste/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:teste/features/transactions/data/datasources/transaction_remote_datasource.dart';
 import 'package:teste/features/transactions/data/repositories/transaction_repository_impl.dart';
@@ -149,6 +150,56 @@ void main() {
       expect(remoteDataSource.lastContext, isNull);
       expect(remoteDataSource.lastIdempotencyKey, isNull);
       expect(remoteDataSource.lastRequestTimestamp, isNull);
+    });
+  });
+
+  group('TransactionRemoteDataSourceImpl.buildWithdrawRequestPayload', () {
+    test('builds the network on-chain send body required by the backend', () {
+      final payload =
+          TransactionRemoteDataSourceImpl.buildWithdrawRequestPayload(
+        idempotencyKey: ' idem-123 ',
+        fromWalletName: ' Minha Carteira ',
+        toAddress: ' bc1qdestino ',
+        amount: 0.0001,
+        description: ' saque para carteira externa ',
+        totpCode: ' 123456 ',
+        confirmationPassphrase: ' frase ',
+        passkeyAssertionJson: null,
+      );
+
+      expect(payload, {
+        'idempotencyKey': 'idem-123',
+        'fromWalletName': 'Minha Carteira',
+        'toAddress': 'bc1qdestino',
+        'amount': 0.0001,
+        'description': 'saque para carteira externa',
+        'totpCode': '123456',
+        'passkeyAssertionResponseJSON': null,
+        'confirmationPassphrase': 'frase',
+      });
+    });
+
+    test('uses the default on-chain description when none is provided', () {
+      final payload =
+          TransactionRemoteDataSourceImpl.buildWithdrawRequestPayload(
+        idempotencyKey: 'idem-123',
+        fromWalletName: 'Minha Carteira',
+        toAddress: 'bc1qdestino',
+        amount: 0.0001,
+      );
+
+      expect(payload['description'], 'saque para carteira externa');
+    });
+
+    test('requires idempotencyKey for external withdrawals', () {
+      expect(
+        () => TransactionRemoteDataSourceImpl.buildWithdrawRequestPayload(
+          fromWalletName: 'Minha Carteira',
+          toAddress: 'bc1qdestino',
+          amount: 0.0001,
+        ),
+        throwsA(isA<ValidationException>()),
+      );
     });
   });
 }

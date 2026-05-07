@@ -10,9 +10,7 @@ import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart'
 import 'package:teste/l10n/l10n_extension.dart';
 
 typedef PaymentConfirmationAction<T> = Future<T?> Function(
-  BuildContext context,
-  String? totpCode,
-);
+    BuildContext context, String? totpCode);
 
 class PaymentConfirmationDetail {
   final String label;
@@ -132,7 +130,7 @@ class _PaymentConfirmationScreenState<T>
       if (!mounted) return;
       AppNotice.showError(
         context,
-        title: 'Não foi possível confirmar',
+        title: context.l10n.paymentConfirmationErrorTitle,
         message: ErrorTranslator.translate(context.l10n, error.toString()),
       );
     } finally {
@@ -146,7 +144,7 @@ class _PaymentConfirmationScreenState<T>
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
       title: widget.title,
-      subtitle: 'Revise os dados e confirme com os fatores de segurança.',
+      subtitle: context.l10n.paymentConfirmationReviewSubtitle,
       onBack: _isSubmitting ? () {} : () => Navigator.of(context).pop(),
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
@@ -240,14 +238,19 @@ class _AmountHero extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            amountPrimary,
-            textAlign: TextAlign.center,
-            style: AppTypography.number.copyWith(
-              color: receiveFlowTextColor,
-              fontSize: 46,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1.8,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              amountPrimary,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: AppTypography.number.copyWith(
+                color: receiveFlowTextColor,
+                fontSize: 46,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -392,11 +395,18 @@ class _ReceiptCard extends StatelessWidget {
     final hasTimeDetail = details.any(
       (detail) =>
           detail.label.toLowerCase().contains('data') ||
+          detail.label.toLowerCase().contains('date') ||
+          detail.label.toLowerCase().contains('fecha') ||
           detail.label.toLowerCase().contains('hora'),
     );
-    final hasNetworkDetail = details.any(
-      (detail) => detail.label.toLowerCase() == 'rede',
-    );
+    final defaultNetworkLabel =
+        context.l10n.paymentConfirmationNetwork.toLowerCase();
+    final withdrawNetworkLabel =
+        context.l10n.withdrawUiDetailNetwork.toLowerCase();
+    final hasNetworkDetail = details.any((detail) {
+      final label = detail.label.toLowerCase();
+      return label == defaultNetworkLabel || label == withdrawNetworkLabel;
+    });
 
     return ReceiveFlowPanel(
       child: Column(
@@ -406,14 +416,8 @@ class _ReceiptCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _InlineMetaPill(
-                icon: LucideIcons.network,
-                label: networkLabel,
-              ),
-              _InlineMetaPill(
-                icon: LucideIcons.calendarClock,
-                label: dateStr,
-              ),
+              _InlineMetaPill(icon: LucideIcons.network, label: networkLabel),
+              _InlineMetaPill(icon: LucideIcons.calendarClock, label: dateStr),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -433,7 +437,7 @@ class _ReceiptCard extends StatelessWidget {
           if (!hasTimeDetail)
             _ReceiptDetailRow(
               detail: PaymentConfirmationDetail(
-                label: 'Data e Hora',
+                label: context.l10n.paymentConfirmationDateTime,
                 value: dateStr,
                 icon: LucideIcons.calendarClock,
               ),
@@ -441,7 +445,7 @@ class _ReceiptCard extends StatelessWidget {
           if (!hasNetworkDetail)
             _ReceiptDetailRow(
               detail: PaymentConfirmationDetail(
-                label: 'Rede',
+                label: context.l10n.paymentConfirmationNetwork,
                 value: networkLabel,
                 icon: LucideIcons.network,
               ),
@@ -468,7 +472,8 @@ class _ReceiptDetailRow extends StatelessWidget {
 
     AppNotice.showSuccess(
       context,
-      message: detail.copyMessage ?? '${detail.label} copiado.',
+      message: detail.copyMessage ??
+          context.l10n.paymentConfirmationCopied(detail.label),
       duration: const Duration(seconds: 2),
     );
   }
@@ -494,11 +499,7 @@ class _ReceiptDetailRow extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  detail.icon,
-                  size: 16,
-                  color: receiveFlowFaintTextColor,
-                ),
+                Icon(detail.icon, size: 16, color: receiveFlowFaintTextColor),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -512,9 +513,9 @@ class _ReceiptDetailRow extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () => _copy(context),
                   icon: const Icon(Icons.copy_rounded, size: 15),
-                  label: const Text('Copiar'),
+                  label: Text(context.l10n.paymentConfirmationCopyAction),
                   style: TextButton.styleFrom(
-                    foregroundColor: receiveFlowMutedTextColor,
+                    foregroundColor: receiveFlowTextColor,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     minimumSize: const Size(0, 34),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -533,9 +534,9 @@ class _ReceiptDetailRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(0),
                   border: Border.all(color: receiveFlowBorderStrongColor),
                 ),
-                child: SelectableText(
-                  detail.value,
-                  style: valueStyle,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SelectableText(detail.value, style: valueStyle),
                 ),
               ),
             ),
@@ -558,11 +559,7 @@ class _ReceiptDetailRow extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    detail.icon,
-                    size: 16,
-                    color: receiveFlowFaintTextColor,
-                  ),
+                  Icon(detail.icon, size: 16, color: receiveFlowFaintTextColor),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -576,12 +573,15 @@ class _ReceiptDetailRow extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                detail.value,
-                style: valueStyle.copyWith(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SelectableText(
+                  detail.value,
+                  style: valueStyle.copyWith(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
                 ),
               ),
             ],
@@ -592,34 +592,53 @@ class _ReceiptDetailRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            detail.icon,
-            size: 16,
-            color: receiveFlowFaintTextColor,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              detail.label,
-              style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: receiveFlowMutedTextColor,
-                    fontWeight: FontWeight.w400,
-                  ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            flex: 2,
-            child: Text(
-              detail.value,
-              textAlign: TextAlign.right,
-              style: valueStyle,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final label = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(detail.icon, size: 16, color: receiveFlowFaintTextColor),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  detail.label,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: receiveFlowMutedTextColor,
+                        fontWeight: FontWeight.w400,
+                      ),
+                ),
+              ),
+            ],
+          );
+          final value = Text(
+            detail.value,
+            textAlign:
+                constraints.maxWidth < 360 ? TextAlign.left : TextAlign.right,
+            maxLines: constraints.maxWidth < 360 ? 4 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: valueStyle,
+          );
+
+          if (constraints.maxWidth < 360) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                label,
+                const SizedBox(height: AppSpacing.xs),
+                value,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: label),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(flex: 2, child: value),
+            ],
+          );
+        },
       ),
     );
   }
@@ -629,10 +648,7 @@ class _InlineMetaPill extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _InlineMetaPill({
-    required this.icon,
-    required this.label,
-  });
+  const _InlineMetaPill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -692,8 +708,11 @@ class _SecurityCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(LucideIcons.shieldAlert,
-                  color: receiveFlowMutedTextColor, size: 20),
+              const Icon(
+                LucideIcons.shieldAlert,
+                color: receiveFlowMutedTextColor,
+                size: 20,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -756,11 +775,7 @@ class _NoticeCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            LucideIcons.info,
-            size: 18,
-            color: receiveFlowMutedTextColor,
-          ),
+          Icon(LucideIcons.info, size: 18, color: receiveFlowMutedTextColor),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(

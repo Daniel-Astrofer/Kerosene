@@ -18,6 +18,7 @@ class ExternalTransfer extends Equatable {
   final String blockchainTxid;
   final String paymentHash;
   final String invoiceData;
+  final double expectedAmountBtc;
   final int confirmations;
   final DateTime? detectedAt;
   final DateTime? settledAt;
@@ -42,6 +43,7 @@ class ExternalTransfer extends Equatable {
     required this.blockchainTxid,
     required this.paymentHash,
     required this.invoiceData,
+    required this.expectedAmountBtc,
     required this.confirmations,
     required this.detectedAt,
     required this.settledAt,
@@ -54,6 +56,16 @@ class ExternalTransfer extends Equatable {
   bool get isOnchain => network.toUpperCase() == 'ONCHAIN';
   bool get isOutbound => transferType.toUpperCase() == 'OUTBOUND_PAYMENT';
   bool get isInboundInvoice => transferType.toUpperCase() == 'INBOUND_INVOICE';
+  bool get isInboundTransfer =>
+      transferType.toUpperCase() == 'ADDRESS_ISSUE' ||
+      transferType.toUpperCase() == 'ONRAMP_PURCHASE' ||
+      transferType.toUpperCase() == 'INBOUND_INVOICE';
+  bool get hasDetectedOnchainTransaction =>
+      blockchainTxid.trim().isNotEmpty || confirmations > 0;
+  bool get canCancelPendingReceive =>
+      isInboundTransfer &&
+      status.toUpperCase() == 'PENDING' &&
+      !hasDetectedOnchainTransaction;
 
   Transaction toTransaction() {
     final normalizedStatus = status.toUpperCase();
@@ -75,11 +87,13 @@ class ExternalTransfer extends Equatable {
       invoiceId,
       id,
     ].firstWhere((value) => value.trim().isNotEmpty, orElse: () => id);
+    final displayAmountBtc =
+        amountBtc.abs() > 0 ? amountBtc : expectedAmountBtc;
     return Transaction(
       id: transactionId,
       fromAddress: isOutbound ? walletName : '',
       toAddress: destination.isNotEmpty ? destination : walletName,
-      amountSatoshis: (amountBtc.abs() * 100000000).round(),
+      amountSatoshis: (displayAmountBtc.abs() * 100000000).round(),
       feeSatoshis: (networkFeeBtc.abs() * 100000000).round(),
       status: txStatus,
       type: isOutbound ? TransactionType.withdrawal : TransactionType.deposit,
@@ -91,6 +105,9 @@ class ExternalTransfer extends Equatable {
       invoiceId: invoiceId.isNotEmpty ? invoiceId : null,
       lightningInvoice: invoiceData.isNotEmpty ? invoiceData : null,
       paymentHash: paymentHash.isNotEmpty ? paymentHash : null,
+      externalTransferId: id,
+      externalTransferStatus: status,
+      externalTransferType: transferType,
       description: context,
       isInternal: false,
       isLightning: isLightning,
@@ -115,6 +132,7 @@ class ExternalTransfer extends Equatable {
       blockchainTxid: json['blockchainTxid']?.toString() ?? '',
       paymentHash: json['paymentHash']?.toString() ?? '',
       invoiceData: json['invoiceData']?.toString() ?? '',
+      expectedAmountBtc: (json['expectedAmountBtc'] as num?)?.toDouble() ?? 0,
       confirmations: (json['confirmations'] as num?)?.toInt() ?? 0,
       detectedAt:
           DateTime.tryParse(json['detectedAt']?.toString() ?? '')?.toLocal(),
@@ -146,6 +164,7 @@ class ExternalTransfer extends Equatable {
         blockchainTxid,
         paymentHash,
         invoiceData,
+        expectedAmountBtc,
         confirmations,
         detectedAt,
         settledAt,

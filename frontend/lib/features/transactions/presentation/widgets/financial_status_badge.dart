@@ -34,19 +34,17 @@ class FinancialStatusBadge extends StatelessWidget {
     switch (status.toUpperCase()) {
       case 'PAID':
         return const FinancialStatusMeta(
-          label: LocalizedCopy(
-            en: 'Paid',
-            pt: 'Pago',
-            es: 'Pagado',
-          ),
+          label: LocalizedCopy(en: 'Paid', pt: 'Pago', es: 'Pagado'),
           color: successColor,
           icon: Icons.check_circle_outline_rounded,
         );
       case 'COMPLETED':
+      case 'SETTLED':
+      case 'CONFIRMED':
         return const FinancialStatusMeta(
           label: LocalizedCopy(
             en: 'Completed',
-            pt: 'Concluido',
+            pt: 'Concluído',
             es: 'Completado',
           ),
           color: successColor,
@@ -54,11 +52,7 @@ class FinancialStatusBadge extends StatelessWidget {
         );
       case 'EXPIRED':
         return const FinancialStatusMeta(
-          label: LocalizedCopy(
-            en: 'Expired',
-            pt: 'Expirado',
-            es: 'Expirado',
-          ),
+          label: LocalizedCopy(en: 'Expired', pt: 'Expirado', es: 'Expirado'),
           color: errorColor,
           icon: Icons.cancel_outlined,
         );
@@ -73,14 +67,37 @@ class FinancialStatusBadge extends StatelessWidget {
           icon: Icons.block_rounded,
         );
       case 'VERIFYING_ONBOARDING':
+      case 'AUTO_RESOLUTION_PENDING':
         return const FinancialStatusMeta(
           label: LocalizedCopy(
-            en: 'Verifying',
-            pt: 'Verificando',
-            es: 'Verificando',
+            en: 'Being checked',
+            pt: 'Em conferência',
+            es: 'En revisión',
           ),
           color: infoColor,
           icon: Icons.sync_rounded,
+        );
+      case 'USER_ACTION_REQUIRED':
+        return const FinancialStatusMeta(
+          label: LocalizedCopy(
+            en: 'Action needed',
+            pt: 'Ação necessária',
+            es: 'Acción necesaria',
+          ),
+          color: pendingColor,
+          icon: Icons.touch_app_rounded,
+        );
+      case 'MEMPOOL':
+      case 'DETECTED':
+      case 'MEMPOOL_SEEN':
+        return const FinancialStatusMeta(
+          label: LocalizedCopy(
+            en: 'Detected',
+            pt: 'Detectado',
+            es: 'Detectado',
+          ),
+          color: infoColor,
+          icon: Icons.radar_rounded,
         );
       case 'PENDING':
       default:
@@ -102,7 +119,7 @@ class FinancialStatusBadge extends StatelessWidget {
         return const FinancialStatusMeta(
           label: LocalizedCopy(
             en: 'Completed',
-            pt: 'Concluido',
+            pt: 'Concluído',
             es: 'Completado',
           ),
           color: successColor,
@@ -120,11 +137,7 @@ class FinancialStatusBadge extends StatelessWidget {
         );
       case TransactionStatus.failed:
         return const FinancialStatusMeta(
-          label: LocalizedCopy(
-            en: 'Failed',
-            pt: 'Falhou',
-            es: 'Fallo',
-          ),
+          label: LocalizedCopy(en: 'Failed', pt: 'Falhou', es: 'Fallo'),
           color: errorColor,
           icon: Icons.error_outline_rounded,
         );
@@ -163,10 +176,12 @@ class FinancialStatusBadge extends StatelessWidget {
           SizedBox(width: compact ? 6 : 8),
           Text(
             meta.label.resolve(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+                  letterSpacing: 0,
                 ),
           ),
         ],

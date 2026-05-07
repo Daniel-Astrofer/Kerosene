@@ -42,5 +42,30 @@ void main() {
         'Entre com senha + TOTP e vincule uma nova passkey neste dispositivo.',
       );
     });
+
+    test('maps payment rail errors to cordial messages', () {
+      expect(
+        ErrorTranslator.translate(l10n, 'LIGHTNING_INSUFFICIENT_LIQUIDITY'),
+        'Não há liquidez Lightning suficiente para concluir este envio agora. Tente outro método ou um valor menor.',
+      );
+      expect(
+        ErrorTranslator.translate(l10n, 'ONCHAIN_RECEIVER_METHOD_NOT_FOUND'),
+        'Este usuário não possui carteira on-chain cadastrada para receber.',
+      );
+      expect(
+        ErrorTranslator.translate(l10n, 'QUOTE_EXPIRED'),
+        'A cotação expirou. Gere uma nova antes de confirmar.',
+      );
+    });
+
+    test('hides technical backend messages', () {
+      expect(
+        ErrorTranslator.translate(
+          l10n,
+          'DioException: endpoint /api/payments failed with invalid payload',
+        ),
+        'Ocorreu um erro inesperado.',
+      );
+    });
   });
 }

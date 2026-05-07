@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../transactions/domain/entities/payment_link.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
-import '../../widgets/admin_data_table.dart';
 
-/// Payment Links management module.
+/// Payment-link aggregate metrics.
+///
+/// The enterprise terminal intentionally avoids listing link descriptions,
+/// deposit addresses, txids, or per-user payloads.
 class PaymentLinksScreen extends ConsumerWidget {
   const PaymentLinksScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linksAsync = ref.watch(adminPaymentLinksProvider);
+    final metricsAsync = ref.watch(adminOperationalMetricsProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AdminTheme.spacingXl),
@@ -22,68 +23,111 @@ class PaymentLinksScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const AdminSectionHeader(
-            title: 'Payment Links',
-            subtitle: 'Track creation, conversion, and lifecycle of payment links',
+            title: 'Payment Metrics',
+            subtitle:
+                'Aggregate payment-link lifecycle metrics without exposing readable user payloads.',
           ),
-          linksAsync.when(
-            data: (links) {
-              final paid = links.where((l) => l.isPaid || l.isCompleted).toList();
-              final pending = links.where((l) => l.isPending && !l.isExpired).toList();
-              final expired = links.where((l) => l.isExpired).toList();
-              final totalAmount = links.fold<double>(0, (s, l) => s + l.amountBtc);
-              final paidAmount = paid.fold<double>(0, (s, l) => s + l.amountBtc);
-              final conversionRate = links.isNotEmpty ? paid.length / links.length : 0.0;
-
-              // Average time to payment (for paid links with both createdAt and paidAt)
-              final paidWithDates = paid.where((l) => l.createdAt != null && l.paidAt != null).toList();
-              final avgPaymentMinutes = paidWithDates.isNotEmpty
-                  ? paidWithDates.fold<double>(0, (s, l) => s + l.paidAt!.difference(l.createdAt!).inMinutes) / paidWithDates.length
-                  : 0.0;
+          metricsAsync.when(
+            data: (metrics) {
+              final links = _map(metrics['paymentLinks']);
+              final total = _int(links['linksCreated']);
+              final paid = _int(links['linksPaid']);
+              final pending = _int(links['linksPending']);
+              final expired = _int(links['linksExpired']);
+              final cancelled = _int(links['linksCancelled']);
+              final totalAmount = _double(links['totalAmountBtc']);
+              final paidAmount = _double(links['paidAmountBtc']);
+              final conversionRate = total == 0 ? 0.0 : paid / total;
 
               return Column(
                 children: [
-                  Row(
+                  AdminResponsiveGrid(
                     children: [
-                      Expanded(child: AdminMetricCard(label: 'Total Links', value: '${links.length}', subtitle: '${totalAmount.toStringAsFixed(6)} BTC total', icon: Icons.qr_code_2_outlined)),
-                      const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(child: AdminMetricCard(label: 'Paid', value: '${paid.length}', subtitle: '${paidAmount.toStringAsFixed(6)} BTC collected', icon: Icons.check_circle_outline, accentColor: AdminColors.positive)),
-                      const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(child: AdminMetricCard(label: 'Conversion', value: '${(conversionRate * 100).toStringAsFixed(1)}%', subtitle: '${pending.length} pending • ${expired.length} expired', icon: Icons.trending_up, accentColor: conversionRate > 0.5 ? AdminColors.positive : AdminColors.warning)),
-                      const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(child: AdminMetricCard(label: 'Avg Time', value: avgPaymentMinutes > 0 ? '${avgPaymentMinutes.toStringAsFixed(0)} min' : '—', subtitle: 'creation to payment', icon: Icons.timer_outlined)),
+                      AdminMetricCard(
+                        label: 'Total Links',
+                        value: '$total',
+                        subtitle: '${totalAmount.toStringAsFixed(6)} BTC total',
+                        icon: Icons.qr_code_2_outlined,
+                      ),
+                      AdminMetricCard(
+                        label: 'Paid',
+                        value: '$paid',
+                        subtitle: '${paidAmount.toStringAsFixed(6)} BTC paid',
+                        icon: Icons.check_circle_outline,
+                        accentColor: AdminColors.positive,
+                      ),
+                      AdminMetricCard(
+                        label: 'Pending',
+                        value: '$pending',
+                        icon: Icons.hourglass_empty,
+                        accentColor: AdminColors.warning,
+                      ),
+                      AdminMetricCard(
+                        label: 'Expired / Cancelled',
+                        value: '${expired + cancelled}',
+                        subtitle: '$expired expired | $cancelled cancelled',
+                        icon: Icons.block_outlined,
+                        accentColor: AdminColors.negative,
+                      ),
+                      AdminMetricCard(
+                        label: 'Conversion',
+                        value: '${(conversionRate * 100).toStringAsFixed(1)}%',
+                        icon: Icons.trending_up,
+                      ),
                     ],
                   ),
                   const SizedBox(height: AdminTheme.spacingXl),
-                  AdminDataTable<PaymentLink>(
-                    data: links,
-                    columns: [
-                      AdminColumn(header: 'ID', cellBuilder: (l) => SelectableText(l.id.length > 10 ? '${l.id.substring(0, 10)}...' : l.id, style: AdminTypography.tableCellMono)),
-                      AdminColumn(header: 'Amount', isNumeric: true, cellBuilder: (l) => Text(l.amountBtc.toStringAsFixed(8), style: AdminTypography.tableCellMono), sortKey: (l) => l.amountBtc),
-                      AdminColumn(header: 'Net Amount', isNumeric: true, cellBuilder: (l) => Text(l.netAmountBtc.toStringAsFixed(8), style: AdminTypography.tableCellMono)),
-                      AdminColumn(header: 'Fee', isNumeric: true, cellBuilder: (l) => Text(l.depositFeeBtc.toStringAsFixed(8), style: AdminTypography.tableCellMono)),
-                      AdminColumn(header: 'Status', cellBuilder: (l) {
-                        AdminBadgeVariant v;
-                        String label;
-                        if (l.isCompleted) { v = AdminBadgeVariant.positive; label = 'Completed'; }
-                        else if (l.isPaid) { v = AdminBadgeVariant.positive; label = 'Paid'; }
-                        else if (l.isExpired) { v = AdminBadgeVariant.negative; label = 'Expired'; }
-                        else { v = AdminBadgeVariant.warning; label = 'Pending'; }
-                        return AdminStatusBadge(label: label, variant: v);
-                      }),
-                      AdminColumn(header: 'Description', cellBuilder: (l) => Text(l.description.isNotEmpty ? (l.description.length > 20 ? '${l.description.substring(0, 20)}...' : l.description) : '—', style: AdminTypography.tableCell)),
-                      AdminColumn(header: 'Created', cellBuilder: (l) => Text(l.createdAt != null ? '${l.createdAt!.year}-${l.createdAt!.month.toString().padLeft(2, '0')}-${l.createdAt!.day.toString().padLeft(2, '0')}' : '—', style: AdminTypography.tableCell), sortKey: (l) => l.createdAt?.millisecondsSinceEpoch ?? 0),
-                      AdminColumn(header: 'Paid At', cellBuilder: (l) => Text(l.paidAt != null ? '${l.paidAt!.year}-${l.paidAt!.month.toString().padLeft(2, '0')}-${l.paidAt!.day.toString().padLeft(2, '0')} ${l.paidAt!.hour.toString().padLeft(2, '0')}:${l.paidAt!.minute.toString().padLeft(2, '0')}' : '—', style: AdminTypography.tableCell)),
-                    ],
-                    emptyMessage: 'No payment links found',
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AdminTheme.spacingLg),
+                    decoration: BoxDecoration(
+                      color: AdminColors.surface,
+                      border: Border.all(color: AdminColors.border),
+                      borderRadius: AdminTheme.borderRadiusSm,
+                    ),
+                    child: Text(
+                      'Per-link descriptions, deposit addresses, txids and user identifiers are intentionally hidden from the enterprise terminal. Use integrity roots and aggregate counters for operations.',
+                      style: AdminTypography.bodySmall.copyWith(
+                        color: AdminColors.textSecondary,
+                        height: 1.45,
+                      ),
+                    ),
                   ),
                 ],
               );
             },
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(AdminTheme.spacing3xl), child: CircularProgressIndicator(color: AdminColors.textTertiary))),
-            error: (e, _) => AdminErrorState(message: 'Failed to load payment links: $e', onRetry: () => ref.invalidate(adminPaymentLinksProvider)),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AdminTheme.spacing3xl),
+                child: CircularProgressIndicator(
+                  color: AdminColors.textTertiary,
+                ),
+              ),
+            ),
+            error: (e, _) => AdminErrorState(
+              message: 'Failed to load aggregate payment metrics: $e',
+              onRetry: () => ref.invalidate(adminOperationalMetricsProvider),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+Map<String, dynamic> _map(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return const {};
+}
+
+int _int(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double _double(Object? value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
 }

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 /// Luxury Deposit Instructions Screen — Refactored with Design System
 class DepositInstructionsScreen extends StatelessWidget {
@@ -11,15 +12,15 @@ class DepositInstructionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
-      title: 'Instruções de depósito',
-      subtitle: 'Leitura curta e direta, no mesmo padrão do fluxo.',
+      title: context.l10n.depositInstructionsTitle,
+      subtitle: context.l10n.depositInstructionsSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildInstructionsCard(context),
           const SizedBox(height: AppSpacing.md),
           ReceiveFlowPrimaryButton(
-            label: 'Entendido',
+            label: context.l10n.depositInstructionsUnderstood,
             onTap: () => Navigator.pop(context),
           ),
         ],
@@ -44,7 +45,7 @@ class DepositInstructionsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  'Instruções de depósito',
+                  context.l10n.depositInstructionsTitle,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: receiveFlowTextColor,
                         fontWeight: FontWeight.w500,
@@ -56,8 +57,8 @@ class DepositInstructionsScreen extends StatelessWidget {
           _buildInstructionItem(
             context,
             icon: LucideIcons.network,
-            label: 'Rede',
-            title: 'Deposite BTC apenas via',
+            label: context.l10n.depositInstructionsNetworkLabel,
+            title: context.l10n.depositInstructionsNetworkTitle,
             highlight: 'Lightning Network',
             suffix: '.',
           ),
@@ -65,29 +66,29 @@ class DepositInstructionsScreen extends StatelessWidget {
           _buildInstructionItem(
             context,
             icon: LucideIcons.arrowDown,
-            label: 'Mínimo',
-            title: 'O depósito mínimo é de',
+            label: context.l10n.depositInstructionsMinimumLabel,
+            title: context.l10n.depositInstructionsMinimumTitle,
             highlight: '0.000001 BTC',
             suffix: '.',
-            note: 'Depósitos abaixo deste valor serão perdidos.',
+            note: context.l10n.depositInstructionsMinimumNote,
           ),
           _buildDivider(),
           _buildInstructionItem(
             context,
             icon: LucideIcons.arrowUp,
-            label: 'Máximo',
-            title: 'O depósito máximo é de',
+            label: context.l10n.depositInstructionsMaximumLabel,
+            title: context.l10n.depositInstructionsMaximumTitle,
             highlight: '1.00 BTC',
-            suffix: ' por transação.',
+            suffix: context.l10n.depositInstructionsMaximumSuffix,
           ),
           _buildDivider(),
           _buildInstructionItem(
             context,
             icon: LucideIcons.timer,
-            label: 'Processamento',
-            title: 'Tempo estimado:',
-            highlight: '< 1 Minuto',
-            suffix: ' via Lightning.',
+            label: context.l10n.depositInstructionsProcessingLabel,
+            title: context.l10n.depositInstructionsProcessingTitle,
+            highlight: context.l10n.depositInstructionsProcessingHighlight,
+            suffix: context.l10n.depositInstructionsProcessingSuffix,
           ),
         ],
       ),

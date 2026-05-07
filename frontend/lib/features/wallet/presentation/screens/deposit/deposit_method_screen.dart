@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/api_display_text.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import 'deposit_lightning_invoice_screen.dart';
 import 'deposit_onchain_invoice_screen.dart';
 
@@ -71,49 +73,52 @@ class DepositMethodScreen extends ConsumerWidget {
     final lightningSubtitle = walletProfileAsync.when(
       data: (profile) {
         if (profile.lightningEnabled) {
-          return 'Invoice BOLT11 com expiração e cópia rápida';
+          return context.l10n.depositFlowLightningFastSubtitle;
         }
         final reason = profile.lightningUnavailableReason.trim();
         if (reason.isNotEmpty) {
-          return reason;
+          return ApiDisplayText.message(context, reason);
         }
-        return 'Lightning indisponível neste ambiente.';
+        return context.l10n.depositFlowLightningUnavailable;
       },
-      loading: () => 'Validando disponibilidade operacional do backend.',
-      error: (_, __) =>
-          'Não foi possível validar a rota Lightning nesta tentativa.',
+      loading: () => context.l10n.depositFlowLightningChecking,
+      error: (_, __) => context.l10n.depositFlowLightningCheckError,
     );
     final lightningTag = walletProfileAsync.when(
-      data: (profile) =>
-          profile.lightningEnabled ? 'Instantâneo' : 'Indisponível',
-      loading: () => 'Validando',
-      error: (_, __) => 'Indisponível',
+      data: (profile) => profile.lightningEnabled
+          ? context.l10n.depositFlowLightningInstant
+          : context.l10n.depositFlowUnavailable,
+      loading: () => context.l10n.depositFlowValidating,
+      error: (_, __) => context.l10n.depositFlowUnavailable,
     );
     final onchainTitle = walletProfileAsync.maybeWhen(
       data: (profile) => profile.isSelfCustody
-          ? 'On-chain (wallet própria)'
-          : 'On-chain (Kerosene)',
+          ? context.l10n.depositFlowOnchainColdTitle
+          : context.l10n.depositFlowOnchainTitle,
       orElse: () => wallet.isSelfCustody
-          ? 'On-chain (wallet própria)'
-          : 'On-chain (Kerosene)',
+          ? context.l10n.depositFlowOnchainColdTitle
+          : context.l10n.depositFlowOnchainTitle,
     );
     final onchainSubtitle = walletProfileAsync.maybeWhen(
       data: (profile) => profile.isSelfCustody
-          ? 'Endereço derivado do seu XPUB. O backend apenas monitora o recebimento.'
-          : 'Endereço Bitcoin custodial com monitoramento até a confirmação.',
+          ? context.l10n.depositFlowOnchainColdSubtitle
+          : context.l10n.depositFlowOnchainSubtitle,
       orElse: () => wallet.isSelfCustody
-          ? 'Endereço derivado do seu XPUB. O backend apenas monitora o recebimento.'
-          : 'Endereço Bitcoin custodial com monitoramento até a confirmação.',
+          ? context.l10n.depositFlowOnchainColdSubtitle
+          : context.l10n.depositFlowOnchainSubtitle,
     );
     final onchainTag = walletProfileAsync.maybeWhen(
-      data: (profile) =>
-          profile.isSelfCustody ? 'XPUB auditado' : '3 confirmações',
-      orElse: () => wallet.isSelfCustody ? 'XPUB auditado' : '3 confirmações',
+      data: (profile) => profile.isSelfCustody
+          ? context.l10n.depositFlowColdWalletTag
+          : context.l10n.depositFlowConfirmationsTag,
+      orElse: () => wallet.isSelfCustody
+          ? context.l10n.depositFlowColdWalletTag
+          : context.l10n.depositFlowConfirmationsTag,
     );
 
     return ReceiveFlowScaffold(
-      title: 'Método de depósito',
-      subtitle: 'Depósito direto por Bitcoin on-chain ou Lightning.',
+      title: context.l10n.depositFlowMethodTitle,
+      subtitle: context.l10n.depositFlowMethodSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -122,7 +127,7 @@ class DepositMethodScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ReceiveFlowSectionLabel('Valor escolhido'),
+                ReceiveFlowSectionLabel(context.l10n.depositFlowSelectedAmount),
                 const SizedBox(height: 4),
                 Text(
                   MoneyDisplay.format(
@@ -136,7 +141,12 @@ class DepositMethodScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Equivale a ${MoneyDisplay.format(amount: btcAmount, currency: Currency.btc)}',
+                  context.l10n.depositFlowEquivalentTo(
+                    MoneyDisplay.format(
+                      amount: btcAmount,
+                      currency: Currency.btc,
+                    ),
+                  ),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: receiveFlowMutedTextColor,
                       ),
@@ -144,11 +154,11 @@ class DepositMethodScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const ReceiveFlowSectionLabel('Depósito direto'),
+          ReceiveFlowSectionLabel(context.l10n.depositFlowChooseOption),
           const SizedBox(height: AppSpacing.sm),
           _buildMethodCard(
             icon: LucideIcons.zap,
-            title: 'Lightning Network',
+            title: context.l10n.lightning,
             subtitle: lightningSubtitle,
             badgeText: lightningTag,
             enabled: lightningEnabled,

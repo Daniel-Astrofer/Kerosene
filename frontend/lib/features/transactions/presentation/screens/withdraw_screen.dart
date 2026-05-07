@@ -21,6 +21,7 @@ import 'package:teste/features/security/domain/entities/account_security_profile
 import 'package:teste/features/security/domain/entities/treasury_overview.dart';
 import 'package:teste/features/security/presentation/providers/security_provider.dart';
 import 'package:teste/features/transactions/domain/entities/fee_estimate.dart';
+import 'package:teste/features/transactions/domain/entities/withdraw_fee_quote_calculation.dart';
 import 'package:teste/features/transactions/presentation/screens/payment_confirmation_screen.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
@@ -52,6 +53,8 @@ class _WithdrawDestinationAnalysis {
 }
 
 class _WithdrawFeeQuote {
+  final WithdrawFeeMode feeMode;
+  final double requestedAmountBtc;
   final double amountBtc;
   final double platformFeeRate;
   final double platformFeeBtc;
@@ -64,6 +67,8 @@ class _WithdrawFeeQuote {
   final bool isEstimated;
 
   const _WithdrawFeeQuote({
+    required this.feeMode,
+    required this.requestedAmountBtc,
     required this.amountBtc,
     required this.platformFeeRate,
     required this.platformFeeBtc,
@@ -76,9 +81,11 @@ class _WithdrawFeeQuote {
     this.isEstimated = false,
   });
 
-  bool get hasAmount => amountBtc > 0;
+  bool get hasAmount => requestedAmountBtc > 0;
   bool get isReady =>
-      hasAmount && !isLoading && error == null && networkFeeBtc > 0;
+      amountBtc > 0 && !isLoading && error == null && networkFeeBtc > 0;
+  double get totalFeesBtc => platformFeeBtc + networkFeeBtc;
+  bool get deductsFees => feeMode == WithdrawFeeMode.recipientPays;
 }
 
 class WithdrawScreen extends ConsumerStatefulWidget {
@@ -116,6 +123,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   Timer? _feeEstimateDebounce;
   double _debouncedAmountBtc = 0;
   bool _feeEstimatePending = false;
+  WithdrawFeeMode _feeMode = WithdrawFeeMode.senderPays;
 
   @override
   void initState() {
@@ -177,13 +185,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   }
 
   _WithdrawFeeQuote _resolveFeeQuote({
-    required double amountBtc,
+    required double requestedAmountBtc,
     required double platformFeeRate,
     required AsyncValue<FeeEstimate>? feeEstimateAsync,
   }) {
-    if (amountBtc <= 0) {
+    if (requestedAmountBtc <= 0) {
       return _WithdrawFeeQuote(
-        amountBtc: amountBtc,
+        feeMode: _feeMode,
+        requestedAmountBtc: requestedAmountBtc,
+        amountBtc: 0,
         platformFeeRate: platformFeeRate,
         platformFeeBtc: 0,
         networkFeeBtc: 0,
@@ -193,25 +203,34 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       );
     }
 
-    final platformFeeBtc = amountBtc * platformFeeRate;
-
     if (widget.entryMode == WithdrawEntryMode.lightning) {
       final networkFeeBtc = _defaultLightningRoutingFeeBtc;
-      return _WithdrawFeeQuote(
-        amountBtc: amountBtc,
+      final calculation = WithdrawFeeQuoteCalculation.resolve(
+        mode: _feeMode,
+        requestedAmountBtc: requestedAmountBtc,
         platformFeeRate: platformFeeRate,
-        platformFeeBtc: platformFeeBtc,
         networkFeeBtc: networkFeeBtc,
-        totalDebitedBtc: amountBtc + platformFeeBtc + networkFeeBtc,
+      );
+      return _WithdrawFeeQuote(
+        feeMode: _feeMode,
+        requestedAmountBtc: requestedAmountBtc,
+        amountBtc: calculation.receiverAmountBtc,
+        platformFeeRate: calculation.platformFeeRate,
+        platformFeeBtc: calculation.platformFeeBtc,
+        networkFeeBtc: calculation.networkFeeBtc,
+        totalDebitedBtc: calculation.totalDebitedBtc,
         usesMaximumRoutingFee: true,
       );
     }
 
     if (feeEstimateAsync == null) {
       return _WithdrawFeeQuote(
-        amountBtc: amountBtc,
+        feeMode: _feeMode,
+        requestedAmountBtc: requestedAmountBtc,
+        amountBtc:
+            _feeMode == WithdrawFeeMode.recipientPays ? 0 : requestedAmountBtc,
         platformFeeRate: platformFeeRate,
-        platformFeeBtc: platformFeeBtc,
+        platformFeeBtc: 0,
         networkFeeBtc: 0,
         totalDebitedBtc: 0,
         isLoading: true,
@@ -233,12 +252,31 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       error: (err, _) => error = err,
     );
 
-    return _WithdrawFeeQuote(
-      amountBtc: amountBtc,
+    final amountBtc = error == null && !isLoading
+        ? WithdrawFeeQuoteCalculation.resolve(
+            mode: _feeMode,
+            requestedAmountBtc: requestedAmountBtc,
+            platformFeeRate: platformFeeRate,
+            networkFeeBtc: networkFeeBtc,
+          ).receiverAmountBtc
+        : (_feeMode == WithdrawFeeMode.recipientPays
+            ? 0.0
+            : requestedAmountBtc);
+    final calculation = WithdrawFeeQuoteCalculation.resolve(
+      mode: _feeMode,
+      requestedAmountBtc: requestedAmountBtc,
       platformFeeRate: platformFeeRate,
-      platformFeeBtc: platformFeeBtc,
       networkFeeBtc: networkFeeBtc,
-      totalDebitedBtc: amountBtc + platformFeeBtc + networkFeeBtc,
+    );
+
+    return _WithdrawFeeQuote(
+      feeMode: _feeMode,
+      requestedAmountBtc: requestedAmountBtc,
+      amountBtc: amountBtc,
+      platformFeeRate: calculation.platformFeeRate,
+      platformFeeBtc: calculation.platformFeeBtc,
+      networkFeeBtc: calculation.networkFeeBtc,
+      totalDebitedBtc: calculation.totalDebitedBtc,
       feeRateSatPerByte: feeRateSatPerByte,
       isLoading: isLoading,
       error: error,
@@ -374,34 +412,38 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   ) {
     if (d.type == _WithdrawDestinationType.empty) {
       return widget.entryMode == WithdrawEntryMode.lightning
-          ? 'Informe uma invoice Lightning ou LNURL para continuar.'
-          : 'Informe um endereco Bitcoin on-chain ou URI bitcoin: para continuar.';
+          ? context.l10n.withdrawUiLightningDestinationRequired
+          : context.l10n.withdrawUiDestinationEmptyOnchain;
     }
     if (d.isNetworkMismatch) {
-      return 'Este endereço pertence à rede ${bitcoinNetworkDisplayName(d.detectedOnchainNetwork)}, '
-          'mas a carteira está operando em ${bitcoinNetworkDisplayName(expectedOnchainNetwork)}.';
+      return context.l10n.withdrawUiNetworkMismatch(
+        bitcoinNetworkDisplayName(d.detectedOnchainNetwork),
+        bitcoinNetworkDisplayName(expectedOnchainNetwork),
+      );
     }
     if (d.isInvalid) {
       return AppCopy.withdrawDestinationInvalid.resolve(context);
     }
     if (!_destinationMatchesFlow(d)) {
       return widget.entryMode == WithdrawEntryMode.lightning
-          ? 'Este campo recebeu um endereco on-chain. Use uma invoice Lightning ou LNURL.'
-          : 'Este campo recebeu uma invoice Lightning. Use o fluxo Lightning para enviar.';
+          ? context.l10n.withdrawUiOnchainDestinationWrongFlow
+          : context.l10n.withdrawUiLightningFieldWrongFlow;
     }
     return d.isLightning
-        ? 'Invoice Lightning ou LNURL valida para este envio.'
+        ? context.l10n.withdrawUiDestinationValidLightning
         : expectedOnchainNetwork == BitcoinNetworkKind.unknown
-            ? 'Endereco on-chain valido para este envio.'
-            : 'Endereco on-chain valido para ${bitcoinNetworkDisplayName(expectedOnchainNetwork)}.';
+            ? context.l10n.withdrawUiDestinationValidOnchain
+            : context.l10n.withdrawUiDestinationValidOnchainNetwork(
+                bitcoinNetworkDisplayName(expectedOnchainNetwork),
+              );
   }
 
   String _screenTitle(BuildContext context) {
     switch (widget.entryMode) {
       case WithdrawEntryMode.onChain:
-        return 'ENVIAR ON-CHAIN';
+        return context.l10n.withdrawUiScreenTitleOnchain;
       case WithdrawEntryMode.lightning:
-        return 'ENVIAR LIGHTNING';
+        return context.l10n.withdrawUiScreenTitleLightning;
     }
   }
 
@@ -420,40 +462,44 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     }
   }
 
-  String _treasuryLiquidityStateLabel(TreasuryOverview overview) {
+  String _treasuryLiquidityStateLabel(
+    BuildContext context,
+    TreasuryOverview overview,
+  ) {
     switch (overview.liquidityState.trim().toUpperCase()) {
       case 'HEALTHY':
-        return 'Saídas LN liberadas';
+        return context.l10n.withdrawUiLiquidityHealthy;
       case 'REBALANCE_REQUIRED':
-        return 'Rebalanceamento recomendado';
+        return context.l10n.withdrawUiLiquidityRebalanceRequired;
       case 'BLOCKED_ONCHAIN_RESERVE':
-        return 'Saídas LN bloqueadas';
+        return context.l10n.withdrawUiLiquidityBlocked;
       default:
-        return overview.liquidityState.trim().isEmpty
-            ? 'Estado operacional desconhecido'
-            : overview.liquidityState.trim();
+        return context.l10n.withdrawUiLiquidityUnknown;
     }
   }
 
-  String _treasuryLiquidityMessage(TreasuryOverview overview) {
+  String _treasuryLiquidityMessage(
+    BuildContext context,
+    TreasuryOverview overview,
+  ) {
     switch (overview.liquidityState.trim().toUpperCase()) {
       case 'HEALTHY':
-        return 'A reserva on-chain cobre a liquidez outbound atual do node Lightning.';
+        return context.l10n.withdrawUiLiquidityHealthyMessage;
       case 'REBALANCE_REQUIRED':
-        return 'A reserva cobre o node, mas a distribuição inbound/outbound pede rebalanceamento.';
+        return context.l10n.withdrawUiLiquidityRebalanceMessage;
       case 'BLOCKED_ONCHAIN_RESERVE':
-        return 'A reserva on-chain não cobre a liquidez outbound exposta. O backend deve bloquear novos pagamentos Lightning.';
+        return context.l10n.withdrawUiLiquidityBlockedMessage;
       default:
-        return 'A tesouraria retornou um estado não categorizado. Revise os saldos antes de continuar.';
+        return context.l10n.withdrawUiLiquidityUnknownMessage;
     }
   }
 
   String _destinationHint(BuildContext context) {
     switch (widget.entryMode) {
       case WithdrawEntryMode.onChain:
-        return 'Cole o endereco Bitcoin';
+        return context.l10n.withdrawUiDestinationHintOnchain;
       case WithdrawEntryMode.lightning:
-        return 'Cole a invoice Lightning ou LNURL';
+        return context.l10n.withdrawUiDestinationHintLightning;
     }
   }
 
@@ -544,8 +590,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       AppNotice.showWarning(
         context,
         title: context.l10n.withdrawConfirmButton,
-        message:
-            'Esta carteira está em modo SELF_CUSTODY. O backend monitora saldo via XPUB, mas não assina nem transmite saques por este fluxo.',
+        message: context.l10n.withdrawUiColdWalletSendBlocked,
       );
       return;
     }
@@ -556,7 +601,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       AppNotice.showWarning(
         context,
         title: context.l10n.lightning,
-        message: _treasuryLiquidityMessage(treasuryOverview),
+        message: _treasuryLiquidityMessage(context, treasuryOverview),
       );
       return;
     }
@@ -575,7 +620,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       AppNotice.showWarning(
         context,
         title: context.l10n.lightning,
-        message: 'Informe uma invoice Lightning ou LNURL para este fluxo.',
+        message: context.l10n.withdrawUiLightningDestinationRequiredForFlow,
       );
       return;
     }
@@ -585,8 +630,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       AppNotice.showWarning(
         context,
         title: context.l10n.lightning,
-        message:
-            'O destino informado é Lightning. Abra o fluxo Lightning para continuar.',
+        message: context.l10n.withdrawUiLightningDestinationWrongFlow,
       );
       return;
     }
@@ -606,8 +650,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       AppNotice.showWarning(
         context,
         title: context.l10n.withdrawAddressLabel,
-        message:
-            'O endereço informado não pertence à rede ${bitcoinNetworkDisplayName(expectedOnchainNetwork)} configurada para esta carteira.',
+        message: context.l10n.withdrawUiConfiguredNetworkMismatch(
+          bitcoinNetworkDisplayName(expectedOnchainNetwork),
+        ),
       );
       return;
     }
@@ -617,8 +662,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         context,
         title: context.l10n.withdrawFeeSection,
         message: feeQuote.isLoading
-            ? 'Aguarde a estimativa da taxa de rede para revisar o valor total do envio.'
-            : 'Nao foi possivel estimar a taxa de rede agora. Tente novamente em instantes.',
+            ? context.l10n.withdrawUiWaitFeeEstimate
+            : context.l10n.withdrawUiFeeEstimateUnavailable,
       );
       return;
     }
@@ -673,8 +718,22 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       amount: feeQuote.amountBtc,
       currency: Currency.btc,
     );
+    final requestedAmount = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: feeQuote.requestedAmountBtc,
+      currency: _selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
     final platformFeeAmount = MoneyDisplay.formatAmountFromBtc(
       btcAmount: feeQuote.platformFeeBtc,
+      currency: _selectedCurrency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final totalFeesAmount = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: feeQuote.totalFeesBtc,
       currency: _selectedCurrency,
       btcUsd: btcUsd,
       btcEur: btcEur,
@@ -715,65 +774,74 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     if (!mounted) return;
     final requiresTotp = securityProfile.requiresTotp;
     final securityMessage = requiresTotp
-        ? 'A transação exige TOTP e os fatores de segurança configurados na sua conta antes de chegar ao servidor.'
-        : 'A transação exige confirmação por passkey antes de chegar ao servidor.';
+        ? context.l10n.withdrawUiSecurityTotpRequired
+        : context.l10n.withdrawUiSecurityPasskeyRequired;
 
     final details = <PaymentConfirmationDetail>[
       PaymentConfirmationDetail(
-        label: 'Rede',
+        label: context.l10n.withdrawUiDetailNetwork,
         value: networkLabel,
         icon: destination.isLightning ? LucideIcons.zap : LucideIcons.link,
       ),
       PaymentConfirmationDetail(
-        label: 'Carteira de origem',
+        label: context.l10n.withdrawUiDetailSourceWallet,
         value: wallet.name,
         icon: LucideIcons.wallet,
       ),
       PaymentConfirmationDetail(
-        label: 'Cartão',
+        label: context.l10n.withdrawUiDetailCard,
         value:
             '${wallet.cardType.label} • ${WalletCardType.formatRate(wallet.withdrawalFeeRate)}',
         icon: LucideIcons.percent,
       ),
       PaymentConfirmationDetail(
-        label: 'Tipo',
-        value:
-            destination.isLightning ? 'Pagamento Lightning' : 'Saque on-chain',
+        label: context.l10n.withdrawUiDetailType,
+        value: destination.isLightning
+            ? context.l10n.withdrawUiLightningPayment
+            : context.l10n.withdrawUiOnchainWithdrawal,
         icon: destination.isLightning ? LucideIcons.zap : LucideIcons.link,
       ),
       PaymentConfirmationDetail(
-        label: 'Execução',
+        label: context.l10n.withdrawUiDetailExecution,
         value: destination.isLightning
             ? (treasuryOverview == null
-                ? 'Liquidez Lightning em verificação'
-                : _treasuryLiquidityStateLabel(treasuryOverview))
-            : 'PSBT + quorum 2-de-3',
+                ? context.l10n.withdrawUiLightningLiquidityChecking
+                : _treasuryLiquidityStateLabel(context, treasuryOverview))
+            : context.l10n.withdrawUiSecureWalletSignature,
         icon: destination.isLightning
             ? LucideIcons.activity
             : LucideIcons.shieldCheck,
       ),
       PaymentConfirmationDetail(
-        label:
-            destination.isLightning ? 'Valor da invoice' : 'Valor no destino',
+        label: feeQuote.deductsFees
+            ? AppCopy.withdrawYouPayTotalLabel.resolve(context)
+            : AppCopy.withdrawReceiverReceivesLabel.resolve(context),
+        value: requestedAmount,
+        icon: LucideIcons.bitcoin,
+        emphasized: true,
+      ),
+      PaymentConfirmationDetail(
+        label: AppCopy.withdrawReceiverReceivesLabel.resolve(context),
         value: primaryAmount,
         icon: LucideIcons.bitcoin,
         emphasized: true,
       ),
       PaymentConfirmationDetail(
-        label: 'Valor em BTC',
+        label: context.l10n.withdrawUiAmountBtc,
         value: secondaryAmount,
         icon: LucideIcons.coins,
       ),
       PaymentConfirmationDetail(
-        label:
-            'Taxa de plataforma (${WalletCardType.formatRate(feeQuote.platformFeeRate)})',
+        label: context.l10n.withdrawUiPlatformFeeWithRate(
+          WalletCardType.formatRate(feeQuote.platformFeeRate),
+        ),
         value: platformFeeAmount,
         icon: LucideIcons.percent,
       ),
       PaymentConfirmationDetail(
         label: destination.isLightning
-            ? 'Teto de roteamento'
-            : 'Taxa estimada de rede',
+            ? context.l10n.withdrawUiRoutingFeeCap
+            : context.l10n.withdrawUiEstimatedNetworkFee,
         value: networkFeeAmount,
         icon: destination.isLightning
             ? LucideIcons.arrowLeftRight
@@ -781,23 +849,30 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       ),
       if (!destination.isLightning && feeQuote.feeRateSatPerByte != null)
         PaymentConfirmationDetail(
-          label: 'Taxa mempool',
+          label: context.l10n.withdrawUiNetworkFeeRate,
           value: '${feeQuote.feeRateSatPerByte!.toStringAsFixed(0)} sat/vB',
           icon: LucideIcons.activity,
         ),
       PaymentConfirmationDetail(
-        label: 'Total debitado',
+        label: feeQuote.deductsFees
+            ? AppCopy.withdrawFeesDeductedLabel.resolve(context)
+            : AppCopy.withdrawFeesAddedLabel.resolve(context),
+        value: totalFeesAmount,
+        icon: LucideIcons.receipt,
+      ),
+      PaymentConfirmationDetail(
+        label: context.l10n.withdrawUiTotalDebited,
         value: totalDebitedAmount,
         icon: LucideIcons.receipt,
         emphasized: true,
       ),
       PaymentConfirmationDetail(
-        label: 'Saldo antes',
+        label: context.l10n.withdrawUiBalanceBefore,
         value: balanceBeforeAmount,
         icon: LucideIcons.wallet,
       ),
       PaymentConfirmationDetail(
-        label: 'Saldo estimado depois',
+        label: context.l10n.withdrawUiBalanceAfter,
         value: balanceAfterAmount,
         icon: LucideIcons.walletCards,
       ),
@@ -813,17 +888,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       MaterialPageRoute(
         builder: (_) => PaymentConfirmationScreen<dynamic>(
           title: AppCopy.withdrawReviewSummaryLabel.resolve(context),
-          eyebrow: 'Revisão final',
+          eyebrow: context.l10n.withdrawUiFinalReview,
           amountPrimary: primaryAmount,
           amountSecondary: secondaryAmount,
-          sourceLabel: 'De',
+          sourceLabel: context.l10n.withdrawUiSourceFrom,
           sourceValue: wallet.name,
           destinationLabel: AppCopy.withdrawDestinationLabel.resolve(context),
           destinationValue: destination.normalizedValue,
           networkLabel: networkLabel,
           notice: destination.isLightning
-              ? 'Confira a invoice e o teto de roteamento. O backend envia o pagamento e ajusta a liquidação conforme a rota disponível.'
-              : 'Confira o endereço on-chain com atenção. Depois de transmitida, a transação Bitcoin não pode ser desfeita.',
+              ? context.l10n.withdrawUiLightningReviewNotice
+              : context.l10n.withdrawUiOnchainReviewNotice,
           securityMessage: securityMessage,
           confirmText: AppCopy.withdrawReviewConfirm.resolve(context),
           cancelText: context.l10n.withdrawCancel,
@@ -879,7 +954,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         AppNotice.showWarning(
           confirmationContext,
           title: confirmationContext.l10n.withdrawConfirmButton,
-          message: 'Autenticação cancelada ou incompleta.',
+          message: confirmationContext.l10n.withdrawUiAuthIncomplete,
         );
       }
       return null;
@@ -981,7 +1056,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     if (wallet == null) {
       return ReceiveFlowScaffold(
         title: _screenTitle(context),
-        subtitle: 'Carregando carteira para iniciar o envio.',
+        subtitle: context.l10n.withdrawUiWalletLoadingSubtitle,
         scrollable: false,
         showBackButton: widget.showBackButton,
         child: const Center(
@@ -1024,7 +1099,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         : null;
 
     final feeQuote = _resolveFeeQuote(
-      amountBtc: amountBtc,
+      requestedAmountBtc: amountBtc,
       platformFeeRate: wallet.withdrawalFeeRate,
       feeEstimateAsync: feeEstimateAsync,
     );
@@ -1050,8 +1125,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     return ReceiveFlowScaffold(
       title: _screenTitle(context),
       subtitle: widget.entryMode == WithdrawEntryMode.lightning
-          ? 'Informe a invoice Lightning, revise o valor e confirme o pagamento.'
-          : 'Informe o endereço Bitcoin, revise taxas e confirme o saque.',
+          ? context.l10n.withdrawUiLightningSubtitle
+          : context.l10n.withdrawUiOnchainSubtitle,
       scrollable: false,
       showBackButton: widget.showBackButton,
       bodyPadding: EdgeInsets.zero,
@@ -1082,8 +1157,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   RecentTransactionDestinationsSection(
                     title: widget.entryMode == WithdrawEntryMode.lightning
-                        ? 'Ultimas invoices'
-                        : 'Ultimos enderecos',
+                        ? context.l10n.withdrawUiRecentLightning
+                        : context.l10n.withdrawUiRecentOnchain,
                     destinations: recentDestinations,
                     onSelect: _applyRecentDestination,
                   ),
@@ -1092,7 +1167,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 _buildDescriptionCard(context),
                 const SizedBox(height: AppSpacing.xl),
                 ReceiveFlowPrimaryButton(
-                  label: 'CONTINUAR',
+                  label: context.l10n.withdrawUiContinue,
                   icon: LucideIcons.arrowRight,
                   onTap: canGoToAmountStep
                       ? () {
@@ -1124,6 +1199,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                   btcEur: btcEur,
                   btcBrl: btcBrl,
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                _buildFeeModeCard(context),
                 const SizedBox(height: AppSpacing.lg),
                 _buildOperationalRouteCard(
                   context,
@@ -1249,9 +1326,48 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 
+  Widget _buildFeeModeCard(BuildContext context) {
+    return ReceiveFlowPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ReceiveFlowSectionLabel(
+            AppCopy.withdrawFeeModeTitle.resolve(context),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _FeeModeOption(
+            selected: _feeMode == WithdrawFeeMode.senderPays,
+            title: AppCopy.withdrawFeeModeSenderPaysTitle.resolve(context),
+            body: AppCopy.withdrawFeeModeSenderPaysBody.resolve(context),
+            icon: LucideIcons.plusCircle,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _feeMode = WithdrawFeeMode.senderPays);
+              _scheduleFeeEstimate();
+            },
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _FeeModeOption(
+            selected: _feeMode == WithdrawFeeMode.recipientPays,
+            title: AppCopy.withdrawFeeModeRecipientPaysTitle.resolve(context),
+            body: AppCopy.withdrawFeeModeRecipientPaysBody.resolve(context),
+            icon: LucideIcons.minusCircle,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _feeMode = WithdrawFeeMode.recipientPays);
+              _scheduleFeeEstimate();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFiatReferenceLine({required double amountBtc}) {
     return Text(
-      'Equivale a ${MoneyDisplay.format(amount: amountBtc, currency: Currency.btc)}',
+      context.l10n.withdrawUiEquivalentTo(
+        MoneyDisplay.format(amount: amountBtc, currency: Currency.btc),
+      ),
       textAlign: TextAlign.center,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: receiveFlowMutedTextColor,
@@ -1439,7 +1555,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'SELF_CUSTODY',
+                context.l10n.withdrawUiColdWalletTitle,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: receiveFlowTextColor,
                       fontWeight: FontWeight.w700,
@@ -1449,7 +1565,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Esta carteira usa XPUB para auditoria e recebimento. O backend não possui a chave privada nem participa da assinatura dos saques.',
+            context.l10n.withdrawUiColdWalletBody,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: receiveFlowMutedTextColor,
                   height: 1.45,
@@ -1475,10 +1591,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ReceiveFlowSectionLabel('Execução operacional'),
+            ReceiveFlowSectionLabel(
+                context.l10n.withdrawUiOperationalExecution),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Saídas on-chain são preparadas como PSBT e seguem assinatura por quorum 2-de-3 antes do broadcast.',
+              context.l10n.withdrawUiOnchainOperationalBody,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                     height: 1.45,
@@ -1490,15 +1607,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     }
 
     return treasuryOverviewAsync.when(
-      loading: () => const ReceiveFlowPanel(
+      loading: () => ReceiveFlowPanel(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ReceiveFlowSectionLabel('Liquidez Lightning'),
-            SizedBox(height: AppSpacing.md),
+            ReceiveFlowSectionLabel(context.l10n.withdrawUiTreasuryLiquidity),
+            const SizedBox(height: AppSpacing.md),
             Text(
-              'Carregando estado real de liquidez e reserva antes de liberar o pagamento Lightning.',
-              style: TextStyle(
+              context.l10n.withdrawUiTreasuryLoadingBody,
+              style: const TextStyle(
                 color: receiveFlowMutedTextColor,
                 height: 1.45,
               ),
@@ -1511,10 +1628,10 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ReceiveFlowSectionLabel('Liquidez Lightning'),
+            ReceiveFlowSectionLabel(context.l10n.withdrawUiTreasuryLiquidity),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Nao foi possivel validar a tesouraria em tempo real nesta tentativa: $error',
+              context.l10n.withdrawUiTreasuryUnavailable,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                     height: 1.45,
@@ -1528,15 +1645,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ReceiveFlowSectionLabel('Liquidez Lightning'),
+            ReceiveFlowSectionLabel(context.l10n.withdrawUiTreasuryLiquidity),
             const SizedBox(height: AppSpacing.md),
             ReceiveFlowMetricRow(
-              label: 'Estado',
-              value: _treasuryLiquidityStateLabel(overview),
+              label: context.l10n.withdrawUiTreasuryState,
+              value: _treasuryLiquidityStateLabel(context, overview),
             ),
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: 'Disponível LN',
+              label: context.l10n.withdrawUiTreasuryAvailableLightning,
               value: MoneyDisplay.format(
                 amount: overview.availableLightningBtc,
                 currency: Currency.btc,
@@ -1544,7 +1661,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             ),
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: 'Outbound atual',
+              label: context.l10n.withdrawUiTreasuryOutbound,
               value: MoneyDisplay.format(
                 amount: overview.outboundLiquidityBtc,
                 currency: Currency.btc,
@@ -1552,7 +1669,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             ),
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: 'Reserva on-chain',
+              label: context.l10n.withdrawUiTreasuryOnchainReserve,
               value: MoneyDisplay.format(
                 amount: overview.availableOnchainBtc,
                 currency: Currency.btc,
@@ -1560,7 +1677,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              _treasuryLiquidityMessage(treasuryOverview ?? overview),
+              _treasuryLiquidityMessage(context, treasuryOverview ?? overview),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                     height: 1.45,
@@ -1637,8 +1754,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
+    final requestedValue = _formatTransactionBtcAmount(
+      btcAmount: feeQuote.requestedAmountBtc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
     final platformFeeValue = _formatTransactionBtcAmount(
       btcAmount: feeQuote.platformFeeBtc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final totalFeesValue = _formatTransactionBtcAmount(
+      btcAmount: feeQuote.totalFeesBtc,
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
@@ -1649,9 +1778,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final networkValue = !hasAmount
         ? '--'
         : feeQuote.isLoading
-            ? 'Estimando...'
+            ? context.l10n.withdrawUiFeeEstimating
             : feeQuote.error != null
-                ? 'Indisponivel'
+                ? context.l10n.withdrawUiUnavailable
                 : _formatTransactionBtcAmount(
                     btcAmount: feeQuote.networkFeeBtc,
                     btcUsd: btcUsd,
@@ -1661,9 +1790,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final totalValue = !hasAmount
         ? '--'
         : feeQuote.isLoading
-            ? 'Aguardando taxa'
+            ? context.l10n.withdrawUiFeeWaiting
             : feeQuote.error != null
-                ? 'Indisponivel'
+                ? context.l10n.withdrawUiUnavailable
                 : _formatTransactionBtcAmount(
                     btcAmount: feeQuote.totalDebitedBtc,
                     btcUsd: btcUsd,
@@ -1710,16 +1839,19 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               color: receiveFlowTextColor,
               backgroundColor: receiveFlowDividerColor,
             ),
-          _FeeRow(label: 'Carteira de origem', value: wallet.name),
+          _FeeRow(
+            label: context.l10n.withdrawUiDetailSourceWallet,
+            value: wallet.name,
+          ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
-            label: 'Cartão',
+            label: context.l10n.withdrawUiDetailCard,
             value:
                 '${wallet.cardType.label} • ${WalletCardType.formatRate(wallet.withdrawalFeeRate)}',
           ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
-            label: 'Rede selecionada',
+            label: context.l10n.withdrawUiSelectedNetwork,
             value: _selectedNetworkLabel(context, expectedOnchainNetwork),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -1731,41 +1863,55 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           const ReceiveFlowDivider(),
-          _FeeRow(label: context.l10n.withdrawAmountLabel, value: amountValue),
+          _FeeRow(
+            label: feeQuote.deductsFees
+                ? AppCopy.withdrawYouPayTotalLabel.resolve(context)
+                : AppCopy.withdrawReceiverReceivesLabel.resolve(context),
+            value: requestedValue,
+            emphasize: true,
+          ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
-            label:
-                'Taxa de plataforma (${WalletCardType.formatRate(feeQuote.platformFeeRate)})',
+            label: context.l10n.withdrawUiPlatformFeeWithRate(
+              WalletCardType.formatRate(feeQuote.platformFeeRate),
+            ),
             value: platformFeeValue,
           ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
             label: widget.entryMode == WithdrawEntryMode.lightning
-                ? 'Taxa maxima de roteamento'
-                : 'Taxa estimada de rede',
+                ? context.l10n.withdrawUiRoutingFeeMax
+                : context.l10n.withdrawUiEstimatedNetworkFee,
             value: networkValue,
           ),
           if (feeRateValue != null) ...[
             const SizedBox(height: AppSpacing.sm),
             _FeeRow(
-              label: 'Taxa mempool',
+              label: context.l10n.withdrawUiNetworkFeeRate,
               value: feeRateValue,
               valueColor: quoteColor,
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
-            label: 'Total debitado',
+            label: feeQuote.deductsFees
+                ? AppCopy.withdrawFeesDeductedLabel.resolve(context)
+                : AppCopy.withdrawFeesAddedLabel.resolve(context),
+            value: totalFeesValue,
+            valueColor: quoteColor,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _FeeRow(
+            label: AppCopy.withdrawYouPayTotalLabel.resolve(context),
             value: totalValue,
             emphasize: true,
           ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
-            label: widget.entryMode == WithdrawEntryMode.lightning
-                ? 'Valor da invoice'
-                : 'Valor no destino',
+            label: AppCopy.withdrawReceiverReceivesLabel.resolve(context),
             value: amountValue,
             valueColor: quoteColor,
+            emphasize: feeQuote.deductsFees,
           ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
@@ -1775,7 +1921,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           _FeeRow(
-            label: 'Saldo estimado depois',
+            label: context.l10n.withdrawUiBalanceAfter,
             value: balanceAfterValue,
             valueColor: quoteColor,
           ),
@@ -1789,7 +1935,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 border: Border.all(color: receiveFlowBorderStrongColor),
               ),
               child: Text(
-                'Nao foi possivel estimar a taxa de rede no momento. Revise novamente em instantes antes de confirmar o envio.',
+                context.l10n.withdrawUiFeeEstimateUnavailableLong,
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: receiveFlowTextColor,
                       height: 1.45,
@@ -1807,10 +1953,10 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               ),
               child: Text(
                 !hasAmount
-                    ? 'Digite um valor para calcular o custo total antes de confirmar.'
-                    : feeQuote.usesMaximumRoutingFee
-                        ? 'A taxa da plataforma usa o cartão ${wallet.cardType.label}. O roteamento acima é o teto reservado para o pagamento Lightning.'
-                        : 'A taxa da plataforma usa o cartão ${wallet.cardType.label}. A taxa de rede usa a estimativa padrão atual da mempool.',
+                    ? context.l10n.withdrawUiEnterAmountForFees
+                    : feeQuote.deductsFees
+                        ? AppCopy.withdrawFeeModeDeductedHint.resolve(context)
+                        : AppCopy.withdrawFeeModeAddedHint.resolve(context),
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: receiveFlowMutedTextColor,
                       height: 1.45,
@@ -1924,6 +2070,81 @@ class _FeeRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _FeeModeOption extends StatelessWidget {
+  final bool selected;
+  final String title;
+  final String body;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _FeeModeOption({
+    required this.selected,
+    required this.title,
+    required this.body,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        selected ? receiveFlowTextColor : receiveFlowBorderStrongColor;
+    final iconColor =
+        selected ? receiveFlowTextColor : receiveFlowMutedTextColor;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: selected ? receiveFlowPanelAltColor : receiveFlowPanelColor,
+          borderRadius: BorderRadius.circular(0),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: iconColor),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: receiveFlowTextColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    body,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: receiveFlowMutedTextColor,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Icon(
+              selected ? LucideIcons.checkCircle2 : LucideIcons.circle,
+              size: 18,
+              color: iconColor,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

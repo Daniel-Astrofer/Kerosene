@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
+import 'package:teste/l10n/app_localizations.dart';
 import 'package:teste/storybook/storybook_mocks.dart';
 
 void main() {
@@ -22,6 +23,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.darkTheme,
+          locale: const Locale('pt'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const LoginPassphraseScreen(username: 'alice'),
         ),
       ),
@@ -32,7 +36,9 @@ void main() {
 
     expect(find.text('Senha da conta'), findsOneWidget);
     expect(
-      find.textContaining('Seed, BIP39 e carteira interna ficam fora do login'),
+      find.textContaining(
+        'Suas chaves de carteira nunca são solicitadas neste login',
+      ),
       findsOneWidget,
     );
     expect(find.textContaining('18 palavras'), findsNothing);

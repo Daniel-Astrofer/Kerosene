@@ -69,7 +69,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         _skipTotpRequested = false;
         AppNotice.showError(
           context,
-          title: 'Fluxo interrompido',
+          title: context.l10n.authFlowInterruptedTitle,
           message: ErrorTranslator.translate(context.l10n, next.toString()),
         );
       }
@@ -96,13 +96,13 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         RegExp(r'[^A-Za-z0-9]').hasMatch(password);
   }
 
-  String? _usernameError(String value) {
+  String? _usernameError(BuildContext context, String value) {
     final username = value.trim();
     if (username.length < 3) {
-      return 'Use pelo menos 3 caracteres.';
+      return context.l10n.authUsernameMinError;
     }
     if (!RegExp(r'^[a-z0-9_]+$').hasMatch(username)) {
-      return 'Use apenas letras minúsculas, números e underline.';
+      return context.l10n.authUsernameCharsError;
     }
     return null;
   }
@@ -130,11 +130,11 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   }
 
   void _continueFromUsername() {
-    final error = _usernameError(_username);
+    final error = _usernameError(context, _username);
     if (error != null) {
       AppNotice.showError(
         context,
-        title: 'Username inválido',
+        title: context.l10n.authInvalidUsernameTitle,
         message: error,
       );
       return;
@@ -146,9 +146,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     if (!_passwordLooksStrong) {
       AppNotice.showError(
         context,
-        title: 'Senha fraca',
-        message:
-            'Use pelo menos 12 caracteres com maiúscula, minúscula, número e símbolo.',
+        title: context.l10n.authWeakPasswordTitle,
+        message: context.l10n.authPasswordStrengthMessage,
       );
       return;
     }
@@ -156,12 +155,12 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   }
 
   void _submitSignup() {
-    final usernameError = _usernameError(_username);
+    final usernameError = _usernameError(context, _username);
     if (usernameError != null) {
       _goToStep(0);
       AppNotice.showError(
         context,
-        title: 'Username inválido',
+        title: context.l10n.authInvalidUsernameTitle,
         message: usernameError,
       );
       return;
@@ -171,9 +170,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       _goToStep(1);
       AppNotice.showError(
         context,
-        title: 'Senha fraca',
-        message:
-            'Use pelo menos 12 caracteres com maiúscula, minúscula, número e símbolo.',
+        title: context.l10n.authWeakPasswordTitle,
+        message: context.l10n.authPasswordStrengthMessage,
       );
       return;
     }
@@ -181,8 +179,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     if (_confirmPasswordController.text != _password) {
       AppNotice.showError(
         context,
-        title: 'Confirmação inválida',
-        message: 'A confirmação de senha não corresponde.',
+        title: context.l10n.authInvalidConfirmationTitle,
+        message: context.l10n.authPasswordMismatchMessage,
       );
       return;
     }
@@ -190,8 +188,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     if (!_acceptedPasswordRisk) {
       AppNotice.showError(
         context,
-        title: 'Confirmação necessária',
-        message: 'Confirme que entende o risco de perder a senha da conta.',
+        title: context.l10n.authConfirmationRequiredTitle,
+        message: context.l10n.authPasswordRiskRequiredMessage,
       );
       return;
     }
@@ -214,9 +212,9 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     final isLoading = authState is AuthLoading;
 
     return AuthEntryScaffold(
-      eyebrow: 'CONTA',
-      title: 'Criar conta',
-      subtitle: 'Insira as credenciais para a criação da conta na plataforma.',
+      eyebrow: context.l10n.authAccountEyebrow.toUpperCase(),
+      title: context.l10n.authCreateAccountTitle,
+      subtitle: context.l10n.authCreateAccountSubtitle,
       onBack: () {
         if (_step > 0 && _step < 3) {
           _goToStep(_step - 1);
@@ -227,7 +225,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildStepMeta(),
+          _buildStepMeta(context),
           const SizedBox(height: AppSpacing.md),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 320),
@@ -266,20 +264,20 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     );
   }
 
-  Widget _buildStepMeta() {
+  Widget _buildStepMeta(BuildContext context) {
     final label = switch (_step) {
       0 => '01/03',
       1 => '02/03',
       2 => '03/03',
-      3 => 'PASSKEY',
-      _ => 'CADASTRO',
+      3 => context.l10n.authPasskeyStepLabel,
+      _ => context.l10n.authSignupStepFallbackLabel,
     };
     final title = switch (_step) {
-      0 => 'Nome de usuário',
-      1 => 'Senha',
-      2 => 'Confirmação',
-      3 => 'Criação',
-      _ => 'Cadastro',
+      0 => context.l10n.authSignupStepUsernameTitle,
+      1 => context.l10n.authSignupStepPasswordTitle,
+      2 => context.l10n.authSignupStepConfirmationTitle,
+      3 => context.l10n.authSignupStepCreationTitle,
+      _ => context.l10n.authSignupStepFallbackLabel,
     };
 
     return Text(
@@ -313,15 +311,14 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _StepTitle(
-            title: 'Conta e credenciais',
-            body:
-                'Primeiro, escolha o identificador público da sua conta. A senha será pedida na próxima etapa.',
+            title: context.l10n.authAccountCredentialsTitle,
+            body: context.l10n.authAccountCredentialsBody,
           ),
           const SizedBox(height: AppSpacing.xl),
           ModernAuthTextField(
             controller: _usernameController,
-            label: 'Nome de usuário',
-            hint: 'Insira Um Nome',
+            label: context.l10n.authUsernameHint,
+            hint: context.l10n.authUsernameHint,
             icon: LucideIcons.user,
             autofocus: true,
             keyboardType: TextInputType.text,
@@ -331,15 +328,14 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
             onFieldSubmitted: (_) => _continueFromUsername(),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const AuthEntryNote(
+          AuthEntryNote(
             icon: LucideIcons.shield,
-            title: 'Custódia',
-            body:
-                'Perder a senha pode significar perder a conta se não possuir o backup dos códigos. BIP39 fica apenas na carteira interna, fora do login da conta.',
+            title: context.l10n.authCustodyNoteTitle,
+            body: context.l10n.authCustodyNoteBody,
           ),
           const SizedBox(height: AppSpacing.xl),
           AuthEntryButton(
-            text: 'CONTINUAR',
+            text: context.l10n.continueButton.toUpperCase(),
             icon: LucideIcons.arrowRight,
             onPressed: _continueFromUsername,
           ),
@@ -353,15 +349,15 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle(
-            title: 'Senha forte',
-            body: 'Use uma senha longa e única.',
+          _StepTitle(
+            title: context.l10n.authStrongPasswordTitle,
+            body: context.l10n.authStrongPasswordBody,
           ),
           const SizedBox(height: AppSpacing.xl),
           ModernAuthTextField(
             controller: _passwordController,
-            label: 'Senha',
-            hint: '+12 caracteres',
+            label: context.l10n.password,
+            hint: context.l10n.authPasswordLongHint,
             icon: LucideIcons.lock,
             isPassword: _obscurePassword,
             autofocus: true,
@@ -384,15 +380,17 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
           const SizedBox(height: AppSpacing.lg),
           AuthEntryNote(
             icon: _passwordLooksStrong ? LucideIcons.check : LucideIcons.key,
-            title: _passwordLooksStrong ? 'Pronta' : 'Regra mínima',
-            body: '+12 caracteres com maiúscula, minúscula, número e símbolo.',
+            title: _passwordLooksStrong
+                ? context.l10n.authPasswordReadyTitle
+                : context.l10n.authPasswordMinimumTitle,
+            body: context.l10n.authPasswordRuleBody,
           ),
           const SizedBox(height: AppSpacing.xl),
           Row(
             children: [
               Expanded(
                 child: AuthEntryButton(
-                  text: 'VOLTAR',
+                  text: context.l10n.authBackAction.toUpperCase(),
                   outlined: true,
                   onPressed: () => _goToStep(0),
                 ),
@@ -400,7 +398,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: AuthEntryButton(
-                  text: 'PRONTO',
+                  text: context.l10n.authReadyAction.toUpperCase(),
                   icon: LucideIcons.arrowRight,
                   onPressed: _continueFromPassword,
                 ),
@@ -417,16 +415,15 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle(
-            title: 'Confirmar senha',
-            body:
-                'Repita a senha e confirme que entende o risco operacional desta credencial.',
+          _StepTitle(
+            title: context.l10n.authConfirmPasswordTitle,
+            body: context.l10n.authConfirmPasswordBody,
           ),
           const SizedBox(height: AppSpacing.xl),
           ModernAuthTextField(
             controller: _confirmPasswordController,
-            label: 'TERMINAR',
-            hint: 'Senha',
+            label: context.l10n.authConfirmPasswordLabel,
+            hint: context.l10n.password,
             icon: LucideIcons.badgeCheck,
             isPassword: _obscureConfirmPassword,
             autofocus: true,
@@ -452,7 +449,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
             children: [
               Expanded(
                 child: AuthEntryButton(
-                  text: 'VOLTAR',
+                  text: context.l10n.authBackAction.toUpperCase(),
                   outlined: true,
                   onPressed: isLoading ? null : () => _goToStep(1),
                 ),
@@ -460,7 +457,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: AuthEntryButton(
-                  text: 'CRIAR',
+                  text: context.l10n.authCreateAction.toUpperCase(),
                   isLoading: isLoading,
                   icon: LucideIcons.arrowRight,
                   onPressed: isLoading ? null : _submitSignup,
@@ -496,7 +493,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                'Entendo que perder a senha pode significar perder a conta.',
+                context.l10n.authPasswordRiskAcknowledgement,
                 style: AppTypography.bodySmall.copyWith(
                   color: authEntryText,
                   height: 1.35,
@@ -514,21 +511,19 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _StepTitle(
-            title: 'Registrar passkey',
-            body:
-                'O cadastro segue direto para a passkey. A etapa TOTP não aparece neste fluxo.',
+          _StepTitle(
+            title: context.l10n.authPasskeyRegisterTitle,
+            body: context.l10n.authPasskeyRegisterBody,
           ),
           const SizedBox(height: AppSpacing.lg),
-          const AuthEntryNote(
+          AuthEntryNote(
             icon: LucideIcons.fingerprint,
-            title: 'Dispositivo',
-            body:
-                'A passkey vincula a conta a este dispositivo e conclui o cadastro.',
+            title: context.l10n.authDeviceTitle,
+            body: context.l10n.authDeviceBody,
           ),
           const SizedBox(height: AppSpacing.xl),
           AuthEntryButton(
-            text: 'REGISTRAR PASSKEY',
+            text: context.l10n.authRegisterPasskeyAction.toUpperCase(),
             isLoading: isLoading,
             icon: LucideIcons.fingerprint,
             onPressed:

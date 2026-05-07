@@ -1,12 +1,14 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user.dart';
+import '../../../../core/utils/device_helper.dart';
 import '../../data/datasources/auth_remote_datasource.dart'
     show
         SignupInitResult,
         ActivationStatusResult,
         AccountSecurityStatusResult,
         BackupCodesStatusResult,
+        AdminLoginResult,
         LoginResult,
         TotpSetupResult,
         OnboardingPaymentLinkDto,
@@ -20,6 +22,15 @@ abstract class AuthRepository {
     required String username,
     required String passphrase,
   });
+
+  Future<Either<Failure, AdminLoginResult>> startAdminLogin({
+    required String username,
+    required String password,
+    required String adminKeyProof,
+    required DeviceMetadata deviceMetadata,
+  });
+
+  Future<Either<Failure, AdminLoginResult>> pollAdminLogin(String attemptId);
 
   /// Signup — resolve PoW e retorna {totpSecret, qrCodeUri}
   Future<Either<Failure, SignupInitResult>> signup({
@@ -142,10 +153,4 @@ abstract class AuthRepository {
   Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
     String linkId,
   );
-
-  /// Mock Confirm Onboarding (Dev shortcut)
-  Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId);
-
-  /// Confirm Voucher payment
-
 }

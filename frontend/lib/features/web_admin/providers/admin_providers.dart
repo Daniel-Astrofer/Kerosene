@@ -1,28 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../transactions/domain/entities/external_transfer.dart';
-import '../../transactions/domain/entities/payment_link.dart';
-import '../../wallet/domain/entities/transaction.dart';
-import '../../wallet/domain/entities/wallet.dart';
 import '../data/admin_data_service.dart';
 
 // ─── Raw Data Providers (real API calls) ─────────
-
-final adminWalletsProvider = FutureProvider<List<Wallet>>((ref) {
-  return ref.watch(adminDataServiceProvider).fetchWallets();
-});
-
-final adminLedgerHistoryProvider = FutureProvider<List<Transaction>>((ref) {
-  return ref.watch(adminDataServiceProvider).fetchLedgerHistory(size: 500);
-});
-
-final adminExternalTransfersProvider =
-    FutureProvider<List<ExternalTransfer>>((ref) {
-  return ref.watch(adminDataServiceProvider).fetchExternalTransfers();
-});
-
-final adminPaymentLinksProvider = FutureProvider<List<PaymentLink>>((ref) {
-  return ref.watch(adminDataServiceProvider).fetchPaymentLinks();
-});
 
 final adminBtcPriceProvider = FutureProvider<Map<String, double>>((ref) {
   return ref.watch(adminDataServiceProvider).fetchBtcPrice();
@@ -50,116 +29,108 @@ final adminCurrentUserProvider = FutureProvider<Map<String, dynamic>>((ref) {
   return ref.watch(adminDataServiceProvider).fetchCurrentUser();
 });
 
+final adminOperationsOverviewProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchOperationsOverview();
+});
+
+final adminOperationalHealthProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchOperationalHealth();
+});
+
+final adminBlockchainMonitorProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchBlockchainMonitor();
+});
+
+final adminLightningMonitorProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchLightningMonitor();
+});
+
+final adminVaultRaftHealthProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchVaultRaftHealth();
+});
+
+final adminReleaseSnapshotProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchReleaseSnapshot();
+});
+
+final adminMobileReleaseProvider = FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchMobileRelease();
+});
+
+final adminOperationalMetricsProvider =
+    FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchOperationalMetrics();
+});
+
+final adminOperationalLogsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchOperationalLogs();
+});
+
+final adminMobileDevicesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchAuthenticatedMobileDevices();
+});
+
+final adminWebDevicesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(adminDataServiceProvider).fetchAdminDevices();
+});
+
 // ─── Derived KPI Providers ──────────────────────
 
-/// Consolidated balance across all wallets
-final adminTotalBalanceProvider = Provider<double>((ref) {
-  final walletsAsync = ref.watch(adminWalletsProvider);
-  return walletsAsync.whenOrNull(
-        data: (wallets) =>
-            wallets.fold<double>(0, (sum, w) => sum + w.balance),
-      ) ??
-      0;
-});
-
-/// Dashboard KPIs derived from real ledger history
+/// Dashboard KPIs derived from aggregate-safe operational datasets.
 final adminDashboardKpisProvider = Provider<DashboardKpis>((ref) {
-  final historyAsync = ref.watch(adminLedgerHistoryProvider);
-  final externalAsync = ref.watch(adminExternalTransfersProvider);
-  final linksAsync = ref.watch(adminPaymentLinksProvider);
-
-  final history = historyAsync.asData?.value ?? [];
-  final externals = externalAsync.asData?.value ?? [];
-  final links = linksAsync.asData?.value ?? [];
-
-  // Transaction volume analysis
-  double totalVolume = 0;
-  double totalFeesPaid = 0;
-  int totalTxCount = history.length;
-  int confirmedCount = 0;
-  int pendingCount = 0;
-  int failedCount = 0;
-
-  for (final tx in history) {
-    totalVolume += tx.amountBTC;
-    totalFeesPaid += tx.feeBTC;
-    switch (tx.status) {
-      case TransactionStatus.confirmed:
-        confirmedCount++;
-        break;
-      case TransactionStatus.pending:
-      case TransactionStatus.confirming:
-        pendingCount++;
-        break;
-      case TransactionStatus.failed:
-        failedCount++;
-        break;
-    }
-  }
-
-  // External network fee analysis
-  double onchainFees = 0;
-  double lightningFees = 0;
-  double onchainVolume = 0;
-  double lightningVolume = 0;
-  int onchainCount = 0;
-  int lightningCount = 0;
-
-  for (final ext in externals) {
-    if (ext.isOnchain) {
-      onchainFees += ext.networkFeeBtc;
-      onchainVolume += ext.amountBtc.abs();
-      onchainCount++;
-    } else if (ext.isLightning) {
-      lightningFees += ext.networkFeeBtc;
-      lightningVolume += ext.amountBtc.abs();
-      lightningCount++;
-    }
-  }
-
-  // Payment link analysis
-  int linksCreated = links.length;
-  int linksPaid = links.where((l) => l.isPaid || l.isCompleted).length;
-  int linksExpired = links.where((l) => l.isExpired).length;
-  int linksPending = links.where((l) => l.isPending && !l.isExpired).length;
-
-  // Inflow/outflow
-  double totalInflow = history
-      .where((tx) =>
-          tx.type == TransactionType.receive ||
-          tx.type == TransactionType.deposit)
-      .fold(0, (sum, tx) => sum + tx.amountBTC);
-  double totalOutflow = history
-      .where((tx) =>
-          tx.type == TransactionType.send ||
-          tx.type == TransactionType.withdrawal)
-      .fold(0, (sum, tx) => sum + tx.amountBTC);
-
-  // Ticket médio
-  double avgTicket = totalTxCount > 0 ? totalVolume / totalTxCount : 0;
+  final metrics =
+      ref.watch(adminOperationalMetricsProvider).asData?.value ?? const {};
+  final transfers = _map(metrics['transfers']);
+  final links = _map(metrics['paymentLinks']);
 
   return DashboardKpis(
-    totalVolumeBtc: totalVolume,
-    totalFeesBtc: totalFeesPaid,
-    totalTransactions: totalTxCount,
-    confirmedTransactions: confirmedCount,
-    pendingTransactions: pendingCount,
-    failedTransactions: failedCount,
-    onchainFeesBtc: onchainFees,
-    lightningFeesBtc: lightningFees,
-    onchainVolumeBtc: onchainVolume,
-    lightningVolumeBtc: lightningVolume,
-    onchainCount: onchainCount,
-    lightningCount: lightningCount,
-    linksCreated: linksCreated,
-    linksPaid: linksPaid,
-    linksExpired: linksExpired,
-    linksPending: linksPending,
-    inflowBtc: totalInflow,
-    outflowBtc: totalOutflow,
-    avgTicketBtc: avgTicket,
+    totalVolumeBtc: _double(metrics['totalVolumeBtc']),
+    totalFeesBtc: _double(metrics['totalFeesBtc']),
+    totalTransactions: _int(metrics['totalTransactions']),
+    confirmedTransactions: _int(metrics['confirmedTransactions']),
+    pendingTransactions: _int(metrics['pendingTransactions']),
+    failedTransactions: _int(metrics['failedTransactions']),
+    onchainFeesBtc: _double(transfers['onchainFeesBtc']),
+    lightningFeesBtc: _double(transfers['lightningFeesBtc']),
+    onchainVolumeBtc: _double(transfers['onchainVolumeBtc']),
+    lightningVolumeBtc: _double(transfers['lightningVolumeBtc']),
+    onchainCount: _int(transfers['onchainCount']),
+    lightningCount: _int(transfers['lightningCount']),
+    linksCreated: _int(links['linksCreated']),
+    linksPaid: _int(links['linksPaid']),
+    linksExpired: _int(links['linksExpired']) + _int(links['linksCancelled']),
+    linksPending: _int(links['linksPending']),
+    inflowBtc: _double(transfers['inflowBtc']),
+    outflowBtc: _double(transfers['outflowBtc']),
+    avgTicketBtc: _double(metrics['avgTicketBtc']),
   );
 });
+
+Map<String, dynamic> _map(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return const {};
+}
+
+double _double(Object? value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+int _int(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
 
 class DashboardKpis {
   final double totalVolumeBtc;

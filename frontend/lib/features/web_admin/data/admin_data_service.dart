@@ -4,123 +4,13 @@ import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_client_provider.dart';
 import '../../../core/errors/exceptions.dart';
-import '../../transactions/domain/entities/external_transfer.dart';
-import '../../transactions/domain/entities/payment_link.dart';
-import '../../transactions/domain/entities/deposit.dart';
-import '../../wallet/domain/entities/wallet.dart';
-import '../../wallet/domain/entities/transaction.dart';
 
 /// Enterprise data service that aggregates real API data for the web admin panel.
-/// No mocks — every KPI is derived from live endpoint data.
+/// Every KPI is derived from live endpoint data.
 class AdminDataService {
   final ApiClient _api;
 
   AdminDataService(this._api);
-
-  // ─── Wallets ────────────────────────────────────
-  Future<List<Wallet>> fetchWallets() async {
-    try {
-      final response = await _api.get(AppConfig.walletAll);
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map<String, dynamic>>()
-            .map((e) => Wallet.fromJson(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      debugPrint('AdminDataService.fetchWallets error: $e');
-      return [];
-    }
-  }
-
-  Future<double> fetchWalletBalance(String walletName) async {
-    try {
-      final response = await _api.get(
-        AppConfig.ledgerBalance,
-        queryParameters: {'walletName': walletName},
-      );
-      return double.tryParse(response.data.toString().trim()) ?? 0;
-    } catch (e) {
-      debugPrint('AdminDataService.fetchWalletBalance error: $e');
-      return 0;
-    }
-  }
-
-  // ─── Ledger History ─────────────────────────────
-  Future<List<Transaction>> fetchLedgerHistory({
-    int page = 0,
-    int size = 200,
-  }) async {
-    try {
-      final response = await _api.get(
-        AppConfig.ledgerHistory,
-        queryParameters: {'page': page, 'size': size},
-      );
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map<String, dynamic>>()
-            .map((e) => Transaction.fromJson(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      debugPrint('AdminDataService.fetchLedgerHistory error: $e');
-      return [];
-    }
-  }
-
-  // ─── External Transfers (on-chain + lightning) ──
-  Future<List<ExternalTransfer>> fetchExternalTransfers() async {
-    try {
-      final response = await _api.get(AppConfig.transactionsNetworkTransfers);
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map<String, dynamic>>()
-            .map((e) => ExternalTransfer.fromJson(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      debugPrint('AdminDataService.fetchExternalTransfers error: $e');
-      return [];
-    }
-  }
-
-  // ─── Payment Links ─────────────────────────────
-  Future<List<PaymentLink>> fetchPaymentLinks() async {
-    try {
-      final response = await _api.get(AppConfig.transactionsPaymentLinksList);
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map<String, dynamic>>()
-            .map((e) => PaymentLink.fromJson(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      if (e is AppException && e.statusCode == 403) return [];
-      debugPrint('AdminDataService.fetchPaymentLinks error: $e');
-      return [];
-    }
-  }
-
-  // ─── Deposits ──────────────────────────────────
-  Future<List<Deposit>> fetchDeposits() async {
-    try {
-      final response = await _api.get(AppConfig.transactionsDeposits);
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map<String, dynamic>>()
-            .map((e) => Deposit.fromJson(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      debugPrint('AdminDataService.fetchDeposits error: $e');
-      return [];
-    }
-  }
 
   // ─── Audit ─────────────────────────────────────
   Future<Map<String, dynamic>> fetchAuditStats() async {
@@ -131,7 +21,7 @@ class AdminDataService {
       }
       return {};
     } catch (e) {
-      debugPrint('AdminDataService.fetchAuditStats error: $e');
+      _logAdminError('fetchAuditStats', e);
       return {};
     }
   }
@@ -144,7 +34,7 @@ class AdminDataService {
       }
       return {};
     } catch (e) {
-      debugPrint('AdminDataService.fetchAuditLatestRoot error: $e');
+      _logAdminError('fetchAuditLatestRoot', e);
       return {};
     }
   }
@@ -160,7 +50,7 @@ class AdminDataService {
       }
       return [];
     } catch (e) {
-      debugPrint('AdminDataService.fetchAuditHistory error: $e');
+      _logAdminError('fetchAuditHistory', e);
       return [];
     }
   }
@@ -179,7 +69,7 @@ class AdminDataService {
       }
       return {'btcUsd': 0, 'btcBrl': 0, 'usdBrl': 0};
     } catch (e) {
-      debugPrint('AdminDataService.fetchBtcPrice error: $e');
+      _logAdminError('fetchBtcPrice', e);
       return {'btcUsd': 0, 'btcBrl': 0, 'usdBrl': 0};
     }
   }
@@ -193,7 +83,7 @@ class AdminDataService {
       }
       return {};
     } catch (e) {
-      debugPrint('AdminDataService.fetchSovereigntyStatus error: $e');
+      _logAdminError('fetchSovereigntyStatus', e);
       return {};
     }
   }
@@ -207,9 +97,159 @@ class AdminDataService {
       }
       return {};
     } catch (e) {
-      debugPrint('AdminDataService.fetchCurrentUser error: $e');
+      _logAdminError('fetchCurrentUser', e);
       return {};
     }
+  }
+
+  // ─── Operations / Monitoring ───────────────────
+  Future<Map<String, dynamic>> fetchOperationsOverview() async {
+    return _fetchMap(
+        AppConfig.adminOperationsOverview, 'fetchOperationsOverview');
+  }
+
+  Future<Map<String, dynamic>> fetchOperationalHealth() async {
+    return _fetchMap(AppConfig.adminOperationsHealth, 'fetchOperationalHealth');
+  }
+
+  Future<Map<String, dynamic>> fetchBlockchainMonitor() async {
+    return _fetchMap(
+        AppConfig.adminOperationsBlockchain, 'fetchBlockchainMonitor');
+  }
+
+  Future<Map<String, dynamic>> fetchLightningMonitor() async {
+    return _fetchMap(
+        AppConfig.adminOperationsLightning, 'fetchLightningMonitor');
+  }
+
+  Future<Map<String, dynamic>> fetchVaultRaftHealth() async {
+    return _fetchMap(
+        AppConfig.adminOperationsVaultRaft, 'fetchVaultRaftHealth');
+  }
+
+  Future<Map<String, dynamic>> fetchReleaseSnapshot() async {
+    return _fetchMap(AppConfig.adminOperationsRelease, 'fetchReleaseSnapshot');
+  }
+
+  Future<Map<String, dynamic>> fetchMobileRelease() async {
+    return _fetchMap(AppConfig.adminOperationsMobile, 'fetchMobileRelease');
+  }
+
+  Future<Map<String, dynamic>> fetchOperationalMetrics() async {
+    return _fetchMap(
+        AppConfig.adminOperationsMetrics, 'fetchOperationalMetrics');
+  }
+
+  Future<List<Map<String, dynamic>>> fetchOperationalLogs() async {
+    try {
+      final response = await _api.get(
+        AppConfig.adminOperationsLogs,
+        queryParameters: {'limit': 50},
+      );
+      if (response.data is List) {
+        return (response.data as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      _logAdminError('fetchOperationalLogs', e);
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAuthenticatedMobileDevices() async {
+    try {
+      final response = await _api.get(AppConfig.authPasskeyDevices);
+      if (response.data is Map) {
+        final data = Map<String, dynamic>.from(response.data as Map);
+        final devices = data['devices'];
+        if (devices is List) {
+          return devices
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      _logAdminError('fetchAuthenticatedMobileDevices', e);
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAdminDevices() async {
+    try {
+      final response = await _api.get(AppConfig.authAdminDevices);
+      if (response.data is List) {
+        return (response.data as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      _logAdminError('fetchAdminDevices', e);
+      return [];
+    }
+  }
+
+  Future<void> blockAdminDevice(String deviceId) async {
+    try {
+      await _api.post(AppConfig.authAdminDeviceBlock(deviceId));
+    } catch (e) {
+      _logAdminError('blockAdminDevice', e);
+    }
+  }
+
+  Future<void> revokeAdminDevice(String deviceId) async {
+    try {
+      await _api.post(AppConfig.authAdminDeviceRevoke(deviceId));
+    } catch (e) {
+      _logAdminError('revokeAdminDevice', e);
+    }
+  }
+
+  Future<void> blockAuthenticatedMobileDevice(String deviceInstallId) async {
+    try {
+      await _api.post(AppConfig.authPasskeyDeviceBlock(deviceInstallId));
+    } catch (e) {
+      _logAdminError('blockAuthenticatedMobileDevice', e);
+    }
+  }
+
+  Future<void> revokeAuthenticatedMobileDevice(String deviceInstallId) async {
+    try {
+      await _api.post(AppConfig.authPasskeyDeviceRevoke(deviceInstallId));
+    } catch (e) {
+      _logAdminError('revokeAuthenticatedMobileDevice', e);
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchMap(String path, String operation) async {
+    try {
+      final response = await _api.get(path);
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {};
+    } catch (e) {
+      _logAdminError(operation, e);
+      return {};
+    }
+  }
+
+  void _logAdminError(String operation, Object error) {
+    if (error is AppException) {
+      debugPrint(
+        'AdminDataService.$operation failed: ${error.runtimeType}'
+        '${error.statusCode != null ? ' status=${error.statusCode}' : ''}'
+        '${error.errorCode != null ? ' code=${error.errorCode}' : ''}',
+      );
+      return;
+    }
+    debugPrint('AdminDataService.$operation failed: ${error.runtimeType}');
   }
 }
 

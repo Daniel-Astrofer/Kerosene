@@ -51,6 +51,15 @@ final class Transaction extends Equatable {
   /// Payment hash Lightning.
   final String? paymentHash;
 
+  /// UUID interno do ExternalTransfer, usado para ações self-service.
+  final String? externalTransferId;
+
+  /// Status bruto do ExternalTransfer, quando a transação veio desse fluxo.
+  final String? externalTransferStatus;
+
+  /// Tipo bruto do ExternalTransfer, por exemplo INBOUND_INVOICE.
+  final String? externalTransferType;
+
   /// Descrição/nota da transação
   final String? description;
 
@@ -77,6 +86,9 @@ final class Transaction extends Equatable {
     this.invoiceId,
     this.lightningInvoice,
     this.paymentHash,
+    this.externalTransferId,
+    this.externalTransferStatus,
+    this.externalTransferType,
     this.description,
     this.isInternal = false,
     this.isLightning = false,
@@ -97,6 +109,25 @@ final class Transaction extends Equatable {
   /// Verifica se a transação está pendente
   bool get isPending => status == TransactionStatus.pending;
 
+  bool get canCancelPendingReceive {
+    final rawStatus = (externalTransferStatus ?? '').toUpperCase();
+    final rawType = (externalTransferType ?? '').toUpperCase();
+    final hasOnchainActivity =
+        (blockchainTxid ?? '').trim().isNotEmpty || confirmations > 0;
+    final isReceiveLike =
+        type == TransactionType.deposit || type == TransactionType.receive;
+    final isInboundTransfer = rawType == 'ADDRESS_ISSUE' ||
+        rawType == 'ONRAMP_PURCHASE' ||
+        rawType == 'INBOUND_INVOICE' ||
+        rawType.isEmpty;
+    return (externalTransferId ?? '').trim().isNotEmpty &&
+        isReceiveLike &&
+        isInboundTransfer &&
+        rawStatus == 'PENDING' &&
+        status == TransactionStatus.pending &&
+        !hasOnchainActivity;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -115,6 +146,9 @@ final class Transaction extends Equatable {
       'invoiceId': invoiceId,
       'lightningInvoice': lightningInvoice,
       'paymentHash': paymentHash,
+      'externalTransferId': externalTransferId,
+      'externalTransferStatus': externalTransferStatus,
+      'externalTransferType': externalTransferType,
       'description': description,
       'isInternal': isInternal,
       'isLightning': isLightning,
@@ -149,13 +183,16 @@ final class Transaction extends Equatable {
         invoiceId: json['invoiceId']?.toString(),
         lightningInvoice: json['lightningInvoice']?.toString(),
         paymentHash: json['paymentHash']?.toString(),
+        externalTransferId: json['externalTransferId']?.toString(),
+        externalTransferStatus: json['externalTransferStatus']?.toString(),
+        externalTransferType: json['externalTransferType']?.toString(),
         description: json['description'],
         isInternal: json['isInternal'] ?? false,
         isLightning: json['isLightning'] ?? false,
       );
     }
 
-    // LedgerTransactionHistory / API payload format
+    // LedgerSyncEventDTO / sanitized ephemeral API payload format
     final amountVal = (json['amount'] as num?)?.toDouble() ?? 0.0;
     final networkFee = (json['networkFee'] as num?)?.toDouble() ?? 0.0;
     final currentUserId = _parseInt(json['currentUserId']);
@@ -223,6 +260,11 @@ final class Transaction extends Equatable {
       invoiceId: json['invoiceId']?.toString(),
       lightningInvoice: json['lightningInvoice']?.toString(),
       paymentHash: json['paymentHash']?.toString(),
+      externalTransferId: json['externalTransferId']?.toString() ??
+          json['externalTransferID']?.toString(),
+      externalTransferStatus: json['externalTransferStatus']?.toString(),
+      externalTransferType: json['externalTransferType']?.toString() ??
+          json['transferType']?.toString(),
       isInternal: typeField == 'INTERNAL' ||
           typeField == 'TRANSFER' ||
           typeField == 'TRANSACTION_SEND' ||
@@ -344,6 +386,9 @@ final class Transaction extends Equatable {
         invoiceId,
         lightningInvoice,
         paymentHash,
+        externalTransferId,
+        externalTransferStatus,
+        externalTransferType,
         description,
         isInternal,
         isLightning,

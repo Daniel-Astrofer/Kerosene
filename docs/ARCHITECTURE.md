@@ -1,21 +1,29 @@
 # Arquitetura Real do Kerosene
 
-Documento tecnico baseado no codigo presente no repositorio em 2026-04-14.
+Documento tecnico baseado no codigo presente no repositorio em 2026-04-29.
 
 ## Visao Geral
 
 ```mermaid
 flowchart LR
+  Public[Landing / Download / Status] --> Web[Flutter Web / Nginx]
+  Admin[Empresa Admin] --> Web
+  Web --> ApiAdmin[/api/admin/operations]
   App[Flutter App] --> TorRelay[Relay local Tor no app]
   TorRelay --> OnionShard[Hidden service Tor do shard]
   OnionShard --> Vanguards[Vanguards controller addon]
   OnionShard --> Api[Kerosene API Spring Boot]
+  ApiAdmin --> Api
   Api --> Pg[(PostgreSQL por shard)]
   Api --> Redis[(Redis por shard)]
   Api --> VaultTor[Hidden service Tor do Vault]
   VaultTor --> Vault[Vault Spring Boot]
+  Api --> VaultRaft[HashiCorp Vault Raft quorum]
   Api --> Mpc[MPC Sidecar Go gRPC]
-  Api --> Bitcoin[Bitcoin/Esplora]
+  Api --> Bitcoin[Bitcoin Core mainnet pruned RPC/ZMQ]
+  Api --> Lnd[LND mainnet gRPC]
+  Bitcoin -. perfil archive-indexer .-> Electrs[electrs opcional]
+  Api --> Manifest[Release manifest assinado]
 ```
 
 O sistema e um monorepo dividido em quatro blocos principais:
@@ -26,6 +34,8 @@ O sistema e um monorepo dividido em quatro blocos principais:
 | Vault | `backend/vault` | Armamento de chave mestra, atestacao TPM simulada/validada e provisionamento de AES key para shards. |
 | MPC sidecar | `backend/mpc-sidecar` | Servico Go/gRPC para contratos `Keygen` e `Sign` usando `tss-lib`. |
 | App | `frontend` | Flutter app com Riverpod, Dio, Tor, passkeys, NFC, QR, wallet UI e background service. |
+| Web publica/admin | `frontend/lib/features/landing`, `frontend/lib/features/web_admin` | Landing publica, download mobile, status e painel empresarial separado. |
+| Infra produtiva local | `backend/kerosene-infrastructure` | Compose com Bitcoin Core pruned, LND, Vault Raft, observabilidade e web-admin isolados. |
 
 ## Camada Onion Hardening
 
@@ -193,8 +203,9 @@ Detalhes reais:
 - Saidas externas usam `WalletAuthorizationService` e seguem a mesma matriz de fatores do ledger: conta padrao usa passkey sem TOTP; TOTP aparece apenas para modos superiores a `STANDARD`.
 - O adapter de custodia e configuravel por `custody.*` e usa `BCX` como nome default do provider.
 - `GET /transactions/deposit-address` e os fluxos de onramp/payment link emitem um endereco custodial dedicado por wallet/usuario.
-- Em ambiente sem provider live, esses enderecos on-chain sao derivados de uma branch da carteira principal da Kerosene (`bitcoin.platform.master-xpub` com fallback para `bitcoin.hot-wallet.xpub`) e cada emissao avanca o indice da wallet monitorada.
-- Lightning usa payload mock deterministico em desenvolvimento.
+- No compose padrao, carteiras Kerosene emitem enderecos on-chain reais via `BitcoinCoreRpcClient.getNewAddress` no wallet descriptor `BITCOIN_RPC_WALLET`.
+- XPUB BIP84 (`bitcoin.platform.master-xpub`) permanece suportado para self-custody/watch-only; fallback local deterministico fica desativado por padrao.
+- Lightning usa LND mainnet real via gRPC para invoices, pagamentos, saldos e streams de transacoes/invoices.
 
 O controller real `MiningController` oferece:
 
@@ -220,8 +231,7 @@ Fluxo real de onboarding sem JWT:
 Limites reais:
 
 - `bitcoin.deposit-address` ainda existe como fallback estatico para onboarding publico/voucher; nao e mais a fonte principal do endpoint autenticado `/transactions/deposit-address`.
-- `LedgerAuditController#getActualOnchainBalance` retorna `50.00000000` como mock/fallback no codigo atual.
-- `MpcSidecarClient` em Java abre canal gRPC, mas `keygen` e `sign` ainda retornam placeholders. O sidecar Go tem contrato gRPC real.
+- `/v1/audit/siphon` falha fechado por padrao; o modo manual/local nao pode ser ligado em `prod`.
 
 ## Vault
 
@@ -250,7 +260,7 @@ Estado atual:
 
 - O sidecar registra `MpcService` e reflection no servidor gRPC.
 - `InitSecureEnclave` e o servico usam simulacoes/arquivos em tmpfs para shards.
-- A API Java ainda nao chama stubs gerados reais; o client atual e placeholder.
+- A API Java usa stubs gRPC gerados em `MpcSidecarClient` para `Keygen` e `Sign`, com timeout e mTLS quando configurado.
 
 ## Frontend Flutter
 
@@ -266,7 +276,16 @@ Caracteristicas reais:
 - `TokenInterceptor` injeta JWT, trata `X-New-Token` e seta `Host` com o host `.onion`.
 - WebSocket de saldo usa endpoint STOMP no backend.
 
-Rotas principais no app:
+Rotas principais no web app:
+
+```text
+/
+/admin
+/download
+/status
+```
+
+Rotas principais no app autenticado:
 
 ```text
 /welcome
@@ -278,6 +297,78 @@ Rotas principais no app:
 /send-money
 /deposits
 ```
+
+## Landing Publica e Painel Empresarial
+
+O bootstrap web roteia a experiencia publica para `KeroseneLandingPage` e mantem o painel empresarial em `/admin`.
+
+Fluxo real:
+
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant Web as web-admin/Nginx
+  participant API as Kerosene API
+  Browser->>Web: GET /
+  Web-->>Browser: Flutter web landing
+  Browser->>API: GET /api/public/mobile-download
+  API-->>Browser: links Android/iOS, versao, changelog e hashes
+  Browser->>Web: GET /admin
+  Browser->>API: Login admin + JWT
+  Browser->>API: GET /api/admin/operations/overview
+  API-->>Browser: saude real de servicos, blockchain, Vault Raft, release e logs saneados
+```
+
+O painel nao exibe seeds, chaves privadas, tokens ou segredos. Logs operacionais usam fingerprint/redaction no backend.
+
+## Blockchain Monitor
+
+O monitor primario on-chain e local: `BitcoinBlockchainMonitorService` consulta `BitcoinCoreRpcClient` e usa Bitcoin Core mainnet pruned como fonte de verdade. O compose padrao sobe `bitcoin-core` com RPC/ZMQ, sem `txindex` e sem API publica primaria.
+
+Fluxo:
+
+```mermaid
+flowchart LR
+  Bitcoind[bitcoin-core pruned RPC/ZMQ] --> OnchainMonitor[BitcoinBlockchainMonitorService]
+  Bitcoind -. profile archive-indexer .-> Electrs[electrs opcional]
+  OnchainMonitor --> BlockchainAPI[/api/admin/operations/blockchain]
+  Transfers[(ExternalTransferRepository)] --> OnchainMonitor
+  Lnd[LND neutrino mainnet gRPC] --> LightningMonitor[LightningNetworkMonitorService]
+  LightningMonitor --> LightningAPI[/api/admin/operations/lightning]
+  Lnd --> Streams[SubscribeTransactions / SubscribeInvoices]
+  Streams --> Transfers
+```
+
+Dados on-chain publicados: altura, hash do bloco, dificuldade, progresso de sincronizacao, `pruned`, `pruneHeight`, mempool, estimativas de fee, transacoes relevantes por fingerprint e confirmacoes quando disponiveis. Dados Lightning publicados: pubkey, alias, versao, sincronizacao, altura, peers/canais, saldo local/remoto e saldo confirmado da wallet. Se Bitcoin Core ou LND cair, o respectivo status fica `DOWN`; API publica externa so pode ser usada como fallback explicito.
+
+## Vault Raft Quorum
+
+O cluster HashiCorp Vault roda em `vault-raft-1`, `vault-raft-2` e `vault-raft-3` com integrated storage/Raft. O bootstrap local inicializa, junta peers e faz unseal dos tres nos.
+
+Fluxo:
+
+```mermaid
+flowchart TB
+  Bootstrap[vault-raft-bootstrap] --> V1[vault-raft-1 leader]
+  Bootstrap --> V2[vault-raft-2 follower]
+  Bootstrap --> V3[vault-raft-3 follower]
+  API[Kerosene API startup] --> Health[sys/health]
+  API --> Leader[sys/leader]
+  API --> Raft[sys/storage/raft/configuration]
+  Health --> Decision{initialized + unsealed + quorum}
+  Leader --> Decision
+  Raft --> Decision
+  Decision -->|ok| Run[servico inicia]
+  Decision -->|falha| Block[bloqueia startup]
+```
+
+Com `vault.raft.required=true`, a API falha fechada quando o quorum, leader, followers ou seal status nao estao saudaveis.
+
+## Release Snapshot e Attestation
+
+`ReleaseManifestService` carrega `/release/release-manifest.json`, valida assinatura Ed25519 e compara commit, image digest, hash do codigo e hash de configuracoes permitidas. O endpoint `/system/release` expoe o snapshot runtime sem segredos.
+
+Comunicacoes criticas podem exigir `ReleaseAttestationFilter`: digest autorizado, timestamp anti-replay, prova HMAC do corpo/requisicao e identidade de servico por mTLS quando configurado. Diferenca de digest/hash bloqueia a operacao critica e gera alerta de seguranca.
 
 ## WebSocket
 
@@ -327,7 +418,7 @@ Tabelas relevantes:
 
 Migracao adicional:
 
-- `backend/kerosene/src/main/resources/db/migration.sql` adiciona `totp_secret`, indices de performance, `deposit_address` e ajustes de passkey.
+- `backend/kerosene/src/main/resources/db/migration.sql` adiciona `totp_secret`, indices de performance, `deposit_address`, ajustes de passkey, payment links duraveis, outbox de provider externo, auditoria financeira encadeada por hash e tabelas de reconciliacao.
 
 ## Seguranca
 
@@ -339,11 +430,13 @@ Mecanismos presentes:
 - JWT renewal por `X-New-Token`.
 - TOTP em signup/login, endpoints sensiveis de auditoria e transacoes somente quando a politica elevada exigir (`SHAMIR`/`MULTISIG_2FA`). Contas `STANDARD` e `PASSKEY` usam passkey nas transacoes e nao pedem TOTP.
 - `VaultKeyProvider` usa Vault quando `vault.enabled=true` e cai para `AES_SECRET` em desenvolvimento.
+- `VaultRaftHealthService` valida quorum real do HashiCorp Vault antes de liberar startup em Docker.
+- `ReleaseManifestService` valida manifesto assinado e `ReleaseAttestationFilter` protege comunicacoes criticas entre servicos.
 - `NetworkEgressFilter` documenta enforcement por iptables/seccomp, sem instalar SecurityManager.
 
 Limites e pontos de atencao:
 
 - CORS esta com `allowedOriginPatterns("*")` no estado atual.
-- `WalletResponseDTO` expoe `passphraseHash`; isso deve ser revisado antes de producao.
+- `WalletResponseDTO` nao expoe `passphraseHash`, seeds, passphrases, segredos TOTP ou material sensivel.
 - Alguns endpoints comentados como publicos em controllers nao estao liberados na `SecurityFilterChain`.
 - O sidecar MPC ainda nao esta integrado com stubs reais no client Java.

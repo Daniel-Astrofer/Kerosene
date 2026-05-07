@@ -237,7 +237,7 @@ class _Card3DTransform extends StatelessWidget {
 
   // Sombra estática otimizada - Constante para evitar realocação a cada frame
   static final BoxShadow _kOptimizedShadow = BoxShadow(
-    color: Colors.black.withOpacity(0.2), // Slightly darker
+    color: Colors.black.withValues(alpha: 0.2), // Slightly darker
     blurRadius: 8, // Reduced from 12
     spreadRadius: 0, // Reduced from -2 to 0 (simpler calculation)
     offset: const Offset(0, 4),

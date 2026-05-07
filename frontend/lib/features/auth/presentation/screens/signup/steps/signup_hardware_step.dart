@@ -38,8 +38,8 @@ class SignupHardwareStep extends ConsumerWidget {
         if (next.errorCode == 'SESSION_NOT_FOUND') {
           showCustomErrorDialog(
             context,
-            'Sua sessão de cadastro expirou. Você precisa reiniciar o processo de criação de conta seguro.',
-            title: 'Sessão Interrompida',
+            context.l10n.authSignupSessionExpiredMessage,
+            title: context.l10n.authSessionInterruptedTitle,
             onGoBack: () {
               ref.read(authControllerProvider.notifier).clearError();
               Navigator.of(context).pop();
@@ -51,8 +51,8 @@ class SignupHardwareStep extends ConsumerWidget {
         if (next.errorCode == 'ERR_VAULT_NOT_READY') {
           showCustomErrorDialog(
             context,
-            'O servidor ainda está inicializando a segurança criptográfica. Tente novamente em alguns segundos.',
-            title: 'Aguardando Servidor',
+            context.l10n.authSecurityPreparingMessage,
+            title: context.l10n.authSecurityPreparingTitle,
             onRetry: () {
               ref.read(authControllerProvider.notifier).clearError();
               _handleRegister(ref);
@@ -86,6 +86,12 @@ class SignupHardwareStep extends ConsumerWidget {
         AppCopy.signupHardwareChipDeviceLock.resolve(context),
         AppCopy.signupHardwareChipSaferAccess.resolve(context),
       ],
+      footer: SignupPrimaryFooter(
+        text: AppCopy.signupHardwareCta.resolve(context),
+        isLoading: isLoading,
+        onPressed: () => _handleRegister(ref),
+        icon: LucideIcons.fingerprint,
+      ),
       children: [
         SignupPanel(
           tone: SignupSurfaceTone.primary,
@@ -117,12 +123,6 @@ class SignupHardwareStep extends ConsumerWidget {
           tone: SignupSurfaceTone.primary,
         ),
       ],
-      footer: SignupPrimaryFooter(
-        text: AppCopy.signupHardwareCta.resolve(context),
-        isLoading: isLoading,
-        onPressed: () => _handleRegister(ref),
-        icon: LucideIcons.fingerprint,
-      ),
     );
   }
 }

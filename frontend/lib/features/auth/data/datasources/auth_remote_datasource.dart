@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart' as crypto;
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/device_helper.dart';
 import '../models/user_model.dart';
 
 // ─── DTO returned from signup ─────────────────────────────────────────────────
@@ -90,6 +91,32 @@ class LoginResult {
       userId: raw.substring(0, spaceIdx),
       jwt: raw.substring(spaceIdx + 1).trim(),
       requiresTotp: false,
+    );
+  }
+}
+
+class AdminLoginResult {
+  final String status;
+  final bool requiresMobileApproval;
+  final String attemptId;
+  final String token;
+  final String message;
+
+  const AdminLoginResult({
+    this.status = '',
+    this.requiresMobileApproval = false,
+    this.attemptId = '',
+    this.token = '',
+    this.message = '',
+  });
+
+  factory AdminLoginResult.fromJson(Map<String, dynamic> json) {
+    return AdminLoginResult(
+      status: (json['status'] ?? '').toString(),
+      requiresMobileApproval: json['requiresMobileApproval'] == true,
+      attemptId: (json['attemptId'] ?? '').toString(),
+      token: (json['token'] ?? '').toString(),
+      message: (json['message'] ?? '').toString(),
     );
   }
 }
@@ -327,6 +354,15 @@ abstract class AuthRemoteDataSource {
     required String passphrase,
   });
 
+  Future<AdminLoginResult> startAdminLogin({
+    required String username,
+    required String password,
+    required String adminKeyProof,
+    required DeviceMetadata deviceMetadata,
+  });
+
+  Future<AdminLoginResult> pollAdminLogin(String attemptId);
+
   /// Verifica TOTP de login — retorna JWT
   Future<String> verifyLoginTotp({
     required String username,
@@ -405,12 +441,6 @@ abstract class AuthRemoteDataSource {
   /// Consulta o estado atual do payment link de onboarding
   Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId);
 
-  /// Mock de confirmação de onboarding (atalho para devs)
-  Future<void> mockConfirmOnboarding(String sessionId);
-
-  /// Confirmação de voucher (com suporte a mock_tx_)
-
-
   /// Refresh token (usando cookie)
   Future<String> refreshToken();
 
@@ -461,11 +491,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
       }
       throw ServerException(
-        message: 'PoW challenge missing from response: $body',
+        message: 'Não conseguimos preparar a proteção da conta agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao obter desafio PoW: $e');
+      throw ServerException(
+        message: 'Não conseguimos preparar a proteção da conta agora.',
+      );
     }
   }
 
@@ -506,7 +538,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // ApiResponseInterceptor already unwraps the ApiResponse envelope.
       // API v5.8 returns: { otpUri: "otpauth://...", backupCodes: ["12345678", ...] }
       final body = response.data;
-      debugPrint('🌐 [SIGNUP] Body received: $body');
+      debugPrint('🌐 [SIGNUP] Response received from auth service.');
 
       dynamic parsedBody = body;
       if (body is String) {
@@ -582,12 +614,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         totpOptional = dataMap['totpOptional'] != false;
 
         debugPrint(
-            '🔐 TOTP Data extracted. Secret length: ${totpSecret.length}, BackupCodes: ${backupCodes.length}');
+          '🔐 TOTP setup metadata extracted. BackupCodes: ${backupCodes.length}',
+        );
       }
 
       if (totpSecret.isEmpty || totpSecret.startsWith('{')) {
         throw ServerException(
-            message: 'Invalid TOTP secret received from server.');
+          message:
+              'Não conseguimos preparar o autenticador agora. Tente novamente.',
+        );
       }
 
       return SignupInitResult(
@@ -599,7 +634,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar cadastro: $e');
+      throw ServerException(
+          message: 'Não conseguimos iniciar seu cadastro agora.');
     }
   }
 
@@ -623,13 +659,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           body is String ? body.trim() : body?.toString().trim();
       if (verifiedSessionId == null || verifiedSessionId.isEmpty) {
         throw ServerException(
-          message: 'Signup TOTP verify: sessionId não retornado',
+          message: 'Não conseguimos confirmar o código agora.',
         );
       }
       return verifiedSessionId;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao verificar TOTP de cadastro: $e');
+      throw ServerException(
+          message: 'Não conseguimos confirmar o código agora.');
     }
   }
 
@@ -650,7 +687,48 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       rethrow;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao fazer login: $e');
+      throw ServerException(message: 'Não conseguimos entrar na sua conta.');
+    }
+  }
+
+  @override
+  Future<AdminLoginResult> startAdminLogin({
+    required String username,
+    required String password,
+    required String adminKeyProof,
+    required DeviceMetadata deviceMetadata,
+  }) async {
+    try {
+      final response = await apiClient.post(
+        AppConfig.authAdminLogin,
+        data: {
+          'username': username,
+          'password': password,
+          'adminKeyProof': adminKeyProof,
+          ...deviceMetadata.toJson(),
+        },
+      );
+      return AdminLoginResult.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Não conseguimos iniciar o acesso admin.');
+    }
+  }
+
+  @override
+  Future<AdminLoginResult> pollAdminLogin(String attemptId) async {
+    try {
+      final response =
+          await apiClient.get(AppConfig.authAdminLoginPoll(attemptId));
+      return AdminLoginResult.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+          message: 'Não conseguimos confirmar o acesso admin.');
     }
   }
 
@@ -675,7 +753,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return result.jwt;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao verificar 2FA de login: $e');
+      throw ServerException(
+          message: 'Não conseguimos confirmar o código agora.');
     }
   }
 
@@ -694,7 +773,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar registro de passkey: $e');
+      throw ServerException(
+          message: 'Não conseguimos iniciar a confirmação por passkey.');
     }
   }
 
@@ -713,7 +793,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-          message: 'Erro ao finalizar registro de passkey: $e');
+          message: 'Não conseguimos concluir a confirmação por passkey.');
     }
   }
 
@@ -729,7 +809,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar login via passkey: $e');
+      throw ServerException(
+          message: 'Não conseguimos iniciar a entrada por passkey.');
     }
   }
 
@@ -752,10 +833,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         },
       );
       return LoginResult.fromResponseData(response.data);
-
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao finalizar login via passkey: $e');
+      throw ServerException(
+          message: 'Não conseguimos concluir a entrada por passkey.');
     }
   }
 
@@ -769,7 +850,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar registro de passkey: $e');
+      throw ServerException(
+          message: 'Não conseguimos iniciar a confirmação por passkey.');
     }
   }
 
@@ -784,7 +866,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-          message: 'Erro ao finalizar registro de passkey: $e');
+          message: 'Não conseguimos concluir a confirmação por passkey.');
     }
   }
 
@@ -824,12 +906,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       throw const ServerException(
-        message: 'Resposta inválida ao iniciar a recuperação emergencial.',
+        message: 'Não conseguimos iniciar a recuperação agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao iniciar recuperação emergencial: $e',
+        message: 'Não conseguimos iniciar a recuperação agora.',
       );
     }
   }
@@ -873,12 +955,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       throw const ServerException(
-        message: 'Resposta inválida ao finalizar a recuperação emergencial.',
+        message: 'Não conseguimos concluir a recuperação agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao finalizar recuperação emergencial: $e',
+        message: 'Não conseguimos concluir a recuperação agora.',
       );
     }
   }
@@ -894,29 +976,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return ActivationStatusResult.fromJson(Map<String, dynamic>.from(body));
       }
       throw const ServerException(
-        message: 'Resposta inválida ao consultar status de ativação.',
+        message: 'Não conseguimos atualizar a ativação agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar ativação: $e');
+      throw ServerException(
+          message: 'Não conseguimos atualizar a ativação agora.');
     }
   }
 
   @override
   Future<ActivationStatusResult> createActivationDepositLink() async {
-    try {
-      final response = await apiClient.post(AppConfig.authActivationDepositLink);
-      final body = response.data;
-      if (body is Map) {
-        return ActivationStatusResult.fromJson(Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Resposta inválida ao gerar link de ativação.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao gerar link de ativação: $e');
-    }
+    return getActivationStatus();
   }
 
   @override
@@ -924,23 +995,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String linkId,
     required String txid,
   }) async {
-    try {
-      final response = await apiClient.post(
-        '${AppConfig.authActivationStatus}/$linkId/confirm',
-        data: {'txid': txid},
-      );
-      final body = response.data;
-      if (body is Map) {
-        return ActivationStatusResult.fromJson(Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Resposta inválida ao confirmar depósito de ativação.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Erro ao confirmar depósito de ativação: $e');
-    }
+    throw const ValidationException(
+      message:
+          'A confirmação manual por TXID foi descontinuada. Faça o depósito pelo fluxo de recebimento do app e aguarde o monitoramento automático.',
+      errorCode: 'ERR_ACTIVATION_MANUAL_CONFIRM_DISABLED',
+    );
   }
 
   @override
@@ -954,11 +1013,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         );
       }
       throw const ServerException(
-        message: 'Resposta inválida ao consultar segurança da conta.',
+        message: 'Não conseguimos atualizar a segurança da conta agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar segurança da conta: $e');
+      throw ServerException(
+          message: 'Não conseguimos atualizar a segurança da conta agora.');
     }
   }
 
@@ -971,11 +1031,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return TotpSetupResult.fromJson(Map<String, dynamic>.from(body));
       }
       throw const ServerException(
-        message: 'Resposta inválida ao iniciar configuração de TOTP.',
+        message: 'Não conseguimos configurar o autenticador agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao iniciar configuração de TOTP: $e');
+      throw ServerException(
+          message: 'Não conseguimos configurar o autenticador agora.');
     }
   }
 
@@ -990,14 +1051,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final body = response.data;
       if (body is Map) {
-        return BackupCodesStatusResult.fromJson(Map<String, dynamic>.from(body));
+        return BackupCodesStatusResult.fromJson(
+            Map<String, dynamic>.from(body));
       }
       throw const ServerException(
-        message: 'Resposta inválida ao confirmar configuração de TOTP.',
+        message: 'Não conseguimos confirmar o autenticador agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao confirmar configuração de TOTP: $e');
+      throw ServerException(
+          message: 'Não conseguimos confirmar o autenticador agora.');
     }
   }
 
@@ -1007,7 +1070,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await apiClient.delete(AppConfig.authTotpDisable);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao desativar TOTP: $e');
+      throw ServerException(
+          message: 'Não conseguimos desativar o autenticador agora.');
     }
   }
 
@@ -1017,31 +1081,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await apiClient.get(AppConfig.authBackupCodes);
       final body = response.data;
       if (body is Map) {
-        return BackupCodesStatusResult.fromJson(Map<String, dynamic>.from(body));
+        return BackupCodesStatusResult.fromJson(
+            Map<String, dynamic>.from(body));
       }
       throw const ServerException(
-        message: 'Resposta inválida ao consultar backup codes.',
+        message: 'Não conseguimos consultar os códigos de recuperação agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar backup codes: $e');
+      throw ServerException(
+          message:
+              'Não conseguimos consultar os códigos de recuperação agora.');
     }
   }
 
   @override
   Future<BackupCodesStatusResult> regenerateBackupCodes() async {
     try {
-      final response = await apiClient.post(AppConfig.authBackupCodesRegenerate);
+      final response =
+          await apiClient.post(AppConfig.authBackupCodesRegenerate);
       final body = response.data;
       if (body is Map) {
-        return BackupCodesStatusResult.fromJson(Map<String, dynamic>.from(body));
+        return BackupCodesStatusResult.fromJson(
+            Map<String, dynamic>.from(body));
       }
       throw const ServerException(
-        message: 'Resposta inválida ao regenerar backup codes.',
+        message: 'Não conseguimos gerar novos códigos de recuperação agora.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao regenerar backup codes: $e');
+      throw ServerException(
+          message: 'Não conseguimos gerar novos códigos de recuperação agora.');
     }
   }
 
@@ -1050,48 +1120,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String linkId,
     required String txid,
   }) async {
-    try {
-      final response = await apiClient.post(
-        '${AppConfig.transactionsPaymentLink}/$linkId/confirm',
-        data: {
-          'txid': txid,
-        },
-      );
-      final body = response.data;
-      if (body is Map) {
-        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Resposta inválida ao confirmar pagamento de onboarding.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao confirmar pagamento de onboarding: $e');
-    }
-  }
-
-  @override
-  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId) async {
-    try {
-      final response = await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
-      final body = response.data;
-      if (body is Map) {
-        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Resposta inválida ao consultar status do onboarding.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar status do onboarding: $e');
-    }
-  }
-
-  @override
-  Future<void> mockConfirmOnboarding(String sessionId) async {
-    debugPrint(
-      '⚠️ mockConfirmOnboarding sem endpoint backend. Ignorando atalho local para sessionId=$sessionId',
+    throw const ValidationException(
+      message:
+          'Pagamentos de onboarding não aceitam confirmação manual por TXID. O backend credita automaticamente quando a rede confirma o depósito.',
+      errorCode: 'ERR_ONBOARDING_MANUAL_CONFIRM_DISABLED',
     );
+  }
+
+  @override
+  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(
+      String linkId) async {
+    try {
+      final response =
+          await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
+      final body = response.data;
+      if (body is Map) {
+        return OnboardingPaymentLinkDto.fromJson(
+            Map<String, dynamic>.from(body));
+      }
+      throw const ServerException(
+        message: 'Não conseguimos atualizar esta etapa agora.',
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+          message: 'Não conseguimos atualizar esta etapa agora.');
+    }
   }
 
   // ─── Refresh / Logout / CurrentUser ──────────────────────────────────────────
@@ -1126,10 +1180,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       throw ServerException(
-          message: 'Formato de resposta inválido em /auth/me');
+          message: 'Não conseguimos carregar os dados da sua conta agora.');
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao obter usuário: $e');
+      throw ServerException(
+          message: 'Não conseguimos carregar os dados da sua conta agora.');
     }
   }
 }

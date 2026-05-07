@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,18 +49,18 @@ void main() {
         ],
       );
 
-      print('🚀 [Setup] Starting Tor Bootstrap for Integration Tests...');
+      debugPrint('🚀 [Setup] Starting Tor Bootstrap for Integration Tests...');
       try {
         final bool torStarted = await torService.start();
         if (!torStarted) {
-          print(
+          debugPrint(
               '⚠️ [Setup] Tor failed to start. Tests requiring .onion will fail.');
           return;
         }
 
         // Create Relay to the default onion node
         final host = Uri.parse(AppConfig.onionBaseUrl).host;
-        print('🌐 [Setup] Creating relay for host: $host');
+        debugPrint('🌐 [Setup] Creating relay for host: $host');
 
         final int relayPort = await torService.startRelay(host, 80);
         final testApiUrl = 'http://127.0.0.1:$relayPort';
@@ -67,14 +68,14 @@ void main() {
         AppConfig.apiUrl = testApiUrl;
         container.read(torApiUrlProvider.notifier).updateUrl(testApiUrl);
 
-        print('✅ [Setup] Tor Relay Active at $testApiUrl');
+        debugPrint('✅ [Setup] Tor Relay Active at $testApiUrl');
       } catch (e) {
-        print('❌ [Setup] Critical failure: $e');
+        debugPrint('❌ [Setup] Critical failure: $e');
       }
     });
 
     tearDownAll(() async {
-      print('🧹 [Teardown] Stopping Tor services...');
+      debugPrint('🧹 [Teardown] Stopping Tor services...');
       await torService.stop();
       container.dispose();
     });
@@ -84,7 +85,7 @@ void main() {
       final apiClient = container.read(apiClientProvider);
 
       try {
-        print(
+        debugPrint(
             '📡 [Test] Requesting PoW challenge from ${AppConfig.apiUrl}${AppConfig.authPowChallenge}');
         final response = await apiClient.get(AppConfig.authPowChallenge);
 
@@ -100,9 +101,9 @@ void main() {
         expect(data['challenge'], isA<String>());
         expect(data['difficulty'], isA<int>());
 
-        print('✅ [Contract] /auth/pow/challenge validation passed.');
-        print('   Challenge: ${data['challenge']}');
-        print('   Difficulty: ${data['difficulty']}');
+        debugPrint('✅ [Contract] /auth/pow/challenge validation passed.');
+        debugPrint('   Challenge: ${data['challenge']}');
+        debugPrint('   Difficulty: ${data['difficulty']}');
       } catch (e) {
         fail('API request failed: $e');
       }
@@ -112,7 +113,7 @@ void main() {
       final apiClient = container.read(apiClientProvider);
 
       try {
-        print('📡 [Test] Requesting Sovereignty Status...');
+        debugPrint('📡 [Test] Requesting Sovereignty Status...');
         final response = await apiClient.get(AppConfig.sovereigntyStatus);
 
         expect(response.statusCode, 200);
@@ -123,10 +124,11 @@ void main() {
         expect(data['networkConsensus'], isA<Map<String, dynamic>>());
         expect(data['ledgerIntegrity'], isA<Map<String, dynamic>>());
         expect(data['memoryProtection'], isA<Map<String, dynamic>>());
-        print(
+        debugPrint(
             '✅ [Integration] Sovereignty payload retornou as seções esperadas.');
       } catch (e) {
-        print('⚠️ Skipping detailed sovereignty check (Optional endpoint)');
+        debugPrint(
+            '⚠️ Skipping detailed sovereignty check (Optional endpoint)');
       }
     });
 
@@ -134,14 +136,14 @@ void main() {
       final host = Uri.parse(AppConfig.onionBaseUrl).host;
       final relayPort = await torService.startRelay(host, 80);
 
-      print(
+      debugPrint(
           '🔌 [Test] Attempting TCP Connection to Relay Port $relayPort (WS Tunnel)');
 
       try {
         final socket = await Socket.connect('127.0.0.1', relayPort,
             timeout: const Duration(seconds: 10));
         expect(socket, isNotNull);
-        print('✅ [WebSocket] Tunnel is reachable.');
+        debugPrint('✅ [WebSocket] Tunnel is reachable.');
         await socket.close();
       } catch (e) {
         fail('WebSocket Relay Tunnel is unreachable: $e');

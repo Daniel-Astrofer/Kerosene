@@ -3,10 +3,13 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -28,6 +31,8 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	go serveVersionEndpoint()
+
 	s, err := newGrpcServer()
 	if err != nil {
 		log.Fatalf("failed to configure gRPC server: %v", err)
@@ -41,6 +46,37 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
+
+func serveVersionEndpoint() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"service":        "mpc-sidecar",
+			"gitCommit":      valueOrUnknown("GIT_COMMIT"),
+			"buildTime":      valueOrUnknown("BUILD_TIME"),
+			"imageDigest":    valueOrUnknown("IMAGE_DIGEST"),
+			"releaseDigest":  valueOrUnknown("RELEASE_MANIFEST_DIGEST"),
+			"releaseChecked": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+	server := &http.Server{
+		Addr:              ":8081",
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("[MPC] version endpoint stopped: %v", err)
+	}
+}
+
+func valueOrUnknown(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return "unknown"
+	}
+	return value
 }
 
 func newGrpcServer() (*grpc.Server, error) {

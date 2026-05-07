@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
 import '../providers/appearance_provider.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
@@ -53,11 +54,7 @@ class AppThemePalette {
   LinearGradient get backgroundGradient => LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          backgroundTop,
-          backgroundMid,
-          backgroundBottom,
-        ],
+        colors: [backgroundTop, backgroundMid, backgroundBottom],
       );
 }
 
@@ -111,16 +108,22 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         surface: palette.surface,
+        surfaceContainerHighest: palette.inputFill,
         error: AppColors.error,
         onPrimary: AppColors.white,
+        onSecondary: AppColors.white,
         onSurface: AppColors.white,
+        onSurfaceVariant: AppColors.white70,
+        onError: AppColors.white,
         secondaryContainer: AppColors.secondary.withValues(alpha: 0.2),
+        onSecondaryContainer: AppColors.white,
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        },
+      disabledColor: AppColors.white.withValues(alpha: 0.42),
+      pageTransitionsTheme: kerosenePageTransitionsTheme,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.white,
+        selectionColor: AppColors.white.withValues(alpha: 0.22),
+        selectionHandleColor: AppColors.white,
       ),
       textTheme: TextTheme(
         displayLarge: AppTypography.h1,
@@ -135,7 +138,7 @@ class AppTheme {
         fillColor: palette.inputFill,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md + 2,
+          vertical: AppSpacing.md,
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.medium,
@@ -153,22 +156,93 @@ class AppTheme {
           borderRadius: AppRadius.medium,
           borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
-        hintStyle: AppTypography.bodyMedium.copyWith(
-          color: Colors.white.withValues(alpha: 0.25),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.medium,
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
-        labelStyle: AppTypography.bodyMedium.copyWith(color: AppColors.grey),
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: Colors.white.withValues(alpha: 0.48),
+        ),
+        labelStyle: AppTypography.bodyMedium.copyWith(
+          color: Colors.white.withValues(alpha: 0.72),
+        ),
+        floatingLabelStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        errorStyle: AppTypography.bodySmall.copyWith(
+          color: AppColors.error,
+          fontWeight: FontWeight.w600,
+        ),
+        prefixIconColor: Colors.white.withValues(alpha: 0.72),
+        suffixIconColor: Colors.white.withValues(alpha: 0.72),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: AppColors.white,
+          backgroundColor: AppColors.white,
+          foregroundColor: AppColors.black,
+          disabledBackgroundColor: AppColors.white.withValues(alpha: 0.08),
+          disabledForegroundColor: AppColors.white.withValues(alpha: 0.54),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
           padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.md + 2,
+            vertical: AppSpacing.md,
             horizontal: AppSpacing.lg,
           ),
           textStyle: AppTypography.buttonText,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.white,
+          foregroundColor: AppColors.black,
+          disabledBackgroundColor: AppColors.white.withValues(alpha: 0.08),
+          disabledForegroundColor: AppColors.white.withValues(alpha: 0.54),
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.md,
+            horizontal: AppSpacing.lg,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+          textStyle: AppTypography.buttonText.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: palette.surface,
+          foregroundColor: AppColors.white,
+          disabledForegroundColor: AppColors.white.withValues(alpha: 0.52),
+          side: BorderSide(color: AppColors.white.withValues(alpha: 0.26)),
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.md,
+            horizontal: AppSpacing.lg,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+          textStyle: AppTypography.buttonText.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.white,
+          disabledForegroundColor: AppColors.white.withValues(alpha: 0.50),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm,
+            horizontal: AppSpacing.md,
+          ),
+          textStyle: AppTypography.buttonText.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: AppColors.white,
+          disabledForegroundColor: AppColors.white.withValues(alpha: 0.46),
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -192,10 +266,21 @@ class AppTheme {
         backgroundColor: palette.surface,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: palette.surface,
+        modalBarrierColor: Colors.black.withValues(alpha: 0.74),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: palette.surface,
         surfaceTintColor: Colors.transparent,
+        textStyle: AppTypography.bodyMedium.copyWith(color: AppColors.white),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.white,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.black,
+          fontWeight: FontWeight.w600,
+        ),
+        actionTextColor: AppColors.black,
+        disabledActionTextColor: AppColors.black.withValues(alpha: 0.48),
       ),
     );
   }

@@ -127,6 +127,11 @@ class _SignupSecurityStepState extends ConsumerState<SignupSecurityStep> {
         AppCopy.signupSecurityChipGuidedBackup.resolve(context),
         selected.badge,
       ],
+      footer: SignupPrimaryFooter(
+        text: context.l10n.seedSecurityContinue,
+        onPressed: _handleContinue,
+        icon: LucideIcons.arrowRight,
+      ),
       children: [
         ...choices.map(
           (choice) => Padding(
@@ -269,11 +274,6 @@ class _SignupSecurityStepState extends ConsumerState<SignupSecurityStep> {
               : SignupSurfaceTone.primary,
         ),
       ],
-      footer: SignupPrimaryFooter(
-        text: context.l10n.seedSecurityContinue,
-        onPressed: _handleContinue,
-        icon: LucideIcons.arrowRight,
-      ),
     );
   }
 }

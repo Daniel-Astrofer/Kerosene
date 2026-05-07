@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 
 import '../../providers/currency_provider.dart';
 import '../../providers/price_provider.dart';
@@ -31,9 +32,7 @@ class CurrencySelectorChips extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Wrap(
         spacing: 6,
@@ -72,13 +71,18 @@ class _CurrencyChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: responsive.isTinyPhone ? 10 : 14,
+          vertical: responsive.isTinyPhone ? 8 : 10,
+        ),
         decoration: BoxDecoration(
           color: selected
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.16)
@@ -93,15 +97,14 @@ class _CurrencyChip extends StatelessWidget {
         child: Text(
           currency.code,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: selected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.68),
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.6,
-              ),
+            color: selected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.68),
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
         ),
       ),
     );

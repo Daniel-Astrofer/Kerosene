@@ -61,6 +61,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.darkTheme,
+          locale: const Locale('pt'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: ReceiveScreen(initialWallet: wallet),
@@ -71,8 +72,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('RECEBIMENTO BLOQUEADO'), findsOneWidget);
-    expect(find.textContaining('deposite algum valor primeiro'), findsOneWidget);
+    expect(find.text('Recebimento indisponível'), findsOneWidget);
+    expect(find.textContaining('receber fundos'), findsOneWidget);
     expect(find.text('Depositar'), findsOneWidget);
     expect(find.textContaining('Depósito obrigatório'), findsNothing);
     expect(find.textContaining('bc1qactivation'), findsNothing);

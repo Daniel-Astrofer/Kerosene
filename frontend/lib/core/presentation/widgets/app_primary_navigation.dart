@@ -3,6 +3,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 enum AppPrimaryDestination { home, card, history, mining, settings }
 
@@ -22,42 +26,42 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
     }
   }
 
-  String get label {
+  String label(BuildContext context) {
     switch (this) {
       case AppPrimaryDestination.home:
-        return 'Início';
+        return context.l10n.primaryNavHome;
       case AppPrimaryDestination.card:
-        return 'Cartão';
+        return context.l10n.primaryNavCard;
       case AppPrimaryDestination.history:
-        return 'Histórico';
+        return context.l10n.primaryNavHistory;
       case AppPrimaryDestination.mining:
-        return 'Minerar';
+        return context.l10n.primaryNavMining;
       case AppPrimaryDestination.settings:
-        return 'Ajustes';
+        return context.l10n.primaryNavSettings;
     }
   }
 
   IconData get icon {
     switch (this) {
       case AppPrimaryDestination.home:
-        return Icons.home_rounded;
+        return LucideIcons.home;
       case AppPrimaryDestination.card:
-        return Icons.credit_card_rounded;
+        return LucideIcons.walletCards;
       case AppPrimaryDestination.history:
-        return Icons.receipt_long_rounded;
+        return LucideIcons.receipt;
       case AppPrimaryDestination.mining:
-        return Icons.bolt_rounded;
+        return LucideIcons.zap;
       case AppPrimaryDestination.settings:
-        return Icons.settings_rounded;
+        return LucideIcons.settings;
     }
   }
 }
 
 class AppPrimaryNavigationBar extends StatelessWidget {
-  static const double _floatingHeight = 78;
-  static const double _topSpacing = 8;
-  static const double _bottomSpacing = 18;
-  static const double _contentBuffer = 20;
+  static const double _floatingHeight = 80;
+  static const double _topSpacing = AppSpacing.sm;
+  static const double _bottomSpacing = AppSpacing.lg;
+  static const double _contentBuffer = AppSpacing.lg;
 
   final AppPrimaryDestination currentDestination;
   final AppPrimaryNavigationController? controller;
@@ -199,9 +203,14 @@ class _PrimaryNavigationBarBodyState extends State<_PrimaryNavigationBarBody>
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLargeScreen = screenWidth >= 1180;
     final isTablet = screenWidth >= 720;
-    final horizontalMargin = isLargeScreen ? 28.0 : (isTablet ? 24.0 : 16.0);
-    final maxWidth = isLargeScreen ? 520.0 : (isTablet ? 460.0 : 420.0);
-    final borderRadius = BorderRadius.circular(isLargeScreen ? 18 : 14);
+    final isTinyPhone = screenWidth < 360;
+    final horizontalMargin = isLargeScreen
+        ? AppSpacing.xl
+        : (isTablet
+              ? AppSpacing.lg
+              : (isTinyPhone ? AppSpacing.sm : AppSpacing.md));
+    final maxWidth = isLargeScreen ? 520.0 : (isTablet ? 464.0 : 424.0);
+    final borderRadius = BorderRadius.circular(AppSpacing.md);
 
     return SafeArea(
       top: false,
@@ -227,9 +236,9 @@ class _PrimaryNavigationBarBodyState extends State<_PrimaryNavigationBarBody>
                       return Container(
                         decoration: BoxDecoration(
                           borderRadius: borderRadius,
-                          color: const Color(0xFF101317),
+                          color: AppColors.bgInput,
                           border: Border.all(
-                            color: const Color(0xFF252B32),
+                            color: AppColors.white10,
                             width: 1.0,
                           ),
                         ),
@@ -238,28 +247,30 @@ class _PrimaryNavigationBarBodyState extends State<_PrimaryNavigationBarBody>
                             Positioned.fill(
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF101317),
+                                  color: AppColors.bgInput,
                                 ),
                               ),
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.sm,
                               ),
                               child: Row(
                                 children: [
-                                  for (var index = 0;
-                                      index <
-                                          AppPrimaryDestination.values.length;
-                                      index++)
+                                  for (
+                                    var index = 0;
+                                    index < AppPrimaryDestination.values.length;
+                                    index++
+                                  )
                                     Expanded(
                                       child: _PrimaryNavigationItem(
                                         index: index,
                                         refreshVersion: _refreshVersion,
                                         destination:
                                             AppPrimaryDestination.values[index],
-                                        selected: AppPrimaryDestination
+                                        selected:
+                                            AppPrimaryDestination
                                                 .values[index] ==
                                             widget.currentDestination,
                                         onTap: () {
@@ -343,15 +354,12 @@ class _PrimaryNavigationItemState extends State<_PrimaryNavigationItem>
       duration: const Duration(milliseconds: 780),
     );
 
-    Future<void>.delayed(
-      Duration(milliseconds: 140 + (widget.index * 90)),
-      () {
-        if (!mounted) {
-          return;
-        }
-        _introController.forward();
-      },
-    );
+    Future<void>.delayed(Duration(milliseconds: 140 + (widget.index * 90)), () {
+      if (!mounted) {
+        return;
+      }
+      _introController.forward();
+    });
   }
 
   @override
@@ -398,111 +406,154 @@ class _PrimaryNavigationItemState extends State<_PrimaryNavigationItem>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([
-        _introController,
-        _pressController,
-        _tapController,
-        _refreshController,
-      ]),
-      builder: (context, _) {
-        final intro = Curves.easeOutCubic.transform(_introController.value);
-        final press = Curves.easeOutCubic.transform(_pressController.value);
-        final tap = Curves.easeOutBack.transform(_tapController.value);
-        final refresh =
-            Curves.easeInOutCubic.transform(_refreshController.value);
-        final refreshLift = math.sin(refresh * math.pi) * 4;
-        final refreshPulse = math.sin(refresh * math.pi) * 0.08;
-        final introTurn = (1 - intro) * (widget.selected ? -0.22 : 0.18);
-        final activeAccent = const Color(0xFF6F7D8C);
-        final iconColor = widget.selected
-            ? Colors.white
-            : Colors.white.withValues(alpha: 0.76);
-        final shellColor = widget.selected
-            ? activeAccent.withValues(alpha: 0.20)
-            : Colors.white.withValues(alpha: 0.045 + (press * 0.03));
-        final shellBorder = widget.selected
-            ? activeAccent.withValues(alpha: 0.44)
-            : Colors.white.withValues(alpha: 0.05 + (refresh * 0.04));
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shellMaxWidth = math.max(
+          44.0,
+          constraints.maxWidth - (AppSpacing.xs * 2),
+        );
+        final selectedShellSize = math.min(64.0, shellMaxWidth);
+        final idleShellSize = math.min(56.0, shellMaxWidth);
+        final itemHeight = math.max(56.0, selectedShellSize);
+        final selectedIconSize = math.min(24.0, selectedShellSize * 0.44);
+        final idleIconSize = math.min(23.0, idleShellSize * 0.44);
 
-        return Opacity(
-          opacity: intro,
-          child: Transform.translate(
-            offset: Offset(0, (1 - intro) * 18),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Tooltip(
-                message: widget.destination.label,
-                child: Semantics(
-                  label: widget.destination.label,
-                  button: true,
-                  selected: widget.selected,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTapDown: _handleTapDown,
-                      onTapCancel: _handleTapCancel,
-                      onTapUp: (_) => _handleTapCancel(),
-                      onTap: _handleTap,
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        height: 58,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOutCubic,
-                              width: widget.selected ? 58 : 54,
-                              height: widget.selected ? 58 : 54,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: shellColor,
-                                border: Border.all(color: shellBorder),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: widget.selected ? 5 : 8,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 220),
-                                curve: Curves.easeOutCubic,
-                                width: widget.selected ? 20 : 6,
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: widget.selected
-                                      ? Colors.white.withValues(alpha: 0.92)
-                                      : Colors.white.withValues(alpha: 0.14),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                            ),
-                            Transform.translate(
-                              offset: Offset(0, -refreshLift + (press * 1.5)),
-                              child: Transform.rotate(
-                                angle: introTurn - (press * 0.04),
-                                child: Transform.scale(
-                                  scale: (0.88 + (intro * 0.12)) -
-                                      (press * 0.10) +
-                                      (widget.selected ? 0.08 : 0.0) +
-                                      (tap * 0.14) +
-                                      refreshPulse,
-                                  child: Icon(
-                                    widget.destination.icon,
-                                    size: widget.selected ? 24 : 23,
-                                    color: iconColor,
+        return AnimatedBuilder(
+          animation: Listenable.merge([
+            _introController,
+            _pressController,
+            _tapController,
+            _refreshController,
+          ]),
+          builder: (context, _) {
+            final intro = Curves.easeOutCubic.transform(_introController.value);
+            final press = Curves.easeOutCubic.transform(_pressController.value);
+            final tap = Curves.easeOutBack.transform(_tapController.value);
+            final refresh = Curves.easeInOutCubic.transform(
+              _refreshController.value,
+            );
+            final refreshLift = math.sin(refresh * math.pi) * 4;
+            final refreshPulse = math.sin(refresh * math.pi) * 0.08;
+            final introTurn = (1 - intro) * (widget.selected ? -0.22 : 0.18);
+            final activeAccent = AppColors.white70;
+            final iconColor = widget.selected
+                ? AppColors.white
+                : AppColors.white.withValues(alpha: 0.76);
+            final shellColor = widget.selected
+                ? activeAccent.withValues(alpha: 0.20)
+                : AppColors.white.withValues(alpha: 0.045 + (press * 0.03));
+            final shellBorder = widget.selected
+                ? activeAccent.withValues(alpha: 0.44)
+                : AppColors.white.withValues(alpha: 0.05 + (refresh * 0.04));
+            final label = widget.destination.label(context);
+
+            return Opacity(
+              opacity: intro,
+              child: Transform.translate(
+                offset: Offset(0, (1 - intro) * 18),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                  ),
+                  child: Tooltip(
+                    message: label,
+                    child: Semantics(
+                      label: label,
+                      button: true,
+                      selected: widget.selected,
+                      child: Material(
+                        color: AppColors.black.withValues(alpha: 0),
+                        child: InkWell(
+                          onTapDown: _handleTapDown,
+                          onTapCancel: _handleTapCancel,
+                          onTapUp: (_) => _handleTapCancel(),
+                          onTap: _handleTap,
+                          borderRadius: BorderRadius.circular(AppSpacing.sm),
+                          child: SizedBox(
+                            height: itemHeight,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.easeOutCubic,
+                                  width: widget.selected
+                                      ? selectedShellSize
+                                      : idleShellSize,
+                                  height: widget.selected
+                                      ? selectedShellSize
+                                      : idleShellSize,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      AppSpacing.sm,
+                                    ),
+                                    color: shellColor,
+                                    border: Border.all(color: shellBorder),
                                   ),
                                 ),
-                              ),
+                                Positioned(
+                                  bottom: widget.selected
+                                      ? AppSpacing.xs
+                                      : AppSpacing.sm,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 220),
+                                    curve: Curves.easeOutCubic,
+                                    width: widget.selected
+                                        ? math.min(
+                                            AppSpacing.lg,
+                                            selectedShellSize * 0.38,
+                                          )
+                                        : AppSpacing.sm,
+                                    height: AppSpacing.xs,
+                                    decoration: BoxDecoration(
+                                      color: widget.selected
+                                          ? AppColors.white.withValues(
+                                              alpha: 0.92,
+                                            )
+                                          : AppColors.white.withValues(
+                                              alpha: 0.14,
+                                            ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.xxl,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Transform.translate(
+                                  offset: Offset(
+                                    0,
+                                    -refreshLift + (press * 1.5),
+                                  ),
+                                  child: Transform.rotate(
+                                    angle: introTurn - (press * 0.04),
+                                    child: Transform.scale(
+                                      scale:
+                                          (0.88 + (intro * 0.12)) -
+                                          (press * 0.10) +
+                                          (widget.selected ? 0.08 : 0.0) +
+                                          (tap * 0.14) +
+                                          refreshPulse,
+                                      child: Icon(
+                                        widget.destination.icon,
+                                        size: widget.selected
+                                            ? selectedIconSize
+                                            : idleIconSize,
+                                        color: iconColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

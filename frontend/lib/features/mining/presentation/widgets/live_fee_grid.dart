@@ -6,6 +6,7 @@ import 'package:teste/features/mining/domain/entities/mining_dashboard_snapshot.
 import 'package:teste/features/mining/presentation/mining_formatters.dart';
 import 'package:teste/features/mining/presentation/models/mining_dashboard_view_data.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class LiveFeeGrid extends StatelessWidget {
   final MiningFeeMarketSnapshot feeMarket;
@@ -25,8 +26,8 @@ class LiveFeeGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Mercado de taxas',
-            subtitle: 'Faixas ativas, spread e janela de inclusão.',
+            title: context.l10n.miningFeesTitle,
+            subtitle: context.l10n.miningFeesSubtitle,
             trailing: MiningTrendChip(
               label: '${viewData.projectedFastLaneWindowMinutes} min',
               positive: viewData.congestionLevel == MiningCongestionLevel.calm,
@@ -43,15 +44,16 @@ class LiveFeeGrid extends StatelessWidget {
               ),
               _SignalChip(
                 label: viewData.hasWideFeeSpread
-                    ? 'spread amplo'
-                    : 'spread controlado',
+                    ? context.l10n.miningFeesWideSpread
+                    : context.l10n.miningFeesControlledSpread,
                 tone: viewData.hasWideFeeSpread
                     ? MiningStatusTone.warning
                     : MiningStatusTone.live,
               ),
               _SignalChip(
-                label:
-                    'janela ${MiningFormatters.feeRate(viewData.nextBlockMinimumFee)}+',
+                label: context.l10n.miningFeesWindow(
+                  MiningFormatters.feeRate(viewData.nextBlockMinimumFee),
+                ),
                 tone: MiningStatusTone.info,
               ),
             ],
@@ -71,28 +73,28 @@ class LiveFeeGrid extends StatelessWidget {
                 children: [
                   _FeeTile(
                     width: cardWidth,
-                    label: 'Prioritaria',
+                    label: context.l10n.miningFeesPriority,
                     value: feeMarket.priorityFee,
                     helper: 'Entrada em 1 bloco',
                     accent: miningRed,
                   ),
                   _FeeTile(
                     width: cardWidth,
-                    label: 'Expressa',
+                    label: context.l10n.miningFeesExpress,
                     value: feeMarket.expressFee,
                     helper: 'Janela 30 min',
                     accent: miningAmber,
                   ),
                   _FeeTile(
                     width: cardWidth,
-                    label: 'Padrão',
+                    label: context.l10n.miningFeesStandard,
                     value: feeMarket.standardFee,
                     helper: 'Ritmo normal',
                     accent: miningBlue,
                   ),
                   _FeeTile(
                     width: cardWidth,
-                    label: 'Economica',
+                    label: context.l10n.miningFeesEconomy,
                     value: feeMarket.economyFee,
                     helper: 'Sem urgencia',
                     accent: miningTeal,
@@ -188,7 +190,7 @@ class _FeeTile extends StatelessWidget {
               AppTypography.h3,
               color: Colors.white,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
+              letterSpacing: 0,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -231,12 +233,7 @@ class _FeeBand extends StatelessWidget {
                     borderRadius: miningInnerBorderRadius,
                     border: Border.all(color: miningBorder),
                     gradient: const LinearGradient(
-                      colors: [
-                        miningRed,
-                        miningAmber,
-                        miningBlue,
-                        miningTeal,
-                      ],
+                      colors: [miningRed, miningAmber, miningBlue, miningTeal],
                       stops: [0.0, 0.34, 0.7, 1.0],
                     ),
                   ),
@@ -244,11 +241,7 @@ class _FeeBand extends StatelessWidget {
               ),
               Align(
                 alignment: Alignment(-1 + (medianStop * 2), 0),
-                child: Container(
-                  width: 3,
-                  height: 18,
-                  color: Colors.white,
-                ),
+                child: Container(width: 3, height: 18, color: Colors.white),
               ),
               Align(
                 alignment: Alignment(-1 + (minStop * 2), 0),
@@ -266,20 +259,20 @@ class _FeeBand extends StatelessWidget {
           children: [
             Expanded(
               child: _BandLabel(
-                label: 'Minimo',
+                label: context.l10n.miningFeesMinimum,
                 value: MiningFormatters.feeRate(minFee),
               ),
             ),
             Expanded(
               child: _BandLabel(
-                label: 'Mediana',
+                label: context.l10n.miningFeesMedian,
                 value: MiningFormatters.feeRate(medianFee),
                 alignEnd: true,
               ),
             ),
             Expanded(
               child: _BandLabel(
-                label: 'Maximo',
+                label: context.l10n.miningFeesMaximum,
                 value: MiningFormatters.feeRate(maxFee),
                 alignEnd: true,
               ),
@@ -322,7 +315,7 @@ class _BandLabel extends StatelessWidget {
             AppTypography.bodySmall,
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+            letterSpacing: 0,
           ),
         ),
       ],
@@ -334,10 +327,7 @@ class _SignalChip extends StatelessWidget {
   final String label;
   final MiningStatusTone tone;
 
-  const _SignalChip({
-    required this.label,
-    required this.tone,
-  });
+  const _SignalChip({required this.label, required this.tone});
 
   @override
   Widget build(BuildContext context) {

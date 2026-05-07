@@ -6,14 +6,19 @@ import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/monochrome_theme.dart';
+import 'package:teste/core/utils/api_display_text.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/safe_display_text.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/features/mining/presentation/mining_explorer.dart';
 import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
 import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 String _financialCopy(
   BuildContext context, {
@@ -60,16 +65,24 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dateTitle =
-        _financialCopy(context, pt: 'Data', en: 'Date', es: 'Fecha');
+    final dateTitle = _financialCopy(
+      context,
+      pt: 'Data',
+      en: 'Date',
+      es: 'Fecha',
+    );
     final advancedDetailsTitle = _financialCopy(
       context,
-      pt: 'Ver dados completos',
-      en: 'See full details',
-      es: 'Ver datos completos',
+      pt: 'Dados do pagamento',
+      en: 'Payment details',
+      es: 'Datos del pago',
     );
-    final contextTitle =
-        _financialCopy(context, pt: 'Contexto', en: 'Context', es: 'Contexto');
+    final contextTitle = _financialCopy(
+      context,
+      pt: 'Contexto',
+      en: 'Context',
+      es: 'Contexto',
+    );
     final statusMeta = paymentLink != null
         ? FinancialStatusBadge.paymentLink(paymentLink!.status)
         : FinancialStatusBadge.transaction(transaction!.status);
@@ -87,10 +100,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
     );
     final secondaryAmount = selectedCurrency == Currency.btc
         ? null
-        : MoneyDisplay.format(
-            amount: amountBtc,
-            currency: Currency.btc,
-          );
+        : MoneyDisplay.format(amount: amountBtc, currency: Currency.btc);
     final createdAt =
         paymentLink?.createdAt ?? paymentLink?.paidAt ?? transaction?.timestamp;
     final hasAdvancedDetails = (_secondaryAddress != null &&
@@ -128,8 +138,8 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
               _SummaryHero(
                 statusMeta: statusMeta,
                 leadingIcon: leadingIcon,
-                headline: _headline,
-                contextLabel: _contextLabel,
+                headline: _headline(context),
+                contextLabel: _contextLabel(context),
                 supportingText: _summaryMessage,
                 primaryAmount: primaryAmount,
                 secondaryAmount: secondaryAmount,
@@ -177,7 +187,12 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                     ],
                     if (_invoiceId != null) ...[
                       _CopyablePanel(
-                        title: 'Invoice ID',
+                        title: _financialCopy(
+                          context,
+                          pt: 'Código do pedido',
+                          en: 'Request code',
+                          es: 'Código del pedido',
+                        ),
                         value: _invoiceId!,
                         compact: true,
                       ),
@@ -185,7 +200,12 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                     ],
                     if (_paymentHash != null) ...[
                       _CopyablePanel(
-                        title: 'Payment hash',
+                        title: _financialCopy(
+                          context,
+                          pt: 'Código de confirmação',
+                          en: 'Confirmation code',
+                          es: 'Código de confirmación',
+                        ),
                         value: _paymentHash!,
                         compact: true,
                       ),
@@ -193,7 +213,12 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                     ],
                     if (_lightningInvoice != null) ...[
                       _CopyablePanel(
-                        title: 'Invoice Lightning',
+                        title: _financialCopy(
+                          context,
+                          pt: 'Código Lightning',
+                          en: 'Lightning code',
+                          es: 'Código Lightning',
+                        ),
                         value: _lightningInvoice!,
                         compact: true,
                       ),
@@ -204,12 +229,11 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                         title: contextTitle,
                         compact: true,
                         child: Text(
-                          _description!,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: monoTextColor,
-                                    height: 1.45,
-                                  ),
+                          ApiDisplayText.message(context, _description),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: monoTextColor, height: 1.45),
                         ),
                       ),
                   ],
@@ -219,6 +243,10 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                 const SizedBox(height: 12),
                 _NetworkExplorerButton(transaction: transaction!),
               ],
+              if (transaction?.canCancelPendingReceive == true) ...[
+                const SizedBox(height: 12),
+                _CancelReceiveButton(transaction: transaction!),
+              ],
             ],
           ),
         ),
@@ -226,28 +254,66 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
     );
   }
 
-  String get _headline {
+  String _headline(BuildContext context) {
     if (paymentLink != null) {
       if (paymentLink!.isOnboardingVoucher) {
-        return 'Voucher de onboarding';
+        return _financialCopy(
+          context,
+          pt: 'Voucher de boas-vindas',
+          en: 'Welcome voucher',
+          es: 'Voucher de bienvenida',
+        );
       }
-      return 'Pagamento por link';
+      return _financialCopy(
+        context,
+        pt: 'Pagamento por link',
+        en: 'Payment link',
+        es: 'Pago por enlace',
+      );
     }
 
-    return TransactionVisualSpec.fromTransaction(transaction!).label;
+    return TransactionVisualSpec.fromTransaction(transaction!)
+        .localizedLabel(context);
   }
 
-  String get _contextLabel {
+  String _contextLabel(BuildContext context) {
     if (paymentLink != null) {
       if (paymentLink!.isOnboardingVoucher) {
-        return 'Voucher de onboarding';
+        return _financialCopy(
+          context,
+          pt: 'Voucher de boas-vindas',
+          en: 'Welcome voucher',
+          es: 'Voucher de bienvenida',
+        );
       }
-      return 'Pagamento por link';
+      return _financialCopy(
+        context,
+        pt: 'Pagamento por link',
+        en: 'Payment link',
+        es: 'Pago por enlace',
+      );
     }
     if (transaction!.type == TransactionType.withdrawal) {
-      return 'Saque para fora';
+      return _financialCopy(
+        context,
+        pt: 'Saque externo',
+        en: 'External withdrawal',
+        es: 'Retiro externo',
+      );
     }
-    return transaction!.isInternal ? 'Movimentação interna' : 'Rede Bitcoin';
+    return transaction!.isInternal
+        ? _financialCopy(
+            context,
+            pt: 'Movimentação Kerosene',
+            en: 'Kerosene activity',
+            es: 'Movimiento Kerosene',
+          )
+        : _financialCopy(
+            context,
+            pt: 'Rede Bitcoin',
+            en: 'Bitcoin network',
+            es: 'Red Bitcoin',
+          );
   }
 
   String? get _primaryAddress {
@@ -287,7 +353,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
 
   String get _referenceLabel {
     if (paymentLink?.txid != null || transaction?.blockchainTxid != null) {
-      return 'TXID';
+      return 'Código da transação';
     }
     return 'Referência';
   }
@@ -345,6 +411,77 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
         return 'Movimentação concluída com sucesso e pronta para conferência.';
       case TransactionStatus.failed:
         return 'Não foi possível concluir esta movimentação. Revise os detalhes antes de tentar novamente.';
+    }
+  }
+}
+
+class _CancelReceiveButton extends ConsumerWidget {
+  final Transaction transaction;
+
+  const _CancelReceiveButton({required this.transaction});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _cancel(context, ref),
+        icon: const Icon(Icons.block_rounded),
+        label: Text(context.l10n.onchainDepositCancelAction),
+      ),
+    );
+  }
+
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final transferId = transaction.externalTransferId?.trim() ?? '';
+    if (transferId.isEmpty || !transaction.canCancelPendingReceive) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(context.l10n.onchainDepositCancelTitle),
+            content: Text(context.l10n.onchainDepositCancelMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(context.l10n.goBack),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(context.l10n.onchainDepositCancelAction),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await ref
+          .read(transactionRepositoryProvider)
+          .cancelInboundTransfer(transferId);
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(pagedTransactionHistoryProvider);
+      ref.invalidate(externalTransfersProvider);
+      if (context.mounted) {
+        Navigator.of(context).maybePop();
+        AppNotice.showSuccess(
+          context,
+          message: context.l10n.apiDisplayReceiveCancelled,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        AppNotice.showError(
+          context,
+          message: ErrorTranslator.translate(context.l10n, error.toString()),
+        );
+      }
     }
   }
 }
@@ -415,6 +552,7 @@ class _NetworkExplorerButton extends StatelessWidget {
         label: Text(
           'Abrir ${explorer.buttonLabel}',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Colors.black,
                 fontWeight: FontWeight.w800,
               ),
         ),
@@ -475,11 +613,11 @@ class _CopyablePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final copiedMessage = _financialCopy(
+    final visibleValue = SafeDisplayText.displayIdentifier(
       context,
-      pt: 'Informação copiada para a área de transferência.',
-      en: 'Information copied to the clipboard.',
-      es: 'Informacion copiada al portapapeles.',
+      value,
+      leading: compact ? 8 : 10,
+      trailing: compact ? 6 : 8,
     );
     return _DetailPanel(
       title: title,
@@ -489,7 +627,7 @@ class _CopyablePanel extends StatelessWidget {
         children: [
           Expanded(
             child: SelectableText(
-              value,
+              visibleValue,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: monoTextColor,
                     fontWeight: FontWeight.w700,
@@ -505,7 +643,10 @@ class _CopyablePanel extends StatelessWidget {
               if (!context.mounted) {
                 return;
               }
-              AppNotice.showSuccess(context, message: copiedMessage);
+              AppNotice.showSuccess(
+                context,
+                message: context.l10n.apiDisplayCopied,
+              );
             },
             icon: const Icon(Icons.copy_rounded),
             color: monoTextColor,
@@ -633,10 +774,7 @@ class _DisclosurePanel extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _DisclosurePanel({
-    required this.title,
-    required this.children,
-  });
+  const _DisclosurePanel({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -662,12 +800,6 @@ class _DisclosurePanel extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
-                ),
-          ),
-          subtitle: Text(
-            'Mostramos só o essencial primeiro.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: monoMutedTextColor,
                 ),
           ),
           children: children,

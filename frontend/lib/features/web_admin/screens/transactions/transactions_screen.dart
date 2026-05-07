@@ -1,72 +1,251 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/utils/transaction_address_display.dart';
-import '../../../wallet/domain/entities/transaction.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
-import '../../widgets/admin_data_table.dart';
 
-/// Transactions module — full list with filters, sorting, and detail view.
-class TransactionsScreen extends ConsumerStatefulWidget {
+/// Integrity proofs module.
+///
+/// The enterprise terminal must not expose a user's readable transaction
+/// history. It shows only cryptographic roots and operational proof state.
+class TransactionsScreen extends ConsumerWidget {
   const TransactionsScreen({super.key});
 
   @override
-  ConsumerState<TransactionsScreen> createState() => _TransactionsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final latestRoot = ref.watch(adminAuditLatestRootProvider);
+    final auditHistory = ref.watch(adminAuditHistoryProvider);
+    final sovereignty = ref.watch(adminSovereigntyProvider);
 
-class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
-  String _typeFilter = 'all';
-  String _statusFilter = 'all';
-  String _searchQuery = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final historyAsync = ref.watch(adminLedgerHistoryProvider);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AdminTheme.spacingXl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AdminSectionHeader(
-            title: 'Transactions',
-            subtitle: 'Complete history of all ledger operations',
-          ),
-
-          // Filters
-          _buildFilters(),
-          const SizedBox(height: AdminTheme.spacingLg),
-
-          // Table
-          historyAsync.when(
-            data: (txs) {
-              final filtered = _applyFilters(txs);
-              return AdminDataTable<Transaction>(
-                data: filtered,
-                columns: _buildColumns(),
-                emptyMessage: 'No transactions match the current filters',
-              );
-            },
-            loading: () => const AdminDataTable<Transaction>(
-              data: [],
-              columns: [],
-              isLoading: true,
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(adminAuditLatestRootProvider);
+        ref.invalidate(adminAuditHistoryProvider);
+        ref.invalidate(adminSovereigntyProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AdminTheme.spacingXl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AdminSectionHeader(
+              title: 'Integrity Proofs',
+              subtitle:
+                  'Ledger sem payload: hash-chain, Merkle root e estado operacional sem historico pessoal.',
             ),
-            error: (e, _) => AdminErrorState(
-              message: 'Failed to load transactions: $e',
-              onRetry: () => ref.invalidate(adminLedgerHistoryProvider),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: AdminTheme.spacingXl),
+              padding: const EdgeInsets.all(AdminTheme.spacingLg),
+              decoration: BoxDecoration(
+                color: AdminColors.warningSubtle,
+                border: Border.all(
+                  color: AdminColors.warning.withValues(alpha: 0.35),
+                ),
+                borderRadius: AdminTheme.borderRadiusSm,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.privacy_tip_outlined,
+                    color: AdminColors.warning,
+                    size: 18,
+                  ),
+                  const SizedBox(width: AdminTheme.spacingMd),
+                  Expanded(
+                    child: Text(
+                      'Readable transaction rows are an ephemeral mobile sync buffer retained for up to 24h. This terminal exposes proofs and aggregate state, not user statements.',
+                      style: AdminTypography.bodySmall.copyWith(
+                        color: AdminColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            AdminResponsiveGrid(
+              children: [
+                _LatestRootCard(asyncValue: latestRoot),
+                _SovereigntyIntegrityCard(asyncValue: sovereignty),
+              ],
+            ),
+            const SizedBox(height: AdminTheme.spacingXl),
+            _AuditRootsTimeline(asyncValue: auditHistory),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildFilters() {
+class _LatestRootCard extends StatelessWidget {
+  final AsyncValue<Map<String, dynamic>> asyncValue;
+
+  const _LatestRootCard({required this.asyncValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProofCard(
+      title: 'Latest Merkle root',
+      icon: Icons.account_tree_outlined,
+      child: asyncValue.when(
+        data: (root) {
+          if (root.isEmpty) {
+            return Text('No root available', style: AdminTypography.bodyMedium);
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Row('Root', _short(root['merkleRoot'])),
+              _Row('Ledger count', '${root['ledgerCount'] ?? 0}'),
+              _Row('Created', '${root['createdAt'] ?? 'unknown'}'),
+              _Row('Anchor', _short(root['anchorTxid'])),
+            ],
+          );
+        },
+        loading: () => const LinearProgressIndicator(
+          color: AdminColors.textTertiary,
+        ),
+        error: (error, _) => Text(
+          'Failed to load root: $error',
+          style: AdminTypography.caption,
+        ),
+      ),
+    );
+  }
+}
+
+class _SovereigntyIntegrityCard extends StatelessWidget {
+  final AsyncValue<Map<String, dynamic>> asyncValue;
+
+  const _SovereigntyIntegrityCard({required this.asyncValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProofCard(
+      title: 'Hash-chain state',
+      icon: Icons.fingerprint,
+      child: asyncValue.when(
+        data: (data) {
+          final ledgerIntegrity = data['ledgerIntegrity'];
+          final integrity = ledgerIntegrity is Map
+              ? Map<String, dynamic>.from(ledgerIntegrity)
+              : <String, dynamic>{};
+          if (integrity.isEmpty) {
+            return Text(
+              'Integrity state unavailable',
+              style: AdminTypography.bodyMedium,
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: integrity.entries.take(6).map((entry) {
+              return _Row(_formatKey(entry.key), _short(entry.value));
+            }).toList(),
+          );
+        },
+        loading: () => const LinearProgressIndicator(
+          color: AdminColors.textTertiary,
+        ),
+        error: (error, _) => Text(
+          'Failed to load integrity state: $error',
+          style: AdminTypography.caption,
+        ),
+      ),
+    );
+  }
+}
+
+class _AuditRootsTimeline extends StatelessWidget {
+  final AsyncValue<List<Map<String, dynamic>>> asyncValue;
+
+  const _AuditRootsTimeline({required this.asyncValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProofCard(
+      title: 'Merkle audit roots',
+      icon: Icons.history_outlined,
+      child: asyncValue.when(
+        data: (entries) {
+          if (entries.isEmpty) {
+            return Text('No audit checkpoints found', style: AdminTypography.bodyMedium);
+          }
+          return Column(
+            children: entries.take(20).map((entry) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: AdminTheme.spacingSm),
+                padding: const EdgeInsets.all(AdminTheme.spacingMd),
+                decoration: BoxDecoration(
+                  color: AdminColors.backgroundElevated,
+                  border: Border.all(color: AdminColors.borderSubtle),
+                  borderRadius: AdminTheme.borderRadiusXs,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.account_tree_outlined,
+                      color: AdminColors.textTertiary,
+                      size: 15,
+                    ),
+                    const SizedBox(width: AdminTheme.spacingMd),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _short(entry['merkleRoot']),
+                            style: AdminTypography.mono.copyWith(
+                              fontSize: 12,
+                              color: AdminColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'created ${entry['createdAt'] ?? 'unknown'} | ledgers ${entry['ledgerCount'] ?? 0}',
+                            style: AdminTypography.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const LinearProgressIndicator(
+          color: AdminColors.textTertiary,
+        ),
+        error: (error, _) => Text(
+          'Failed to load audit roots: $error',
+          style: AdminTypography.caption,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProofCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _ProofCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(AdminTheme.spacingLg),
       decoration: BoxDecoration(
         color: AdminColors.surface,
@@ -76,243 +255,59 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search bar
-          TextField(
-            onChanged: (v) => setState(() => _searchQuery = v),
-            style: AdminTypography.bodyMedium.copyWith(
-              color: AdminColors.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Search by ID, address, description...',
-              prefixIcon: const Icon(Icons.search,
-                  size: 18, color: AdminColors.textTertiary),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AdminTheme.spacingLg,
-                vertical: AdminTheme.spacingMd,
-              ),
-            ),
-          ),
-          const SizedBox(height: AdminTheme.spacingMd),
-
-          // Type filter
           Row(
             children: [
-              Text('TYPE', style: AdminTypography.label),
-              const SizedBox(width: AdminTheme.spacingMd),
-              ..._buildTypeFilters(),
-              const SizedBox(width: AdminTheme.spacingXl),
-              Text('STATUS', style: AdminTypography.label),
-              const SizedBox(width: AdminTheme.spacingMd),
-              ..._buildStatusFilters(),
+              Icon(icon, size: 16, color: AdminColors.warning),
+              const SizedBox(width: AdminTheme.spacingSm),
+              Text(title.toUpperCase(), style: AdminTypography.label),
             ],
+          ),
+          const SizedBox(height: AdminTheme.spacingLg),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _Row(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: Text(label, style: AdminTypography.caption)),
+          const SizedBox(width: AdminTheme.spacingMd),
+          Flexible(
+            child: SelectableText(
+              value,
+              textAlign: TextAlign.right,
+              style: AdminTypography.mono.copyWith(
+                fontSize: 12,
+                color: AdminColors.textPrimary,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  List<Widget> _buildTypeFilters() {
-    final types = {
-      'all': 'All',
-      'internal': 'Internal',
-      'lightning': 'Lightning',
-      'onchain': 'On-chain',
-    };
-    return types.entries.map((e) {
-      return Padding(
-        padding: const EdgeInsets.only(right: AdminTheme.spacingSm),
-        child: AdminFilterChip(
-          label: e.value,
-          isSelected: _typeFilter == e.key,
-          onTap: () => setState(() => _typeFilter = e.key),
-        ),
-      );
-    }).toList();
-  }
+String _formatKey(String key) {
+  return key.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[0]}').trim();
+}
 
-  List<Widget> _buildStatusFilters() {
-    final statuses = {
-      'all': 'All',
-      'confirmed': 'Confirmed',
-      'pending': 'Pending',
-      'failed': 'Failed',
-    };
-    return statuses.entries.map((e) {
-      return Padding(
-        padding: const EdgeInsets.only(right: AdminTheme.spacingSm),
-        child: AdminFilterChip(
-          label: e.value,
-          isSelected: _statusFilter == e.key,
-          onTap: () => setState(() => _statusFilter = e.key),
-        ),
-      );
-    }).toList();
-  }
-
-  List<Transaction> _applyFilters(List<Transaction> txs) {
-    var result = txs;
-
-    // Type filter
-    if (_typeFilter == 'internal') {
-      result = result.where((tx) => tx.isInternal).toList();
-    } else if (_typeFilter == 'lightning') {
-      result = result.where((tx) => tx.isLightning).toList();
-    } else if (_typeFilter == 'onchain') {
-      result = result.where((tx) => !tx.isInternal && !tx.isLightning).toList();
-    }
-
-    // Status filter
-    if (_statusFilter == 'confirmed') {
-      result = result
-          .where((tx) => tx.status == TransactionStatus.confirmed)
-          .toList();
-    } else if (_statusFilter == 'pending') {
-      result = result
-          .where((tx) =>
-              tx.status == TransactionStatus.pending ||
-              tx.status == TransactionStatus.confirming)
-          .toList();
-    } else if (_statusFilter == 'failed') {
-      result =
-          result.where((tx) => tx.status == TransactionStatus.failed).toList();
-    }
-
-    // Search
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      result = result.where((tx) {
-        final primaryAddress =
-            resolvePrimaryTransactionAddress(tx).toLowerCase();
-        final secondaryAddress =
-            (resolveSecondaryTransactionAddress(tx) ?? '').toLowerCase();
-        return tx.id.toLowerCase().contains(q) ||
-            primaryAddress.contains(q) ||
-            secondaryAddress.contains(q) ||
-            (tx.description?.toLowerCase().contains(q) ?? false);
-      }).toList();
-    }
-
-    return result;
-  }
-
-  List<AdminColumn<Transaction>> _buildColumns() {
-    return [
-      AdminColumn<Transaction>(
-        header: 'ID',
-        cellBuilder: (tx) => SelectableText(
-          tx.id.length > 12 ? '${tx.id.substring(0, 12)}...' : tx.id,
-          style: AdminTypography.tableCellMono,
-        ),
-        sortKey: (tx) => tx.id,
-      ),
-      AdminColumn<Transaction>(
-        header: 'Type',
-        cellBuilder: (tx) {
-          final label = tx.isLightning
-              ? 'Lightning'
-              : tx.isInternal
-                  ? 'Internal'
-                  : 'On-chain';
-          return AdminStatusBadge(
-            label: label,
-            variant: tx.isLightning
-                ? AdminBadgeVariant.info
-                : tx.isInternal
-                    ? AdminBadgeVariant.accent
-                    : AdminBadgeVariant.neutral,
-          );
-        },
-      ),
-      AdminColumn<Transaction>(
-        header: 'Direction',
-        cellBuilder: (tx) {
-          final isSend = tx.type == TransactionType.send ||
-              tx.type == TransactionType.withdrawal;
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSend ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 14,
-                color: isSend ? AdminColors.negative : AdminColors.positive,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                tx.type.displayName,
-                style: AdminTypography.tableCell,
-              ),
-            ],
-          );
-        },
-      ),
-      AdminColumn<Transaction>(
-        header: 'Amount (BTC)',
-        isNumeric: true,
-        cellBuilder: (tx) => Text(
-          tx.amountBTC.toStringAsFixed(8),
-          style: AdminTypography.tableCellMono,
-        ),
-        sortKey: (tx) => tx.amountBTC,
-      ),
-      AdminColumn<Transaction>(
-        header: 'Fee (BTC)',
-        isNumeric: true,
-        cellBuilder: (tx) => Text(
-          tx.feeBTC.toStringAsFixed(8),
-          style: AdminTypography.tableCellMono,
-        ),
-        sortKey: (tx) => tx.feeBTC,
-      ),
-      AdminColumn<Transaction>(
-        header: 'Status',
-        cellBuilder: (tx) => AdminStatusBadge(
-          label: tx.status.displayName,
-          variant: _statusVariant(tx.status),
-        ),
-      ),
-      AdminColumn<Transaction>(
-        header: 'Date',
-        cellBuilder: (tx) => Text(
-          _formatDate(tx.timestamp),
-          style: AdminTypography.tableCell,
-        ),
-        sortKey: (tx) => tx.timestamp.millisecondsSinceEpoch,
-      ),
-      AdminColumn<Transaction>(
-        header: 'Source',
-        cellBuilder: (tx) => SelectableText(
-          _truncateAddress(resolveSecondaryTransactionAddress(tx) ?? '—'),
-          style: AdminTypography.tableCell,
-        ),
-      ),
-      AdminColumn<Transaction>(
-        header: 'Address',
-        cellBuilder: (tx) => SelectableText(
-          _truncateAddress(resolvePrimaryTransactionAddress(tx)),
-          style: AdminTypography.tableCell,
-        ),
-      ),
-    ];
-  }
-
-  AdminBadgeVariant _statusVariant(TransactionStatus status) {
-    switch (status) {
-      case TransactionStatus.confirmed:
-        return AdminBadgeVariant.positive;
-      case TransactionStatus.pending:
-      case TransactionStatus.confirming:
-        return AdminBadgeVariant.warning;
-      case TransactionStatus.failed:
-        return AdminBadgeVariant.negative;
-    }
-  }
-
-  String _formatDate(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _truncateAddress(String value) {
-    return value.length > 16 ? '${value.substring(0, 16)}...' : value;
-  }
+String _short(Object? value) {
+  final text = value?.toString() ?? 'absent';
+  if (text.isEmpty) return 'absent';
+  if (text.length <= 22) return text;
+  return '${text.substring(0, 14)}...${text.substring(text.length - 6)}';
 }

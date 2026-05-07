@@ -59,14 +59,10 @@ InputDecoration monochromeInputDecoration({
     fillColor: monoSurfaceAltColor,
     contentPadding: const EdgeInsets.symmetric(
       horizontal: AppSpacing.lg,
-      vertical: AppSpacing.md + 2,
+      vertical: AppSpacing.md,
     ),
-    labelStyle: AppTypography.bodySmall.copyWith(
-      color: monoMutedTextColor,
-    ),
-    hintStyle: AppTypography.bodySmall.copyWith(
-      color: monoFaintTextColor,
-    ),
+    labelStyle: AppTypography.bodySmall.copyWith(color: monoMutedTextColor),
+    hintStyle: AppTypography.bodySmall.copyWith(color: monoFaintTextColor),
     border: border,
     enabledBorder: border,
     focusedBorder: const OutlineInputBorder(
@@ -105,6 +101,8 @@ ButtonStyle monochromeFilledButtonStyle({
   return FilledButton.styleFrom(
     backgroundColor: background,
     foregroundColor: foreground,
+    disabledBackgroundColor: monoSurfaceRaisedColor,
+    disabledForegroundColor: monoMutedTextColor,
     minimumSize: Size.fromHeight(minHeight),
     textStyle: AppTypography.buttonText.copyWith(
       letterSpacing: 0.4,
@@ -118,6 +116,7 @@ ButtonStyle monochromeFilledButtonStyle({
 ButtonStyle monochromeTextButtonStyle() {
   return TextButton.styleFrom(
     foregroundColor: monoMutedTextColor,
+    disabledForegroundColor: monoFaintTextColor,
     textStyle: AppTypography.caption.copyWith(
       color: monoMutedTextColor,
       letterSpacing: 1.1,
@@ -134,6 +133,7 @@ ButtonStyle monochromeOutlinedButtonStyle({
   return OutlinedButton.styleFrom(
     minimumSize: Size.fromHeight(minHeight),
     foregroundColor: foregroundColor,
+    disabledForegroundColor: monoFaintTextColor,
     side: const BorderSide(color: monoBorderStrongColor),
     backgroundColor: monoSurfaceAltColor,
     shape: const RoundedRectangleBorder(borderRadius: monoRadius),

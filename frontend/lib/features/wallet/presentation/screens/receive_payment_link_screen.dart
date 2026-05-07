@@ -7,13 +7,15 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/utils/api_display_text.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/qr_payment_parser.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
-import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class ReceivePaymentLinkScreen extends ConsumerStatefulWidget {
   final PaymentLink initialLink;
@@ -80,25 +82,13 @@ class _ReceivePaymentLinkScreenState
     );
   }
 
-  String get _destinationHash {
-    final value = _link.destinationHash?.trim();
-    if (value != null && value.isNotEmpty) {
-      return value;
-    }
-    return _link.depositAddress;
-  }
-
   Duration get _remainingTime {
     final expiresAt = _link.expiresAt;
     if (expiresAt == null) {
       return Duration.zero;
     }
-
     final remaining = expiresAt.toLocal().difference(DateTime.now());
-    if (remaining.isNegative) {
-      return Duration.zero;
-    }
-    return remaining;
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   bool get _shouldKeepPolling => _link.isPending || _link.isVerifyingOnboarding;
@@ -112,13 +102,9 @@ class _ReceivePaymentLinkScreenState
       if (!mounted) {
         return;
       }
+      setState(() => _elapsedSeconds += 1);
 
-      setState(() {
-        _elapsedSeconds += 1;
-      });
-
-      final shouldRefresh = _elapsedSeconds % 12 == 0;
-      if (shouldRefresh && _shouldKeepPolling && !_isRefreshing) {
+      if (_elapsedSeconds % 12 == 0 && _shouldKeepPolling && !_isRefreshing) {
         await _refreshLink(silent: true);
       }
     });
@@ -130,7 +116,6 @@ class _ReceivePaymentLinkScreenState
     }
 
     final previousStatus = _link.status;
-
     setState(() => _isRefreshing = true);
     try {
       final latest = await ref
@@ -140,10 +125,7 @@ class _ReceivePaymentLinkScreenState
         return;
       }
 
-      setState(() {
-        _link = latest;
-      });
-
+      setState(() => _link = latest);
       if (previousStatus != latest.status) {
         ref.invalidate(paymentLinksProvider);
         ref.invalidate(transactionHistoryProvider);
@@ -151,7 +133,9 @@ class _ReceivePaymentLinkScreenState
       }
     } catch (error) {
       if (!silent && mounted) {
-        SnackbarHelper.showError('Nao foi possivel atualizar o link: $error');
+        SnackbarHelper.showError(
+          ErrorTranslator.translate(context.l10n, error.toString()),
+        );
       }
     } finally {
       if (mounted) {
@@ -167,6 +151,7 @@ class _ReceivePaymentLinkScreenState
   }
 
   Future<void> _cancelLink() async {
+    final l10n = context.l10n;
     final reason = await _showCancelReasonSheet();
     if (reason == null) {
       return;
@@ -184,16 +169,16 @@ class _ReceivePaymentLinkScreenState
         return;
       }
 
-      setState(() {
-        _link = cancelled;
-      });
+      setState(() => _link = cancelled);
       ref.invalidate(paymentLinksProvider);
       ref.invalidate(transactionHistoryProvider);
       ref.invalidate(pagedTransactionHistoryProvider);
-      SnackbarHelper.showSuccess('Link de pagamento cancelado.');
+      SnackbarHelper.showSuccess(l10n.receivePaymentLinkCancelled);
     } catch (error) {
       if (mounted) {
-        SnackbarHelper.showError('Nao foi possivel cancelar o link: $error');
+        SnackbarHelper.showError(
+          ErrorTranslator.translate(context.l10n, error.toString()),
+        );
       }
     } finally {
       if (mounted) {
@@ -221,16 +206,14 @@ class _ReceivePaymentLinkScreenState
             decoration: BoxDecoration(
               color: receiveFlowPanelColor,
               border: Border.all(color: receiveFlowBorderStrongColor),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
+              borderRadius: BorderRadius.zero,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Cancelar link',
+                  context.l10n.receivePaymentLinkCancelTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: receiveFlowTextColor,
                         fontWeight: FontWeight.w700,
@@ -238,7 +221,7 @@ class _ReceivePaymentLinkScreenState
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Opcionalmente registre o motivo para manter o histórico operacional coerente.',
+                  context.l10n.receivePaymentLinkCancelMessage,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: receiveFlowMutedTextColor,
                         height: 1.4,
@@ -248,15 +231,15 @@ class _ReceivePaymentLinkScreenState
                 TextField(
                   controller: controller,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Motivo do cancelamento',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.receivePaymentLinkCancelReason,
                   ),
                 ),
                 const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pop(controller.text),
-                  icon: const Icon(LucideIcons.xCircle, size: 16),
-                  label: const Text('Confirmar cancelamento'),
+                ReceiveFlowPrimaryButton(
+                  onTap: () => Navigator.of(context).pop(controller.text),
+                  icon: LucideIcons.xCircle,
+                  label: context.l10n.receivePaymentLinkConfirmCancel,
                 ),
               ],
             ),
@@ -274,61 +257,54 @@ class _ReceivePaymentLinkScreenState
     if (hours > 0) {
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
-
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  String _formatDateTime(DateTime? dateTime) {
+  String _formatDateTime(BuildContext context, DateTime? dateTime) {
     if (dateTime == null) {
-      return 'Nao informado';
+      return context.l10n.receivePaymentLinkNotInformed;
     }
     final local = dateTime.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
-  String get _statusHeadline {
+  String _statusHeadline(BuildContext context) {
     if (_link.isVerifyingOnboarding) {
-      return 'Pagamento em verificacao';
+      return context.l10n.receivePaymentLinkStatusChecking;
     }
     if (_link.isPaid || _link.isCompleted) {
-      return 'Pagamento recebido';
+      return context.l10n.receivePaymentLinkStatusReceived;
     }
     if (_link.isCancelled) {
-      return 'Link cancelado';
+      return context.l10n.receivePaymentLinkStatusCancelled;
     }
     if (_link.isExpired) {
-      return 'Link expirado';
+      return context.l10n.receivePaymentLinkStatusExpired;
     }
-    return 'Aguardando pagamento';
+    return context.l10n.receivePaymentLinkStatusWaiting;
   }
 
-  String get _statusMessage {
+  String _statusMessage(BuildContext context) {
     if (_link.isVerifyingOnboarding) {
-      return 'A rede ja identificou o pagamento e o backend ainda esta validando a etapa final.';
+      return context.l10n.receivePaymentLinkCheckingMessage;
     }
     if (_link.isPaid || _link.isCompleted) {
-      return 'O valor deste link ja foi recebido. O historico do criador reflete esse estado automaticamente.';
+      return context.l10n.receivePaymentLinkReceivedMessage;
     }
     if (_link.isCancelled) {
       return _link.cancelReason?.trim().isNotEmpty == true
-          ? 'Este link foi cancelado: ${_link.cancelReason}.'
-          : 'Este link foi cancelado e nao aceita mais pagamentos.';
+          ? context.l10n.receivePaymentLinkCancelledReason(
+              _link.cancelReason!,
+            )
+          : context.l10n.receivePaymentLinkCancelledMessage;
     }
     if (_link.isExpired) {
-      return 'Este link nao aceita mais pagamentos. Gere um novo QR para continuar a receber.';
+      return context.l10n.receivePaymentLinkExpiredMessage;
     }
     if (_isLockedPaymentRequest) {
-      return 'Quem abrir este QR ou link verá apenas a confirmação. Valor e destino ficam travados pelo servidor.';
+      return context.l10n.receivePaymentLinkLockedMessage;
     }
-    return 'Use o QR code ou copie o link de pagamento abaixo. O status sera atualizado automaticamente.';
-  }
-
-  String _shortHash(String value) {
-    final trimmed = value.trim();
-    if (trimmed.length <= 18) {
-      return trimmed;
-    }
-    return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 8)}';
+    return context.l10n.receivePaymentLinkWaitingMessage;
   }
 
   @override
@@ -336,8 +312,8 @@ class _ReceivePaymentLinkScreenState
     final statusMeta = FinancialStatusBadge.paymentLink(_link.status);
 
     return ReceiveFlowScaffold(
-      title: 'Recebimento',
-      subtitle: 'QR, link e acompanhamento no mesmo padrão visual.',
+      title: context.l10n.receivePaymentLinkTitle,
+      subtitle: context.l10n.receivePaymentLinkSubtitle,
       actions: [
         if (_isRefreshing)
           const SizedBox(
@@ -352,7 +328,7 @@ class _ReceivePaymentLinkScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHero(statusMeta),
+          _buildHero(context, statusMeta),
           const SizedBox(height: 16),
           _buildQrCard(context),
           const SizedBox(height: 16),
@@ -366,7 +342,7 @@ class _ReceivePaymentLinkScreenState
     );
   }
 
-  Widget _buildHero(FinancialStatusMeta statusMeta) {
+  Widget _buildHero(BuildContext context, FinancialStatusMeta statusMeta) {
     return ReceiveFlowPanel(
       backgroundColor: receiveFlowPanelAltColor,
       child: Column(
@@ -383,27 +359,35 @@ class _ReceivePaymentLinkScreenState
               _MetricChip(
                 icon: Icons.timer_outlined,
                 label: _link.isExpired
-                    ? 'Expirado'
-                    : 'Expira em ${_formatDuration(_remainingTime)}',
+                    ? context.l10n.receivePaymentLinkExpired
+                    : context.l10n.receivePaymentLinkExpiresIn(
+                        _formatDuration(_remainingTime),
+                      ),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          Text(
-            widget.requestedAmountLabel,
-            style: const TextStyle(
-              color: receiveFlowTextColor,
-              fontSize: 28,
-              fontWeight: FontWeight.w500,
-              height: 1,
-              letterSpacing: -0.8,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              widget.requestedAmountLabel,
+              maxLines: 1,
+              softWrap: false,
+              style: const TextStyle(
+                color: receiveFlowTextColor,
+                fontSize: 28,
+                fontWeight: FontWeight.w500,
+                height: 1,
+                letterSpacing: 0,
+              ),
             ),
           ),
           if (widget.requestedAmountLabel != widget.btcAmountLabel) ...[
             const SizedBox(height: 6),
             Text(
               widget.btcAmountLabel,
-              style: TextStyle(
+              style: const TextStyle(
                 color: receiveFlowMutedTextColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
@@ -417,11 +401,15 @@ class _ReceivePaymentLinkScreenState
               [
                 if (widget.cardTypeLabel != null) widget.cardTypeLabel,
                 if (widget.depositFeeLabel != null)
-                  'depósito ${widget.depositFeeLabel}',
+                  context.l10n.receivePaymentLinkDepositFee(
+                    widget.depositFeeLabel!,
+                  ),
                 if (widget.netAmountLabel != null)
-                  'líquido ${widget.netAmountLabel}',
+                  context.l10n.receivePaymentLinkNetAmount(
+                    widget.netAmountLabel!,
+                  ),
               ].join(' • '),
-              style: TextStyle(
+              style: const TextStyle(
                 color: receiveFlowMutedTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -431,7 +419,7 @@ class _ReceivePaymentLinkScreenState
           ],
           const SizedBox(height: 16),
           Text(
-            _statusHeadline,
+            _statusHeadline(context),
             style: const TextStyle(
               color: receiveFlowTextColor,
               fontSize: 18,
@@ -440,8 +428,8 @@ class _ReceivePaymentLinkScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            _statusMessage,
-            style: TextStyle(
+            _statusMessage(context),
+            style: const TextStyle(
               color: receiveFlowMutedTextColor,
               fontSize: 13,
               height: 1.4,
@@ -453,27 +441,18 @@ class _ReceivePaymentLinkScreenState
             runSpacing: 10,
             children: [
               _DetailTag(
-                title: 'ID',
-                value: _link.id,
-              ),
-              if (_isLockedPaymentRequest && _destinationHash.isNotEmpty)
-                _DetailTag(
-                  title: 'Destino',
-                  value: _shortHash(_destinationHash),
-                ),
-              _DetailTag(
-                title: 'Expira',
-                value: _formatDateTime(_link.expiresAt),
+                title: context.l10n.receivePaymentLinkExpires,
+                value: _formatDateTime(context, _link.expiresAt),
               ),
               if (_link.txid != null && _link.txid!.isNotEmpty)
                 _DetailTag(
-                  title: 'TXID',
+                  title: context.l10n.receivePaymentLinkTransactionCode,
                   value: _link.txid!,
                 ),
               if (_link.isCancelled)
                 _DetailTag(
-                  title: 'Estado',
-                  value: 'Cancelado',
+                  title: context.l10n.receivePaymentLinkState,
+                  value: ApiDisplayText.status(context, _link.status),
                 ),
             ],
           ),
@@ -518,9 +497,10 @@ class _ReceivePaymentLinkScreenState
           Text(
             context.l10n.receiveScanToPay,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: receiveFlowMutedTextColor,
-                ),
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: receiveFlowMutedTextColor),
           ),
         ],
       ),
@@ -529,54 +509,36 @@ class _ReceivePaymentLinkScreenState
 
   Widget _buildLinkDetails(BuildContext context) {
     if (_isLockedPaymentRequest) {
-      return Column(
-        children: [
-          _CopyFieldCard(
-            title: 'Link de pagamento',
-            value: _paymentUri,
-            helper:
-                'Este link abre a confirmação com valor e destino travados.',
-            onCopy: () => _copyValue(
-              _paymentUri,
-              'Link de pagamento copiado para a area de transferencia.',
-            ),
-          ),
-          const SizedBox(height: 12),
-          _CopyFieldCard(
-            title: 'Hash do destino',
-            value: _destinationHash,
-            helper:
-                'Somente o hash publico da carteira de destino fica visivel para quem paga.',
-            onCopy: () => _copyValue(
-              _destinationHash,
-              'Hash do destino copiado para a area de transferencia.',
-            ),
-          ),
-        ],
+      return _CopyFieldCard(
+        title: context.l10n.receivePaymentLinkPaymentLinkTitle,
+        value: _paymentUri,
+        helper: context.l10n.receivePaymentLinkLockedHelper,
+        onCopy: () => _copyValue(
+          _paymentUri,
+          context.l10n.receivePaymentLinkCopied,
+        ),
       );
     }
 
     return Column(
       children: [
         _CopyFieldCard(
-          title: 'Link de pagamento',
+          title: context.l10n.receivePaymentLinkPaymentLinkTitle,
           value: _paymentUri,
-          helper:
-              'Este e o payload completo do QR com endereco e valor definidos.',
+          helper: context.l10n.receivePaymentLinkShareHelper,
           onCopy: () => _copyValue(
             _paymentUri,
-            'Link de pagamento copiado para a area de transferencia.',
+            context.l10n.receivePaymentLinkCopied,
           ),
         ),
         const SizedBox(height: 12),
         _CopyFieldCard(
           title: context.l10n.depositAddress,
           value: _link.depositAddress,
-          helper:
-              'Endereco retornado pela API para receber exatamente este pagamento.',
+          helper: context.l10n.receivePaymentLinkDepositAddressHelper,
           onCopy: () => _copyValue(
             _link.depositAddress,
-            'Endereco de deposito copiado para a area de transferencia.',
+            context.l10n.receivePaymentLinkDepositAddressCopied,
           ),
         ),
       ],
@@ -590,18 +552,18 @@ class _ReceivePaymentLinkScreenState
           _ActionButton(
             onTap: () => _refreshLink(),
             icon: LucideIcons.refreshCw,
-            label: 'Atualizar',
+            label: context.l10n.receivePaymentLinkRefresh,
           ),
           _ActionButton(
             onTap: () => Navigator.pushNamed(context, '/history'),
             icon: LucideIcons.history,
-            label: 'Histórico',
+            label: context.l10n.history,
           ),
           if (_canCancelLink)
             _ActionButton(
               onTap: _cancelLink,
               icon: LucideIcons.xCircle,
-              label: 'Cancelar',
+              label: context.l10n.cancel,
             ),
         ];
 
@@ -630,15 +592,12 @@ class _ReceivePaymentLinkScreenState
   }
 
   Widget _buildConfigurationCard(BuildContext context) {
-    final metadataEntries = _link.metadata.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-
     return ReceiveFlowPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Configuracao do link',
+            context.l10n.receivePaymentLinkConfigurationTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: receiveFlowTextColor,
                   fontWeight: FontWeight.w600,
@@ -650,82 +609,54 @@ class _ReceivePaymentLinkScreenState
             runSpacing: 10,
             children: [
               _DetailTag(
-                title: 'Visibilidade',
+                title: context.l10n.receivePaymentLinkVisibility,
                 value: _humanizeFlag(_link.visibility),
               ),
               _DetailTag(
-                title: 'Fechamento',
+                title: context.l10n.receivePaymentLinkCompletion,
                 value: _humanizeFlag(_link.confirmationMode),
               ),
               _DetailTag(
-                title: 'Valor',
-                value: _link.amountLocked ? 'Travado' : 'Flexivel',
+                title: context.l10n.receivePaymentLinkAmount,
+                value: _link.amountLocked
+                    ? context.l10n.receivePaymentLinkAmountSet
+                    : context.l10n.receivePaymentLinkAmountFlexible,
               ),
               if (_link.referenceLabel != null &&
                   _link.referenceLabel!.trim().isNotEmpty)
                 _DetailTag(
-                  title: 'Referencia',
+                  title: context.l10n.receivePaymentLinkReference,
                   value: _link.referenceLabel!,
                 ),
               if (_link.createdAt != null)
                 _DetailTag(
-                  title: 'Criado em',
-                  value: _formatDateTime(_link.createdAt),
+                  title: context.l10n.receivePaymentLinkCreatedAt,
+                  value: _formatDateTime(context, _link.createdAt),
                 ),
               if (_link.paidAt != null)
                 _DetailTag(
-                  title: 'Pago em',
-                  value: _formatDateTime(_link.paidAt),
+                  title: context.l10n.receivePaymentLinkPaidAt,
+                  value: _formatDateTime(context, _link.paidAt),
                 ),
               if (_link.completedAt != null)
                 _DetailTag(
-                  title: 'Liquidado em',
-                  value: _formatDateTime(_link.completedAt),
+                  title: context.l10n.receivePaymentLinkConfirmedAt,
+                  value: _formatDateTime(context, _link.completedAt),
                 ),
               if (_link.cancelledAt != null)
                 _DetailTag(
-                  title: 'Cancelado em',
-                  value: _formatDateTime(_link.cancelledAt),
+                  title: context.l10n.receivePaymentLinkCancelledAt,
+                  value: _formatDateTime(context, _link.cancelledAt),
                 ),
             ],
           ),
-          if (metadataEntries.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              'Metadados',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: receiveFlowMutedTextColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: metadataEntries
-                  .map(
-                    (entry) => _DetailTag(
-                      title: entry.key,
-                      value: entry.value,
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
         ],
       ),
     );
   }
 
   String _humanizeFlag(String value) {
-    return value
-        .split('_')
-        .where((segment) => segment.trim().isNotEmpty)
-        .map(
-          (segment) =>
-              '${segment[0].toUpperCase()}${segment.substring(1).toLowerCase()}',
-        )
-        .join(' ');
+    return ApiDisplayText.action(context, value);
   }
 }
 
@@ -762,22 +693,25 @@ class _CopyFieldCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: onCopy,
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: const Text('Copiar'),
+                label: Text(context.l10n.receivePaymentLinkCopy),
                 style: TextButton.styleFrom(
-                  foregroundColor: receiveFlowMutedTextColor,
+                  foregroundColor: receiveFlowTextColor,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          SelectableText(
-            value,
-            style: AppTypography.technicalMono(
-              textStyle: const TextStyle(
-                color: receiveFlowTextColor,
-                fontSize: 13,
-                height: 1.45,
-                fontWeight: FontWeight.w400,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SelectableText(
+              value,
+              style: AppTypography.technicalMono(
+                textStyle: const TextStyle(
+                  color: receiveFlowTextColor,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ),
@@ -808,11 +742,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ReceiveFlowSecondaryButton(
-      onTap: onTap,
-      icon: icon,
-      label: label,
-    );
+    return ReceiveFlowSecondaryButton(onTap: onTap, icon: icon, label: label);
   }
 }
 
@@ -820,10 +750,7 @@ class _MetricChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _MetricChip({
-    required this.icon,
-    required this.label,
-  });
+  const _MetricChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -857,20 +784,15 @@ class _DetailTag extends StatelessWidget {
   final String title;
   final String value;
 
-  const _DetailTag({
-    required this.title,
-    required this.value,
-  });
+  const _DetailTag({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
     final normalizedTitle = title.trim().toUpperCase();
-    final isTechnicalValue = normalizedTitle == 'ID' ||
-        normalizedTitle == 'TXID' ||
-        normalizedTitle == 'DESTINO';
+    final isTechnicalValue = normalizedTitle.contains('TRANSAÇÃO');
 
     return Container(
-      constraints: const BoxConstraints(minWidth: 96),
+      constraints: const BoxConstraints(minWidth: 96, maxWidth: 280),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: receiveFlowPanelColor,
@@ -889,19 +811,25 @@ class _DetailTag extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: isTechnicalValue
-                ? AppTypography.technicalMono(
-                    textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: receiveFlowTextColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                  )
-                : Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: receiveFlowTextColor,
-                      fontWeight: FontWeight.w500,
-                    ),
+          Tooltip(
+            message: value,
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: isTechnicalValue
+                  ? AppTypography.technicalMono(
+                      textStyle:
+                          Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: receiveFlowTextColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                    )
+                  : Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+            ),
           ),
         ],
       ),

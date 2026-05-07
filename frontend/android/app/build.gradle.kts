@@ -1,8 +1,35 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
+
+fun stringProperty(name: String): String? {
+    return (project.findProperty(name) as String?)
+        ?: System.getenv(name)
+        ?: keystoreProperties.getProperty(name)
+}
+
+val releaseStoreFile = stringProperty("KEROSENE_UPLOAD_STORE_FILE")
+val releaseStorePassword = stringProperty("KEROSENE_UPLOAD_STORE_PASSWORD")
+val releaseKeyAlias = stringProperty("KEROSENE_UPLOAD_KEY_ALIAS")
+val releaseKeyPassword = stringProperty("KEROSENE_UPLOAD_KEY_PASSWORD")
+val hasReleaseSigningConfig = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+val allowDebugReleaseSigning =
+    stringProperty("KEROSENE_ALLOW_DEBUG_RELEASE_SIGNING") == "true"
 
 android {
     namespace = "com.teste.kersosene"
@@ -14,7 +41,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.teste.kersosene"
+        applicationId = stringProperty("KEROSENE_ANDROID_APPLICATION_ID")
+            ?: "com.teste.kersosene"
         minSdk = flutter.minSdkVersion // Definido manualmente para garantir compatibilidade
         targetSdk = 36 // ATUALIZADO PARA 36
         versionCode = 1
@@ -34,9 +62,32 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = when {
+                hasReleaseSigningConfig -> signingConfigs.getByName("release")
+                allowDebugReleaseSigning -> signingConfigs.getByName("debug")
+                else -> null
+            }
+            if (!hasReleaseSigningConfig && !allowDebugReleaseSigning) {
+                throw GradleException(
+                    "Release signing is not configured. Set KEROSENE_UPLOAD_STORE_FILE, " +
+                        "KEROSENE_UPLOAD_STORE_PASSWORD, KEROSENE_UPLOAD_KEY_ALIAS and " +
+                        "KEROSENE_UPLOAD_KEY_PASSWORD, or set " +
+                        "KEROSENE_ALLOW_DEBUG_RELEASE_SIGNING=true for local non-production builds."
+                )
+            }
         }
     }
 }

@@ -64,7 +64,9 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
       final xpub = _xpubController.text.trim();
       final managementPassphrase = _managementPassphraseController.text.trim();
       if (xpub.isEmpty) {
-        SnackbarHelper.showError('Informe o XPUB da carteira self-custody.');
+        SnackbarHelper.showError(
+          'Informe a chave pública da carteira fria.',
+        );
         return;
       }
       if (managementPassphrase.length < 8) {
@@ -170,7 +172,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
               const SizedBox(height: AppSpacing.xxl),
               _buildCreateButton(
                 _walletMode == 'SELF_CUSTODY'
-                    ? 'Conectar XPUB'
+                    ? 'Conectar carteira fria'
                     : AppCopy.createWalletGenerateStructure.resolve(context),
               ).animate(delay: 200.ms).fade().slideY(begin: 0.2, end: 0),
             ] else ...[
@@ -263,7 +265,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           Expanded(
             child: Text(
               isSelfCustody
-                  ? 'No modo self-custody, o backend recebe apenas o XPUB para derivar endereços e auditar saldo. A passphrase abaixo serve apenas para gerenciar esta carteira dentro da conta.'
+                  ? 'Esta carteira fria fica sob sua guarda. A Kerosene acompanha os recebimentos sem ter acesso à frase de recuperação nem às chaves de movimentação.'
                   : 'A seed BIP39 existe apenas na carteira interna. Ela não faz parte do login da conta Kerosene.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white70,
@@ -303,7 +305,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         const SizedBox(height: AppSpacing.xl),
         if (isSelfCustody) ...[
           Text(
-            'XPUB de monitoramento',
+            AppCopy.createWalletColdPublicKeyLabel.resolve(context),
             style: Theme.of(context).textTheme.labelSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -313,7 +315,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
             maxLines: 4,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'xpub / zpub / vpub',
+              hintText: AppCopy.createWalletColdPublicKeyHint.resolve(context),
               prefixIcon: const Padding(
                 padding: EdgeInsets.only(bottom: 36),
                 child: Icon(LucideIcons.scanLine, size: 18),
@@ -328,7 +330,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            'Passphrase de gestão',
+            AppCopy.createWalletManagementPassphraseLabel.resolve(context),
             style: Theme.of(context).textTheme.labelSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -337,7 +339,8 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
             obscureText: true,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'Use uma passphrase só para administrar esta wallet',
+              hintText:
+                  AppCopy.createWalletManagementPassphraseHint.resolve(context),
               prefixIcon: const Icon(LucideIcons.lock, size: 18),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
@@ -382,7 +385,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Modo da carteira',
+          AppCopy.createWalletModeLabel.resolve(context),
           style: Theme.of(context).textTheme.labelSmall,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -390,8 +393,9 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           children: [
             Expanded(
               child: _buildWalletModeCard(
-                title: 'Kerosene',
-                subtitle: 'Custódia on-chain + Lightning',
+                title: AppCopy.createWalletKeroseneModeTitle.resolve(context),
+                subtitle:
+                    AppCopy.createWalletKeroseneModeSubtitle.resolve(context),
                 icon: LucideIcons.shield,
                 selected: _walletMode == 'KEROSENE',
                 onTap: () => setState(() {
@@ -402,8 +406,8 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _buildWalletModeCard(
-                title: 'Self-custody',
-                subtitle: 'XPUB para receber e auditar',
+                title: AppCopy.createWalletColdModeTitle.resolve(context),
+                subtitle: AppCopy.createWalletColdModeSubtitle.resolve(context),
                 icon: LucideIcons.scanLine,
                 selected: _walletMode == 'SELF_CUSTODY',
                 onTap: () => setState(() {
@@ -594,22 +598,20 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(LucideIcons.copy,
-                  size: 16, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                LucideIcons.shieldCheck,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: _mnemonic));
-                  SnackbarHelper.showSuccess(
-                    AppCopy.createWalletCopied.resolve(context),
-                  );
-                },
+              Expanded(
                 child: Text(
-                  AppCopy.createWalletCopyAll.resolve(context),
+                  AppCopy.createWalletPaperOnly.resolve(context),
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    height: 1.35,
                     fontSize: 12,
                   ),
                 ),

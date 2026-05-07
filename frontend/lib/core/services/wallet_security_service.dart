@@ -34,8 +34,8 @@ class WalletSecurityService {
     try {
       await _storageService.write(key: _mnemonicKey, value: mnemonic);
       return true;
-    } catch (e) {
-      debugPrint('Error saving mnemonic: $e');
+    } catch (_) {
+      debugPrint('WalletSecurityService: recovery phrase could not be saved.');
       return false;
     }
   }
@@ -64,8 +64,9 @@ class WalletSecurityService {
   }) async {
     Uint8List? seed;
     try {
-      if (!bip39.validateMnemonic(mnemonic))
+      if (!bip39.validateMnemonic(mnemonic)) {
         throw Exception('Invalid Mnemonic');
+      }
       seed = bip39.mnemonicToSeed(mnemonic);
       final root = Bip32Slip10Secp256k1.fromSeed(seed);
       final childKey = root.derivePath("m/84'/0'/0'/0/0");

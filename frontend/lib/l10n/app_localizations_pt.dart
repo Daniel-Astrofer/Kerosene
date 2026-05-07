@@ -438,7 +438,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get processing => 'PROCESSANDO...';
 
   @override
-  String get nfcInDevelopment => 'NFC EM DESENVOLVIMENTO';
+  String get nfcInDevelopment => 'NFC INDISPONÍVEL NESTE DISPOSITIVO';
 
   @override
   String get amountToReceive => 'VALOR A RECEBER';
@@ -511,43 +511,43 @@ class AppLocalizationsPt extends AppLocalizations {
   String get totalToReceive => 'TOTAL A RECEBER';
 
   @override
-  String get sovereignKeyVerification => 'VERIFICAÇÃO DE CHAVE SOBERANA';
+  String get sovereignKeyVerification => 'VERIFICAÇÃO POR PASSKEY';
 
   @override
   String get readyToScan => 'PRONTO PARA ESCANEAR';
 
   @override
-  String get sovereigntyStatusTitle => 'STATUS DE SOBERANIA';
+  String get sovereigntyStatusTitle => 'STATUS DE SEGURANÇA';
 
   @override
-  String get liveAttestationReport => 'RELATÓRIO DE ATESTAÇÃO AO VIVO';
+  String get liveAttestationReport => 'RELATÓRIO DE SEGURANÇA';
 
   @override
-  String get systemSovereign => 'SISTEMA SOBERANO';
+  String get systemSovereign => 'SISTEMA DE SEGURANÇA';
 
   @override
   String get integrityAlert => 'ALERTA DE INTEGRIDADE';
 
   @override
-  String get hardwareAttestation => 'ATESTAÇÃO DE HARDWARE';
+  String get hardwareAttestation => 'VERIFICAÇÃO DO DISPOSITIVO';
 
   @override
-  String get networkConsensus => 'CONSENSO DE REDE';
+  String get networkConsensus => 'CONFIRMAÇÕES DA REDE';
 
   @override
-  String get ledgerIntegrity => 'INTEGRIDADE DO LEDGER';
+  String get ledgerIntegrity => 'INTEGRIDADE FINANCEIRA';
 
   @override
-  String get memoryProtection => 'PROTEÇÃO DE MEMÓRIA';
+  String get memoryProtection => 'PROTEÇÃO LOCAL';
 
   @override
-  String get serverUptime => 'Uptime do servidor';
+  String get serverUptime => 'Disponibilidade do serviço';
 
   @override
   String get realtimeReportInfo => 'Relatório gerado em tempo real';
 
   @override
-  String get analyzingSovereignty => 'ANALISANDO SOBERANIA…';
+  String get analyzingSovereignty => 'VERIFICANDO SEGURANÇA…';
 
   @override
   String get chooseUniqueHandle => 'Escolha seu Handle Único';
@@ -618,10 +618,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get marketingNewsDesc => 'Fique atualizado com as últimas novidades';
 
   @override
-  String get sovereigntyStatus => 'Status de Soberania';
+  String get sovereigntyStatus => 'Status de Segurança';
 
   @override
-  String get sovereigntyStatusDesc => 'TPM · Quórum · Merkle · Memória';
+  String get sovereigntyStatusDesc => 'Proteção da conta e saúde do serviço';
 
   @override
   String get biometricAuth => 'Autenticação Biométrica';
@@ -752,6 +752,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get nfcTagWrittenSuccess => 'Tag gravada com sucesso!';
+
+  @override
+  String get nfcTagInvalid =>
+      'Esta tag não contém um pedido de pagamento legível.';
+
+  @override
+  String get nfcPaymentNotFound =>
+      'Nenhum pedido de pagamento compatível foi encontrado nesta tag.';
+
+  @override
+  String get nfcCouldNotProcess =>
+      'Não foi possível processar esta tag NFC. Tente novamente.';
 
   @override
   String get writeNfcTag => 'Gravar Tag NFC';
@@ -941,12 +953,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get twoFaBackupTitle => 'Sua Semente de Recuperação';
 
   @override
-  String get twoFaBackupBadge =>
-      'Chave 3 de 3 — Emergência / Bypass de Soberania';
+  String get twoFaBackupBadge => 'Chave 3 de 3 — Emergência / Recuperação';
 
   @override
   String get twoFaBackupSubtitle =>
-      'Se a Kerosene encerrar, use esta semente de 12 palavras com sua semente principal para recuperar os fundos sem envolvimento do servidor.';
+      'Guarde este backup de 12 palavras separado da frase principal. Juntos, eles ajudam a recuperar o acesso em uma emergência.';
 
   @override
   String get twoFaCoSignerNote =>
@@ -995,17 +1006,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get totpErrorInvalid => 'Código inválido. Por favor, tente novamente.';
 
   @override
-  String get passkeyTitle => 'Chave Soberana';
+  String get passkeyTitle => 'Chave do dispositivo';
 
   @override
   String get passkeySubtitle =>
       'Proteja sua conta com uma chave de hardware biométrica. Sem necessidade de senha.';
 
   @override
-  String get passkeyRegisterButton => 'Ativar Chave Soberana';
+  String get passkeyRegisterButton => 'Ativar chave do dispositivo';
 
   @override
-  String get passkeySuccessMessage => 'Chave Soberana ativada!';
+  String get passkeySuccessMessage => 'Chave do dispositivo ativada!';
 
   @override
   String get passkeySkip => 'Pular por enquanto';
@@ -1216,7 +1227,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get passkeyNoBiometrics =>
-      'Configure biometria ou um bloqueio de tela neste dispositivo para usar a Chave Soberana.';
+      'Configure biometria ou um bloqueio de tela neste dispositivo para usar a chave do dispositivo.';
 
   @override
   String passkeyErrorStarting(String message) {
@@ -1225,7 +1236,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get passkeyBiometricReason =>
-      'Desbloqueie a Chave Soberana para proteger sua carteira Kerosene';
+      'Desbloqueie a chave do dispositivo para proteger sua carteira Kerosene';
 
   @override
   String passkeyErrorFinishing(String message) {
@@ -1247,7 +1258,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get passkeyLoadingSecuring => 'Protegendo Dispositivo...';
 
   @override
-  String get passkeyLoadingRegistering => 'Ativando Chave Soberana...';
+  String get passkeyLoadingRegistering => 'Ativando chave do dispositivo...';
 
   @override
   String get usernameHintChars => 'a-z, 0-9 e _';
@@ -1290,7 +1301,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get confErrorMsg =>
-      'Ocorreu um erro ao finalizar a criação da sua conta no servidor. Por favor, reinicie o processo de configuração com segurança.';
+      'Não conseguimos finalizar a criação da sua conta. Reinicie a configuração com segurança.';
 
   @override
   String get confVerifiedMsg =>
@@ -1553,6 +1564,532 @@ class AppLocalizationsPt extends AppLocalizations {
       'Guarde bem estas palavras. Sem elas, seus fundos serão perdidos.';
 
   @override
+  String get bitcoinAccountsTitle => 'Contas Bitcoin';
+
+  @override
+  String get bitcoinAccountsSubtitle =>
+      'Veja seu cartão Kerosene e suas carteiras frias em uma tela simples. Chaves privadas ficam fora do app, exceto durante a criação de uma nova carteira fria.';
+
+  @override
+  String get bitcoinAccountsErrorTitle => 'Contas Bitcoin indisponíveis';
+
+  @override
+  String get bitcoinAccountsErrorMessage =>
+      'Não conseguimos carregar suas contas agora. Tente novamente em instantes.';
+
+  @override
+  String get bitcoinAccountsCreateColdWallet => 'Criar carteira fria';
+
+  @override
+  String get bitcoinAccountsNewKeroseneCard => 'Novo cartão Kerosene';
+
+  @override
+  String get bitcoinAccountsEmptyTitle => 'Nenhuma conta Bitcoin ainda';
+
+  @override
+  String get bitcoinAccountsEmptyMessage =>
+      'Crie uma carteira fria para guardar por longo prazo ou adicione um cartão Kerosene para receber no dia a dia.';
+
+  @override
+  String get bitcoinAccountsKeroseneCardSection => 'Cartão Kerosene';
+
+  @override
+  String get bitcoinAccountsColdWalletSection => 'Carteiras frias';
+
+  @override
+  String get bitcoinAccountsNoKeroseneCard =>
+      'Nenhum cartão Kerosene ativo ainda.';
+
+  @override
+  String get bitcoinAccountsNoColdWallet =>
+      'Nenhuma carteira fria está sendo acompanhada ainda.';
+
+  @override
+  String get bitcoinAccountsKeroseneCardBadge => 'Cartão Kerosene';
+
+  @override
+  String get bitcoinAccountsColdWalletBadge => 'Somente leitura';
+
+  @override
+  String get bitcoinAccountsUnnamedAccount => 'Conta Bitcoin';
+
+  @override
+  String get bitcoinAccountsAvailableBalance => 'Saldo disponível';
+
+  @override
+  String get bitcoinAccountsObservedBalance => 'Saldo acompanhado';
+
+  @override
+  String get bitcoinAccountsKeroseneCardNote =>
+      'Use este cartão para receber Bitcoin dentro da Kerosene e movimentar recursos com rapidez.';
+
+  @override
+  String get bitcoinAccountsColdWalletNote =>
+      'A Kerosene só acompanha esta carteira. Para gastar, você ainda precisa das palavras de recuperação ou do seu dispositivo offline.';
+
+  @override
+  String get bitcoinAccountsPendingBalance => 'Aguardando';
+
+  @override
+  String get bitcoinAccountsReservedBalance => 'Reservado';
+
+  @override
+  String get bitcoinAccountsReviewBalance => 'Em análise';
+
+  @override
+  String get bitcoinAccountsReceiveBtc => 'Receber BTC';
+
+  @override
+  String get bitcoinAccountsStatusActive => 'Pronta';
+
+  @override
+  String get bitcoinAccountsStatusPending => 'Preparando';
+
+  @override
+  String get bitcoinAccountsStatusDisabled => 'Pausada';
+
+  @override
+  String get bitcoinAccountsStatusReady => 'Disponível';
+
+  @override
+  String get bitcoinAccountsCreateCardTitle => 'Novo cartão Kerosene';
+
+  @override
+  String get bitcoinAccountsCardNameLabel => 'Nome do cartão';
+
+  @override
+  String get bitcoinAccountsCardNameHint => 'Diário, Reserva, Viagem';
+
+  @override
+  String get bitcoinAccountsCreateCardNotice =>
+      'Este cartão é para fundos que você quer deixar disponíveis dentro da Kerosene.';
+
+  @override
+  String get bitcoinAccountsCreateCardAction => 'Criar cartão';
+
+  @override
+  String get bitcoinAccountsCreateCardErrorTitle => 'Cartão não criado';
+
+  @override
+  String get bitcoinAccountsCreateCardErrorMessage =>
+      'Não conseguimos criar este cartão agora. Verifique o nome e tente novamente.';
+
+  @override
+  String get coldWalletCreateTitle => 'Criar carteira fria';
+
+  @override
+  String get coldWalletCreateSubtitle =>
+      'Gere as palavras de recuperação neste aparelho, anote com calma e a Kerosene guardará apenas o necessário para mostrar saldos.';
+
+  @override
+  String get coldWalletNameLabel => 'Nome da carteira';
+
+  @override
+  String get coldWalletNameHint => 'Cofre, Reserva da família, Longo prazo';
+
+  @override
+  String get coldWalletSecurityLevelTitle => 'Nível de segurança';
+
+  @override
+  String get coldWalletLevelEssentialTitle => 'Essencial';
+
+  @override
+  String get coldWalletLevelEssentialBody =>
+      '12 palavras de recuperação. Mais fácil de anotar, indicado para valores menores.';
+
+  @override
+  String get coldWalletLevelRecommendedTitle => 'Recomendado';
+
+  @override
+  String get coldWalletLevelRecommendedBody =>
+      '24 palavras de recuperação. Melhor padrão para guardar Bitcoin por longo prazo.';
+
+  @override
+  String get coldWalletLevelMaximumTitle => 'Máximo';
+
+  @override
+  String get coldWalletLevelMaximumBody =>
+      '24 palavras mais uma palavra extra. Perder qualquer uma delas significa perder o acesso.';
+
+  @override
+  String get coldWalletExtraWordLabel => 'Palavra extra';
+
+  @override
+  String get coldWalletExtraWordHint => 'Não reutilize uma senha';
+
+  @override
+  String get coldWalletExtraWordWarning =>
+      'A palavra extra não pode ser recuperada pela Kerosene. Guarde-a separada das palavras de recuperação.';
+
+  @override
+  String get coldWalletChecklistTitle => 'Antes de gerar';
+
+  @override
+  String get coldWalletChecklistPaper =>
+      'Tenho papel ou backup em metal preparado.';
+
+  @override
+  String get coldWalletChecklistPrivate =>
+      'Estou em um local privado, sem câmeras por perto.';
+
+  @override
+  String get coldWalletChecklistOffline =>
+      'Desliguei Wi-Fi e dados móveis manualmente.';
+
+  @override
+  String get coldWalletChecklistNoPhotos => 'Não vou tirar prints nem fotos.';
+
+  @override
+  String get coldWalletGenerateAction => 'Gerar palavras';
+
+  @override
+  String get coldWalletBackupTitle => 'Anote estas palavras';
+
+  @override
+  String get coldWalletBackupSubtitle =>
+      'Estas palavras controlam a carteira. A Kerosene não consegue recuperá-las depois e não vai salvá-las.';
+
+  @override
+  String get coldWalletWordsHidden =>
+      'As palavras ficam ocultas até você decidir mostrá-las.';
+
+  @override
+  String get coldWalletShowWords => 'Mostrar palavras';
+
+  @override
+  String get coldWalletHideWords => 'Ocultar palavras';
+
+  @override
+  String get coldWalletBackupDoneAction => 'Já anotei';
+
+  @override
+  String get coldWalletVerifySubtitle =>
+      'Digite as palavras pedidas para confirmar o backup antes de importar a chave pública de acompanhamento.';
+
+  @override
+  String coldWalletVerifyWordLabel(int index) {
+    return 'Palavra $index';
+  }
+
+  @override
+  String get coldWalletVerifyFailedTitle => 'Backup não confirmado';
+
+  @override
+  String get coldWalletVerifyFailedMessage =>
+      'Confira as palavras e tente novamente.';
+
+  @override
+  String get coldWalletImportAction => 'Finalizar e acompanhar';
+
+  @override
+  String get coldWalletImportingAction => 'Importando...';
+
+  @override
+  String get coldWalletImportedTitle => 'Carteira fria adicionada';
+
+  @override
+  String get coldWalletImportedMessage =>
+      'Apenas a chave pública de acompanhamento foi importada.';
+
+  @override
+  String get coldWalletImportErrorTitle => 'Carteira fria não adicionada';
+
+  @override
+  String get coldWalletImportErrorMessage =>
+      'Reconecte a internet e tente novamente. Suas palavras de recuperação não foram enviadas.';
+
+  @override
+  String get bitcoinReceiveTitle => 'Receber BTC';
+
+  @override
+  String get bitcoinReceiveAmountOptional => 'Valor opcional em sats';
+
+  @override
+  String get bitcoinReceiveOneTime => 'Endereço de uso único';
+
+  @override
+  String get bitcoinReceiveOneTimeSubtitle =>
+      'Recomendado para privacidade e acompanhamento limpo.';
+
+  @override
+  String get bitcoinReceiveGenerateAddress => 'Gerar endereço';
+
+  @override
+  String get bitcoinReceiveGenerating => 'Gerando...';
+
+  @override
+  String get bitcoinReceiveRefresh => 'Atualizar';
+
+  @override
+  String get bitcoinReceiveCreateErrorTitle => 'Não foi possível gerar';
+
+  @override
+  String get bitcoinReceiveCreateErrorMessage =>
+      'Revise os dados e tente um novo endereço.';
+
+  @override
+  String get bitcoinReceiveStatusErrorTitle => 'Status indisponível';
+
+  @override
+  String get bitcoinReceiveStatusErrorMessage =>
+      'Não conseguimos atualizar este recebimento agora.';
+
+  @override
+  String get bitcoinReceiveCopiedTitle => 'Copiado';
+
+  @override
+  String get bitcoinReceiveCopiedMessage => 'Endereço Bitcoin copiado.';
+
+  @override
+  String get bitcoinReceiveStatusActive => 'Aguardando';
+
+  @override
+  String get bitcoinReceiveStatusDetected => 'Detectado';
+
+  @override
+  String get bitcoinReceiveStatusConfirming => 'Confirmando';
+
+  @override
+  String get bitcoinReceiveStatusPaid => 'Pago';
+
+  @override
+  String get bitcoinReceiveStatusExpired => 'Expirado';
+
+  @override
+  String get bitcoinReceiveStatusLate => 'Pagamento atrasado';
+
+  @override
+  String get bitcoinReceiveStatusReview => 'Em análise';
+
+  @override
+  String get bitcoinReceiveStatusAction => 'Precisa de revisão';
+
+  @override
+  String get bitcoinReceiveStatusProtected => 'Protegido';
+
+  @override
+  String get bitcoinReceiveStatusWaiting => 'Aguardando';
+
+  @override
+  String get bitcoinReceiveMessageActive =>
+      'Envie BTC para este endereço. Atualizaremos esta tela quando a rede encontrar o pagamento.';
+
+  @override
+  String get bitcoinReceiveMessageDetected =>
+      'O pagamento apareceu na rede Bitcoin e está aguardando confirmações.';
+
+  @override
+  String get bitcoinReceiveMessageConfirming =>
+      'A transação entrou em um bloco e ainda está confirmando.';
+
+  @override
+  String get bitcoinReceiveMessagePaid =>
+      'Pagamento confirmado e adicionado ao saldo do seu cartão Kerosene.';
+
+  @override
+  String get bitcoinReceiveMessageExpired =>
+      'Este pedido expirou. Gere um novo endereço para continuar.';
+
+  @override
+  String get bitcoinReceiveMessageLate =>
+      'Um pagamento chegou depois da expiração e será analisado com segurança.';
+
+  @override
+  String get bitcoinReceiveMessageReview =>
+      'Sua confirmação foi recebida. Estamos aguardando a condição segura de liberação.';
+
+  @override
+  String get bitcoinReceiveMessageAction =>
+      'Confirme este pagamento para concluir o recebimento com segurança.';
+
+  @override
+  String get bitcoinReceiveMessageProtected =>
+      'Este recebimento ficou protegido após um problema de sincronização. Atualize mais tarde.';
+
+  @override
+  String get bitcoinReceiveMessageWaiting => 'Aguardando a rede Bitcoin.';
+
+  @override
+  String get onchainDepositTitle => 'Depósito on-chain';
+
+  @override
+  String get onchainDepositSubtitle =>
+      'Escaneie o QR Code ou copie o endereço Bitcoin exatamente como mostrado.';
+
+  @override
+  String get onchainDepositPreparingSubtitle =>
+      'Preparando seu endereço de recebimento.';
+
+  @override
+  String get onchainDepositLoadingTitle => 'Carregando';
+
+  @override
+  String get onchainDepositLoadingMessage =>
+      'Buscando a cotação atual antes de criar o endereço.';
+
+  @override
+  String get onchainDepositAddressUnavailable =>
+      'Não conseguimos criar um endereço Bitcoin válido. Tente novamente.';
+
+  @override
+  String get onchainDepositTrackingUnavailable =>
+      'Não conseguimos iniciar o acompanhamento deste depósito. Tente novamente.';
+
+  @override
+  String get onchainDepositAddressCopied => 'Endereço Bitcoin copiado.';
+
+  @override
+  String get onchainDepositSelectedWallet => 'Carteira selecionada';
+
+  @override
+  String get onchainDepositLocalNetwork => 'Rede local de teste';
+
+  @override
+  String get onchainDepositStatusCompleted => 'Concluído';
+
+  @override
+  String get onchainDepositStatusConfirmed => 'Confirmado';
+
+  @override
+  String get onchainDepositStatusDetected => 'Detectado';
+
+  @override
+  String get onchainDepositStatusWaiting => 'Aguardando pagamento';
+
+  @override
+  String get onchainDepositStatusFailed => 'Falhou';
+
+  @override
+  String get onchainDepositStatusCancelled => 'Cancelado';
+
+  @override
+  String get onchainDepositStatusExpired => 'Expirado';
+
+  @override
+  String get onchainDepositDescriptionCancelled =>
+      'Este depósito foi cancelado. Crie um novo endereço se ainda quiser depositar.';
+
+  @override
+  String onchainDepositDescriptionWaiting(String network) {
+    return 'Este endereço está reservado para este depósito na rede $network.';
+  }
+
+  @override
+  String get onchainDepositDescriptionConfirmed =>
+      'A rede Bitcoin confirmou este depósito.';
+
+  @override
+  String onchainDepositDescriptionConfirming(int current, int total) {
+    return 'Pagamento detectado. Aguardando $current/$total confirmações.';
+  }
+
+  @override
+  String onchainDepositDetectedNotice(int current, int total) {
+    return 'Pagamento detectado. Acompanhando $current/$total confirmações.';
+  }
+
+  @override
+  String get onchainDepositConfirmedNotice => 'Depósito confirmado.';
+
+  @override
+  String get onchainDepositCancelTitle => 'Cancelar depósito';
+
+  @override
+  String get onchainDepositCancelMessage =>
+      'Este recebimento será ocultado/cancelado na Kerosene. Se alguém já enviou BTC para o endereço, a rede Bitcoin ainda pode confirmar a transação.';
+
+  @override
+  String get onchainDepositCancelAction => 'Cancelar depósito';
+
+  @override
+  String get onchainDepositCancelling => 'Cancelando...';
+
+  @override
+  String get onchainDepositCancelledNotice => 'Depósito cancelado.';
+
+  @override
+  String get onchainDepositGettingAddressTitle => 'Criando endereço';
+
+  @override
+  String get onchainDepositGettingAddressMessage =>
+      'Após o pagamento, o saldo será atualizado quando as confirmações Bitcoin chegarem.';
+
+  @override
+  String get onchainDepositErrorTitle => 'Não foi possível preparar o depósito';
+
+  @override
+  String get onchainDepositTotalLabel => 'Total a depositar';
+
+  @override
+  String onchainDepositNetworkTag(String network) {
+    return 'Endereço $network';
+  }
+
+  @override
+  String get onchainDepositTrackingTitle => 'Acompanhamento do pagamento';
+
+  @override
+  String get onchainDepositConfirmationsLabel => 'Confirmações';
+
+  @override
+  String get onchainDepositTxidLabel => 'Código da transação';
+
+  @override
+  String get onchainDepositObservedAmountLabel => 'Valor visto';
+
+  @override
+  String get onchainDepositAmountCheckLabel => 'Conferência do valor';
+
+  @override
+  String get onchainDepositAmountCheckOk => 'Valor correto';
+
+  @override
+  String get onchainDepositAmountCheckDifferent => 'Valor diferente';
+
+  @override
+  String get onchainDepositQrTitle => 'Endereço Bitcoin';
+
+  @override
+  String get onchainDepositQuoteLabel => 'Cotação BTC';
+
+  @override
+  String get onchainDepositDestinationWalletLabel => 'Vai cair em';
+
+  @override
+  String get onchainDepositNetworkLabel => 'Rede';
+
+  @override
+  String get onchainDepositExpectedAmountLabel => 'Valor esperado';
+
+  @override
+  String get onchainDepositReceivedAmountLabel => 'Valor recebido';
+
+  @override
+  String get onchainDepositMinimumConfirmationsLabel => 'Confirmações mínimas';
+
+  @override
+  String onchainDepositMinimumConfirmationsValue(int count) {
+    return '$count blocos';
+  }
+
+  @override
+  String get onchainDepositCustodyLabel => 'Tipo de carteira';
+
+  @override
+  String get onchainDepositCustodySelf => 'Carteira fria acompanhada';
+
+  @override
+  String get onchainDepositCustodyKerosene => 'Cartão Kerosene';
+
+  @override
+  String get onchainDepositSecuritySelf =>
+      'A Kerosene só acompanha este endereço. Para gastar, você continua usando suas palavras de recuperação ou seu dispositivo offline.';
+
+  @override
+  String get onchainDepositSecurityKerosene =>
+      'Este endereço foi criado para o seu cartão Kerosene e será acompanhado até o depósito confirmar.';
+
+  @override
   String get errUnexpected => 'Ocorreu um erro inesperado.';
 
   @override
@@ -1612,7 +2149,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'O destinatário da transação não foi encontrado.';
 
   @override
-  String get errLedgerGeneric => 'Erro interno na conta financeira.';
+  String get errLedgerGeneric =>
+      'Não foi possível concluir a movimentação agora.';
 
   @override
   String get errLedgerPaymentRequestNotFound =>
@@ -1638,7 +2176,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get errWalletNotFound => 'A carteira informada não foi encontrada.';
 
   @override
-  String get errWalletGeneric => 'Erro de validação na carteira.';
+  String get errWalletGeneric =>
+      'Não foi possível validar esta carteira agora.';
 
   @override
   String get errNotifMissingToken => 'Token de notificação ausente.';
@@ -1649,7 +2188,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get errInternalServer =>
-      'Nossos servidores estão temporariamente indisponíveis.';
+      'A Kerosene está temporariamente indisponível.';
 
   @override
   String get errSessionExpired =>
@@ -1664,14 +2203,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get errNoInternet =>
-      'Sem conexão com a internet ou servidor fora do ar.';
+      'Sem conexão com a internet. Verifique sua conexão e tente novamente.';
 
   @override
   String get errTimeout =>
       'A conexão demorou muito. Verifique sua internet e tente novamente.';
 
   @override
-  String get errCommFailure => 'Falha na comunicação com o servidor Kerosene.';
+  String get errCommFailure => 'Não conseguimos falar com a Kerosene agora.';
 
   @override
   String get errInvalidBtcAddress => 'O endereço Bitcoin informado é inválido.';
@@ -1712,4 +2251,3824 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get sendingData => 'ENVIANDO DADOS';
+
+  @override
+  String get apiDisplayActive => 'Ativo';
+
+  @override
+  String get apiDisplayWaiting => 'Aguardando';
+
+  @override
+  String get apiDisplayBeingChecked => 'Em conferência';
+
+  @override
+  String get apiDisplayDetected => 'Detectado';
+
+  @override
+  String get apiDisplayConfirming => 'Confirmando';
+
+  @override
+  String get apiDisplayCompleted => 'Concluído';
+
+  @override
+  String get apiDisplayExpired => 'Expirado';
+
+  @override
+  String get apiDisplayCancelled => 'Cancelado';
+
+  @override
+  String get apiDisplayNotCompleted => 'Não concluído';
+
+  @override
+  String get apiDisplayProtected => 'Protegido';
+
+  @override
+  String get apiDisplayAvailable => 'Disponível';
+
+  @override
+  String get apiDisplayUnavailable => 'Indisponível';
+
+  @override
+  String get apiDisplayHealthy => 'Saudável';
+
+  @override
+  String get apiDisplayNeedsAttention => 'Atenção necessária';
+
+  @override
+  String get apiDisplayActionNeeded => 'Ação necessária';
+
+  @override
+  String get apiDisplayInReview => 'Em análise';
+
+  @override
+  String get apiDisplayBeingTracked => 'Em acompanhamento';
+
+  @override
+  String get apiDisplayAutomatic => 'Automático';
+
+  @override
+  String get apiDisplayManualConfirmation => 'Confirmação manual';
+
+  @override
+  String get apiDisplayPrivate => 'Privado';
+
+  @override
+  String get apiDisplayShareable => 'Compartilhável';
+
+  @override
+  String get apiDisplayWatchedColdWallet => 'Carteira fria acompanhada';
+
+  @override
+  String get apiDisplayKeroseneCard => 'Cartão Kerosene';
+
+  @override
+  String get apiDisplayBitcoinWallet => 'Carteira Bitcoin';
+
+  @override
+  String get apiDisplayDeviceKey => 'Chave do aparelho';
+
+  @override
+  String get apiDisplayAuthenticatorCode => 'Código do autenticador';
+
+  @override
+  String get apiDisplayAccessPassword => 'Senha de acesso';
+
+  @override
+  String get apiDisplayRecoveryCodes => 'Códigos de recuperação';
+
+  @override
+  String get apiDisplaySecureConfirmation => 'Confirmação segura';
+
+  @override
+  String get apiDisplayGenericActionError =>
+      'Não conseguimos concluir essa ação agora. Tente novamente.';
+
+  @override
+  String get apiDisplayLightningUnavailable =>
+      'Lightning não está disponível para esta carteira no momento.';
+
+  @override
+  String get apiDisplayDepositAddressCreateFailed =>
+      'Não conseguimos criar um endereço para este depósito.';
+
+  @override
+  String get apiDisplaySecureConfirmationStartFailed =>
+      'Não conseguimos iniciar a confirmação segura. Tente novamente.';
+
+  @override
+  String get apiDisplayInformationUnavailable => 'Informação indisponível';
+
+  @override
+  String get apiDisplayAddressUnavailable => 'Endereço indisponível';
+
+  @override
+  String get apiDisplayCopied => 'Copiado';
+
+  @override
+  String get apiDisplayDataCopied => 'Dados copiados';
+
+  @override
+  String get apiDisplayTransactionSummaryCopied =>
+      'Resumo da transação copiado para a área de transferência.';
+
+  @override
+  String get apiDisplayReceiveCancelled => 'Recebimento cancelado.';
+
+  @override
+  String get detailReference => 'Referência';
+
+  @override
+  String get detailRequestCode => 'Código do pedido';
+
+  @override
+  String get detailConfirmationCode => 'Código de confirmação';
+
+  @override
+  String get detailLightningCode => 'Código Lightning';
+
+  @override
+  String get detailType => 'Tipo';
+
+  @override
+  String get detailBtcAmount => 'BTC';
+
+  @override
+  String get detailPaymentLink => 'Pagamento por link';
+
+  @override
+  String get detailOnboardingVoucher => 'Voucher de onboarding';
+
+  @override
+  String get detailExternalWithdrawal => 'Saque para fora';
+
+  @override
+  String get detailInternalMovement => 'Movimentação interna';
+
+  @override
+  String get detailBitcoinNetwork => 'Rede Bitcoin';
+
+  @override
+  String get qrScannerInstruction => 'Alinhe o QR Code dentro da moldura.';
+
+  @override
+  String get errorPopupSuccessTitle => 'Tudo certo';
+
+  @override
+  String get errorPopupTransactionTitle =>
+      'Não conseguimos concluir a transação';
+
+  @override
+  String get errorPopupBalanceTitle => 'Saldo necessário';
+
+  @override
+  String get errorPopupNetworkTitle => 'Conexão indisponível';
+
+  @override
+  String get errorPopupAccessTitle => 'Falha na verificação de acesso';
+
+  @override
+  String get errInvalidNetworkAddress =>
+      'Este endereço Bitcoin não combina com a rede desta carteira. Confira e tente novamente.';
+
+  @override
+  String get errCustodyProviderUnavailable =>
+      'Esta forma de movimentação não está disponível no momento. Tente outra opção ou volte mais tarde.';
+
+  @override
+  String get errPayloadTooLarge =>
+      'O conteúdo é grande demais para enviar com segurança.';
+
+  @override
+  String get errRecoveryBadRequest =>
+      'Revise os códigos, a nova frase e o código do autenticador.';
+
+  @override
+  String get errRecoveryRejected =>
+      'Não foi possível confirmar a recuperação. Revise os dados e tente novamente.';
+
+  @override
+  String get errRecoverySessionExpired =>
+      'O tempo de recuperação expirou. Reinicie o processo.';
+
+  @override
+  String get errRecoveryRateLimited =>
+      'Aguarde alguns minutos antes de tentar recuperar novamente.';
+
+  @override
+  String get errPasskeyDeviceNotLinked =>
+      'Este dispositivo não está vinculado à sua conta para confirmar com passkey. Vincule este aparelho e tente novamente.';
+
+  @override
+  String get errPasskeyRequired =>
+      'Uma passkey compatível com este login é obrigatória para concluir a operação.';
+
+  @override
+  String get errPasskeyWrongDevice =>
+      'Esta passkey não serve para este login. Entre com senha e código do autenticador, depois vincule uma nova passkey neste aparelho.';
+
+  @override
+  String get errPasskeyRejected =>
+      'A passkey foi rejeitada nesta operação. Se o problema persistir, vincule outra passkey compatível.';
+
+  @override
+  String get errPasskeyLinkGuidance =>
+      'Entre com senha e código do autenticador, depois vincule uma passkey compatível com este aparelho.';
+
+  @override
+  String get errReceiverNotReady =>
+      'Este usuário ainda não está pronto para receber fundos.';
+
+  @override
+  String get errOnchainReceiverMethodNotFound =>
+      'Este usuário não possui carteira on-chain cadastrada para receber.';
+
+  @override
+  String get errOnchainInvalidAddress =>
+      'O endereço Bitcoin informado não é válido para esta rede.';
+
+  @override
+  String get errOnchainAmountBelowDust =>
+      'O valor é baixo demais para envio on-chain depois das taxas.';
+
+  @override
+  String get errOnchainInsufficientFundsForFee =>
+      'Saldo insuficiente para cobrir o valor e a taxa de rede.';
+
+  @override
+  String get errLightningInsufficientLiquidity =>
+      'Não há liquidez Lightning suficiente para concluir este envio agora. Tente outro método ou um valor menor.';
+
+  @override
+  String get errLightningRouteNotFound =>
+      'Não encontramos uma rota Lightning confiável para este pagamento.';
+
+  @override
+  String get errLightningReceiverMethodNotFound =>
+      'Este usuário ainda não configurou recebimento Lightning.';
+
+  @override
+  String get errQuoteExpired =>
+      'A cotação expirou. Gere uma nova antes de confirmar.';
+
+  @override
+  String get errQuoteChanged =>
+      'A cotação mudou. Revise os valores atualizados antes de confirmar.';
+
+  @override
+  String get errNetAmountNegative =>
+      'O valor líquido ficaria menor que zero após as taxas.';
+
+  @override
+  String get errInsufficientBalanceForFees =>
+      'Saldo insuficiente para cobrir o valor e as taxas.';
+
+  @override
+  String get homeTxReceived => 'Recebido';
+
+  @override
+  String get homeTxSent => 'Enviado';
+
+  @override
+  String get homeTxPaid => 'Pago';
+
+  @override
+  String get homeNow => 'agora';
+
+  @override
+  String homeMinutesAgo(int count) {
+    return '$count min atrás';
+  }
+
+  @override
+  String homeHoursAgo(int count) {
+    return '$count h atrás';
+  }
+
+  @override
+  String homeYesterdayAt(String time) {
+    return 'Ontem às $time';
+  }
+
+  @override
+  String get homeWalletRequiredTitle => 'Carteira necessária';
+
+  @override
+  String get homeWalletRequiredMessage =>
+      'Selecione ou crie uma carteira antes de usar esta ação.';
+
+  @override
+  String get homeNfcUnavailable =>
+      'NFC não está disponível neste dispositivo no momento.';
+
+  @override
+  String get homeSendInternalLabel => 'Enviar dentro da Kerosene';
+
+  @override
+  String get homeSendInternalSubtitle => 'Transferência imediata entre contas';
+
+  @override
+  String get homeSendOnchainLabel => 'Enviar on-chain';
+
+  @override
+  String get homeSendOnchainSubtitle => 'Para um endereço Bitcoin';
+
+  @override
+  String get homeSendLightningLabel => 'Enviar via Lightning';
+
+  @override
+  String get homeSendLightningSubtitle => 'Invoice, LNURL ou Lightning Address';
+
+  @override
+  String get homeScanQrLabel => 'Escanear QR';
+
+  @override
+  String get homeScanQrSubtitle => 'Ler cobrança ou endereço';
+
+  @override
+  String get homePaymentLinkLabel => 'Link de pagamento';
+
+  @override
+  String get homePaymentLinkSubtitle =>
+      'Cole um link interno, URI on-chain, pedido Lightning ou ID de cobrança.';
+
+  @override
+  String get homeNfcPayLabel => 'Pagar por NFC';
+
+  @override
+  String get homeNfcPaySubtitle => 'Aproxime para iniciar';
+
+  @override
+  String get homeSendTitle => 'Enviar';
+
+  @override
+  String get homePrimaryNoWalletTitle => 'Configure sua carteira principal';
+
+  @override
+  String get homePrimaryNoWalletSubtitle =>
+      'Crie uma carteira para receber, enviar e acompanhar seu saldo com segurança.';
+
+  @override
+  String get homePrimaryReadyNoBalanceTitle => 'Carteira pronta para uso';
+
+  @override
+  String get homePrimaryReadyNoBalanceSubtitle =>
+      'Faça um depósito quando quiser. Acompanhamos a confirmação da rede em tempo real.';
+
+  @override
+  String get homePrimaryReadyTitle => 'Pronto para movimentar';
+
+  @override
+  String get homePrimaryReadySubtitle =>
+      'Acesse as principais operações da carteira com confirmação clara antes de cada envio.';
+
+  @override
+  String get homeCreateWalletAction => 'Criar carteira';
+
+  @override
+  String get homeDepositFundsAction => 'Depositar fundos';
+
+  @override
+  String get homeSendBtcAction => 'Enviar BTC';
+
+  @override
+  String get homeReceiveBtcAction => 'Receber BTC';
+
+  @override
+  String get homeViewDepositsAction => 'Ver depósitos';
+
+  @override
+  String get homePendingLinkTitle => 'Aguardando dados';
+
+  @override
+  String get homePendingLinkMessage =>
+      'Cole um link, pedido Lightning, endereço Bitcoin ou código Kerosene.';
+
+  @override
+  String get homeLightningPaymentTitle => 'Pagamento Lightning';
+
+  @override
+  String get homeOnchainPaymentTitle => 'Pagamento on-chain';
+
+  @override
+  String get homeInternalTransferTitle => 'Transferência interna';
+
+  @override
+  String get homeInvalidLinkTitle => 'Código inválido';
+
+  @override
+  String get homeInvalidLinkMessage =>
+      'Remova espaços ou quebras de linha e tente novamente.';
+
+  @override
+  String get homeInternalLinkTitle => 'Link interno';
+
+  @override
+  String get homeInvoiceOrLnurl => 'Invoice ou LNURL';
+
+  @override
+  String get homeBitcoinAddress => 'Endereço Bitcoin';
+
+  @override
+  String get homeKeroseneUser => 'Usuário Kerosene';
+
+  @override
+  String get homePaymentId => 'ID do pagamento';
+
+  @override
+  String get homePaymentLinkTitle => 'Link de pagamento';
+
+  @override
+  String get homePayloadLabel => 'Dados do pagamento';
+
+  @override
+  String get homePayloadHint =>
+      'Link Kerosene, bitcoin:..., lightning:... ou ID';
+
+  @override
+  String get homePasteAction => 'Colar';
+
+  @override
+  String get homePayloadActionContinueOnchain => 'Continuar on-chain';
+
+  @override
+  String get homePayloadActionContinueLightning => 'Continuar Lightning';
+
+  @override
+  String get homePayloadActionContinueInternal => 'Continuar interno';
+
+  @override
+  String get homePayloadActionLoadLink => 'Carregar link';
+
+  @override
+  String get homePayloadActionContinue => 'Continuar';
+
+  @override
+  String get homeAmountFromLink => 'Definido pelo link';
+
+  @override
+  String get homeAmountNotProvided => 'Não informado';
+
+  @override
+  String get homeDestinationLocked => 'Destino protegido';
+
+  @override
+  String get homeLoadingLinkData => 'Carregando dados do link';
+
+  @override
+  String get homeLinkValidationLater =>
+      'Os detalhes serão validados ao continuar';
+
+  @override
+  String get homeNetworkLabel => 'Rede';
+
+  @override
+  String get homeDestinationLabel => 'Destino';
+
+  @override
+  String get homeAmountLabel => 'Valor';
+
+  @override
+  String get homeNetworkInternal => 'Interno';
+
+  @override
+  String get homeNetworkOnchain => 'On-chain';
+
+  @override
+  String get homeNetworkLightning => 'Lightning';
+
+  @override
+  String get homeNetworkInvalid => 'Inválido';
+
+  @override
+  String get homeNetworkWaiting => 'Aguardando';
+
+  @override
+  String get homeEmptyNoWalletTitle => 'Crie sua primeira carteira';
+
+  @override
+  String get homeEmptyNoWalletDescription =>
+      'Você precisa de uma carteira para começar a movimentar.';
+
+  @override
+  String get homeEmptyNoBalanceTitle => 'Adicione saldo para começar';
+
+  @override
+  String get homeEmptyNoBalanceDescription =>
+      'Assim que entrar o primeiro depósito, suas movimentações aparecem aqui.';
+
+  @override
+  String get homeEmptyNoTransactionsTitle => 'Sem transações recentes';
+
+  @override
+  String get homeEmptyNoTransactionsDescription =>
+      'Novas movimentações vão aparecer automaticamente nesta área.';
+
+  @override
+  String get homeDepositAction => 'Depositar';
+
+  @override
+  String get homeRefreshAction => 'Atualizar';
+
+  @override
+  String get homeFullHistory => 'Ver histórico completo';
+
+  @override
+  String get homeLoadingTransactionsTitle => 'Carregando';
+
+  @override
+  String get homeLoadingTransactionsSubtitle =>
+      'Sincronizando suas movimentações.';
+
+  @override
+  String get homeOpenReceiveScreen => 'Abrir tela de recebimento';
+
+  @override
+  String get authAccountAccessTitle => 'Acesso da conta';
+
+  @override
+  String get authAccountPasswordLabel => 'Senha da conta';
+
+  @override
+  String get authUsernameRequiredMessage =>
+      'Informe o nome de usuário da conta.';
+
+  @override
+  String get authAccessEyebrow => 'Acessar conta';
+
+  @override
+  String get authUsernameStepSubtitle =>
+      'Primeiro informe seu nome de usuário.';
+
+  @override
+  String get authUsernameHint => 'Nome de usuário';
+
+  @override
+  String get authPasskeyFirstNoteTitle => 'Acesso protegido';
+
+  @override
+  String get authPasskeyFirstNoteBody =>
+      'A Kerosene verifica primeiro a chave deste dispositivo.';
+
+  @override
+  String get authPrivateAccessEyebrow => 'Acesso privado';
+
+  @override
+  String get authAccountPasswordTitle => 'Senha da conta';
+
+  @override
+  String get authAccountPasswordHint => 'Digite sua senha';
+
+  @override
+  String get authCredentialSendingTitle => 'Entrando';
+
+  @override
+  String get authCredentialTitle => 'Credencial';
+
+  @override
+  String get authCredentialSendingBody =>
+      'Estamos protegendo sua entrada. Aguarde um instante.';
+
+  @override
+  String get authCredentialBody =>
+      'Use a senha da conta para continuar. Suas chaves de carteira nunca são solicitadas neste login.';
+
+  @override
+  String get authSignInAction => 'Entrar';
+
+  @override
+  String get authEmergencyRecoveryAction => 'Recuperação de emergência';
+
+  @override
+  String get authFlowInterruptedTitle => 'Não foi possível continuar';
+
+  @override
+  String get authInvalidUsernameTitle => 'Nome de usuário inválido';
+
+  @override
+  String get authWeakPasswordTitle => 'Senha fraca';
+
+  @override
+  String get authInvalidConfirmationTitle => 'Confirmação inválida';
+
+  @override
+  String get authPasswordMismatchMessage =>
+      'A confirmação de senha não corresponde.';
+
+  @override
+  String get authConfirmationRequiredTitle => 'Confirmação necessária';
+
+  @override
+  String get authPasswordRiskRequiredMessage =>
+      'Confirme que entende a importância de guardar a senha da conta.';
+
+  @override
+  String get authAccountEyebrow => 'Conta';
+
+  @override
+  String get authCreateAccountTitle => 'Criar conta';
+
+  @override
+  String get authCreateAccountSubtitle =>
+      'Escolha suas credenciais de acesso à Kerosene.';
+
+  @override
+  String get authUsernameMinError => 'Use pelo menos 3 caracteres.';
+
+  @override
+  String get authUsernameCharsError =>
+      'Use apenas letras minúsculas, números e underline.';
+
+  @override
+  String get authPasswordStrengthMessage =>
+      'Use pelo menos 12 caracteres com maiúscula, minúscula, número e símbolo.';
+
+  @override
+  String get authAccountCredentialsTitle => 'Conta e credenciais';
+
+  @override
+  String get authAccountCredentialsBody =>
+      'Escolha seu identificador público. A senha será definida na próxima etapa.';
+
+  @override
+  String get authCustodyNoteTitle => 'Guarde com cuidado';
+
+  @override
+  String get authCustodyNoteBody =>
+      'Se você perder a senha sem os códigos de recuperação, o acesso à conta pode ser perdido. Guarde os códigos em local seguro.';
+
+  @override
+  String get authStrongPasswordTitle => 'Senha forte';
+
+  @override
+  String get authStrongPasswordBody =>
+      'Use uma senha longa, única e difícil de adivinhar.';
+
+  @override
+  String get authPasswordReadyTitle => 'Pronta';
+
+  @override
+  String get authPasswordMinimumTitle => 'Regra mínima';
+
+  @override
+  String get authPasswordRuleBody =>
+      '12 caracteres ou mais, com maiúscula, minúscula, número e símbolo.';
+
+  @override
+  String get authBackAction => 'Voltar';
+
+  @override
+  String get authReadyAction => 'Pronto';
+
+  @override
+  String get authConfirmPasswordTitle => 'Confirmar senha';
+
+  @override
+  String get authConfirmPasswordBody =>
+      'Repita a senha e confirme que você sabe onde guardá-la.';
+
+  @override
+  String get authConfirmPasswordLabel => 'Confirmar senha';
+
+  @override
+  String get authPasswordRiskAcknowledgement =>
+      'Entendo que perder a senha pode impedir meu acesso à conta.';
+
+  @override
+  String get authCreateAction => 'Criar';
+
+  @override
+  String get authPasskeyRegisterTitle => 'Registrar chave do dispositivo';
+
+  @override
+  String get authPasskeyRegisterBody =>
+      'Finalize criando a chave segura deste dispositivo para proteger o acesso.';
+
+  @override
+  String get authDeviceTitle => 'Dispositivo';
+
+  @override
+  String get authDeviceBody =>
+      'A chave deste dispositivo ajuda a confirmar que é você ao entrar na conta.';
+
+  @override
+  String get authRegisterPasskeyAction => 'Registrar chave';
+
+  @override
+  String get authPasskeyStepLabel => 'Chave';
+
+  @override
+  String get authSignupStepFallbackLabel => 'Cadastro';
+
+  @override
+  String get authSignupStepUsernameTitle => 'Nome de usuário';
+
+  @override
+  String get authSignupStepPasswordTitle => 'Senha';
+
+  @override
+  String get authSignupStepConfirmationTitle => 'Confirmação';
+
+  @override
+  String get authSignupStepCreationTitle => 'Criação';
+
+  @override
+  String get authPasswordLongHint => '12 caracteres ou mais';
+
+  @override
+  String get authSessionInterruptedTitle => 'Sessão interrompida';
+
+  @override
+  String get authSignupSessionExpiredMessage =>
+      'Sua sessão de cadastro expirou. Reinicie a criação da conta para continuar com segurança.';
+
+  @override
+  String get authSecurityPreparingTitle => 'Preparando segurança';
+
+  @override
+  String get authSecurityPreparingMessage =>
+      'A proteção da conta ainda está sendo preparada. Tente novamente em alguns segundos.';
+
+  @override
+  String get profileFallbackUser => 'Usuário';
+
+  @override
+  String get profileNoWallet => 'Sem carteira';
+
+  @override
+  String get profileNoWallets => 'Nenhuma carteira';
+
+  @override
+  String get profileOneActiveWallet => '1 carteira ativa';
+
+  @override
+  String profileActiveWallets(int count) {
+    return '$count carteiras ativas';
+  }
+
+  @override
+  String get profileBiometricsChecking => 'Verificando';
+
+  @override
+  String get profileBiometricsEnabled => 'Biometria ativa';
+
+  @override
+  String get profileBiometricsDisabled => 'Biometria desativada';
+
+  @override
+  String get profileBiometricsUnavailable => 'Biometria indisponível';
+
+  @override
+  String get profileAlertsMonitoringActive => 'Alertas e monitoramento ativos';
+
+  @override
+  String get profileMonitoringNoBanners => 'Monitoramento ativo sem banners';
+
+  @override
+  String get profileRealtimeAlertsDisabled =>
+      'Alertas em tempo real desativados';
+
+  @override
+  String get profileAccessHeader => 'Perfil e acesso';
+
+  @override
+  String get profileAccessSubtitle =>
+      'Identidade, segurança da conta e controle de sessão.';
+
+  @override
+  String get profileAuthenticated => 'Conta autenticada';
+
+  @override
+  String get profileAwaitingAuthentication => 'Aguardando autenticação';
+
+  @override
+  String get profileIntro =>
+      'Esta área reúne seu acesso, proteção da conta e canais de suporte.';
+
+  @override
+  String get profilePostureTitle => 'Postura atual';
+
+  @override
+  String get profilePostureSubtitle =>
+      'Sinais importantes da sua conta em leitura simples.';
+
+  @override
+  String get profilePrioritiesTitle => 'Prioridades';
+
+  @override
+  String get profilePrioritiesSubtitle =>
+      'Acesso, segurança e preferências de confiança.';
+
+  @override
+  String get profileSecuritySubtitle =>
+      'Revise biometria, recuperação, chave do dispositivo e práticas de acesso.';
+
+  @override
+  String get profileSovereigntyReportTitle => 'Relatório de soberania';
+
+  @override
+  String get profileSovereigntyReportSubtitle =>
+      'Acompanhe hardware, consenso e integridade operacional.';
+
+  @override
+  String get profileSettingsSubtitle =>
+      'Ajuste privacidade, idioma, aparência e sessão.';
+
+  @override
+  String get profileAccountSupportTitle => 'Conta e suporte';
+
+  @override
+  String get profileAccountSupportSubtitle =>
+      'Dados pessoais, notificações e ajuda.';
+
+  @override
+  String get profilePersonalDataSubtitle =>
+      'Revise nome, dados e informações da conta.';
+
+  @override
+  String get profileNotificationsSubtitle =>
+      'Controle alertas de transação e segurança.';
+
+  @override
+  String get profileSupportSubtitle =>
+      'Abra os canais de suporte para dúvidas ou incidentes.';
+
+  @override
+  String get profileLogoutSubtitle =>
+      'Encerra a sessão atual e exige nova autenticação.';
+
+  @override
+  String get profileSecurityShamir => 'Backup avançado';
+
+  @override
+  String get profileSecurityMultisig => 'Cofre com múltiplas aprovações';
+
+  @override
+  String get profileSecurityStandard => 'Proteção padrão';
+
+  @override
+  String get walletEditNameAction => 'Editar nome';
+
+  @override
+  String get securityCopiedTitle => 'Copiado';
+
+  @override
+  String securityCopiedMessage(String label) {
+    return '$label copiado para a área de transferência.';
+  }
+
+  @override
+  String get securityTotpFailureTitle =>
+      'Não foi possível atualizar o autenticador';
+
+  @override
+  String get securityInvalidCodeTitle => 'Código inválido';
+
+  @override
+  String get securityTotpCodeRequiredMessage =>
+      'Digite os 6 dígitos do autenticador.';
+
+  @override
+  String get securityTotpEnabledTitle => 'Autenticador ativado';
+
+  @override
+  String get securityTotpEnabledMessage =>
+      'Sua conta agora tem uma camada adicional de proteção.';
+
+  @override
+  String get securityTotpDisableFailedTitle =>
+      'Não foi possível desativar o autenticador';
+
+  @override
+  String get securityTotpDisabledTitle => 'Autenticador desativado';
+
+  @override
+  String get securityTotpDisabledMessage =>
+      'A proteção por autenticador foi removida desta conta.';
+
+  @override
+  String get securityBackupRegenerateFailedTitle =>
+      'Não foi possível gerar novos códigos';
+
+  @override
+  String get securityBackupCodesTitle => 'Códigos de recuperação';
+
+  @override
+  String get securityBackupCodesBody =>
+      'Guarde estes códigos fora deste aparelho. Eles podem ajudar a recuperar o acesso.';
+
+  @override
+  String get securityBackupCodesCopyLabel => 'Códigos de recuperação';
+
+  @override
+  String get securityBackupCodesCopyAction => 'Copiar códigos';
+
+  @override
+  String get securityRegisterDeviceFailedTitle =>
+      'Não foi possível registrar o dispositivo';
+
+  @override
+  String get securityDeviceRegisteredTitle => 'Dispositivo registrado';
+
+  @override
+  String get securityDeviceRegisteredMessage =>
+      'Este dispositivo agora está vinculado à sua conta.';
+
+  @override
+  String get securityDeviceInventoryLoadingSubtitle =>
+      'A conta possui dispositivo autenticado, mas os detalhes ainda estão sendo carregados.';
+
+  @override
+  String get securityRegisterDeviceSubtitle =>
+      'Registre este aparelho como dispositivo autenticado.';
+
+  @override
+  String get securityCompatibleDeviceOne =>
+      'Existe 1 dispositivo compatível com este login.';
+
+  @override
+  String securityCompatibleDeviceMany(int count) {
+    return 'Existem $count dispositivos compatíveis com este login.';
+  }
+
+  @override
+  String get securityLegacyDeviceSubtitle =>
+      'Há dispositivos antigos com compatibilidade limitada. Vincule este aparelho novamente se o acesso falhar.';
+
+  @override
+  String get securityNoCompatibleDeviceSubtitle =>
+      'Os dispositivos registrados não são compatíveis com este login. Entre com senha e autenticador para vincular outro.';
+
+  @override
+  String get securityScreenTitle => 'Segurança';
+
+  @override
+  String get securityScreenSubtitle =>
+      'Dispositivos autenticados, autenticador, códigos de recuperação e PIN deste aparelho.';
+
+  @override
+  String get securityUnprotectedTitle => 'Conta não protegida';
+
+  @override
+  String get securityUnprotectedFallback =>
+      'Ative o autenticador para adicionar uma camada opcional de proteção.';
+
+  @override
+  String get securityPinEntryTitle => 'PIN de entrada';
+
+  @override
+  String get securityPinLoadError =>
+      'Não foi possível consultar o PIN deste dispositivo.';
+
+  @override
+  String get securityAuthenticatedDevicesTitle => 'Dispositivos autenticados';
+
+  @override
+  String get securityRegisteredDeviceSubtitle =>
+      'Este dispositivo está registrado para esta conta.';
+
+  @override
+  String get securityRegisterThisDeviceSubtitle => 'Registre este aparelho.';
+
+  @override
+  String get securityLinkNewDeviceAction => 'Vincular novo dispositivo';
+
+  @override
+  String get securityRegisterDeviceAction => 'Registrar dispositivo';
+
+  @override
+  String get securityDeviceCompatibilityError =>
+      'Não foi possível consultar a compatibilidade dos dispositivos deste login.';
+
+  @override
+  String get securityTotpOptionalTitle => 'Autenticador opcional';
+
+  @override
+  String get securityTotpEnabledSubtitle =>
+      'Autenticador ativo. O aviso de conta não protegida não aparece.';
+
+  @override
+  String get securityTotpDisabledSubtitle =>
+      'Sem autenticador. A conta fica marcada como não protegida.';
+
+  @override
+  String get securityDisableTotpAction => 'Desativar autenticador';
+
+  @override
+  String get securityEnableTotpAction => 'Ativar autenticador';
+
+  @override
+  String securityBackupCodesRemaining(int count) {
+    return '$count códigos restantes. Guarde-os em local seguro.';
+  }
+
+  @override
+  String get securityBackupCodesLockedSubtitle =>
+      'Ative o autenticador para liberar códigos de recuperação.';
+
+  @override
+  String get securityRegenerateCodesAction => 'Gerar novos códigos';
+
+  @override
+  String get securityWaitingTotpAction => 'Aguardando autenticador';
+
+  @override
+  String get securityViewLatestAction => 'Ver últimos';
+
+  @override
+  String get securityBackupCodesLoadError =>
+      'Não foi possível consultar os códigos de recuperação.';
+
+  @override
+  String get securityStatusLoadError =>
+      'Não foi possível consultar o estado de segurança da conta.';
+
+  @override
+  String get securityCurrentStatusTitle => 'Estado atual';
+
+  @override
+  String get securityStrongPasswordPill => 'Senha forte';
+
+  @override
+  String get securityDevicePill => 'Dispositivo';
+
+  @override
+  String get securityInboundPill => 'Recebimento';
+
+  @override
+  String get securityAppPinPill => 'PIN de entrada';
+
+  @override
+  String get securityLocalBiometricsPill => 'Biometria local';
+
+  @override
+  String get securityCurrentHostLabel => 'Aparelho atual';
+
+  @override
+  String get securityCurrentRpLabel => 'Domínio de acesso';
+
+  @override
+  String get securityLegacyCredentialsTitle => 'Credenciais antigas detectadas';
+
+  @override
+  String get securityLegacyCredentialsBody =>
+      'Existem dispositivos antigos com detalhes incompletos. Substitua por uma nova chave quando possível.';
+
+  @override
+  String get securityNoAuthenticatedDevice =>
+      'Nenhum dispositivo autenticado foi vinculado para esta conta neste contexto.';
+
+  @override
+  String get securityDeviceDetailsUnavailable =>
+      'O dispositivo está ativo, mas os detalhes ainda não estão disponíveis.';
+
+  @override
+  String get securityInventoryNotLoaded =>
+      'Os detalhes dos dispositivos ainda não foram carregados.';
+
+  @override
+  String get securityInventoryNone =>
+      'Nenhum dispositivo autenticado registrado para esta conta.';
+
+  @override
+  String get securityInventoryCompatible =>
+      'Ao menos um dispositivo autenticado pode ser usado neste login.';
+
+  @override
+  String get securityInventoryLegacy =>
+      'Existem dispositivos com detalhes incompletos. Revise a lista antes de depender deles.';
+
+  @override
+  String get securityInventoryIncompatible =>
+      'Os dispositivos vinculados atualmente não servem para este login.';
+
+  @override
+  String get securityInventoryUnknownBanner =>
+      'Não foi possível determinar se este login possui um dispositivo utilizável.';
+
+  @override
+  String get securityInventoryRegisterBanner =>
+      'Vincule este dispositivo para liberar confirmações e login compatíveis.';
+
+  @override
+  String securityInventoryCompatibleCount(int count) {
+    return '$count dispositivos podem confirmar este login agora.';
+  }
+
+  @override
+  String get securityInventoryCompatibleFallback =>
+      'Existe ao menos um dispositivo compatível com este login.';
+
+  @override
+  String get securityInventoryLegacyBanner =>
+      'Há credenciais antigas. Se este login falhar, entre com senha e autenticador para vincular este aparelho novamente.';
+
+  @override
+  String get securityInventoryIncompatibleBanner =>
+      'Nenhum dispositivo compatível foi encontrado para este acesso. Entre com senha e autenticador para vincular outro.';
+
+  @override
+  String get securityPinActiveLockedSubtitle =>
+      'PIN ativo antes da entrada no app. Bloqueado temporariamente neste dispositivo.';
+
+  @override
+  String securityPinActiveAttemptsSubtitle(int count) {
+    return 'PIN ativo antes da entrada no app. $count tentativas restantes antes do bloqueio.';
+  }
+
+  @override
+  String get securityPinDisabledSubtitle =>
+      'Proteja a entrada do app neste dispositivo com um PIN independente da senha principal.';
+
+  @override
+  String get securityChangePinAction => 'Alterar PIN';
+
+  @override
+  String get securityEnablePinAction => 'Ativar PIN';
+
+  @override
+  String get securityDisableAction => 'Desativar';
+
+  @override
+  String get securityPinMismatchError =>
+      'O novo PIN e a confirmação precisam ser iguais.';
+
+  @override
+  String get securityPinEnableTitle => 'Ativar PIN de entrada';
+
+  @override
+  String get securityPinChangeTitle => 'Alterar PIN deste dispositivo';
+
+  @override
+  String get securityPinDisableTitle => 'Desativar PIN de entrada';
+
+  @override
+  String get securityPinEnableBody =>
+      'O PIN será exigido sempre que o app abrir com esta sessão neste dispositivo.';
+
+  @override
+  String get securityPinChangeBody =>
+      'Use o PIN atual ou um código do autenticador para cadastrar um novo PIN.';
+
+  @override
+  String get securityPinDisableBody =>
+      'Use o PIN atual ou um código do autenticador para remover a barreira de entrada deste dispositivo.';
+
+  @override
+  String get securityCurrentPinLabel => 'PIN atual ou código do autenticador';
+
+  @override
+  String get securityTotpCodeLabel => 'Código do autenticador';
+
+  @override
+  String securityNewPinLabel(int min, int max) {
+    return 'Novo PIN ($min-$max dígitos)';
+  }
+
+  @override
+  String get securityConfirmNewPinLabel => 'Confirmar novo PIN';
+
+  @override
+  String get securityDisablePinAction => 'Desativar PIN';
+
+  @override
+  String get securitySavePinAction => 'Salvar PIN';
+
+  @override
+  String get securityDeviceBrandLabel => 'Marca';
+
+  @override
+  String get securityDeviceModelLabel => 'Modelo';
+
+  @override
+  String get securityDeviceSerialLabel => 'Número de série';
+
+  @override
+  String get securityDeviceInstallIdLabel => 'ID da instalação';
+
+  @override
+  String get securityDeviceBrowserLabel => 'Navegador';
+
+  @override
+  String get securityDeviceSystemLabel => 'Sistema';
+
+  @override
+  String get securityDeviceStatusLabel => 'Status';
+
+  @override
+  String get securityDeviceFirstAccessLabel => 'Primeiro acesso';
+
+  @override
+  String get securityDeviceLastAccessLabel => 'Último acesso';
+
+  @override
+  String get securityDeviceOriginLabel => 'Origem';
+
+  @override
+  String get securityDeviceRelyingPartyLabel => 'Domínio de acesso';
+
+  @override
+  String get securityDeviceCanUse => 'Pode ser usado neste login.';
+
+  @override
+  String get securityDeviceCannotUse => 'Não pode ser usado neste login atual.';
+
+  @override
+  String get securityDeviceUnknownUse =>
+      'Compatibilidade ainda não determinada para esta credencial.';
+
+  @override
+  String get securityStatusPending => 'Pendente';
+
+  @override
+  String get securityStatusBlocked => 'Bloqueado';
+
+  @override
+  String get securityStatusRevoked => 'Revogado';
+
+  @override
+  String get securityStatusActive => 'Ativo';
+
+  @override
+  String get securityCompatibleBadge => 'Compatível';
+
+  @override
+  String get securityIncompatibleBadge => 'Incompatível';
+
+  @override
+  String get securityUnknownBadge => 'Desconhecido';
+
+  @override
+  String get securityTotpSetupTitle => 'Ativar autenticador';
+
+  @override
+  String get securityCopySecretAction => 'Copiar segredo';
+
+  @override
+  String get securityValidateTotpAction => 'Validar código';
+
+  @override
+  String get settingsUiSecurityAccessSection => 'Segurança e acesso';
+
+  @override
+  String get settingsUiEnterpriseAccessSection => 'Acesso empresarial';
+
+  @override
+  String get settingsUiPrivacySection => 'Privacidade';
+
+  @override
+  String get settingsUiAccountAccessSection => 'Conta e acesso';
+
+  @override
+  String get settingsUiNotificationsSection => 'Notificações';
+
+  @override
+  String get settingsUiAppearanceSection => 'Aparência';
+
+  @override
+  String get settingsUiLocaleCurrencySection => 'Idioma e moeda';
+
+  @override
+  String get settingsUiSessionSection => 'Sessão';
+
+  @override
+  String get settingsUiOperationalSummaryTitle => 'Resumo operacional';
+
+  @override
+  String get settingsUiAlertsLabel => 'Alertas';
+
+  @override
+  String get settingsUiAlertsBackgroundActive => 'Segundo plano ativo';
+
+  @override
+  String get settingsUiDisabled => 'Desativado';
+
+  @override
+  String get settingsUiThemeLabel => 'Tema';
+
+  @override
+  String get settingsUiChecking => 'Verificando';
+
+  @override
+  String get settingsUiActive => 'Ativa';
+
+  @override
+  String get settingsUiInactive => 'Desativada';
+
+  @override
+  String get settingsUiUnavailable => 'Indisponível';
+
+  @override
+  String get settingsUiDecimalPrecisionTitle => 'Precisão decimal';
+
+  @override
+  String settingsUiDecimalPrecisionSubtitle(int count) {
+    return 'Exibindo $count casas decimais';
+  }
+
+  @override
+  String get settingsUiHideBalanceTitle => 'Ocultar saldo';
+
+  @override
+  String get settingsUiBalanceHiddenSubtitle =>
+      'Valores mascarados na interface principal';
+
+  @override
+  String get settingsUiBalanceVisibleSubtitle =>
+      'Valores visíveis em telas operacionais';
+
+  @override
+  String get settingsUiSovereigntyReportTitle => 'Relatório de soberania';
+
+  @override
+  String get settingsUiSovereigntyReportSubtitle =>
+      'Abrir o painel de atestação, consenso e integridade operacional';
+
+  @override
+  String get settingsUiSecurityUnprotectedSubtitle =>
+      'Conta não protegida. Revise autenticador e códigos de recuperação.';
+
+  @override
+  String get settingsUiSecurityProtectedSubtitle =>
+      'Conta protegida com senha forte, dispositivos autenticados e fatores opcionais.';
+
+  @override
+  String get settingsUiSecurityLoadingSubtitle => 'Consultando estado da conta';
+
+  @override
+  String get settingsUiSecurityErrorSubtitle =>
+      'Não foi possível consultar a segurança da conta';
+
+  @override
+  String get settingsUiPasskeyRegisteredSubtitle =>
+      'Dispositivo autenticado já registrado para esta conta';
+
+  @override
+  String get settingsUiPasskeyRegisterSubtitle =>
+      'Registrar este aparelho com biometria';
+
+  @override
+  String get settingsUiPasskeyLoadingSubtitle => 'Consultando dispositivos';
+
+  @override
+  String get settingsUiPasskeyErrorSubtitle =>
+      'Não foi possível consultar dispositivos';
+
+  @override
+  String get settingsUiUnprotectedBannerTitle => 'Conta não protegida';
+
+  @override
+  String get settingsUiUnprotectedBannerBody =>
+      'O autenticador está desligado. Abra a central de segurança para ativar a proteção e revisar os códigos de recuperação.';
+
+  @override
+  String get settingsUiBiometricUnlockTitle => 'Desbloqueio biométrico';
+
+  @override
+  String get settingsUiBiometricUnlockSubtitle =>
+      'Use digital ou rosto para desbloquear';
+
+  @override
+  String get settingsUiSecurityCenterTitle => 'Central de segurança';
+
+  @override
+  String get settingsUiSessionsActiveTitle => 'Sessões ativas';
+
+  @override
+  String get settingsUiSessionsActiveSubtitle =>
+      'Ver e revogar sessões do dispositivo';
+
+  @override
+  String get settingsUiSessionsActiveMessage =>
+      'Suas sessões são protegidas automaticamente. Encerre o acesso deste aparelho se ele não estiver mais com você.';
+
+  @override
+  String get settingsUiEnterpriseIntro =>
+      'Para uso empresarial, gere uma chave de acesso neste dispositivo e guarde-a com segurança.';
+
+  @override
+  String get settingsUiEnterpriseKeyLoading =>
+      'Consultando chave empresarial...';
+
+  @override
+  String get settingsUiEnterpriseKeyLoadError =>
+      'Não foi possível consultar a chave empresarial.';
+
+  @override
+  String get settingsUiEnterpriseCreateKeyTitle => 'Criar chave empresarial';
+
+  @override
+  String get settingsUiEnterpriseCreateKeySubtitle =>
+      'Gera uma chave forte neste aparelho e registra apenas a confirmação segura';
+
+  @override
+  String get settingsUiEnterpriseRotateKeyTitle => 'Trocar chave';
+
+  @override
+  String get settingsUiEnterpriseRotateKeySubtitle =>
+      'Revoga a chave atual e cria uma nova';
+
+  @override
+  String get settingsUiEnterpriseRevokeKeyTitle => 'Revogar chave';
+
+  @override
+  String get settingsUiEnterpriseRevokeKeySubtitle =>
+      'Impede novos acessos empresariais até uma nova chave ser criada';
+
+  @override
+  String get settingsUiEnterpriseCreateDialogMessage =>
+      'Esta chave autoriza o acesso empresarial junto com usuário e senha. Guarde-a com segurança. A Kerosene nunca pedirá sua seed ou frase de recuperação.';
+
+  @override
+  String get settingsUiEnterpriseCreateKeyAction => 'Criar chave';
+
+  @override
+  String get settingsUiEnterpriseCreateKeyFailed =>
+      'Não foi possível criar a chave';
+
+  @override
+  String get settingsUiEnterpriseRevokeDialogMessage =>
+      'A chave atual deixará de autorizar o acesso empresarial. Crie uma nova neste dispositivo quando precisar reativar.';
+
+  @override
+  String get settingsUiEnterpriseRevokeAction => 'Revogar';
+
+  @override
+  String get settingsUiEnterpriseRevokeFailed => 'Não foi possível revogar';
+
+  @override
+  String get settingsUiEnterpriseKeyRevokedTitle => 'Chave revogada';
+
+  @override
+  String get settingsUiEnterpriseKeyRevokedMessage =>
+      'O acesso empresarial exigirá uma nova chave.';
+
+  @override
+  String get settingsUiEnterpriseDecisionFailed =>
+      'Não foi possível registrar a decisão';
+
+  @override
+  String get settingsUiEnterpriseAccessAllowedTitle => 'Acesso permitido';
+
+  @override
+  String get settingsUiEnterpriseDeviceBlockedTitle => 'Dispositivo bloqueado';
+
+  @override
+  String get settingsUiEnterpriseAccessAllowedMessage =>
+      'O acesso empresarial poderá continuar no navegador.';
+
+  @override
+  String get settingsUiEnterpriseDeviceBlockedMessage =>
+      'Novas tentativas deste dispositivo foram bloqueadas.';
+
+  @override
+  String get settingsUiEnterpriseKeyCreatedTitle => 'Chave criada';
+
+  @override
+  String get settingsUiEnterpriseKeyCreatedMessage =>
+      'Esta chave será mostrada apenas agora. Guarde-a com segurança.';
+
+  @override
+  String get settingsUiEnterpriseKeyCopiedMessage =>
+      'Chave empresarial copiada.';
+
+  @override
+  String get settingsUiCopyAction => 'Copiar';
+
+  @override
+  String get settingsUiCloseAction => 'Fechar';
+
+  @override
+  String get settingsUiEnterpriseKeyActive =>
+      'Chave ativa para acesso empresarial.';
+
+  @override
+  String get settingsUiEnterpriseKeyMissing =>
+      'Nenhuma chave empresarial ativa.';
+
+  @override
+  String get settingsUiEnterpriseAttemptTitle =>
+      'Houve uma tentativa de acesso empresarial.';
+
+  @override
+  String get settingsUiBrowserLabel => 'Navegador';
+
+  @override
+  String get settingsUiDeviceLabel => 'Dispositivo';
+
+  @override
+  String get settingsUiTimeLabel => 'Horário';
+
+  @override
+  String get settingsUiAllowAction => 'Permitir';
+
+  @override
+  String get settingsUiBlockAction => 'Bloquear';
+
+  @override
+  String get settingsUiAuthenticatedLabel => 'Autenticado';
+
+  @override
+  String get settingsUiDeleteAccountTitle => 'Excluir conta';
+
+  @override
+  String get settingsUiDeleteAccountSubtitle =>
+      'Remove permanentemente todos os dados';
+
+  @override
+  String get settingsUiDeleteAccountDialogTitle => 'Excluir conta?';
+
+  @override
+  String get settingsUiDeleteAccountDialogMessage =>
+      'Isso vai excluir permanentemente sua conta, suas carteiras e seus fundos. Esta ação não pode ser desfeita.\n\nPara proteger seus recursos, saque todos os saldos antes de excluir a conta.';
+
+  @override
+  String get settingsUiDeleteForeverAction => 'Excluir para sempre';
+
+  @override
+  String get settingsUiTransactionSecurityAlertsTitle =>
+      'Alertas de transação e segurança';
+
+  @override
+  String get settingsUiBackgroundAlertsOnSubtitle =>
+      'Ativo. O app permanece em segundo plano para mostrar transações e alertas de segurança.';
+
+  @override
+  String get settingsUiBackgroundAlertsOffSubtitle =>
+      'Ative para manter o app em segundo plano e receber transações e alertas de segurança.';
+
+  @override
+  String get settingsUiInAppBannersTitle => 'Banners dentro do app';
+
+  @override
+  String get settingsUiInAppBannersOnSubtitle =>
+      'Mostra alertas contextuais na sessão atual.';
+
+  @override
+  String get settingsUiInAppBannersOffSubtitle =>
+      'Mantém o feed, mas não interrompe a navegação com banners.';
+
+  @override
+  String get settingsUiFinancialEventsTitle => 'Eventos financeiros';
+
+  @override
+  String get settingsUiFinancialEventsOnSubtitle =>
+      'Recebimentos, envios, depósitos, links e mineração entram no feed.';
+
+  @override
+  String get settingsUiFinancialEventsOffSubtitle =>
+      'Oculta alertas de operação financeira no feed da sessão.';
+
+  @override
+  String get settingsUiSecurityEventsTitle => 'Eventos de segurança';
+
+  @override
+  String get settingsUiSecurityEventsOnSubtitle =>
+      'Logins, recuperação e eventos sensíveis continuam destacados.';
+
+  @override
+  String get settingsUiSecurityEventsOffSubtitle =>
+      'Oculta apenas alertas de segurança da inbox da sessão.';
+
+  @override
+  String get settingsUiUpdatingBackgroundAlerts =>
+      'Atualizando o monitoramento em segundo plano.';
+
+  @override
+  String settingsUiBackgroundAlertsInfo(int count) {
+    return 'Quando ativo, a Kerosene mantém um serviço em segundo plano para monitorar envios, recebimentos e eventos críticos de segurança. No Android, uma notificação persistente do sistema ficará visível enquanto o monitoramento estiver ligado. $count alertas ainda não foram lidos nesta sessão.';
+  }
+
+  @override
+  String get settingsUiPermissionRequiredTitle => 'Permissão necessária';
+
+  @override
+  String get settingsUiPermissionRequiredMessage =>
+      'O sistema não liberou as notificações. Autorize o app para ativar o monitoramento em segundo plano.';
+
+  @override
+  String get settingsUiMonitoringActiveTitle => 'Monitoramento ativo';
+
+  @override
+  String get settingsUiMonitoringInactiveTitle => 'Monitoramento desativado';
+
+  @override
+  String get settingsUiMonitoringActiveMessage =>
+      'O app continuará em segundo plano para mostrar transações e alertas de segurança.';
+
+  @override
+  String get settingsUiMonitoringInactiveMessage =>
+      'A Kerosene não manterá mais o serviço em segundo plano para alertas.';
+
+  @override
+  String get settingsUiAlertsUpdateFailedTitle =>
+      'Não foi possível atualizar alertas';
+
+  @override
+  String get settingsUiAlertsUpdateFailedMessage =>
+      'Não foi possível alterar o monitoramento em segundo plano agora.';
+
+  @override
+  String get settingsUiLogoutTitle => 'Encerrar sessão';
+
+  @override
+  String get settingsUiLogoutSubtitle => 'Encerra a sessão atual';
+
+  @override
+  String get settingsUiLogoutDialogTitle => 'Encerrar sessão?';
+
+  @override
+  String get settingsUiLogoutDialogMessage =>
+      'Você precisará se autenticar novamente para acessar a conta.';
+
+  @override
+  String get settingsUiAuthenticatedDevicesBody =>
+      'Este registro usa o sensor biométrico do dispositivo como chave física de segurança. Os detalhes exibidos usam dados auditáveis do aparelho, sem expor informações sensíveis.';
+
+  @override
+  String get settingsUiRegisterNewDeviceAction => 'Registrar novo dispositivo';
+
+  @override
+  String get settingsUiLearnMoreAction => 'Saiba mais';
+
+  @override
+  String get settingsUiBackgroundAlertsTitle => 'Alertas em segundo plano';
+
+  @override
+  String get settingsUiBackgroundAlertsConsentBody =>
+      'Ao ativar esta opção, a Kerosene continuará rodando em segundo plano para mostrar transações recebidas, enviadas e alertas críticos de segurança. No Android, o sistema manterá uma notificação persistente enquanto o monitoramento estiver ativo.';
+
+  @override
+  String get settingsUiEnableMonitoringAction => 'Ativar monitoramento';
+
+  @override
+  String get settingsUiUnderstoodAction => 'Entendi';
+
+  @override
+  String get transactionVisualCancelled => 'Cancelado';
+
+  @override
+  String get transactionVisualRefund => 'Estorno';
+
+  @override
+  String get transactionVisualFailed => 'Não concluído';
+
+  @override
+  String get transactionVisualMining => 'Mineração';
+
+  @override
+  String get transactionVisualSwap => 'Conversão';
+
+  @override
+  String get transactionVisualFee => 'Taxa';
+
+  @override
+  String get transactionVisualLightningDeposit => 'Depósito Lightning';
+
+  @override
+  String get transactionVisualLightningPayment => 'Pagamento Lightning';
+
+  @override
+  String get transactionVisualLightningReceive => 'Recebimento Lightning';
+
+  @override
+  String get transactionVisualDeposit => 'Depósito';
+
+  @override
+  String get transactionVisualWithdrawal => 'Saque';
+
+  @override
+  String get transactionVisualNfcReceive => 'Recebimento por NFC';
+
+  @override
+  String get transactionVisualNfcPayment => 'Pagamento por NFC';
+
+  @override
+  String get transactionVisualQrReceive => 'Recebimento via QR';
+
+  @override
+  String get transactionVisualQrPayment => 'Pagamento via QR';
+
+  @override
+  String get transactionVisualPaymentLinkReceive => 'Recebimento por link';
+
+  @override
+  String get transactionVisualPaymentLinkPayment => 'Pagamento por link';
+
+  @override
+  String get transactionVisualInternalReceive => 'Recebimento Kerosene';
+
+  @override
+  String get transactionVisualInternalSend => 'Envio Kerosene';
+
+  @override
+  String get transactionVisualEvent => 'Movimentação';
+
+  @override
+  String get transactionVisualOnChainReceive => 'Recebimento on-chain';
+
+  @override
+  String get transactionVisualOnChainSend => 'Envio on-chain';
+
+  @override
+  String get withdrawUiColdWalletSendBlocked =>
+      'Esta carteira fria é apenas acompanhada no app. Para enviar, assine a transação no dispositivo onde suas chaves ficam guardadas.';
+
+  @override
+  String get withdrawUiLightningDestinationRequired =>
+      'Informe um pedido Lightning ou LNURL para continuar.';
+
+  @override
+  String get withdrawUiLightningDestinationRequiredForFlow =>
+      'Informe um pedido Lightning ou LNURL para este envio.';
+
+  @override
+  String get withdrawUiLightningDestinationWrongFlow =>
+      'O destino informado é Lightning. Abra o envio Lightning para continuar.';
+
+  @override
+  String get withdrawUiOnchainDestinationWrongFlow =>
+      'Este campo recebeu um endereço on-chain. Use um pedido Lightning ou LNURL.';
+
+  @override
+  String get withdrawUiLightningFieldWrongFlow =>
+      'Este campo recebeu um pedido Lightning. Use o envio Lightning para continuar.';
+
+  @override
+  String withdrawUiConfiguredNetworkMismatch(String network) {
+    return 'O endereço informado não pertence à rede $network configurada para esta carteira.';
+  }
+
+  @override
+  String withdrawUiNetworkMismatch(String detected, String expected) {
+    return 'Este endereço pertence à rede $detected, mas a carteira está operando em $expected.';
+  }
+
+  @override
+  String get withdrawUiWaitFeeEstimate =>
+      'Aguarde a estimativa da taxa de rede para revisar o valor total do envio.';
+
+  @override
+  String get withdrawUiFeeEstimateUnavailable =>
+      'Não foi possível estimar a taxa de rede agora. Tente novamente em instantes.';
+
+  @override
+  String get withdrawUiSecurityTotpRequired =>
+      'A transação exige o código do autenticador e os fatores de segurança configurados na sua conta.';
+
+  @override
+  String get withdrawUiSecurityPasskeyRequired =>
+      'A transação exige confirmação por passkey antes do envio.';
+
+  @override
+  String get withdrawUiDetailNetwork => 'Rede';
+
+  @override
+  String get withdrawUiDetailSourceWallet => 'Carteira de origem';
+
+  @override
+  String get withdrawUiDetailCard => 'Cartão';
+
+  @override
+  String get withdrawUiDetailType => 'Tipo';
+
+  @override
+  String get withdrawUiDetailExecution => 'Execução';
+
+  @override
+  String get withdrawUiLightningPayment => 'Pagamento Lightning';
+
+  @override
+  String get withdrawUiOnchainWithdrawal => 'Saque on-chain';
+
+  @override
+  String get withdrawUiLightningLiquidityChecking =>
+      'Liquidez Lightning em verificação';
+
+  @override
+  String get withdrawUiSecureWalletSignature => 'Assinatura segura da carteira';
+
+  @override
+  String get withdrawUiAmountBtc => 'Valor em BTC';
+
+  @override
+  String withdrawUiPlatformFeeWithRate(String rate) {
+    return 'Taxa da Kerosene ($rate)';
+  }
+
+  @override
+  String get withdrawUiRoutingFeeCap => 'Limite de roteamento';
+
+  @override
+  String get withdrawUiEstimatedNetworkFee => 'Taxa estimada de rede';
+
+  @override
+  String get withdrawUiNetworkFeeRate => 'Taxa da rede';
+
+  @override
+  String get withdrawUiTotalDebited => 'Total debitado';
+
+  @override
+  String get withdrawUiBalanceBefore => 'Saldo antes';
+
+  @override
+  String get withdrawUiBalanceAfter => 'Saldo estimado depois';
+
+  @override
+  String get withdrawUiFinalReview => 'Revisão final';
+
+  @override
+  String get withdrawUiSourceFrom => 'De';
+
+  @override
+  String get withdrawUiLightningReviewNotice =>
+      'Confira o pedido Lightning e o limite de roteamento. O pagamento será enviado pela melhor rota disponível.';
+
+  @override
+  String get withdrawUiOnchainReviewNotice =>
+      'Confira o endereço on-chain com atenção. Depois de transmitida, a transação Bitcoin não pode ser desfeita.';
+
+  @override
+  String get withdrawUiAuthIncomplete =>
+      'Autenticação cancelada ou incompleta.';
+
+  @override
+  String get withdrawUiWalletLoadingSubtitle =>
+      'Carregando carteira para iniciar o envio.';
+
+  @override
+  String get withdrawUiLightningSubtitle =>
+      'Informe o pedido Lightning, revise o valor e confirme o pagamento.';
+
+  @override
+  String get withdrawUiOnchainSubtitle =>
+      'Informe o endereço Bitcoin, revise taxas e confirme o saque.';
+
+  @override
+  String get withdrawUiRecentLightning => 'Últimos pedidos Lightning';
+
+  @override
+  String get withdrawUiRecentOnchain => 'Últimos endereços';
+
+  @override
+  String get withdrawUiContinue => 'Continuar';
+
+  @override
+  String get withdrawUiTreasuryLiquidity => 'Liquidez Lightning';
+
+  @override
+  String get withdrawUiTreasuryUnavailable =>
+      'Não foi possível validar a liquidez em tempo real nesta tentativa. Tente novamente em instantes.';
+
+  @override
+  String get withdrawUiTreasuryState => 'Estado';
+
+  @override
+  String get withdrawUiTreasuryAvailableLightning => 'Disponível LN';
+
+  @override
+  String get withdrawUiTreasuryOutbound => 'Saída disponível';
+
+  @override
+  String get withdrawUiTreasuryOnchainReserve => 'Reserva on-chain';
+
+  @override
+  String get withdrawUiFeeEstimating => 'Estimando...';
+
+  @override
+  String get withdrawUiUnavailable => 'Indisponível';
+
+  @override
+  String get withdrawUiFeeWaiting => 'Aguardando taxa';
+
+  @override
+  String get withdrawUiSelectedNetwork => 'Rede selecionada';
+
+  @override
+  String get withdrawUiRoutingFeeMax => 'Taxa máxima de roteamento';
+
+  @override
+  String get withdrawUiFeeEstimateUnavailableLong =>
+      'Não foi possível estimar a taxa de rede no momento. Revise novamente em instantes antes de confirmar o envio.';
+
+  @override
+  String get withdrawUiEnterAmountForFees =>
+      'Digite um valor para calcular o custo total antes de confirmar.';
+
+  @override
+  String withdrawUiEquivalentTo(String amount) {
+    return 'Equivale a $amount';
+  }
+
+  @override
+  String get withdrawUiColdWalletTitle => 'Carteira fria';
+
+  @override
+  String get withdrawUiColdWalletBody =>
+      'Esta carteira fria é acompanhada para recebimentos, mas as chaves de saque permanecem fora da Kerosene.';
+
+  @override
+  String get withdrawUiOperationalExecution => 'Execução operacional';
+
+  @override
+  String get withdrawUiOnchainOperationalBody =>
+      'Saídas on-chain são preparadas para assinatura segura antes de serem enviadas à rede Bitcoin.';
+
+  @override
+  String get withdrawUiTreasuryLoadingBody =>
+      'Carregando liquidez e reserva antes de liberar o pagamento Lightning.';
+
+  @override
+  String get withdrawUiDestinationEmptyOnchain =>
+      'Informe um endereço Bitcoin on-chain ou URI bitcoin: para continuar.';
+
+  @override
+  String get withdrawUiDestinationValidLightning =>
+      'Pedido Lightning ou LNURL válido para este envio.';
+
+  @override
+  String get withdrawUiDestinationValidOnchain =>
+      'Endereço on-chain válido para este envio.';
+
+  @override
+  String withdrawUiDestinationValidOnchainNetwork(String network) {
+    return 'Endereço on-chain válido para $network.';
+  }
+
+  @override
+  String get withdrawUiScreenTitleOnchain => 'Enviar on-chain';
+
+  @override
+  String get withdrawUiScreenTitleLightning => 'Enviar Lightning';
+
+  @override
+  String get withdrawUiLiquidityHealthy => 'Saídas Lightning disponíveis';
+
+  @override
+  String get withdrawUiLiquidityRebalanceRequired =>
+      'Ajuste de liquidez recomendado';
+
+  @override
+  String get withdrawUiLiquidityBlocked => 'Saídas Lightning pausadas';
+
+  @override
+  String get withdrawUiLiquidityUnknown => 'Estado operacional indisponível';
+
+  @override
+  String get withdrawUiLiquidityHealthyMessage =>
+      'A reserva Bitcoin cobre a liquidez Lightning disponível para envio.';
+
+  @override
+  String get withdrawUiLiquidityRebalanceMessage =>
+      'A reserva está adequada, mas a liquidez Lightning precisa de ajuste antes de envios maiores.';
+
+  @override
+  String get withdrawUiLiquidityBlockedMessage =>
+      'Os pagamentos Lightning foram pausados até que a reserva volte ao nível necessário.';
+
+  @override
+  String get withdrawUiLiquidityUnknownMessage =>
+      'Não conseguimos classificar a liquidez agora. Revise os valores antes de continuar.';
+
+  @override
+  String get withdrawUiDestinationHintOnchain => 'Cole o endereço Bitcoin';
+
+  @override
+  String get withdrawUiDestinationHintLightning =>
+      'Cole o pedido Lightning ou LNURL';
+
+  @override
+  String get depositLedgerAddressCopied => 'Endereço copiado.';
+
+  @override
+  String get depositLedgerMovementsTitle => 'Movimentações';
+
+  @override
+  String depositLedgerPage(int page) {
+    return 'Página $page';
+  }
+
+  @override
+  String get depositLedgerBackTooltip => 'Voltar';
+
+  @override
+  String get depositLedgerRefreshTooltip => 'Atualizar';
+
+  @override
+  String get depositLedgerStatementTitle => 'Extrato';
+
+  @override
+  String get depositLedgerAccountSubtitle => 'Movimentação da conta';
+
+  @override
+  String get depositLedgerBalance => 'Saldo';
+
+  @override
+  String get depositLedgerHideBalance => 'Ocultar saldo';
+
+  @override
+  String get depositLedgerShowBalance => 'Mostrar saldo';
+
+  @override
+  String get depositLedgerItems => 'Itens';
+
+  @override
+  String get depositLedgerPending => 'Pendentes';
+
+  @override
+  String get depositLedgerOpenCharges => 'Cobranças';
+
+  @override
+  String get depositLedgerNetwork => 'Rede';
+
+  @override
+  String get depositLedgerActive => 'Ativa';
+
+  @override
+  String get depositLedgerManual => 'Manual';
+
+  @override
+  String get depositLedgerCopyAddress => 'Copiar endereço';
+
+  @override
+  String get depositLedgerLoadingCharges => 'Carregando cobranças';
+
+  @override
+  String get depositLedgerOpenChargesTitle => 'Cobranças abertas';
+
+  @override
+  String get depositLedgerVoucherTitle => 'Voucher de boas-vindas';
+
+  @override
+  String get depositLedgerPaymentLinkTitle => 'Link de pagamento';
+
+  @override
+  String depositLedgerExpiresIn(String time) {
+    return 'Expira $time';
+  }
+
+  @override
+  String get depositLedgerNow => 'Agora';
+
+  @override
+  String get depositLedgerCopyAction => 'copiar';
+
+  @override
+  String get depositLedgerManageAction => 'gerenciar';
+
+  @override
+  String get depositLedgerUpdating => 'Atualizando extrato';
+
+  @override
+  String get depositLedgerEmptyTitle => 'Sem movimentações';
+
+  @override
+  String get depositLedgerEmptyMessage => 'Nada nesta página.';
+
+  @override
+  String get depositLedgerCancelReceive => 'Cancelar recebimento';
+
+  @override
+  String get depositLedgerCancelReceiveMessage =>
+      'Este recebimento será cancelado na Kerosene. Se alguém já enviou BTC para o endereço, a rede Bitcoin ainda pode confirmar a transação.';
+
+  @override
+  String get depositLedgerBackAction => 'Voltar';
+
+  @override
+  String get depositLedgerReceiveCanceled => 'Recebimento cancelado.';
+
+  @override
+  String get depositLedgerPreviousTooltip => 'Anterior';
+
+  @override
+  String get depositLedgerNextTooltip => 'Próxima';
+
+  @override
+  String get depositLedgerAlerts => 'Alertas';
+
+  @override
+  String get depositLedgerUpdateAction => 'Atualizar';
+
+  @override
+  String get depositLedgerErrorTitle => 'Não foi possível atualizar';
+
+  @override
+  String depositLedgerPageShort(int page) {
+    return 'Pág. $page';
+  }
+
+  @override
+  String depositLedgerRowsPerPage(int count) {
+    return '$count por página';
+  }
+
+  @override
+  String get depositLedgerNoCounterparty => 'Sem contraparte';
+
+  @override
+  String get depositLedgerStatusCompleted => 'Concluído';
+
+  @override
+  String get depositLedgerStatusConfirming => 'Confirmando';
+
+  @override
+  String get depositLedgerStatusPending => 'Pendente';
+
+  @override
+  String get depositLedgerStatusFailed => 'Falhou';
+
+  @override
+  String get depositLedgerStatusVerifying => 'Verificando';
+
+  @override
+  String get depositLedgerStatusPaid => 'Pago';
+
+  @override
+  String get depositLedgerStatusExpired => 'Expirado';
+
+  @override
+  String get depositLedgerRelativeSoon => 'em instantes';
+
+  @override
+  String depositLedgerRelativeInMinutes(int count) {
+    return 'em $count min';
+  }
+
+  @override
+  String depositLedgerRelativeInHours(int count) {
+    return 'em $count h';
+  }
+
+  @override
+  String depositLedgerRelativeInDays(int count) {
+    return 'em $count d';
+  }
+
+  @override
+  String get depositLedgerRelativeNow => 'agora';
+
+  @override
+  String depositLedgerRelativeMinutesAgo(int count) {
+    return 'há $count min';
+  }
+
+  @override
+  String depositLedgerRelativeHoursAgo(int count) {
+    return 'há $count h';
+  }
+
+  @override
+  String get paymentConfirmationErrorTitle => 'Não foi possível confirmar';
+
+  @override
+  String get paymentConfirmationReviewSubtitle =>
+      'Revise os dados e confirme com os fatores de segurança.';
+
+  @override
+  String get paymentConfirmationDateTime => 'Data e hora';
+
+  @override
+  String get paymentConfirmationNetwork => 'Rede';
+
+  @override
+  String get paymentConfirmationCopyAction => 'Copiar';
+
+  @override
+  String paymentConfirmationCopied(String label) {
+    return '$label copiado.';
+  }
+
+  @override
+  String get depositFlowDepositTitle => 'Depositar';
+
+  @override
+  String get depositFlowAmountSubtitle =>
+      'Informe o valor e escolha como deseja receber.';
+
+  @override
+  String get depositFlowSelectedCurrency => 'Moeda selecionada';
+
+  @override
+  String get depositFlowAmountLabel => 'Valor do depósito';
+
+  @override
+  String get depositFlowContinue => 'Continuar';
+
+  @override
+  String depositFlowEquivalentTo(String amount) {
+    return 'Equivale a $amount';
+  }
+
+  @override
+  String depositFlowYouReceive(String amount) {
+    return 'Você recebe $amount';
+  }
+
+  @override
+  String get depositFlowMethodTitle => 'Método de depósito';
+
+  @override
+  String get depositFlowMethodSubtitle =>
+      'Escolha como deseja receber este valor em Bitcoin.';
+
+  @override
+  String get depositFlowSelectedAmount => 'Valor escolhido';
+
+  @override
+  String get depositFlowChooseOption => 'Escolha uma opção';
+
+  @override
+  String get depositFlowLightningFastSubtitle =>
+      'Recebimento rápido com validade curta e cópia em um toque.';
+
+  @override
+  String get depositFlowLightningUnavailable =>
+      'Lightning não está disponível para esta carteira no momento.';
+
+  @override
+  String get depositFlowLightningChecking =>
+      'Verificando disponibilidade para esta carteira.';
+
+  @override
+  String get depositFlowLightningCheckError =>
+      'Não foi possível verificar o Lightning agora. Você ainda pode usar on-chain.';
+
+  @override
+  String get depositFlowLightningInstant => 'Instantâneo';
+
+  @override
+  String get depositFlowUnavailable => 'Indisponível';
+
+  @override
+  String get depositFlowValidating => 'Validando';
+
+  @override
+  String get depositFlowOnchainColdTitle => 'Bitcoin on-chain da carteira fria';
+
+  @override
+  String get depositFlowOnchainTitle => 'Bitcoin on-chain';
+
+  @override
+  String get depositFlowOnchainColdSubtitle =>
+      'Endereço da sua carteira fria para acompanhar o depósito com segurança.';
+
+  @override
+  String get depositFlowOnchainSubtitle =>
+      'Endereço Bitcoin exclusivo acompanhado até a confirmação.';
+
+  @override
+  String get depositFlowColdWalletTag => 'Carteira fria';
+
+  @override
+  String get depositFlowConfirmationsTag => '3 confirmações';
+
+  @override
+  String get depositFlowProviderTitle => 'Provedor de compra';
+
+  @override
+  String get depositFlowProviderSubtitle =>
+      'Selecione o checkout para comprar Bitcoin com segurança.';
+
+  @override
+  String get depositFlowRequestedPurchase => 'Compra solicitada';
+
+  @override
+  String get depositFlowProviderSecurityHint =>
+      'Você continuará em um ambiente seguro e o endereço Bitcoin já será preenchido para este pagamento.';
+
+  @override
+  String get depositFlowProvidersLoadingTitle => 'Carregando provedores';
+
+  @override
+  String get depositFlowProvidersLoadingMessage =>
+      'Preparando as opções de compra com o endereço desta carteira.';
+
+  @override
+  String get depositFlowProvidersErrorTitle =>
+      'Não foi possível carregar provedores';
+
+  @override
+  String get depositFlowUnknownError => 'Não foi possível concluir agora.';
+
+  @override
+  String get depositFlowRetry => 'Tentar novamente';
+
+  @override
+  String get depositFlowNoProvidersTitle => 'Nenhum provedor disponível';
+
+  @override
+  String get depositFlowNoProvidersMessage =>
+      'Não encontramos opções de compra disponíveis no momento.';
+
+  @override
+  String get depositFlowSecureAddress => 'Endereço seguro';
+
+  @override
+  String get depositFlowCheckoutSubtitle => 'Checkout seguro no app.';
+
+  @override
+  String get depositFlowDepositAddressCopied => 'Endereço de depósito copiado.';
+
+  @override
+  String depositFlowEstimatedPurchase(String amount) {
+    return 'Compra estimada em $amount';
+  }
+
+  @override
+  String get depositFlowProviderLoadError =>
+      'Não foi possível carregar o provedor';
+
+  @override
+  String get depositFlowCheckoutAddressTitle =>
+      'Endereço BTC vinculado ao checkout';
+
+  @override
+  String get depositFlowAddressUnavailable => 'Endereço indisponível';
+
+  @override
+  String get depositFlowCopy => 'Copiar';
+
+  @override
+  String get depositLightningLoading => 'Carregando';
+
+  @override
+  String get depositLightningGoesTo => 'Vai cair em';
+
+  @override
+  String get depositLightningSummary => 'Resumo';
+
+  @override
+  String get depositInstructionsTitle => 'Instruções de depósito';
+
+  @override
+  String get depositInstructionsSubtitle =>
+      'Leitura curta e direta, no mesmo padrão do fluxo.';
+
+  @override
+  String get depositInstructionsUnderstood => 'Entendido';
+
+  @override
+  String get depositInstructionsNetworkLabel => 'Rede';
+
+  @override
+  String get depositInstructionsNetworkTitle => 'Deposite BTC apenas via';
+
+  @override
+  String get depositInstructionsMinimumLabel => 'Mínimo';
+
+  @override
+  String get depositInstructionsMinimumTitle => 'O depósito mínimo é de';
+
+  @override
+  String get depositInstructionsMinimumNote =>
+      'Depósitos abaixo deste valor serão perdidos.';
+
+  @override
+  String get depositInstructionsMaximumLabel => 'Máximo';
+
+  @override
+  String get depositInstructionsMaximumTitle => 'O depósito máximo é de';
+
+  @override
+  String get depositInstructionsMaximumSuffix => ' por transação.';
+
+  @override
+  String get depositInstructionsProcessingLabel => 'Processamento';
+
+  @override
+  String get depositInstructionsProcessingTitle => 'Tempo estimado:';
+
+  @override
+  String get depositInstructionsProcessingHighlight => '< 1 minuto';
+
+  @override
+  String get depositInstructionsProcessingSuffix => ' via Lightning.';
+
+  @override
+  String get depositQrReceiveTitle => 'Receber BTC';
+
+  @override
+  String get depositQrReceiveSubtitle =>
+      'QR de depósito em visual simples e seguro.';
+
+  @override
+  String get depositQrSetAmount => 'Definir valor';
+
+  @override
+  String get depositQrScanTitle => 'Escaneie para receber Bitcoin';
+
+  @override
+  String get depositQrBitcoinOnlyWarning =>
+      'Envie apenas Bitcoin (BTC) para este endereço.\nO envio de outros ativos resultará em perda permanente.';
+
+  @override
+  String get depositQrAddressLabel => 'Seu endereço BTC';
+
+  @override
+  String get depositQrCopy => 'Copiar';
+
+  @override
+  String get depositQrCopied => 'Endereço copiado.';
+
+  @override
+  String get depositQrShare => 'Compartilhar';
+
+  @override
+  String get depositQrSave => 'Salvar QR';
+
+  @override
+  String get receiveQrTitle => 'Receber por QR';
+
+  @override
+  String get receiveQrSubtitle => 'QR compacto e monocromático para exibição.';
+
+  @override
+  String get receiveQrCopied => 'Copiado para a área de transferência';
+
+  @override
+  String get withdrawReceiptSubtitle =>
+      'Comprovante com valor, destino e identificador do envio.';
+
+  @override
+  String get receiveHubNfcUnavailable =>
+      'NFC não está disponível neste dispositivo no momento.';
+
+  @override
+  String get receiveHubTitle => 'Receber';
+
+  @override
+  String get receiveHubSubtitle =>
+      'Depósito, cobrança e QR em um fluxo simples.';
+
+  @override
+  String get receiveHubActions => 'Ações disponíveis';
+
+  @override
+  String get receiveHubIntro =>
+      'Escolha como deseja receber. Cada opção mantém o foco no valor, no destino e na confirmação.';
+
+  @override
+  String get receiveHubDeposit => 'Depositar';
+
+  @override
+  String get receiveHubDepositSubtitle =>
+      'Adicionar saldo por compra, Lightning ou on-chain';
+
+  @override
+  String get receiveHubOnchain => 'Receber on-chain';
+
+  @override
+  String get receiveHubOnchainSubtitle => 'Gerar QR Bitcoin com valor opcional';
+
+  @override
+  String get receiveHubLightning => 'Receber Lightning';
+
+  @override
+  String get receiveHubLightningSubtitle =>
+      'Criar pedido instantâneo para a carteira';
+
+  @override
+  String get receiveHubPaymentLink => 'Link de pagamento';
+
+  @override
+  String get receiveHubPaymentLinkSubtitle =>
+      'Cobrança acompanhada com destino protegido';
+
+  @override
+  String get receiveHubNfc => 'Receber por NFC';
+
+  @override
+  String get receiveHubNfcSubtitle => 'Preparar cobrança por aproximação';
+
+  @override
+  String get receiveHubNoWalletTitle => 'Nenhuma carteira disponível';
+
+  @override
+  String get receiveHubNoWalletMessage =>
+      'Crie ou selecione uma carteira antes de iniciar um recebimento.';
+
+  @override
+  String get receiveScreenQrEyebrow => 'QR Code';
+
+  @override
+  String get receiveScreenPaymentLinkEyebrow => 'Link de pagamento';
+
+  @override
+  String get receiveScreenOnchainEyebrow => 'On-chain';
+
+  @override
+  String get receiveScreenLightningEyebrow => 'Lightning';
+
+  @override
+  String get receiveScreenQrDescription =>
+      'Gere um QR interno com valor e destino protegidos para confirmação.';
+
+  @override
+  String get receiveScreenNfcDescription =>
+      'Prepare uma cobrança por aproximação com destino protegido.';
+
+  @override
+  String get receiveScreenPaymentLinkDescription =>
+      'Crie um link acompanhado que abre direto na confirmação.';
+
+  @override
+  String get receiveScreenOnchainDescription =>
+      'Gere um QR Bitcoin on-chain com valor e destino definidos.';
+
+  @override
+  String get receiveScreenLightningDescription =>
+      'Gere um pedido Lightning para recebimento rápido.';
+
+  @override
+  String get receiveScreenGenerateQr => 'Gerar QR';
+
+  @override
+  String get receiveScreenPrepareNfc => 'Preparar NFC';
+
+  @override
+  String get receiveScreenCreateLink => 'Criar link';
+
+  @override
+  String get receiveScreenGenerateOnchainQr => 'Gerar QR on-chain';
+
+  @override
+  String get receiveScreenGenerateLightningInvoice => 'Gerar invoice Lightning';
+
+  @override
+  String get receiveScreenSelectDepositWallet =>
+      'Selecione uma carteira para depositar.';
+
+  @override
+  String get receiveScreenQrSubtitle =>
+      'Defina o valor e gere um QR interno com destino protegido.';
+
+  @override
+  String get receiveScreenNfcSubtitle =>
+      'Defina o valor e prepare uma cobrança por aproximação.';
+
+  @override
+  String get receiveScreenPaymentLinkSubtitle =>
+      'Defina o valor e gere uma cobrança acompanhada.';
+
+  @override
+  String get receiveScreenOnchainSubtitle =>
+      'Defina o valor e gere um QR Bitcoin compatível.';
+
+  @override
+  String get receiveScreenLightningSubtitle =>
+      'Defina o valor e siga para um pedido Lightning.';
+
+  @override
+  String get receiveScreenInboundBlockedTitle => 'Recebimento indisponível';
+
+  @override
+  String get receiveScreenInboundBlockedMessage =>
+      'Ative uma carteira ou adicione saldo para receber pela plataforma.';
+
+  @override
+  String get receiveScreenRefreshStatus => 'Atualizar status';
+
+  @override
+  String receiveScreenEquivalentTo(String amount) {
+    return 'Equivale a $amount';
+  }
+
+  @override
+  String receiveScreenDestination(String walletName) {
+    return 'Destino $walletName';
+  }
+
+  @override
+  String get receiveScreenPrivacyHint =>
+      'Quem pagar verá apenas os dados necessários para confirmar o recebimento.';
+
+  @override
+  String get receiveScreenSelectReceiveWallet =>
+      'Selecione uma carteira para receber.';
+
+  @override
+  String get receiveScreenInvalidPaymentLink =>
+      'Não conseguimos criar um link de pagamento válido agora.';
+
+  @override
+  String receiveScreenPaymentLinkError(String error) {
+    return 'Não foi possível gerar o link de pagamento: $error';
+  }
+
+  @override
+  String receiveScreenDefaultDescription(String walletName) {
+    return 'Recebimento $walletName';
+  }
+
+  @override
+  String get receiveScreenConfigureLinkEyebrow => 'Configurar link';
+
+  @override
+  String get receiveScreenConfigureLinkTitle => 'Link de pagamento';
+
+  @override
+  String get receiveScreenConfigureLinkSubtitle =>
+      'Defina validade, visibilidade e identificação antes de gerar o link.';
+
+  @override
+  String get receiveScreenDescriptionLabel => 'Descrição';
+
+  @override
+  String get receiveScreenReferenceLabel => 'Referência';
+
+  @override
+  String get receiveScreen15Minutes => '15 minutos';
+
+  @override
+  String get receiveScreen1Hour => '1 hora';
+
+  @override
+  String get receiveScreen3Hours => '3 horas';
+
+  @override
+  String get receiveScreen24Hours => '24 horas';
+
+  @override
+  String get receiveScreenValidityLabel => 'Validade';
+
+  @override
+  String get receiveScreenPrivate => 'Privado';
+
+  @override
+  String get receiveScreenPublic => 'Público';
+
+  @override
+  String get receiveScreenVisibilityLabel => 'Visibilidade';
+
+  @override
+  String get receiveScreenUserActionRequired => 'Concluir com sua confirmação';
+
+  @override
+  String get receiveScreenAutoComplete => 'Completar automaticamente';
+
+  @override
+  String get receiveScreenCompletionLabel => 'Fechamento';
+
+  @override
+  String get receiveScreenCustomerLabel => 'Cliente';
+
+  @override
+  String get receiveScreenNoteLabel => 'Nota';
+
+  @override
+  String get receiveScreenGenerateLink => 'Gerar link';
+
+  @override
+  String get receivePaymentLinkCancelled => 'Link de pagamento cancelado.';
+
+  @override
+  String get receivePaymentLinkCancelTitle => 'Cancelar link';
+
+  @override
+  String get receivePaymentLinkCancelMessage =>
+      'Se quiser, informe um motivo para aparecer no seu histórico.';
+
+  @override
+  String get receivePaymentLinkCancelReason => 'Motivo do cancelamento';
+
+  @override
+  String get receivePaymentLinkConfirmCancel => 'Confirmar cancelamento';
+
+  @override
+  String get receivePaymentLinkNotInformed => 'Não informado';
+
+  @override
+  String get receivePaymentLinkStatusChecking => 'Pagamento em conferência';
+
+  @override
+  String get receivePaymentLinkStatusReceived => 'Pagamento recebido';
+
+  @override
+  String get receivePaymentLinkStatusCancelled => 'Link cancelado';
+
+  @override
+  String get receivePaymentLinkStatusExpired => 'Link expirado';
+
+  @override
+  String get receivePaymentLinkStatusWaiting => 'Aguardando pagamento';
+
+  @override
+  String get receivePaymentLinkCheckingMessage =>
+      'A rede já identificou o pagamento. Estamos concluindo a conferência final.';
+
+  @override
+  String get receivePaymentLinkReceivedMessage =>
+      'O valor deste link já foi recebido e o histórico foi atualizado.';
+
+  @override
+  String receivePaymentLinkCancelledReason(String reason) {
+    return 'Este link foi cancelado: $reason.';
+  }
+
+  @override
+  String get receivePaymentLinkCancelledMessage =>
+      'Este link foi cancelado e não aceita mais pagamentos.';
+
+  @override
+  String get receivePaymentLinkExpiredMessage =>
+      'Este link não aceita mais pagamentos. Gere um novo QR para continuar recebendo.';
+
+  @override
+  String get receivePaymentLinkLockedMessage =>
+      'Quem abrir este QR verá uma confirmação simples, com valor e destino protegidos.';
+
+  @override
+  String get receivePaymentLinkWaitingMessage =>
+      'Use o QR Code ou copie o link de pagamento abaixo. O status será atualizado automaticamente.';
+
+  @override
+  String get receivePaymentLinkTitle => 'Recebimento';
+
+  @override
+  String get receivePaymentLinkSubtitle =>
+      'QR, link e acompanhamento em uma tela simples.';
+
+  @override
+  String get receivePaymentLinkExpired => 'Expirado';
+
+  @override
+  String receivePaymentLinkExpiresIn(String duration) {
+    return 'Expira em $duration';
+  }
+
+  @override
+  String receivePaymentLinkDepositFee(String amount) {
+    return 'depósito $amount';
+  }
+
+  @override
+  String receivePaymentLinkNetAmount(String amount) {
+    return 'líquido $amount';
+  }
+
+  @override
+  String get receivePaymentLinkExpires => 'Expira';
+
+  @override
+  String get receivePaymentLinkTransactionCode => 'Código da transação';
+
+  @override
+  String get receivePaymentLinkState => 'Estado';
+
+  @override
+  String get receivePaymentLinkPaymentLinkTitle => 'Link de pagamento';
+
+  @override
+  String get receivePaymentLinkLockedHelper =>
+      'Este link abre a confirmação do pagamento com valor e destino protegidos.';
+
+  @override
+  String get receivePaymentLinkShareHelper =>
+      'Compartilhe este link para receber o valor definido.';
+
+  @override
+  String get receivePaymentLinkCopied =>
+      'Link de pagamento copiado para a área de transferência.';
+
+  @override
+  String get receivePaymentLinkDepositAddressHelper =>
+      'Endereço Bitcoin exclusivo para este pagamento.';
+
+  @override
+  String get receivePaymentLinkDepositAddressCopied =>
+      'Endereço de depósito copiado para a área de transferência.';
+
+  @override
+  String get receivePaymentLinkRefresh => 'Atualizar';
+
+  @override
+  String get receivePaymentLinkConfigurationTitle =>
+      'Configuração do recebimento';
+
+  @override
+  String get receivePaymentLinkVisibility => 'Visibilidade';
+
+  @override
+  String get receivePaymentLinkCompletion => 'Fechamento';
+
+  @override
+  String get receivePaymentLinkAmount => 'Valor';
+
+  @override
+  String get receivePaymentLinkAmountSet => 'Definido';
+
+  @override
+  String get receivePaymentLinkAmountFlexible => 'Flexível';
+
+  @override
+  String get receivePaymentLinkReference => 'Referência';
+
+  @override
+  String get receivePaymentLinkCreatedAt => 'Criado em';
+
+  @override
+  String get receivePaymentLinkPaidAt => 'Pago em';
+
+  @override
+  String get receivePaymentLinkConfirmedAt => 'Confirmado em';
+
+  @override
+  String get receivePaymentLinkCancelledAt => 'Cancelado em';
+
+  @override
+  String get receivePaymentLinkCopy => 'Copiar';
+
+  @override
+  String get sendMoneyDestinationLabel => 'Destino';
+
+  @override
+  String get sendMoneyDestinationHint => 'Endereço ou nome de usuário';
+
+  @override
+  String get sendMoneyRecentTitle => 'Já enviados';
+
+  @override
+  String get sendMoneyGoToAmount => 'Ir para o valor';
+
+  @override
+  String get sendMoneyMissingDestination => 'Informe o endereço ou usuário.';
+
+  @override
+  String get sendMoneyExternalUseWithdraw =>
+      'Pagamentos on-chain devem usar o fluxo de saque.';
+
+  @override
+  String get sendMoneyReview => 'Revisar';
+
+  @override
+  String get sendMoneyDetailType => 'Tipo';
+
+  @override
+  String get sendMoneyTypePaymentLink => 'Pagamento por link interno';
+
+  @override
+  String get sendMoneyTypeInternalTransfer => 'Transferência interna Kerosene';
+
+  @override
+  String get sendMoneyDetailValue => 'Valor';
+
+  @override
+  String get sendMoneyDetailValueBtc => 'Valor em BTC';
+
+  @override
+  String get sendMoneyDetailTotalBtc => 'Total em BTC';
+
+  @override
+  String get sendMoneyDetailBalanceBefore => 'Saldo antes do envio';
+
+  @override
+  String get sendMoneyDetailLinkId => 'ID do link';
+
+  @override
+  String get sendMoneyDetailDestinationHash => 'Hash do destino';
+
+  @override
+  String get sendMoneyDestinationHashCopied => 'Hash do destino copiado.';
+
+  @override
+  String get sendMoneyConfirmPayment => 'Confirmar pagamento';
+
+  @override
+  String get sendMoneyLockedRequestEyebrow => 'Pedido protegido';
+
+  @override
+  String get sendMoneyFinalReviewEyebrow => 'Revisão final';
+
+  @override
+  String get sendMoneySourceLabel => 'De';
+
+  @override
+  String get sendMoneyDestinationToLabel => 'Para';
+
+  @override
+  String get sendMoneyInternalNetwork => 'Interno';
+
+  @override
+  String get sendMoneyLockedNotice =>
+      'Valor e destino foram definidos pelo link. Confirme apenas se reconhecer este pedido.';
+
+  @override
+  String get sendMoneyReviewNotice =>
+      'Confira os dados antes de confirmar. Depois da autorização, o envio será processado.';
+
+  @override
+  String get sendMoneySecurityMessage =>
+      'A confirmação usa a sessão atual e os fatores de segurança configurados na sua conta antes de enviar o pagamento.';
+
+  @override
+  String get sendMoneyAuthFailed =>
+      'A autenticação foi cancelada ou não pôde ser concluída.';
+
+  @override
+  String get sendMoneyInvalidPaymentRequest =>
+      'Solicitação de pagamento inválida.';
+
+  @override
+  String get sendMoneyExternalQrUseWithdraw =>
+      'QR externo detectado. Use o fluxo de saque para pagamentos on-chain.';
+
+  @override
+  String get sendMoneyRequestDataLoaded => 'Dados da solicitação carregados.';
+
+  @override
+  String get sendMoneyInvalidQrRequest =>
+      'Este QR ou NFC não parece ser uma solicitação válida.';
+
+  @override
+  String get sendMoneyRequestAlreadyPaid => 'Esta solicitação já foi paga.';
+
+  @override
+  String get sendMoneyRequestExpired =>
+      'Esta solicitação de pagamento expirou.';
+
+  @override
+  String get sendMoneyLockedDestination => 'Destino protegido';
+
+  @override
+  String get sendMoneyPaymentRequestLoaded =>
+      'Solicitação de pagamento carregada.';
+
+  @override
+  String get walletConfigAddressCopiedMessage =>
+      'O endereço da carteira foi copiado com sucesso.';
+
+  @override
+  String get walletConfigAddressCopiedTitle => 'Endereço copiado';
+
+  @override
+  String get walletConfigExportNoticeMessage =>
+      'A exportação da chave privada depende da verificação de segurança do dispositivo.';
+
+  @override
+  String get walletConfigExportNoticeTitle => 'Validação necessária';
+
+  @override
+  String get walletConfigAddressTitle => 'Endereço da carteira';
+
+  @override
+  String get walletConfigAddressSubtitle =>
+      'Use este endereço para depósitos on-chain desta carteira.';
+
+  @override
+  String get walletConfigCopy => 'Copiar';
+
+  @override
+  String get walletConfigFeesTitle => 'Taxas da carteira';
+
+  @override
+  String get walletConfigFeesSubtitle =>
+      'Valores atualizados para movimentações externas desta carteira.';
+
+  @override
+  String get walletConfigControlsTitle => 'Controles';
+
+  @override
+  String get walletConfigControlsSubtitle =>
+      'Ajustes de uso e proteção visual da carteira no app.';
+
+  @override
+  String get walletConfigFreezeCardTitle => 'Congelar cartão';
+
+  @override
+  String get walletConfigFreezeCardSubtitle =>
+      'Desativa temporariamente o uso desta carteira no fluxo visual.';
+
+  @override
+  String get walletConfigHideBalanceTitle => 'Ocultar saldo na home';
+
+  @override
+  String get walletConfigHideBalanceSubtitle =>
+      'Mantém a carteira visível, mas reduz a exposição do saldo.';
+
+  @override
+  String get walletConfigExportKeyTitle => 'Exportar chave privada';
+
+  @override
+  String get walletConfigExportKeySubtitle =>
+      'Exige verificação adicional antes de revelar material sensível.';
+
+  @override
+  String get walletConfigCardRuleTitle => 'Regra do cartão';
+
+  @override
+  String get walletConfigCardRuleSubtitle =>
+      'O perfil considera o relacionamento da conta e o volume elegível dos últimos 30 dias.';
+
+  @override
+  String get walletConfigTitle => 'Cartão da carteira';
+
+  @override
+  String get walletConfigSubtitle =>
+      'Configuração visual, endereço e taxas da carteira.';
+
+  @override
+  String walletConfigHeroSummary(
+      int level, String cardType, String withdrawRate, String depositRate) {
+    return 'Nível $level • $cardType. Saques externos usam $withdrawRate e depósitos externos usam $depositRate.';
+  }
+
+  @override
+  String get walletConfigNetworkLabel => 'Rede';
+
+  @override
+  String get walletConfigPathLabel => 'Path';
+
+  @override
+  String get walletConfigStatusLabel => 'Status';
+
+  @override
+  String get walletConfigStatusFrozen => 'Congelado';
+
+  @override
+  String get walletConfigStatusActive => 'Ativo';
+
+  @override
+  String get walletConfigLevelLabel => 'Nível';
+
+  @override
+  String get walletConfigWithdrawLabel => 'Saque';
+
+  @override
+  String get walletConfigWithdrawHelper => 'Saída externa';
+
+  @override
+  String get walletConfigDepositLabel => 'Depósito';
+
+  @override
+  String get walletConfigDepositHelper => 'Entrada externa';
+
+  @override
+  String get walletConfigInternalLabel => 'Interno';
+
+  @override
+  String get walletConfigInternalHelper => 'Entre carteiras Kerosene';
+
+  @override
+  String get walletCardUnavailableTitle => 'Cartão indisponível';
+
+  @override
+  String get walletCardNoActiveTitle => 'Nenhum cartão ativo';
+
+  @override
+  String get walletCardNoActiveMessage =>
+      'Crie uma carteira para habilitar o cartão da conta.';
+
+  @override
+  String get walletCardAccountCardsTitle => 'Cartões da conta';
+
+  @override
+  String walletCardAccountCardsSubtitle(String walletName) {
+    return 'Deslize para ver os cartões, as taxas e os requisitos da conta $walletName.';
+  }
+
+  @override
+  String get walletCardCurrentLabel => 'Atual';
+
+  @override
+  String get walletCardUpgradeLabel => 'Upgrade';
+
+  @override
+  String get walletCardAutomatic => 'Automático';
+
+  @override
+  String get walletCardValidityLabel => 'Validade';
+
+  @override
+  String get walletCardRotationLabel => 'Rotação';
+
+  @override
+  String get walletCardPreviousLabel => 'Anterior';
+
+  @override
+  String get walletCardRotating => 'Em rotação';
+
+  @override
+  String get walletCardExpiring => 'Expirando';
+
+  @override
+  String get walletCardActive => 'Ativo';
+
+  @override
+  String get walletCardNotInformed => 'Não informado';
+
+  @override
+  String get walletCardRotationTitle => 'Rotação do cartão';
+
+  @override
+  String get walletCardRotationSubtitle =>
+      'A validade do cartão é real e a próxima emissão acontece automaticamente quando a janela expira.';
+
+  @override
+  String walletCardCurrentExpires(String cardNumber, String date) {
+    return '$cardNumber • vence $date';
+  }
+
+  @override
+  String get walletCardLastRotationLabel => 'Última rotação';
+
+  @override
+  String walletCardPreviousExpired(String cardNumber, String date) {
+    return '$cardNumber • expirou $date';
+  }
+
+  @override
+  String get walletCardYourCard => 'Seu cartão';
+
+  @override
+  String get walletCardDepositLabel => 'Depósito';
+
+  @override
+  String get walletCardWithdrawLabel => 'Saque';
+
+  @override
+  String get walletCardMiningLabel => 'Mineração';
+
+  @override
+  String get walletCardHowToGet => 'Como conseguir';
+
+  @override
+  String get walletCardRulesTitle => 'Como os cartões mudam';
+
+  @override
+  String get walletCardRulesSubtitle =>
+      'Quando sua conta estiver de acordo com os requisitos, o cartão é alterado automaticamente.';
+
+  @override
+  String get walletCardGraphiteTitle => 'Grafite';
+
+  @override
+  String get walletCardSilverTitle => 'Prata';
+
+  @override
+  String get walletCardBlackTitle => 'Black';
+
+  @override
+  String get walletCardHiddenTitle => 'Oculto';
+
+  @override
+  String get walletCardGraphiteTier => 'Inicial';
+
+  @override
+  String get walletCardSilverTier => 'Intermediário';
+
+  @override
+  String get walletCardBlackTier => 'Maior nível';
+
+  @override
+  String get walletCardGraphiteDescription =>
+      'Cartão inicial para usuários novos. É o nível padrão da conta.';
+
+  @override
+  String get walletCardSilverDescription =>
+      'Upgrade intermediário com taxas menores para depósitos, saques e mineração.';
+
+  @override
+  String get walletCardBlackDescription =>
+      'Menor custo da plataforma para contas com maior tempo e maior volume.';
+
+  @override
+  String get walletCardGraphiteQualification =>
+      'Disponível automaticamente para contas novas.';
+
+  @override
+  String get walletCardSilverQualification =>
+      'Movimentação acima de 1500 por mês e pelo menos 6 meses de conta.';
+
+  @override
+  String get walletCardBlackQualification =>
+      'Movimentação acima de 4000 por mês e pelo menos 1 ano de conta.';
+
+  @override
+  String get walletCardGraphiteEligibility => 'Usuários novos.';
+
+  @override
+  String get walletCardSilverEligibility =>
+      'Movimentações acima de 1500 por mês e 6 meses de conta.';
+
+  @override
+  String get walletCardBlackEligibility =>
+      'Movimentações acima de 4000 por mês e 1 ano de conta.';
+
+  @override
+  String get walletCardHashCopiedTitle => 'Hash copiado';
+
+  @override
+  String get walletCardHashCopiedMessage => 'O hash da carteira foi copiado.';
+
+  @override
+  String get appEntryPinUnavailableTitle => 'PIN indisponível';
+
+  @override
+  String get appEntryPinUnavailableMessage =>
+      'Não foi possível validar a proteção de entrada. Atualize o estado e tente novamente.';
+
+  @override
+  String get appEntryRefresh => 'Atualizar';
+
+  @override
+  String get appEntryConfirm => 'Confirmar';
+
+  @override
+  String get appEntryReset => 'Redefinir';
+
+  @override
+  String get appEntryExit => 'Sair';
+
+  @override
+  String get appEntryTotpLabel => 'Código TOTP';
+
+  @override
+  String get appEntryNewPinLabel => 'Novo PIN numérico';
+
+  @override
+  String appEntryPinLengthError(int min, int max) {
+    return 'Use entre $min e $max dígitos.';
+  }
+
+  @override
+  String appEntryRetryIn(String duration) {
+    return 'Nova tentativa em $duration.';
+  }
+
+  @override
+  String get appEntryUnlockPrompt =>
+      'Digite o PIN deste dispositivo para abrir sua carteira.';
+
+  @override
+  String get appEntryLockedHelper => 'Entrada bloqueada temporariamente.';
+
+  @override
+  String appEntryAttemptsHelper(int count) {
+    return 'Tentativas restantes antes do bloqueio: $count.';
+  }
+
+  @override
+  String get appEntryLocalPinHelper =>
+      'Este PIN protege apenas este dispositivo.';
+
+  @override
+  String get appEntryEyebrow => 'PIN de entrada';
+
+  @override
+  String get appEntryResetTitle => 'Redefinir PIN';
+
+  @override
+  String get appEntryResetMessage =>
+      'Use o código autenticador da conta para definir um novo PIN neste dispositivo.';
+
+  @override
+  String get appEntrySavePin => 'Salvar PIN';
+
+  @override
+  String get sessionEndedTitle => 'Sessão encerrada';
+
+  @override
+  String get primaryNavHome => 'Início';
+
+  @override
+  String get primaryNavCard => 'Cartão';
+
+  @override
+  String get primaryNavHistory => 'Histórico';
+
+  @override
+  String get primaryNavMining => 'Minerar';
+
+  @override
+  String get primaryNavSettings => 'Ajustes';
+
+  @override
+  String get securityTreasuryBuffer => 'Buffer';
+
+  @override
+  String get securityTreasuryConfirmations => 'Confirmações';
+
+  @override
+  String get securityTreasuryLightning => 'Lightning';
+
+  @override
+  String get securityTreasuryProfit => 'Lucro';
+
+  @override
+  String get miningContractSelectRigTitle => 'Selecione um equipamento';
+
+  @override
+  String get miningContractSelectRigMessage =>
+      'Não encontramos equipamentos disponíveis para aluguel agora.';
+
+  @override
+  String get miningContractInvalidDurationTitle => 'Prazo inválido';
+
+  @override
+  String miningContractInvalidDurationMessage(int minHours, int maxHours) {
+    return 'Escolha um prazo entre ${minHours}h e ${maxHours}h para este equipamento.';
+  }
+
+  @override
+  String get miningContractInvalidBudgetTitle => 'Valor inválido';
+
+  @override
+  String get miningContractInvalidBudgetMessage =>
+      'Informe um valor em BTC maior que zero.';
+
+  @override
+  String get miningContractInvalidHashrateTitle => 'Potência inválida';
+
+  @override
+  String miningContractInvalidHashrateMessage(String unit) {
+    return 'Informe a potência desejada em $unit.';
+  }
+
+  @override
+  String get miningContractNoAllocationTitle => 'Sem alocação estimada';
+
+  @override
+  String get miningContractNoAllocationMessage =>
+      'A combinação escolhida não gera potência contratável.';
+
+  @override
+  String get miningContractTotpRequiredTitle => 'Código obrigatório';
+
+  @override
+  String get miningContractTotpRequiredMessage =>
+      'Digite o código do autenticador da carteira para continuar.';
+
+  @override
+  String get miningContractRequiredFieldsTitle => 'Campos obrigatórios';
+
+  @override
+  String get miningContractRequiredFieldsMessage =>
+      'Preencha o endereço de recebimento, a pool e o identificador do minerador.';
+
+  @override
+  String get miningContractAuthIncompleteTitle => 'Autorização incompleta';
+
+  @override
+  String get miningContractAuthIncompleteMessage =>
+      'A operação foi cancelada antes da autorização final.';
+
+  @override
+  String get miningContractCreateFailedTitle =>
+      'Não foi possível criar a alocação';
+
+  @override
+  String get miningContractUnknownError => 'Não foi possível concluir agora.';
+
+  @override
+  String get miningContractCreatedTitle => 'Alocação criada';
+
+  @override
+  String miningContractCreatedMessage(
+      String rigName, String hashrate, int durationHours) {
+    return '$rigName alugado com $hashrate por ${durationHours}h.';
+  }
+
+  @override
+  String get miningContractCancelFailedTitle => 'Não foi possível cancelar';
+
+  @override
+  String get miningContractCancelledTitle => 'Alocação encerrada';
+
+  @override
+  String get miningContractCancelledMessage =>
+      'Os valores proporcionais foram atualizados no seu histórico.';
+
+  @override
+  String get miningContractRigsTitle => 'Equipamentos disponíveis';
+
+  @override
+  String get miningContractRigsSubtitle =>
+      'Escolha um equipamento e veja o preço estimado antes de autorizar.';
+
+  @override
+  String get miningContractCreateAction => 'Criar alocação';
+
+  @override
+  String get miningContractAllocationsTitle => 'Alocações ativas e recentes';
+
+  @override
+  String get miningContractAllocationsSubtitle =>
+      'Acompanhe seus contratos e cancele quando a política permitir.';
+
+  @override
+  String get miningContractNetworkContextTitle => 'Rede e liquidação';
+
+  @override
+  String get miningContractNetworkHashrate => 'Potência da rede';
+
+  @override
+  String get miningContractDailyReward => 'Recompensa diária';
+
+  @override
+  String get miningContractSelectWalletHint =>
+      'Selecione uma carteira para debitar o aluguel e preencher o endereço de recebimento.';
+
+  @override
+  String miningContractActiveWallet(String walletName, String balance) {
+    return 'Carteira ativa: $walletName • saldo $balance';
+  }
+
+  @override
+  String miningContractRigAvailable(
+      String algorithm, String provider, String hashrate, String unit) {
+    return '$algorithm • $provider • $hashrate $unit disponíveis';
+  }
+
+  @override
+  String miningContractPricePerUnit(String unit) {
+    return 'Preço por $unit/dia';
+  }
+
+  @override
+  String miningContractYieldPerUnit(String unit) {
+    return 'Rendimento por $unit/dia';
+  }
+
+  @override
+  String get miningContractBudgetMode => 'Valor em BTC';
+
+  @override
+  String get miningContractHashrateMode => 'Potência';
+
+  @override
+  String get miningContractBudgetLabel => 'Valor em BTC';
+
+  @override
+  String get miningContractHashrateLabel => 'Potência desejada';
+
+  @override
+  String get miningContractPayoutAddressLabel => 'Endereço para receber';
+
+  @override
+  String get miningContractPoolUrlLabel => 'Pool de mineração';
+
+  @override
+  String get miningContractWorkerNameLabel => 'Identificador do minerador';
+
+  @override
+  String get miningContractEstimateTitle => 'Prévia da alocação';
+
+  @override
+  String get miningContractAllocatedHashrate => 'Potência alocada';
+
+  @override
+  String get miningContractEstimatedCost => 'Custo estimado';
+
+  @override
+  String get miningContractProjectedYield => 'Rendimento bruto projetado';
+
+  @override
+  String get miningContractTotpAuthorization => 'Autorização por código';
+
+  @override
+  String get miningContractCost => 'Custo';
+
+  @override
+  String get miningContractNetYield => 'Rendimento líquido';
+
+  @override
+  String get miningContractCancelAllocation => 'Cancelar alocação';
+
+  @override
+  String get miningContractRetry => 'Tentar novamente';
+
+  @override
+  String get miningStateOfflineTitle => 'Sem conectividade';
+
+  @override
+  String get miningStateOfflineMessage =>
+      'Não foi possível consultar a rede Bitcoin agora.';
+
+  @override
+  String get miningStateEmptyTitle => 'Sem dados disponíveis';
+
+  @override
+  String get miningStateEmptyMessage =>
+      'Não encontramos informações suficientes para montar o painel de mineração agora.';
+
+  @override
+  String get miningStateErrorTitle => 'Falha ao iniciar o painel';
+
+  @override
+  String get miningStateRetryLater =>
+      'Tente sincronizar novamente em instantes.';
+
+  @override
+  String get miningTxInternalTitle => 'Fluxo interno';
+
+  @override
+  String get miningTxInternalSubtitle =>
+      'Conciliação interna. Sem liquidação pública.';
+
+  @override
+  String get miningTxReference => 'Referência';
+
+  @override
+  String get miningTxConfirmations => 'Confirmações';
+
+  @override
+  String get miningTxLightningTitle => 'Fluxo Lightning';
+
+  @override
+  String get miningTxLightningSubtitle =>
+      'Liquidação fora da camada base. Contexto local apenas.';
+
+  @override
+  String get miningTxChannel => 'Canal';
+
+  @override
+  String get miningTxRecord => 'Registro';
+
+  @override
+  String get miningTxNoPublicSummaryTitle => 'Transação sem resumo público';
+
+  @override
+  String get miningTxNoPublicSummaryMessage =>
+      'A rede não retornou um resumo detalhado.';
+
+  @override
+  String get miningTxLookupUnavailableTitle => 'Consulta on-chain indisponível';
+
+  @override
+  String get miningTxLocalStatus => 'Status local';
+
+  @override
+  String get miningTxOnchainTitle => 'Contexto on-chain';
+
+  @override
+  String get miningTxOnchainSubtitle =>
+      'Inclusão, posição e custo efetivo da transação.';
+
+  @override
+  String get miningTxConfirmed => 'Confirmada';
+
+  @override
+  String get miningTxPending => 'Pendente';
+
+  @override
+  String get miningTxTxid => 'TXID';
+
+  @override
+  String get miningTxFeeRate => 'Taxa por vByte';
+
+  @override
+  String get miningTxBlock => 'Bloco';
+
+  @override
+  String get miningTxAwaiting => 'aguardando';
+
+  @override
+  String get miningTxPosition => 'Posição';
+
+  @override
+  String get miningTxNotAvailable => 'n/d';
+
+  @override
+  String get miningTxLoadingTitle => 'Contexto transacional';
+
+  @override
+  String get miningTxLoadingSubtitle =>
+      'Consultando dados públicos da transação.';
+
+  @override
+  String get miningMetricsCurrentHeight => 'Altura atual';
+
+  @override
+  String miningMetricsRetargetInBlocks(int blocks) {
+    return 'retarget em $blocks blocos';
+  }
+
+  @override
+  String get miningMetricsMrr => 'MRR';
+
+  @override
+  String get miningMetricsHashrate => 'Hashrate';
+
+  @override
+  String get miningMetricsDifficulty => 'Dificuldade';
+
+  @override
+  String get miningMetricsPace => 'Ritmo';
+
+  @override
+  String get miningMetricsLastUpdated => 'Última atualização';
+
+  @override
+  String get miningMetricsNow => 'agora';
+
+  @override
+  String get miningMetricsMempool => 'Mempool';
+
+  @override
+  String get miningMetricsPriorityFee => 'Taxa prioritária';
+
+  @override
+  String get miningMetricsEstimatedTps => 'TPS estimado';
+
+  @override
+  String get miningMetricsMempoolPressureTitle => 'Pressão da mempool';
+
+  @override
+  String get miningMetricsMempoolPressureSubtitle =>
+      'Faixa de taxa, volume pendente e disputa por inclusão.';
+
+  @override
+  String get miningMetricsPending => 'Pendentes';
+
+  @override
+  String get miningMetricsVbytes => 'vBytes';
+
+  @override
+  String get miningMetricsVolumeMb => 'Volume MB';
+
+  @override
+  String get miningMetricsAggregatedFees => 'Taxas agregadas';
+
+  @override
+  String get miningMetricsNetworkHealthTitle => 'Saúde da rede';
+
+  @override
+  String get miningMetricsNetworkHealthSubtitle =>
+      'Dificuldade, retarget e throughput recente.';
+
+  @override
+  String get miningMetricsThroughput => 'Throughput';
+
+  @override
+  String get miningMetricsOccupancy => 'Ocupação';
+
+  @override
+  String get miningMetricsFeesInReward => 'Taxas no reward';
+
+  @override
+  String get miningMetricsNextAdjustment => 'Próximo ajuste';
+
+  @override
+  String get miningMetricsLocalMonitorTitle => 'Monitor local';
+
+  @override
+  String get miningMetricsLocalMonitorActiveSubtitle =>
+      'Telemetria local estimada da operação ativa.';
+
+  @override
+  String get miningMetricsLocalMonitorInactiveSubtitle =>
+      'Nenhum minerador local ativo.';
+
+  @override
+  String get miningMetricsMiningStatus => 'Minerando';
+
+  @override
+  String get miningMetricsOfflineStatus => 'Offline';
+
+  @override
+  String get miningMetricsLocalHashrate => 'Hashrate local';
+
+  @override
+  String get miningMetricsAcceptedShares => 'Shares aceitos';
+
+  @override
+  String get miningMetricsRejectedShares => 'Shares rejeitados';
+
+  @override
+  String get miningMetricsTemperature => 'Temperatura';
+
+  @override
+  String get miningMetricsHashrateTrendTitle => 'Tendência de hashrate';
+
+  @override
+  String get miningMetricsHashrateTrendSubtitle =>
+      'Curva recente da potência computacional da rede.';
+
+  @override
+  String get miningMetricsTrendEmpty =>
+      'Sem série temporal suficiente para traçar a curva.';
+
+  @override
+  String get miningMetricsRecentBlocksTitle => 'Blocos recentes';
+
+  @override
+  String get miningMetricsRecentBlocksSubtitle =>
+      'Cadência, volume e ocupação em leitura curta.';
+
+  @override
+  String get miningMetricsDominantPoolsTitle => 'Pools dominantes';
+
+  @override
+  String get miningMetricsDominantPoolsSubtitle =>
+      'Participação recente, média de match e blocos vazios.';
+
+  @override
+  String miningMetricsLeadingPool(String percent) {
+    return '$percent% líder';
+  }
+
+  @override
+  String get miningFeesTitle => 'Mercado de taxas';
+
+  @override
+  String get miningFeesSubtitle =>
+      'Faixas ativas, spread e janela de inclusão.';
+
+  @override
+  String get miningFeesWideSpread => 'spread amplo';
+
+  @override
+  String get miningFeesControlledSpread => 'spread controlado';
+
+  @override
+  String miningFeesWindow(String fee) {
+    return 'janela $fee+';
+  }
+
+  @override
+  String get miningFeesPriority => 'Prioritária';
+
+  @override
+  String get miningFeesExpress => 'Expressa';
+
+  @override
+  String get miningFeesStandard => 'Padrão';
+
+  @override
+  String get miningFeesEconomy => 'Econômica';
+
+  @override
+  String get miningFeesMinimum => 'Mínimo';
+
+  @override
+  String get miningFeesMedian => 'Mediana';
+
+  @override
+  String get miningFeesMaximum => 'Máximo';
+
+  @override
+  String get miningBlocksTitle => 'Blocos em formação';
+
+  @override
+  String get miningBlocksSubtitle =>
+      'Fila projetada ao lado das confirmações recentes.';
+
+  @override
+  String miningBlocksQueued(int count) {
+    return '$count na fila';
+  }
+
+  @override
+  String get miningBlocksQueue => 'Fila';
+
+  @override
+  String get miningBlocksConfirmed => 'Confirmado';
+
+  @override
+  String get miningBlocksNew => 'Novo';
+
+  @override
+  String get miningBlocksNoBlocks => 'sem blocos';
+
+  @override
+  String miningBlocksNext(int number) {
+    return 'Próximo $number';
+  }
+
+  @override
+  String get miningBlocksRange => 'Faixa';
+
+  @override
+  String get miningBlocksFees => 'Taxas';
+
+  @override
+  String miningBlocksNewHeight(int height) {
+    return 'Novo #$height';
+  }
+
+  @override
+  String get miningBlocksBitcoinNetwork => 'Rede Bitcoin';
+
+  @override
+  String miningBlocksTransactions(int count) {
+    return '$count transações';
+  }
+
+  @override
+  String get miningBlocksHash => 'Hash';
+
+  @override
+  String get miningBlocksWeight => 'Peso';
+
+  @override
+  String get miningBlocksTimestamp => 'Timestamp';
+
+  @override
+  String get miningBlocksSize => 'Tamanho';
+
+  @override
+  String get miningBlocksFee => 'Taxa';
+
+  @override
+  String get miningBlocksUnavailable => 'indisponível';
 }

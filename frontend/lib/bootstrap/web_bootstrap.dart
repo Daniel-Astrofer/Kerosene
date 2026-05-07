@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:teste/core/config/app_config.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
+import 'package:teste/core/performance/kerosene_performance_boundary.dart';
 import 'package:teste/core/providers/tor_providers.dart';
-import 'package:teste/core/services/balance_websocket_service.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/web_admin/theme/admin_theme.dart';
 import 'package:teste/features/web_admin/shell/admin_shell.dart';
 import 'package:teste/features/web_admin/navigation/admin_content_router.dart';
 import 'package:teste/features/web_admin/screens/login/admin_login_screen.dart';
+import 'package:teste/features/landing/presentation/kerosene_landing_page.dart';
 
 /// Resolves the API URL for the web admin.
 ///
@@ -21,13 +25,13 @@ String _resolveApiUrl() {
   // 1. Explicit API URL override (highest priority)
   const configuredApiUrl = String.fromEnvironment('WEB_API_URL');
   if (configuredApiUrl.trim().isNotEmpty) {
-    return configuredApiUrl.trim();
+    return _normalizeApiOrigin(configuredApiUrl, 'WEB_API_URL');
   }
 
   // 2. Onion gateway proxy URL (e.g. onion2web, tor2web, or local Nginx)
   const onionGateway = String.fromEnvironment('WEB_ONION_GATEWAY');
   if (onionGateway.trim().isNotEmpty) {
-    return onionGateway.trim();
+    return _normalizeApiOrigin(onionGateway, 'WEB_ONION_GATEWAY');
   }
 
   // 3. Detect if already running inside Tor Browser on a .onion domain
@@ -43,6 +47,26 @@ String _resolveApiUrl() {
   // 4. Same-origin fallback (web app served by the backend itself)
   return Uri.base.origin;
 }
+
+String _normalizeApiOrigin(String raw, String envName) {
+  final trimmed = raw.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null || !uri.hasScheme || uri.host.trim().isEmpty) {
+    throw ArgumentError(
+      '$envName must be an absolute URL, for example http://example.onion',
+    );
+  }
+
+  if (uri.scheme != 'http' && uri.scheme != 'https') {
+    throw ArgumentError('$envName must use http or https.');
+  }
+
+  return trimmed.endsWith('/')
+      ? trimmed.substring(0, trimmed.length - 1)
+      : trimmed;
+}
+
+bool _isOnionHost(String host) => host.toLowerCase().endsWith('.onion');
 
 Future<void> initializeApp(ProviderContainer container) async {
   usePathUrlStrategy();
@@ -66,7 +90,9 @@ void configureResolvedApiUrl(
 
   try {
     final host = Uri.parse(resolvedApiUrl).host;
-    if (host.endsWith('.onion')) {
+    final browserHost = Uri.base.host;
+    AppConfig.isTorEnabled = _isOnionHost(host) || _isOnionHost(browserHost);
+    if (_isOnionHost(host)) {
       debugPrint('🧅 Onion routing active → $host');
     }
   } catch (_) {}
@@ -82,68 +108,96 @@ class _AdminWebApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Kerosene — Enterprise Console',
+      title: 'Kerosene',
       debugShowCheckedModeBanner: false,
-      theme: AdminTheme.themeData,
+      theme: AdminTheme.themeData.copyWith(
+        pageTransitionsTheme: kerosenePageTransitionsTheme,
+      ),
       scrollBehavior: const _WebScrollBehavior(),
-      home: Consumer(
-        builder: (context, ref, child) {
-          final authState = ref.watch(authControllerProvider);
+      builder: (context, child) {
+        return KeroseneResponsiveBoundary(
+          child: KerosenePerformanceBoundary(child: child!),
+        );
+      },
+      initialRoute: _initialRoute(),
+      routes: {
+        '/': (_) => const KeroseneLandingPage(),
+        '/bitcoin-banking': (_) => const KeroseneLandingPage(),
+        '/admin': (_) => const _AdminAuthGate(),
+        '/download': (_) => const KeroseneLandingPage(focusDownload: true),
+        '/status': (_) => const KerosenePublicStatusPage(),
+      },
+      onUnknownRoute: (_) =>
+          MaterialPageRoute(builder: (_) => const KeroseneLandingPage()),
+    );
+  }
 
-          // Loading / initial
-          if (authState is AuthInitial || authState is AuthLoading) {
-            return const Scaffold(
-              backgroundColor: Color(0xFF0E0E10),
-              body: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF6A6A74),
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Establishing secure connection...',
-                      style: TextStyle(
-                        fontFamily: 'HubotSans',
-                        fontSize: 12,
-                        color: Color(0xFF6A6A74),
-                      ),
-                    ),
-                  ],
+  String _initialRoute() {
+    return resolveWebInitialRoute(Uri.base.path);
+  }
+}
+
+@visibleForTesting
+String resolveWebInitialRoute(String path) {
+  if (path == '/bitcoin-banking' || path.startsWith('/bitcoin-banking/')) {
+    return '/bitcoin-banking';
+  }
+  if (path == '/admin' || path.startsWith('/admin/')) return '/admin';
+  if (path == '/download') return '/download';
+  if (path == '/status') return '/status';
+  return '/';
+}
+
+class _AdminAuthGate extends ConsumerWidget {
+  const _AdminAuthGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+
+    if (authState is AuthInitial || authState is AuthLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0E0E10),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF6A6A74),
                 ),
               ),
-            );
-          }
+              SizedBox(height: 16),
+              Text(
+                'Establishing secure connection...',
+                style: TextStyle(
+                  fontFamily: 'HubotSans',
+                  fontSize: 12,
+                  color: Color(0xFF6A6A74),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-          // Authenticated → admin panel
-          if (authState is AuthAuthenticated) {
-            return const AdminShell(
-              child: AdminContentRouter(),
-            );
-          }
+    if (authState is AuthAuthenticated && authState.user.isAdmin) {
+      return const AdminShell(child: AdminContentRouter());
+    }
 
-          // TOTP required → the login screen handles this state internally
-          // (it watches authControllerProvider and shows TOTP UI)
-          if (authState is AuthRequiresLoginTotp) {
-            return const AdminLoginScreen();
-          }
+    if (authState is AuthRequiresLoginTotp) {
+      return const AdminLoginScreen();
+    }
 
-          // Server unavailable
-          if (authState is AuthServerUnavailable) {
-            return _ServerUnavailableView(message: authState.message, ref: ref);
-          }
+    if (authState is AuthServerUnavailable) {
+      return _ServerUnavailableView(message: authState.message, ref: ref);
+    }
 
-          // Default → login (covers AuthUnauthenticated, AuthError, etc.)
-          return const AdminLoginScreen();
-        },
-      ),
-    );
+    return const AdminLoginScreen();
   }
 }
 
@@ -151,10 +205,7 @@ class _ServerUnavailableView extends StatelessWidget {
   final String message;
   final WidgetRef ref;
 
-  const _ServerUnavailableView({
-    required this.message,
-    required this.ref,
-  });
+  const _ServerUnavailableView({required this.message, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -187,9 +238,9 @@ class _ServerUnavailableView extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Ensure the onion service is reachable or check your Tor gateway configuration.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF6A6A74),
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6A6A74)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),

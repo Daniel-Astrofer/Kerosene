@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
@@ -102,24 +101,6 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
       'es' => es,
       _ => en,
     };
-  }
-
-  void _copySecret() {
-    final secret = widget.totpSecret;
-    if (secret == null || secret.isEmpty) {
-      return;
-    }
-
-    Clipboard.setData(ClipboardData(text: secret));
-    AppNotice.showSuccess(
-      context,
-      title: _t(
-        pt: 'Segredo copiado',
-        en: 'Secret copied',
-        es: 'Secreto copiado',
-      ),
-      message: context.l10n.totpSecretCopied,
-    );
   }
 
   void _handleCodeChanged(String code) {
@@ -511,14 +492,6 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                             letterSpacing: 1.3,
                             height: 1.5,
                           ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  IconButton(
-                    onPressed: _copySecret,
-                    icon: Icon(
-                      LucideIcons.copy,
-                      color: accentColor,
                     ),
                   ),
                 ],

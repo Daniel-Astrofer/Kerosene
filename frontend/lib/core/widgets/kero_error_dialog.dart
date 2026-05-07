@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 /// Kerosene Error Types — matches Figma error variants
 enum KeroErrorType {
@@ -71,7 +72,7 @@ extension KeroErrorTypeExt on KeroErrorType {
       case KeroErrorType.walletNotFound:
         return 'A carteira especificada não foi encontrada. Verifique se ela ainda está ativa.';
       case KeroErrorType.internalServer:
-        return 'Ocorreu um erro inesperado em nossos servidores. Por favor, tente novamente mais tarde.';
+        return 'Não conseguimos concluir agora. Por favor, tente novamente mais tarde.';
       case KeroErrorType.ledgerPaymentReceived:
         return 'O pagamento foi processado com sucesso.';
     }
@@ -166,13 +167,13 @@ class KeroErrorDialog extends StatelessWidget {
         : AppNotificationTone.error;
     final actions = <AppNotificationAction>[
       AppNotificationAction(
-        label: 'Voltar',
+        label: context.l10n.goBack,
         icon: Icons.arrow_back_rounded,
         onPressed: () => Navigator.of(context).pop(),
       ),
       if (onSecondaryAction != null)
         AppNotificationAction(
-          label: secondaryLabel ?? 'Depositar',
+          label: secondaryLabel ?? context.l10n.deposit,
           icon: Icons.add_rounded,
           onPressed: () {
             Navigator.of(context).pop();

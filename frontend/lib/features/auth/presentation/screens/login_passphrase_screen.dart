@@ -109,8 +109,8 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
     });
 
     return AuthEntryScaffold(
-      eyebrow: 'PRIVATE ACCESS',
-      title: 'Senha da conta',
+      eyebrow: context.l10n.authPrivateAccessEyebrow.toUpperCase(),
+      title: context.l10n.authAccountPasswordTitle,
       subtitle: '@${widget.username.trim()}',
       onBack: () => Navigator.of(context).maybePop(),
       child: AuthEntryPanel(
@@ -119,8 +119,8 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
           children: [
             ModernAuthTextField(
               controller: _passwordController,
-              label: 'Senha',
-              hint: 'Digite sua senha forte',
+              label: context.l10n.password,
+              hint: context.l10n.authAccountPasswordHint,
               icon: LucideIcons.lock,
               isPassword: _obscurePassword,
               autofocus: true,
@@ -145,21 +145,23 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
             const SizedBox(height: AppSpacing.lg),
             AuthEntryNote(
               icon: isLoading ? LucideIcons.loader2 : LucideIcons.shieldCheck,
-              title: isLoading ? 'Enviando' : 'Credencial',
+              title: isLoading
+                  ? context.l10n.authCredentialSendingTitle
+                  : context.l10n.authCredentialTitle,
               body: isLoading
-                  ? 'Enviando credenciais com estado de tela reduzido para evitar trabalho visual desnecessário.'
-                  : 'Use a senha forte da conta para continuar. Seed, BIP39 e carteira interna ficam fora do login.',
+                  ? context.l10n.authCredentialSendingBody
+                  : context.l10n.authCredentialBody,
             ),
             const SizedBox(height: AppSpacing.xl),
             AuthEntryButton(
-              text: 'ENTRAR',
+              text: context.l10n.authSignInAction.toUpperCase(),
               isLoading: isLoading,
               icon: LucideIcons.arrowRight,
               onPressed: isLoading ? null : _submit,
             ),
             const SizedBox(height: AppSpacing.md),
             AuthEntryButton(
-              text: 'RECUPERAÇÃO DE EMERGÊNCIA',
+              text: context.l10n.authEmergencyRecoveryAction.toUpperCase(),
               outlined: true,
               onPressed: isLoading ? null : _openRecovery,
             ),

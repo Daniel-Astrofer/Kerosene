@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/usecases/login_usecase.dart';
 import '../domain/usecases/signup_usecase.dart';
 import '../domain/repositories/auth_repository.dart';
+import '../data/datasources/auth_remote_datasource.dart' show LoginResult;
 import '../../../core/services/audio_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/passkey_service.dart';
@@ -25,6 +26,7 @@ class AuthController extends Notifier<AuthState> {
   Timer? _onboardingPollTimer;
   bool _isPollingOnboarding = false;
   bool _isCompletingOnboarding = false;
+  static const int _maxTransparentChallengeRenewals = 2;
 
   AuthError _mapFailureToAuthError(Failure failure) {
     return AuthError(
@@ -52,6 +54,11 @@ class AuthController extends Notifier<AuthState> {
     }
 
     return AuthError('$fallbackMessage: $raw');
+  }
+
+  bool _isPasskeyChallengeExpired(Failure failure) {
+    final code = failure.errorCode ?? '';
+    return code == 'CHALLENGE_EXPIRED' || code == 'AUTH_012';
   }
 
   @override
@@ -366,6 +373,12 @@ class AuthController extends Notifier<AuthState> {
     stopBackgroundService();
   }
 
+  void markSessionInvalidated() {
+    _stopOnboardingPolling();
+    state = const AuthUnauthenticated();
+    unawaited(stopBackgroundService());
+  }
+
   void clearError() {
     if (state is AuthError) {
       state = const AuthUnauthenticated();
@@ -377,7 +390,11 @@ class AuthController extends Notifier<AuthState> {
     await _checkAuthStatus();
   }
 
-  Future<void> loginWithPasskey(String username) async {
+  Future<void> loginWithPasskey(
+    String username, {
+    int remainingChallengeRenewals = _maxTransparentChallengeRenewals,
+  }) async {
+    username = username.trim();
     if (username.isEmpty) {
       state = const AuthError(
           'Por favor, insira o usuário para entrar com Passkey');
@@ -406,19 +423,48 @@ class AuthController extends Notifier<AuthState> {
             credential: credential,
           );
 
-          finishResult.fold(
-            (failure) => state = _mapFailureToAuthError(failure),
-            (loginResult) {
-              if (loginResult.requiresTotp) {
-                state = AuthRequiresLoginTotp(
-                  username: username,
-                  passphrase: '',
-                  preAuthToken: loginResult.jwt,
-                );
-              } else {
-                _checkAuthStatus();
+          await finishResult.fold(
+            (failure) async {
+              final renewedChallenge = _extractPasskeyChallenge(failure);
+              if (renewedChallenge == null) {
+                if (_isPasskeyChallengeExpired(failure) &&
+                    remainingChallengeRenewals > 0) {
+                  await loginWithPasskey(
+                    username,
+                    remainingChallengeRenewals: remainingChallengeRenewals - 1,
+                  );
+                  return;
+                }
+                state = _mapFailureToAuthError(failure);
+                return;
               }
+
+              final renewedCredential = await passkeyService.authenticate(
+                challengeHex: renewedChallenge,
+                username: username,
+              );
+              final renewedFinish = await authRepository.passkeyLoginFinish(
+                username: username,
+                credential: renewedCredential,
+              );
+              await renewedFinish.fold(
+                (secondFailure) async {
+                  if (_isPasskeyChallengeExpired(secondFailure) &&
+                      remainingChallengeRenewals > 0) {
+                    await loginWithPasskey(
+                      username,
+                      remainingChallengeRenewals:
+                          remainingChallengeRenewals - 1,
+                    );
+                    return;
+                  }
+                  state = _mapFailureToAuthError(secondFailure);
+                },
+                (loginResult) async =>
+                    _completePasskeyLogin(username, loginResult),
+              );
             },
+            (loginResult) async => _completePasskeyLogin(username, loginResult),
           );
         } catch (e) {
           state = _mapPasskeyExceptionToAuthError(
@@ -428,6 +474,44 @@ class AuthController extends Notifier<AuthState> {
         }
       },
     );
+  }
+
+  void _completePasskeyLogin(String username, LoginResult loginResult) {
+    if (loginResult.requiresTotp) {
+      state = AuthRequiresLoginTotp(
+        username: username,
+        passphrase: '',
+        preAuthToken: loginResult.jwt,
+      );
+    } else {
+      _checkAuthStatus();
+    }
+  }
+
+  String? _extractPasskeyChallenge(Failure failure) {
+    final challenge = _extractChallengeFromValue(failure.data);
+    if (challenge != null) {
+      return challenge;
+    }
+
+    const marker = 'PASSKEY_CHALLENGE_REQUIRED:';
+    final markerIndex = failure.message.indexOf(marker);
+    if (markerIndex < 0) {
+      return null;
+    }
+    final value = failure.message.substring(markerIndex + marker.length).trim();
+    return RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(value) ? value : null;
+  }
+
+  String? _extractChallengeFromValue(Object? value) {
+    if (value is Map) {
+      final direct = value['challenge']?.toString().trim();
+      if (direct != null && RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(direct)) {
+        return direct;
+      }
+      return _extractChallengeFromValue(value['data']);
+    }
+    return null;
   }
 
   Future<void> registerPasskey() async {
@@ -470,9 +554,7 @@ class AuthController extends Notifier<AuthState> {
                 (_) => state = AuthAuthenticated(currentState.user),
                 (user) => state = AuthAuthenticated(user),
               );
-              debugPrint(
-                '🔐 Passkey registered successfully for ${currentState.user.name}',
-              );
+              debugPrint('Passkey registered successfully.');
             },
           );
         } catch (e) {
@@ -544,7 +626,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> _loadActivationDepositState({
     required String sessionId,
   }) async {
-    final result = await authRepository.createActivationDepositLink();
+    final result = await authRepository.getActivationStatus();
     result.fold(
       (failure) => state = _mapFailureToAuthError(failure),
       (status) {
@@ -589,25 +671,13 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    final cleanTxid = txid.trim();
-    if (cleanTxid.isEmpty) {
-      state = currentState.copyWith(
-        errorMessage: 'Cole o TXID da transação on-chain para continuar.',
-      );
-      return;
-    }
-
     state = currentState.copyWith(
       isSubmitting: true,
-      submittedTxid: cleanTxid,
-      statusMessage: 'Validando o depósito de ativação na rede Bitcoin...',
+      statusMessage: 'Atualizando o status do depósito de ativação...',
       clearError: true,
     );
 
-    final result = await authRepository.confirmActivationPayment(
-      linkId: linkId,
-      txid: cleanTxid,
-    );
+    final result = await authRepository.getActivationStatus();
 
     result.fold(
       (failure) {
@@ -631,12 +701,14 @@ class AuthController extends Notifier<AuthState> {
           paymentStatus: status.paymentStatus.isNotEmpty
               ? status.paymentStatus
               : latestState.paymentStatus,
-          submittedTxid: cleanTxid,
           statusMessage: status.warningMessage.isNotEmpty
               ? status.warningMessage
               : _statusMessageForPaymentStatus(status.paymentStatus),
           isSubmitting: false,
-          clearError: true,
+          errorMessage: status.activated
+              ? null
+              : 'A confirmação manual por TXID foi descontinuada. Faça o depósito pelo fluxo de recebimento do app e aguarde o monitoramento automático.',
+          clearError: status.activated,
         );
 
         if (status.activated) {
@@ -697,20 +769,6 @@ class AuthController extends Notifier<AuthState> {
           );
         }
       },
-    );
-  }
-
-  Future<void> mockConfirmOnboarding({
-    required String sessionId,
-    required String username,
-    required String password,
-  }) async {
-    state = const AuthLoading();
-    final result = await authRepository.mockConfirmOnboarding(sessionId);
-
-    result.fold(
-      (failure) => state = _mapFailureToAuthError(failure),
-      (_) => login(username: username, password: password),
     );
   }
 }

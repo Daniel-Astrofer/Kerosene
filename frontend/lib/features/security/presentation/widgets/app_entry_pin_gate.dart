@@ -95,7 +95,7 @@ class _PinGateErrorState extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    'PIN indisponível',
+                    context.l10n.appEntryPinUnavailableTitle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: monoTextColor,
                           fontWeight: FontWeight.w700,
@@ -103,7 +103,7 @@ class _PinGateErrorState extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Nao foi possivel validar a protecao de entrada. Atualize o estado e tente novamente.',
+                    context.l10n.appEntryPinUnavailableMessage,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: monoMutedTextColor,
                           height: 1.45,
@@ -113,7 +113,7 @@ class _PinGateErrorState extends StatelessWidget {
                   FilledButton(
                     onPressed: onRetry,
                     style: monochromeFilledButtonStyle(),
-                    child: const Text('ATUALIZAR'),
+                    child: Text(context.l10n.appEntryRefresh),
                   ),
                 ],
               ),
@@ -192,8 +192,10 @@ class _AppEntryPinLockScreenState
     if (_pin.length < _status.minPinLength ||
         _pin.length > _status.maxPinLength) {
       setState(() {
-        _errorMessage =
-            'Use entre ${_status.minPinLength} e ${_status.maxPinLength} digitos.';
+        _errorMessage = context.l10n.appEntryPinLengthError(
+          _status.minPinLength,
+          _status.maxPinLength,
+        );
       });
       return;
     }
@@ -247,13 +249,15 @@ class _AppEntryPinLockScreenState
   Widget build(BuildContext context) {
     final remaining = _status.remainingLockDuration;
     final subtitle = _status.locked
-        ? 'Nova tentativa em ${_formatDuration(remaining)}.'
-        : 'Digite o PIN deste dispositivo para abrir a carteira.';
+        ? context.l10n.appEntryRetryIn(_formatDuration(remaining))
+        : context.l10n.appEntryUnlockPrompt;
     final helper = _status.locked
-        ? 'Entrada bloqueada temporariamente.'
+        ? context.l10n.appEntryLockedHelper
         : _status.resettableWithTotp
-            ? '${_status.remainingAttempts} tentativa(s) restantes antes do bloqueio.'
-            : 'Apenas este dispositivo usa este PIN.';
+            ? context.l10n.appEntryAttemptsHelper(
+                _status.remainingAttempts,
+              )
+            : context.l10n.appEntryLocalPinHelper;
 
     return CyberBackground.authenticated(
       useScroll: false,
@@ -296,7 +300,7 @@ class _AppEntryPinLockScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'PIN DE ENTRADA',
+                              context.l10n.appEntryEyebrow.toUpperCase(),
                               style: AppTypography.caption.copyWith(
                                 color: monoMutedTextColor,
                                 letterSpacing: 1.8,
@@ -401,7 +405,7 @@ class _AppEntryPinLockScreenState
                               color: Colors.black,
                             ),
                           )
-                        : const Text('CONFIRMAR'),
+                        : Text(context.l10n.appEntryConfirm),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
@@ -411,7 +415,7 @@ class _AppEntryPinLockScreenState
                         TextButton(
                           onPressed: _busy ? null : _resetWithTotp,
                           style: monochromeTextButtonStyle(),
-                          child: const Text('REDEFINIR'),
+                          child: Text(context.l10n.appEntryReset),
                         ),
                       if (_status.resettableWithTotp)
                         Padding(
@@ -426,7 +430,7 @@ class _AppEntryPinLockScreenState
                       TextButton(
                         onPressed: _busy ? null : _logout,
                         style: monochromeTextButtonStyle(),
-                        child: const Text('SAIR'),
+                        child: Text(context.l10n.appEntryExit),
                       ),
                     ],
                   ),
@@ -518,7 +522,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
               color: monoBorderStrongColor,
             ),
             Text(
-              'REDEFINIR PIN',
+              context.l10n.appEntryResetTitle.toUpperCase(),
               style: AppTypography.caption.copyWith(
                 color: monoMutedTextColor,
                 letterSpacing: 1.8,
@@ -527,7 +531,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Use o TOTP da conta para definir um novo PIN neste dispositivo.',
+              context.l10n.appEntryResetMessage,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: monoMutedTextColor,
                     height: 1.45,
@@ -541,7 +545,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
               maxLength: 6,
               style: const TextStyle(color: monoTextColor),
               decoration: monochromeInputDecoration(
-                label: 'Codigo TOTP',
+                label: context.l10n.appEntryTotpLabel,
                 counterText: '',
               ),
             ),
@@ -553,7 +557,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
               maxLength: 8,
               style: const TextStyle(color: monoTextColor),
               decoration: monochromeInputDecoration(
-                label: 'Novo PIN numerico',
+                label: context.l10n.appEntryNewPinLabel,
                 counterText: '',
               ),
             ),
@@ -582,7 +586,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
                         color: Colors.black,
                       ),
                     )
-                  : const Text('ATUALIZAR'),
+                  : Text(context.l10n.appEntrySavePin),
             ),
           ],
         ),

@@ -8,7 +8,10 @@ Ela deve permanecer enxuta: mantenha aqui somente documentos canonicos, versiona
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura por componente, fluxo de dados, seguranca e limites atuais. |
 | [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Docker Compose, Tor hidden services, PostgreSQL, Redis, Vault, redes, volumes e scripts operacionais. |
+| [PRODUCTION_OPERATIONS.md](PRODUCTION_OPERATIONS.md) | Landing web, painel empresarial, Bitcoin Core pruned, LND, Vault Raft, release snapshots e attestation. |
+| [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | Gates de prontidao para producao, validacoes obrigatorias e pendencias operacionais antes do lancamento. |
 | [API_REFERENCE.md](API_REFERENCE.md) | API REST, WebSocket/STOMP e API interna do Vault derivadas dos controllers reais. |
+| [FRONTEND_API_USAGE.md](FRONTEND_API_USAGE.md) | Guia de consumo da API pela UI, com endpoints por tela, parametros e rotas a evitar. |
 | [FEATURES_AND_STATES.md](FEATURES_AND_STATES.md) | Mapa funcional do app, estados expostos ao frontend, implementacao atual e gaps para proximas iteracoes. |
 | [APK.md](APK.md) | Metadados, checksums e processo profissional de publicacao do APK. |
 
@@ -18,8 +21,13 @@ Esta documentacao foi montada a partir destes arquivos reais:
 
 - `backend/kerosene/src/main/java/**`
 - `backend/kerosene/src/main/resources/application*.properties`
+- `frontend/lib/features/landing/**`
+- `frontend/lib/features/web_admin/**`
 - `backend/kerosene/docker-compose.yml`
 - `backend/kerosene-infrastructure/docker-compose.local.yml`
+- `backend/kerosene-infrastructure/bitcoin/**`
+- `backend/kerosene-infrastructure/vault/raft/**`
+- `scripts/release-snapshot.sh`
 - `backend/kerosene-infrastructure/scripts/init-local.sh`
 - `backend/vault/src/main/java/**`
 - `backend/mpc-sidecar/**`

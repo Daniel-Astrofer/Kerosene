@@ -64,6 +64,8 @@ dependencies:
   storybook_flutter: ^0.14.1
   webview_flutter: ^4.13.1
 
+  flutter_web_plugins:
+    sdk: flutter
 dev_dependencies:
   flutter_test:
     sdk: flutter

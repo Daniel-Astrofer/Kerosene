@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,8 @@ import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
@@ -19,9 +23,11 @@ import 'package:teste/features/transactions/presentation/widgets/transaction_vis
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/balance_websocket_provider.dart';
-import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
+import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart'
+    hide transactionRepositoryProvider;
 import 'package:teste/features/wallet/presentation/screens/receive_payment_link_screen.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 const Color _background = authenticatedSurfaceBackgroundColor;
 const Color _surface = Color(0xFF0D0F11);
@@ -37,10 +43,7 @@ const Color _iconMuted = Color(0xFF9099A3);
 class DepositsScreen extends ConsumerStatefulWidget {
   final bool showPrimaryNavigation;
 
-  const DepositsScreen({
-    super.key,
-    this.showPrimaryNavigation = false,
-  });
+  const DepositsScreen({super.key, this.showPrimaryNavigation = false});
 
   @override
   ConsumerState<DepositsScreen> createState() => _DepositsScreenState();
@@ -119,7 +122,9 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     );
     final depositFeeLabel = link.depositFeeBtc > 0
         ? MoneyDisplay.format(
-            amount: link.depositFeeBtc, currency: Currency.btc)
+            amount: link.depositFeeBtc,
+            currency: Currency.btc,
+          )
         : null;
     final netAmountLabel = link.netAmountBtc > 0
         ? MoneyDisplay.format(amount: link.netAmountBtc, currency: Currency.btc)
@@ -183,10 +188,11 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
+    final responsive = context.responsive;
+    final screenWidth = responsive.size.width;
     final isWide = screenWidth >= 1120;
     final isCompact = screenWidth < 760;
-    final pageHorizontalPadding = isCompact ? 16.0 : 24.0;
+    final pageHorizontalPadding = responsive.horizontalPadding;
     final pageTopPadding = isCompact ? 14.0 : 20.0;
     final pageBottomPadding = widget.showPrimaryNavigation
         ? AppPrimaryNavigationBar.scaffoldBottomClearance(context)
@@ -233,10 +239,11 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     final isRealtimeActive = wsAsync.asData?.value?.isConnected ?? false;
     final linksAsync = ref.watch(paymentLinksProvider);
     final links = linksAsync.asData?.value ?? const <PaymentLink>[];
-    final sortedLinks = [...links]..sort((a, b) {
-        final rankCompare = _paymentLinkPriority(a).compareTo(
-          _paymentLinkPriority(b),
-        );
+    final sortedLinks = [...links]
+      ..sort((a, b) {
+        final rankCompare = _paymentLinkPriority(
+          a,
+        ).compareTo(_paymentLinkPriority(b));
         if (rankCompare != 0) {
           return rankCompare;
         }
@@ -251,7 +258,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
       pagedTransactionHistoryProvider((page: _page, size: _size)),
     );
     final historyRows = [
-      ...(historyAsync.asData?.value ?? const <Transaction>[])
+      ...(historyAsync.asData?.value ?? const <Transaction>[]),
     ]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     final pendingTransactions = historyRows
         .where(
@@ -293,7 +300,10 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                             child: Center(
                               child: ConstrainedBox(
                                 constraints: BoxConstraints(
-                                  maxWidth: isWide ? 1040 : 720,
+                                  maxWidth: math.min(
+                                    isWide ? 1040 : 720,
+                                    responsive.maxReadableWidth,
+                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment:
@@ -305,7 +315,8 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                       showNotificationButton: !isWide,
                                       onBack: () => widget.showPrimaryNavigation
                                           ? AppPrimaryNavigationBar.backOrHome(
-                                              context)
+                                              context,
+                                            )
                                           : Navigator.maybePop(context),
                                       onRefresh: _refreshData,
                                       onNotifications: () async {
@@ -343,9 +354,9 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                       onCopyAddress: depositAddress == null
                                           ? null
                                           : () => _copyValue(
-                                                depositAddress,
-                                                'Endereço copiado.',
-                                              ),
+                                              depositAddress,
+                                              'Endereço copiado.',
+                                            ),
                                       onOpenLinks: openLinks.isEmpty
                                           ? null
                                           : _scrollToLinks,
@@ -365,26 +376,33 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                           btcBrl: btcBrl,
                                           onCopyAddress: (address) =>
                                               _copyValue(
-                                            address,
-                                            'Endereço copiado.',
-                                          ),
+                                                address,
+                                                context
+                                                    .l10n
+                                                    .depositLedgerAddressCopied,
+                                              ),
                                           onOpenLink: (link) =>
                                               _openPaymentLink(
-                                            link,
-                                            wallet: activeWallet,
-                                            selectedCurrency: selectedCurrency,
-                                            btcUsd: btcUsd,
-                                            btcEur: btcEur,
-                                            btcBrl: btcBrl,
-                                          ),
+                                                link,
+                                                wallet: activeWallet,
+                                                selectedCurrency:
+                                                    selectedCurrency,
+                                                btcUsd: btcUsd,
+                                                btcEur: btcEur,
+                                                btcBrl: btcBrl,
+                                              ),
                                         ),
                                       ),
                                     ],
                                     SizedBox(height: isCompact ? 20 : 24),
                                     _SectionTitle(
                                       icon: LucideIcons.receipt,
-                                      title: 'Movimentações',
-                                      trailing: 'Página ${_page + 1}',
+                                      title: context
+                                          .l10n
+                                          .depositLedgerMovementsTitle,
+                                      trailing: context.l10n.depositLedgerPage(
+                                        _page + 1,
+                                      ),
                                     ),
                                     const SizedBox(height: 10),
                                     _HistorySection(
@@ -397,20 +415,20 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                       page: _page,
                                       size: _size,
                                       isLoading: historyAsync.isLoading,
-                                      canGoNext: !historyAsync.isLoading &&
+                                      canGoNext:
+                                          !historyAsync.isLoading &&
                                           historyRows.length >= _size,
                                       onPrevious: _page == 0
                                           ? null
                                           : () async {
-                                              await HapticFeedback
-                                                  .selectionClick();
+                                              await HapticFeedback.selectionClick();
                                               setState(() => _page -= 1);
                                             },
-                                      onNext: !historyAsync.isLoading &&
+                                      onNext:
+                                          !historyAsync.isLoading &&
                                               historyRows.length >= _size
                                           ? () async {
-                                              await HapticFeedback
-                                                  .selectionClick();
+                                              await HapticFeedback.selectionClick();
                                               setState(() => _page += 1);
                                             }
                                           : null,
@@ -532,7 +550,7 @@ class _StatementHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _IconButtonShell(
-          tooltip: 'Voltar',
+          tooltip: context.l10n.depositLedgerBackTooltip,
           icon: LucideIcons.arrowLeft,
           onPressed: onBack,
         ),
@@ -541,11 +559,11 @@ class _StatementHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Extrato', style: titleStyle),
+              Text(context.l10n.depositLedgerStatementTitle, style: titleStyle),
               const SizedBox(height: 5),
               Text(
                 walletName == null || walletName!.trim().isEmpty
-                    ? 'Ledger da conta'
+                    ? context.l10n.depositLedgerAccountSubtitle
                     : walletName!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -560,7 +578,7 @@ class _StatementHeader extends StatelessWidget {
           ),
         ),
         _IconButtonShell(
-          tooltip: 'Atualizar',
+          tooltip: context.l10n.depositLedgerRefreshTooltip,
           icon: LucideIcons.refreshCw,
           onPressed: onRefresh,
         ),
@@ -606,7 +624,7 @@ class _StatementOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isCompact = MediaQuery.sizeOf(context).width < 760;
+    final isCompact = context.responsive.size.width < 760;
 
     return Container(
       decoration: BoxDecoration(
@@ -632,7 +650,7 @@ class _StatementOverview extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Saldo',
+                        context.l10n.depositLedgerBalance,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: _textMuted,
                           fontWeight: FontWeight.w700,
@@ -650,9 +668,7 @@ class _StatementOverview extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0,
                             height: 1.0,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ),
@@ -672,7 +688,9 @@ class _StatementOverview extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 _IconButtonShell(
-                  tooltip: balanceVisible ? 'Ocultar saldo' : 'Mostrar saldo',
+                  tooltip: balanceVisible
+                      ? context.l10n.depositLedgerHideBalance
+                      : context.l10n.depositLedgerShowBalance,
                   icon: balanceVisible ? LucideIcons.eyeOff : LucideIcons.eye,
                   onPressed: onToggleBalance,
                 ),
@@ -688,24 +706,27 @@ class _StatementOverview extends StatelessWidget {
               children: [
                 _OverviewMetric(
                   icon: LucideIcons.receipt,
-                  label: 'Itens',
+                  label: context.l10n.depositLedgerItems,
                   value: '$transactionCount',
                 ),
                 _OverviewMetric(
                   icon: LucideIcons.clock3,
-                  label: 'Pendentes',
+                  label: context.l10n.depositLedgerPending,
                   value: '$pendingCount',
                 ),
                 _OverviewMetric(
                   icon: LucideIcons.link2,
-                  label: 'Cobranças',
+                  label: context.l10n.depositLedgerOpenCharges,
                   value: '$openLinkCount',
                 ),
                 _OverviewMetric(
-                  icon:
-                      realtimeActive ? LucideIcons.radio : LucideIcons.cloudOff,
-                  label: 'Rede',
-                  value: realtimeActive ? 'Ativa' : 'Manual',
+                  icon: realtimeActive
+                      ? LucideIcons.radio
+                      : LucideIcons.cloudOff,
+                  label: context.l10n.depositLedgerNetwork,
+                  value: realtimeActive
+                      ? context.l10n.depositLedgerActive
+                      : context.l10n.depositLedgerManual,
                 ),
               ],
             ),
@@ -719,17 +740,17 @@ class _StatementOverview extends StatelessWidget {
               children: [
                 _MonoActionButton(
                   icon: LucideIcons.copy,
-                  label: 'Copiar endereço',
+                  label: context.l10n.depositLedgerCopyAddress,
                   onPressed: onCopyAddress,
                 ),
                 _MonoActionButton(
                   icon: LucideIcons.link,
-                  label: 'Cobranças',
+                  label: context.l10n.depositLedgerOpenCharges,
                   onPressed: onOpenLinks,
                 ),
                 _MonoActionButton(
                   icon: LucideIcons.refreshCw,
-                  label: 'Atualizar',
+                  label: context.l10n.depositLedgerUpdateAction,
                   onPressed: onRefresh,
                 ),
               ],
@@ -816,8 +837,11 @@ class _OpenLinksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return linksAsync.when(
-      loading: () => const _LoadingPanel(message: 'Carregando cobranças'),
-      error: (error, _) => _ErrorPanel(message: error.toString()),
+      loading: () =>
+          _LoadingPanel(message: context.l10n.depositLedgerLoadingCharges),
+      error: (error, _) => _ErrorPanel(
+        message: ErrorTranslator.translate(context.l10n, error.toString()),
+      ),
       data: (_) {
         if (links.isEmpty) {
           return const SizedBox.shrink();
@@ -828,7 +852,7 @@ class _OpenLinksSection extends StatelessWidget {
           children: [
             _SectionTitle(
               icon: LucideIcons.link2,
-              title: 'Cobranças abertas',
+              title: context.l10n.depositLedgerOpenChargesTitle,
               trailing: '${links.length}',
             ),
             const SizedBox(height: 10),
@@ -840,9 +864,11 @@ class _OpenLinksSection extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  for (var index = 0;
-                      index < links.take(3).length;
-                      index++) ...[
+                  for (
+                    var index = 0;
+                    index < links.take(3).length;
+                    index++
+                  ) ...[
                     if (index > 0) const Divider(height: 1, color: _borderSoft),
                     _PaymentLinkRow(
                       link: links[index],
@@ -890,13 +916,16 @@ class _PaymentLinkRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title =
-        link.isOnboardingVoucher ? 'Voucher onboarding' : 'Link de pagamento';
+    final title = link.isOnboardingVoucher
+        ? context.l10n.depositLedgerVoucherTitle
+        : context.l10n.depositLedgerPaymentLinkTitle;
     final moment = link.expiresAt != null
-        ? 'Expira ${_relativeTime(link.expiresAt!)}'
+        ? context.l10n.depositLedgerExpiresIn(
+            _relativeTime(context, link.expiresAt!),
+          )
         : link.createdAt != null
-            ? _relativeTime(link.createdAt!)
-            : 'Agora';
+        ? _relativeTime(context, link.createdAt!)
+        : context.l10n.depositLedgerNow;
 
     return InkWell(
       onTap: onOpenLink,
@@ -922,7 +951,7 @@ class _PaymentLinkRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${_linkStatusLabel(link)} · $moment',
+                    '${_linkStatusLabel(context, link)} · $moment',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
@@ -971,7 +1000,7 @@ class _PaymentLinkRow extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'copiar',
+                            context.l10n.depositLedgerCopyAction,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: _textMuted,
                               fontWeight: FontWeight.w700,
@@ -992,7 +1021,7 @@ class _PaymentLinkRow extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'gerenciar',
+                          context.l10n.depositLedgerManageAction,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: _textMuted,
                             fontWeight: FontWeight.w700,
@@ -1026,14 +1055,16 @@ class _HistorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return historyAsync.when(
-      loading: () => const _LoadingPanel(message: 'Atualizando ledger'),
-      error: (error, _) => _ErrorPanel(message: error.toString()),
+      loading: () => _LoadingPanel(message: context.l10n.depositLedgerUpdating),
+      error: (error, _) => _ErrorPanel(
+        message: ErrorTranslator.translate(context.l10n, error.toString()),
+      ),
       data: (_) {
         if (rows.isEmpty) {
-          return const _EmptyPanel(
+          return _EmptyPanel(
             icon: LucideIcons.receipt,
-            title: 'Sem movimentações',
-            message: 'Nada nesta página.',
+            title: context.l10n.depositLedgerEmptyTitle,
+            message: context.l10n.depositLedgerEmptyMessage,
           );
         }
 
@@ -1100,10 +1131,7 @@ class _HistoryListRow extends ConsumerWidget {
   final Transaction transaction;
   final VoidCallback onTap;
 
-  const _HistoryListRow({
-    required this.transaction,
-    required this.onTap,
-  });
+  const _HistoryListRow({required this.transaction, required this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1120,7 +1148,8 @@ class _HistoryListRow extends ConsumerWidget {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
-    final counterparty = _counterpartyLabel(transaction);
+    final counterparty = _counterpartyLabel(context, transaction);
+    final responsive = context.responsive;
 
     return InkWell(
       onTap: onTap,
@@ -1144,7 +1173,7 @@ class _HistoryListRow extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          visual.label,
+                          visual.localizedLabel(context),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -1174,7 +1203,9 @@ class _HistoryListRow extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 150),
+              constraints: BoxConstraints(
+                maxWidth: responsive.isTinyPhone ? 112 : 150,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -1192,14 +1223,19 @@ class _HistoryListRow extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _DepositsScreenState._timeFormat
-                        .format(transaction.timestamp),
+                    _DepositsScreenState._timeFormat.format(
+                      transaction.timestamp,
+                    ),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: _textMuted,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0,
                     ),
                   ),
+                  if (transaction.canCancelPendingReceive) ...[
+                    const SizedBox(height: 4),
+                    _CancelReceiveInlineButton(transaction: transaction),
+                  ],
                 ],
               ),
             ),
@@ -1234,10 +1270,7 @@ class _HistoryTableRow extends ConsumerWidget {
   final Transaction transaction;
   final VoidCallback onTap;
 
-  const _HistoryTableRow({
-    required this.transaction,
-    required this.onTap,
-  });
+  const _HistoryTableRow({required this.transaction, required this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1275,7 +1308,7 @@ class _HistoryTableRow extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      visual.label,
+                      visual.localizedLabel(context),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -1305,7 +1338,7 @@ class _HistoryTableRow extends ConsumerWidget {
             SizedBox(
               width: 280,
               child: Text(
-                _counterpartyLabel(transaction),
+                _counterpartyLabel(context, transaction),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -1317,19 +1350,98 @@ class _HistoryTableRow extends ConsumerWidget {
             ),
             SizedBox(
               width: 140,
-              child: Text(
-                _DepositsScreenState._dateFormat.format(transaction.timestamp),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: _textMuted,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _DepositsScreenState._dateFormat.format(
+                      transaction.timestamp,
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _textMuted,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  if (transaction.canCancelPendingReceive)
+                    _CancelReceiveInlineButton(transaction: transaction),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _CancelReceiveInlineButton extends ConsumerWidget {
+  final Transaction transaction;
+
+  const _CancelReceiveInlineButton({required this.transaction});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TextButton(
+      onPressed: () => _cancel(context, ref),
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(0, 28),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: _textSecondary,
+      ),
+      child: Text(context.l10n.depositLedgerCancelReceive),
+    );
+  }
+
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final transferId = transaction.externalTransferId?.trim() ?? '';
+    if (transferId.isEmpty || !transaction.canCancelPendingReceive) {
+      return;
+    }
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(context.l10n.depositLedgerCancelReceive),
+            content: Text(context.l10n.depositLedgerCancelReceiveMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(context.l10n.depositLedgerBackAction),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(context.l10n.depositLedgerCancelReceive),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await ref
+          .read(transactionRepositoryProvider)
+          .cancelInboundTransfer(transferId);
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(pagedTransactionHistoryProvider);
+      ref.invalidate(externalTransfersProvider);
+      if (context.mounted) {
+        AppNotice.showSuccess(
+          context,
+          message: context.l10n.depositLedgerReceiveCanceled,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        AppNotice.showError(
+          context,
+          message: ErrorTranslator.translate(context.l10n, error.toString()),
+        );
+      }
+    }
   }
 }
 
@@ -1367,7 +1479,7 @@ class _PaginationControls extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'Pág. ${page + 1}',
+            context.l10n.depositLedgerPageShort(page + 1),
             style: theme.textTheme.labelSmall?.copyWith(
               color: _textMuted,
               fontWeight: FontWeight.w800,
@@ -1386,10 +1498,14 @@ class _PaginationControls extends StatelessWidget {
                 letterSpacing: 0,
               ),
               iconEnabledColor: _textMuted,
-              items: const [10, 25, 50].map((value) {
+              items: [10, 25, 50].map((value) {
                 return DropdownMenuItem<int>(
                   value: value,
-                  child: Text(isCompact ? '$value' : '$value por página'),
+                  child: Text(
+                    isCompact
+                        ? '$value'
+                        : context.l10n.depositLedgerRowsPerPage(value),
+                  ),
                 );
               }).toList(),
               onChanged: isLoading
@@ -1403,13 +1519,13 @@ class _PaginationControls extends StatelessWidget {
           ),
           const Spacer(),
           _IconButtonShell(
-            tooltip: 'Anterior',
+            tooltip: context.l10n.depositLedgerPreviousTooltip,
             icon: LucideIcons.chevronLeft,
             onPressed: onPrevious,
           ),
           const SizedBox(width: 8),
           _IconButtonShell(
-            tooltip: 'Próxima',
+            tooltip: context.l10n.depositLedgerNextTooltip,
             icon: LucideIcons.chevronRight,
             onPressed: canGoNext ? onNext : null,
           ),
@@ -1424,11 +1540,7 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final String? trailing;
 
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-    this.trailing,
-  });
+  const _SectionTitle({required this.icon, required this.title, this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -1502,8 +1614,9 @@ class _MonoActionButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 15,
-                color:
-                    disabled ? _textMuted.withValues(alpha: 0.42) : _iconMuted,
+                color: disabled
+                    ? _textMuted.withValues(alpha: 0.42)
+                    : _iconMuted,
               ),
               const SizedBox(width: 8),
               Text(
@@ -1579,10 +1692,7 @@ class _NotificationButton extends StatelessWidget {
   final int count;
   final VoidCallback onPressed;
 
-  const _NotificationButton({
-    required this.count,
-    required this.onPressed,
-  });
+  const _NotificationButton({required this.count, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -1590,7 +1700,7 @@ class _NotificationButton extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         _IconButtonShell(
-          tooltip: 'Alertas',
+          tooltip: context.l10n.depositLedgerAlerts,
           icon: LucideIcons.bell,
           onPressed: onPressed,
         ),
@@ -1610,12 +1720,12 @@ class _NotificationButton extends StatelessWidget {
               child: Text(
                 count > 9 ? '9+' : '$count',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: _background,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                      height: 1,
-                    ),
+                  color: _background,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                  height: 1,
+                ),
               ),
             ),
           ),
@@ -1627,9 +1737,7 @@ class _NotificationButton extends StatelessWidget {
 class _MonoIconBox extends StatelessWidget {
   final IconData icon;
 
-  const _MonoIconBox({
-    required this.icon,
-  });
+  const _MonoIconBox({required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -1663,7 +1771,7 @@ class _StatusText extends StatelessWidget {
         Icon(_statusIcon(status), size: 12, color: _textMuted),
         const SizedBox(width: 5),
         Text(
-          _statusLabel(status),
+          _statusLabel(context, status),
           style: theme.textTheme.labelSmall?.copyWith(
             color: _textMuted,
             fontWeight: FontWeight.w800,
@@ -1679,10 +1787,7 @@ class _TableHeadCell extends StatelessWidget {
   final double width;
   final String text;
 
-  const _TableHeadCell({
-    required this.width,
-    required this.text,
-  });
+  const _TableHeadCell({required this.width, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -1691,10 +1796,10 @@ class _TableHeadCell extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: _textMuted,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
+          color: _textMuted,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
       ),
     );
   }
@@ -1729,10 +1834,10 @@ class _LoadingPanel extends StatelessWidget {
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _textSecondary,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
+                color: _textSecondary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
             ),
           ),
         ],
@@ -1765,21 +1870,21 @@ class _ErrorPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Falha ao atualizar',
+                  context.l10n.depositLedgerErrorTitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _textPrimary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
+                    color: _textPrimary,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   message,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: _textMuted,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0,
-                      ),
+                    color: _textMuted,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
                 ),
               ],
             ),
@@ -1821,19 +1926,19 @@ class _EmptyPanel extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: _textPrimary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0,
-                      ),
+                    color: _textPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   message,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: _textMuted,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0,
-                      ),
+                    color: _textMuted,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
                 ),
               ],
             ),
@@ -1875,7 +1980,7 @@ class _MobileActionDock extends StatelessWidget {
                 Expanded(
                   child: _MonoActionButton(
                     icon: LucideIcons.refreshCw,
-                    label: 'Atualizar',
+                    label: context.l10n.depositLedgerUpdateAction,
                     onPressed: onRefresh,
                   ),
                 ),
@@ -1888,7 +1993,7 @@ class _MobileActionDock extends StatelessWidget {
                         width: double.infinity,
                         child: _MonoActionButton(
                           icon: LucideIcons.bell,
-                          label: 'Alertas',
+                          label: context.l10n.depositLedgerAlerts,
                           onPressed: onNotifications,
                         ),
                       ),
@@ -1909,9 +2014,7 @@ class _MobileActionDock extends StatelessWidget {
                               notificationCount > 9
                                   ? '9+'
                                   : '$notificationCount',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
+                              style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     color: _background,
                                     fontSize: 9,
@@ -1956,8 +2059,9 @@ String _transactionAmountLabel({
     );
   }
 
-  final signedAmount =
-      _isCredit(transaction) ? transaction.amountBTC : -transaction.amountBTC;
+  final signedAmount = _isCredit(transaction)
+      ? transaction.amountBTC
+      : -transaction.amountBTC;
 
   return MoneyDisplay.formatAmountFromBtc(
     btcAmount: signedAmount,
@@ -1969,24 +2073,24 @@ String _transactionAmountLabel({
   );
 }
 
-String _counterpartyLabel(Transaction tx) {
+String _counterpartyLabel(BuildContext context, Transaction tx) {
   final value = resolvePrimaryTransactionAddress(tx).trim();
   if (value.isEmpty) {
-    return 'Sem contraparte';
+    return context.l10n.depositLedgerNoCounterparty;
   }
   return _DepositsScreenState.shorten(value, head: 12, tail: 6);
 }
 
-String _statusLabel(TransactionStatus status) {
+String _statusLabel(BuildContext context, TransactionStatus status) {
   switch (status) {
     case TransactionStatus.confirmed:
-      return 'Concluído';
+      return context.l10n.depositLedgerStatusCompleted;
     case TransactionStatus.confirming:
-      return 'Confirmando';
+      return context.l10n.depositLedgerStatusConfirming;
     case TransactionStatus.pending:
-      return 'Pendente';
+      return context.l10n.depositLedgerStatusPending;
     case TransactionStatus.failed:
-      return 'Falhou';
+      return context.l10n.depositLedgerStatusFailed;
   }
 }
 
@@ -2003,47 +2107,47 @@ IconData _statusIcon(TransactionStatus status) {
   }
 }
 
-String _linkStatusLabel(PaymentLink link) {
+String _linkStatusLabel(BuildContext context, PaymentLink link) {
   if (link.isVerifyingOnboarding) {
-    return 'Verificando';
+    return context.l10n.depositLedgerStatusVerifying;
   }
   if (link.isPending) {
-    return 'Pendente';
+    return context.l10n.depositLedgerStatusPending;
   }
   if (link.isPaid || link.isCompleted) {
-    return 'Pago';
+    return context.l10n.depositLedgerStatusPaid;
   }
   if (link.isExpired) {
-    return 'Expirado';
+    return context.l10n.depositLedgerStatusExpired;
   }
   return link.status;
 }
 
-String _relativeTime(DateTime date) {
+String _relativeTime(BuildContext context, DateTime date) {
   final localDate = date.toLocal();
   final now = DateTime.now();
   final difference = now.difference(localDate);
   if (difference.isNegative) {
     final future = localDate.difference(now);
     if (future.inMinutes < 1) {
-      return 'em instantes';
+      return context.l10n.depositLedgerRelativeSoon;
     }
     if (future.inHours < 1) {
-      return 'em ${future.inMinutes} min';
+      return context.l10n.depositLedgerRelativeInMinutes(future.inMinutes);
     }
     if (future.inDays < 1) {
-      return 'em ${future.inHours} h';
+      return context.l10n.depositLedgerRelativeInHours(future.inHours);
     }
-    return 'em ${future.inDays} d';
+    return context.l10n.depositLedgerRelativeInDays(future.inDays);
   }
   if (difference.inMinutes < 1) {
-    return 'agora';
+    return context.l10n.depositLedgerRelativeNow;
   }
   if (difference.inHours < 1) {
-    return 'há ${difference.inMinutes} min';
+    return context.l10n.depositLedgerRelativeMinutesAgo(difference.inMinutes);
   }
   if (difference.inDays < 1) {
-    return 'há ${difference.inHours} h';
+    return context.l10n.depositLedgerRelativeHoursAgo(difference.inHours);
   }
   return _DepositsScreenState._dateTimeFormat.format(localDate);
 }

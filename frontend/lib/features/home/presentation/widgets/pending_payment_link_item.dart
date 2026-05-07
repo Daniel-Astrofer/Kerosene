@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import '../../../transactions/domain/entities/payment_link.dart';
 
 class PendingPaymentLinkItem extends StatelessWidget {
@@ -13,6 +14,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
     final timeLeft = paymentLink.expiresAt != null
         ? paymentLink.expiresAt!.difference(DateTime.now())
         : Duration.zero;
@@ -26,24 +28,26 @@ class PendingPaymentLinkItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(16),
-        width: 280, // Fixed width for horizontal scroll
+        padding: EdgeInsets.all(responsive.isTinyPhone ? 14 : 16),
+        width: responsive.clampWidth(responsive.isTinyPhone ? 244 : 280),
         decoration: BoxDecoration(
-          color:
-              Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
+          color: Theme.of(
+            context,
+          ).colorScheme.onPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isCompleted
-                ? const Color(0xFF00FF94).withOpacity(0.2)
-                : const Color(0xFFFFB800).withOpacity(0.1),
+                ? const Color(0xFF00FF94).withValues(alpha: 0.2)
+                : const Color(0xFFFFB800).withValues(alpha: 0.1),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isCompleted
-                      ? const Color(0xFF00FF94)
-                      : const Color(0xFFFFB800))
-                  .withValues(alpha: 0.02),
+              color:
+                  (isCompleted
+                          ? const Color(0xFF00FF94)
+                          : const Color(0xFFFFB800))
+                      .withValues(alpha: 0.02),
               blurRadius: 10,
               spreadRadius: 0,
             ),
@@ -60,8 +64,8 @@ class PendingPaymentLinkItem extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isCompleted
-                        ? const Color(0xFF00FF94).withOpacity(0.1)
-                        : const Color(0xFFFFB800).withOpacity(0.1),
+                        ? const Color(0xFF00FF94).withValues(alpha: 0.1)
+                        : const Color(0xFFFFB800).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -89,8 +93,8 @@ class PendingPaymentLinkItem extends StatelessWidget {
                           color: isCompleted
                               ? const Color(0xFF00FF94)
                               : (isExpired
-                                  ? Colors.redAccent
-                                  : const Color(0xFFFFB800)),
+                                    ? Colors.redAccent
+                                    : const Color(0xFFFFB800)),
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.2,
@@ -100,10 +104,9 @@ class PendingPaymentLinkItem extends StatelessWidget {
                         Text(
                           _formatDuration(timeLeft),
                           style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimary
-                                .withValues(alpha: 0.7),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary.withValues(alpha: 0.7),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -113,30 +116,39 @@ class PendingPaymentLinkItem extends StatelessWidget {
                 ),
 
                 // BTC Value
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'VALOR',
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.24),
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: responsive.isTinyPhone ? 88 : 112,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'VALOR',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary.withValues(alpha: 0.24),
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text(
-                      paymentLink.amountBtc.toStringAsFixed(8),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'monospace',
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          paymentLink.amountBtc.toStringAsFixed(8),
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontSize: responsive.isTinyPhone ? 12 : 14,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -148,10 +160,9 @@ class PendingPaymentLinkItem extends StatelessWidget {
                   ? paymentLink.description
                   : 'Aguardando pagamento via rede Bitcoin...',
               style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.5),
                 fontSize: 13,
                 height: 1.4,
               ),
@@ -167,11 +178,12 @@ class PendingPaymentLinkItem extends StatelessWidget {
               children: [
                 Text(
                   isCompleted ? 'Confirmado' : 'Link de Pagamento',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.2),
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -179,10 +191,9 @@ class PendingPaymentLinkItem extends StatelessWidget {
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.2),
                 ),
               ],
             ),

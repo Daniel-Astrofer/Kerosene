@@ -119,7 +119,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          t.description ?? visual.label,
+                          t.description ?? visual.localizedLabel(context),
                           style:
                               Theme.of(context).textTheme.bodyMedium!.copyWith(
                                     fontWeight: FontWeight.bold,

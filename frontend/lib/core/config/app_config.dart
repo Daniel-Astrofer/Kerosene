@@ -54,10 +54,15 @@ class AppConfig {
   static const String authPasskeyChallenge = '/auth/passkey/challenge';
   static const String authPasskeyRegister = '/auth/passkey/register';
   static const String authPasskeyVerify = '/auth/passkey/verify';
+  static const String authPasskeyDevices = '/auth/passkey/devices';
   static const String authPasskeyOnboardingStart =
       '/auth/passkey/onboarding/start';
   static const String authPasskeyOnboardingFinish =
       '/auth/passkey/onboarding/finish';
+  static String authPasskeyDeviceBlock(String deviceInstallId) =>
+      '/auth/passkey/devices/$deviceInstallId/block';
+  static String authPasskeyDeviceRevoke(String deviceInstallId) =>
+      '/auth/passkey/devices/$deviceInstallId/revoke';
   static const String authRecoveryEmergencyStart =
       '/auth/recovery/emergency/start';
   static const String authRecoveryEmergencyFinish =
@@ -109,6 +114,19 @@ class AppConfig {
   static const String authTotpSetup = '/auth/totp/setup';
   static const String authTotpVerify = '/auth/totp/verify';
   static const String authTotpDisable = '/auth/totp';
+  static const String authAdminLogin = '/auth/admin/login';
+  static const String authAdminKey = '/auth/admin/key';
+  static const String authAdminPendingAttempts =
+      '/auth/admin/access-attempts/pending';
+  static const String authAdminDevices = '/auth/admin/devices';
+  static String authAdminLoginPoll(String attemptId) =>
+      '/auth/admin/login/$attemptId';
+  static String authAdminAttemptDecision(String attemptId) =>
+      '/auth/admin/access-attempts/$attemptId/decision';
+  static String authAdminDeviceBlock(String deviceId) =>
+      '/auth/admin/devices/$deviceId/block';
+  static String authAdminDeviceRevoke(String deviceId) =>
+      '/auth/admin/devices/$deviceId/revoke';
 
   // 2. Wallets
   static const String walletCreate = '/wallet/create';
@@ -167,6 +185,37 @@ class AppConfig {
       '/transactions/payment-links';
   static const String transactionsOnrampUrls = '/api/onramp/urls';
 
+  // 4.2 Bitcoin Accounts
+  static const String bitcoinAccounts = '/bitcoin/accounts';
+  static const String bitcoinAccountsInternalCard =
+      '/bitcoin/accounts/internal-card';
+  static const String bitcoinAccountsColdWallet =
+      '/bitcoin/accounts/cold-wallet';
+  static const String bitcoinReceivePublic = '/bitcoin/receive';
+  static const String bitcoinReceiveRequests = '/bitcoin/receive-requests';
+  static String bitcoinAccountReceiveRequests(String accountId) =>
+      '/bitcoin/accounts/$accountId/receive-requests';
+  static String bitcoinReceiveRequestStatus(String id) =>
+      '/bitcoin/receive-requests/$id/status';
+  static String bitcoinReceiveRequestExpire(String id) =>
+      '/bitcoin/receive-requests/$id/expire';
+  static String bitcoinReceiveRequestHide(String id) =>
+      '/bitcoin/receive-requests/$id/hide';
+  static String bitcoinReceiveRequestUserAction(String id) =>
+      '/bitcoin/receive-requests/$id/user-action';
+  static String bitcoinColdWalletPsbt(String coldWalletId) =>
+      '/bitcoin/cold-wallets/$coldWalletId/psbt';
+  static String bitcoinColdWalletUtxos(String coldWalletId) =>
+      '/bitcoin/cold-wallets/$coldWalletId/utxos';
+  static const String bitcoinTaxEvents = '/bitcoin/tax-events';
+  static String bitcoinTaxEventsExport(String format) =>
+      '/bitcoin/tax-events/export?format=$format';
+  static String bitcoinTaxEventClassify(String eventId) =>
+      '/bitcoin/tax-events/$eventId/classify';
+  static String bitcoinPsbt(String workflowId) => '/bitcoin/psbt/$workflowId';
+  static String bitcoinPsbtSigned(String workflowId) =>
+      '/bitcoin/psbt/$workflowId/signed';
+
   // 6. Notifications
   static const String notificationsList = '/notifications';
   static const String notificationsRead = '/notifications/{id}/read';
@@ -187,12 +236,28 @@ class AppConfig {
   static const String auditMerkleHistory = '/audit/history';
   static const String auditMerkleTrigger = '/audit/trigger';
 
+  // 7.3 Enterprise operations
+  static const String adminOperationsOverview =
+      '/api/admin/operations/overview';
+  static const String adminOperationsHealth = '/api/admin/operations/health';
+  static const String adminOperationsBlockchain =
+      '/api/admin/operations/blockchain';
+  static const String adminOperationsLightning =
+      '/api/admin/operations/lightning';
+  static const String adminOperationsVaultRaft =
+      '/api/admin/operations/vault-raft';
+  static const String adminOperationsRelease = '/api/admin/operations/release';
+  static const String adminOperationsLogs = '/api/admin/operations/logs';
+  static const String adminOperationsMobile = '/api/admin/operations/mobile';
+  static const String adminOperationsMetrics = '/api/admin/operations/metrics';
+
   // 8. Vault System
   static const String vaultArm = '/v1/vault/arm';
   static const String vaultAttest = '/v1/vault/attest';
   static const String vaultProvision = '/v1/vault/provision';
 
-  // (Legacy / Extra - Checking for compatibility)
+  // Legacy constants kept for compile compatibility. Deposit history and
+  // balance must use /transactions/network/transfers.
   static const String transactionsConfirmDeposit =
       '/transactions/confirm-deposit';
   static const String transactionsDeposits = '/transactions/deposits';

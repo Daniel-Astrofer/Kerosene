@@ -99,7 +99,7 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
     } catch (error) {
       throw SovereignAuthException(
         code: SovereignAuthErrorCodes.storageFailure,
-        message: 'Unable to persist sovereign key material securely.',
+        message: 'Unable to save the device key securely.',
         cause: error,
       );
     }
@@ -137,7 +137,7 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
     } catch (error) {
       throw SovereignAuthException(
         code: SovereignAuthErrorCodes.storageFailure,
-        message: 'Unable to update the sovereign signature counter.',
+        message: 'Unable to update the device key securely.',
         cause: error,
       );
     }
@@ -157,14 +157,13 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
     } on FormatException catch (error) {
       throw SovereignAuthException(
         code: SovereignAuthErrorCodes.corruptedKeyMaterial,
-        message:
-            'Stored sovereign key material is corrupted. Register the device again.',
+        message: 'The device key needs to be registered again on this device.',
         cause: error,
       );
     } catch (error) {
       throw SovereignAuthException(
         code: SovereignAuthErrorCodes.storageFailure,
-        message: 'Unable to access secure sovereign key material.',
+        message: 'Unable to access the secure device key.',
         cause: error,
       );
     }
@@ -195,7 +194,7 @@ class LocalAuthSovereignPresenceVerifier implements SovereignPresenceVerifier {
       throw const SovereignAuthException(
         code: SovereignAuthErrorCodes.noLocalCredentials,
         message:
-            'Configure biometrics or a device screen lock before using Sovereign Key.',
+            'Configure biometrics or a device screen lock before using the device key.',
       );
     } on LocalAuthException catch (error) {
       throw _mapLocalAuthException(error);
@@ -214,7 +213,7 @@ class LocalAuthSovereignPresenceVerifier implements SovereignPresenceVerifier {
       if (!didAuthenticate) {
         throw const SovereignAuthException(
           code: SovereignAuthErrorCodes.authCancelled,
-          message: 'User cancelled the sovereign authentication prompt.',
+          message: 'Device confirmation was cancelled.',
         );
       }
     } on LocalAuthException catch (error) {
@@ -230,14 +229,14 @@ class LocalAuthSovereignPresenceVerifier implements SovereignPresenceVerifier {
         return const SovereignAuthException(
           code: SovereignAuthErrorCodes.noLocalCredentials,
           message:
-              'Configure biometrics or a device screen lock before using Sovereign Key.',
+              'Configure biometrics or a device screen lock before using the device key.',
         );
       case LocalAuthExceptionCode.userCanceled:
       case LocalAuthExceptionCode.systemCanceled:
       case LocalAuthExceptionCode.userRequestedFallback:
         return const SovereignAuthException(
           code: SovereignAuthErrorCodes.authCancelled,
-          message: 'User cancelled the sovereign authentication prompt.',
+          message: 'Device confirmation was cancelled.',
         );
       default:
         return SovereignAuthException(
@@ -317,7 +316,7 @@ class SovereignAuthService implements PasskeyCryptographyService {
       }
       throw SovereignAuthException(
         code: SovereignAuthErrorCodes.storageFailure,
-        message: 'Unable to generate or persist the sovereign key pair.',
+        message: 'Unable to prepare the device key securely.',
         cause: error,
       );
     }
@@ -361,7 +360,7 @@ class SovereignAuthService implements PasskeyCryptographyService {
     if (data.isEmpty) {
       throw const SovereignAuthException(
         code: SovereignAuthErrorCodes.invalidChallenge,
-        message: 'Sovereign signature payload cannot be empty.',
+        message: 'Secure confirmation could not be prepared.',
       );
     }
 
@@ -373,7 +372,7 @@ class SovereignAuthService implements PasskeyCryptographyService {
         throw const SovereignAuthException(
           code: SovereignAuthErrorCodes.keyNotFound,
           message:
-              'No sovereign key is registered on this device. Register the device first.',
+              'No device key is registered on this device. Register this device first.',
         );
       }
 
@@ -387,7 +386,7 @@ class SovereignAuthService implements PasskeyCryptographyService {
       }
       throw SovereignAuthException(
         code: SovereignAuthErrorCodes.signingFailure,
-        message: 'Unable to sign data with the sovereign key.',
+        message: 'Unable to confirm with the device key.',
         cause: error,
       );
     }

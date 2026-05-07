@@ -8,6 +8,7 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class WithdrawReviewPopup extends ConsumerStatefulWidget {
   final double amount;
@@ -62,6 +63,9 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
     // the backend response and signed in the provider.
     setState(() => _isLoading = true);
     await Future.delayed(800.ms);
+    if (!mounted) {
+      return;
+    }
     setState(() => _shamirVerified = true);
 
     // TOTP Check
@@ -252,10 +256,10 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
                   letterSpacing: 10,
                   fontSize: 24,
                 ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
               counterText: "",
-              hintText: "000000",
+              hintText: context.l10n.totpEnterCodeHint,
             ),
           ),
         ),

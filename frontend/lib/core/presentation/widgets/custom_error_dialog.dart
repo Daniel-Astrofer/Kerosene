@@ -129,9 +129,9 @@ class _DialogConfig {
       return _DialogConfig(
         title: _resolveLabel(
           languageCode,
-          pt: 'Não foi possível falar com o servidor',
-          en: 'Could not reach the server',
-          es: 'No fue posible conectar con el servidor',
+          pt: 'Conexão indisponível',
+          en: 'Connection unavailable',
+          es: 'Conexión no disponible',
         ),
         tone: AppNotificationTone.warning,
       );

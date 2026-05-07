@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class OnrampWebViewScreen extends StatefulWidget {
@@ -114,7 +116,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
     HapticFeedback.selectionClick();
     Clipboard.setData(ClipboardData(text: widget.depositAddress));
     SnackbarHelper.showSuccess(
-      'Endereço de depósito copiado.',
+      context.l10n.depositFlowDepositAddressCopied,
       title: widget.providerName,
     );
   }
@@ -123,7 +125,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
       title: widget.providerName,
-      subtitle: 'Checkout seguro no app.',
+      subtitle: context.l10n.depositFlowCheckoutSubtitle,
       scrollable: false,
       bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       actions: [
@@ -166,7 +168,9 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Compra estimada em ${widget.btcAmountLabel}',
+                        context.l10n.depositFlowEstimatedPurchase(
+                          widget.btcAmountLabel,
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: receiveFlowMutedTextColor,
                             ),
@@ -214,7 +218,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                                 ),
                                 const SizedBox(height: AppSpacing.md),
                                 Text(
-                                  'Não foi possível carregar o provedor',
+                                  context.l10n.depositFlowProviderLoadError,
                                   textAlign: TextAlign.center,
                                   style: Theme.of(context)
                                       .textTheme
@@ -226,7 +230,10 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
                                 Text(
-                                  _errorMessage!,
+                                  ErrorTranslator.translate(
+                                    context.l10n,
+                                    _errorMessage!,
+                                  ),
                                   textAlign: TextAlign.center,
                                   style: Theme.of(context)
                                       .textTheme
@@ -238,7 +245,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                                 const SizedBox(height: AppSpacing.lg),
                                 ReceiveFlowSecondaryButton(
                                   onTap: _reload,
-                                  label: 'Tentar novamente',
+                                  label: context.l10n.depositFlowRetry,
                                   icon: LucideIcons.refreshCw,
                                 ),
                               ],
@@ -259,13 +266,13 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const ReceiveFlowSectionLabel(
-                        'Endereço BTC vinculado ao checkout',
+                      ReceiveFlowSectionLabel(
+                        context.l10n.depositFlowCheckoutAddressTitle,
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         widget.depositAddress.isEmpty
-                            ? 'Endereço indisponível'
+                            ? context.l10n.depositFlowAddressUnavailable
                             : widget.depositAddress,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -282,7 +289,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                 ReceiveFlowSecondaryButton(
                   onTap: widget.depositAddress.isEmpty ? null : _copyAddress,
                   icon: LucideIcons.copy,
-                  label: 'Copiar',
+                  label: context.l10n.depositFlowCopy,
                   fullWidth: false,
                 ),
               ],

@@ -8,14 +8,12 @@ import 'package:teste/features/mining/presentation/mining_formatters.dart';
 import 'package:teste/features/mining/presentation/providers/mining_providers.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class MiningTransactionContextCard extends ConsumerWidget {
   final Transaction transaction;
 
-  const MiningTransactionContextCard({
-    super.key,
-    required this.transaction,
-  });
+  const MiningTransactionContextCard({super.key, required this.transaction});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,20 +21,20 @@ class MiningTransactionContextCard extends ConsumerWidget {
 
     if (descriptor.rail == MiningExplorerRail.internal) {
       return _ContextShell(
-        title: 'Fluxo interno',
-        subtitle: 'Conciliação interna. Sem liquidação pública.',
+        title: context.l10n.miningTxInternalTitle,
+        subtitle: context.l10n.miningTxInternalSubtitle,
         accent: miningTeal,
         children: [
           _ContextFact(
-            label: 'Referência',
+            label: context.l10n.miningTxReference,
             value: descriptor.reference,
           ),
           _ContextFact(
-            label: 'Status',
+            label: context.l10n.status,
             value: transaction.status.name.toUpperCase(),
           ),
           _ContextFact(
-            label: 'Confirmações',
+            label: context.l10n.miningTxConfirmations,
             value: '${transaction.confirmations}',
           ),
         ],
@@ -46,20 +44,20 @@ class MiningTransactionContextCard extends ConsumerWidget {
     if (descriptor.rail == MiningExplorerRail.lightning ||
         !descriptor.canLookupOnchain) {
       return _ContextShell(
-        title: 'Fluxo Lightning',
-        subtitle: 'Liquidação fora da camada base. Contexto local apenas.',
+        title: context.l10n.miningTxLightningTitle,
+        subtitle: context.l10n.miningTxLightningSubtitle,
         accent: miningAmber,
         children: [
           _ContextFact(
-            label: 'Canal',
+            label: context.l10n.miningTxChannel,
             value: descriptor.reference,
           ),
           _ContextFact(
-            label: 'Status',
+            label: context.l10n.status,
             value: transaction.status.name.toUpperCase(),
           ),
           _ContextFact(
-            label: 'Registro',
+            label: context.l10n.miningTxRecord,
             value: MiningFormatters.shortDateTime(transaction.timestamp),
           ),
         ],
@@ -74,21 +72,24 @@ class MiningTransactionContextCard extends ConsumerWidget {
       data: (summary) {
         if (summary == null) {
           return _fallbackCard(
-            title: 'Transação sem resumo público',
-            description: 'A rede não retornou um snapshot detalhado.',
+            context: context,
+            title: context.l10n.miningTxNoPublicSummaryTitle,
+            description: context.l10n.miningTxNoPublicSummaryMessage,
           );
         }
         return _OnchainContextCard(summary: summary);
       },
       loading: () => const _ContextLoadingCard(),
       error: (error, _) => _fallbackCard(
-        title: 'Lookup on-chain indisponível',
+        context: context,
+        title: context.l10n.miningTxLookupUnavailableTitle,
         description: error.toString(),
       ),
     );
   }
 
   Widget _fallbackCard({
+    required BuildContext context,
     required String title,
     required String description,
   }) {
@@ -98,15 +99,15 @@ class MiningTransactionContextCard extends ConsumerWidget {
       accent: miningBlue,
       children: [
         _ContextFact(
-          label: 'Status local',
+          label: context.l10n.miningTxLocalStatus,
           value: transaction.status.name.toUpperCase(),
         ),
         _ContextFact(
-          label: 'Confirmações',
+          label: context.l10n.miningTxConfirmations,
           value: '${transaction.confirmations}',
         ),
         _ContextFact(
-          label: 'Registro',
+          label: context.l10n.miningTxRecord,
           value: MiningFormatters.shortDateTime(transaction.timestamp),
         ),
       ],
@@ -117,9 +118,7 @@ class MiningTransactionContextCard extends ConsumerWidget {
 class _OnchainContextCard extends StatelessWidget {
   final MempoolTransactionSummary summary;
 
-  const _OnchainContextCard({
-    required this.summary,
-  });
+  const _OnchainContextCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
@@ -127,33 +126,35 @@ class _OnchainContextCard extends StatelessWidget {
         summary.confirmed ? MiningStatusTone.live : MiningStatusTone.warning;
 
     return _ContextShell(
-      title: 'Contexto on-chain',
-      subtitle: 'Inclusão, posição e custo efetivo da transação.',
+      title: context.l10n.miningTxOnchainTitle,
+      subtitle: context.l10n.miningTxOnchainSubtitle,
       accent: miningBlue,
       trailing: MiningStatusBadge(
-        label: summary.confirmed ? 'CONFIRMADA' : 'PENDENTE',
+        label: summary.confirmed
+            ? context.l10n.miningTxConfirmed
+            : context.l10n.miningTxPending,
         tone: statusTone,
         pulse: !summary.confirmed,
       ),
       children: [
         _ContextFact(
-          label: 'TXID',
+          label: context.l10n.miningTxTxid,
           value: shortHash(summary.txid, leading: 12, trailing: 10),
         ),
         _ContextFact(
-          label: 'Fee rate',
+          label: context.l10n.miningTxFeeRate,
           value: MiningFormatters.feeRate(summary.effectiveFeeRate),
         ),
         _ContextFact(
-          label: 'Bloco',
+          label: context.l10n.miningTxBlock,
           value: summary.blockHeight == null
-              ? 'aguardando'
+              ? context.l10n.miningTxAwaiting
               : '#${summary.blockHeight}',
         ),
         _ContextFact(
-          label: 'Posição',
+          label: context.l10n.miningTxPosition,
           value: summary.positionInBlock == null || summary.blockTxCount == null
-              ? 'n/d'
+              ? context.l10n.miningTxNotAvailable
               : '${summary.positionInBlock}/${summary.blockTxCount}',
         ),
       ],
@@ -170,17 +171,17 @@ class _ContextLoadingCard extends StatelessWidget {
       accent: miningBlue,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           MiningSectionHeading(
-            title: 'Contexto transacional',
-            subtitle: 'Consultando dados públicos da transação.',
+            title: context.l10n.miningTxLoadingTitle,
+            subtitle: context.l10n.miningTxLoadingSubtitle,
           ),
-          SizedBox(height: AppSpacing.lg),
-          MiningSkeletonBlock(height: 18),
-          SizedBox(height: AppSpacing.sm),
-          MiningSkeletonBlock(height: 18),
-          SizedBox(height: AppSpacing.sm),
-          MiningSkeletonBlock(height: 18),
+          const SizedBox(height: AppSpacing.lg),
+          const MiningSkeletonBlock(height: 18),
+          const SizedBox(height: AppSpacing.sm),
+          const MiningSkeletonBlock(height: 18),
+          const SizedBox(height: AppSpacing.sm),
+          const MiningSkeletonBlock(height: 18),
         ],
       ),
     );
@@ -249,10 +250,7 @@ class _ContextFact extends StatelessWidget {
   final String label;
   final String value;
 
-  const _ContextFact({
-    required this.label,
-    required this.value,
-  });
+  const _ContextFact({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +277,7 @@ class _ContextFact extends StatelessWidget {
                 AppTypography.bodyMedium,
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
+                letterSpacing: 0,
               ),
             ),
           ],

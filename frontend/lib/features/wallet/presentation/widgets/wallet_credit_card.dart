@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/l10n/l10n_extension.dart';
@@ -10,9 +11,9 @@ import '../../domain/entities/wallet.dart';
 import '../providers/balance_settings_provider.dart';
 import '../screens/wallet_config_screen.dart';
 
-const _creditCardWidth = 303.0;
-const _creditCardHeight = 191.0;
-const _creditCardRadius = 20.0;
+const _creditCardWidth = 336.0;
+const _creditCardHeight = 190.0;
+const _creditCardRadius = 10.0;
 
 class WalletCreditCard extends ConsumerWidget {
   final Wallet? wallet;
@@ -52,22 +53,8 @@ class WalletCreditCard extends ConsumerWidget {
     HapticFeedback.mediumImpact();
     Navigator.push(
       context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 520),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            WalletConfigScreen(wallet: wallet!),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final slide = Tween<Offset>(
-            begin: const Offset(0, 0.16),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-          );
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(position: slide, child: child),
-          );
-        },
+      keroseneHorizontalRoute<void>(
+        builder: (_) => WalletConfigScreen(wallet: wallet!),
       ),
     );
   }
@@ -361,10 +348,7 @@ class _CardBrandBlock extends StatelessWidget {
   final _CreditCardPalette palette;
   final String tier;
 
-  const _CardBrandBlock({
-    required this.palette,
-    required this.tier,
-  });
+  const _CardBrandBlock({required this.palette, required this.tier});
 
   @override
   Widget build(BuildContext context) {
@@ -405,10 +389,7 @@ class _BalanceBlock extends StatelessWidget {
   final String label;
   final _CreditCardPalette palette;
 
-  const _BalanceBlock({
-    required this.label,
-    required this.palette,
-  });
+  const _BalanceBlock({required this.label, required this.palette});
 
   @override
   Widget build(BuildContext context) {
@@ -507,18 +488,15 @@ class _SecurityHashButton extends StatelessWidget {
   final String hash;
   final _CreditCardPalette palette;
 
-  const _SecurityHashButton({
-    required this.hash,
-    required this.palette,
-  });
+  const _SecurityHashButton({required this.hash, required this.palette});
 
   void _copyHash(BuildContext context) {
     Clipboard.setData(ClipboardData(text: hash));
     HapticFeedback.selectionClick();
     AppNotice.showSuccess(
       context,
-      title: 'Hash copiado',
-      message: 'O hash da carteira foi copiado.',
+      title: context.l10n.walletCardHashCopiedTitle,
+      message: context.l10n.walletCardHashCopiedMessage,
     );
   }
 
@@ -534,8 +512,9 @@ class _SecurityHashButton extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color:
-                Colors.white.withValues(alpha: palette.isLight ? 0.18 : 0.08),
+            color: Colors.white.withValues(
+              alpha: palette.isLight ? 0.18 : 0.08,
+            ),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: palette.inkPrimary.withValues(alpha: 0.18),
@@ -562,9 +541,7 @@ class _CardChip extends StatelessWidget {
     return SizedBox(
       width: 45,
       height: 34,
-      child: CustomPaint(
-        painter: _CardChipPainter(palette: palette),
-      ),
+      child: CustomPaint(painter: _CardChipPainter(palette: palette)),
     );
   }
 }
@@ -607,10 +584,7 @@ class _NetworkDisc extends StatelessWidget {
     return Container(
       width: 22,
       height: 22,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -630,32 +604,6 @@ class _CreditCardSurfacePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = palette.line.withValues(alpha: palette.isLight ? 0.28 : 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.75;
-
-    for (var i = -4; i < 15; i++) {
-      final y = i * 18.0;
-      canvas.drawLine(
-        Offset(-20, y),
-        Offset(size.width + 22, y + size.width * 0.28),
-        linePaint,
-      );
-    }
-
-    final finePaint = Paint()
-      ..color = palette.line.withValues(alpha: palette.isLight ? 0.18 : 0.10)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.45;
-    for (var x = 24.0; x < size.width; x += 18) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x - 40, size.height),
-        finePaint,
-      );
-    }
-
     final highlightDx = size.width * (0.55 + (tiltY * 0.18).clamp(-0.16, 0.16));
     final highlightDy =
         size.height * (0.22 + (tiltX * 0.12).clamp(-0.10, 0.10));
@@ -680,7 +628,7 @@ class _CreditCardSurfacePainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(6, 6, size.width - 12, size.height - 12),
-        const Radius.circular(_creditCardRadius - 6),
+        const Radius.circular(_creditCardRadius - 4),
       ),
       edgePaint,
     );
@@ -711,8 +659,9 @@ class _CardChipPainter extends CustomPainter {
         colors: palette.chipGradient,
       ).createShader(rect);
     final stroke = Paint()
-      ..color =
-          palette.inkPrimary.withValues(alpha: palette.isLight ? 0.18 : 0.24)
+      ..color = palette.inkPrimary.withValues(
+        alpha: palette.isLight ? 0.18 : 0.24,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.9;
     final line = Paint()
@@ -728,17 +677,35 @@ class _CardChipPainter extends CustomPainter {
     final w = rect.width;
     final h = rect.height;
     canvas.drawLine(
-        Offset(x + w * 0.33, y + 3), Offset(x + w * 0.33, y + h - 3), line);
+      Offset(x + w * 0.33, y + 3),
+      Offset(x + w * 0.33, y + h - 3),
+      line,
+    );
     canvas.drawLine(
-        Offset(x + w * 0.67, y + 3), Offset(x + w * 0.67, y + h - 3), line);
+      Offset(x + w * 0.67, y + 3),
+      Offset(x + w * 0.67, y + h - 3),
+      line,
+    );
     canvas.drawLine(
-        Offset(x + 3, y + h * 0.32), Offset(x + w * 0.26, y + h * 0.32), line);
+      Offset(x + 3, y + h * 0.32),
+      Offset(x + w * 0.26, y + h * 0.32),
+      line,
+    );
     canvas.drawLine(
-        Offset(x + 3, y + h * 0.68), Offset(x + w * 0.26, y + h * 0.68), line);
-    canvas.drawLine(Offset(x + w * 0.74, y + h * 0.32),
-        Offset(x + w - 3, y + h * 0.32), line);
-    canvas.drawLine(Offset(x + w * 0.74, y + h * 0.68),
-        Offset(x + w - 3, y + h * 0.68), line);
+      Offset(x + 3, y + h * 0.68),
+      Offset(x + w * 0.26, y + h * 0.68),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + w * 0.74, y + h * 0.32),
+      Offset(x + w - 3, y + h * 0.32),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + w * 0.74, y + h * 0.68),
+      Offset(x + w - 3, y + h * 0.68),
+      line,
+    );
   }
 
   @override
@@ -783,56 +750,32 @@ class _CreditCardPalette {
   }
 
   static const _blue = _CreditCardPalette(
-    gradient: [
-      Color(0xFF182843),
-      Color(0xFF0B111B),
-      Color(0xFF10151D),
-    ],
-    chipGradient: [
-      Color(0xFFE9EEF3),
-      Color(0xFFADB7C2),
-      Color(0xFF727D88),
-    ],
-    border: Color(0xFF2F405A),
-    line: Color(0xFF9FB0C6),
-    inkPrimary: Color(0xFFF3F6FA),
-    inkSecondary: Color(0xFF9EADBF),
+    gradient: [Color(0xFF191919), Color(0xFF0D0D0D), Color(0xFF161616)],
+    chipGradient: [Color(0xFFE7E7E1), Color(0xFFA8A8A0), Color(0xFF686862)],
+    border: Color(0xFF3A3A3A),
+    line: Color(0xFFA0A09B),
+    inkPrimary: Color(0xFFF1F1ED),
+    inkSecondary: Color(0xFFA0A09B),
     isLight: false,
   );
 
   static const _silver = _CreditCardPalette(
-    gradient: [
-      Color(0xFFF1F3F5),
-      Color(0xFFBFC5CC),
-      Color(0xFF7F8790),
-    ],
-    chipGradient: [
-      Color(0xFFF5F1E6),
-      Color(0xFFD4C392),
-      Color(0xFF9C8753),
-    ],
-    border: Color(0xFFE8ECEF),
-    line: Color(0xFF4D5660),
-    inkPrimary: Color(0xFF101418),
-    inkSecondary: Color(0xFF3E4650),
+    gradient: [Color(0xFFF1F1EC), Color(0xFFD2D2CC), Color(0xFF9A9A94)],
+    chipGradient: [Color(0xFFF7F7F1), Color(0xFFC8C8C0), Color(0xFF85857E)],
+    border: Color(0xFFF1F1EC),
+    line: Color(0xFF555550),
+    inkPrimary: Color(0xFF090909),
+    inkSecondary: Color(0xFF555550),
     isLight: true,
   );
 
   static const _black = _CreditCardPalette(
-    gradient: [
-      Color(0xFF030405),
-      Color(0xFF0A0D11),
-      Color(0xFF1A1F26),
-    ],
-    chipGradient: [
-      Color(0xFFDFE5EA),
-      Color(0xFF9BA4AE),
-      Color(0xFF5F6872),
-    ],
-    border: Color(0xFF2A3038),
-    line: Color(0xFF6E7782),
-    inkPrimary: Color(0xFFF1F3F5),
-    inkSecondary: Color(0xFF8F98A3),
+    gradient: [Color(0xFF030303), Color(0xFF080808), Color(0xFF151515)],
+    chipGradient: [Color(0xFFE2E2DC), Color(0xFF9A9A94), Color(0xFF5D5D58)],
+    border: Color(0xFF2A2A2A),
+    line: Color(0xFF6B6B66),
+    inkPrimary: Color(0xFFF1F1ED),
+    inkSecondary: Color(0xFFA0A09B),
     isLight: false,
   );
 

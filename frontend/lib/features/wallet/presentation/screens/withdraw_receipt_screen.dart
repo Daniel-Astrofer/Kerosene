@@ -31,7 +31,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
       title: context.l10n.withdrawSuccess,
-      subtitle: 'Comprovante do envio com destino, taxa e identificador.',
+      subtitle: context.l10n.withdrawReceiptSubtitle,
       onBack: () => Navigator.of(context).popUntil((route) => route.isFirst),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

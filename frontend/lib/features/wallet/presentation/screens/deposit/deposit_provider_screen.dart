@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 import 'onramp_webview_screen.dart';
 
@@ -121,7 +123,7 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
     final depositAddress = _extractDepositAddress(checkoutUrl);
     if (depositAddress.isEmpty) {
       SnackbarHelper.showError(
-        'O link retornado pelo backend não contém endereço de depósito válido.',
+        'Não encontramos um endereço válido neste checkout. Tente outra opção.',
         title: provider.name,
       );
       return;
@@ -176,8 +178,8 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
         .toList(growable: false);
 
     return ReceiveFlowScaffold(
-      title: 'Provedor fiat',
-      subtitle: 'Selecione o checkout mantendo o mesmo fluxo visual.',
+      title: context.l10n.depositFlowProviderTitle,
+      subtitle: context.l10n.depositFlowProviderSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -222,7 +224,7 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ReceiveFlowSectionLabel('Compra solicitada'),
+          ReceiveFlowSectionLabel(context.l10n.depositFlowRequestedPurchase),
           const SizedBox(height: 4),
           Text(
             MoneyDisplay.format(
@@ -236,7 +238,7 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Equivale a $btcAmountLabel',
+            context.l10n.depositFlowEquivalentTo(btcAmountLabel),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: receiveFlowMutedTextColor,
                 ),
@@ -268,7 +270,7 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              'Os provedores abrem em WebView interna com o endereço BTC retornado por `/api/onramp/urls`.',
+              context.l10n.depositFlowProviderSecurityHint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                     height: 1.35,
@@ -281,20 +283,22 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    return const ReceiveFlowStatePanel(
+    return ReceiveFlowStatePanel(
       icon: LucideIcons.loader2,
-      title: 'Carregando provedores',
-      message: 'Gerando links de onramp com o endereço seguro da sua wallet.',
+      title: context.l10n.depositFlowProvidersLoadingTitle,
+      message: context.l10n.depositFlowProvidersLoadingMessage,
     );
   }
 
   Widget _buildErrorState(BuildContext context) {
     return ReceiveFlowStatePanel(
       icon: LucideIcons.cloudOff,
-      title: 'Falha ao carregar provedores',
-      message: _errorMessage ?? 'Erro desconhecido.',
+      title: context.l10n.depositFlowProvidersErrorTitle,
+      message: _errorMessage == null
+          ? context.l10n.depositFlowUnknownError
+          : ErrorTranslator.translate(context.l10n, _errorMessage!),
       footer: ReceiveFlowSecondaryButton(
-        label: 'Tentar novamente',
+        label: context.l10n.depositFlowRetry,
         icon: LucideIcons.refreshCw,
         onTap: _retry,
       ),
@@ -302,10 +306,10 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return const ReceiveFlowStatePanel(
+    return ReceiveFlowStatePanel(
       icon: LucideIcons.wallet,
-      title: 'Nenhum provedor disponível',
-      message: 'O backend não retornou links de onramp para esta sessão.',
+      title: context.l10n.depositFlowNoProvidersTitle,
+      message: context.l10n.depositFlowNoProvidersMessage,
     );
   }
 
@@ -390,10 +394,10 @@ class _DepositProviderScreenState extends ConsumerState<DepositProviderScreen> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    const Expanded(
+                    Expanded(
                       child: _FeaturePill(
                         icon: LucideIcons.link,
-                        label: 'Endereço seguro',
+                        label: context.l10n.depositFlowSecureAddress,
                       ),
                     ),
                   ],

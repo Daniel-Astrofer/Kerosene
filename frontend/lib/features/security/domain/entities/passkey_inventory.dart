@@ -14,16 +14,34 @@ PasskeyCompatibilityStatus passkeyCompatibilityStatusFromApi(String? raw) {
 }
 
 class PasskeyDevice extends Equatable {
-  final String? credentialId;
+  final String? credentialRef;
   final String deviceName;
+  final String brand;
+  final String model;
+  final String serialNumber;
+  final String deviceInstallId;
+  final String platform;
+  final String browser;
+  final DateTime? firstAccessAt;
+  final DateTime? lastAccessAt;
+  final String status;
   final String relyingPartyId;
   final String originHost;
   final PasskeyCompatibilityStatus compatibilityStatus;
   final bool compatibleWithCurrentLogin;
 
   const PasskeyDevice({
-    this.credentialId,
+    this.credentialRef,
     required this.deviceName,
+    this.brand = '',
+    this.model = '',
+    this.serialNumber = '',
+    this.deviceInstallId = '',
+    this.platform = '',
+    this.browser = '',
+    this.firstAccessAt,
+    this.lastAccessAt,
+    this.status = 'ACTIVE',
     this.relyingPartyId = '',
     this.originHost = '',
     this.compatibilityStatus = PasskeyCompatibilityStatus.unknown,
@@ -32,8 +50,18 @@ class PasskeyDevice extends Equatable {
 
   factory PasskeyDevice.fromJson(Map<String, dynamic> json) {
     return PasskeyDevice(
-      credentialId: json['credentialId']?.toString(),
+      credentialRef:
+          (json['credentialRef'] ?? json['credentialId'])?.toString(),
       deviceName: (json['deviceName'] ?? 'Passkey').toString(),
+      brand: (json['brand'] ?? '').toString(),
+      model: (json['model'] ?? '').toString(),
+      serialNumber: (json['serialNumber'] ?? '').toString(),
+      deviceInstallId: (json['deviceInstallId'] ?? '').toString(),
+      platform: (json['platform'] ?? '').toString(),
+      browser: (json['browser'] ?? '').toString(),
+      firstAccessAt: _date(json['firstAccessAt']),
+      lastAccessAt: _date(json['lastAccessAt']),
+      status: (json['status'] ?? 'ACTIVE').toString(),
       relyingPartyId: (json['relyingPartyId'] ?? '').toString(),
       originHost: (json['originHost'] ?? '').toString(),
       compatibilityStatus: passkeyCompatibilityStatusFromApi(
@@ -45,13 +73,27 @@ class PasskeyDevice extends Equatable {
 
   @override
   List<Object?> get props => [
-        credentialId,
+        credentialRef,
         deviceName,
+        brand,
+        model,
+        serialNumber,
+        deviceInstallId,
+        platform,
+        browser,
+        firstAccessAt,
+        lastAccessAt,
+        status,
         relyingPartyId,
         originHost,
         compatibilityStatus,
         compatibleWithCurrentLogin,
       ];
+}
+
+DateTime? _date(dynamic value) {
+  if (value == null) return null;
+  return DateTime.tryParse(value.toString());
 }
 
 class PasskeyInventory extends Equatable {

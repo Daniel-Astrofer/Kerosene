@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:teste/core/theme/app_spacing.dart';
@@ -12,6 +13,7 @@ import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 import 'deposit/deposit_amount_screen.dart';
 import 'receive_screen.dart';
@@ -19,10 +21,7 @@ import 'receive_screen.dart';
 class ReceiveHubScreen extends ConsumerStatefulWidget {
   final Wallet? initialWallet;
 
-  const ReceiveHubScreen({
-    super.key,
-    this.initialWallet,
-  });
+  const ReceiveHubScreen({super.key, this.initialWallet});
 
   @override
   ConsumerState<ReceiveHubScreen> createState() => _ReceiveHubScreenState();
@@ -65,37 +64,15 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
   }
 
   Route<T> _bottomUpRoute<T>(WidgetBuilder builder) {
-    return PageRouteBuilder<T>(
-      transitionDuration: const Duration(milliseconds: 320),
-      reverseTransitionDuration: const Duration(milliseconds: 240),
-      pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        );
-
-        return FadeTransition(
-          opacity: Tween<double>(begin: 0.78, end: 1).animate(curved),
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.08),
-              end: Offset.zero,
-            ).animate(curved),
-            child: child,
-          ),
-        );
-      },
-    );
+    return keroseneHorizontalRoute<T>(builder: builder);
   }
 
   void _openDeposit(Wallet wallet) {
     HapticFeedback.lightImpact();
     unawaited(
-      Navigator.of(context).push<void>(
-        _bottomUpRoute((_) => DepositAmountScreen(wallet: wallet)),
-      ),
+      Navigator.of(
+        context,
+      ).push<void>(_bottomUpRoute((_) => DepositAmountScreen(wallet: wallet))),
     );
   }
 
@@ -104,7 +81,7 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
       AppNotice.showInfo(
         context,
         title: 'NFC',
-        message: 'NFC não está disponível neste dispositivo no momento.',
+        message: context.l10n.receiveHubNfcUnavailable,
       );
       return;
     }
@@ -113,10 +90,7 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
     unawaited(
       Navigator.of(context).push<void>(
         _bottomUpRoute(
-          (_) => ReceiveScreen(
-            initialWallet: wallet,
-            initialMode: mode,
-          ),
+          (_) => ReceiveScreen(initialWallet: wallet, initialMode: mode),
         ),
       ),
     );
@@ -126,14 +100,15 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
   Widget build(BuildContext context) {
     final walletState = ref.watch(walletProvider);
     final wallet = _resolveWallet(walletState);
-    final bottomClearance =
-        AppPrimaryNavigationBar.scaffoldBottomClearance(context);
+    final bottomClearance = AppPrimaryNavigationBar.scaffoldBottomClearance(
+      context,
+    );
 
     return Stack(
       children: [
         ReceiveFlowScaffold(
-          title: 'Receber',
-          subtitle: 'Fluxo único para depósito, cobrança e geração de QR.',
+          title: context.l10n.receiveHubTitle,
+          subtitle: context.l10n.receiveHubSubtitle,
           bodyPadding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             AppSpacing.sm,
@@ -143,11 +118,11 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const ReceiveFlowSectionLabel('Ações disponíveis'),
+              ReceiveFlowSectionLabel(context.l10n.receiveHubActions),
               const SizedBox(height: 8),
               ReceiveFlowPanel(
                 child: Text(
-                  'Todas as opções de recebimento seguem o mesmo visual: layout compacto, leitura rápida e foco no dado principal.',
+                  context.l10n.receiveHubIntro,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: receiveFlowMutedTextColor,
                         height: 1.35,
@@ -160,46 +135,35 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
               else ...[
                 _ReceiveHubAction(
                   icon: LucideIcons.banknote,
-                  label: 'Depositar',
-                  subtitle: 'Adicionar saldo via onramp, Lightning ou on-chain',
+                  label: context.l10n.receiveHubDeposit,
+                  subtitle: context.l10n.receiveHubDepositSubtitle,
                   onTap: () => _openDeposit(wallet),
                 ),
                 _ReceiveHubAction(
                   icon: LucideIcons.network,
-                  label: 'Receber On-chain',
-                  subtitle: 'Gerar payload Bitcoin com valor opcional',
-                  onTap: () => _openReceive(
-                    wallet,
-                    ReceiveFlowMode.onChain,
-                  ),
+                  label: context.l10n.receiveHubOnchain,
+                  subtitle: context.l10n.receiveHubOnchainSubtitle,
+                  onTap: () => _openReceive(wallet, ReceiveFlowMode.onChain),
                 ),
                 _ReceiveHubAction(
                   icon: LucideIcons.zap,
-                  label: 'Receber Lightning',
-                  subtitle: 'Criar invoice instantânea para a carteira',
-                  onTap: () => _openReceive(
-                    wallet,
-                    ReceiveFlowMode.lightning,
-                  ),
+                  label: context.l10n.receiveHubLightning,
+                  subtitle: context.l10n.receiveHubLightningSubtitle,
+                  onTap: () => _openReceive(wallet, ReceiveFlowMode.lightning),
                 ),
                 _ReceiveHubAction(
                   icon: LucideIcons.link2,
-                  label: 'Link de pagamento',
-                  subtitle: 'Cobrança rastreada com destino travado',
-                  onTap: () => _openReceive(
-                    wallet,
-                    ReceiveFlowMode.paymentLink,
-                  ),
+                  label: context.l10n.receiveHubPaymentLink,
+                  subtitle: context.l10n.receiveHubPaymentLinkSubtitle,
+                  onTap: () =>
+                      _openReceive(wallet, ReceiveFlowMode.paymentLink),
                 ),
                 if (_isNfcAvailable)
                   _ReceiveHubAction(
                     icon: LucideIcons.smartphoneNfc,
-                    label: 'Receber por NFC',
-                    subtitle: 'Preparar cobrança por aproximação',
-                    onTap: () => _openReceive(
-                      wallet,
-                      ReceiveFlowMode.nfc,
-                    ),
+                    label: context.l10n.receiveHubNfc,
+                    subtitle: context.l10n.receiveHubNfcSubtitle,
+                    onTap: () => _openReceive(wallet, ReceiveFlowMode.nfc),
                   ),
               ],
             ],
@@ -245,11 +209,10 @@ class _ReceiveHubEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ReceiveFlowStatePanel(
+    return ReceiveFlowStatePanel(
       icon: LucideIcons.wallet,
-      title: 'Nenhuma carteira disponível',
-      message:
-          'Crie ou selecione uma carteira antes de iniciar um fluxo de recebimento.',
+      title: context.l10n.receiveHubNoWalletTitle,
+      message: context.l10n.receiveHubNoWalletMessage,
     );
   }
 }

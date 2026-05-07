@@ -45,7 +45,7 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
       AppNotice.showError(
         context,
         title: context.l10n.username,
-        message: 'Informe o username da conta.',
+        message: context.l10n.authUsernameRequiredMessage,
       );
       return;
     }
@@ -74,10 +74,9 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthEntryScaffold(
-      eyebrow: 'ACESSAR CONTA',
+      eyebrow: context.l10n.authAccessEyebrow.toUpperCase(),
       title: context.l10n.welcomeBack,
-      subtitle:
-          'Primeiro informe seu nome de usuário',
+      subtitle: context.l10n.authUsernameStepSubtitle,
       onBack: () => Navigator.of(context).maybePop(),
       child: AuthEntryPanel(
         child: Column(
@@ -86,7 +85,7 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
             ModernAuthTextField(
               controller: _usernameController,
               label: context.l10n.username,
-              hint: 'Nome de usuário',
+              hint: context.l10n.authUsernameHint,
               icon: LucideIcons.user,
               autofocus: true,
               keyboardType: TextInputType.text,
@@ -96,11 +95,10 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
               onFieldSubmitted: (_) => _handleContinue(),
             ),
             const SizedBox(height: AppSpacing.lg),
-            const AuthEntryNote(
+            AuthEntryNote(
               icon: LucideIcons.fingerprint,
-              title: 'Aviso',
-              body:
-                  'A Kerosene tenta a passkey local primeiro.',
+              title: context.l10n.authPasskeyFirstNoteTitle,
+              body: context.l10n.authPasskeyFirstNoteBody,
             ),
             const SizedBox(height: AppSpacing.xl),
             AuthEntryButton(

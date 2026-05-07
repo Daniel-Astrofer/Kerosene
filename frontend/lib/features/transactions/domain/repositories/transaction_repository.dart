@@ -78,9 +78,10 @@ abstract class TransactionRepository {
   });
   Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
-    bool regenerate = false,
+    required double expectedAmountBtc,
   });
   Future<LightningInvoice> createLightningInvoice({
+    required String idempotencyKey,
     required String walletName,
     required double amount,
     String? memo,
@@ -102,5 +103,6 @@ abstract class TransactionRepository {
     String? description,
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
+    String? idempotencyKey,
   });
 }

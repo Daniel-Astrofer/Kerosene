@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'fingerprint_scanner.dart';
 import '../security/app_pin_service.dart';
 
@@ -21,8 +22,9 @@ class PinDialog extends StatefulWidget {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor:
-          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.92),
+      barrierColor: Theme.of(
+        context,
+      ).colorScheme.onSurface.withValues(alpha: 0.92),
       builder: (_) => PinDialog(isSetup: isSetup),
     );
     return result ?? false;
@@ -109,20 +111,23 @@ class _PinDialogState extends State<PinDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+    final tightHeight = responsive.size.height < 700;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.85)),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.85),
+        ),
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              SizedBox(height: tightHeight ? 20 : 40),
               // App Logo - Using centered circular image for premium feel
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -132,7 +137,9 @@ class _PinDialogState extends State<PinDialog> {
                     opacity: value,
                     child: Transform.scale(
                       scale: 0.8 + (0.2 * value),
-                      child: const CyberFingerprintScanner(size: 120),
+                      child: CyberFingerprintScanner(
+                        size: responsive.isTinyPhone ? 96 : 120,
+                      ),
                     ),
                   );
                 },
@@ -143,23 +150,24 @@ class _PinDialogState extends State<PinDialog> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onPrimary,
-                  fontSize: 26,
+                  fontSize: responsive.isTinyPhone ? 22 : 26,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
+                  letterSpacing: 0,
                   fontFamily: 'HubotSansExpanded',
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 _subtitle,
+                maxLines: tightHeight ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.6),
-                  fontSize: 14,
-                  letterSpacing: 0.5,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.6),
+                  fontSize: responsive.isTinyPhone ? 13 : 14,
+                  letterSpacing: 0,
                 ),
               ),
 
@@ -179,10 +187,9 @@ class _PinDialogState extends State<PinDialog> {
                       shape: BoxShape.circle,
                       color: filled
                           ? const Color(0xFF00F0FF)
-                          : Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.1),
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onPrimary.withValues(alpha: 0.1),
                     ),
                   );
                 }),
@@ -210,33 +217,32 @@ class _PinDialogState extends State<PinDialog> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: tightHeight ? 8 : 20),
 
               // Keypad - Futuristic Grid
               _buildModernKeypad(),
 
-              const SizedBox(height: 40),
+              SizedBox(height: tightHeight ? 16 : 40),
 
               // Cancel Action
               if (!widget.isSetup)
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.4),
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.4),
                   ),
                   child: const Text(
                     'CANCEL AUTHENTICATION',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),
-              const SizedBox(height: 20),
+              SizedBox(height: tightHeight ? 10 : 20),
             ],
           ),
         ),
@@ -252,6 +258,10 @@ class _PinDialogState extends State<PinDialog> {
       ['C', '0', '⌫'],
     ];
 
+    final responsive = context.responsive;
+    final keySize = responsive.isTinyPhone ? 64.0 : 75.0;
+    final keyPadding = responsive.isTinyPhone ? 7.0 : 10.0;
+
     return Column(
       children: keys.map((row) {
         return Row(
@@ -259,7 +269,7 @@ class _PinDialogState extends State<PinDialog> {
           children: row.map((key) {
             final isAction = key == '⌫' || key == 'C';
             return Padding(
-              padding: const EdgeInsets.all(10.0),
+              padding: EdgeInsets.all(keyPadding),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (_) {
@@ -276,19 +286,17 @@ class _PinDialogState extends State<PinDialog> {
                   }
                 },
                 child: Container(
-                  width: 75,
-                  height: 75,
+                  width: keySize,
+                  height: keySize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.03),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.03),
                     border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onPrimary
-                          .withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimary.withValues(alpha: 0.05),
                       width: 1,
                     ),
                   ),

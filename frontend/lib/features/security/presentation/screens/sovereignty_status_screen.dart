@@ -347,7 +347,8 @@ class _SovereigntyStatusScreenState
     final totalNodes = status.networkConsensus['totalNodes'] ?? 0;
     final ledgerCount = status.ledgerIntegrity['ledgerCount'] ?? 0;
     final diskPersistence = status.memoryProtection['diskPersistence'] == true;
-    final quorumLabel = _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum');
+    final quorumLabel =
+        _copy(pt: 'Confirmações', en: 'Confirmations', es: 'Confirmaciones');
     final ledgerLabel = _copy(pt: 'Ledger', en: 'Ledger', es: 'Ledger');
 
     return LayoutBuilder(
@@ -380,9 +381,9 @@ class _SovereigntyStatusScreenState
                 label: quorumLabel,
                 value: '$activeNodes/$totalNodes',
                 detail: _copy(
-                  pt: 'Nós ativos',
-                  en: 'Active nodes',
-                  es: 'Nodos activos',
+                  pt: 'Confirmações ativas',
+                  en: 'Active confirmations',
+                  es: 'Confirmaciones activas',
                 ),
               ),
             ),
@@ -710,15 +711,15 @@ class _SovereigntyStatusScreenState
                         width: itemWidth,
                         child: _MetricCard(
                           label: _copy(
-                            pt: 'Saldo do node LN',
-                            en: 'LN node balance',
-                            es: 'Saldo del nodo LN',
+                            pt: 'Saldo Lightning',
+                            en: 'Lightning balance',
+                            es: 'Saldo Lightning',
                           ),
                           value: _formatBtc(overview.lightningNodeBtc),
                           detail: _copy(
-                            pt: 'Saldo total visível no node Lightning',
-                            en: 'Total balance visible in the Lightning node',
-                            es: 'Saldo total visible en el nodo Lightning',
+                            pt: 'Saldo total disponível para operações Lightning',
+                            en: 'Total balance available for Lightning activity',
+                            es: 'Saldo total disponible para operaciones Lightning',
                           ),
                         ),
                       ),
@@ -726,15 +727,15 @@ class _SovereigntyStatusScreenState
                         width: itemWidth,
                         child: _MetricCard(
                           label: _copy(
-                            pt: 'Liquidez outbound',
-                            en: 'Outbound liquidity',
-                            es: 'Liquidez outbound',
+                            pt: 'Liquidez para envio',
+                            en: 'Send liquidity',
+                            es: 'Liquidez para envio',
                           ),
                           value: _formatBtc(overview.outboundLiquidityBtc),
                           detail: _copy(
                             pt: 'Capacidade de saída disponível para pagamentos LN',
-                            en: 'Outbound capacity available for LN payments',
-                            es: 'Capacidad de salida disponible para pagos LN',
+                            en: 'Available capacity for Lightning payments',
+                            es: 'Capacidad disponible para pagos Lightning',
                           ),
                           accentColor: overview.lightningSendsAllowed
                               ? AppColors.success
@@ -745,9 +746,9 @@ class _SovereigntyStatusScreenState
                         width: itemWidth,
                         child: _MetricCard(
                           label: _copy(
-                            pt: 'Liquidez inbound',
-                            en: 'Inbound liquidity',
-                            es: 'Liquidez inbound',
+                            pt: 'Liquidez para recebimento',
+                            en: 'Receive liquidity',
+                            es: 'Liquidez para recepcion',
                           ),
                           value: _formatBtc(overview.inboundLiquidityBtc),
                           detail: _copy(
@@ -895,16 +896,20 @@ class _SovereigntyStatusScreenState
     final statusColor =
         statusOk ? AppColors.success : Theme.of(context).colorScheme.error;
     final statusLabel = failStopMode
-        ? 'FAIL-STOP'
+        ? _copy(
+            pt: 'SAÍDAS PAUSADAS',
+            en: 'OUTFLOWS PAUSED',
+            es: 'SALIDAS PAUSADAS',
+          )
         : (isSolvent
             ? _copy(pt: 'SOLVENTE', en: 'SOLVENT', es: 'SOLVENTE')
             : _copy(pt: 'RISCO', en: 'RISK', es: 'RIESGO'));
 
     final summary = failStopMode
         ? _copy(
-            pt: 'O fail-stop protege escritas enquanto o quórum não volta ao mínimo operacional. A liquidez segue visível, mas as saídas devem ser tratadas como bloqueadas.',
-            en: 'Fail-stop protects writes while quorum is below the operational minimum. Liquidity remains visible, but outflows should be treated as blocked.',
-            es: 'El fail-stop protege las escrituras mientras el quórum no vuelva al mínimo operativo. La liquidez sigue visible, pero las salidas deben tratarse como bloqueadas.',
+            pt: 'As saídas foram pausadas por segurança até que as confirmações voltem ao nível mínimo. A liquidez segue visível.',
+            en: 'Outflows are paused for safety until confirmations return to the minimum level. Liquidity remains visible.',
+            es: 'Las salidas estan pausadas por seguridad hasta que las confirmaciones vuelvan al nivel minimo. La liquidez sigue visible.',
           )
         : statusOk
             ? _copy(
@@ -913,9 +918,9 @@ class _SovereigntyStatusScreenState
                 es: 'Los activos auditados cubren el pasivo y la operación mantiene margen para on-chain, Lightning y recolección segregada de ganancias.',
               )
             : _copy(
-                pt: 'Há pressão operacional entre solvência, liquidez ou quórum. Revise buffer, reservas e disponibilidade de nós antes de ampliar a exposição.',
-                en: 'There is operational pressure between solvency, liquidity, or quorum. Review buffer, reserves, and node availability before increasing exposure.',
-                es: 'Existe presión operativa entre solvencia, liquidez o quórum. Revisa buffer, reservas y disponibilidad de nodos antes de aumentar la exposición.',
+                pt: 'Há atenção necessária entre saldo, liquidez ou confirmações. Revise as reservas antes de ampliar a exposição.',
+                en: 'Balance, liquidity, or confirmations need attention. Review reserves before increasing exposure.',
+                es: 'Saldo, liquidez o confirmaciones requieren atencion. Revisa las reservas antes de aumentar la exposicion.',
               );
 
     return Container(
@@ -1012,22 +1017,22 @@ class _SovereigntyStatusScreenState
             runSpacing: 10,
             children: [
               _SummaryPill(
-                label: _copy(pt: 'Buffer', en: 'Buffer', es: 'Buffer'),
+                label: context.l10n.securityTreasuryBuffer,
                 value: _formatSignedBtc(buffer),
                 ok: buffer >= 0,
               ),
               _SummaryPill(
-                label: _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum'),
+                label: context.l10n.securityTreasuryConfirmations,
                 value: '$activeNodes/$totalNodes',
                 ok: quorumHealthy,
               ),
               _SummaryPill(
-                label: _copy(pt: 'Lightning', en: 'Lightning', es: 'Lightning'),
+                label: context.l10n.securityTreasuryLightning,
                 value: _formatShortBtc(lightningBalance),
                 ok: lightningBalance > 0,
               ),
               _SummaryPill(
-                label: _copy(pt: 'Lucro', en: 'Profit', es: 'Ganancia'),
+                label: context.l10n.securityTreasuryProfit,
                 value: _formatShortBtc(profitPending),
                 ok: profitPending >= 0,
               ),
@@ -1088,9 +1093,9 @@ class _SovereigntyStatusScreenState
                       ),
                       value: _formatBtc(onchainBalance),
                       detail: _copy(
-                        pt: 'Hot wallet + XPUBs',
-                        en: 'Hot wallet + XPUBs',
-                        es: 'Hot wallet + XPUBs',
+                        pt: 'Reservas acompanhadas',
+                        en: 'Tracked reserves',
+                        es: 'Reservas acompanadas',
                       ),
                     ),
                   ),
@@ -1122,18 +1127,18 @@ class _SovereigntyStatusScreenState
           const SizedBox(height: 16),
           _TreasuryDetailRow(
             label: _copy(
-              pt: 'Carteiras monitoradas por XPUB',
-              en: 'Wallets monitored by XPUB',
-              es: 'Carteras monitoreadas por XPUB',
+              pt: 'Carteiras frias acompanhadas',
+              en: 'Watched cold wallets',
+              es: 'Billeteras frias acompanadas',
             ),
             value: _formatBtc(walletXpubBalance),
           ),
           const SizedBox(height: 10),
           _TreasuryDetailRow(
             label: _copy(
-              pt: 'Cofre auditado / treasury XPUB',
-              en: 'Audited treasury / treasury XPUB',
-              es: 'Tesorería auditada / treasury XPUB',
+              pt: 'Cofre principal acompanhado',
+              en: 'Tracked main vault',
+              es: 'Boveda principal acompanada',
             ),
             value: _formatBtc(treasuryXpubBalance),
           ),
@@ -1155,14 +1160,14 @@ class _SovereigntyStatusScreenState
             ),
             value: failStopMode
                 ? _copy(
-                    pt: 'Saídas pausadas por fail-stop',
-                    en: 'Outflows paused by fail-stop',
-                    es: 'Salidas pausadas por fail-stop',
+                    pt: 'Saídas pausadas por segurança',
+                    en: 'Outflows paused for safety',
+                    es: 'Salidas pausadas por seguridad',
                   )
                 : _copy(
-                    pt: 'Quórum $activeNodes/$totalNodes ativo • mínimo $requiredNodes',
-                    en: 'Quorum $activeNodes/$totalNodes active • minimum $requiredNodes',
-                    es: 'Quórum $activeNodes/$totalNodes activo • mínimo $requiredNodes',
+                    pt: 'Confirmações $activeNodes/$totalNodes ativas • mínimo $requiredNodes',
+                    en: 'Confirmations $activeNodes/$totalNodes active • minimum $requiredNodes',
+                    es: 'Confirmaciones $activeNodes/$totalNodes activas • minimo $requiredNodes',
                   ),
             highlight: quorumHealthy,
           ),
@@ -1175,9 +1180,9 @@ class _SovereigntyStatusScreenState
     final active = quorum['status'] == 'ACTIVE';
     final activeNodes = quorum['activeNodes'] ?? 0;
     final totalNodes = quorum['totalNodes'] ?? 3;
-    final quorumLabel = _copy(pt: 'Quórum', en: 'Quorum', es: 'Quórum');
-    final algorithmLabel =
-        _copy(pt: 'Algoritmo', en: 'Algorithm', es: 'Algoritmo');
+    final quorumLabel =
+        _copy(pt: 'Confirmações', en: 'Confirmations', es: 'Confirmaciones');
+    final algorithmLabel = _copy(pt: 'Regra', en: 'Rule', es: 'Regla');
     final jurisdictions = (quorum['jurisdictions'] as List<dynamic>?)
             ?.map((entry) => entry.toString())
             .toList() ??
@@ -1187,9 +1192,15 @@ class _SovereigntyStatusScreenState
       icon: Icons.hub_rounded,
       title: context.l10n.networkConsensus,
       subtitle:
-          '$activeNodes/$totalNodes ${_copy(pt: 'nós ativos', en: 'active nodes', es: 'nodos activos')}',
+          '$activeNodes/$totalNodes ${_copy(pt: 'confirmações ativas', en: 'active confirmations', es: 'confirmaciones activas')}',
       statusOk: active,
-      statusLabel: quorum['status'] ?? 'OFFLINE',
+      statusLabel: active
+          ? _copy(pt: 'Ativo', en: 'Active', es: 'Activo')
+          : _copy(
+              pt: 'Atenção necessária',
+              en: 'Needs attention',
+              es: 'Requiere atención',
+            ),
       rows: [
         _Row(
           label: quorumLabel,
@@ -1198,7 +1209,11 @@ class _SovereigntyStatusScreenState
         ),
         _Row(
           label: algorithmLabel,
-          value: quorum['consensusAlgorithm'] ?? 'BFT',
+          value: _copy(
+            pt: 'Confirmação distribuída',
+            en: 'Distributed approval',
+            es: 'Aprobación distribuida',
+          ),
         ),
         for (int i = 0; i < jurisdictions.length; i++)
           _Row(
@@ -1638,27 +1653,27 @@ class _SovereigntyStatusScreenState
     switch (overview.liquidityState.trim().toUpperCase()) {
       case 'HEALTHY':
         return _copy(
-          pt: 'A reserva on-chain cobre a liquidez outbound do node Lightning e os pagamentos LN podem seguir sem bloqueio adicional.',
-          en: 'On-chain reserves cover outbound node liquidity and LN sends can proceed without extra blocking.',
-          es: 'La reserva on-chain cubre la liquidez outbound del nodo Lightning y los envíos LN pueden seguir sin bloqueo adicional.',
+          pt: 'A reserva Bitcoin cobre a liquidez Lightning disponível para envio e os pagamentos podem seguir normalmente.',
+          en: 'Bitcoin reserves cover available Lightning send liquidity, so payments can continue normally.',
+          es: 'La reserva Bitcoin cubre la liquidez Lightning disponible para envio y los pagos pueden continuar normalmente.',
         );
       case 'REBALANCE_REQUIRED':
         return _copy(
-          pt: 'A reserva está íntegra, mas a distribuição de inbound/outbound pede rebalanceamento antes de ampliar o volume Lightning.',
-          en: 'Reserves are intact, but inbound/outbound distribution requires rebalancing before increasing Lightning volume.',
-          es: 'Las reservas están íntegras, pero la distribución inbound/outbound requiere rebalanceo antes de aumentar el volumen Lightning.',
+          pt: 'A reserva está íntegra, mas a liquidez Lightning precisa de ajuste antes de ampliar o volume.',
+          en: 'Reserves are intact, but Lightning liquidity needs adjustment before volume increases.',
+          es: 'Las reservas estan integras, pero la liquidez Lightning necesita ajuste antes de aumentar el volumen.',
         );
       case 'BLOCKED_ONCHAIN_RESERVE':
         return _copy(
-          pt: 'Os pagamentos Lightning foram bloqueados porque a reserva on-chain não cobre a liquidez outbound atualmente exposta.',
-          en: 'Lightning sends are blocked because on-chain reserves do not cover currently exposed outbound liquidity.',
-          es: 'Los envíos Lightning están bloqueados porque la reserva on-chain no cubre la liquidez outbound actualmente expuesta.',
+          pt: 'Os pagamentos Lightning foram pausados até que a reserva Bitcoin volte ao nível necessário.',
+          en: 'Lightning sends are paused until Bitcoin reserves return to the required level.',
+          es: 'Los pagos Lightning estan pausados hasta que la reserva Bitcoin vuelva al nivel necesario.',
         );
       default:
         return _copy(
-          pt: 'A leitura operacional retornou um estado de liquidez não categorizado. Revise a reserva, os canais e os bloqueios pendentes.',
-          en: 'Operational readout returned an uncategorized liquidity state. Review reserves, channels, and pending locks.',
-          es: 'La lectura operativa devolvió un estado de liquidez no categorizado. Revisa reservas, canales y bloqueos pendientes.',
+          pt: 'Não conseguimos classificar a liquidez agora. Revise as reservas antes de continuar.',
+          en: 'We could not classify liquidity right now. Review reserves before continuing.',
+          es: 'No pudimos clasificar la liquidez ahora. Revisa las reservas antes de continuar.',
         );
     }
   }

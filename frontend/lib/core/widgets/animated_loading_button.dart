@@ -89,12 +89,12 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
       height: 56,
       decoration: BoxDecoration(
         color: _isLoading
-            ? widget.baseColor.withOpacity(0.15)
+            ? widget.baseColor.withValues(alpha: 0.15)
             : widget.baseColor,
         borderRadius: BorderRadius.circular(14),
         border: _isLoading
             ? Border.all(
-                color: widget.baseColor.withOpacity(0.5),
+                color: widget.baseColor.withValues(alpha: 0.5),
                 width: 1.5,
               )
             : null,
@@ -123,28 +123,33 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
-                color: widget.baseColor.withOpacity(_glowAnimation.value),
+                color: widget.baseColor.withValues(alpha: _glowAnimation.value),
                 strokeWidth: 2,
               ),
             ),
             const SizedBox(width: 12),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              child: Text(
-                widget.loadingTexts[_currentTextIndex],
-                key: ValueKey<int>(_currentTextIndex),
-                style: TextStyle(
-                  color: widget.baseColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  letterSpacing: 0.5,
-                  shadows: [
-                    Shadow(
-                      color: widget.baseColor
-                          .withValues(alpha: _glowAnimation.value * 0.5),
-                      blurRadius: 8,
-                    ),
-                  ],
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                child: Text(
+                  widget.loadingTexts[_currentTextIndex],
+                  key: ValueKey<int>(_currentTextIndex),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: widget.baseColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    letterSpacing: 0,
+                    shadows: [
+                      Shadow(
+                        color: widget.baseColor.withValues(
+                          alpha: _glowAnimation.value * 0.5,
+                        ),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -157,11 +162,14 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
   Widget _buildIdleState() {
     return Text(
       widget.text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
       style: TextStyle(
         color: Theme.of(context).scaffoldBackgroundColor,
         fontWeight: FontWeight.w800,
         fontSize: 16,
-        letterSpacing: 0.5,
+        letterSpacing: 0,
       ),
     );
   }

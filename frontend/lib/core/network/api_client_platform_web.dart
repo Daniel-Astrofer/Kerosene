@@ -9,9 +9,9 @@ void configureProxyRouting({
   required Ref ref,
   required ApiClientRoutePolicy routePolicy,
   required String baseUrl,
-  required bool shouldUseSocksProxy({
+  required bool Function({
     required String baseUrl,
     required ApiClientRoutePolicy routePolicy,
     required bool torRunning,
-  }),
+  }) shouldUseSocksProxy,
 }) {}

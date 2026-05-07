@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/device_helper.dart';
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -52,6 +53,75 @@ class AuthRepositoryImpl implements AuthRepository {
           statusCode: e.statusCode,
           errorCode: e.errorCode,
           data: e.data));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AdminLoginResult>> startAdminLogin({
+    required String username,
+    required String password,
+    required String adminKeyProof,
+    required DeviceMetadata deviceMetadata,
+  }) async {
+    try {
+      final result = await remoteDataSource.startAdminLogin(
+        username: username,
+        password: password,
+        adminKeyProof: adminKeyProof,
+        deviceMetadata: deviceMetadata,
+      );
+      if (result.token.isNotEmpty && result.token.contains('.')) {
+        final parsed = LoginResult.fromResponseData(result.token);
+        await localDataSource.saveToken(parsed.jwt);
+      }
+      return Right(result);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AdminLoginResult>> pollAdminLogin(
+      String attemptId) async {
+    try {
+      final result = await remoteDataSource.pollAdminLogin(attemptId);
+      if (result.token.isNotEmpty) {
+        final parsed = LoginResult.fromResponseData(result.token);
+        if (parsed.jwt.isNotEmpty && parsed.jwt.contains('.')) {
+          await localDataSource.saveToken(parsed.jwt);
+        }
+      }
+      return Right(result);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -363,23 +433,6 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId) async {
-    try {
-      await remoteDataSource.mockConfirmOnboarding(sessionId);
-      return const Right(null);
-    } on AppException catch (error) {
-      return Left(ServerFailure(
-        message: error.message,
-        statusCode: error.statusCode,
-        errorCode: error.errorCode,
-        data: error.data,
-      ));
-    } catch (error) {
-      return Left(ServerFailure(message: error.toString()));
-    }
-  }
-
-  @override
   Future<Either<Failure, ActivationStatusResult>>
       createActivationDepositLink() async {
     try {
@@ -570,18 +623,14 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-
-
-
-
   // ─── Logout ───────────────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, void>> logout() async {
     try {
       try {
         await remoteDataSource.logout();
-      } catch (e) {
-        debugPrint('Remote logout failed, proceeding with local clear: $e');
+      } catch (_) {
+        debugPrint('Remote logout failed; clearing local session.');
       }
       await localDataSource.clearAll();
       return const Right(null);

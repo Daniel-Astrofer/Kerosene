@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/l10n/l10n_extension.dart';
-import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
+import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class PersonalDataScreen extends ConsumerWidget {
   const PersonalDataScreen({super.key});
@@ -11,6 +12,7 @@ class PersonalDataScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
+    final responsive = context.responsive;
     String name = "User";
     if (authState is AuthAuthenticated) {
       name = authState.user.name;
@@ -22,34 +24,45 @@ class PersonalDataScreen extends ConsumerWidget {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: EdgeInsets.all(
+              responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+            ),
             child: _buildHeader(context),
           ),
 
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  _buildInfoItem(
-                    context,
-                    context.l10n.name,
-                    name,
-                    Icons.person_outline_rounded,
+              padding: EdgeInsets.symmetric(
+                horizontal: responsive.horizontalPadding,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: responsive.mobileContentMaxWidth,
                   ),
-                  _buildInfoItem(
-                    context,
-                    context.l10n.phone,
-                    "+1 (555) 123-4567",
-                    Icons.phone_outlined,
+                  child: Column(
+                    children: [
+                      _buildInfoItem(
+                        context,
+                        context.l10n.name,
+                        name,
+                        Icons.person_outline_rounded,
+                      ),
+                      _buildInfoItem(
+                        context,
+                        context.l10n.phone,
+                        "+1 (555) 123-4567",
+                        Icons.phone_outlined,
+                      ),
+                      _buildInfoItem(
+                        context,
+                        context.l10n.personalAddress,
+                        "123 Bitcoin Blvd, Satoshi City",
+                        Icons.location_on_outlined,
+                      ),
+                    ],
                   ),
-                  _buildInfoItem(
-                    context,
-                    context.l10n.personalAddress,
-                    "123 Bitcoin Blvd, Satoshi City",
-                    Icons.location_on_outlined,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -66,16 +79,15 @@ class PersonalDataScreen extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.1)),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.1),
+              ),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -85,12 +97,15 @@ class PersonalDataScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        Text(
-          context.l10n.personalData.toUpperCase(),
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium!
-              .copyWith(letterSpacing: 2),
+        Expanded(
+          child: Text(
+            context.l10n.personalData.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium!.copyWith(letterSpacing: 0),
+          ),
         ),
       ],
     );
@@ -109,28 +124,28 @@ class PersonalDataScreen extends ConsumerWidget {
         color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: Theme.of(context)
-                .colorScheme
-                .onPrimary
-                .withValues(alpha: 0.05)),
+          color: Theme.of(
+            context,
+          ).colorScheme.onPrimary.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.7),
-                size: 20),
+            child: Icon(
+              icon,
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.7),
+              size: 20,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -139,29 +154,33 @@ class PersonalDataScreen extends ConsumerWidget {
               children: [
                 Text(
                   label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.3),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.0,
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.3),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 ),
               ],
             ),
           ),
           Icon(
             Icons.edit_rounded,
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.onPrimary.withValues(alpha: 0.3),
             size: 20,
           ),
         ],

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,14 +78,14 @@ void main() {
         ],
       );
 
-      print('🚀 [Setup] Initializing Tor Relay (Port 9999)...');
+      debugPrint('🚀 [Setup] Initializing Tor Relay (Port 9999)...');
       final host = Uri.parse(AppConfig.onionBaseUrl).host;
       int relayPort;
       try {
         // Try standard relay first (port 9050 fallback in TorService)
         relayPort = await torService.startRelay(host, 80);
       } catch (e) {
-        print(
+        debugPrint(
             '⚠️ [Setup] TorService.startRelay failed, using manual relay on port 9999...');
         relayPort = await _manualStartRelay(9999, host, 80);
       }
@@ -92,7 +93,7 @@ void main() {
       final testApiUrl = 'http://127.0.0.1:$relayPort';
       AppConfig.apiUrl = testApiUrl;
       container.read(torApiUrlProvider.notifier).updateUrl(testApiUrl);
-      print('✅ [Setup] API Ready at $testApiUrl');
+      debugPrint('✅ [Setup] API Ready at $testApiUrl');
     });
 
     tearDownAll(() async {
@@ -103,14 +104,14 @@ void main() {
     test('Step 1-3: Signup & PoW', () async {
       final apiClient = container.read(apiClientProvider);
 
-      print('📡 [Auth] Requesting PoW Challenge...');
+      debugPrint('📡 [Auth] Requesting PoW Challenge...');
       final challengeRes = await apiClient.get(AppConfig.authPowChallenge);
       final challenge = challengeRes.data['challenge'];
 
-      print('🧠 [Auth] Solving PoW...');
+      debugPrint('🧠 [Auth] Solving PoW...');
       final nonce = solvePoW(challenge);
 
-      print('📝 [Auth] Signup for: $testUsername');
+      debugPrint('📝 [Auth] Signup for: $testUsername');
       final signupRes = await apiClient.post(
         AppConfig.authSignup,
         data: {
@@ -132,7 +133,7 @@ void main() {
       }
       totpSecret ??= body['totpSecret'] ?? body['data']?['totpSecret'];
 
-      print(
+      debugPrint(
           '✅ [Auth] Signup successful. TOTP Secret: ${totpSecret?.substring(0, 4)}...');
       expect(totpSecret, isNotNull);
     });
@@ -142,7 +143,7 @@ void main() {
       expect(totpSecret, isNotNull);
 
       final code = TotpGenerator.generate(totpSecret!);
-      print('🔢 [Auth] Verifying Signup TOTP Code: $code');
+      debugPrint('🔢 [Auth] Verifying signup TOTP code.');
 
       final verifyRes = await apiClient.post(
         AppConfig.authSignupVerify,
@@ -153,13 +154,13 @@ void main() {
       );
 
       expect(verifyRes.statusCode, 200);
-      print('✅ [Auth] Account Verified.');
+      debugPrint('✅ [Auth] Account Verified.');
     });
 
     test('Step 5: Login & preAuthToken', () async {
       final apiClient = container.read(apiClientProvider);
 
-      print('🔑 [Auth] Login attempt...');
+      debugPrint('🔑 [Auth] Login attempt...');
       final loginRes = await apiClient.post(
         AppConfig.authLogin,
         data: {
@@ -170,7 +171,7 @@ void main() {
 
       expect(loginRes.statusCode, 202);
       preAuthToken = loginRes.data.toString();
-      print('✅ [Auth] Login Accepted. PreAuthToken received.');
+      debugPrint('✅ [Auth] Login Accepted. PreAuthToken received.');
     });
 
     test('Step 6: Final Login Verify (TOTP)', () async {
@@ -179,7 +180,7 @@ void main() {
       expect(preAuthToken, isNotNull);
 
       final code = TotpGenerator.generate(totpSecret!);
-      print('🔢 [Auth] Verifying Login TOTP Code: $code');
+      debugPrint('🔢 [Auth] Verifying login TOTP code.');
 
       final finalVerifyRes = await apiClient.post(
         AppConfig.authLoginVerify,
@@ -195,14 +196,14 @@ void main() {
       final raw = finalVerifyRes.data.toString();
       finalJwt = raw.contains(' ') ? raw.split(' ').last : raw;
 
-      print('✅ [Auth] Final JWT Obtained: ${finalJwt?.substring(0, 16)}...');
+      debugPrint('✅ [Auth] Final session credential obtained.');
     });
 
     test('Step 7: Profile Access Check', () async {
       final apiClient = container.read(apiClientProvider);
       expect(finalJwt, isNotNull);
 
-      print('👤 [Auth] Accessing /auth/me...');
+      debugPrint('👤 [Auth] Accessing /auth/me...');
       final meRes = await apiClient.get(
         AppConfig.authMe,
         options: Options(headers: {'Authorization': 'Bearer $finalJwt'}),
@@ -210,7 +211,7 @@ void main() {
 
       expect(meRes.statusCode, 200);
       expect(meRes.data['username'], testUsername);
-      print(
+      debugPrint(
           '🎉 [Auth] Profile matched! User is authenticated as ${meRes.data['username']}');
     });
   },

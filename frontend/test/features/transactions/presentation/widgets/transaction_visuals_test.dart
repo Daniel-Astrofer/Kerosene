@@ -22,7 +22,7 @@ void main() {
 
       expect(visual.family, TransactionVisualFamily.onChain);
       expect(visual.direction, TransactionVisualDirection.outgoing);
-      expect(visual.label, 'Envio on-chain');
+      expect(visual.labelKey, TransactionVisualLabel.onChainSend);
       expect(visual.prefix, '-');
     });
 
@@ -44,7 +44,7 @@ void main() {
 
       expect(visual.family, TransactionVisualFamily.internalTransfer);
       expect(visual.direction, TransactionVisualDirection.incoming);
-      expect(visual.label, 'Recebimento interno');
+      expect(visual.labelKey, TransactionVisualLabel.internalReceive);
       expect(visual.prefix, '+');
     });
 
@@ -67,7 +67,7 @@ void main() {
 
       expect(visual.family, TransactionVisualFamily.qrCode);
       expect(visual.direction, TransactionVisualDirection.incoming);
-      expect(visual.label, 'Recebimento via QR');
+      expect(visual.labelKey, TransactionVisualLabel.qrReceive);
     });
 
     test('classifies lightning transactions from the explicit flag', () {
@@ -88,7 +88,7 @@ void main() {
 
       expect(visual.family, TransactionVisualFamily.lightning);
       expect(visual.direction, TransactionVisualDirection.outgoing);
-      expect(visual.label, 'Pagamento Lightning');
+      expect(visual.labelKey, TransactionVisualLabel.lightningPayment);
     });
 
     test('keeps deposits in the dedicated deposit family', () {
@@ -108,7 +108,7 @@ void main() {
 
       expect(visual.family, TransactionVisualFamily.deposit);
       expect(visual.direction, TransactionVisualDirection.incoming);
-      expect(visual.label, 'Depósito');
+      expect(visual.labelKey, TransactionVisualLabel.deposit);
     });
   });
 
@@ -131,6 +131,7 @@ void main() {
         blockchainTxid: '',
         paymentHash: 'payment-hash-1',
         invoiceData: 'lnbc1pjexampleinvoice',
+        expectedAmountBtc: 0,
         confirmations: 0,
         detectedAt: null,
         settledAt: null,

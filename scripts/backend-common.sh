@@ -56,6 +56,8 @@ ensure_docker_service_started() {
   info "Docker daemon is not responding. Starting docker service..."
   if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     systemctl start docker >/dev/null 2>&1 || fail "Failed to start Docker service with systemctl."
+  elif systemctl start docker >/dev/null 2>&1; then
+    :
   elif command -v sudo >/dev/null 2>&1; then
     if sudo -n true 2>/dev/null; then
       sudo -n systemctl start docker >/dev/null || fail "Failed to start Docker service with sudo systemctl."
@@ -87,10 +89,24 @@ wait_for_docker() {
 
 load_backend_env() {
   require_file "$ENV_FILE"
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
+  local line key value first last
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || fail "Invalid .env line: ${line%%=*}"
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    if [[ "${#value}" -ge 2 ]]; then
+      first="${value:0:1}"
+      last="${value: -1}"
+      if { [[ "$first" == "'" ]] && [[ "$last" == "'" ]]; } ||
+         { [[ "$first" == '"' ]] && [[ "$last" == '"' ]]; }; then
+        value="${value:1:${#value}-2}"
+      fi
+    fi
+    export "$key=$value"
+  done < "$ENV_FILE"
 }
 
 detect_compose() {

@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 
@@ -94,10 +93,9 @@ class _BouncingButtonState extends State<BouncingButton> {
                       widget.onPressed?.call();
                     },
               borderRadius: BorderRadius.zero,
-              splashColor: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.1),
+              splashColor: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.1),
               highlightColor: Colors.transparent,
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -138,13 +136,18 @@ class _BouncingButtonState extends State<BouncingButton> {
                                   constraints: BoxConstraints(
                                     maxWidth: availableTextWidth.toDouble(),
                                   ),
-                                  child: Text(
-                                    widget.text,
-                                    textAlign: TextAlign.center,
-                                    softWrap: true,
-                                    style: AppTypography.buttonText.copyWith(
-                                      color: foregroundColor,
-                                      fontWeight: FontWeight.w800,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      widget.text,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      softWrap: false,
+                                      style: AppTypography.buttonText.copyWith(
+                                        color: foregroundColor,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
                                 ),

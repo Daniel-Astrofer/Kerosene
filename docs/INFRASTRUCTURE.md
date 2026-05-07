@@ -1,6 +1,6 @@
 # Infraestrutura Real do Kerosene
 
-Documento baseado nos arquivos Docker, compose, propriedades Spring e scripts existentes em 2026-04-07.
+Documento baseado nos arquivos Docker, compose, propriedades Spring e scripts existentes em 2026-04-29.
 
 ## Arquivos Relevantes
 
@@ -24,22 +24,30 @@ O compose local atual usa o layout real `backend/*`:
 
 ```bash
 bash scripts/init-local.sh
-bash scripts/start-local.sh
-bash scripts/logs-local.sh
-bash scripts/stop-local.sh
+docker compose up -d --build
+docker compose logs -f kerosene-app-is web-admin bitcoin-core vault-raft-1
+docker compose down
 ```
 
 Comando compose equivalente:
 
 ```bash
-docker compose --project-name kerosene-infrastructure --env-file backend/kerosene/.env -f backend/kerosene-infrastructure/docker-compose.local.yml config
-docker compose --project-name kerosene-infrastructure --env-file backend/kerosene/.env -f backend/kerosene-infrastructure/docker-compose.local.yml up -d --build
+docker compose --env-file backend/kerosene/.env -f docker-compose.yml config
+docker compose --env-file backend/kerosene/.env -f docker-compose.yml up -d --build
 ```
 
 Servicos definidos:
 
 | Servico | Funcao |
 | --- | --- |
+| `web-admin` | Nginx servindo `frontend/build/web`: landing em `/`, painel admin em `/admin`, download e status. |
+| `bitcoin-core` / `bitcoin-pruned-node` | No Bitcoin mainnet pruned com RPC, ZMQ e wallet descriptor. |
+| `lnd-neutrino` | LND mainnet real via Bitcoin Core pruned local para Lightning. |
+| `lnd-bootstrap` | Inicializa/desbloqueia a wallet LND e prepara TLS/macaroon. |
+| `bitcoin-indexer` | electrs opcional no profile `archive-indexer`; nao sobe no modo pruned padrao. |
+| `vault-raft-1`, `vault-raft-2`, `vault-raft-3` | HashiCorp Vault com integrated storage/Raft. |
+| `vault-raft-bootstrap` | Inicializacao, join e unseal do cluster Raft local. |
+| `prometheus` | Observabilidade basica dos servicos locais. |
 | `kerosene-vault` | Vault local sem port binding de host. |
 | `kerosene-tor-vault` | Hidden service Tor do Vault. |
 | `db-is`, `db-ch`, `db-sg` | PostgreSQL 17 Alpine por shard, `REQUIRE_MTLS=false` no local. |
@@ -56,6 +64,7 @@ Redes definidas:
 | `net_vault` | bridge internal | Sem egress direto; Vault isolado. |
 | `net_db_is`, `net_db_ch`, `net_db_sg` | bridge internal | Banco e Redis por shard. |
 | `net_mpc` | bridge internal | Declarada para sidecar MPC. |
+| `net_bitcoin` | bridge internal | Bitcoin Core pruned, indexador opcional e apps. |
 | `net_tor` | bridge internal | Comunicacao app/Tor. |
 | `tor_egress` | bridge | Apenas daemons Tor devem ter saida. |
 
@@ -71,6 +80,9 @@ tor_control_is, tor_control_ch, tor_control_sg
 vanguards_state_is, vanguards_state_ch, vanguards_state_sg
 tor_keys_vault, tor_keys_is, tor_keys_ch, tor_keys_sg
 shard_identity_is, shard_identity_ch, shard_identity_sg
+bitcoin_core_data, bitcoin_indexer_data
+vault_raft_1_data, vault_raft_2_data, vault_raft_3_data, vault_raft_bootstrap
+prometheus_data
 ```
 
 Observacao operacional: o compose local define os sidecars `mpc-sidecar-is`, `mpc-sidecar-ch` e `mpc-sidecar-sg` no `net_mpc`. O compose `backend/kerosene/docker-compose.yml` permanece como topologia distribuida antiga/producao e ainda deve ser revisado antes de producao para garantir build contexts consistentes com o layout `backend/*`.
@@ -104,10 +116,71 @@ flowchart TB
   end
 
   TorVault[kerosene-tor-vault] --> Vault[kerosene-vault]
+  Web[web-admin] --> AppIS
+  Web --> AppCH
+  Web --> AppSG
+  AppIS --> Bitcoin[bitcoin-core]
+  AppCH --> Bitcoin
+  AppSG --> Bitcoin
+  AppIS --> Lnd[lnd-bitcoind]
+  AppCH --> Lnd
+  AppSG --> Lnd
+  Bitcoin -. archive-indexer .-> Electrs[bitcoin-indexer opcional]
+  AppIS --> VaultRaft[vault-raft quorum]
+  AppCH --> VaultRaft
+  AppSG --> VaultRaft
+  Prom[prometheus] --> AppIS
+  Prom --> AppCH
+  Prom --> AppSG
   AppIS --> TorVault
   AppCH --> TorVault
   AppSG --> TorVault
 ```
+
+## Bitcoin Core Pruned, LND e Indexador Opcional
+
+Arquivos:
+
+- `backend/kerosene-infrastructure/bitcoin/bitcoind-entrypoint.sh`
+- `backend/kerosene-infrastructure/bitcoin/bitcoind-healthcheck.sh`
+- `backend/kerosene-infrastructure/scripts/lnd-entrypoint.sh`
+- `backend/kerosene-infrastructure/scripts/lnd-bootstrap.sh`
+
+O servico Compose continua chamado `bitcoin-core` para compatibilidade interna, mas o container e a rede expõem `bitcoin-pruned-node`. Ele usa a imagem oficial `bitcoin/bitcoin:27.1` e executa `bitcoind` em modo pruned real: `BITCOIN_CHAIN=mainnet`, `prune=${BITCOIN_PRUNE_MB:-5500}`, `txindex=0`, RPC local, ZMQ para blocos/transacoes e volume `bitcoin_core_data`. O container fica na `net_bitcoin` para RPC/ZMQ internos e tambem na rede de egress para conexoes P2P outbound da mainnet, sem publicar RPC no host. O healthcheck falha se `getblockchaininfo` nao reportar `pruned=true` e `chain=main`. Ele carrega ou cria o wallet descriptor `BITCOIN_RPC_WALLET`, usado para enderecos on-chain reais via `getnewaddress`.
+
+O servico Compose ainda se chama `lnd-neutrino` para compatibilidade, mas o container roda LND mainnet com `--bitcoin.active --bitcoin.node=bitcoind`, conectado ao `bitcoin-pruned-node` por RPC/ZMQ. A rede expõe o alias interno `lnd-bitcoind`, usado pelo backend e pelo bootstrap com verificacao TLS. `lnd-bootstrap` inicializa ou desbloqueia a wallet e disponibiliza `tls.cert` e `admin.macaroon` em `lnd_data`; as apps montam esse volume somente leitura e acessam LND por gRPC.
+
+`bitcoin-indexer`/electrs fica no profile `archive-indexer`. Ele nao e fonte primaria no modo pruned, porque indexadores de arquivo exigem historico/txindex que conflitam com a politica padrao de poda.
+
+O backend usa `bitcoin.rpc.*`, `bitcoin.rpc.zmq.*`, `lightning.lnd.*` e, opcionalmente, `bitcoin.indexer.*`. Se `bitcoin.rpc.required=true`, readiness e painel marcam falha quando o RPC local nao responde. Se `bitcoin.rpc.pruned-required=true`, o monitor blockchain marca falha quando o RPC responder de um no sem poda. Se LND estiver indisponivel, `/api/admin/operations/lightning` retorna `DOWN` e operacoes Lightning reais falham fechadas.
+
+## Vault Raft
+
+Arquivos:
+
+- `backend/kerosene-infrastructure/vault/raft/vault-raft-1.hcl`
+- `backend/kerosene-infrastructure/vault/raft/vault-raft-2.hcl`
+- `backend/kerosene-infrastructure/vault/raft/vault-raft-3.hcl`
+- `backend/kerosene-infrastructure/vault/raft/bootstrap-raft.sh`
+
+O bootstrap inicializa o cluster, junta os followers ao leader, faz unseal dos tres nos e persiste token/unseal keys em volume Docker local. As apps montam somente leitura esse volume para health checks. Valores gerados sao operacionais e nao devem ser publicados.
+
+## Release Snapshot e Identidade
+
+Arquivo:
+
+- `scripts/release-snapshot.sh`
+
+Comandos:
+
+```bash
+bash scripts/release-snapshot.sh generate
+bash scripts/release-snapshot.sh validate
+```
+
+O script calcula commit Git, hash do codigo, hash das configs permitidas, digest de manifesto, assinatura Ed25519 e SBOM opcional via `syft`. O diretorio `release/` permanece ignorado porque contem chave privada local e artefatos gerados.
+
+Cada app recebe `RELEASE_*` por ambiente e monta `/release` como somente leitura. O backend publica `/system/release`; o sidecar MPC publica `/version`.
 
 ## Backend App Image
 
@@ -266,11 +339,40 @@ HMAC_SECRET_KEY
 WEBAUTHN_RP_ID
 WEBAUTHN_RP_NAME
 WEBAUTHN_ORIGINS
-BITCOIN_ESPLORA_BASE_URL
+BITCOIN_NETWORK
+BITCOIN_CHAIN
+BITCOIN_PRUNE_MB
+BITCOIN_P2P_PORT
+BITCOIN_RPC_ENABLED
+BITCOIN_RPC_REQUIRED
+BITCOIN_RPC_PRUNED_REQUIRED
+BITCOIN_RPC_USER
+BITCOIN_RPC_PASSWORD
+BITCOIN_RPC_URL
+BITCOIN_RPC_WALLET
+BITCOIN_WALLET_PASSPHRASE
+BITCOIN_ZMQ_ENABLED
+BITCOIN_ZMQ_RAWTX
+BITCOIN_ZMQ_HASHBLOCK
+BITCOIN_INDEXER_BASE_URL
+BITCOIN_ESPLORA_ENABLED
+BITCOIN_FEE_RECOMMENDATION_URL
 BITCOIN_PLATFORM_MASTER_XPUB
 BITCOIN_HOT_WALLET_ADDRESS
 BITCOIN_HOT_WALLET_XPUB
 BITCOIN_HOT_WALLET_XPUB_SCAN_RANGE
+TRANSACTIONS_BITCOIN_CORE_WALLET_ADDRESS_ENABLED
+LIGHTNING_LND_ENABLED
+LIGHTNING_LND_HOST
+LIGHTNING_LND_PORT
+LIGHTNING_LND_REST_PORT
+LIGHTNING_LND_TLS_ENABLED
+LIGHTNING_LND_TLS_CERT_PATH
+LIGHTNING_LND_MACAROON
+LIGHTNING_LND_MACAROON_PATH
+LIGHTNING_LND_PROVIDER_NAME
+LIGHTNING_LND_BOOTSTRAP_TIMEOUT_SECONDS
+LND_WALLET_PASSWORD
 EXPECTED_TOR_HASH
 REGION
 MPC_SIDECAR_HOST
@@ -286,6 +388,20 @@ CUSTODY_LIGHTNING_INVOICE_PATH
 CUSTODY_ONCHAIN_SEND_PATH
 CUSTODY_LIGHTNING_PAY_PATH
 TOR_HEALTH_VANGUARDS_STATE_FILE
+VAULT_RAFT_REQUIRED
+VAULT_RAFT_ADDR
+VAULT_RAFT_TOKEN_FILE
+RELEASE_MANIFEST_PATH
+RELEASE_MANIFEST_SIGNATURE_PATH
+RELEASE_MANIFEST_PUBLIC_KEY
+RELEASE_ATTESTATION_REQUIRED
+RELEASE_ATTESTATION_REMOTE_ENABLED
+RELEASE_ATTESTATION_SECRET
+MOBILE_ANDROID_DOWNLOAD_URL
+MOBILE_IOS_DOWNLOAD_URL
+MOBILE_APP_VERSION
+MOBILE_ANDROID_SHA256
+MOBILE_IOS_SHA256
 ```
 
 Variaveis com defaults no codigo:
@@ -294,7 +410,11 @@ Variaveis com defaults no codigo:
 - `bitcoin.min-confirmations`.
 - `bitcoin.payment-link-expiration-minutes`.
 - `bitcoin.mock-mode`.
+- `bitcoin.rpc.*`.
+- `bitcoin.rpc.zmq.*`.
+- `bitcoin.esplora.enabled`.
 - `bitcoin.esplora.base-url`.
+- `bitcoin.fee-recommendation.url`.
 - `bitcoin.platform.master-xpub`.
 - `bitcoin.hot-wallet.address`.
 - `bitcoin.hot-wallet.xpub`.
@@ -315,15 +435,20 @@ Variaveis com defaults no codigo:
 - `custody.lightning-invoice-path`.
 - `custody.onchain-send-path`.
 - `custody.lightning-pay-path`.
+- `bitcoin.rpc.required`.
+- `vault.raft.required`.
+- `release.attestation.required`.
+- `release.attestation.remote.enabled`.
+- `mobile.release.version`.
 
 Configuracao nova de custodia/pagamentos externos:
 
 - `transactions.external.fee-rate`: taxa percentual aplicada em saidas externas; default real `0.009` (0.9%).
 - `lightning.default-max-routing-fee-sats`: reserva default de fee Lightning; default real `60` sats.
 - `custody.*`: define o adapter HTTP para provider externo de carteira/custodia. O nome default configurado no backend e `BCX`.
-- Se `custody.base-url` ou `custody.api-key` nao estiverem configurados, o backend entra em fallback:
-  - enderecos on-chain usam derivacao local a partir de uma branch por wallet da carteira principal da Kerosene (`bitcoin.platform.master-xpub` com fallback para `bitcoin.hot-wallet.xpub`).
-  - Lightning usa invoices/pagamentos mock deterministas para desenvolvimento.
+- No compose padrao, enderecos on-chain Kerosene usam `BitcoinCoreRpcClient.getNewAddress` contra o wallet `BITCOIN_RPC_WALLET`.
+- XPUB BIP84 (`bitcoin.platform.master-xpub`) continua disponivel para self-custody/watch-only. O fallback local deterministico exige `TRANSACTIONS_LOCAL_DERIVED_ADDRESS_FALLBACK_ENABLED=true` e fica desativado por padrao.
+- Lightning usa LND gRPC real para invoices, pagamentos e monitoramento; nao ha mock habilitado no profile Docker.
 
 ## Validacao Antes de Deploy
 
@@ -331,8 +456,10 @@ Checklist minimo:
 
 ```bash
 bash scripts/init-local.sh
-bash scripts/start-local.sh --no-arm
-bash scripts/stop-local.sh
+bash scripts/release-snapshot.sh generate
+docker compose --env-file backend/kerosene/.env -f docker-compose.yml config
+docker compose --env-file backend/kerosene/.env -f docker-compose.yml up -d --build
+docker compose --env-file backend/kerosene/.env -f docker-compose.yml down
 cd backend/kerosene
 ./gradlew test
 ./gradlew dependencyCheckAnalyze
@@ -345,3 +472,5 @@ Cuidados:
 - Confirme se os build contexts apontam para `backend/vault` e `backend/mpc-sidecar` no layout atual.
 - Confirme se `bitcoin.platform.master-xpub` ou `bitcoin.hot-wallet.xpub` estao configurados para a emissao dos enderecos custodiais on-chain.
 - Confirme se `WEBAUTHN_RP_ID` e `WEBAUTHN_ORIGINS` batem com o dominio/onion acessado pelo app.
+- Confirme se o manifesto assinado foi gerado para o commit e as imagens publicadas.
+- Confirme se o cluster Vault Raft tem leader, followers votantes e seal status saudavel antes de promover release.

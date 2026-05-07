@@ -13,6 +13,7 @@ import 'package:teste/core/utils/snackbar_helper.dart';
 /// Cliente HTTP configurado com Dio
 class ApiClient {
   static const int _paranoidMaxPayloadBytes = 2048;
+  static const int _psbtMaxPayloadBytes = 64 * 1024;
   late final Dio _dio;
   Dio get dio => _dio; // Added for TokenInterceptor retry logic
   final Ref ref; // Add Ref to access providers
@@ -119,7 +120,7 @@ class ApiClient {
     Options? options,
   }) async {
     try {
-      _validatePayloadSize(data);
+      _validatePayloadSize(path, data);
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.post(
         path,
@@ -143,7 +144,7 @@ class ApiClient {
     Options? options,
   }) async {
     try {
-      _validatePayloadSize(data);
+      _validatePayloadSize(path, data);
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.put(
         path,
@@ -167,7 +168,7 @@ class ApiClient {
     Options? options,
   }) async {
     try {
-      _validatePayloadSize(data);
+      _validatePayloadSize(path, data);
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.delete(
         path,
@@ -192,7 +193,7 @@ class ApiClient {
     return (options ?? Options()).copyWith(headers: currentHeaders);
   }
 
-  void _validatePayloadSize(dynamic data) {
+  void _validatePayloadSize(String path, dynamic data) {
     if (data == null) {
       return;
     }
@@ -208,17 +209,25 @@ class ApiClient {
     }
 
     if (payloadBytes == null ||
-        payloadBytes.length <= _paranoidMaxPayloadBytes) {
+        payloadBytes.length <= _maxPayloadBytesForPath(path)) {
       return;
     }
 
     const message =
-        'O payload excede 2 KB e será rejeitado pelo filtro de segurança do backend. Reduza o conteúdo antes de enviar.';
-    SnackbarHelper.showWarning(message, title: 'Payload muito grande');
+        'O conteúdo é grande demais para enviar com segurança. Reduza as informações e tente novamente.';
+    SnackbarHelper.showWarning(message, title: 'Conteúdo muito grande');
     throw const ValidationException(
       message: message,
       errorCode: 'ERR_PAYLOAD_TOO_LARGE',
     );
+  }
+
+  int _maxPayloadBytesForPath(String path) {
+    if (path.startsWith('/bitcoin/psbt/') ||
+        (path.contains('/cold-wallets/') && path.endsWith('/psbt'))) {
+      return _psbtMaxPayloadBytes;
+    }
+    return _paranoidMaxPayloadBytes;
   }
 
   @visibleForTesting
@@ -267,7 +276,7 @@ class ApiClient {
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
-          var message = 'Erro no servidor';
+          var message = 'Não conseguimos concluir a solicitação agora.';
           String? errorCode;
           Object? errorData;
 

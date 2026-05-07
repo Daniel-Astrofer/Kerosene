@@ -81,9 +81,10 @@ abstract class TransactionRemoteDataSource {
   });
   Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
-    bool regenerate = false,
+    required double expectedAmountBtc,
   });
   Future<LightningInvoice> createLightningInvoice({
+    required String idempotencyKey,
     required String walletName,
     required double amount,
     String? memo,
@@ -105,6 +106,7 @@ abstract class TransactionRemoteDataSource {
     String? description,
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
+    String? idempotencyKey,
   });
 }
 
@@ -129,6 +131,66 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           .toList();
     }
     return const [];
+  }
+
+  List<ExternalTransfer> _externalTransfersFromResponse(dynamic data) {
+    return _parseJsonListResponse(data).map(ExternalTransfer.fromJson).toList();
+  }
+
+  bool _isCreditedExternalStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+      case 'SETTLED':
+      case 'CONFIRMED':
+      case 'PAID':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  Deposit _depositFromExternalTransfer(ExternalTransfer transfer) {
+    final transferId = [
+      transfer.blockchainTxid,
+      transfer.paymentHash,
+      transfer.externalReference,
+      transfer.invoiceId,
+      transfer.id,
+    ].firstWhere((value) => value.trim().isNotEmpty, orElse: () => transfer.id);
+    final amount = transfer.amountBtc.abs() > 0
+        ? transfer.amountBtc.abs()
+        : transfer.expectedAmountBtc.abs();
+    final credited = _isCreditedExternalStatus(transfer.status);
+
+    return Deposit(
+      id: transfer.id.hashCode,
+      userId: 0,
+      txid: transferId,
+      fromAddress: transfer.provider,
+      toAddress: transfer.destination.isNotEmpty
+          ? transfer.destination
+          : transfer.walletName,
+      amountBtc: amount,
+      confirmations: transfer.confirmations,
+      status: credited ? 'credited' : transfer.status.toLowerCase(),
+      createdAt: transfer.detectedAt ?? transfer.createdAt,
+      confirmedAt: transfer.settledAt,
+    );
+  }
+
+  bool _matchesExternalTransfer(ExternalTransfer transfer, String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    return [
+      transfer.id,
+      transfer.blockchainTxid,
+      transfer.paymentHash,
+      transfer.externalReference,
+      transfer.invoiceId,
+    ].any((candidate) => candidate.trim() == normalized);
   }
 
   Map<String, dynamic> _parseErrorPayload(dynamic data) {
@@ -163,10 +225,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     final message = payload['message']?.toString().trim().isNotEmpty == true
         ? payload['message']!.toString().trim()
         : (payload['error']?.toString().trim().isNotEmpty == true
-            ? payload['error']!.toString().trim()
-            : (error.message?.trim().isNotEmpty == true
-                ? error.message!.trim()
-                : 'Erro no servidor'));
+              ? payload['error']!.toString().trim()
+              : (error.message?.trim().isNotEmpty == true
+                    ? error.message!.trim()
+                    : 'Não conseguimos concluir sua solicitação agora.'));
     final rawCode = payload['errorCode']?.toString().trim();
     final errorCode = rawCode == null || rawCode.isEmpty ? null : rawCode;
     final errorData = payload['data'];
@@ -209,7 +271,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return FeeEstimate.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao estimar taxa: $e');
+      throw ServerException(
+        message: 'Não conseguimos calcular a taxa agora. Tente novamente.',
+      );
     }
   }
 
@@ -231,7 +295,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao criar transação não assinada: $e',
+        message:
+            'Não conseguimos preparar essa transação agora. Tente novamente.',
       );
     }
   }
@@ -246,7 +311,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar status: $e');
+      throw ServerException(
+        message: 'Não conseguimos atualizar o status agora.',
+      );
     }
   }
 
@@ -266,8 +333,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     int? requestTimestamp,
   }) async {
     try {
-      final normalizedSender =
-          fromAddress.trim().isNotEmpty ? fromAddress.trim() : '';
+      final normalizedSender = fromAddress.trim().isNotEmpty
+          ? fromAddress.trim()
+          : '';
       final response = await apiClient.post(
         AppConfig.ledgerTransaction,
         data: {
@@ -287,7 +355,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       final data = _parseJsonResponse(response.data);
       if (data.isEmpty) {
-        final fallbackTxid = idempotencyKey ??
+        final fallbackTxid =
+            idempotencyKey ??
             requestTimestamp?.toString() ??
             DateTime.now().microsecondsSinceEpoch.toString();
         return TxStatus(
@@ -307,7 +376,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         throw _mapDioError(e);
       }
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao enviar transação: $e');
+      throw ServerException(
+        message: 'Não conseguimos enviar a transação agora.',
+      );
     }
   }
 
@@ -331,7 +402,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao transmitir transação: $e');
+      throw ServerException(
+        message: 'Não conseguimos transmitir a transação agora.',
+      );
     }
   }
 
@@ -362,14 +435,16 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       if (address.isEmpty) {
         throw const ServerException(
-          message: 'Endereço de depósito não retornado pelo servidor.',
+          message: 'Não conseguimos criar um endereço para este depósito.',
         );
       }
 
       return address;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao obter endereço de depósito: $e');
+      throw ServerException(
+        message: 'Não conseguimos criar um endereço para este depósito.',
+      );
     }
   }
 
@@ -380,23 +455,24 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       final data = response.data;
 
       if (data is Map<String, dynamic>) {
-        return data.map(
-          (key, value) => MapEntry(key, value?.toString() ?? ''),
-        );
+        return data.map((key, value) => MapEntry(key, value?.toString() ?? ''));
       }
 
       if (data is Map) {
-        return Map<String, dynamic>.from(data).map(
-          (key, value) => MapEntry(key, value?.toString() ?? ''),
-        );
+        return Map<String, dynamic>.from(
+          data,
+        ).map((key, value) => MapEntry(key, value?.toString() ?? ''));
       }
 
       throw const ServerException(
-        message: 'Links de onramp não retornados pelo servidor.',
+        message:
+            'Não encontramos opções de compra disponíveis para esta sessão.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao obter links de onramp: $e');
+      throw ServerException(
+        message: 'Não conseguimos carregar as opções de compra agora.',
+      );
     }
   }
 
@@ -406,23 +482,18 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String fromAddress,
     required double amount,
   }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.transactionsConfirmDeposit,
-        data: {'txid': txid, 'fromAddress': fromAddress, 'amount': amount},
-      );
-      return Deposit.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao confirmar depósito: $e');
-    }
+    throw const ValidationException(
+      message:
+          'Depósitos são detectados automaticamente pelo monitoramento de rede. Aguarde a confirmação aparecer no histórico.',
+      errorCode: 'ERR_DEPOSIT_MANUAL_CONFIRM_DISABLED',
+    );
   }
 
   @override
   Future<List<Deposit>> getDeposits() async {
     try {
       final response = await apiClient.get(
-        AppConfig.transactionsDeposits, // Note: Verify if this constant exists
+        AppConfig.transactionsNetworkTransfers,
       );
 
       var data = response.data;
@@ -432,16 +503,15 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         } catch (_) {}
       }
 
-      if (data is List) {
-        return data
-            .whereType<Map<String, dynamic>>()
-            .map((e) => Deposit.fromJson(e))
-            .toList();
-      }
-      return [];
+      return _externalTransfersFromResponse(data)
+          .where((transfer) => transfer.isInboundTransfer)
+          .map(_depositFromExternalTransfer)
+          .toList();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao listar depósitos: $e');
+      throw ServerException(
+        message: 'Não conseguimos carregar seus depósitos agora.',
+      );
     }
   }
 
@@ -449,14 +519,23 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<double> getDepositBalance() async {
     try {
       final response = await apiClient.get(
-        AppConfig
-            .transactionsDepositBalance, // Note: Verify if this constant exists
+        AppConfig.transactionsNetworkTransfers,
       );
-      return double.tryParse(response.data.toString().trim()) ?? 0;
+      final deposits = _externalTransfersFromResponse(response.data)
+          .where(
+            (transfer) =>
+                transfer.isInboundTransfer &&
+                _isCreditedExternalStatus(transfer.status),
+          )
+          .map(_depositFromExternalTransfer);
+      return deposits.fold<double>(
+        0,
+        (total, deposit) => total + deposit.amountBtc,
+      );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao consultar saldo de depósitos: $e',
+        message: 'Não conseguimos atualizar o saldo de depósitos agora.',
       );
     }
   }
@@ -465,12 +544,31 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   Future<Deposit> getDeposit(String txid) async {
     try {
       final response = await apiClient.get(
-        '${AppConfig.transactionsDeposit}/$txid', // Note: Verify existence
+        AppConfig.transactionsNetworkTransfers,
       );
-      return Deposit.fromJson(_parseJsonResponse(response.data));
+      ExternalTransfer? transfer;
+      for (final candidate in _externalTransfersFromResponse(response.data)) {
+        if (candidate.isInboundTransfer &&
+            _matchesExternalTransfer(candidate, txid)) {
+          transfer = candidate;
+          break;
+        }
+      }
+
+      if (transfer == null) {
+        throw const ServerException(
+          message: 'Não encontramos este depósito no monitoramento de rede.',
+          statusCode: 404,
+          errorCode: 'ERR_DEPOSIT_NOT_FOUND',
+        );
+      }
+
+      return _depositFromExternalTransfer(transfer);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar depósito: $e');
+      throw ServerException(
+        message: 'Não conseguimos carregar este depósito agora.',
+      );
     }
   }
 
@@ -506,7 +604,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return PaymentLink.fromJson(data);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao criar payment link: $e');
+      throw ServerException(
+        message: 'Não conseguimos criar este link de pagamento agora.',
+      );
     }
   }
 
@@ -520,7 +620,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return PaymentLink.fromJson(data);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar payment link: $e');
+      throw ServerException(
+        message: 'Não conseguimos atualizar este link de pagamento agora.',
+      );
     }
   }
 
@@ -548,7 +650,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
 
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao listar payment links: $e');
+      throw ServerException(
+        message: 'Não conseguimos carregar seus links de pagamento agora.',
+      );
     }
   }
 
@@ -560,14 +664,14 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     try {
       final response = await apiClient.post(
         '${AppConfig.transactionsPaymentLink}/$linkId/cancel',
-        data: {
-          if (reason != null) 'reason': reason,
-        },
+        data: {if (reason != null) 'reason': reason},
       );
       return PaymentLink.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao cancelar payment link: $e');
+      throw ServerException(
+        message: 'Não conseguimos cancelar este link agora.',
+      );
     }
   }
 
@@ -584,7 +688,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao consultar perfil de rede da carteira: $e',
+        message: 'Não conseguimos verificar as opções desta carteira agora.',
       );
     }
   }
@@ -592,28 +696,30 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<OnchainAddressAllocation> issueOnchainAddress({
     required String walletName,
-    bool regenerate = false,
+    required double expectedAmountBtc,
   }) async {
     try {
       final response = await apiClient.post(
         AppConfig.transactionsNetworkOnchainAddress,
         data: {
           'walletName': walletName,
-          'regenerate': regenerate,
+          'expectedAmountBtc': expectedAmountBtc,
         },
       );
       return OnchainAddressAllocation.fromJson(
-          _parseJsonResponse(response.data));
+        _parseJsonResponse(response.data),
+      );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao emitir endereço on-chain da carteira: $e',
+        message: 'Não conseguimos criar um endereço para esta carteira agora.',
       );
     }
   }
 
   @override
   Future<LightningInvoice> createLightningInvoice({
+    required String idempotencyKey,
     required String walletName,
     required double amount,
     String? memo,
@@ -623,6 +729,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       final response = await apiClient.post(
         AppConfig.transactionsNetworkLightningInvoice,
         data: {
+          'idempotencyKey': idempotencyKey,
           'walletName': walletName,
           'amount': amount,
           'memo': memo,
@@ -632,22 +739,23 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       return LightningInvoice.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao criar invoice Lightning: $e');
+      throw ServerException(
+        message: 'Não conseguimos criar o pedido Lightning agora.',
+      );
     }
   }
 
   @override
   Future<List<ExternalTransfer>> getExternalTransfers() async {
     try {
-      final response =
-          await apiClient.get(AppConfig.transactionsNetworkTransfers);
-      return _parseJsonListResponse(response.data)
-          .map(ExternalTransfer.fromJson)
-          .toList();
+      final response = await apiClient.get(
+        AppConfig.transactionsNetworkTransfers,
+      );
+      return _externalTransfersFromResponse(response.data);
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao listar transferências externas: $e',
+        message: 'Não conseguimos carregar suas movimentações agora.',
       );
     }
   }
@@ -662,7 +770,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao consultar transferência externa: $e',
+        message: 'Não conseguimos atualizar esta movimentação agora.',
       );
     }
   }
@@ -680,7 +788,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       }
       if (e is AppException) rethrow;
       throw ServerException(
-        message: 'Erro ao cancelar depósito externo: $e',
+        message: 'Não conseguimos cancelar este depósito agora.',
       );
     }
   }
@@ -699,36 +807,26 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     String? description,
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
+    String? idempotencyKey,
   }) async {
     try {
       final response = await apiClient.post(
         isLightning
             ? AppConfig.transactionsNetworkLightningPay
             : AppConfig.transactionsNetworkOnchainSend,
-        data: isLightning
-            ? {
-                'fromWalletName': fromWalletName,
-                'paymentRequest': paymentRequest,
-                'amount': amount,
-                'maxRoutingFeeBtc': maxRoutingFeeBtc,
-                if (totpCode != null) 'totpCode': totpCode,
-                if (description != null) 'description': description,
-                if (confirmationPassphrase != null)
-                  'confirmationPassphrase': confirmationPassphrase,
-                if (passkeyAssertionJson != null)
-                  'passkeyAssertionResponseJSON': passkeyAssertionJson,
-              }
-            : {
-                'fromWalletName': fromWalletName,
-                'toAddress': toAddress,
-                'amount': amount,
-                if (totpCode != null) 'totpCode': totpCode,
-                if (description != null) 'description': description,
-                if (confirmationPassphrase != null)
-                  'confirmationPassphrase': confirmationPassphrase,
-                if (passkeyAssertionJson != null)
-                  'passkeyAssertionResponseJSON': passkeyAssertionJson,
-              },
+        data: TransactionRemoteDataSourceImpl.buildWithdrawRequestPayload(
+          fromWalletName: fromWalletName,
+          toAddress: toAddress,
+          paymentRequest: paymentRequest,
+          amount: amount,
+          totpCode: totpCode,
+          isLightning: isLightning,
+          maxRoutingFeeBtc: maxRoutingFeeBtc,
+          description: description,
+          confirmationPassphrase: confirmationPassphrase,
+          passkeyAssertionJson: passkeyAssertionJson,
+          idempotencyKey: idempotencyKey,
+        ),
       );
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
@@ -738,9 +836,78 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       if (e is AppException) rethrow;
       throw ServerException(
         message: isLightning
-            ? 'Erro ao realizar pagamento Lightning: $e'
-            : 'Erro ao realizar saque on-chain: $e',
+            ? 'Não conseguimos concluir o pagamento Lightning agora.'
+            : 'Não conseguimos concluir o saque on-chain agora.',
       );
     }
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic> buildWithdrawRequestPayload({
+    required String fromWalletName,
+    String? toAddress,
+    String? paymentRequest,
+    required double amount,
+    String? totpCode,
+    bool isLightning = false,
+    double maxRoutingFeeBtc = 0.000001,
+    String? description,
+    String? confirmationPassphrase,
+    String? passkeyAssertionJson,
+    String? idempotencyKey,
+  }) {
+    final normalizedWalletName = _requiredText(
+      fromWalletName,
+      'fromWalletName',
+    );
+    final normalizedIdempotencyKey = _requiredText(
+      idempotencyKey,
+      'idempotencyKey',
+    );
+    final normalizedDescription = _optionalText(description);
+    final normalizedTotp = _optionalText(totpCode);
+    final normalizedPassphrase = _optionalText(confirmationPassphrase);
+    final normalizedPasskeyAssertion = _optionalText(passkeyAssertionJson);
+
+    if (isLightning) {
+      return {
+        'idempotencyKey': normalizedIdempotencyKey,
+        'fromWalletName': normalizedWalletName,
+        'paymentRequest': _requiredText(paymentRequest, 'paymentRequest'),
+        'amount': amount,
+        'maxRoutingFeeBtc': maxRoutingFeeBtc,
+        'description': normalizedDescription,
+        'totpCode': normalizedTotp,
+        'passkeyAssertionResponseJSON': normalizedPasskeyAssertion,
+        'confirmationPassphrase': normalizedPassphrase,
+      };
+    }
+
+    return {
+      'idempotencyKey': normalizedIdempotencyKey,
+      'fromWalletName': normalizedWalletName,
+      'toAddress': _requiredText(toAddress, 'toAddress'),
+      'amount': amount,
+      'description': normalizedDescription ?? 'saque para carteira externa',
+      'totpCode': normalizedTotp,
+      'passkeyAssertionResponseJSON': normalizedPasskeyAssertion,
+      'confirmationPassphrase': normalizedPassphrase,
+    };
+  }
+
+  static String _requiredText(String? value, String fieldName) {
+    final normalized = _optionalText(value);
+    if (normalized == null) {
+      throw ValidationException(message: '$fieldName is required');
+    }
+    return normalized;
+  }
+
+  static String? _optionalText(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
   }
 }

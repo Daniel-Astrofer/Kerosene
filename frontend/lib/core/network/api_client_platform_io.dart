@@ -24,11 +24,11 @@ void configureProxyRouting({
   required Ref ref,
   required ApiClientRoutePolicy routePolicy,
   required String baseUrl,
-  required bool shouldUseSocksProxy({
+  required bool Function({
     required String baseUrl,
     required ApiClientRoutePolicy routePolicy,
     required bool torRunning,
-  }),
+  }) shouldUseSocksProxy,
 }) {
   final torService = ref.read(torServiceProvider);
   final shouldProxy = shouldUseSocksProxy(
@@ -49,7 +49,6 @@ void configureProxyRouting({
       ProxySettings(InternetAddress.loopbackIPv4, torService.socksPort),
     ];
     SocksTCPClient.assignToHttpClient(client, settings);
-    client.badCertificateCallback = (cert, host, port) => true;
     return client;
   };
 

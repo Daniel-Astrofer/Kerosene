@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 /// Luxury QR Deposit Screen — Refactored with Design System
 class LuxuryQrDepositScreen extends StatelessWidget {
@@ -37,8 +38,8 @@ class LuxuryQrDepositScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
-      title: 'Receber BTC',
-      subtitle: 'Visual simplificado para QR de depósito.',
+      title: context.l10n.depositQrReceiveTitle,
+      subtitle: context.l10n.depositQrReceiveSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -56,7 +57,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
           if (amountBtc == null || amountBtc! <= 0) ...[
             const SizedBox(height: AppSpacing.md),
             ReceiveFlowPrimaryButton(
-              label: 'Definir valor',
+              label: context.l10n.depositQrSetAmount,
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -123,7 +124,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Escaneie para receber Bitcoin',
+            context.l10n.depositQrScanTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: receiveFlowTextColor,
                   fontWeight: FontWeight.w500,
@@ -132,7 +133,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Envie apenas Bitcoin (BTC) para este endereço.\nO envio de outros ativos resultará em perda permanente.',
+            context.l10n.depositQrBitcoinOnlyWarning,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: receiveFlowMutedTextColor,
                   height: 1.35,
@@ -149,7 +150,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ReceiveFlowSectionLabel('Seu endereço BTC'),
+          ReceiveFlowSectionLabel(context.l10n.depositQrAddressLabel),
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
@@ -165,13 +166,13 @@ class LuxuryQrDepositScreen extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               ReceiveFlowSecondaryButton(
-                label: 'Copiar',
+                label: context.l10n.depositQrCopy,
                 icon: LucideIcons.copy,
                 fullWidth: false,
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   Clipboard.setData(ClipboardData(text: address));
-                  SnackbarHelper.showSuccess('Endereço copiado!');
+                  SnackbarHelper.showSuccess(context.l10n.depositQrCopied);
                 },
               ),
             ],
@@ -187,7 +188,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
         Expanded(
           child: _buildSecondaryActionButton(
             icon: LucideIcons.share2,
-            label: 'Compartilhar',
+            label: context.l10n.depositQrShare,
             onTap: () {},
           ),
         ),
@@ -195,7 +196,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
         Expanded(
           child: _buildSecondaryActionButton(
             icon: LucideIcons.download,
-            label: 'Salvar QR',
+            label: context.l10n.depositQrSave,
             onTap: () {},
           ),
         ),

@@ -126,7 +126,7 @@ class MiningMarketplaceActionNotifier
           final challenge = _extractPasskeyChallenge(e);
           if (challenge == null) {
             throw StateError(
-              'Não foi possível extrair o challenge da passkey da resposta do servidor.',
+              'Não conseguimos iniciar a confirmação segura. Tente novamente.',
             );
           }
 
@@ -149,7 +149,7 @@ class MiningMarketplaceActionNotifier
           state = MiningMarketplaceActionState(allocation: allocation);
           return allocation;
         } catch (signErr) {
-          debugPrint('>>> Mining allocation passkey flow failed: $signErr');
+          debugPrint('Mining allocation secure confirmation failed.');
           state = MiningMarketplaceActionState(error: signErr.toString());
           return null;
         }

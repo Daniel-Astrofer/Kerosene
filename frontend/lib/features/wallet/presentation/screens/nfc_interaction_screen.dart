@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:nfc_manager/ndef_record.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -71,54 +72,128 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
       },
       onDiscovered: (NfcTag tag) async {
         if (!mounted) return;
+        final l10n = context.l10n;
         setState(() {
-          _statusMessage = context.l10n.processing;
+          _statusMessage = l10n.processing;
         });
 
         try {
           if (widget.paymentUri != null) {
-            // WRITE MODE
-            // Assuming Android/iOS bridge handles standard NDEF formatting through raw maps
-            // if we use the underlying tag format. But normally nfc_manager requires specific platform tags.
-            // Since `Ndef` isn't directly exposed in this version of nfc_manager without ndef package,
-            // we will use internal serialization or ndef package if available.
-            // But actually we are running out of time so I will mock the write logic
-            // which can be implemented correctly with the nfc_manager_ndef plugin in a real device.
-            await Future.delayed(const Duration(milliseconds: 800));
-            _handleSuccess("PAGAMENTO PRONTO PARA RECEBIMENTO (NFC)");
+            await _writePaymentUri(tag, widget.paymentUri!);
           } else {
-            // READ MODE
             final ndef = Ndef.from(tag);
             final cachedMessage = ndef?.cachedMessage;
             if (cachedMessage == null) {
-              _handleError("TAG INVÁLIDA (NÃO É NDEF)");
+              _handleError(l10n.nfcTagInvalid);
               return;
             }
 
             for (final record in cachedMessage.records) {
-              final payload = record.payload;
-              if (payload.isEmpty) {
-                continue;
-              }
-
-              // Basic URI parsing
-              final contentBytes = payload.skip(1).toList();
-              final fullUri = utf8.decode(contentBytes, allowMalformed: true);
-
+              final fullUri = _decodeUriRecord(record);
+              if (fullUri == null) continue;
               final parsed = QrPaymentParser.decode(fullUri);
               if (parsed != null && parsed.isComplete) {
                 _handleSuccessRead(fullUri);
                 return;
               }
             }
-            _handleError("PAGAMENTO NÃO ENCONTRADO NA TAG");
+            _handleError(l10n.nfcPaymentNotFound);
           }
-        } catch (e) {
-          _handleError("ERRO NFC: $e");
+        } catch (_) {
+          _handleError(l10n.nfcCouldNotProcess);
         }
       },
     );
   }
+
+  Future<void> _writePaymentUri(NfcTag tag, String paymentUri) async {
+    final l10n = context.l10n;
+    final ndef = Ndef.from(tag);
+    if (ndef == null) {
+      _handleError(l10n.nfcTagNotSupported);
+      return;
+    }
+    if (!ndef.isWritable) {
+      _handleError(l10n.nfcTagNotWritable);
+      return;
+    }
+
+    final message = _buildUriMessage(paymentUri);
+    if (ndef.maxSize > 0 && message.byteLength > ndef.maxSize) {
+      _handleError(l10n.nfcTagCapacityError);
+      return;
+    }
+
+    await ndef.write(message: message);
+    if (!mounted) return;
+    _handleSuccess(l10n.nfcTagWrittenSuccess);
+  }
+
+  NdefMessage _buildUriMessage(String uri) {
+    return NdefMessage(
+      records: [
+        NdefRecord(
+          typeNameFormat: TypeNameFormat.wellKnown,
+          type: Uint8List.fromList('U'.codeUnits),
+          identifier: Uint8List(0),
+          payload: Uint8List.fromList([0x00, ...utf8.encode(uri)]),
+        ),
+      ],
+    );
+  }
+
+  String? _decodeUriRecord(NdefRecord record) {
+    if (record.typeNameFormat != TypeNameFormat.wellKnown ||
+        utf8.decode(record.type, allowMalformed: true) != 'U' ||
+        record.payload.isEmpty) {
+      return null;
+    }
+
+    final prefixIndex = record.payload.first;
+    final prefix =
+        prefixIndex < _uriPrefixes.length ? _uriPrefixes[prefixIndex] : '';
+    final contentBytes = record.payload.skip(1).toList(growable: false);
+    return '$prefix${utf8.decode(contentBytes, allowMalformed: true)}';
+  }
+
+  static const List<String> _uriPrefixes = [
+    '',
+    'http://www.',
+    'https://www.',
+    'http://',
+    'https://',
+    'tel:',
+    'mailto:',
+    'ftp://anonymous:anonymous@',
+    'ftp://ftp.',
+    'ftps://',
+    'sftp://',
+    'smb://',
+    'nfs://',
+    'ftp://',
+    'dav://',
+    'news:',
+    'telnet://',
+    'imap:',
+    'rtsp://',
+    'urn:',
+    'pop:',
+    'sip:',
+    'sips:',
+    'tftp:',
+    'btspp://',
+    'btl2cap://',
+    'btgoep://',
+    'tcpobex://',
+    'irdaobex://',
+    'file://',
+    'urn:epc:id:',
+    'urn:epc:tag:',
+    'urn:epc:pat:',
+    'urn:epc:raw:',
+    'urn:epc:',
+    'urn:nfc:',
+  ];
 
   void _handleError(String msg) {
     if (!mounted) return;
@@ -183,10 +258,9 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                   .fade()
                   .slideY(begin: 0.1, end: 0.0),
               const SizedBox(height: AppSpacing.xxl),
-              _buildCancelButton(context)
-                  .animate(delay: 400.ms)
-                  .fade()
-                  .slideY(begin: 0.2, end: 0.0),
+              _buildCancelButton(
+                context,
+              ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0.0),
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
@@ -198,19 +272,23 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.x,
-                color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(
+              LucideIcons.x,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 24,
+            ),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
@@ -218,10 +296,10 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
             (widget.paymentUri != null
                 ? context.l10n.receive.toUpperCase()
                 : context.l10n.send.toUpperCase()),
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  letterSpacing: 4,
+                  fontWeight: FontWeight.w900,
+                ),
           ),
           const SizedBox(width: 48),
         ],
@@ -237,10 +315,9 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
               ? context.l10n.amountToReceive.toUpperCase()
               : context.l10n.amount.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.3),
                 letterSpacing: 3,
                 fontWeight: FontWeight.w900,
               ),
@@ -251,7 +328,7 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
           style: Theme.of(context).textTheme.displayLarge!.copyWith(
                 fontSize: 56,
                 fontWeight: FontWeight.w200,
-                letterSpacing: -2.0,
+                letterSpacing: 0,
                 color: Theme.of(context).colorScheme.primary,
                 fontFamily: 'JetBrainsMono',
               ),
@@ -278,7 +355,8 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(
-                        alpha: 0.2 * (1.0 - _rippleController.value)),
+                          alpha: 0.2 * (1.0 - _rippleController.value),
+                        ),
                     width: 2,
                   ),
                 ),
@@ -294,7 +372,8 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(
-                        alpha: 0.1 * (1.0 - _rippleController.value)),
+                          alpha: 0.1 * (1.0 - _rippleController.value),
+                        ),
                     width: 1,
                   ),
                 ),
@@ -306,23 +385,20 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.05),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.05),
                 border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.2),
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     blurRadius: 40,
                     spreadRadius: 8,
                   ),
@@ -349,20 +425,19 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
             widget.paymentUri != null
                 ? "APROXIME PARA COBRAR"
                 : "APROXIME PARA PAGAR",
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(fontWeight: FontWeight.w900, letterSpacing: 2),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             context.l10n.nfcInstructions,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.4),
                   height: 1.5,
                   fontWeight: FontWeight.w500,
                 ),
@@ -380,19 +455,19 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.5),
                       blurRadius: 10,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
               ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                  begin: const Offset(0.8, 0.8),
-                  end: const Offset(1.3, 1.3),
-                  duration: 800.ms),
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1.3, 1.3),
+                    duration: 800.ms,
+                  ),
               const SizedBox(width: AppSpacing.md),
               Text(
                 _statusMessage,
@@ -420,23 +495,23 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
           height: 60,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
+            color: Theme.of(
+              context,
+            ).colorScheme.onPrimary.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(AppSpacing.md),
             border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.05),
-                width: 1.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.05),
+              width: 1.5,
+            ),
           ),
           child: Text(
             context.l10n.cancelOperation.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.4),
                   fontWeight: FontWeight.w900,
                   letterSpacing: 3,
                 ),

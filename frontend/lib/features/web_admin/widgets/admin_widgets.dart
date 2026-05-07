@@ -3,6 +3,46 @@ import '../theme/admin_colors.dart';
 import '../theme/admin_typography.dart';
 import '../theme/admin_theme.dart';
 
+class AdminResponsiveGrid extends StatelessWidget {
+  final List<Widget> children;
+  final double minItemWidth;
+  final double spacing;
+
+  const AdminResponsiveGrid({
+    super.key,
+    required this.children,
+    this.minItemWidth = 260,
+    this.spacing = AdminTheme.spacingLg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = (width / minItemWidth)
+            .floor()
+            .clamp(1, children.isEmpty ? 1 : children.length)
+            .toInt();
+        final itemWidth = (width - (spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: children
+              .map(
+                (child) => SizedBox(
+                  width: itemWidth.isFinite ? itemWidth : width,
+                  child: child,
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
 /// Enterprise KPI metric card for dashboard.
 class AdminMetricCard extends StatelessWidget {
   final String label;
@@ -43,7 +83,11 @@ class AdminMetricCard extends StatelessWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 16, color: accentColor ?? AdminColors.textTertiary),
+                Icon(
+                  icon,
+                  size: 16,
+                  color: accentColor ?? AdminColors.textTertiary,
+                ),
                 const SizedBox(width: AdminTheme.spacingSm),
               ],
               Expanded(
@@ -56,41 +100,59 @@ class AdminMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AdminTheme.spacingMd),
-          Text(
-            value,
-            style: AdminTypography.metric,
-            overflow: TextOverflow.ellipsis,
+          Tooltip(
+            message: value,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                softWrap: false,
+                style: AdminTypography.metric,
+              ),
+            ),
           ),
           if (subtitle != null || trend != null) ...[
             const SizedBox(height: AdminTheme.spacingSm),
-            Row(
+            Wrap(
+              spacing: AdminTheme.spacingSm,
+              runSpacing: AdminTheme.spacingXs,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 if (trend != null) ...[
-                  Icon(
-                    isPositiveTrend ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: 12,
-                    color: isPositiveTrend
-                        ? AdminColors.positive
-                        : AdminColors.negative,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    trend!,
-                    style: AdminTypography.caption.copyWith(
-                      color: isPositiveTrend
-                          ? AdminColors.positive
-                          : AdminColors.negative,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPositiveTrend
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        size: 12,
+                        color: isPositiveTrend
+                            ? AdminColors.positive
+                            : AdminColors.negative,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        trend!,
+                        style: AdminTypography.caption.copyWith(
+                          color: isPositiveTrend
+                              ? AdminColors.positive
+                              : AdminColors.negative,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-                if (trend != null && subtitle != null)
-                  const SizedBox(width: AdminTheme.spacingSm),
                 if (subtitle != null)
-                  Expanded(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 260),
                     child: Text(
                       subtitle!,
                       style: AdminTypography.caption,
                       overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ),
               ],
@@ -127,11 +189,13 @@ class AdminStatusBadge extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: AdminTypography.caption.copyWith(
           color: variant.textColor,
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+          letterSpacing: 0,
         ),
       ),
     );
@@ -149,13 +213,13 @@ enum AdminBadgeVariant {
     AdminColors.negative,
     AdminColors.negative,
   ),
-  warning(
-    AdminColors.warningSubtle,
-    AdminColors.warning,
-    AdminColors.warning,
-  ),
+  warning(AdminColors.warningSubtle, AdminColors.warning, AdminColors.warning),
   info(AdminColors.infoSubtle, AdminColors.info, AdminColors.info),
-  neutral(AdminColors.surfaceElevated, AdminColors.border, AdminColors.textTertiary),
+  neutral(
+    AdminColors.surfaceElevated,
+    AdminColors.border,
+    AdminColors.textSecondary,
+  ),
   accent(AdminColors.accentSubtle, AdminColors.accent, AdminColors.accent);
 
   final Color backgroundColor;
@@ -186,23 +250,43 @@ class AdminSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AdminTheme.spacingLg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final titleBlock = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AdminTypography.h2),
+              if (subtitle != null) ...[
+                const SizedBox(height: AdminTheme.spacingXs),
+                Text(
+                  subtitle!,
+                  style: AdminTypography.bodyMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          );
+
+          if (constraints.maxWidth < 560 && trailing != null) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AdminTypography.h2),
-                if (subtitle != null) ...[
-                  const SizedBox(height: AdminTheme.spacingXs),
-                  Text(subtitle!, style: AdminTypography.bodyMedium),
-                ],
+                titleBlock,
+                const SizedBox(height: AdminTheme.spacingMd),
+                trailing!,
               ],
-            ),
-          ),
-          if (trailing != null) trailing!,
-        ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: titleBlock),
+              if (trailing != null) trailing!,
+            ],
+          );
+        },
       ),
     );
   }
@@ -237,9 +321,10 @@ class _AdminSkeletonState extends State<AdminSkeleton>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    _animation = Tween<double>(begin: 0.3, end: 0.6).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 0.6,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -257,7 +342,9 @@ class _AdminSkeletonState extends State<AdminSkeleton>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            color: AdminColors.surfaceElevated.withValues(alpha: _animation.value),
+            color: AdminColors.surfaceElevated.withValues(
+              alpha: _animation.value,
+            ),
             borderRadius: widget.borderRadius ?? AdminTheme.borderRadiusSm,
           ),
         );
@@ -271,11 +358,7 @@ class AdminErrorState extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
 
-  const AdminErrorState({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const AdminErrorState({super.key, required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -382,8 +465,13 @@ class AdminFilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: AdminTypography.buttonSmall.copyWith(
-            color: isSelected ? AdminColors.accent : AdminColors.textSecondary,
+            color: isSelected
+                ? AdminColors.textPrimary
+                : AdminColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),

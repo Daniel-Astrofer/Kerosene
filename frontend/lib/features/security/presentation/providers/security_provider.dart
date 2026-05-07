@@ -5,6 +5,7 @@ import '../../data/datasources/security_remote_datasource.dart';
 import '../../data/repositories/security_repository_impl.dart';
 import '../../domain/entities/app_pin_status.dart';
 import '../../domain/entities/account_security_profile.dart';
+import '../../domain/entities/admin_access.dart';
 import '../../domain/repositories/security_repository.dart';
 import '../../domain/entities/security_status.dart';
 import '../../domain/entities/treasury_overview.dart';
@@ -63,6 +64,36 @@ final appPinStatusProvider = FutureProvider<AppPinStatus>((ref) async {
   return result.fold(
     (failure) => throw Exception(failure.message),
     (status) => status,
+  );
+});
+
+final adminKeyStatusProvider =
+    FutureProvider.autoDispose<AdminKeyStatus>((ref) async {
+  final repository = ref.watch(securityRepositoryProvider);
+  final result = await repository.getAdminKeyStatus();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (status) => status,
+  );
+});
+
+final pendingAdminAccessAttemptsProvider =
+    FutureProvider.autoDispose<List<AdminAccessAttempt>>((ref) async {
+  final repository = ref.watch(securityRepositoryProvider);
+  final result = await repository.getPendingAdminAttempts();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (attempts) => attempts,
+  );
+});
+
+final adminAuthenticatedDevicesProvider =
+    FutureProvider.autoDispose<List<AdminAuthenticatedDevice>>((ref) async {
+  final repository = ref.watch(securityRepositoryProvider);
+  final result = await repository.getAdminDevices();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (devices) => devices,
   );
 });
 

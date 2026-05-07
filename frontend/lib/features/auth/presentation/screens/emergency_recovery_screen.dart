@@ -1,6 +1,5 @@
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/constants/app_copy.dart';
@@ -367,19 +366,6 @@ class _EmergencyRecoveryScreenState
     );
   }
 
-  Future<void> _copyNewCodes() async {
-    final codes = _finishResult?.newBackupCodes ?? const <String>[];
-    if (codes.isEmpty) {
-      return;
-    }
-
-    await Clipboard.setData(ClipboardData(text: codes.join('\n')));
-    if (!mounted) {
-      return;
-    }
-    _showSnack(_t(_RecoveryCopy.newRecoveryCodesCopied));
-  }
-
   AuthActionIllustrationMode _headerMode() {
     if (_issue != null) {
       return _issue!.illustrationMode;
@@ -656,14 +642,6 @@ class _EmergencyRecoveryScreenState
                 _InfoCard(
                   title: _t(_RecoveryCopy.authenticatorSecretTitle),
                   lines: [_totpSecret],
-                  trailingLabel: _t(_RecoveryCopy.copyAction),
-                  onTrailingPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: _totpSecret));
-                    if (!mounted) {
-                      return;
-                    }
-                    _showSnack(_t(_RecoveryCopy.totpSecretCopied));
-                  },
                 ),
             ],
           ),
@@ -765,12 +743,6 @@ class _EmergencyRecoveryScreenState
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        BouncingButton(
-          text: _t(_RecoveryCopy.copyNewCodes),
-          variant: BouncingButtonVariant.outlined,
-          onPressed: _copyNewCodes,
-        ),
         const SizedBox(height: AppSpacing.md),
         BouncingButton(
           text: _t(_RecoveryCopy.backToLogin),
@@ -787,14 +759,10 @@ class _EmergencyRecoveryScreenState
 class _InfoCard extends StatelessWidget {
   final String title;
   final List<String> lines;
-  final String? trailingLabel;
-  final VoidCallback? onTrailingPressed;
 
   const _InfoCard({
     required this.title,
     required this.lines,
-    this.trailingLabel,
-    this.onTrailingPressed,
   });
 
   @override
@@ -822,11 +790,6 @@ class _InfoCard extends StatelessWidget {
                       ),
                 ),
               ),
-              if (trailingLabel != null && onTrailingPressed != null)
-                TextButton(
-                  onPressed: onTrailingPressed,
-                  child: Text(trailingLabel!),
-                ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -941,7 +904,7 @@ class _RecoveryCopy {
     es: 'Cada recovery code debe tener exactamente 8 digitos.',
   );
   static const invalidRecoveryPayload = LocalizedCopy(
-    en: 'Invalid recovery payload',
+    en: 'Invalid recovery information',
     pt: 'Dados invalidos para recuperacao',
     es: 'Datos invalidos para recuperacion',
   );
@@ -989,11 +952,6 @@ class _RecoveryCopy {
     en: 'Register the new passkey on this device before completing recovery.',
     pt: 'Registre a nova passkey neste aparelho antes de concluir a recuperacao.',
     es: 'Registra la nueva passkey en este dispositivo antes de completar la recuperacion.',
-  );
-  static const newRecoveryCodesCopied = LocalizedCopy(
-    en: 'New recovery codes copied.',
-    pt: 'Novos recovery codes copiados.',
-    es: 'Nuevos recovery codes copiados.',
   );
   static const restartRecovery = LocalizedCopy(
     en: 'Restart recovery',
@@ -1045,16 +1003,6 @@ class _RecoveryCopy {
     pt: 'Segredo do autenticador',
     es: 'Secreto del autenticador',
   );
-  static const copyAction = LocalizedCopy(
-    en: 'Copy',
-    pt: 'Copiar',
-    es: 'Copiar',
-  );
-  static const totpSecretCopied = LocalizedCopy(
-    en: 'TOTP secret copied.',
-    pt: 'Segredo TOTP copiado.',
-    es: 'Secreto TOTP copiado.',
-  );
   static const registerNewPasskey = LocalizedCopy(
     en: 'Register new passkey',
     pt: 'Registrar nova passkey',
@@ -1089,11 +1037,6 @@ class _RecoveryCopy {
     en: 'NEW RECOVERY CODES',
     pt: 'NOVOS RECOVERY CODES',
     es: 'NUEVOS RECOVERY CODES',
-  );
-  static const copyNewCodes = LocalizedCopy(
-    en: 'Copy new codes',
-    pt: 'Copiar novos codigos',
-    es: 'Copiar nuevos codigos',
   );
   static const backToLogin = LocalizedCopy(
     en: 'Back to login',
@@ -1136,9 +1079,9 @@ class _RecoveryCopy {
     switch (stage) {
       case _RecoveryStage.collect:
         return const LocalizedCopy(
-          en: 'The backend requires PoW, at least 3 distinct recovery codes, and a valid new seed. For safety, this API does not publicly confirm whether the username exists.',
-          pt: 'O backend exige PoW, pelo menos 3 recovery codes distintos e uma nova seed valida. Por seguranca, esta API nao confirma publicamente se o username existe.',
-          es: 'El backend exige PoW, al menos 3 recovery codes distintos y una nueva seed valida. Por seguridad, esta API no confirma publicamente si el usuario existe.',
+          en: 'Use at least 3 different recovery codes and a valid new recovery phrase. For your privacy, we do not confirm whether an account exists until the recovery is validated.',
+          pt: 'Use pelo menos 3 codigos de recuperacao diferentes e uma nova frase valida. Pela sua privacidade, nao confirmamos se a conta existe ate a recuperacao ser validada.',
+          es: 'Usa al menos 3 codigos de recuperacion distintos y una nueva frase valida. Por tu privacidad, no confirmamos si la cuenta existe hasta validar la recuperacion.',
         ).resolve(context);
       case _RecoveryStage.configure:
         return const LocalizedCopy(

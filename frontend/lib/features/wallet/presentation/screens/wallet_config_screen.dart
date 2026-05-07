@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/core/utils/safe_display_text.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 import '../../domain/entities/wallet.dart';
 import '../models/wallet_card_appearance.dart';
@@ -31,15 +34,13 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
 
   bool _isBlocked = false;
   bool _hideBalance = false;
-  int _materialIndex = 0; // 0=Metal, 1=Wood, 2=Diamond, 3=Ruby (Debug Only)
 
   WalletCardAppearance get _appearance {
     return WalletCardAppearance.fromCardType(widget.wallet.cardType);
   }
 
   String get _walletAddress {
-    final address = widget.wallet.address.trim();
-    return address.isEmpty ? 'Endereço indisponível' : address;
+    return widget.wallet.address.trim();
   }
 
   String get _walletTypeLabel {
@@ -57,23 +58,23 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
 
   void _copyAddress() {
     if (widget.wallet.address.trim().isEmpty) {
-      SnackbarHelper.showWarning('Esta wallet ainda não possui endereço.');
+      SnackbarHelper.showWarning(context.l10n.apiDisplayAddressUnavailable);
       return;
     }
 
     HapticFeedback.lightImpact();
     Clipboard.setData(ClipboardData(text: widget.wallet.address));
     SnackbarHelper.showSuccess(
-      'O endereço da wallet foi copiado com sucesso.',
-      title: 'Endereço copiado',
+      context.l10n.walletConfigAddressCopiedMessage,
+      title: context.l10n.walletConfigAddressCopiedTitle,
     );
   }
 
   void _showExportNotice() {
     HapticFeedback.mediumImpact();
     SnackbarHelper.showInfo(
-      'A exportação da chave privada depende da verificação de segurança do dispositivo.',
-      title: 'Validação necessária',
+      context.l10n.walletConfigExportNoticeMessage,
+      title: context.l10n.walletConfigExportNoticeTitle,
     );
   }
 
@@ -84,6 +85,7 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
       alpha: appearance.isDark ? 0.92 : 0.96,
     );
     const screenBackground = authenticatedSurfaceBackgroundColor;
+    final responsive = context.responsive;
 
     return Scaffold(
       backgroundColor: screenBackground,
@@ -93,10 +95,17 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
         color: screenBackground,
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            padding: EdgeInsets.fromLTRB(
+              responsive.horizontalPadding,
+              AppSpacing.md,
+              responsive.horizontalPadding,
+              AppSpacing.xl,
+            ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
+                constraints: BoxConstraints(
+                  maxWidth: responsive.mobileContentMaxWidth,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -109,16 +118,15 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     _SectionCard(
                       appearance: appearance,
-                      title: 'Endereço da wallet',
-                      subtitle:
-                          'Use este endereço para depósitos on-chain desta carteira.',
+                      title: context.l10n.walletConfigAddressTitle,
+                      subtitle: context.l10n.walletConfigAddressSubtitle,
                       trailing: TextButton.icon(
                         onPressed: _copyAddress,
                         style: TextButton.styleFrom(
                           foregroundColor: appearance.accentColor,
                         ),
                         icon: const Icon(Icons.copy_rounded, size: 16),
-                        label: const Text('Copiar'),
+                        label: Text(context.l10n.walletConfigCopy),
                       ),
                       child: _AddressPanel(
                         appearance: appearance,
@@ -128,9 +136,8 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     _SectionCard(
                       appearance: appearance,
-                      title: 'Taxas da carteira',
-                      subtitle:
-                          'Taxa dinâmica retornada pela API para movimentações externas.',
+                      title: context.l10n.walletConfigFeesTitle,
+                      subtitle: context.l10n.walletConfigFeesSubtitle,
                       child: _FeeGrid(
                         appearance: appearance,
                         wallet: widget.wallet,
@@ -139,16 +146,15 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     _SectionCard(
                       appearance: appearance,
-                      title: 'Controles',
-                      subtitle:
-                          'Ajustes de uso e proteção visual da carteira na aplicação.',
+                      title: context.l10n.walletConfigControlsTitle,
+                      subtitle: context.l10n.walletConfigControlsSubtitle,
                       child: Column(
                         children: [
                           _FinanceActionRow(
                             appearance: appearance,
-                            title: 'Congelar cartão',
+                            title: context.l10n.walletConfigFreezeCardTitle,
                             subtitle:
-                                'Desativa temporariamente o uso desta carteira no fluxo visual.',
+                                context.l10n.walletConfigFreezeCardSubtitle,
                             icon: Icons.lock_outline_rounded,
                             iconColor: _warningColor,
                             trailing: Switch.adaptive(
@@ -165,9 +171,9 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                           Divider(height: 1, color: appearance.lineColor),
                           _FinanceActionRow(
                             appearance: appearance,
-                            title: 'Ocultar saldo na home',
+                            title: context.l10n.walletConfigHideBalanceTitle,
                             subtitle:
-                                'Mantém a carteira visível, mas reduz a exposição do saldo.',
+                                context.l10n.walletConfigHideBalanceSubtitle,
                             icon: Icons.visibility_off_outlined,
                             iconColor: appearance.inkSecondary,
                             trailing: Switch.adaptive(
@@ -184,9 +190,9 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                           Divider(height: 1, color: appearance.lineColor),
                           _FinanceActionRow(
                             appearance: appearance,
-                            title: 'Exportar chave privada',
+                            title: context.l10n.walletConfigExportKeyTitle,
                             subtitle:
-                                'Exige verificação adicional antes de revelar material sensível.',
+                                context.l10n.walletConfigExportKeySubtitle,
                             icon: Icons.key_outlined,
                             iconColor: _dangerColor,
                             onTap: _showExportNotice,
@@ -197,9 +203,8 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     _SectionCard(
                       appearance: appearance,
-                      title: 'Regra do cartão',
-                      subtitle:
-                          'O backend classifica a carteira por idade da conta e volume elegível nos últimos 30 dias.',
+                      title: context.l10n.walletConfigCardRuleTitle,
+                      subtitle: context.l10n.walletConfigCardRuleSubtitle,
                       child: _CardRulesPanel(
                         appearance: appearance,
                         currentType: widget.wallet.cardType,
@@ -216,6 +221,8 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
   }
 
   Widget _buildAppBar(WalletCardAppearance appearance) {
+    final responsive = context.responsive;
+
     return Row(
       children: [
         DecoratedBox(
@@ -247,20 +254,28 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Cartão da carteira',
+                context.l10n.walletConfigTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.h2.copyWith(
                   color: Theme.of(context).colorScheme.onPrimary,
+                  fontSize: responsive.compactFontSize(
+                    tiny: 21,
+                    compact: 23,
+                    regular: 24,
+                  ),
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Configuração visual, endereço e taxas da wallet.',
+                context.l10n.walletConfigSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodySmall.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.64),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.64),
                   height: 1.35,
                 ),
               ),
@@ -271,14 +286,15 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
     );
   }
 
-  Widget _buildHeroSection(
-    WalletCardAppearance appearance,
-    Color panelColor,
-  ) {
+  Widget _buildHeroSection(WalletCardAppearance appearance, Color panelColor) {
+    final responsive = context.responsive;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(
+        responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+      ),
       decoration: BoxDecoration(
         color: panelColor,
         borderRadius: BorderRadius.circular(28),
@@ -292,8 +308,9 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
             offset: const Offset(0, 18),
           ),
           BoxShadow(
-            color:
-                Colors.black.withValues(alpha: appearance.isDark ? 0.26 : 0.06),
+            color: Colors.black.withValues(
+              alpha: appearance.isDark ? 0.26 : 0.06,
+            ),
             blurRadius: 26,
             offset: const Offset(0, 12),
           ),
@@ -304,16 +321,29 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
         children: [
           Text(
             widget.wallet.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.h1.copyWith(
               color: appearance.inkPrimary,
-              fontSize: 28,
+              fontSize: responsive.compactFontSize(
+                tiny: 24,
+                compact: 26,
+                regular: 28,
+              ),
               fontWeight: FontWeight.w800,
               height: 1.0,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Nível ${appearance.levelNumber} • ${widget.wallet.cardType.label}. Saques externos usam ${WalletCardType.formatRate(widget.wallet.withdrawalFeeRate)} e depósitos externos usam ${WalletCardType.formatRate(widget.wallet.depositFeeRate)}.',
+            context.l10n.walletConfigHeroSummary(
+              appearance.levelNumber,
+              widget.wallet.cardType.label,
+              WalletCardType.formatRate(widget.wallet.withdrawalFeeRate),
+              WalletCardType.formatRate(widget.wallet.depositFeeRate),
+            ),
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.bodyMedium.copyWith(
               color: appearance.inkSecondary,
               height: 1.45,
@@ -350,27 +380,29 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
             children: [
               _SummaryPill(
                 appearance: appearance,
-                label: 'Rede',
+                label: context.l10n.walletConfigNetworkLabel,
                 value: _walletTypeLabel,
                 icon: Icons.account_balance_wallet_outlined,
               ),
               _SummaryPill(
                 appearance: appearance,
-                label: 'Path',
+                label: context.l10n.walletConfigPathLabel,
                 value: widget.wallet.derivationPath,
                 icon: Icons.alt_route_rounded,
               ),
               _SummaryPill(
                 appearance: appearance,
-                label: 'Status',
-                value: _isBlocked ? 'Congelado' : 'Ativo',
+                label: context.l10n.walletConfigStatusLabel,
+                value: _isBlocked
+                    ? context.l10n.walletConfigStatusFrozen
+                    : context.l10n.walletConfigStatusActive,
                 icon: _isBlocked
                     ? Icons.pause_circle_outline_rounded
                     : Icons.check_circle_outline_rounded,
               ),
               _SummaryPill(
                 appearance: appearance,
-                label: 'Nível',
+                label: context.l10n.walletConfigLevelLabel,
                 value:
                     '${widget.wallet.cardType.label} ${appearance.levelNumber}',
                 icon: Icons.layers_outlined,
@@ -400,10 +432,14 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(
+        responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+      ),
       decoration: BoxDecoration(
         color: appearance.surfaceColor.withValues(
           alpha: appearance.isDark ? 0.92 : 0.95,
@@ -412,8 +448,9 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: appearance.lineColor),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withValues(alpha: appearance.isDark ? 0.16 : 0.04),
+            color: Colors.black.withValues(
+              alpha: appearance.isDark ? 0.16 : 0.04,
+            ),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -431,6 +468,8 @@ class _SectionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.h3.copyWith(
                         color: appearance.inkPrimary,
                         fontWeight: FontWeight.w700,
@@ -439,6 +478,8 @@ class _SectionCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       subtitle,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodySmall.copyWith(
                         color: appearance.inkSecondary,
                         height: 1.4,
@@ -449,7 +490,12 @@ class _SectionCard extends StatelessWidget {
               ),
               if (trailing != null) ...[
                 const SizedBox(width: AppSpacing.md),
-                trailing!,
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: responsive.isTinyPhone ? 124 : 180,
+                  ),
+                  child: trailing!,
+                ),
               ],
             ],
           ),
@@ -465,13 +511,11 @@ class _AddressPanel extends StatelessWidget {
   final WalletCardAppearance appearance;
   final String address;
 
-  const _AddressPanel({
-    required this.appearance,
-    required this.address,
-  });
+  const _AddressPanel({required this.appearance, required this.address});
 
   @override
   Widget build(BuildContext context) {
+    final visibleAddress = SafeDisplayText.displayAddress(context, address);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
       width: double.infinity,
@@ -482,7 +526,7 @@ class _AddressPanel extends StatelessWidget {
         border: Border.all(color: appearance.lineColor),
       ),
       child: SelectableText(
-        address,
+        visibleAddress,
         style: AppTypography.bodyMedium.copyWith(
           color: appearance.inkPrimary,
           fontFamily: 'JetBrainsMono',
@@ -497,10 +541,7 @@ class _FeeGrid extends StatelessWidget {
   final WalletCardAppearance appearance;
   final Wallet wallet;
 
-  const _FeeGrid({
-    required this.appearance,
-    required this.wallet,
-  });
+  const _FeeGrid({required this.appearance, required this.wallet});
 
   @override
   Widget build(BuildContext context) {
@@ -517,23 +558,23 @@ class _FeeGrid extends StatelessWidget {
           children: [
             _FeeTile(
               appearance: appearance,
-              label: 'Saque',
+              label: context.l10n.walletConfigWithdrawLabel,
               value: WalletCardType.formatRate(wallet.withdrawalFeeRate),
-              helper: 'Saída externa',
+              helper: context.l10n.walletConfigWithdrawHelper,
               accent: _WalletConfigScreenState._dangerColor,
             ),
             _FeeTile(
               appearance: appearance,
-              label: 'Depósito',
+              label: context.l10n.walletConfigDepositLabel,
               value: WalletCardType.formatRate(wallet.depositFeeRate),
-              helper: 'Entrada externa',
+              helper: context.l10n.walletConfigDepositHelper,
               accent: appearance.accentColor,
             ),
             _FeeTile(
               appearance: appearance,
-              label: 'Interno',
+              label: context.l10n.walletConfigInternalLabel,
               value: '0%',
-              helper: 'Entre wallets Kerosene',
+              helper: context.l10n.walletConfigInternalHelper,
               accent: _WalletConfigScreenState._successColor,
             ),
           ],
@@ -582,6 +623,8 @@ class _FeeTile extends StatelessWidget {
           const Spacer(),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.bodySmall.copyWith(
               color: appearance.inkSecondary,
               fontWeight: FontWeight.w600,
@@ -590,6 +633,8 @@ class _FeeTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.h2.copyWith(
               color: appearance.inkPrimary,
               fontWeight: FontWeight.w800,
@@ -598,6 +643,8 @@ class _FeeTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             helper,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.caption.copyWith(
               color: appearance.inkSecondary,
             ),
@@ -629,6 +676,8 @@ class _FinanceActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
@@ -637,8 +686,8 @@ class _FinanceActionRow extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 46,
-              height: 46,
+              width: responsive.isTinyPhone ? 40 : 46,
+              height: responsive.isTinyPhone ? 40 : 46,
               decoration: BoxDecoration(
                 color: iconColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
@@ -652,6 +701,8 @@ class _FinanceActionRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodyMedium.copyWith(
                       color: appearance.inkPrimary,
                       fontWeight: FontWeight.w700,
@@ -660,6 +711,8 @@ class _FinanceActionRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodySmall.copyWith(
                       color: appearance.inkSecondary,
                     ),
@@ -684,10 +737,7 @@ class _CardRulesPanel extends StatelessWidget {
   final WalletCardAppearance appearance;
   final WalletCardType currentType;
 
-  const _CardRulesPanel({
-    required this.appearance,
-    required this.currentType,
-  });
+  const _CardRulesPanel({required this.appearance, required this.currentType});
 
   @override
   Widget build(BuildContext context) {
@@ -816,11 +866,7 @@ class _SummaryPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: appearance.inkSecondary,
-          ),
+          Icon(icon, size: 16, color: appearance.inkSecondary),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -2,68 +2,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
-const Color _walletCardScreenBackground = Color(0xFF080A0D);
-const Color _walletCardPanelBackground = Color(0xFF101419);
-const Color _walletCardPanelBorder = Color(0xFF1B2027);
-const Color _walletCardText = Color(0xFFF4F6F8);
-const Color _walletCardMutedText = Color(0xFF9BA4AE);
-const Color _walletCardFaintText = Color(0xFF6C7681);
+const Color _walletCardScreenBackground = Color(0xFF020202);
+const Color _walletCardPanelBackground = Color(0xFF0D0D0D);
+const Color _walletCardPanelRaised = Color(0xFF141414);
+const Color _walletCardPanelBorder = Color(0xFF2A2A2A);
+const Color _walletCardPanelBorderStrong = Color(0xFF3A3A3A);
+const Color _walletCardText = Color(0xFFF1F1ED);
+const Color _walletCardMutedText = Color(0xFFA0A09B);
+const Color _walletCardFaintText = Color(0xFF6B6B66);
 
 const List<_CardShowcaseSpec> _cardShowcases = [
   _CardShowcaseSpec(
-    id: 'blue',
-    title: 'Azul',
-    tierLabel: 'ENTRY LEVEL',
-    description:
-        'Cartão inicial para usuários novos. É o nível padrão da conta.',
-    qualification: 'Disponível automaticamente para contas novas.',
+    id: 'graphite',
     depositRate: 0.009,
     withdrawalRate: 0.009,
     miningRate: 0.003,
     walletCardType: WalletCardType.bronze,
-    fillColor: Color(0xFF182843),
-    borderColor: Color(0xFF344863),
-    textColor: Color(0xFFF8FAFF),
-    mutedTextColor: Color(0xFFB8C6D8),
+    fillColor: Color(0xFF151515),
+    borderColor: Color(0xFF3A3A3A),
+    textColor: Color(0xFFF1F1ED),
+    mutedTextColor: Color(0xFFA0A09B),
   ),
   _CardShowcaseSpec(
-    id: 'gray',
-    title: 'Cinza',
-    tierLabel: 'INTERMEDIÁRIO',
-    description:
-        'Upgrade intermediário com taxas menores para depósitos, saques e mineração.',
-    qualification:
-        'Movimentação acima de 1500 por mês e pelo menos 6 meses de conta.',
+    id: 'silver',
     depositRate: 0.008,
     withdrawalRate: 0.008,
     miningRate: 0.002,
     walletCardType: WalletCardType.white,
-    fillColor: Color(0xFFC6CBD1),
-    borderColor: Color(0xFFE8ECEF),
-    textColor: Color(0xFF101418),
-    mutedTextColor: Color(0xFF3E4650),
+    fillColor: Color(0xFFE4E4DF),
+    borderColor: Color(0xFFF2F2EC),
+    textColor: Color(0xFF090909),
+    mutedTextColor: Color(0xFF555550),
   ),
   _CardShowcaseSpec(
     id: 'black',
-    title: 'Black',
-    tierLabel: 'HIGH TIER',
-    description:
-        'Menor custo da plataforma para contas com maior tempo e maior volume.',
-    qualification:
-        'Movimentação acima de 4000 por mês e pelo menos 1 ano de conta.',
     depositRate: 0.007,
     withdrawalRate: 0.007,
     miningRate: 0.001,
     walletCardType: WalletCardType.black,
-    fillColor: Color(0xFF101216),
-    borderColor: Color(0xFF2D333B),
-    textColor: Color(0xFFF4F6F8),
-    mutedTextColor: Color(0xFFC8CDD3),
+    fillColor: Color(0xFF040404),
+    borderColor: Color(0xFF282828),
+    textColor: Color(0xFFF1F1ED),
+    mutedTextColor: Color(0xFFA0A09B),
   ),
   _CardShowcaseSpec.hidden(),
 ];
@@ -92,18 +79,20 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
   @override
   Widget build(BuildContext context) {
     final walletState = ref.watch(walletProvider);
-    final navigationClearance =
-        AppPrimaryNavigationBar.scaffoldBottomClearance(context);
+    final navigationClearance = AppPrimaryNavigationBar.scaffoldBottomClearance(
+      context,
+    );
+    final responsive = context.responsive;
 
     final content = switch (walletState) {
       WalletLoading() || WalletInitial() => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF8FA0B2)),
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF8FA0B2)),
+      ),
       WalletError(:final message) => _SolidMessage(
-          icon: LucideIcons.alertCircle,
-          title: 'Cartão indisponível',
-          message: message,
-        ),
+        icon: LucideIcons.alertCircle,
+        title: context.l10n.walletCardUnavailableTitle,
+        message: message,
+      ),
       WalletLoaded() => _buildLoadedContent(walletState),
     };
 
@@ -114,14 +103,16 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
           SafeArea(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
-                20,
-                18,
-                20,
+                responsive.horizontalPadding,
+                responsive.isTinyPhone ? 14 : 18,
+                responsive.horizontalPadding,
                 navigationClearance,
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
+                  constraints: BoxConstraints(
+                    maxWidth: responsive.mobileContentMaxWidth,
+                  ),
                   child: content,
                 ),
               ),
@@ -136,14 +127,15 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
   }
 
   Widget _buildLoadedContent(WalletLoaded loaded) {
-    final wallet = loaded.selectedWallet ??
+    final wallet =
+        loaded.selectedWallet ??
         (loaded.wallets.isNotEmpty ? loaded.wallets.first : null);
 
     if (wallet == null) {
-      return const _SolidMessage(
+      return _SolidMessage(
         icon: LucideIcons.creditCard,
-        title: 'Nenhum cartão ativo',
-        message: 'Crie uma carteira para habilitar o cartão da conta.',
+        title: context.l10n.walletCardNoActiveTitle,
+        message: context.l10n.walletCardNoActiveMessage,
       );
     }
 
@@ -159,10 +151,7 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
 class _WalletCardCarouselExperience extends StatefulWidget {
   final Wallet wallet;
 
-  const _WalletCardCarouselExperience({
-    super.key,
-    required this.wallet,
-  });
+  const _WalletCardCarouselExperience({super.key, required this.wallet});
 
   @override
   State<_WalletCardCarouselExperience> createState() =>
@@ -179,7 +168,7 @@ class _WalletCardCarouselExperienceState
     super.initState();
     _selectedIndex = _indexForWalletCardType(widget.wallet.cardType);
     _pageController = PageController(
-      viewportFraction: 0.84,
+      viewportFraction: 0.94,
       initialPage: _selectedIndex,
     );
   }
@@ -193,6 +182,7 @@ class _WalletCardCarouselExperienceState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final responsive = context.responsive;
     final currentCard = _cardShowcases[_selectedIndex];
     final activeCard = _showcaseForWalletCardType(widget.wallet.cardType);
 
@@ -200,15 +190,20 @@ class _WalletCardCarouselExperienceState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Cartões da conta',
+          context.l10n.walletCardAccountCardsTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: _walletCardText,
+            fontSize: responsive.compactFontSize(
+              tiny: 22,
+              compact: 24,
+              regular: 28,
+            ),
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          'Deslize para ver os cartões, as taxas e os requisitos da conta ${widget.wallet.name}.',
+          context.l10n.walletCardAccountCardsSubtitle(widget.wallet.name),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: _walletCardMutedText,
             height: 1.4,
@@ -220,58 +215,71 @@ class _WalletCardCarouselExperienceState
           runSpacing: AppSpacing.sm,
           children: [
             _InfoChip(
-              label: 'Atual',
-              value: activeCard.title,
-            ),
-            const _InfoChip(
-              label: 'Upgrade',
-              value: 'Automático',
+              label: context.l10n.walletCardCurrentLabel,
+              value: activeCard.title(context),
             ),
             _InfoChip(
-              label: 'Validade',
-              value: _expiryLabel(widget.wallet.cardExpiresAt),
+              label: context.l10n.walletCardUpgradeLabel,
+              value: context.l10n.walletCardAutomatic,
             ),
             _InfoChip(
-              label: 'Rotação',
-              value: _rotationLabel(widget.wallet),
+              label: context.l10n.walletCardValidityLabel,
+              value: _expiryLabel(context, widget.wallet.cardExpiresAt),
+            ),
+            _InfoChip(
+              label: context.l10n.walletCardRotationLabel,
+              value: _rotationLabel(context, widget.wallet),
             ),
             if (widget.wallet.hasPreviousCard)
               _InfoChip(
-                label: 'Anterior',
+                label: context.l10n.walletCardPreviousLabel,
                 value: '****${widget.wallet.previousCardNumberSuffix}',
               ),
           ],
         ),
         const SizedBox(height: AppSpacing.xl),
-        SizedBox(
-          height: 230,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: _cardShowcases.length,
-            onPageChanged: (index) {
-              setState(() => _selectedIndex = index);
-            },
-            itemBuilder: (context, index) {
-              final spec = _cardShowcases[index];
-              final isSelected = index == _selectedIndex;
-              final isCurrent = spec.walletCardType == widget.wallet.cardType;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = constraints.maxWidth * 0.94;
+            final cardHeight = (cardWidth / 1.72)
+                .clamp(
+                  responsive.isTinyPhone ? 164.0 : 184.0,
+                  responsive.isCompact ? 218.0 : 236.0,
+                )
+                .toDouble();
 
-              return AnimatedScale(
-                scale: isSelected ? 1.0 : 0.94,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: _ShowcaseCard(
-                    spec: spec,
-                    wallet: widget.wallet,
-                    isCurrent: isCurrent,
-                    isSelected: isSelected,
-                  ),
-                ),
-              );
-            },
-          ),
+            return SizedBox(
+              height: cardHeight,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _cardShowcases.length,
+                onPageChanged: (index) {
+                  setState(() => _selectedIndex = index);
+                },
+                itemBuilder: (context, index) {
+                  final spec = _cardShowcases[index];
+                  final isSelected = index == _selectedIndex;
+                  final isCurrent =
+                      spec.walletCardType == widget.wallet.cardType;
+
+                  return AnimatedScale(
+                    scale: isSelected ? 1.0 : 0.96,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: _ShowcaseCard(
+                        spec: spec,
+                        wallet: widget.wallet,
+                        isCurrent: isCurrent,
+                        isSelected: isSelected,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.md),
         _CarouselIndicator(
@@ -284,10 +292,7 @@ class _WalletCardCarouselExperienceState
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
           child: currentCard.isHidden
-              ? const SizedBox(
-                  key: ValueKey('hidden-card'),
-                  height: 8,
-                )
+              ? const SizedBox(key: ValueKey('hidden-card'), height: 8)
               : _CardDescriptionPanel(
                   key: ValueKey(currentCard.id),
                   spec: currentCard,
@@ -321,19 +326,19 @@ class _WalletCardCarouselExperienceState
     );
   }
 
-  String _rotationLabel(Wallet wallet) {
+  String _rotationLabel(BuildContext context, Wallet wallet) {
     if (wallet.isCardRotating) {
-      return 'Em rotação';
+      return context.l10n.walletCardRotating;
     }
     if (wallet.isCardExpiring) {
-      return 'Expirando';
+      return context.l10n.walletCardExpiring;
     }
-    return 'Ativo';
+    return context.l10n.walletCardActive;
   }
 
-  String _expiryLabel(DateTime? dateTime) {
+  String _expiryLabel(BuildContext context, DateTime? dateTime) {
     if (dateTime == null) {
-      return 'Nao informado';
+      return context.l10n.walletCardNotInformed;
     }
     return '${dateTime.month.toString().padLeft(2, '0')}/${(dateTime.year % 100).toString().padLeft(2, '0')}';
   }
@@ -360,20 +365,8 @@ class _ShowcaseCard extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(
-              spec.fillColor,
-              Colors.white,
-              spec.id == 'gray' ? 0.16 : 0.04,
-            )!,
-            spec.fillColor,
-            Color.lerp(spec.fillColor, Colors.black, 0.28)!,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(22),
+        color: spec.fillColor,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: spec.borderColor,
           width: isSelected ? 1.3 : 1.0,
@@ -387,18 +380,30 @@ class _ShowcaseCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(10),
         child: Stack(
           children: [
             Positioned.fill(
-              child: CustomPaint(
-                painter: _ShowcaseCardTexturePainter(
-                  lineColor: spec.textColor.withValues(alpha: 0.16),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(
+                        alpha: spec.id == 'silver' ? 0.20 : 0.05,
+                      ),
+                      Colors.transparent,
+                      Colors.black.withValues(
+                        alpha: spec.id == 'silver' ? 0.08 : 0.20,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: spec.isHidden
                   ? Center(
                       child: Column(
@@ -445,8 +450,9 @@ class _ShowcaseCard extends StatelessWidget {
                                   color: spec.textColor.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color:
-                                        spec.textColor.withValues(alpha: 0.16),
+                                    color: spec.textColor.withValues(
+                                      alpha: 0.16,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
@@ -465,9 +471,9 @@ class _ShowcaseCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             _ShowcaseChip(
-                              fillColor: spec.id == 'gray'
-                                  ? const Color(0xFFD0B875)
-                                  : const Color(0xFFCBD3DA),
+                              fillColor: spec.id == 'silver'
+                                  ? const Color(0xFFF0F0EA)
+                                  : const Color(0xFFC9C9C1),
                               lineColor: Colors.black.withValues(alpha: 0.22),
                             ),
                             const SizedBox(width: 12),
@@ -478,7 +484,7 @@ class _ShowcaseCard extends StatelessWidget {
                             ),
                             const Spacer(),
                             Text(
-                              spec.title.toUpperCase(),
+                              spec.title(context).toUpperCase(),
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: spec.mutedTextColor,
                                 fontWeight: FontWeight.w800,
@@ -487,27 +493,29 @@ class _ShowcaseCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 14),
                         Text(
                           _displayNumber(),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: spec.textColor,
                             fontFamily: 'JetBrainsMono',
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.7,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Expanded(
                               child: _ShowcaseCardField(
                                 label: 'CARD HOLDER',
-                                value: (isCurrent
-                                        ? wallet.effectiveCardHolderName
-                                        : wallet.name)
-                                    .toUpperCase(),
+                                value:
+                                    (isCurrent
+                                            ? wallet.effectiveCardHolderName
+                                            : wallet.name)
+                                        .toUpperCase(),
                                 textColor: spec.textColor,
                                 mutedTextColor: spec.mutedTextColor,
                               ),
@@ -567,14 +575,14 @@ class _RotationTimelinePanel extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: _walletCardPanelBackground,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _walletCardPanelBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Rotação do cartão',
+            context.l10n.walletCardRotationTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               color: _walletCardText,
               fontWeight: FontWeight.w800,
@@ -582,7 +590,7 @@ class _RotationTimelinePanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'A validade do cartão agora é real e a próxima emissão acontece automaticamente quando a janela expira.',
+            context.l10n.walletCardRotationSubtitle,
             style: theme.textTheme.bodySmall?.copyWith(
               color: _walletCardMutedText,
               height: 1.4,
@@ -590,38 +598,42 @@ class _RotationTimelinePanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _TimelineRow(
-            label: 'Atual',
-            value:
-                '${wallet.effectiveMaskedCardNumber} • vence ${_formatDate(wallet.cardExpiresAt)}',
+            label: context.l10n.walletCardCurrentLabel,
+            value: context.l10n.walletCardCurrentExpires(
+              wallet.effectiveMaskedCardNumber,
+              _formatDate(context, wallet.cardExpiresAt),
+            ),
           ),
           if (wallet.cardLastRotatedAt != null)
             _TimelineRow(
-              label: 'Última rotação',
-              value: _formatDateTime(wallet.cardLastRotatedAt),
+              label: context.l10n.walletCardLastRotationLabel,
+              value: _formatDateTime(context, wallet.cardLastRotatedAt),
             ),
           if (wallet.hasPreviousCard)
             _TimelineRow(
-              label: 'Anterior',
-              value:
-                  '****${wallet.previousCardNumberSuffix} • expirou ${_formatDate(wallet.previousCardExpiresAt)}',
+              label: context.l10n.walletCardPreviousLabel,
+              value: context.l10n.walletCardPreviousExpired(
+                '****${wallet.previousCardNumberSuffix}',
+                _formatDate(context, wallet.previousCardExpiresAt),
+              ),
             ),
         ],
       ),
     );
   }
 
-  String _formatDate(DateTime? value) {
+  String _formatDate(BuildContext context, DateTime? value) {
     if (value == null) {
-      return 'nao informado';
+      return context.l10n.walletCardNotInformed;
     }
     return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
   }
 
-  String _formatDateTime(DateTime? value) {
+  String _formatDateTime(BuildContext context, DateTime? value) {
     if (value == null) {
-      return 'nao informado';
+      return context.l10n.walletCardNotInformed;
     }
-    return '${_formatDate(value)} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+    return '${_formatDate(context, value)} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -629,36 +641,40 @@ class _TimelineRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _TimelineRow({
-    required this.label,
-    required this.value,
-  });
+  const _TimelineRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+    final labelWidth = responsive.isTinyPhone ? 82.0 : 104.0;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
           SizedBox(
-            width: 104,
+            width: labelWidth,
             child: Text(
               label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _walletCardFaintText,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                  ),
+                color: _walletCardFaintText,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
+              maxLines: responsive.isTinyPhone ? 2 : 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _walletCardText,
-                    fontFamily: 'JetBrainsMono',
-                    height: 1.35,
-                  ),
+                color: _walletCardText,
+                fontFamily: 'JetBrainsMono',
+                height: 1.35,
+              ),
             ),
           ),
         ],
@@ -685,17 +701,18 @@ class _ShowcaseCardField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment:
-          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: mutedTextColor,
-                fontSize: 8,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
+            color: mutedTextColor,
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
         ),
         const SizedBox(height: 4),
         SizedBox(
@@ -707,10 +724,10 @@ class _ShowcaseCardField extends StatelessWidget {
               value,
               maxLines: 1,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
+                color: textColor,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ),
@@ -723,10 +740,7 @@ class _ShowcaseChip extends StatelessWidget {
   final Color fillColor;
   final Color lineColor;
 
-  const _ShowcaseChip({
-    required this.fillColor,
-    required this.lineColor,
-  });
+  const _ShowcaseChip({required this.fillColor, required this.lineColor});
 
   @override
   Widget build(BuildContext context) {
@@ -738,9 +752,7 @@ class _ShowcaseChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
       ),
-      child: CustomPaint(
-        painter: _ShowcaseChipPainter(lineColor: lineColor),
-      ),
+      child: CustomPaint(painter: _ShowcaseChipPainter(lineColor: lineColor)),
     );
   }
 }
@@ -794,33 +806,6 @@ class _ShowcaseChipPainter extends CustomPainter {
   }
 }
 
-class _ShowcaseCardTexturePainter extends CustomPainter {
-  final Color lineColor;
-
-  const _ShowcaseCardTexturePainter({required this.lineColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = lineColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.7;
-    for (var i = -3; i < 14; i++) {
-      final y = i * 18.0;
-      canvas.drawLine(
-        Offset(-20, y),
-        Offset(size.width + 20, y + size.width * 0.24),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ShowcaseCardTexturePainter oldDelegate) {
-    return oldDelegate.lineColor != lineColor;
-  }
-}
-
 class _CardDescriptionPanel extends StatelessWidget {
   final _CardShowcaseSpec spec;
   final bool isCurrent;
@@ -838,7 +823,7 @@ class _CardDescriptionPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _walletCardPanelBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _walletCardPanelBorder),
       ),
       padding: const EdgeInsets.all(18),
@@ -849,7 +834,7 @@ class _CardDescriptionPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  spec.title,
+                  spec.title(context),
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: _walletCardText,
                     fontWeight: FontWeight.w800,
@@ -864,12 +849,11 @@ class _CardDescriptionPanel extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(999),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: _walletCardPanelBorderStrong),
                   ),
                   child: Text(
-                    'SEU CARTÃO',
+                    context.l10n.walletCardYourCard,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: _walletCardText,
                       fontWeight: FontWeight.w800,
@@ -881,7 +865,7 @@ class _CardDescriptionPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            spec.description ?? '',
+            spec.description(context),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: _walletCardMutedText,
               height: 1.4,
@@ -889,20 +873,20 @@ class _CardDescriptionPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           _FeeInfoRow(
-            label: 'Depósito',
+            label: context.l10n.walletCardDepositLabel,
             value: WalletCardType.formatRate(spec.depositRate ?? 0),
           ),
           _FeeInfoRow(
-            label: 'Saque',
+            label: context.l10n.walletCardWithdrawLabel,
             value: WalletCardType.formatRate(spec.withdrawalRate ?? 0),
           ),
           _FeeInfoRow(
-            label: 'Mineração',
+            label: context.l10n.walletCardMiningLabel,
             value: WalletCardType.formatRate(spec.miningRate ?? 0),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            'Como conseguir',
+            context.l10n.walletCardHowToGet,
             style: theme.textTheme.labelLarge?.copyWith(
               color: _walletCardText,
               fontWeight: FontWeight.w700,
@@ -910,7 +894,7 @@ class _CardDescriptionPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            spec.qualification ?? '',
+            spec.qualification(context),
             style: theme.textTheme.bodySmall?.copyWith(
               color: _walletCardMutedText,
               height: 1.45,
@@ -932,7 +916,7 @@ class _UpgradeRulesPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _walletCardPanelBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _walletCardPanelBorder),
       ),
       padding: const EdgeInsets.all(18),
@@ -940,7 +924,7 @@ class _UpgradeRulesPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Como os cartões mudam',
+            context.l10n.walletCardRulesTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               color: _walletCardText,
               fontWeight: FontWeight.w800,
@@ -948,29 +932,27 @@ class _UpgradeRulesPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Quando sua conta estiver de acordo com os requisitos, o cartão é alterado instantaneamente e automaticamente.',
+            context.l10n.walletCardRulesSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: _walletCardMutedText,
               height: 1.45,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          const _EligibilityRow(
-            color: Color(0xFF2D5BFF),
-            title: 'Azul',
-            description: 'Usuários novos.',
+          _EligibilityRow(
+            color: Color(0xFF343434),
+            title: context.l10n.walletCardGraphiteTitle,
+            description: context.l10n.walletCardGraphiteEligibility,
           ),
-          const _EligibilityRow(
-            color: Color(0xFF7F8894),
-            title: 'Cinza',
-            description:
-                'Movimentações acima de 1500 por mês e 6 meses de conta.',
+          _EligibilityRow(
+            color: Color(0xFFE4E4DF),
+            title: context.l10n.walletCardSilverTitle,
+            description: context.l10n.walletCardSilverEligibility,
           ),
-          const _EligibilityRow(
-            color: Color(0xFF101216),
-            title: 'Black',
-            description:
-                'Movimentações acima de 4000 por mês e 1 ano de conta.',
+          _EligibilityRow(
+            color: Color(0xFF050505),
+            title: context.l10n.walletCardBlackTitle,
+            description: context.l10n.walletCardBlackEligibility,
           ),
         ],
       ),
@@ -982,10 +964,7 @@ class _FeeInfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _FeeInfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _FeeInfoRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1003,17 +982,17 @@ class _FeeInfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _walletCardMutedText,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: _walletCardMutedText,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Text(
             value,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _walletCardText,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: _walletCardText,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -1045,10 +1024,8 @@ class _EligibilityRow extends StatelessWidget {
             margin: const EdgeInsets.only(top: 3),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-              ),
+              borderRadius: BorderRadius.circular(2),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
           ),
           const SizedBox(width: 12),
@@ -1059,17 +1036,17 @@ class _EligibilityRow extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: _walletCardText,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: _walletCardText,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _walletCardMutedText,
-                        height: 1.45,
-                      ),
+                    color: _walletCardMutedText,
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),
@@ -1084,19 +1061,16 @@ class _InfoChip extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoChip({
-    required this.label,
-    required this.value,
-  });
+  const _InfoChip({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: _walletCardPanelBackground,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _walletCardPanelBorder),
+        color: _walletCardPanelRaised,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: _walletCardPanelBorderStrong),
       ),
       child: RichText(
         text: TextSpan(
@@ -1104,18 +1078,18 @@ class _InfoChip extends StatelessWidget {
             TextSpan(
               text: '$label: ',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _walletCardFaintText,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
+                color: _walletCardFaintText,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
             ),
             TextSpan(
               text: value,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _walletCardText,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.4,
-                  ),
+                color: _walletCardText,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
             ),
           ],
         ),
@@ -1148,7 +1122,7 @@ class _CarouselIndicator extends StatelessWidget {
             color: index == currentIndex
                 ? Colors.white.withValues(alpha: 0.88)
                 : Colors.white.withValues(alpha: 0.22),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
       ),
@@ -1174,7 +1148,7 @@ class _SolidMessage extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _walletCardPanelBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _walletCardPanelBorder),
       ),
       padding: const EdgeInsets.all(18),
@@ -1212,10 +1186,6 @@ class _SolidMessage extends StatelessWidget {
 
 class _CardShowcaseSpec {
   final String id;
-  final String title;
-  final String tierLabel;
-  final String? description;
-  final String? qualification;
   final double? depositRate;
   final double? withdrawalRate;
   final double? miningRate;
@@ -1228,10 +1198,6 @@ class _CardShowcaseSpec {
 
   const _CardShowcaseSpec({
     required this.id,
-    required this.title,
-    required this.tierLabel,
-    required this.description,
-    required this.qualification,
     required this.depositRate,
     required this.withdrawalRate,
     required this.miningRate,
@@ -1243,18 +1209,50 @@ class _CardShowcaseSpec {
   }) : isHidden = false;
 
   const _CardShowcaseSpec.hidden()
-      : id = 'hidden',
-        title = 'Oculto',
-        tierLabel = '',
-        description = null,
-        qualification = null,
-        depositRate = null,
-        withdrawalRate = null,
-        miningRate = null,
-        walletCardType = null,
-        fillColor = const Color(0x0AFFFFFF),
-        borderColor = const Color(0x26FFFFFF),
-        textColor = const Color(0xFFF4F6F8),
-        mutedTextColor = const Color(0xB3F4F6F8),
-        isHidden = true;
+    : id = 'hidden',
+      depositRate = null,
+      withdrawalRate = null,
+      miningRate = null,
+      walletCardType = null,
+      fillColor = const Color(0x0AFFFFFF),
+      borderColor = const Color(0x26FFFFFF),
+      textColor = const Color(0xFFF4F6F8),
+      mutedTextColor = const Color(0xB3F4F6F8),
+      isHidden = true;
+
+  String title(BuildContext context) {
+    return switch (id) {
+      'graphite' => context.l10n.walletCardGraphiteTitle,
+      'silver' => context.l10n.walletCardSilverTitle,
+      'black' => context.l10n.walletCardBlackTitle,
+      _ => context.l10n.walletCardHiddenTitle,
+    };
+  }
+
+  String tierLabel(BuildContext context) {
+    return switch (id) {
+      'graphite' => context.l10n.walletCardGraphiteTier,
+      'silver' => context.l10n.walletCardSilverTier,
+      'black' => context.l10n.walletCardBlackTier,
+      _ => '',
+    };
+  }
+
+  String description(BuildContext context) {
+    return switch (id) {
+      'graphite' => context.l10n.walletCardGraphiteDescription,
+      'silver' => context.l10n.walletCardSilverDescription,
+      'black' => context.l10n.walletCardBlackDescription,
+      _ => '',
+    };
+  }
+
+  String qualification(BuildContext context) {
+    return switch (id) {
+      'graphite' => context.l10n.walletCardGraphiteQualification,
+      'silver' => context.l10n.walletCardSilverQualification,
+      'black' => context.l10n.walletCardBlackQualification,
+      _ => '',
+    };
+  }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/safe_display_text.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../domain/entities/wallet.dart';
 
 import 'package:teste/shared/widgets/brushed_metal_container.dart';
@@ -31,13 +33,12 @@ class WalletCard extends StatefulWidget {
   State<WalletCard> createState() => _WalletCardState();
 
   String _shortAddress(String address) {
-    if (address.isEmpty) return '—';
-    if (address.length <= 16) return address;
-    return '${address.substring(0, 8)}...${address.substring(address.length - 8)}';
+    return SafeDisplayText.maskAddress(address);
   }
 }
 
-class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateMixin {
+class _WalletCardState extends State<WalletCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _rotationController;
 
   @override
@@ -46,7 +47,35 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncRotationState();
+  }
+
+  @override
+  void didUpdateWidget(covariant WalletCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      _syncRotationState();
+    }
+  }
+
+  bool get _shouldRotate =>
+      widget.isSelected &&
+      TickerMode.valuesOf(context).enabled &&
+      !MediaQuery.disableAnimationsOf(context);
+
+  void _syncRotationState() {
+    if (_shouldRotate) {
+      _rotationController.repeat();
+    } else {
+      _rotationController.stop();
+      _rotationController.value = 0;
+    }
   }
 
   @override
@@ -92,7 +121,7 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
             ListTile(
               leading: Icon(LucideIcons.edit,
                   color: Theme.of(context).colorScheme.onPrimary),
-              title: Text('EDITAR NOME',
+              title: Text(context.l10n.walletEditNameAction.toUpperCase(),
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall!
@@ -105,7 +134,7 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
             ListTile(
               leading: Icon(LucideIcons.trash2,
                   color: Theme.of(context).colorScheme.error),
-              title: Text('REMOVER CARTEIRA',
+              title: Text(context.l10n.removeWallet.toUpperCase(),
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: Theme.of(context).colorScheme.error,
                       fontWeight: FontWeight.w900,
@@ -148,7 +177,7 @@ class _WalletCardState extends State<WalletCard> with SingleTickerProviderStateM
                     return CustomPaint(
                       painter: _NeonGlowPainter(
                         color: primaryColor,
-                        rotation: _rotationController.value,
+                        rotation: _shouldRotate ? _rotationController.value : 0,
                         intensity: widget.isSelected ? 1.0 : 0.4,
                       ),
                     );
@@ -382,7 +411,7 @@ class _NeonGlowPainter extends CustomPainter {
     final auraPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
-      ..color = color.withOpacity(0.3 * intensity)
+      ..color = color.withValues(alpha: 0.3 * intensity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
     canvas.drawRRect(rRect, auraPaint);
 

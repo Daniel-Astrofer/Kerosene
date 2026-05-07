@@ -159,6 +159,11 @@ class _SignupUsernameStepState extends State<SignupUsernameStep> {
         AppCopy.signupUsernameChipCharset.resolve(context),
         AppCopy.signupUsernameChipUnderscore.resolve(context),
       ],
+      footer: SignupPrimaryFooter(
+        text: AppCopy.signupUsernameContinue.resolve(context),
+        onPressed: _validateAndSubmit,
+        icon: LucideIcons.arrowRight,
+      ),
       children: [
         SignupPanel(
           tone: SignupSurfaceTone.primary,
@@ -263,11 +268,6 @@ class _SignupUsernameStepState extends State<SignupUsernameStep> {
           tone: SignupSurfaceTone.primary,
         ),
       ],
-      footer: SignupPrimaryFooter(
-        text: AppCopy.signupUsernameContinue.resolve(context),
-        onPressed: _validateAndSubmit,
-        icon: LucideIcons.arrowRight,
-      ),
     );
   }
 }

@@ -27,44 +27,41 @@ class BalanceWebSocketService {
   /// Conecta ao WebSocket do backend via ponte local SOCKS5 (Tor)
   Future<void> connect() async {
     if (_stompClient != null && _isConnected) {
-      debugPrint('⚠️ WebSocket já está conectado');
+      debugPrint('BalanceWebSocketService: already connected.');
       return;
     }
 
     final fullUrl = '$baseUrl/ws/balance';
 
-    debugPrint('🔌 Conectando STOMP SockJS: $fullUrl');
+    debugPrint('BalanceWebSocketService: connecting.');
 
     _stompClient = StompClient(
       config: StompConfig.sockJS(
         url: fullUrl,
         onConnect: _onConnect,
         onWebSocketError: (dynamic error) {
-          debugPrint('❌ WS Error: $error');
+          debugPrint('BalanceWebSocketService: socket error.');
           _isConnected = false;
         },
         onStompError: (StompFrame frame) {
-          debugPrint('❌ STOMP Error: ${frame.body}');
+          debugPrint('BalanceWebSocketService: protocol error.');
           _isConnected = false;
         },
         onDisconnect: (_) {
-          debugPrint('🔌 WebSocket desconectado');
+          debugPrint('BalanceWebSocketService: disconnected.');
           _isConnected = false;
         },
         beforeConnect: () async {
-          debugPrint('🔄 Iniciando conexão WebSocket...');
+          debugPrint('BalanceWebSocketService: starting handshake.');
           if (authToken == null) {
-            debugPrint(
-              '⚠️ AuthToken is null. Authorization header will not be sent.',
-            );
+            debugPrint('BalanceWebSocketService: session credential missing.');
           } else {
             debugPrint(
-              '✅ AuthToken is present. Authorization header will be sent.',
-            );
+                'BalanceWebSocketService: session credential available.');
           }
         },
         onWebSocketDone: () {
-          debugPrint('✅ WebSocket done');
+          debugPrint('BalanceWebSocketService: socket closed.');
         },
         webSocketConnectHeaders: {
           if (authToken != null) 'Authorization': 'Bearer $authToken',
@@ -85,26 +82,21 @@ class BalanceWebSocketService {
   /// Callback quando conectado ao WebSocket
   void _onConnect(StompFrame frame) {
     _isConnected = true;
-    debugPrint('✅ WebSocket conectado com sucesso!');
-    debugPrint('📡 Frame: ${frame.headers}');
-    debugPrint('📡 Inscrevendo-se em: /user/queue/balance');
+    debugPrint('BalanceWebSocketService: connected.');
+    debugPrint('BalanceWebSocketService: subscribing to balance feed.');
 
     _stompClient?.subscribe(
       destination: '/user/queue/balance',
       callback: (StompFrame frame) {
         if (frame.body != null) {
           try {
-            debugPrint('📨 RAW MESSAGE: ${frame.body}');
             final json = jsonDecode(frame.body!);
             final update = BalanceUpdate.fromJson(json);
 
-            debugPrint(
-              '💰 Balance update recebido: ${update.walletName} = ${update.newBalance} BTC',
-            );
+            debugPrint('BalanceWebSocketService: balance event decoded.');
             onBalanceUpdate(update);
-          } catch (e, stackTrace) {
-            debugPrint('❌ Erro ao processar mensagem WS: $e');
-            debugPrint('Stack: $stackTrace');
+          } catch (_) {
+            debugPrint('BalanceWebSocketService: balance event rejected.');
           }
         }
       },
@@ -118,7 +110,6 @@ class BalanceWebSocketService {
         }
 
         try {
-          debugPrint('🔔 Notification message: ${frame.body}');
           final json = jsonDecode(frame.body!);
           if (json is Map<String, dynamic>) {
             onNotification?.call(RealtimeNotificationEvent.fromJson(json));
@@ -129,20 +120,19 @@ class BalanceWebSocketService {
               ),
             );
           }
-        } catch (e, stackTrace) {
-          debugPrint('❌ Erro ao processar notificação WS: $e');
-          debugPrint('Stack: $stackTrace');
+        } catch (_) {
+          debugPrint('BalanceWebSocketService: notification event rejected.');
         }
       },
     );
 
-    debugPrint('✅ Subscrição concluída!');
+    debugPrint('BalanceWebSocketService: subscriptions ready.');
   }
 
   /// Desconecta do WebSocket
   void disconnect() {
     if (_stompClient != null) {
-      debugPrint('🔌 Desconectando WebSocket...');
+      debugPrint('BalanceWebSocketService: disconnecting.');
       _stompClient?.deactivate();
       _stompClient = null;
       _isConnected = false;

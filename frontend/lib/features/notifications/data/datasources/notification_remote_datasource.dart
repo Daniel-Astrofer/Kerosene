@@ -6,6 +6,13 @@ import 'package:teste/features/notifications/domain/entities/session_notificatio
 abstract class NotificationRemoteDataSource {
   Future<List<SessionNotificationItem>> getNotifications();
   Future<void> markAsRead(String notificationId);
+  Future<void> registerDeviceToken({
+    required String platform,
+    required String token,
+    String? deviceId,
+    String? appVersion,
+  });
+  Future<void> revokeDeviceToken(String tokenId);
 }
 
 class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
@@ -47,7 +54,47 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
       if (error is AppException) {
         rethrow;
       }
-      throw ServerException(message: 'Erro ao marcar notificação como lida: $error');
+      throw ServerException(
+          message: 'Erro ao marcar notificação como lida: $error');
+    }
+  }
+
+  @override
+  Future<void> registerDeviceToken({
+    required String platform,
+    required String token,
+    String? deviceId,
+    String? appVersion,
+  }) async {
+    try {
+      await apiClient.post(
+        AppConfig.notificationRegisterToken,
+        data: {
+          'platform': platform,
+          'token': token,
+          if (deviceId != null) 'deviceId': deviceId,
+          if (appVersion != null) 'appVersion': appVersion,
+        },
+      );
+    } catch (error) {
+      if (error is AppException) {
+        rethrow;
+      }
+      throw ServerException(
+          message: 'Erro ao registrar token de notificação: $error');
+    }
+  }
+
+  @override
+  Future<void> revokeDeviceToken(String tokenId) async {
+    try {
+      await apiClient.delete('/notifications/device-tokens/$tokenId');
+    } catch (error) {
+      if (error is AppException) {
+        rethrow;
+      }
+      throw ServerException(
+          message: 'Erro ao revogar token de notificação: $error');
     }
   }
 }

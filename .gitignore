@@ -10,12 +10,21 @@
 !/frontend/**
 !/docs/
 !/docs/**
+!/docs-final/
+!/docs-final/**
 !/scripts/
 !/scripts/**
+!/.github/
+!/.github/**
+!/AGENTS.md
+!/docker-compose.yml
+!/README.md
 
 # Root-level material kept local only.
 /assets/
 /assets/**
+/backups/
+/backups/**
 /screenshots/
 /screenshots/**
 /vault/
@@ -67,6 +76,7 @@
 **/.remote-control/**
 **/.openclaude-profile.json
 **/AGENTS.md
+!/AGENTS.md
 **/CLAUDE.md
 **/GEMINI.md
 **/mcp_config.json
@@ -111,6 +121,8 @@
 **/.pub/**
 **/build/
 **/build/**
+**/*.root-owned-*
+**/*.root-owned-*/**
 **/target/
 **/target/**
 **/out/
@@ -138,13 +150,19 @@
 
 # Documentation and generated analysis outputs kept local.
 **/*.md
+!/AGENTS.md
+!/README.md
 !/docs/**/*.md
+!/docs-final/**/*.md
 !/backend/**/docs/**/*.md
+!/backend/kerosene/*.md
 !/.gitignore
 !/.gitattributes
 frontend/*.txt
 frontend/**/*.txt
 !frontend/**/CMakeLists.txt
+!frontend/FRONTEND_GUIDELINES.md
+frontend/*.png
 frontend/Get
 frontend/Process
 frontend/Run

@@ -37,10 +37,7 @@ class _IssueInfo {
 class PasskeyVerificationScreen extends ConsumerStatefulWidget {
   final String username;
 
-  const PasskeyVerificationScreen({
-    super.key,
-    required this.username,
-  });
+  const PasskeyVerificationScreen({super.key, required this.username});
 
   @override
   ConsumerState<PasskeyVerificationScreen> createState() =>
@@ -54,6 +51,8 @@ class _PasskeyVerificationScreenState
   bool _isRunningSequence = false;
   Timer? _sequenceTimer;
   Completer<bool>? _sequenceCompleter;
+  int _transparentChallengeRenewals = 0;
+  static const int _maxTransparentChallengeRenewals = 2;
 
   @override
   void initState() {
@@ -63,10 +62,15 @@ class _PasskeyVerificationScreenState
     });
   }
 
-  Future<void> _startPasskeySequence() async {
+  Future<void> _startPasskeySequence({
+    bool resetChallengeRenewals = true,
+  }) async {
     if (_isRunningSequence) return;
 
     _isRunningSequence = true;
+    if (resetChallengeRenewals) {
+      _transparentChallengeRenewals = 0;
+    }
     ref.read(authControllerProvider.notifier).clearError();
 
     if (mounted) {
@@ -94,9 +98,9 @@ class _PasskeyVerificationScreenState
 
     _isRunningSequence = false;
     unawaited(
-      ref.read(authControllerProvider.notifier).loginWithPasskey(
-            widget.username.trim(),
-          ),
+      ref
+          .read(authControllerProvider.notifier)
+          .loginWithPasskey(widget.username.trim()),
     );
   }
 
@@ -126,18 +130,13 @@ class _PasskeyVerificationScreenState
     await Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => LoginPassphraseScreen(
-          username: widget.username.trim(),
-        ),
+        builder: (context) =>
+            LoginPassphraseScreen(username: widget.username.trim()),
       ),
     );
   }
 
-  String _copy({
-    required String pt,
-    required String en,
-    required String es,
-  }) {
+  String _copy({required String pt, required String en, required String es}) {
     switch (Localizations.localeOf(context).languageCode) {
       case 'en':
         return en;
@@ -228,6 +227,11 @@ class _PasskeyVerificationScreenState
       title: AppCopy.passkeyVerificationFailed.resolve(context),
       message: translated,
     );
+  }
+
+  bool _isChallengeExpired(AuthError error) {
+    final code = error.errorCode ?? '';
+    return code == 'CHALLENGE_EXPIRED' || code == 'AUTH_012';
   }
 
   int _activeStepIndex() {
@@ -340,6 +344,21 @@ class _PasskeyVerificationScreenState
       } else if (next is AuthError) {
         _cancelSequenceWait();
         _isRunningSequence = false;
+        if (_isChallengeExpired(next) &&
+            _transparentChallengeRenewals < _maxTransparentChallengeRenewals) {
+          _transparentChallengeRenewals++;
+          if (mounted) {
+            setState(() {
+              _issue = null;
+              _phase = _PasskeyPhase.connecting;
+            });
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 250));
+          if (mounted) {
+            unawaited(_startPasskeySequence(resetChallengeRenewals: false));
+          }
+          return;
+        }
         if (mounted) {
           setState(() {
             _issue = _issueFromError(next);
@@ -357,9 +376,7 @@ class _PasskeyVerificationScreenState
       title: _phaseLabel(),
       subtitle: _phaseBody(),
       onBack: () => Navigator.pop(context),
-      trailing: [
-        _PasskeyUserChip(username: widget.username.trim()),
-      ],
+      trailing: [_PasskeyUserChip(username: widget.username.trim())],
       child: AuthEntryPanel(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -391,9 +408,11 @@ class _PasskeyVerificationScreenState
               const SizedBox(height: AppSpacing.sm),
             if (isIssue && _issue != null && _issue!.allowManualFallback)
               AuthEntryButton(
-                text: AppCopy.passkeyVerificationUsePassphrase
-                    .resolve(context)
-                    .toUpperCase(),
+                text: _copy(
+                  pt: 'CONTINUAR COM SENHA',
+                  en: 'CONTINUE WITH PASSWORD',
+                  es: 'CONTINUAR CON CONTRASEÑA',
+                ),
                 outlined: true,
                 onPressed: _goToManualLogin,
               ),
@@ -440,9 +459,7 @@ class _PasskeyUserChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: authEntrySurface,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Text(
         '@$username',
@@ -481,9 +498,7 @@ class _PasskeyStatusBlock extends StatelessWidget {
           height: 64,
           decoration: BoxDecoration(
             color: authEntrySurfaceRaised,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 260),

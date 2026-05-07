@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/wallet_security_service.dart';
+import '../../../../core/utils/bitcoin_network.dart';
 import '../../../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../../transactions/data/datasources/transaction_remote_datasource.dart';
 import '../../domain/repositories/wallet_repository.dart';
@@ -233,7 +234,7 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<Either<Failure, bool>> validateAddress(String address) async {
-    return Right(address.isNotEmpty);
+    return Right(looksLikeBitcoinAddress(address));
   }
 
   @override

@@ -6,6 +6,8 @@ import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/l10n/app_localizations.dart';
 import '../core/providers/appearance_provider.dart';
 import '../core/providers/locale_provider.dart';
+import '../core/providers/session_invalidation_provider.dart';
+import '../core/responsive/kerosene_responsive.dart';
 import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/screens/login_username_screen.dart';
 import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
@@ -14,6 +16,7 @@ import '../features/home/presentation/screens/home_loading_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
 import '../features/wallet/presentation/screens/create_wallet_screen.dart';
 import '../features/wallet/presentation/screens/wallet_card_screen.dart';
+import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../features/wallet/presentation/screens/receive_hub_screen.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart';
 import '../features/security/presentation/providers/security_provider.dart';
@@ -27,6 +30,7 @@ import '../core/services/audio_service.dart';
 import '../core/providers/tor_providers.dart';
 import '../core/services/tor_service.dart';
 import '../core/config/app_config.dart';
+import '../core/performance/kerosene_performance_boundary.dart';
 import '../core/utils/qr_payment_parser.dart';
 import '../features/auth/controller/auth_controller.dart';
 import '../shared/widgets/offline_overlay.dart';
@@ -85,6 +89,12 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider).locale;
     final appearance = ref.watch(appearanceProvider);
+    ref.listen<int>(sessionInvalidationProvider, (previous, next) {
+      if (previous == next) {
+        return;
+      }
+      ref.read(authControllerProvider.notifier).markSessionInvalidated();
+    });
 
     return MaterialApp(
       title: 'Kerosene Bank',
@@ -107,16 +117,13 @@ class MyApp extends ConsumerWidget {
         return supportedLocales.first;
       },
       builder: (context, child) {
-        final mediaQuery = MediaQuery.maybeOf(context);
-        Widget current = OfflineOverlay(child: child!);
-        if (mediaQuery != null) {
-          current = MediaQuery(
-            data: mediaQuery.copyWith(
-              textScaler: TextScaler.linear(appearance.fontScale.scaleFactor),
-            ),
-            child: current,
-          );
-        }
+        Widget current = KerosenePerformanceBoundary(
+          child: OfflineOverlay(child: child!),
+        );
+        current = KeroseneResponsiveBoundary(
+          requestedTextScale: appearance.fontScale.scaleFactor,
+          child: current,
+        );
         return _AppRealtimeBootstrap(child: current);
       },
       home: Consumer(
@@ -126,9 +133,7 @@ class MyApp extends ConsumerWidget {
             return const Scaffold(backgroundColor: Colors.black);
           }
           if (authState is AuthAuthenticated) {
-            return const AppEntryPinGate(
-              child: HomeLoadingScreen(),
-            );
+            return const AppEntryPinGate(child: HomeLoadingScreen());
           }
           if (authState is AuthServerUnavailable) {
             return const ServerUnavailableScreen();
@@ -140,34 +145,69 @@ class MyApp extends ConsumerWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginUsernameScreen(),
         '/signup': (context) => const SignupFlowScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/home_loading': (context) => const HomeLoadingScreen(),
-        '/settings': (context) =>
-            const SettingsScreen(showPrimaryNavigation: true),
-        '/history': (context) =>
-            const DepositsScreen(showPrimaryNavigation: true),
-        '/card': (context) => const WalletCardScreen(),
-        '/receive': (context) => const ReceiveHubScreen(),
-        '/mining': (context) => const MiningScreen(),
-        '/create_wallet': (context) => const CreateWalletScreen(),
-        '/send-money': (context) => const SendMoneyScreen(),
-        '/deposits': (context) =>
-            const DepositsScreen(showPrimaryNavigation: true),
+        '/home': (context) => const _PrivateMobileRoute(child: HomeScreen()),
+        '/home_loading': (context) =>
+            const _PrivateMobileRoute(child: HomeLoadingScreen()),
+        '/settings': (context) => const _PrivateMobileRoute(
+          child: SettingsScreen(showPrimaryNavigation: true),
+        ),
+        '/history': (context) => const _PrivateMobileRoute(
+          child: DepositsScreen(showPrimaryNavigation: true),
+        ),
+        '/card': (context) =>
+            const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
+        '/wallet-cards-legacy': (context) =>
+            const _PrivateMobileRoute(child: WalletCardScreen()),
+        '/receive': (context) =>
+            const _PrivateMobileRoute(child: ReceiveHubScreen()),
+        '/mining': (context) =>
+            const _PrivateMobileRoute(child: MiningScreen()),
+        '/create_wallet': (context) =>
+            const _PrivateMobileRoute(child: CreateWalletScreen()),
+        '/send-money': (context) =>
+            const _PrivateMobileRoute(child: SendMoneyScreen()),
+        '/deposits': (context) => const _PrivateMobileRoute(
+          child: DepositsScreen(showPrimaryNavigation: true),
+        ),
       },
       onGenerateRoute: (settings) {
-        final linkId =
-            QrPaymentParser.extractPaymentLinkId(settings.name ?? '');
+        final linkId = QrPaymentParser.extractPaymentLinkId(
+          settings.name ?? '',
+        );
         if (linkId != null) {
           return MaterialPageRoute(
             settings: settings,
-            builder: (_) => SendMoneyScreen(
-              initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+            builder: (_) => _PrivateMobileRoute(
+              child: SendMoneyScreen(
+                initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+              ),
             ),
           );
         }
         return null;
       },
     );
+  }
+}
+
+class _PrivateMobileRoute extends ConsumerWidget {
+  final Widget child;
+
+  const _PrivateMobileRoute({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    if (authState is AuthInitial || authState is AuthLoading) {
+      return const Scaffold(backgroundColor: Colors.black);
+    }
+    if (authState is AuthAuthenticated) {
+      return AppEntryPinGate(child: child);
+    }
+    if (authState is AuthServerUnavailable) {
+      return const ServerUnavailableScreen();
+    }
+    return const WelcomeScreen();
   }
 }
 
@@ -198,14 +238,5 @@ class KeroseneScrollBehavior extends ScrollBehavior {
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
     return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
-  }
-
-  @override
-  Widget buildScrollbar(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    return super.buildScrollbar(context, child, details);
   }
 }

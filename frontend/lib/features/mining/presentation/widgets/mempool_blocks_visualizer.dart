@@ -6,6 +6,7 @@ import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/features/mining/domain/entities/mining_dashboard_snapshot.dart';
 import 'package:teste/features/mining/presentation/mining_formatters.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class MempoolBlocksVisualizer extends StatelessWidget {
   final List<MiningProjectedBlockSnapshot> projectedBlocks;
@@ -30,10 +31,12 @@ class MempoolBlocksVisualizer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Blocos em formação',
-            subtitle: 'Fila projetada ao lado das confirmações recentes.',
+            title: context.l10n.miningBlocksTitle,
+            subtitle: context.l10n.miningBlocksSubtitle,
             trailing: MiningStatusBadge(
-              label: '${visibleProjected.length} NA FILA',
+              label: context.l10n.miningBlocksQueued(
+                visibleProjected.length,
+              ),
               tone: MiningStatusTone.info,
             ),
           ),
@@ -41,10 +44,19 @@ class MempoolBlocksVisualizer extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
-            children: const [
-              _LegendChip(label: 'Fila', color: miningAmber),
-              _LegendChip(label: 'Confirmado', color: miningTeal),
-              _LegendChip(label: 'Novo', color: miningBlue),
+            children: [
+              _LegendChip(
+                label: context.l10n.miningBlocksQueue,
+                color: miningAmber,
+              ),
+              _LegendChip(
+                label: context.l10n.miningBlocksConfirmed,
+                color: miningTeal,
+              ),
+              _LegendChip(
+                label: context.l10n.miningBlocksNew,
+                color: miningBlue,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -64,11 +76,12 @@ class MempoolBlocksVisualizer extends StatelessWidget {
                   );
                 }),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
                   child: _TimelineDivider(
                     confirmedLabel: visibleConfirmed.isEmpty
-                        ? 'sem blocos'
+                        ? context.l10n.miningBlocksNoBlocks
                         : '#${visibleConfirmed.first.height}',
                   ),
                 ),
@@ -94,10 +107,7 @@ class _ProjectedBlockCard extends StatelessWidget {
   final MiningProjectedBlockSnapshot block;
   final int blockNumber;
 
-  const _ProjectedBlockCard({
-    required this.block,
-    required this.blockNumber,
-  });
+  const _ProjectedBlockCard({required this.block, required this.blockNumber});
 
   @override
   Widget build(BuildContext context) {
@@ -106,10 +116,7 @@ class _ProjectedBlockCard extends StatelessWidget {
 
     return Container(
       width: 156,
-      decoration: miningInsetDecoration(
-        accent: fillColor,
-        emphasized: true,
-      ),
+      decoration: miningInsetDecoration(accent: fillColor, emphasized: true),
       child: ClipRRect(
         borderRadius: miningInnerBorderRadius,
         child: Stack(
@@ -146,7 +153,7 @@ class _ProjectedBlockCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   MiningStatusBadge(
-                    label: 'NEXT $blockNumber',
+                    label: context.l10n.miningBlocksNext(blockNumber),
                     tone: MiningStatusTone.warning,
                   ),
                   const Spacer(),
@@ -155,7 +162,7 @@ class _ProjectedBlockCard extends StatelessWidget {
                     style: miningMonoStyle(
                       AppTypography.h2,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
+                      letterSpacing: 0,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -165,13 +172,13 @@ class _ProjectedBlockCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _MetricLine(
-                    label: 'Faixa',
+                    label: context.l10n.miningBlocksRange,
                     value:
                         '${MiningFormatters.feeRate(block.minFeeRate)} - ${MiningFormatters.feeRate(block.maxFeeRate)}',
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   _MetricLine(
-                    label: 'Taxas',
+                    label: context.l10n.miningBlocksFees,
                     value: MiningFormatters.btcFromSats(block.totalFeesSat),
                   ),
                 ],
@@ -188,10 +195,7 @@ class _ConfirmedBlockCard extends StatelessWidget {
   final MiningBlockSnapshot block;
   final bool highlight;
 
-  const _ConfirmedBlockCard({
-    required this.block,
-    required this.highlight,
-  });
+  const _ConfirmedBlockCard({required this.block, required this.highlight});
 
   @override
   Widget build(BuildContext context) {
@@ -220,8 +224,9 @@ class _ConfirmedBlockCard extends StatelessWidget {
             Row(
               children: [
                 MiningStatusBadge(
-                  label:
-                      highlight ? 'NOVO #${block.height}' : '#${block.height}',
+                  label: highlight
+                      ? context.l10n.miningBlocksNewHeight(block.height)
+                      : '#${block.height}',
                   tone:
                       highlight ? MiningStatusTone.info : MiningStatusTone.live,
                   pulse: highlight,
@@ -238,7 +243,7 @@ class _ConfirmedBlockCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              block.poolName ?? 'Rede Bitcoin',
+              block.poolName ?? context.l10n.miningBlocksBitcoinNetwork,
               style: AppTypography.bodyMedium.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -247,34 +252,34 @@ class _ConfirmedBlockCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '${block.txCount} transações',
+              context.l10n.miningBlocksTransactions(block.txCount),
               style: AppTypography.bodySmall.copyWith(color: miningMuted),
             ),
             const Spacer(),
             _MetricLine(
-              label: 'Hash',
+              label: context.l10n.miningBlocksHash,
               value: _shortHash(block.id),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: 'Peso',
+              label: context.l10n.miningBlocksWeight,
               value: MiningFormatters.blockFill(block.weightRatio),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: 'Timestamp',
+              label: context.l10n.miningBlocksTimestamp,
               value: MiningFormatters.timeOfDay(block.timestamp),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: 'Tamanho',
+              label: context.l10n.miningBlocksSize,
               value: MiningFormatters.megabytes(block.sizeMb),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: 'Taxa',
+              label: context.l10n.miningBlocksFee,
               value: block.medianFeeRate == null
-                  ? 'indisponivel'
+                  ? context.l10n.miningBlocksUnavailable
                   : MiningFormatters.feeRate(block.medianFeeRate!),
             ),
           ],
@@ -346,10 +351,7 @@ class _LegendChip extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _LegendChip({
-    required this.label,
-    required this.color,
-  });
+  const _LegendChip({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -391,10 +393,7 @@ class _MetricLine extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MetricLine({
-    required this.label,
-    required this.value,
-  });
+  const _MetricLine({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -418,7 +417,7 @@ class _MetricLine extends StatelessWidget {
               AppTypography.bodySmall,
               color: Colors.white,
               fontWeight: FontWeight.w600,
-              letterSpacing: -0.2,
+              letterSpacing: 0,
             ),
             overflow: TextOverflow.ellipsis,
           ),

@@ -234,8 +234,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         children: [
           const ReceiveFlowSectionLabel('DESTINO'),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          SelectableText(
             recipientLabel.isEmpty ? recipientValue : recipientLabel,
+            maxLines: 2,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: receiveFlowTextColor,
                   fontWeight: FontWeight.w500,
@@ -244,8 +245,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ),
           if (recipientSubtitle != null) ...[
             const SizedBox(height: 6),
-            Text(
+            SelectableText(
               recipientSubtitle,
+              maxLines: 3,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                     fontFamily: 'JetBrainsMono',
@@ -309,14 +311,17 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     ),
               ),
               Flexible(
-                child: Text(
-                  primaryAmountLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.amountInput(
-                    isBtc: _selectedCurrency == Currency.btc,
-                    color: receiveFlowTextColor,
-                  ).copyWith(fontWeight: FontWeight.w500),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    primaryAmountLabel,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: AppTypography.amountInput(
+                      isBtc: _selectedCurrency == Currency.btc,
+                      color: receiveFlowTextColor,
+                    ).copyWith(fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
             ],
@@ -391,18 +396,23 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       backgroundColor: receiveFlowPanelAltColor,
       child: Column(
         children: [
-          Text(
-            MoneyDisplay.formatCompact(
-              amount: lockedPrimaryAmount,
-              currency: _selectedCurrency,
-            ),
-            style: AppTypography.amountInput(
-              isBtc: _selectedCurrency == Currency.btc,
-              color: receiveFlowTextColor,
-            ).copyWith(
-              fontSize: _selectedCurrency == Currency.btc ? 40 : 46,
-              letterSpacing: -1.2,
-              fontWeight: FontWeight.w500,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              MoneyDisplay.formatCompact(
+                amount: lockedPrimaryAmount,
+                currency: _selectedCurrency,
+              ),
+              maxLines: 1,
+              softWrap: false,
+              style: AppTypography.amountInput(
+                isBtc: _selectedCurrency == Currency.btc,
+                color: receiveFlowTextColor,
+              ).copyWith(
+                fontSize: _selectedCurrency == Currency.btc ? 40 : 46,
+                letterSpacing: 0,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -516,22 +526,24 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xl,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildManualFlowHero(context),
           const SizedBox(height: AppSpacing.xl),
           _buildStepInput(
-            label: 'DESTINO',
+            label: context.l10n.sendMoneyDestinationLabel,
             controller: _receiverController,
-            hint: 'Endereço ou nome de usuário',
+            hint: context.l10n.sendMoneyDestinationHint,
             icon: LucideIcons.user,
           ),
           if (recentInternalDestinations.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
             RecentTransactionDestinationsSection(
-              title: 'Já enviados',
+              title: context.l10n.sendMoneyRecentTitle,
               destinations: recentInternalDestinations,
               onSelect: _applyRecentInternalDestination,
               maxItems: 6,
@@ -540,17 +552,20 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ],
           const SizedBox(height: AppSpacing.xxl),
           ReceiveFlowPrimaryButton(
-            label: 'IR PARA O VALOR',
+            label: context.l10n.sendMoneyGoToAmount,
             icon: LucideIcons.arrowRight,
             radius: 0,
             onTap: () {
               if (_receiverController.text.trim().isEmpty) {
-                SnackbarHelper.showError("Informe o endereço ou usuário.");
+                SnackbarHelper.showError(
+                  context.l10n.sendMoneyMissingDestination,
+                );
                 return;
               }
               if (_isExternalBitcoinTarget(_receiverController.text.trim())) {
                 SnackbarHelper.showError(
-                    "Pagamentos on-chain devem usar o fluxo de saque.");
+                  context.l10n.sendMoneyExternalUseWithdraw,
+                );
                 return;
               }
               FocusScope.of(context).unfocus();
@@ -576,7 +591,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xl,
+      ),
       child: Column(
         children: [
           _buildRecipientSummaryPanel(),
@@ -595,9 +612,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               _buildFiatReferenceLine(amountBtc: amountBtc),
               const SizedBox(height: AppSpacing.md),
             ],
-            RepaintBoundary(
-              child: _buildKeypad(),
-            ),
+            RepaintBoundary(child: _buildKeypad()),
           ] else ...[
             _buildLockedAmountView(
               btcUsd: btcUsd,
@@ -607,7 +622,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ],
           const SizedBox(height: AppSpacing.xl),
           ReceiveFlowPrimaryButton(
-            label: 'REVISAR',
+            label: context.l10n.sendMoneyReview,
             icon: LucideIcons.arrowRight,
             isLoading: isLoading,
             radius: 0,
@@ -660,9 +675,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             maxLength: maxLength,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: receiveFlowFaintTextColor,
-                  ),
+              hintStyle: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: receiveFlowFaintTextColor),
               counterText: '',
               filled: false,
               isDense: true,
@@ -758,21 +773,21 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     final details = <PaymentConfirmationDetail>[
       PaymentConfirmationDetail(
-        label: 'Tipo',
+        label: context.l10n.sendMoneyDetailType,
         value: isPaymentLink
-            ? 'Pagamento por link interno'
-            : 'Transferência interna Kerosene',
+            ? context.l10n.sendMoneyTypePaymentLink
+            : context.l10n.sendMoneyTypeInternalTransfer,
         icon: isPaymentLink ? LucideIcons.link : LucideIcons.repeat2,
       ),
       PaymentConfirmationDetail(
-        label: 'Valor',
+        label: context.l10n.sendMoneyDetailValue,
         value: amountLabel,
         icon: LucideIcons.bitcoin,
         emphasized: true,
       ),
       if (selectedCurrency != Currency.btc)
         PaymentConfirmationDetail(
-          label: 'Valor em BTC',
+          label: context.l10n.sendMoneyDetailValueBtc,
           value: btcAmountLabel,
           icon: LucideIcons.coins,
         ),
@@ -790,52 +805,54 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       ),
       if (selectedCurrency != Currency.btc)
         PaymentConfirmationDetail(
-          label: 'Total em BTC',
+          label: context.l10n.sendMoneyDetailTotalBtc,
           value: btcTotalLabel,
           icon: LucideIcons.equal,
         ),
       PaymentConfirmationDetail(
-        label: 'Saldo antes do envio',
+        label: context.l10n.sendMoneyDetailBalanceBefore,
         value: balanceLabel,
         icon: LucideIcons.walletCards,
       ),
       if (_pendingPaymentLinkId != null)
         PaymentConfirmationDetail(
-          label: 'ID do link',
+          label: context.l10n.sendMoneyDetailLinkId,
           value: _pendingPaymentLinkId!,
           icon: LucideIcons.fingerprint,
           monospace: true,
         ),
       if (isPaymentLink && _lockedDestinationHash != null)
         PaymentConfirmationDetail(
-          label: 'Hash do destino',
+          label: context.l10n.sendMoneyDetailDestinationHash,
           value: _lockedDestinationHash!,
           icon: LucideIcons.lock,
           monospace: true,
           copyable: true,
-          copyMessage: 'Hash do destino copiado.',
+          copyMessage: context.l10n.sendMoneyDestinationHashCopied,
         ),
     ];
 
     final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
         builder: (_) => PaymentConfirmationScreen<dynamic>(
-          title:
-              isPaymentLink ? 'Confirmar pagamento' : context.l10n.reviewSend,
-          eyebrow: isPaymentLink ? 'Pedido bloqueado' : 'Revisão final',
+          title: isPaymentLink
+              ? context.l10n.sendMoneyConfirmPayment
+              : context.l10n.reviewSend,
+          eyebrow: isPaymentLink
+              ? context.l10n.sendMoneyLockedRequestEyebrow
+              : context.l10n.sendMoneyFinalReviewEyebrow,
           amountPrimary: amountLabel,
           amountSecondary: btcAmountLabel,
-          sourceLabel: 'De',
+          sourceLabel: context.l10n.sendMoneySourceLabel,
           sourceValue: wallet.name,
-          destinationLabel: 'Para',
+          destinationLabel: context.l10n.sendMoneyDestinationToLabel,
           destinationValue: recipientLabel,
           destinationSubtitle: destinationSubtitle,
-          networkLabel: 'Interno',
+          networkLabel: context.l10n.sendMoneyInternalNetwork,
           notice: isPaymentLink
-              ? 'Valor e destino foram definidos pelo link. Confirme apenas se reconhecer este pedido.'
-              : 'Confira os dados antes de confirmar. Depois da autorização, o envio será processado.',
-          securityMessage:
-              'A confirmação usa a sessão atual e os fatores de segurança configurados na sua conta antes de enviar o pagamento.',
+              ? context.l10n.sendMoneyLockedNotice
+              : context.l10n.sendMoneyReviewNotice,
+          securityMessage: context.l10n.sendMoneySecurityMessage,
           confirmText: context.l10n.confirm,
           cancelText: context.l10n.cancel,
           details: details,
@@ -863,22 +880,29 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required double fee,
     required String toAddress,
   }) async {
+    final l10n = context.l10n;
     final profile = await _resolveSecurityProfile(wallet);
+    if (!mounted || !confirmationContext.mounted) {
+      return null;
+    }
+
     final authResult = await TransactionAuthGate.show(
       confirmationContext,
       profile: profile,
       allowDeviceAuthUnavailable: true,
     );
 
-    if (!authResult.isAuthenticated || !mounted) {
-      SnackbarHelper.showError("Autenticação cancelada ou falhou");
+    if (!authResult.isAuthenticated ||
+        !mounted ||
+        !confirmationContext.mounted) {
+      SnackbarHelper.showError(l10n.sendMoneyAuthFailed);
       return null;
     }
 
     if (_pendingPaymentLinkId != null) {
       final linkId = _pendingPaymentLinkId;
       if (linkId == null) {
-        SnackbarHelper.showError("Solicitação de pagamento inválida.");
+        SnackbarHelper.showError(l10n.sendMoneyInvalidPaymentRequest);
         return null;
       }
 
@@ -901,6 +925,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       HapticFeedback.heavyImpact();
       final error = ref.read(paymentLinkNotifierProvider).error;
       if (error != null) {
+        if (!mounted || !confirmationContext.mounted) {
+          return null;
+        }
         SnackbarHelper.showError(
           ErrorTranslator.translate(confirmationContext.l10n, error),
         );
@@ -943,6 +970,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     HapticFeedback.heavyImpact();
     final error = ref.read(sendTransactionProvider).error;
     if (error != null) {
+      if (!mounted || !confirmationContext.mounted) {
+        return null;
+      }
       SnackbarHelper.showError(
         ErrorTranslator.translate(confirmationContext.l10n, error),
       );
@@ -962,7 +992,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     if (parsed != null && parsed.isComplete) {
       if (_isExternalBitcoinTarget(parsed.address)) {
         SnackbarHelper.showError(
-          "QR externo detectado. Use o fluxo de saque para pagamentos on-chain.",
+          context.l10n.sendMoneyExternalQrUseWithdraw,
         );
         return;
       }
@@ -981,9 +1011,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       });
 
       HapticFeedback.lightImpact();
-      SnackbarHelper.showSuccess("Dados da requisição carregados!");
+      SnackbarHelper.showSuccess(context.l10n.sendMoneyRequestDataLoaded);
     } else {
-      SnackbarHelper.showError("QR/NFC Request inválido");
+      SnackbarHelper.showError(context.l10n.sendMoneyInvalidQrRequest);
     }
   }
 
@@ -991,55 +1021,60 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final result =
         await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
 
-    result.fold((failure) {
-      SnackbarHelper.showError(
-        ErrorTranslator.translate(
-          context.l10n,
-          failure.errorCode ?? failure.message,
-        ),
-      );
-    }, (data) {
-      final payload = data['data'] is Map
-          ? Map<String, dynamic>.from(data['data'] as Map)
-          : data;
-      final rawAmount = payload['amount'];
-      final amount = rawAmount is num
-          ? rawAmount.toDouble()
-          : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
-      final status = (payload['status']?.toString() ?? 'PENDING').toUpperCase();
-      final destinationHash = _readPaymentRequestDestinationHash(payload);
+    result.fold(
+      (failure) {
+        SnackbarHelper.showError(
+          ErrorTranslator.translate(
+            context.l10n,
+            failure.errorCode ?? failure.message,
+          ),
+        );
+      },
+      (data) {
+        final payload = data['data'] is Map
+            ? Map<String, dynamic>.from(data['data'] as Map)
+            : data;
+        final rawAmount = payload['amount'];
+        final amount = rawAmount is num
+            ? rawAmount.toDouble()
+            : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
+        final status =
+            (payload['status']?.toString() ?? 'PENDING').toUpperCase();
+        final destinationHash = _readPaymentRequestDestinationHash(payload);
 
-      if (status == 'PAID') {
-        SnackbarHelper.showError("Esta solicitação já foi paga.");
-        return;
-      }
-      if (status == 'CANCELED' || status == 'EXPIRED') {
-        SnackbarHelper.showError("Esta solicitação de pagamento expirou.");
-        return;
-      }
-
-      setState(() {
-        _pendingPaymentLinkId = linkId;
-        _lockedDestinationHash =
-            destinationHash.isNotEmpty ? destinationHash : null;
-        _lockedRecipientLabel = destinationHash.isNotEmpty
-            ? _shortHash(destinationHash)
-            : 'Destino bloqueado';
-        _lockedRecipientAddress =
-            destinationHash.isNotEmpty ? destinationHash : 'Destino bloqueado';
-        if (amount > 0) {
-          _lockedAmountBtc = amount;
-          _amount = amount
-              .toStringAsFixed(8)
-              .replaceAll(RegExp(r'0+$'), '')
-              .replaceAll(RegExp(r'\.$'), '');
+        if (status == 'PAID') {
+          SnackbarHelper.showError(context.l10n.sendMoneyRequestAlreadyPaid);
+          return;
         }
-      });
-      SnackbarHelper.showSuccess("Solicitação de pagamento carregada.");
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _openLockedPaymentConfirmationIfReady();
-      });
-    });
+        if (status == 'CANCELED' || status == 'EXPIRED') {
+          SnackbarHelper.showError(context.l10n.sendMoneyRequestExpired);
+          return;
+        }
+
+        setState(() {
+          _pendingPaymentLinkId = linkId;
+          _lockedDestinationHash =
+              destinationHash.isNotEmpty ? destinationHash : null;
+          _lockedRecipientLabel = destinationHash.isNotEmpty
+              ? _shortHash(destinationHash)
+              : context.l10n.sendMoneyLockedDestination;
+          _lockedRecipientAddress = destinationHash.isNotEmpty
+              ? destinationHash
+              : context.l10n.sendMoneyLockedDestination;
+          if (amount > 0) {
+            _lockedAmountBtc = amount;
+            _amount = amount
+                .toStringAsFixed(8)
+                .replaceAll(RegExp(r'0+$'), '')
+                .replaceAll(RegExp(r'\.$'), '');
+          }
+        });
+        SnackbarHelper.showSuccess(context.l10n.sendMoneyPaymentRequestLoaded);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _openLockedPaymentConfirmationIfReady();
+        });
+      },
+    );
   }
 
   String _readPaymentRequestDestinationHash(Map<String, dynamic> data) {

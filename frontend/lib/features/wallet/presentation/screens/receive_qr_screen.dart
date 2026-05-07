@@ -25,8 +25,8 @@ class ReceiveQrScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ReceiveFlowScaffold(
-      title: 'Receber por QR',
-      subtitle: 'Visual compacto e monocromático para exibição do QR.',
+      title: context.l10n.receiveQrTitle,
+      subtitle: context.l10n.receiveQrSubtitle,
       child: Column(
         children: [
           ReceiveFlowPanel(
@@ -107,8 +107,7 @@ class ReceiveQrScreen extends ConsumerWidget {
             onTap: () {
               HapticFeedback.mediumImpact();
               Clipboard.setData(ClipboardData(text: paymentUri));
-              SnackbarHelper.showSuccess(
-                  "Copiado para a área de transferência");
+              SnackbarHelper.showSuccess(context.l10n.receiveQrCopied);
             },
             icon: LucideIcons.copy,
             label: context.l10n.copy.toUpperCase(),

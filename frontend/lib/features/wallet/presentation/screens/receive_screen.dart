@@ -9,6 +9,7 @@ import 'package:teste/core/theme/monochrome_theme.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/utils/currency_logic.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/l10n/l10n_extension.dart';
@@ -117,45 +118,45 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
   String _flowEyebrow(BuildContext context) {
     switch (widget.initialMode) {
       case ReceiveFlowMode.qrCode:
-        return 'QR CODE';
+        return context.l10n.receiveScreenQrEyebrow;
       case ReceiveFlowMode.nfc:
         return context.l10n.nfc.toUpperCase();
       case ReceiveFlowMode.paymentLink:
-        return 'LINK DE PAGAMENTO';
+        return context.l10n.receiveScreenPaymentLinkEyebrow;
       case ReceiveFlowMode.onChain:
-        return 'ON-CHAIN';
+        return context.l10n.receiveScreenOnchainEyebrow;
       case ReceiveFlowMode.lightning:
-        return 'LIGHTNING';
+        return context.l10n.receiveScreenLightningEyebrow;
     }
   }
 
   String _flowDescription(BuildContext context) {
     switch (widget.initialMode) {
       case ReceiveFlowMode.qrCode:
-        return 'Gere um QR interno com valor e destino travados para confirmação.';
+        return context.l10n.receiveScreenQrDescription;
       case ReceiveFlowMode.nfc:
-        return 'Prepare um payload NFC interno com destino travado.';
+        return context.l10n.receiveScreenNfcDescription;
       case ReceiveFlowMode.paymentLink:
-        return 'Crie um link rastreado que abre direto na confirmação.';
+        return context.l10n.receiveScreenPaymentLinkDescription;
       case ReceiveFlowMode.onChain:
-        return 'Gere um URI Bitcoin on-chain padrao com valor e rota predefinidos.';
+        return context.l10n.receiveScreenOnchainDescription;
       case ReceiveFlowMode.lightning:
-        return 'Gere uma invoice Lightning Network de liquidacao instantanea.';
+        return context.l10n.receiveScreenLightningDescription;
     }
   }
 
   String _continueLabel(BuildContext context) {
     switch (widget.initialMode) {
       case ReceiveFlowMode.qrCode:
-        return 'GERAR QR';
+        return context.l10n.receiveScreenGenerateQr;
       case ReceiveFlowMode.nfc:
-        return 'PREPARAR NFC';
+        return context.l10n.receiveScreenPrepareNfc;
       case ReceiveFlowMode.paymentLink:
-        return 'CRIAR LINK';
+        return context.l10n.receiveScreenCreateLink;
       case ReceiveFlowMode.onChain:
-        return 'GERAR QR ON-CHAIN';
+        return context.l10n.receiveScreenGenerateOnchainQr;
       case ReceiveFlowMode.lightning:
-        return 'GERAR INVOICE LN';
+        return context.l10n.receiveScreenGenerateLightningInvoice;
     }
   }
 
@@ -174,7 +175,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
   void _openDeposit() {
     final wallet = _selectedWallet;
     if (wallet == null) {
-      SnackbarHelper.showError('Selecione uma carteira para depositar.');
+      SnackbarHelper.showError(context.l10n.receiveScreenSelectDepositWallet);
       return;
     }
 
@@ -193,7 +194,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     final inboundBlocked = activationStatus?.canReceiveInbound != true;
 
     return ReceiveFlowScaffold(
-      title: 'Receber',
+      title: context.l10n.receive,
       subtitle: _screenSubtitle(context),
       scrollable: inboundBlocked,
       bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -236,15 +237,15 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
   String _screenSubtitle(BuildContext context) {
     switch (widget.initialMode) {
       case ReceiveFlowMode.qrCode:
-        return 'Defina o valor e gere um QR interno com destino bloqueado.';
+        return context.l10n.receiveScreenQrSubtitle;
       case ReceiveFlowMode.nfc:
-        return 'Defina o valor e prepare uma cobrança por aproximação.';
+        return context.l10n.receiveScreenNfcSubtitle;
       case ReceiveFlowMode.paymentLink:
-        return 'Defina o valor e gere uma cobrança rastreada.';
+        return context.l10n.receiveScreenPaymentLinkSubtitle;
       case ReceiveFlowMode.onChain:
-        return 'Defina o valor e gere um payload Bitcoin compatível.';
+        return context.l10n.receiveScreenOnchainSubtitle;
       case ReceiveFlowMode.lightning:
-        return 'Defina o valor e siga para uma invoice Lightning.';
+        return context.l10n.receiveScreenLightningSubtitle;
     }
   }
 
@@ -291,8 +292,10 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
   }
 
   Widget _buildInboundBlockedCard(dynamic activationStatus) {
-    final warning = activationStatus?.warningMessage?.toString() ??
-        'Para receber fundos dentro da plataforma, deposite algum valor primeiro.';
+    final rawWarning = activationStatus?.warningMessage?.toString();
+    final warning = rawWarning != null && rawWarning.isNotEmpty
+        ? ErrorTranslator.translate(context.l10n, rawWarning)
+        : context.l10n.receiveScreenInboundBlockedMessage;
 
     return ReceiveFlowPanel(
       backgroundColor: receiveFlowPanelAltColor,
@@ -324,9 +327,9 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'RECEBIMENTO BLOQUEADO',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.receiveScreenInboundBlockedTitle,
+                      style: const TextStyle(
                         color: receiveFlowTextColor,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.9,
@@ -353,7 +356,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
               TextButton.icon(
                 onPressed: _openDeposit,
                 icon: const Icon(LucideIcons.download, size: 16),
-                label: const Text('Depositar'),
+                label: Text(context.l10n.deposit),
                 style: TextButton.styleFrom(
                   foregroundColor: receiveFlowMutedTextColor,
                 ),
@@ -361,7 +364,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
               TextButton.icon(
                 onPressed: () => ref.invalidate(activationStatusProvider),
                 icon: const Icon(LucideIcons.refreshCw, size: 16),
-                label: const Text('Atualizar status'),
+                label: Text(context.l10n.receiveScreenRefreshStatus),
                 style: TextButton.styleFrom(
                   foregroundColor: receiveFlowMutedTextColor,
                 ),
@@ -416,7 +419,12 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           const SizedBox(height: AppSpacing.sm),
           if (_selectedCurrency != Currency.btc)
             Text(
-              'Equivale a ${MoneyDisplay.formatCompact(amount: btcEquivalent, currency: Currency.btc)}',
+              context.l10n.receiveScreenEquivalentTo(
+                MoneyDisplay.formatCompact(
+                  amount: btcEquivalent,
+                  currency: Currency.btc,
+                ),
+              ),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                   ),
@@ -425,12 +433,12 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           if (wallet != null && btcEquivalent > 0) ...[
             const SizedBox(height: AppSpacing.md),
             ReceiveFlowTag(
-              label: 'Destino ${wallet.name}',
+              label: context.l10n.receiveScreenDestination(wallet.name),
               icon: LucideIcons.lock,
             ),
             const SizedBox(height: 8),
             Text(
-              'Quem pagar verá apenas hash público, valor e saldo antes da confirmação.',
+              context.l10n.receiveScreenPrivacyHint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowFaintTextColor,
                     height: 1.3,
@@ -480,12 +488,13 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   Future<void> _generateAndNavigate() async {
     HapticFeedback.mediumImpact();
+    final l10n = context.l10n;
     setState(() => _isGenerating = true);
 
     final selectedWallet = _selectedWallet;
     if (selectedWallet == null) {
       setState(() => _isGenerating = false);
-      SnackbarHelper.showError('Selecione uma carteira para receber.');
+      SnackbarHelper.showError(l10n.receiveScreenSelectReceiveWallet);
       return;
     }
 
@@ -570,7 +579,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           throw failureMessage!;
         }
         if (createdLink == null || createdLink!.id.isEmpty) {
-          throw 'Link de pagamento inválido retornado pelo servidor.';
+          throw l10n.receiveScreenInvalidPaymentLink;
         }
 
         link = createdLink!;
@@ -582,8 +591,12 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
     } catch (error) {
       if (mounted) {
         setState(() => _isGenerating = false);
+        final translated = ErrorTranslator.translate(
+          l10n,
+          error.toString(),
+        );
         SnackbarHelper.showError(
-          'Nao foi possivel gerar o link de pagamento: $error',
+          l10n.receiveScreenPaymentLinkError(translated),
         );
       }
       return;
@@ -636,14 +649,16 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
 
   Future<_PaymentLinkConfig?> _showPaymentLinkConfigSheet() {
     final descriptionController = TextEditingController(
-      text: 'Recebimento ${_selectedWallet?.name ?? 'Kerosene'}',
+      text: context.l10n.receiveScreenDefaultDescription(
+        _selectedWallet?.name ?? 'Kerosene',
+      ),
     );
     final referenceController = TextEditingController();
     final customerController = TextEditingController();
     final noteController = TextEditingController();
     int expiresInMinutes = 60;
     String visibility = 'PRIVATE';
-    String confirmationMode = 'MANUAL_REVIEW';
+    String confirmationMode = 'USER_ACTION_REQUIRED';
 
     return showModalBottomSheet<_PaymentLinkConfig>(
       context: context,
@@ -677,7 +692,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         color: monoBorderStrongColor,
                       ),
                       Text(
-                        'CONFIGURAR LINK',
+                        context.l10n.receiveScreenConfigureLinkEyebrow,
                         style: AppTypography.caption.copyWith(
                           color: monoMutedTextColor,
                           fontWeight: FontWeight.w800,
@@ -686,7 +701,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Link de pagamento',
+                        context.l10n.receiveScreenConfigureLinkTitle,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: monoTextColor,
                               fontWeight: FontWeight.w700,
@@ -694,7 +709,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Defina validade, visibilidade e identificadores antes de gerar o link.',
+                        context.l10n.receiveScreenConfigureLinkSubtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: monoMutedTextColor,
                               height: 1.45,
@@ -705,14 +720,14 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         controller: descriptionController,
                         style: const TextStyle(color: monoTextColor),
                         decoration: monochromeInputDecoration(
-                          label: 'Descricao',
+                          label: context.l10n.receiveScreenDescriptionLabel,
                         ),
                       ),
                       TextField(
                         controller: referenceController,
                         style: const TextStyle(color: monoTextColor),
                         decoration: monochromeInputDecoration(
-                          label: 'Referencia',
+                          label: context.l10n.receiveScreenReferenceLabel,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -720,13 +735,23 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         initialValue: expiresInMinutes,
                         dropdownColor: monoSurfaceAltColor,
                         style: const TextStyle(color: monoTextColor),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
-                              value: 15, child: Text('15 minutos')),
-                          DropdownMenuItem(value: 60, child: Text('1 hora')),
-                          DropdownMenuItem(value: 180, child: Text('3 horas')),
+                            value: 15,
+                            child: Text(context.l10n.receiveScreen15Minutes),
+                          ),
                           DropdownMenuItem(
-                              value: 1440, child: Text('24 horas')),
+                            value: 60,
+                            child: Text(context.l10n.receiveScreen1Hour),
+                          ),
+                          DropdownMenuItem(
+                            value: 180,
+                            child: Text(context.l10n.receiveScreen3Hours),
+                          ),
+                          DropdownMenuItem(
+                            value: 1440,
+                            child: Text(context.l10n.receiveScreen24Hours),
+                          ),
                         ],
                         onChanged: (value) {
                           if (value != null) {
@@ -734,7 +759,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                           }
                         },
                         decoration: monochromeInputDecoration(
-                          label: 'Validade',
+                          label: context.l10n.receiveScreenValidityLabel,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -742,14 +767,14 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         initialValue: visibility,
                         dropdownColor: monoSurfaceAltColor,
                         style: const TextStyle(color: monoTextColor),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
                             value: 'PRIVATE',
-                            child: Text('Privado'),
+                            child: Text(context.l10n.receiveScreenPrivate),
                           ),
                           DropdownMenuItem(
                             value: 'PUBLIC',
-                            child: Text('Público'),
+                            child: Text(context.l10n.receiveScreenPublic),
                           ),
                         ],
                         onChanged: (value) {
@@ -758,7 +783,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                           }
                         },
                         decoration: monochromeInputDecoration(
-                          label: 'Visibilidade',
+                          label: context.l10n.receiveScreenVisibilityLabel,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -766,14 +791,18 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         initialValue: confirmationMode,
                         dropdownColor: monoSurfaceAltColor,
                         style: const TextStyle(color: monoTextColor),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
-                            value: 'MANUAL_REVIEW',
-                            child: Text('Confirmação manual'),
+                            value: 'USER_ACTION_REQUIRED',
+                            child: Text(
+                              context.l10n.receiveScreenUserActionRequired,
+                            ),
                           ),
                           DropdownMenuItem(
                             value: 'AUTO_COMPLETE',
-                            child: Text('Completar automaticamente'),
+                            child: Text(
+                              context.l10n.receiveScreenAutoComplete,
+                            ),
                           ),
                         ],
                         onChanged: (value) {
@@ -782,7 +811,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                           }
                         },
                         decoration: monochromeInputDecoration(
-                          label: 'Fechamento',
+                          label: context.l10n.receiveScreenCompletionLabel,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -790,14 +819,14 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                         controller: customerController,
                         style: const TextStyle(color: monoTextColor),
                         decoration: monochromeInputDecoration(
-                          label: 'Cliente',
+                          label: context.l10n.receiveScreenCustomerLabel,
                         ),
                       ),
                       TextField(
                         controller: noteController,
                         style: const TextStyle(color: monoTextColor),
                         decoration: monochromeInputDecoration(
-                          label: 'Nota',
+                          label: context.l10n.receiveScreenNoteLabel,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
@@ -820,7 +849,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
                             ),
                           );
                         },
-                        child: const Text('GERAR LINK'),
+                        child: Text(context.l10n.receiveScreenGenerateLink),
                       ),
                     ],
                   ),

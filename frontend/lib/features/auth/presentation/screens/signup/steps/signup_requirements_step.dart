@@ -27,6 +27,12 @@ class SignupRequirementsStep extends ConsumerWidget {
         AppCopy.signupRequirementsChipPasskey.resolve(context),
         AppCopy.signupRequirementsChipConfirmations.resolve(context),
       ],
+      footer: SignupPrimaryFooter(
+        text: AppCopy.signupRequirementsCta.resolve(context),
+        onPressed: onNext,
+        caption: AppCopy.signupRequirementsCaption.resolve(context),
+        icon: LucideIcons.arrowRight,
+      ),
       children: [
         SignupPanel(
           tone: SignupSurfaceTone.primary,
@@ -75,12 +81,6 @@ class SignupRequirementsStep extends ConsumerWidget {
           tone: SignupSurfaceTone.warning,
         ),
       ],
-      footer: SignupPrimaryFooter(
-        text: AppCopy.signupRequirementsCta.resolve(context),
-        onPressed: onNext,
-        caption: AppCopy.signupRequirementsCaption.resolve(context),
-        icon: LucideIcons.arrowRight,
-      ),
     );
   }
 }

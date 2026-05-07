@@ -1,5 +1,5 @@
 # Build Stage
-FROM golang:1.24-alpine AS builder
+FROM docker.io/library/golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -27,15 +27,24 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o mpc_enclave main.go
 
 # Production Run Stage
-FROM alpine:latest
+FROM docker.io/library/alpine:latest
 
-# Installs ca-certificates if calls to external APIs are needed.
-RUN apk --no-cache add ca-certificates tzdata
+# ca-certificates for TLS, netcat for diagnostics, and wget for Docker healthchecks.
+RUN apk --no-cache add ca-certificates tzdata netcat-openbsd wget && \
+    addgroup -S kerosene && \
+    adduser -S -D -H -G kerosene kerosene && \
+    mkdir -p /app/encrypted-shards /mnt/mpc-shards && \
+    chown -R kerosene:kerosene /app /mnt/mpc-shards
 
 WORKDIR /app
-COPY --from=builder /app/mpc_enclave .
+COPY --from=builder --chown=kerosene:kerosene /app/mpc_enclave .
 
-EXPOSE 50051
+EXPOSE 50051 8081
 
-# Executa o binario de Go com zero dependencias
+# Executa o binario de Go como usuario nao-root.
+USER kerosene:kerosene
+
+HEALTHCHECK --interval=10s --timeout=4s --start-period=30s --retries=6 \
+  CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/version"]
+
 ENTRYPOINT ["/app/mpc_enclave"]

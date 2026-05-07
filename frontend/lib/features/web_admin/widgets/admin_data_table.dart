@@ -118,43 +118,56 @@ class _AdminDataTableState<T> extends State<AdminDataTable<T>> {
           ),
           child: ClipRRect(
             borderRadius: AdminTheme.borderRadiusSm,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                sortColumnIndex: _sortColumnIndex,
-                sortAscending: _sortAscending,
-                headingRowHeight: 44,
-                dataRowMinHeight: 44,
-                dataRowMaxHeight: 52,
-                horizontalMargin: AdminTheme.spacingLg,
-                columnSpacing: AdminTheme.spacingXl,
-                headingRowColor: WidgetStateProperty.all(AdminColors.tableHeader),
-                columns: widget.columns.asMap().entries.map((entry) {
-                  return DataColumn(
-                    label: Text(
-                      entry.value.header.toUpperCase(),
-                      style: AdminTypography.tableHeader,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      sortColumnIndex: _sortColumnIndex,
+                      sortAscending: _sortAscending,
+                      headingRowHeight: 44,
+                      dataRowMinHeight: 44,
+                      dataRowMaxHeight: 64,
+                      horizontalMargin: AdminTheme.spacingLg,
+                      columnSpacing: AdminTheme.spacingXl,
+                      headingRowColor: WidgetStateProperty.all(
+                        AdminColors.tableHeader,
+                      ),
+                      columns: widget.columns.asMap().entries.map((entry) {
+                        return DataColumn(
+                          label: Text(
+                            entry.value.header.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AdminTypography.tableHeader,
+                          ),
+                          onSort: entry.value.sortKey != null ? _sort : null,
+                          numeric: entry.value.isNumeric,
+                        );
+                      }).toList(),
+                      rows: _pageData.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+                        return DataRow(
+                          color: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.hovered)) {
+                              return AdminColors.tableRowHover;
+                            }
+                            return index.isOdd
+                                ? AdminColors.tableRowAlt
+                                : Colors.transparent;
+                          }),
+                          cells: widget.columns.map((col) {
+                            return DataCell(col.cellBuilder(item));
+                          }).toList(),
+                        );
+                      }).toList(),
                     ),
-                    onSort: entry.value.sortKey != null ? _sort : null,
-                    numeric: entry.value.isNumeric,
-                  );
-                }).toList(),
-                rows: _pageData.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final item = entry.value;
-                  return DataRow(
-                    color: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.hovered)) {
-                        return AdminColors.tableRowHover;
-                      }
-                      return index.isOdd ? AdminColors.tableRowAlt : Colors.transparent;
-                    }),
-                    cells: widget.columns.map((col) {
-                      return DataCell(col.cellBuilder(item));
-                    }).toList(),
-                  );
-                }).toList(),
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -207,8 +220,11 @@ class _Pagination extends StatelessWidget {
     final start = currentPage * rowsPerPage + 1;
     final end = ((currentPage + 1) * rowsPerPage).clamp(0, totalItems);
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AdminTheme.spacingLg,
+      runSpacing: AdminTheme.spacingSm,
       children: [
         Text(
           'Showing $start–$end of $totalItems',

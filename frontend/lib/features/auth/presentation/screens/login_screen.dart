@@ -169,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
-                        'Acesso da conta',
+                        context.l10n.authAccountAccessTitle,
                         style: Theme.of(context).textTheme.displayLarge!,
                         textAlign: TextAlign.center,
                       ),
@@ -194,7 +194,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.lg),
                       CyberTextField(
                         controller: _passwordController,
-                        label: 'SENHA DA CONTA',
+                        label:
+                            context.l10n.authAccountPasswordLabel.toUpperCase(),
                         hint: '••••••••',
                         prefixIcon: Icon(
                           LucideIcons.lock,

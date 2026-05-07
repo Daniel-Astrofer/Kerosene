@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 class OnchainAddressAllocation extends Equatable {
   final String walletName;
   final String onchainAddress;
+  final double expectedAmountBtc;
   final String network;
   final String provider;
   final String externalWalletReference;
@@ -16,6 +17,7 @@ class OnchainAddressAllocation extends Equatable {
   const OnchainAddressAllocation({
     required this.walletName,
     required this.onchainAddress,
+    required this.expectedAmountBtc,
     required this.network,
     required this.provider,
     required this.externalWalletReference,
@@ -34,6 +36,7 @@ class OnchainAddressAllocation extends Equatable {
     return OnchainAddressAllocation(
       walletName: json['walletName']?.toString() ?? '',
       onchainAddress: json['onchainAddress']?.toString() ?? '',
+      expectedAmountBtc: (json['expectedAmountBtc'] as num?)?.toDouble() ?? 0,
       network: json['network']?.toString() ?? '',
       provider: json['provider']?.toString() ?? '',
       externalWalletReference:
@@ -52,6 +55,7 @@ class OnchainAddressAllocation extends Equatable {
   List<Object?> get props => [
         walletName,
         onchainAddress,
+        expectedAmountBtc,
         network,
         provider,
         externalWalletReference,

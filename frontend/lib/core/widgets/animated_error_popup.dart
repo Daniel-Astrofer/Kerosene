@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
-import 'package:teste/l10n/app_localizations.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class AnimatedErrorPopup extends StatelessWidget {
   final String title;
@@ -25,18 +25,21 @@ class AnimatedErrorPopup extends StatelessWidget {
     VoidCallback? onRetry,
     VoidCallback? onGoBack,
   }) {
-    String title = isSuccess ? 'Sucesso' : 'Erro na Transação';
+    final l10n = context.l10n;
+    String title = isSuccess
+        ? l10n.errorPopupSuccessTitle
+        : l10n.errorPopupTransactionTitle;
     final lower = message.toLowerCase();
     if (lower.contains('saldo') ||
         lower.contains('fundos') ||
         lower.contains('insuficiente')) {
-      title = 'Saldo Insuficiente';
+      title = l10n.errorPopupBalanceTitle;
     } else if (lower.contains('conexão') || lower.contains('servidor')) {
-      title = 'Erro de Rede';
+      title = l10n.errorPopupNetworkTitle;
     } else if (lower.contains('autenticação') ||
         lower.contains('senha') ||
         lower.contains('código')) {
-      title = 'Falha de Acesso';
+      title = l10n.errorPopupAccessTitle;
     }
 
     showGeneralDialog(
@@ -44,7 +47,7 @@ class AnimatedErrorPopup extends StatelessWidget {
       barrierDismissible: true,
       barrierLabel: 'Dismiss Error',
       barrierColor: Colors.black.withValues(alpha: 0.68),
-      transitionDuration: const Duration(milliseconds: 260),
+      transitionDuration: const Duration(milliseconds: 160),
       pageBuilder: (context, anim1, anim2) {
         return Center(
           child: Material(
@@ -72,14 +75,14 @@ class AnimatedErrorPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = context.l10n;
     final split = _splitMessage(message);
     final details =
         split.extra == null ? split.main : '${split.main}\n${split.extra}';
     final actions = <AppNotificationAction>[
       if (onRetry != null)
         AppNotificationAction(
-          label: l10n?.tryAgain ?? 'Try Again',
+          label: l10n.tryAgain,
           icon: Icons.refresh_rounded,
           onPressed: () {
             Navigator.of(context).pop();
@@ -88,7 +91,7 @@ class AnimatedErrorPopup extends StatelessWidget {
         ),
       if (onGoBack != null)
         AppNotificationAction(
-          label: l10n?.goBack ?? 'Go Back',
+          label: l10n.goBack,
           icon: Icons.arrow_back_rounded,
           onPressed: () {
             Navigator.of(context).pop();
@@ -97,7 +100,7 @@ class AnimatedErrorPopup extends StatelessWidget {
         ),
       if (onRetry == null && onGoBack == null)
         AppNotificationAction(
-          label: l10n?.done ?? 'Done',
+          label: l10n.done,
           onPressed: () => Navigator.of(context).pop(),
         ),
     ];

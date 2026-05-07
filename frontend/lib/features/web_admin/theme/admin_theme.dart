@@ -22,12 +22,9 @@ class AdminTheme {
   static const double radiusSm = 4;
   static const double radiusMd = 6;
 
-  static BorderRadius get borderRadiusXs =>
-      BorderRadius.circular(radiusXs);
-  static BorderRadius get borderRadiusSm =>
-      BorderRadius.circular(radiusSm);
-  static BorderRadius get borderRadiusMd =>
-      BorderRadius.circular(radiusMd);
+  static BorderRadius get borderRadiusXs => BorderRadius.circular(radiusXs);
+  static BorderRadius get borderRadiusSm => BorderRadius.circular(radiusSm);
+  static BorderRadius get borderRadiusMd => BorderRadius.circular(radiusMd);
 
   // ─── Sidebar ────────────────────────────────────
   static const double sidebarWidth = 240;
@@ -46,13 +43,21 @@ class AdminTheme {
       fontFamily: 'HubotSans',
       useMaterial3: true,
       colorScheme: const ColorScheme.dark(
-        primary: AdminColors.accent,
+        primary: AdminColors.textPrimary,
         secondary: AdminColors.info,
         surface: AdminColors.surface,
+        surfaceContainerHighest: AdminColors.backgroundElevated,
         error: AdminColors.negative,
-        onPrimary: AdminColors.textPrimary,
+        onPrimary: AdminColors.background,
         onSurface: AdminColors.textPrimary,
+        onSurfaceVariant: AdminColors.textSecondary,
         onError: AdminColors.textPrimary,
+      ),
+      disabledColor: AdminColors.textDisabled,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AdminColors.textPrimary,
+        selectionColor: AdminColors.textPrimary.withValues(alpha: 0.18),
+        selectionHandleColor: AdminColors.textPrimary,
       ),
       textTheme: const TextTheme(
         displayLarge: AdminTypography.displayLarge,
@@ -91,17 +96,58 @@ class AdminTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: borderRadiusSm,
-          borderSide: const BorderSide(color: AdminColors.accent, width: 1.5),
+          borderSide: const BorderSide(
+            color: AdminColors.textPrimary,
+            width: 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: borderRadiusSm,
+          borderSide: const BorderSide(color: AdminColors.negative, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: borderRadiusSm,
+          borderSide: const BorderSide(color: AdminColors.negative, width: 1.5),
         ),
         hintStyle: AdminTypography.bodyMedium.copyWith(
-          color: AdminColors.textDisabled,
+          color: AdminColors.textSecondary,
+        ),
+        labelStyle: AdminTypography.bodyMedium.copyWith(
+          color: AdminColors.textSecondary,
+        ),
+        floatingLabelStyle: AdminTypography.bodyMedium.copyWith(
+          color: AdminColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        prefixIconColor: AdminColors.textSecondary,
+        suffixIconColor: AdminColors.textSecondary,
+        errorStyle: AdminTypography.caption.copyWith(
+          color: AdminColors.negative,
+          fontWeight: FontWeight.w600,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AdminColors.accent,
-          foregroundColor: AdminColors.textPrimary,
+          backgroundColor: AdminColors.textPrimary,
+          foregroundColor: AdminColors.background,
+          disabledBackgroundColor: AdminColors.surfaceElevated,
+          disabledForegroundColor: AdminColors.textDisabled,
           elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: borderRadiusSm),
+          padding: const EdgeInsets.symmetric(
+            vertical: spacingMd,
+            horizontal: spacingXl,
+          ),
+          textStyle: AdminTypography.button,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AdminColors.textPrimary,
+          foregroundColor: AdminColors.background,
+          disabledBackgroundColor: AdminColors.surfaceElevated,
+          disabledForegroundColor: AdminColors.textDisabled,
+          minimumSize: const Size.fromHeight(40),
           shape: RoundedRectangleBorder(borderRadius: borderRadiusSm),
           padding: const EdgeInsets.symmetric(
             vertical: spacingMd,
@@ -112,8 +158,10 @@ class AdminTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AdminColors.textSecondary,
-          side: const BorderSide(color: AdminColors.border),
+          backgroundColor: AdminColors.surface,
+          foregroundColor: AdminColors.textPrimary,
+          disabledForegroundColor: AdminColors.textDisabled,
+          side: const BorderSide(color: AdminColors.borderStrong),
           shape: RoundedRectangleBorder(borderRadius: borderRadiusSm),
           padding: const EdgeInsets.symmetric(
             vertical: spacingMd,
@@ -124,7 +172,8 @@ class AdminTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AdminColors.textSecondary,
+          foregroundColor: AdminColors.textPrimary,
+          disabledForegroundColor: AdminColors.textDisabled,
           shape: RoundedRectangleBorder(borderRadius: borderRadiusSm),
           padding: const EdgeInsets.symmetric(
             vertical: spacingSm,
@@ -186,6 +235,12 @@ class AdminTheme {
       iconTheme: const IconThemeData(
         color: AdminColors.textSecondary,
         size: 20,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: AdminColors.textPrimary,
+          disabledForegroundColor: AdminColors.textDisabled,
+        ),
       ),
     );
   }

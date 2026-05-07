@@ -24,13 +24,7 @@ const BorderRadius miningInnerBorderRadius = BorderRadius.all(
   Radius.circular(miningInnerRadiusValue),
 );
 
-enum MiningStatusTone {
-  neutral,
-  live,
-  info,
-  warning,
-  danger,
-}
+enum MiningStatusTone { neutral, live, info, warning, danger }
 
 Color miningToneColor(MiningStatusTone tone) {
   switch (tone) {
@@ -119,11 +113,7 @@ class MiningPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            miningSurfaceElevated,
-            miningSurface,
-            miningInk,
-          ],
+          colors: [miningSurfaceElevated, miningSurface, miningInk],
         ),
       ),
       child: Stack(
@@ -148,10 +138,7 @@ class MiningPanel extends StatelessWidget {
             left: 18,
             right: 18,
             top: 0,
-            child: Container(
-              height: 1,
-              color: accent.withValues(alpha: 0.12),
-            ),
+            child: Container(height: 1, color: accent.withValues(alpha: 0.12)),
           ),
           Positioned.fill(
             child: IgnorePointer(
@@ -172,10 +159,7 @@ class MiningPanel extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: padding,
-            child: child,
-          ),
+          Padding(padding: padding, child: child),
         ],
       ),
     );
@@ -341,7 +325,7 @@ class MiningMetricCard extends StatelessWidget {
                 AppTypography.h2,
                 fontWeight: FontWeight.w700,
                 height: 1.0,
-                letterSpacing: -0.6,
+                letterSpacing: 0,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -418,19 +402,19 @@ class MiningSkeletonBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: borderRadius ?? miningInnerBorderRadius,
-        border: Border.all(color: miningBorder),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.02),
-            Colors.white.withValues(alpha: 0.07),
-            Colors.white.withValues(alpha: 0.02),
-          ],
-        ),
-      ),
-    )
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: borderRadius ?? miningInnerBorderRadius,
+            border: Border.all(color: miningBorder),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withValues(alpha: 0.02),
+                Colors.white.withValues(alpha: 0.07),
+                Colors.white.withValues(alpha: 0.02),
+              ],
+            ),
+          ),
+        )
         .animate(onPlay: (controller) => controller.repeat())
         .fade(begin: 0.45, end: 1, duration: 900.ms)
         .then()
@@ -442,10 +426,7 @@ class _CornerBracket extends StatelessWidget {
   final Color accent;
   final bool alignEnd;
 
-  const _CornerBracket({
-    required this.accent,
-    required this.alignEnd,
-  });
+  const _CornerBracket({required this.accent, required this.alignEnd});
 
   @override
   Widget build(BuildContext context) {
@@ -456,19 +437,11 @@ class _CornerBracket extends StatelessWidget {
         children: [
           Align(
             alignment: alignEnd ? Alignment.topRight : Alignment.topLeft,
-            child: Container(
-              width: 18,
-              height: 1,
-              color: accent,
-            ),
+            child: Container(width: 18, height: 1, color: accent),
           ),
           Align(
             alignment: alignEnd ? Alignment.bottomRight : Alignment.topLeft,
-            child: Container(
-              width: 1,
-              height: 18,
-              color: accent,
-            ),
+            child: Container(width: 1, height: 18, color: accent),
           ),
         ],
       ),

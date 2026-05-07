@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/constants/app_copy.dart';
-import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/features/auth/presentation/widgets/totp_input_container.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
@@ -53,24 +49,6 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
     if (oldWidget.backupCodes != widget.backupCodes) {
       _backupConfirmed = widget.backupCodes.isEmpty;
     }
-  }
-
-  void _copySecret() {
-    Clipboard.setData(ClipboardData(text: widget.totpSecret));
-    AppNotice.showSuccess(
-      context,
-      title: AppCopy.signupTotpSecretCopiedTitle.resolve(context),
-      message: AppCopy.signupTotpSecretCopiedBody.resolve(context),
-    );
-  }
-
-  void _copyBackupCodes() {
-    Clipboard.setData(ClipboardData(text: widget.backupCodes.join('\n')));
-    AppNotice.showSuccess(
-      context,
-      title: AppCopy.signupTotpCodesCopiedTitle.resolve(context),
-      message: AppCopy.signupTotpCodesCopiedBody.resolve(context),
-    );
   }
 
   void _handleVerify(String code) {
@@ -121,6 +99,12 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
         AppCopy.signupTotpChipBackup.resolve(context),
         AppCopy.signupTotpChipCode.resolve(context),
       ],
+      footer: SignupPrimaryFooter(
+        text: context.l10n.totpVerifyButton,
+        isLoading: isLoading,
+        onPressed: canSubmit ? () => _handleVerify(_currentCode) : null,
+        icon: LucideIcons.badgeCheck,
+      ),
       children: [
         _buildSection(
           context: context,
@@ -197,14 +181,6 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                             ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: _copySecret,
-                      child: AnimatedGlyphIcon(
-                        icon: LucideIcons.copy,
-                        color: AppColors.success,
-                        size: 20,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -223,15 +199,6 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                               fontWeight: FontWeight.bold,
                             ),
                       ),
-                    ),
-                    TextButton.icon(
-                      onPressed: _copyBackupCodes,
-                      icon: const AnimatedGlyphIcon(
-                        icon: LucideIcons.copy,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                      label: Text(AppCopy.signupTotpCopy.resolve(context)),
                     ),
                   ],
                 ),
@@ -349,12 +316,6 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
           ),
         ),
       ],
-      footer: SignupPrimaryFooter(
-        text: context.l10n.totpVerifyButton,
-        isLoading: isLoading,
-        onPressed: canSubmit ? () => _handleVerify(_currentCode) : null,
-        icon: LucideIcons.badgeCheck,
-      ),
     );
   }
 

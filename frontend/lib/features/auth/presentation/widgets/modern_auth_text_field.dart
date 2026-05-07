@@ -61,9 +61,9 @@ class ModernAuthTextField extends StatelessWidget {
           label.toUpperCase(),
           style: AppTypography.caption.copyWith(
             fontFamily: 'HubotSansCondensed',
-            color: Colors.white.withValues(alpha: 0.68),
+            color: Colors.white.withValues(alpha: 0.76),
             fontWeight: FontWeight.w700,
-            letterSpacing: 1.1,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -80,17 +80,19 @@ class ModernAuthTextField extends StatelessWidget {
           enabled: enabled,
           cursorColor: Colors.white,
           style: AppTypography.bodyLarge.copyWith(
-            color: Colors.white,
+            color: enabled
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.58),
             fontWeight: FontWeight.w500,
             height: 1.2,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: AppTypography.bodyMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.26),
+              color: Colors.white.withValues(alpha: 0.48),
             ),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.035),
+            fillColor: Colors.white.withValues(alpha: enabled ? 0.055 : 0.025),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
@@ -100,7 +102,7 @@ class ModernAuthTextField extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
               child: Icon(
                 icon,
-                color: Colors.white.withValues(alpha: 0.58),
+                color: Colors.white.withValues(alpha: enabled ? 0.64 : 0.34),
                 size: 16,
               ),
             ),
@@ -119,6 +121,10 @@ class ModernAuthTextField extends StatelessWidget {
               ),
             ),
             focusedErrorBorder: focusedBorder,
+            errorStyle: AppTypography.bodySmall.copyWith(
+              color: const Color(0xFFFF6B6B),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

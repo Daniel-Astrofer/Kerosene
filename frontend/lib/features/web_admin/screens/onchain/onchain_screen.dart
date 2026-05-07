@@ -1,190 +1,237 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../transactions/domain/entities/external_transfer.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
-import '../../widgets/admin_data_table.dart';
 
 /// On-chain BTC operations module.
+///
+/// Shows node and mempool state, not individual on-chain user history.
 class OnchainScreen extends ConsumerWidget {
   const OnchainScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final transfersAsync = ref.watch(adminExternalTransfersProvider);
+    final blockchain = ref.watch(adminBlockchainMonitorProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AdminTheme.spacingXl),
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(adminBlockchainMonitorProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AdminTheme.spacingXl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AdminSectionHeader(
+              title: 'On-chain Operations',
+              subtitle:
+                  'Bitcoin Core status, block height, mempool, and sanitized watched-transaction fingerprints.',
+            ),
+            blockchain.when(
+              data: (data) {
+                final chain = _map(data['chain']);
+                final mempool = _map(data['mempool']);
+                final fees = _map(data['fees']);
+                final relevant = (data['relevantTransactions'] as List?) ?? const [];
+                return Column(
+                  children: [
+                    AdminResponsiveGrid(
+                      children: [
+                        AdminMetricCard(
+                          label: 'Status',
+                          value: '${data['status'] ?? 'UNKNOWN'}',
+                          icon: Icons.link,
+                          accentColor: _statusColor('${data['status'] ?? ''}'),
+                        ),
+                        AdminMetricCard(
+                          label: 'Block Height',
+                          value: '${chain['height'] ?? 0}',
+                          icon: Icons.layers_outlined,
+                        ),
+                        AdminMetricCard(
+                          label: 'Mempool',
+                          value: '${mempool['transactions'] ?? 0} tx',
+                          icon: Icons.memory_outlined,
+                        ),
+                        AdminMetricCard(
+                          label: 'Fee Rate',
+                          value: '${fees['fastestFee'] ?? fees['halfHourFee'] ?? 0} sat/vB',
+                          icon: Icons.payments_outlined,
+                          accentColor: AdminColors.warning,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AdminTheme.spacingXl),
+                    _Panel(
+                      title: 'Node state',
+                      child: Wrap(
+                        spacing: 24,
+                        runSpacing: 12,
+                        children: [
+                          _KeyValue('Primary source', '${data['primarySource']}'),
+                          _KeyValue('Network', '${data['network']}'),
+                          _KeyValue('Best hash', _short(chain['bestBlockHash'])),
+                          _KeyValue('Pruned', '${chain['pruned'] ?? false}'),
+                          _KeyValue('Prune height', '${chain['pruneHeight'] ?? 0}'),
+                          _KeyValue('Indexer', '${data['indexer']}'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AdminTheme.spacingXl),
+                    _Panel(
+                      title: 'Watched transaction fingerprints',
+                      child: relevant.isEmpty
+                          ? Text(
+                              'No watched on-chain transactions currently require action.',
+                              style: AdminTypography.bodySmall.copyWith(
+                                color: AdminColors.textSecondary,
+                              ),
+                            )
+                          : Column(
+                              children: relevant.take(12).map((item) {
+                                final row = _map(item);
+                                return _EventRow(
+                                  title: '${row['status'] ?? 'UNKNOWN'}',
+                                  body:
+                                      '${row['txidRef'] ?? 'absent'} | ${row['confirmations'] ?? 0} confirmations',
+                                );
+                              }).toList(),
+                            ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AdminTheme.spacing3xl),
+                  child: CircularProgressIndicator(
+                    color: AdminColors.textTertiary,
+                  ),
+                ),
+              ),
+              error: (e, _) => AdminErrorState(
+                message: 'Failed to load blockchain monitor: $e',
+                onRetry: () => ref.invalidate(adminBlockchainMonitorProvider),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _Panel({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AdminTheme.spacingLg),
+      decoration: BoxDecoration(
+        color: AdminColors.surface,
+        border: Border.all(color: AdminColors.border),
+        borderRadius: AdminTheme.borderRadiusSm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AdminSectionHeader(
-            title: 'On-chain Operations',
-            subtitle: 'Bitcoin blockchain transactions and confirmations',
-          ),
-          transfersAsync.when(
-            data: (transfers) {
-              final onchain = transfers.where((t) => t.isOnchain).toList();
-              final totalVolume =
-                  onchain.fold<double>(0, (s, t) => s + t.amountBtc.abs());
-              final totalFees =
-                  onchain.fold<double>(0, (s, t) => s + t.networkFeeBtc);
-              final completed = onchain
-                  .where((t) =>
-                      t.status.toUpperCase() == 'COMPLETED' ||
-                      t.status.toUpperCase() == 'SETTLED')
-                  .length;
-              final pending = onchain
-                  .where((t) =>
-                      t.status.toUpperCase() == 'PENDING' ||
-                      t.status.toUpperCase() == 'PROCESSING')
-                  .length;
+          Text(title.toUpperCase(), style: AdminTypography.label),
+          const SizedBox(height: AdminTheme.spacingLg),
+          child,
+        ],
+      ),
+    );
+  }
+}
 
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                          child: AdminMetricCard(
-                              label: 'Total Operations',
-                              value: '${onchain.length}',
-                              icon: Icons.link,
-                              accentColor: AdminColors.accent)),
-                      const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(
-                          child: AdminMetricCard(
-                              label: 'Volume',
-                              value: '${totalVolume.toStringAsFixed(8)} BTC',
-                              icon: Icons.swap_horiz)),
-                      const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(
-                          child: AdminMetricCard(
-                              label: 'Network Fees',
-                              value: '${totalFees.toStringAsFixed(8)} BTC',
-                              icon: Icons.payments_outlined,
-                              accentColor: AdminColors.warning)),
-                      const SizedBox(width: AdminTheme.spacingLg),
-                      Expanded(
-                          child: AdminMetricCard(
-                              label: 'Status',
-                              value: '$completed confirmed',
-                              subtitle: '$pending pending',
-                              icon: Icons.check_circle_outline,
-                              accentColor: AdminColors.positive)),
-                    ],
-                  ),
-                  const SizedBox(height: AdminTheme.spacingXl),
-                  AdminDataTable<ExternalTransfer>(
-                    data: onchain,
-                    columns: [
-                      AdminColumn(
-                          header: 'Ref',
-                          cellBuilder: (t) => SelectableText(
-                              t.externalReference.isNotEmpty
-                                  ? (t.externalReference.length > 12
-                                      ? '${t.externalReference.substring(0, 12)}...'
-                                      : t.externalReference)
-                                  : t.id.length > 12
-                                      ? '${t.id.substring(0, 12)}...'
-                                      : t.id,
-                              style: AdminTypography.tableCellMono)),
-                      AdminColumn(
-                          header: 'Direction',
-                          cellBuilder: (t) =>
-                              Row(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(
-                                    t.isOutbound
-                                        ? Icons.arrow_upward
-                                        : Icons.arrow_downward,
-                                    size: 14,
-                                    color: t.isOutbound
-                                        ? AdminColors.negative
-                                        : AdminColors.positive),
-                                const SizedBox(width: 4),
-                                Text(t.isOutbound ? 'Sent' : 'Received',
-                                    style: AdminTypography.tableCell)
-                              ])),
-                      AdminColumn(
-                          header: 'Amount',
-                          isNumeric: true,
-                          cellBuilder: (t) => Text(
-                              t.amountBtc.abs().toStringAsFixed(8),
-                              style: AdminTypography.tableCellMono),
-                          sortKey: (t) => t.amountBtc.abs()),
-                      AdminColumn(
-                          header: 'Fee',
-                          isNumeric: true,
-                          cellBuilder: (t) => Text(
-                              t.networkFeeBtc.toStringAsFixed(8),
-                              style: AdminTypography.tableCellMono)),
-                      AdminColumn(
-                        header: 'Address',
-                        cellBuilder: (t) => SelectableText(
-                          t.destination.isNotEmpty
-                              ? (t.destination.length > 18
-                                  ? '${t.destination.substring(0, 18)}...'
-                                  : t.destination)
-                              : '—',
-                          style: AdminTypography.tableCellMono,
-                        ),
-                      ),
-                      AdminColumn(
-                        header: 'TXID',
-                        cellBuilder: (t) => SelectableText(
-                          t.blockchainTxid.isNotEmpty
-                              ? (t.blockchainTxid.length > 18
-                                  ? '${t.blockchainTxid.substring(0, 18)}...'
-                                  : t.blockchainTxid)
-                              : '—',
-                          style: AdminTypography.tableCellMono,
-                        ),
-                      ),
-                      AdminColumn(
-                          header: 'Status',
-                          cellBuilder: (t) {
-                            final v = switch (t.status.toUpperCase()) {
-                              'COMPLETED' ||
-                              'SETTLED' =>
-                                AdminBadgeVariant.positive,
-                              'CANCELLED' => AdminBadgeVariant.negative,
-                              _ => AdminBadgeVariant.warning
-                            };
-                            return AdminStatusBadge(
-                                label: t.status, variant: v);
-                          }),
-                      AdminColumn(
-                          header: 'Wallet',
-                          cellBuilder: (t) => Text(t.walletName,
-                              style: AdminTypography.tableCell)),
-                      AdminColumn(
-                          header: 'Date',
-                          cellBuilder: (t) => Text(
-                              t.createdAt != null
-                                  ? '${t.createdAt!.year}-${t.createdAt!.month.toString().padLeft(2, '0')}-${t.createdAt!.day.toString().padLeft(2, '0')}'
-                                  : '—',
-                              style: AdminTypography.tableCell),
-                          sortKey: (t) =>
-                              t.createdAt?.millisecondsSinceEpoch ?? 0),
-                    ],
-                    emptyMessage: 'No on-chain operations found',
-                  ),
-                ],
-              );
-            },
-            loading: () => const Center(
-                child: Padding(
-                    padding: EdgeInsets.all(AdminTheme.spacing3xl),
-                    child: CircularProgressIndicator(
-                        color: AdminColors.textTertiary))),
-            error: (e, _) => AdminErrorState(
-                message: 'Failed to load on-chain data: $e',
-                onRetry: () => ref.invalidate(adminExternalTransfersProvider)),
+class _KeyValue extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _KeyValue(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label.toUpperCase(), style: AdminTypography.label),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AdminTypography.mono.copyWith(
+              fontSize: 12,
+              color: AdminColors.textPrimary,
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _EventRow extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _EventRow({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AdminTheme.spacingSm),
+      padding: const EdgeInsets.all(AdminTheme.spacingMd),
+      decoration: BoxDecoration(
+        color: AdminColors.backgroundElevated,
+        border: Border.all(color: AdminColors.borderSubtle),
+        borderRadius: AdminTheme.borderRadiusXs,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.fingerprint, color: AdminColors.textTertiary, size: 15),
+          const SizedBox(width: AdminTheme.spacingMd),
+          Expanded(
+            child: Text(
+              '$title | $body',
+              style: AdminTypography.mono.copyWith(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Map<String, dynamic> _map(Object? value) {
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return <String, dynamic>{};
+}
+
+Color _statusColor(String status) {
+  final normalized = status.toUpperCase();
+  if (normalized == 'UP' || normalized == 'OK' || normalized == 'ONLINE') {
+    return AdminColors.positive;
+  }
+  if (normalized == 'DOWN' || normalized == 'ERROR') return AdminColors.negative;
+  return AdminColors.warning;
+}
+
+String _short(Object? value) {
+  final text = value?.toString() ?? 'absent';
+  if (text.isEmpty) return 'absent';
+  if (text.length <= 22) return text;
+  return '${text.substring(0, 14)}...${text.substring(text.length - 6)}';
 }

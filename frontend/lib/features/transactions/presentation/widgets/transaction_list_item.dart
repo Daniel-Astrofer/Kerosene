@@ -5,6 +5,7 @@ import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/safe_display_text.dart';
 import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
 
@@ -43,11 +44,10 @@ class TransactionListItem extends ConsumerWidget {
     );
 
     final counterparty = resolvePrimaryTransactionAddress(transaction).trim();
-    final safeCounterparty =
-        counterparty.isEmpty ? 'Endereço indisponível' : counterparty;
-    final displayAddress = safeCounterparty.length > 12
-        ? '${safeCounterparty.substring(0, 6)}…${safeCounterparty.substring(safeCounterparty.length - 4)}'
-        : safeCounterparty;
+    final displayAddress = SafeDisplayText.displayAddress(
+      context,
+      counterparty,
+    );
     final cardGradient = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
@@ -95,7 +95,7 @@ class TransactionListItem extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    visual.label,
+                    visual.localizedLabel(context),
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onPrimary),

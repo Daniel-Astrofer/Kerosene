@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/signup/signup_flow_screen.dart';
+import 'package:teste/l10n/app_localizations.dart';
 import 'package:teste/storybook/storybook_mocks.dart';
 
 void main() {
@@ -22,6 +23,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.darkTheme,
+          locale: const Locale('pt'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const SignupFlowScreen(),
         ),
       ),
@@ -33,11 +37,13 @@ void main() {
     expect(find.text('Criar conta'), findsOneWidget);
     expect(find.text('Conta e credenciais'), findsOneWidget);
     expect(
-      find.textContaining('Perder a senha pode significar perder a conta'),
+      find.textContaining(
+        'Se você perder a senha sem os códigos de recuperação',
+      ),
       findsOneWidget,
     );
     expect(
-      find.textContaining('BIP39 fica apenas na carteira interna'),
+      find.textContaining('Escolha seu identificador público'),
       findsOneWidget,
     );
     expect(find.textContaining('18 palavras'), findsNothing);

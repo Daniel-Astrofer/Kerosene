@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import '../config/app_config.dart';
+import '../utils/device_helper.dart';
 import 'sovereign_auth_service.dart';
 
 /// Passkey service that delegates to SovereignAuthService (Ed25519 + biometric).
@@ -44,8 +45,6 @@ class PasskeyService {
     final signature = await _cryptographyService.signBytes(
       assertion.signaturePayload,
     );
-    final deviceName = await _cryptographyService.getDeviceName();
-
     // ATTENTION: All byte-heavy fields are Base64 (Standard)
     // Signature, authData, clientDataJSON are Base64URL
     final publicKeyBase64 = _toBase64(publicKey);
@@ -53,6 +52,10 @@ class PasskeyService {
     final signatureBase64Url = _toBase64Url(signature);
     final authDataBase64Url = _toBase64Url(assertion.authDataBytes);
     final userHandleBase64 = _toBase64(utf8.encode(username));
+    final deviceMetadata = await DeviceHelper.getDeviceMetadata();
+    final deviceName = deviceMetadata.deviceName.isNotEmpty
+        ? deviceMetadata.deviceName
+        : await _cryptographyService.getDeviceName();
 
     return {
       'publicKey': publicKeyBase64,
@@ -65,6 +68,7 @@ class PasskeyService {
       'user_handle': userHandleBase64,
       'deviceName': deviceName,
       'device_name': deviceName,
+      ...deviceMetadata.toJson(),
       'signature': signatureBase64Url,
       'authData': authDataBase64Url,
       'clientDataJSON': assertion.clientDataJson,

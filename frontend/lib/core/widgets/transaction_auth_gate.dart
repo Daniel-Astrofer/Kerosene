@@ -164,13 +164,18 @@ class TransactionAuthGate {
     BiometricService bio,
   ) async {
     try {
+      final localizedReason =
+          AppCopy.authReasonTransactionConfirm.resolve(context);
       final canUseDeviceAuth = await bio.canAuthenticate();
+      if (!context.mounted) {
+        return _DeviceAuthOutcome.rejected;
+      }
       if (!canUseDeviceAuth) {
         return _DeviceAuthOutcome.unavailable;
       }
 
       final didAuthenticate = await bio.authenticate(
-        localizedReason: AppCopy.authReasonTransactionConfirm.resolve(context),
+        localizedReason: localizedReason,
       );
       return didAuthenticate
           ? _DeviceAuthOutcome.authenticated

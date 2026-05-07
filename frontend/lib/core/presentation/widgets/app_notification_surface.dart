@@ -77,15 +77,18 @@ class AppNotificationSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalizedTitle =
-        _normalize(title, fallback: _fallbackTitle(context));
+    final normalizedTitle = _normalize(
+      title,
+      fallback: _fallbackTitle(context),
+    );
     final normalizedMessage = _normalize(message ?? '', fallback: '');
     final normalizedFooter = _normalize(footerLabel ?? '', fallback: '');
     final accent = AppNotificationStyle.accentFor(tone);
 
     return Container(
-      constraints:
-          minHeight == null ? null : BoxConstraints(minHeight: minHeight!),
+      constraints: minHeight == null
+          ? null
+          : BoxConstraints(minHeight: minHeight!),
       decoration: BoxDecoration(
         color: AppNotificationStyle.surfaceColor,
         borderRadius: BorderRadius.circular(borderRadius),
@@ -129,7 +132,7 @@ class AppNotificationSurface extends StatelessWidget {
                 Expanded(
                   child: Text(
                     normalizedTitle,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppNotificationStyle.titleColor,
@@ -180,14 +183,19 @@ class AppNotificationSurface extends StatelessWidget {
                     const Spacer(),
                   if (normalizedFooter.isNotEmpty) ...[
                     const SizedBox(width: 12),
-                    Text(
-                      normalizedFooter,
-                      style: AppTypography.caption.copyWith(
-                        color: AppNotificationStyle.metaColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        height: 1,
-                        letterSpacing: 0,
+                    Flexible(
+                      child: Text(
+                        normalizedFooter,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: AppTypography.caption.copyWith(
+                          color: AppNotificationStyle.metaColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                          letterSpacing: 0,
+                        ),
                       ),
                     ),
                   ],
@@ -251,13 +259,20 @@ class _NotificationActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = action.icon == null
-        ? Text(action.label)
+        ? Text(action.label, maxLines: 1, overflow: TextOverflow.ellipsis)
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(action.icon!, size: 14),
               const SizedBox(width: 6),
-              Text(action.label),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 140),
+                child: Text(
+                  action.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           );
 

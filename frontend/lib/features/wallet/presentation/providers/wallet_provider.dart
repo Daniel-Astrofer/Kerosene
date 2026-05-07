@@ -245,7 +245,7 @@ class WalletNotifier extends Notifier<WalletState> {
     result.fold(
       (failure) {
         // Log error mas não muda estado para não interromper UX
-        debugPrint('Erro ao atualizar saldo: ${failure.message}');
+        debugPrint('Wallet balance refresh failed.');
       },
       (updatedWallet) {
         final currentState = state as WalletLoaded;
@@ -274,9 +274,7 @@ class WalletNotifier extends Notifier<WalletState> {
 
     state = currentState.copyWith(wallets: updatedWallets);
 
-    debugPrint(
-      '💰 Saldo atualizado via WebSocket: $walletName = $newBalance BTC',
-    );
+    debugPrint('Wallet balance refreshed from realtime feed.');
   }
 }
 
@@ -354,14 +352,34 @@ class SendMoneyNotifier extends Notifier<SendMoneyState> {
     // Estimar taxa
     state = const SendMoneyEstimatingFee();
 
-    // TODO: Implementar estimativa de taxa real via TransactionRepository?
-    const feeSatoshis = 1000; // ~1000 sats para tx padrão
+    final feeSatoshis = await _estimateNetworkFeeSats(amountSatoshis);
+    if (feeSatoshis == null || feeSatoshis <= 0) {
+      state = const SendMoneyError(
+        'Não conseguimos calcular a taxa de rede agora. Tente novamente.',
+      );
+      return;
+    }
 
     state = SendMoneyReady(
       toAddress: toAddress,
       amountSatoshis: amountSatoshis,
       feeSatoshis: feeSatoshis,
     );
+  }
+
+  Future<int?> _estimateNetworkFeeSats(int amountSatoshis) async {
+    try {
+      final estimate =
+          await transactionRepository.estimateFee(amountSatoshis / 100000000.0);
+      final estimatedStandardSats =
+          (estimate.estimatedStandardBtc * 100000000).ceil();
+      if (estimatedStandardSats > 0) {
+        return estimatedStandardSats;
+      }
+      return (estimate.standardSatPerByte * 250).ceil();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Executa envio de Bitcoin
@@ -426,13 +444,7 @@ class SendMoneyNotifier extends Notifier<SendMoneyState> {
             broadcastResult.fold(
               (failure) => state = SendMoneyError(failure.message),
               (txStatus) {
-                // Sucesso!
-                // Converter TxStatus para Transaction entity se necessário ou apenas sucesso
-                // O estado espera 'Transaction'. Vamos criar um mock ou buscar?
-                // TxStatus tem txid.
-
-                // Simular Transaction object a partir de txStatus
-                // Ou refetch transactions.
+                // Keep local state in sync until history refresh returns.
                 state = SendMoneySuccess(
                   Transaction(
                     id: txStatus.txid,

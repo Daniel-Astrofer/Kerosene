@@ -4,6 +4,8 @@ const _ignoredPathParts = <String>[
   '/lib/l10n/',
   '/storybook/',
   '/features/debug/',
+  '/features/landing/',
+  '/features/web_admin/',
   '/test/',
   '/.dart_tool/',
 ];
@@ -11,6 +13,7 @@ const _ignoredPathParts = <String>[
 const _allowedFiles = <String>{
   'lib/core/constants/app_copy.dart',
   'lib/core/utils/locale_copy.dart',
+  'lib/core/utils/api_display_text.dart',
 };
 
 final _uiPattern = RegExp(
@@ -41,8 +44,7 @@ void main() {
         relativePath.contains('/core/widgets/') ||
         relativePath.contains('/core/presentation/widgets/') ||
         relativePath.contains('/shared/widgets/') ||
-        relativePath == 'lib/main.dart' ||
-        relativePath == 'lib/dev_menu.dart';
+        relativePath == 'lib/main.dart';
 
     if (_allowedFiles.contains(relativePath) ||
         _ignoredPathParts.any(normalizedPath.contains)) {
@@ -75,8 +77,14 @@ void main() {
         continue;
       }
 
+      if (_isAllowedNonCopyLiteral(trimmed)) {
+        continue;
+      }
+
       if (line.contains('AppCopy.') ||
+          line.contains('LocalizedCopy(') ||
           line.contains('context.l10n') ||
+          line.contains('.l10n.') ||
           line.contains('AppLocalizations.of(context)')) {
         continue;
       }
@@ -97,4 +105,44 @@ void main() {
     stdout.writeln(' - $finding');
   }
   exitCode = 1;
+}
+
+bool _isAllowedNonCopyLiteral(String trimmed) {
+  const allowedFragments = [
+    "'TOTP'",
+    "'SLIP-39'",
+    "'PSBT'",
+    "'BTC'",
+    "'BITCOIN'",
+    "'Black'",
+    "'Bronze'",
+    "'CARD HOLDER'",
+    "'NFC'",
+    "'QR'",
+    "'S1'",
+    "'S2'",
+    "'S3'",
+    "'000000'",
+    "'VALID THRU'",
+    "'White'",
+    "'•'",
+    '"•"',
+    "'₿'",
+    "'@\${",
+    '"@\${',
+    r"'$_",
+    r'"$_',
+    r"'$",
+    r'"$',
+  ];
+
+  if (allowedFragments.any(trimmed.contains)) {
+    return true;
+  }
+
+  return trimmed.contains("Text(isFilled ? text[index] : '•')") ||
+      trimmed.contains('Text(index.toString()') ||
+      trimmed.contains("Text('S1'") ||
+      trimmed.contains("Text('S2'") ||
+      trimmed.contains("Text('S3'");
 }

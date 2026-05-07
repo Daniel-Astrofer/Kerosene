@@ -1,12 +1,14 @@
 #!/bin/sh
 set -eu
 
-lnd_host="${LND_HOST:-lnd-neutrino}"
+lnd_host="${LND_HOST:-lnd-bitcoind}"
 rest_port="${LND_REST_PORT:-8080}"
 lnd_dir="${LND_DATA_DIR:-/lnd}"
 timeout_seconds="${LND_BOOTSTRAP_TIMEOUT_SECONDS:-180}"
 wallet_password="${LND_WALLET_PASSWORD:-}"
-network="${BITCOIN_NETWORK:-testnet}"
+network="${BITCOIN_NETWORK:-mainnet}"
+tls_server_name="${LND_TLS_SERVER_NAME:-localhost}"
+app_read_gid="${LND_APP_READ_GID:-65532}"
 
 if [ -z "$wallet_password" ]; then
   echo "LND_WALLET_PASSWORD must be configured for bootstrap." >&2
@@ -20,8 +22,10 @@ fi
 
 tls_cert="${lnd_dir}/tls.cert"
 macaroon_path="${lnd_dir}/data/chain/bitcoin/${network}/admin.macaroon"
-state_url="https://${lnd_host}:${rest_port}/v1/state"
+state_url="https://${tls_server_name}:${rest_port}/v1/state"
 password_b64="$(printf '%s' "$wallet_password" | base64 | tr -d '\n')"
+curl_tls_args="--cacert ${tls_cert} --connect-to ${tls_server_name}:${rest_port}:${lnd_host}:${rest_port}"
+seed_backup_path="${LND_LOCAL_SEED_BACKUP_PATH:-${lnd_dir}/kerosene-local-wallet-seed.json}"
 
 deadline=$(( $(date +%s) + timeout_seconds ))
 
@@ -30,7 +34,20 @@ read_state() {
     return 1
   fi
 
-  curl -sS --cacert "$tls_cert" "$state_url" 2>/dev/null || return 1
+  # Keep TLS verification enabled while routing the verified service identity to the Docker alias.
+  curl -sS $curl_tls_args "$state_url" 2>/dev/null || return 1
+}
+
+generate_seed_payload() {
+  if [ -n "${LND_CIPHER_SEED_MNEMONIC:-}" ]; then
+    printf '%s' "$LND_CIPHER_SEED_MNEMONIC" | sed 's/^/[ /; s/$/ ]/'
+    return 0
+  fi
+
+  seed_json="$(curl -sS $curl_tls_args "https://${tls_server_name}:${rest_port}/v1/genseed")"
+  umask 077
+  printf '%s\n' "$seed_json" > "$seed_backup_path"
+  sed -n 's/.*"cipher_seed_mnemonic":[[:space:]]*\[\(.*\)\],[[:space:]]*"enciphered_seed".*/[\1]/p' "$seed_backup_path"
 }
 
 wait_for_state() {
@@ -74,18 +91,23 @@ state_json="$(wait_for_state)"
 
 case "$state_json" in
   *NON_EXISTING*)
+    seed_payload="$(generate_seed_payload)"
+    if [ -z "$seed_payload" ]; then
+      echo "Unable to generate or parse LND cipher seed mnemonic." >&2
+      exit 1
+    fi
     curl -sS -X POST \
-      --cacert "$tls_cert" \
+      $curl_tls_args \
       -H "Content-Type: application/json" \
-      -d "{\"wallet_password\":\"${password_b64}\"}" \
-      "https://${lnd_host}:${rest_port}/v1/initwallet" >/dev/null
+      -d "{\"wallet_password\":\"${password_b64}\",\"cipher_seed_mnemonic\":${seed_payload},\"recovery_window\":0}" \
+      "https://${tls_server_name}:${rest_port}/v1/initwallet" >/dev/null
     ;;
   *LOCKED*)
     curl -sS -X POST \
-      --cacert "$tls_cert" \
+      $curl_tls_args \
       -H "Content-Type: application/json" \
       -d "{\"wallet_password\":\"${password_b64}\"}" \
-      "https://${lnd_host}:${rest_port}/v1/unlockwallet" >/dev/null
+      "https://${tls_server_name}:${rest_port}/v1/unlockwallet" >/dev/null
     ;;
   *UNLOCKED*|*RPC_ACTIVE*|*SERVER_ACTIVE*)
     ;;
@@ -96,3 +118,24 @@ case "$state_json" in
 esac
 
 wait_for_wallet_ready
+
+for dir in \
+  "${lnd_dir}" \
+  "${lnd_dir}/data" \
+  "${lnd_dir}/data/chain" \
+  "${lnd_dir}/data/chain/bitcoin" \
+  "${lnd_dir}/data/chain/bitcoin/${network}"; do
+  if [ -d "$dir" ]; then
+    chgrp "$app_read_gid" "$dir" 2>/dev/null || true
+    chmod 0550 "$dir"
+  fi
+done
+
+if [ -f "$macaroon_path" ]; then
+  chgrp "$app_read_gid" "$macaroon_path" 2>/dev/null || true
+  chmod 0440 "$macaroon_path"
+fi
+
+if [ -f "$tls_cert" ]; then
+  chmod 0444 "$tls_cert"
+fi

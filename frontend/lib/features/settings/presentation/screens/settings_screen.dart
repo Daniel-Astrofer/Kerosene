@@ -1,10 +1,17 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
+import 'package:teste/core/utils/device_helper.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import '../../../../core/providers/alert_preferences_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -23,25 +30,21 @@ import '../../../auth/controller/auth_providers.dart';
 import '../../../profile/presentation/screens/security_settings_screen.dart';
 import '../../../notifications/presentation/providers/session_notification_provider.dart';
 import '../../../security/presentation/screens/sovereignty_status_screen.dart';
+import '../../../security/presentation/providers/security_provider.dart';
+import '../../../security/domain/entities/admin_access.dart';
 import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 
 // ─── Screen Entry ─────────────────────────────────────────────────────────────
 
 final backupCodesProvider = FutureProvider<List<String>>((ref) async {
   final result = await ref.read(authRepositoryProvider).getBackupCodes();
-  return result.fold(
-    (_) => const <String>[],
-    (codes) => codes,
-  );
+  return result.fold((_) => const <String>[], (codes) => codes);
 });
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final bool showPrimaryNavigation;
 
-  const SettingsScreen({
-    super.key,
-    this.showPrimaryNavigation = false,
-  });
+  const SettingsScreen({super.key, this.showPrimaryNavigation = false});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -60,25 +63,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     _headerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 180),
     );
     _sectionsController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 220),
     );
 
     _headerFade = CurvedAnimation(
       parent: _headerController,
       curve: Curves.easeOut,
     );
-    _headerSlide = Tween<Offset>(
-      begin: const Offset(0, -0.3),
-      end: Offset.zero,
-    ).animate(
-        CurvedAnimation(parent: _headerController, curve: Curves.easeOutCubic));
+    _headerSlide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _headerController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _headerController.forward();
-    Future.delayed(const Duration(milliseconds: 150), () {
+    Future.delayed(const Duration(milliseconds: 40), () {
       if (mounted) _sectionsController.forward();
     });
   }
@@ -93,6 +98,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   @override
   Widget build(BuildContext context) {
     ref.watch(appearanceProvider);
+    final responsive = context.responsive;
     final bottomSectionPadding = widget.showPrimaryNavigation
         ? AppPrimaryNavigationBar.scaffoldBottomClearance(context)
         : 80.0;
@@ -101,9 +107,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       backgroundColor: authenticatedSurfaceBackgroundColor,
       body: Stack(
         children: [
-          const Positioned.fill(
-            child: AmbientSideGlowBackdrop.authenticated(),
-          ),
+          const Positioned.fill(child: AmbientSideGlowBackdrop.authenticated()),
           SafeArea(
             child: Column(
               children: [
@@ -125,64 +129,103 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       curve: Curves.easeOut,
                     ),
                     child: ListView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: responsive.horizontalPadding,
                         vertical: AppSpacing.sm,
                       ),
                       physics: const BouncingScrollPhysics(),
                       children: [
-                        const SizedBox(height: AppSpacing.md),
-                        const _SettingsOverviewCard(),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.shield_outlined,
-                          label: 'SEGURANÇA E ACESSO',
-                          color: Colors.white70,
-                          child: const _SecuritySection(),
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: responsive.mobileContentMaxWidth,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: AppSpacing.md),
+                                const _SettingsOverviewCard(),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.shield_outlined,
+                                  label: context
+                                      .l10n
+                                      .settingsUiSecurityAccessSection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _SecuritySection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.admin_panel_settings_outlined,
+                                  label: context
+                                      .l10n
+                                      .settingsUiEnterpriseAccessSection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _EnterpriseAccessSection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.privacy_tip_outlined,
+                                  label: context.l10n.settingsUiPrivacySection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _PrivacySection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.manage_accounts_outlined,
+                                  label: context
+                                      .l10n
+                                      .settingsUiAccountAccessSection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _CredentialsSection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.notifications_outlined,
+                                  label: context
+                                      .l10n
+                                      .settingsUiNotificationsSection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _NotificationsSection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.palette_outlined,
+                                  label: context
+                                      .l10n
+                                      .settingsUiAppearanceSection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _AppearanceSection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.language_rounded,
+                                  label: context
+                                      .l10n
+                                      .settingsUiLocaleCurrencySection
+                                      .toUpperCase(),
+                                  color: Colors.white70,
+                                  child: const _LocaleSection(),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                _buildSection(
+                                  icon: Icons.power_settings_new_rounded,
+                                  label: context.l10n.settingsUiSessionSection
+                                      .toUpperCase(),
+                                  color: Colors.white54,
+                                  child: const _SessionSection(),
+                                ),
+                                SizedBox(height: bottomSectionPadding),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.privacy_tip_outlined,
-                          label: 'PRIVACIDADE',
-                          color: Colors.white70,
-                          child: const _PrivacySection(),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.manage_accounts_outlined,
-                          label: 'CONTA E ACESSO',
-                          color: Colors.white70,
-                          child: const _CredentialsSection(),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.notifications_outlined,
-                          label: 'NOTIFICAÇÕES',
-                          color: Colors.white70,
-                          child: const _NotificationsSection(),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.palette_outlined,
-                          label: 'APARÊNCIA',
-                          color: Colors.white70,
-                          child: const _AppearanceSection(),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.language_rounded,
-                          label: 'IDIOMA E MOEDA',
-                          color: Colors.white70,
-                          child: const _LocaleSection(),
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _buildSection(
-                          icon: Icons.power_settings_new_rounded,
-                          label: 'SESSÃO',
-                          color: Colors.white54,
-                          child: const _SessionSection(),
-                        ),
-                        SizedBox(height: bottomSectionPadding),
                       ],
                     ),
                   ),
@@ -224,37 +267,50 @@ class _SettingsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
+        responsive.horizontalPadding,
         AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
+        responsive.horizontalPadding,
         AppSpacing.md,
       ),
       child: Row(
         children: [
           _IconButton(icon: Icons.arrow_back_ios_new_rounded, onTap: onBack),
           const SizedBox(width: AppSpacing.md),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'CONFIGURAÇÕES',
-                style: AppTypography.h2.copyWith(
-                  letterSpacing: 3,
-                  color: Colors.white,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CONFIGURAÇÕES',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.h2.copyWith(
+                    letterSpacing: 0,
+                    color: Colors.white,
+                    fontSize: responsive.compactFontSize(
+                      tiny: 20,
+                      compact: 22,
+                      regular: 24,
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                'Segurança, privacidade e operação da conta',
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white38,
-                  letterSpacing: 0.5,
+                Text(
+                  'Segurança, privacidade e operação da conta',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.white38,
+                    letterSpacing: 0,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: AppSpacing.sm),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: monochromePanelDecoration(
@@ -267,7 +323,7 @@ class _SettingsHeader extends StatelessWidget {
               color: monoMutedTextColor,
               size: 18,
             ),
-          )
+          ),
         ],
       ),
     );
@@ -300,10 +356,12 @@ class _SettingsOverviewCard extends ConsumerWidget {
     final appearance = ref.watch(appearanceProvider);
 
     final biometricLabel = biometricState.isLoading
-        ? 'Verificando'
+        ? context.l10n.settingsUiChecking
         : biometricState.isSupported
-            ? (biometricState.isEnabled ? 'Ativa' : 'Desativada')
-            : 'Indisponível';
+        ? (biometricState.isEnabled
+              ? context.l10n.settingsUiActive
+              : context.l10n.settingsUiInactive)
+        : context.l10n.settingsUiUnavailable;
 
     return _Card(
       children: [
@@ -313,12 +371,16 @@ class _SettingsOverviewCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Resumo operacional',
+                context.l10n.settingsUiOperationalSummaryTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.h3.copyWith(color: Colors.white),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 AppCopy.settingsOverviewSummary.resolve(context),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodySmall.copyWith(
                   color: Colors.white54,
                   height: 1.6,
@@ -330,10 +392,10 @@ class _SettingsOverviewCard extends ConsumerWidget {
                 runSpacing: AppSpacing.sm,
                 children: [
                   _OverviewPill(
-                    label: 'Alertas',
+                    label: context.l10n.settingsUiAlertsLabel,
                     value: alerts.backgroundAlertsEnabled
-                        ? 'Segundo plano ativo'
-                        : 'Desativados',
+                        ? context.l10n.settingsUiAlertsBackgroundActive
+                        : context.l10n.settingsUiDisabled,
                     color: Colors.white70,
                   ),
                   _OverviewPill(
@@ -355,7 +417,7 @@ class _SettingsOverviewCard extends ConsumerWidget {
                     color: Colors.white70,
                   ),
                   _OverviewPill(
-                    label: 'Tema',
+                    label: context.l10n.settingsUiThemeLabel,
                     value: appearance.themeVariant.label,
                     color: Colors.white70,
                   ),
@@ -382,12 +444,16 @@ class _OverviewPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
     final borderTone =
         Color.lerp(monoBorderStrongColor, color, 0.08) ?? monoBorderStrongColor;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
+      constraints: BoxConstraints(
+        maxWidth: responsive.isTinyPhone ? responsive.clampWidth(260) : 180,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsive.isTinyPhone ? 10 : 12,
         vertical: 10,
       ),
       decoration: monochromePanelDecoration(
@@ -400,14 +466,18 @@ class _OverviewPill extends StatelessWidget {
         children: [
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.caption.copyWith(
               color: monoMutedTextColor,
-              letterSpacing: 1,
+              letterSpacing: 0,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.bodySmall.copyWith(
               color: monoTextColor,
               fontWeight: FontWeight.w700,
@@ -480,12 +550,15 @@ class _AppearanceSection extends ConsumerWidget {
                 children: [
                   Text(
                     'Tamanho da fonte',
-                    style: AppTypography.bodyMedium
-                        .copyWith(color: Colors.white70),
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Colors.white70,
+                    ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: monochromePanelDecoration(
                       color: monoSurfaceAltColor,
                       borderColor: monoBorderStrongColor,
@@ -528,8 +601,9 @@ class _AppearanceSection extends ConsumerWidget {
                   thumbColor: Colors.white,
                   overlayColor: Colors.white.withValues(alpha: 0.12),
                   trackHeight: 2,
-                  thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 8),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 8,
+                  ),
                 ),
                 child: Slider(
                   value: appearance.fontScale.index.toDouble(),
@@ -570,8 +644,10 @@ class _AppearanceSection extends ConsumerWidget {
         _ActionTile(
           icon: Icons.onetwothree_rounded,
           iconColor: Colors.white70,
-          title: 'Precisão decimal',
-          subtitle: 'Exibindo ${balanceSettings.decimalPlaces} casas decimais',
+          title: context.l10n.settingsUiDecimalPrecisionTitle,
+          subtitle: context.l10n.settingsUiDecimalPrecisionSubtitle(
+            balanceSettings.decimalPlaces,
+          ),
           trailing: Icons.refresh_rounded,
           onTap: () {
             HapticFeedback.selectionClick();
@@ -654,10 +730,10 @@ class _PrivacySection extends ConsumerWidget {
         _SwitchTile(
           icon: Icons.visibility_off_outlined,
           iconColor: Colors.white70,
-          title: 'Ocultar saldo',
+          title: context.l10n.settingsUiHideBalanceTitle,
           subtitle: balanceSettings.isHidden
-              ? 'Valores mascarados na interface principal'
-              : 'Valores visíveis em telas operacionais',
+              ? context.l10n.settingsUiBalanceHiddenSubtitle
+              : context.l10n.settingsUiBalanceVisibleSubtitle,
           value: balanceSettings.isHidden,
           accentColor: Colors.white70,
           onChanged: (_) {
@@ -669,9 +745,8 @@ class _PrivacySection extends ConsumerWidget {
         _ActionTile(
           icon: Icons.verified_user_outlined,
           iconColor: Colors.white70,
-          title: 'Relatório de soberania',
-          subtitle:
-              'Abrir o painel de atestação, consenso e integridade operacional',
+          title: context.l10n.settingsUiSovereigntyReportTitle,
+          subtitle: context.l10n.settingsUiSovereigntyReportSubtitle,
           trailing: Icons.chevron_right_rounded,
           onTap: () {
             Navigator.push(
@@ -790,17 +865,17 @@ class _SecuritySection extends ConsumerWidget {
     final securityAsync = ref.watch(securityStatusProvider);
     final securitySubtitle = securityAsync.when(
       data: (security) => security.unprotected
-          ? 'Conta não protegida. Revise TOTP e backup codes.'
-          : 'Conta protegida com senha forte, passkey e fatores opcionais.',
-      loading: () => 'Consultando estado da conta',
-      error: (_, __) => 'Não foi possível consultar a segurança da conta',
+          ? context.l10n.settingsUiSecurityUnprotectedSubtitle
+          : context.l10n.settingsUiSecurityProtectedSubtitle,
+      loading: () => context.l10n.settingsUiSecurityLoadingSubtitle,
+      error: (_, __) => context.l10n.settingsUiSecurityErrorSubtitle,
     );
     final passkeySubtitle = securityAsync.when(
       data: (security) => security.passkeyRegistered
-          ? 'Passkey já registrada para esta conta'
-          : 'Registrar uma passkey protegida por biometria',
-      loading: () => 'Consultando passkey',
-      error: (_, __) => 'Não foi possível consultar a passkey',
+          ? context.l10n.settingsUiPasskeyRegisteredSubtitle
+          : context.l10n.settingsUiPasskeyRegisterSubtitle,
+      loading: () => context.l10n.settingsUiPasskeyLoadingSubtitle,
+      error: (_, __) => context.l10n.settingsUiPasskeyErrorSubtitle,
     );
     final showUnprotectedBanner = securityAsync.maybeWhen(
       data: (security) => security.unprotected,
@@ -817,21 +892,24 @@ class _SecuritySection extends ConsumerWidget {
               borderColor: monoBorderStrongColor,
               showShadow: false,
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'CONTA NÃO PROTEGIDA',
-                  style: TextStyle(
+                  context.l10n.settingsUiUnprotectedBannerTitle.toUpperCase(),
+                  style: const TextStyle(
                     color: monoTextColor,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
-                  'O TOTP está desligado. Abra a central de segurança para ativar o autenticador e revisar os backup codes.',
-                  style: TextStyle(color: monoMutedTextColor, height: 1.4),
+                  context.l10n.settingsUiUnprotectedBannerBody,
+                  style: const TextStyle(
+                    color: monoMutedTextColor,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -842,8 +920,8 @@ class _SecuritySection extends ConsumerWidget {
           _SwitchTile(
             icon: Icons.fingerprint_rounded,
             iconColor: const Color(0xFFF59E0B),
-            title: 'Desbloqueio biométrico',
-            subtitle: 'Use digital ou rosto para desbloquear',
+            title: context.l10n.settingsUiBiometricUnlockTitle,
+            subtitle: context.l10n.settingsUiBiometricUnlockSubtitle,
             value: bioState.isEnabled,
             accentColor: const Color(0xFFF59E0B),
             onChanged: (v) {
@@ -855,31 +933,29 @@ class _SecuritySection extends ConsumerWidget {
         _ActionTile(
           icon: Icons.security_rounded,
           iconColor: const Color(0xFF7AA2F7),
-          title: 'Central de segurança',
+          title: context.l10n.settingsUiSecurityCenterTitle,
           subtitle: securitySubtitle,
           trailing: Icons.chevron_right_rounded,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const SecuritySettingsScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
           ),
         ),
         _Divider(),
         _ActionTile(
           icon: Icons.key_rounded,
           iconColor: const Color(0xFFF59E0B),
-          title: 'Passkey',
+          title: context.l10n.securityAuthenticatedDevicesTitle,
           subtitle: passkeySubtitle,
           trailing: Icons.chevron_right_rounded,
-          onTap: () => _showPasskeySheet(context, ref),
+          onTap: () => _showAuthenticatedDevicesSheet(context, ref),
         ),
         _Divider(),
         _ActionTile(
           icon: Icons.devices_rounded,
           iconColor: Colors.white38,
-          title: 'Sessões ativas',
-          subtitle: 'Ver e revogar sessões do dispositivo',
+          title: context.l10n.settingsUiSessionsActiveTitle,
+          subtitle: context.l10n.settingsUiSessionsActiveSubtitle,
           trailing: Icons.chevron_right_rounded,
           onTap: () => _showSessionInfoSheet(context),
         ),
@@ -887,12 +963,12 @@ class _SecuritySection extends ConsumerWidget {
     );
   }
 
-  void _showPasskeySheet(BuildContext context, WidgetRef ref) {
+  void _showAuthenticatedDevicesSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _PasskeySheet(ref: ref),
+      builder: (_) => _AuthenticatedDevicesSheet(ref: ref),
     );
   }
 
@@ -903,11 +979,371 @@ class _SecuritySection extends ConsumerWidget {
       builder: (_) => _InfoSheet(
         icon: Icons.devices_rounded,
         iconColor: Colors.white38,
-        title: 'Sessões ativas',
-        message:
-            'O gerenciamento de sessão é feito automaticamente pelo servidor. Cada dispositivo é identificado por um X-Device-Hash exclusivo. Encerre a sessão para revogar o acesso atual.',
+        title: context.l10n.settingsUiSessionsActiveTitle,
+        message: context.l10n.settingsUiSessionsActiveMessage,
       ),
     );
+  }
+}
+
+class _EnterpriseAccessSection extends ConsumerWidget {
+  const _EnterpriseAccessSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final keyStatus = ref.watch(adminKeyStatusProvider);
+    final pendingAttempts = ref.watch(pendingAdminAccessAttemptsProvider);
+
+    return _Card(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.settingsUiEnterpriseIntro,
+                style: AppTypography.bodySmall.copyWith(
+                  color: Colors.white60,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              keyStatus.when(
+                data: (status) => _AdminKeyStatusSummary(status: status),
+                loading: () => Text(
+                  context.l10n.settingsUiEnterpriseKeyLoading,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.white38,
+                  ),
+                ),
+                error: (_, __) => Text(
+                  context.l10n.settingsUiEnterpriseKeyLoadError,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.white38,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        _Divider(),
+        _ActionTile(
+          icon: Icons.vpn_key_outlined,
+          iconColor: const Color(0xFFF59E0B),
+          title: context.l10n.settingsUiEnterpriseCreateKeyTitle,
+          subtitle: context.l10n.settingsUiEnterpriseCreateKeySubtitle,
+          trailing: Icons.chevron_right_rounded,
+          onTap: () => _confirmCreateKey(context, ref),
+        ),
+        _Divider(),
+        _ActionTile(
+          icon: Icons.rotate_right_rounded,
+          iconColor: Colors.white54,
+          title: context.l10n.settingsUiEnterpriseRotateKeyTitle,
+          subtitle: context.l10n.settingsUiEnterpriseRotateKeySubtitle,
+          trailing: Icons.refresh_rounded,
+          onTap: () => _confirmCreateKey(context, ref),
+        ),
+        _Divider(),
+        _ActionTile(
+          icon: Icons.block_rounded,
+          iconColor: Colors.white38,
+          title: context.l10n.settingsUiEnterpriseRevokeKeyTitle,
+          subtitle: context.l10n.settingsUiEnterpriseRevokeKeySubtitle,
+          trailing: Icons.delete_outline_rounded,
+          onTap: () => _revokeKey(context, ref),
+        ),
+        pendingAttempts.when(
+          data: (attempts) => attempts.isEmpty
+              ? const SizedBox.shrink()
+              : Column(
+                  children: [
+                    _Divider(),
+                    ...attempts.map(
+                      (attempt) => _AdminAccessAttemptTile(
+                        attempt: attempt,
+                        onApprove: () =>
+                            _decideAttempt(context, ref, attempt, true),
+                        onBlock: () =>
+                            _decideAttempt(context, ref, attempt, false),
+                      ),
+                    ),
+                  ],
+                ),
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmCreateKey(BuildContext context, WidgetRef ref) async {
+    var confirmed = false;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) => _ConfirmationDialog(
+            icon: Icons.admin_panel_settings_outlined,
+            title: context.l10n.settingsUiEnterpriseCreateKeyTitle,
+            message: context.l10n.settingsUiEnterpriseCreateDialogMessage,
+            confirmLabel: context.l10n.settingsUiEnterpriseCreateKeyAction,
+            cancelLabel: context.l10n.cancel,
+            requireConfirmation: true,
+            confirmed: confirmed,
+            onConfirmationChanged: (value) => setState(() => confirmed = value),
+            onConfirm: confirmed
+                ? () => Navigator.pop(dialogContext, true)
+                : null,
+          ),
+        );
+      },
+    );
+
+    if (accepted != true || !context.mounted) {
+      return;
+    }
+
+    final key = _generateAdminKey();
+    final keyHash = crypto.sha256.convert(utf8.encode(key)).toString();
+    final metadata = await DeviceHelper.getDeviceMetadata();
+    final result = await ref
+        .read(securityRepositoryProvider)
+        .createAdminKey(
+          keyMaterialHash: keyHash,
+          deviceInstallId: metadata.deviceInstallId,
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    result.fold(
+      (failure) => AppNotice.showError(
+        context,
+        title: context.l10n.settingsUiEnterpriseCreateKeyFailed,
+        message: failure.message,
+      ),
+      (_) {
+        ref.invalidate(adminKeyStatusProvider);
+        _showCreatedKey(context, key);
+      },
+    );
+  }
+
+  Future<void> _revokeKey(BuildContext context, WidgetRef ref) async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => _ConfirmationDialog(
+        icon: Icons.block_rounded,
+        title: context.l10n.settingsUiEnterpriseRevokeKeyTitle,
+        message: context.l10n.settingsUiEnterpriseRevokeDialogMessage,
+        confirmLabel: context.l10n.settingsUiEnterpriseRevokeAction,
+        cancelLabel: context.l10n.cancel,
+        destructive: true,
+        onConfirm: () => Navigator.pop(dialogContext, true),
+      ),
+    );
+
+    if (accepted != true) {
+      return;
+    }
+
+    final result = await ref.read(securityRepositoryProvider).revokeAdminKey();
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => AppNotice.showError(
+        context,
+        title: context.l10n.settingsUiEnterpriseRevokeFailed,
+        message: failure.message,
+      ),
+      (_) {
+        ref.invalidate(adminKeyStatusProvider);
+        AppNotice.showSuccess(
+          context,
+          title: context.l10n.settingsUiEnterpriseKeyRevokedTitle,
+          message: context.l10n.settingsUiEnterpriseKeyRevokedMessage,
+        );
+      },
+    );
+  }
+
+  Future<void> _decideAttempt(
+    BuildContext context,
+    WidgetRef ref,
+    AdminAccessAttempt attempt,
+    bool approve,
+  ) async {
+    final result = await ref
+        .read(securityRepositoryProvider)
+        .decideAdminAttempt(attemptId: attempt.attemptId, approve: approve);
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => AppNotice.showError(
+        context,
+        title: context.l10n.settingsUiEnterpriseDecisionFailed,
+        message: failure.message,
+      ),
+      (_) {
+        ref.invalidate(pendingAdminAccessAttemptsProvider);
+        AppNotice.showSuccess(
+          context,
+          title: approve
+              ? context.l10n.settingsUiEnterpriseAccessAllowedTitle
+              : context.l10n.settingsUiEnterpriseDeviceBlockedTitle,
+          message: approve
+              ? context.l10n.settingsUiEnterpriseAccessAllowedMessage
+              : context.l10n.settingsUiEnterpriseDeviceBlockedMessage,
+        );
+      },
+    );
+  }
+
+  void _showCreatedKey(BuildContext context, String key) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: monoSurfaceColor,
+        title: Text(
+          context.l10n.settingsUiEnterpriseKeyCreatedTitle,
+          style: const TextStyle(color: monoTextColor),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.l10n.settingsUiEnterpriseKeyCreatedMessage,
+              style: AppTypography.bodySmall.copyWith(
+                color: monoMutedTextColor,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              key,
+              style: const TextStyle(
+                color: monoTextColor,
+                fontFamily: 'JetBrainsMono',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(context.l10n.settingsUiCloseAction.toUpperCase()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _generateAdminKey() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    return 'krs-admin-${base64Url.encode(bytes).replaceAll('=', '')}';
+  }
+}
+
+class _AdminKeyStatusSummary extends StatelessWidget {
+  final AdminKeyStatus status;
+
+  const _AdminKeyStatusSummary({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          status.configured ? Icons.check_circle_outline : Icons.info_outline,
+          color: status.configured ? Colors.white70 : Colors.white38,
+          size: 18,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            status.configured
+                ? context.l10n.settingsUiEnterpriseKeyActive
+                : context.l10n.settingsUiEnterpriseKeyMissing,
+            style: AppTypography.bodySmall.copyWith(color: Colors.white54),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminAccessAttemptTile extends StatelessWidget {
+  final AdminAccessAttempt attempt;
+  final VoidCallback onApprove;
+  final VoidCallback onBlock;
+
+  const _AdminAccessAttemptTile({
+    required this.attempt,
+    required this.onApprove,
+    required this.onBlock,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.settingsUiEnterpriseAttemptTitle,
+            style: AppTypography.bodyMedium.copyWith(color: monoTextColor),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            [
+              if (attempt.browser.isNotEmpty)
+                '${context.l10n.settingsUiBrowserLabel}: ${attempt.browser}',
+              if (attempt.deviceName.isNotEmpty)
+                '${context.l10n.settingsUiDeviceLabel}: ${attempt.deviceName}',
+              if (attempt.requestedAt != null)
+                '${context.l10n.settingsUiTimeLabel}: ${_formatDate(attempt.requestedAt!)}',
+            ].join('\n'),
+            style: AppTypography.bodySmall.copyWith(
+              color: monoMutedTextColor,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: onApprove,
+                  style: monochromeFilledButtonStyle(),
+                  child: Text(context.l10n.settingsUiAllowAction.toUpperCase()),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onBlock,
+                  style: monochromeOutlinedButtonStyle(),
+                  child: Text(context.l10n.settingsUiBlockAction.toUpperCase()),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime value) {
+    final local = value.toLocal();
+    String two(int input) => input.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year} ${two(local.hour)}:${two(local.minute)}';
   }
 }
 
@@ -949,11 +1385,12 @@ class _CredentialsSection extends ConsumerWidget {
                 children: [
                   Text(
                     username,
-                    style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w700),
+                    style: AppTypography.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
-                    'Autenticado',
+                    context.l10n.settingsUiAuthenticatedLabel,
                     style: AppTypography.bodySmall.copyWith(
                       color: monoMutedTextColor,
                       fontWeight: FontWeight.w600,
@@ -970,8 +1407,8 @@ class _CredentialsSection extends ConsumerWidget {
         _ActionTile(
           icon: Icons.delete_forever_rounded,
           iconColor: AppColors.error,
-          title: 'Excluir conta',
-          subtitle: 'Remove permanentemente todos os dados',
+          title: context.l10n.settingsUiDeleteAccountTitle,
+          subtitle: context.l10n.settingsUiDeleteAccountSubtitle,
           trailing: Icons.chevron_right_rounded,
           titleColor: AppColors.error,
           onTap: () => _showDeleteConfirmDialog(context, ref),
@@ -984,16 +1421,16 @@ class _CredentialsSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => _DangerDialog(
-        title: 'Excluir conta?',
-        message:
-            'Isso vai excluir permanentemente sua conta, suas carteiras e seus fundos. Esta ação NÃO pode ser desfeita.\n\nPara proteger seus recursos, saque todos os saldos antes de excluir a conta.',
-        confirmLabel: 'Excluir para sempre',
+        title: context.l10n.settingsUiDeleteAccountDialogTitle,
+        message: context.l10n.settingsUiDeleteAccountDialogMessage,
+        confirmLabel: context.l10n.settingsUiDeleteForeverAction,
         onConfirm: () {
           Navigator.pop(context);
           // Logout and inform user — actual deletion depends on backend support
           ref.read(authControllerProvider.notifier).logout();
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil('/welcome', (_) => false);
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/welcome', (_) => false);
         },
       ),
     );
@@ -1024,10 +1461,10 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
         _SwitchTile(
           icon: Icons.notifications_active_rounded,
           iconColor: const Color(0xFFA78BFA),
-          title: 'Alertas de transação e segurança',
+          title: context.l10n.settingsUiTransactionSecurityAlertsTitle,
           subtitle: alertsEnabled
-              ? 'Ativo. O app permanece em segundo plano para mostrar transações e alertas de segurança.'
-              : 'Ative para manter o app em segundo plano e receber transações e alertas de segurança.',
+              ? context.l10n.settingsUiBackgroundAlertsOnSubtitle
+              : context.l10n.settingsUiBackgroundAlertsOffSubtitle,
           value: alertsEnabled,
           accentColor: const Color(0xFFA78BFA),
           onChanged: _isSaving ? (_) {} : _handleBackgroundAlertsToggle,
@@ -1036,10 +1473,10 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
         _SwitchTile(
           icon: Icons.bolt_rounded,
           iconColor: const Color(0xFF60A5FA),
-          title: 'Banners dentro do app',
+          title: context.l10n.settingsUiInAppBannersTitle,
           subtitle: alerts.inAppBannersEnabled
-              ? 'Mostra alertas contextuais na sessão atual.'
-              : 'Mantém o feed, mas não interrompe a navegação com banners.',
+              ? context.l10n.settingsUiInAppBannersOnSubtitle
+              : context.l10n.settingsUiInAppBannersOffSubtitle,
           value: alerts.inAppBannersEnabled,
           accentColor: const Color(0xFF60A5FA),
           onChanged: (value) => ref
@@ -1050,10 +1487,10 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
         _SwitchTile(
           icon: Icons.swap_vert_rounded,
           iconColor: const Color(0xFF7DD3A0),
-          title: 'Eventos financeiros',
+          title: context.l10n.settingsUiFinancialEventsTitle,
           subtitle: alerts.transactionAlertsEnabled
-              ? 'Recebimentos, envios, depósitos, links e mineração entram no feed.'
-              : 'Oculta alertas de operação financeira no feed da sessão.',
+              ? context.l10n.settingsUiFinancialEventsOnSubtitle
+              : context.l10n.settingsUiFinancialEventsOffSubtitle,
           value: alerts.transactionAlertsEnabled,
           accentColor: const Color(0xFF7DD3A0),
           onChanged: (value) => ref
@@ -1064,10 +1501,10 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
         _SwitchTile(
           icon: Icons.gpp_maybe_rounded,
           iconColor: const Color(0xFFF59E0B),
-          title: 'Eventos de segurança',
+          title: context.l10n.settingsUiSecurityEventsTitle,
           subtitle: alerts.securityAlertsEnabled
-              ? 'Logins, recuperação e eventos sensíveis continuam destacados.'
-              : 'Oculta apenas alertas de segurança da inbox da sessão.',
+              ? context.l10n.settingsUiSecurityEventsOnSubtitle
+              : context.l10n.settingsUiSecurityEventsOffSubtitle,
           value: alerts.securityAlertsEnabled,
           accentColor: const Color(0xFFF59E0B),
           onChanged: (value) => ref
@@ -1096,8 +1533,10 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
                 Expanded(
                   child: Text(
                     _isSaving
-                        ? 'Atualizando o monitoramento em segundo plano.'
-                        : 'Quando ativo, o Kerosene mantém um serviço em segundo plano para monitorar envios, recebimentos e eventos críticos de segurança. No Android, uma notificação persistente do sistema ficará visível enquanto o monitoramento estiver ligado. $notificationCount alerta(s) ainda não foram lidos nesta sessão.',
+                        ? context.l10n.settingsUiUpdatingBackgroundAlerts
+                        : context.l10n.settingsUiBackgroundAlertsInfo(
+                            notificationCount,
+                          ),
                     style: AppTypography.bodySmall.copyWith(
                       color: monoMutedTextColor,
                       height: 1.5,
@@ -1130,8 +1569,8 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
       }
 
       setState(() => _isSaving = true);
-      final permissionsGranted =
-          await NotificationService().requestPermissions();
+      final permissionsGranted = await NotificationService()
+          .requestPermissions();
       if (!mounted) {
         return;
       }
@@ -1139,9 +1578,8 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
         setState(() => _isSaving = false);
         AppNotice.showWarning(
           context,
-          title: 'Permissão necessária',
-          message:
-              'O sistema não liberou as notificações. Autorize o app para ativar o monitoramento em segundo plano.',
+          title: context.l10n.settingsUiPermissionRequiredTitle,
+          message: context.l10n.settingsUiPermissionRequiredMessage,
         );
         return;
       }
@@ -1165,18 +1603,19 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
 
       AppNotice.showInfo(
         context,
-        title: enabled ? 'Monitoramento ativo' : 'Monitoramento desativado',
+        title: enabled
+            ? context.l10n.settingsUiMonitoringActiveTitle
+            : context.l10n.settingsUiMonitoringInactiveTitle,
         message: enabled
-            ? 'O app continuará em segundo plano para mostrar transações e alertas de segurança.'
-            : 'O Kerosene não manterá mais o serviço em segundo plano para alertas.',
+            ? context.l10n.settingsUiMonitoringActiveMessage
+            : context.l10n.settingsUiMonitoringInactiveMessage,
       );
     } catch (_) {
       if (mounted) {
         AppNotice.showError(
           context,
-          title: 'Falha ao atualizar alertas',
-          message:
-              'Não foi possível alterar o monitoramento em segundo plano agora.',
+          title: context.l10n.settingsUiAlertsUpdateFailedTitle,
+          message: context.l10n.settingsUiAlertsUpdateFailedMessage,
         );
       }
     } finally {
@@ -1199,8 +1638,8 @@ class _SessionSection extends ConsumerWidget {
         _ActionTile(
           icon: Icons.logout_rounded,
           iconColor: AppColors.error,
-          title: 'Encerrar sessão',
-          subtitle: 'Encerra a sessão atual',
+          title: context.l10n.settingsUiLogoutTitle,
+          subtitle: context.l10n.settingsUiLogoutSubtitle,
           trailing: Icons.chevron_right_rounded,
           titleColor: AppColors.error,
           onTap: () => _confirmLogout(context, ref),
@@ -1213,16 +1652,16 @@ class _SessionSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => _DangerDialog(
-        title: 'Encerrar sessão?',
-        message:
-            'Você precisará se autenticar novamente com sua frase secreta e com o código TOTP para acessar a conta outra vez.',
-        confirmLabel: 'Encerrar sessão',
+        title: context.l10n.settingsUiLogoutDialogTitle,
+        message: context.l10n.settingsUiLogoutDialogMessage,
+        confirmLabel: context.l10n.settingsUiLogoutTitle,
         onConfirm: () async {
           Navigator.pop(context);
           await ref.read(authControllerProvider.notifier).logout();
           if (context.mounted) {
-            Navigator.of(context)
-                .pushNamedAndRemoveUntil('/welcome', (_) => false);
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/welcome', (_) => false);
           }
         },
       ),
@@ -1232,20 +1671,20 @@ class _SessionSection extends ConsumerWidget {
 
 // ─── Bottom Sheets ────────────────────────────────────────────────────────────
 
-class _PasskeySheet extends StatelessWidget {
+class _AuthenticatedDevicesSheet extends StatelessWidget {
   final WidgetRef ref;
-  const _PasskeySheet({required this.ref});
+  const _AuthenticatedDevicesSheet({required this.ref});
 
   @override
   Widget build(BuildContext context) {
     return _BottomSheetContainer(
-      title: 'Gerenciar passkey',
-      icon: Icons.key_rounded,
+      title: context.l10n.securityAuthenticatedDevicesTitle,
+      icon: Icons.devices_rounded,
       iconColor: const Color(0xFFF59E0B),
       child: Column(
         children: [
           Text(
-            'A passkey usa o sensor biométrico do seu dispositivo como chave física de segurança. Ela substitui a digitação tradicional da senha por um acesso mais rápido e resistente a phishing.',
+            context.l10n.settingsUiAuthenticatedDevicesBody,
             style: AppTypography.bodySmall.copyWith(
               color: Colors.white54,
               height: 1.6,
@@ -1254,7 +1693,7 @@ class _PasskeySheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: 'Registrar nova passkey',
+            label: context.l10n.settingsUiRegisterNewDeviceAction,
             icon: Icons.add_rounded,
             color: const Color(0xFFF59E0B),
             onTap: () async {
@@ -1264,7 +1703,7 @@ class _PasskeySheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _SheetButton(
-            label: 'Saiba mais',
+            label: context.l10n.settingsUiLearnMoreAction,
             icon: Icons.info_outline_rounded,
             color: Colors.white24,
             isOutline: true,
@@ -1282,13 +1721,13 @@ class _BackgroundAlertsConsentSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _BottomSheetContainer(
-      title: 'Alertas em segundo plano',
+      title: context.l10n.settingsUiBackgroundAlertsTitle,
       icon: Icons.notifications_active_rounded,
       iconColor: const Color(0xFFA78BFA),
       child: Column(
         children: [
           Text(
-            'Ao ativar esta opção, o Kerosene continuará rodando em segundo plano para mostrar transações recebidas, enviadas e alertas críticos de segurança. No Android, o sistema manterá uma notificação persistente enquanto o monitoramento estiver ativo.',
+            context.l10n.settingsUiBackgroundAlertsConsentBody,
             style: AppTypography.bodySmall.copyWith(
               color: Colors.white54,
               height: 1.7,
@@ -1297,14 +1736,14 @@ class _BackgroundAlertsConsentSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: 'Ativar monitoramento',
+            label: context.l10n.settingsUiEnableMonitoringAction,
             icon: Icons.check_rounded,
             color: const Color(0xFFA78BFA),
             onTap: () => Navigator.pop(context, true),
           ),
           const SizedBox(height: AppSpacing.md),
           _SheetButton(
-            label: 'Cancelar',
+            label: context.l10n.cancel,
             icon: Icons.close_rounded,
             color: Colors.white24,
             isOutline: true,
@@ -1347,7 +1786,7 @@ class _InfoSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: 'Entendi',
+            label: context.l10n.settingsUiUnderstoodAction,
             icon: Icons.check_rounded,
             color: Colors.white24,
             isOutline: true,
@@ -1376,7 +1815,8 @@ class _BottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderTone = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
+    final borderTone =
+        Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
         monoBorderStrongColor;
 
     return Container(
@@ -1394,11 +1834,7 @@ class _BottomSheetContainer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 1,
-            color: monoBorderStrongColor,
-          ),
+          Container(width: 48, height: 1, color: monoBorderStrongColor),
           const SizedBox(height: AppSpacing.xl),
           Container(
             width: 56,
@@ -1411,10 +1847,7 @@ class _BottomSheetContainer extends StatelessWidget {
             child: Icon(icon, color: monoTextColor, size: 26),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            title,
-            style: AppTypography.h3.copyWith(color: monoTextColor),
-          ),
+          Text(title, style: AppTypography.h3.copyWith(color: monoTextColor)),
           const SizedBox(height: AppSpacing.xl),
           child,
         ],
@@ -1424,6 +1857,105 @@ class _BottomSheetContainer extends StatelessWidget {
 }
 
 // ─── Danger Dialog ────────────────────────────────────────────────────────────
+
+class _ConfirmationDialog extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final String confirmLabel;
+  final String cancelLabel;
+  final bool destructive;
+  final bool requireConfirmation;
+  final bool confirmed;
+  final ValueChanged<bool>? onConfirmationChanged;
+  final VoidCallback? onConfirm;
+
+  const _ConfirmationDialog({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.confirmLabel,
+    required this.cancelLabel,
+    this.destructive = false,
+    this.requireConfirmation = false,
+    this.confirmed = false,
+    this.onConfirmationChanged,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: monoSurfaceColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: const BorderSide(color: monoBorderStrongColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(icon, color: monoTextColor, size: 30),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              style: AppTypography.h3.copyWith(color: monoTextColor),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              style: AppTypography.bodySmall.copyWith(
+                color: monoMutedTextColor,
+                height: 1.55,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (requireConfirmation) ...[
+              const SizedBox(height: AppSpacing.md),
+              CheckboxListTile(
+                value: confirmed,
+                onChanged: (value) =>
+                    onConfirmationChanged?.call(value == true),
+                controlAffinity: ListTileControlAffinity.leading,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Entendo que esta chave autoriza acesso ao painel admin.',
+                  style: AppTypography.bodySmall.copyWith(color: monoTextColor),
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: monochromeOutlinedButtonStyle(),
+                    child: Text(cancelLabel.toUpperCase()),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: onConfirm,
+                    style: destructive
+                        ? monochromeOutlinedButtonStyle()
+                        : monochromeFilledButtonStyle(),
+                    child: Text(confirmLabel.toUpperCase()),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _DangerDialog extends StatelessWidget {
   final String title;
@@ -1563,13 +2095,17 @@ class _SectionLabel extends StatelessWidget {
           child: Icon(icon, size: 14, color: monoTextColor),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Text(
-          label,
-          style: AppTypography.caption.copyWith(
-            color: monoMutedTextColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2.0,
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(
+              color: monoMutedTextColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
           ),
         ),
       ],
@@ -1629,6 +2165,7 @@ class _SelectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
     final selectedBorder =
         Color.lerp(monoTextColor, accentColor, 0.08) ?? monoTextColor;
 
@@ -1641,8 +2178,8 @@ class _SelectionTile extends StatelessWidget {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
             vertical: 14,
           ),
           color: selected ? monoSurfaceAltColor : Colors.transparent,
@@ -1655,10 +2192,12 @@ class _SelectionTile extends StatelessWidget {
                   height: 38,
                   alignment: Alignment.center,
                   decoration: monochromePanelDecoration(
-                    color:
-                        selected ? monoSurfaceRaisedColor : monoSurfaceAltColor,
-                    borderColor:
-                        selected ? selectedBorder : monoBorderStrongColor,
+                    color: selected
+                        ? monoSurfaceRaisedColor
+                        : monoSurfaceAltColor,
+                    borderColor: selected
+                        ? selectedBorder
+                        : monoBorderStrongColor,
                     showShadow: false,
                   ),
                   child: Text(
@@ -1672,10 +2211,14 @@ class _SelectionTile extends StatelessWidget {
                 )
               else
                 Text(leading, style: const TextStyle(fontSize: 22)),
-              const SizedBox(width: AppSpacing.lg),
+              SizedBox(
+                width: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+              ),
               Expanded(
                 child: Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodyMedium.copyWith(
                     color: selected ? monoTextColor : monoMutedTextColor,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
@@ -1683,10 +2226,19 @@ class _SelectionTile extends StatelessWidget {
                 ),
               ),
               if (trailing != null && !selected)
-                Text(
-                  trailing!,
-                  style:
-                      AppTypography.caption.copyWith(color: monoFaintTextColor),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: responsive.isTinyPhone ? 80 : 120,
+                  ),
+                  child: Text(
+                    trailing!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: AppTypography.caption.copyWith(
+                      color: monoFaintTextColor,
+                    ),
+                  ),
                 ),
               if (selected)
                 Icon(
@@ -1723,14 +2275,16 @@ class _SwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
     final activeBorder =
         Color.lerp(monoTextColor, iconColor, 0.08) ?? monoTextColor;
-    final activeTrack = Color.lerp(monoSurfaceRaisedColor, accentColor, 0.08) ??
+    final activeTrack =
+        Color.lerp(monoSurfaceRaisedColor, accentColor, 0.08) ??
         monoSurfaceRaisedColor;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
+      padding: EdgeInsets.symmetric(
+        horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
       child: Row(
@@ -1757,6 +2311,8 @@ class _SwitchTile extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodyMedium.copyWith(
                     color: value ? monoTextColor : monoMutedTextColor,
                     fontWeight: FontWeight.w600,
@@ -1765,6 +2321,8 @@ class _SwitchTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodySmall.copyWith(
                     color: monoFaintTextColor,
                     fontSize: 11,
@@ -1809,7 +2367,9 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconBorder = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
+    final responsive = context.responsive;
+    final iconBorder =
+        Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
         monoBorderStrongColor;
     final effectiveTitleColor = titleColor == null
         ? monoTextColor
@@ -1823,8 +2383,8 @@ class _ActionTile extends StatelessWidget {
           onTap();
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
+          padding: EdgeInsets.symmetric(
+            horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
             vertical: AppSpacing.md,
           ),
           child: Row(
@@ -1846,6 +2406,8 @@ class _ActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyMedium.copyWith(
                         color: effectiveTitleColor,
                         fontWeight: FontWeight.w600,
@@ -1854,6 +2416,8 @@ class _ActionTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodySmall.copyWith(
                         color: monoFaintTextColor,
                         fontSize: 11,

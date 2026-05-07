@@ -86,7 +86,7 @@ final balanceWebSocketServiceProvider =
   final authState = ref.watch(authControllerProvider);
 
   if (authState is! AuthAuthenticated) {
-    debugPrint('⚠️ WebSocket: Usuário não autenticado, não conectando');
+    debugPrint('BalanceWebSocket: authenticated session required.');
     return null;
   }
 
@@ -94,17 +94,13 @@ final balanceWebSocketServiceProvider =
   final baseUrl = ref.watch(torApiUrlProvider);
 
   final userId = authState.user.id;
-  debugPrint(
-    '🔌 Iniciando WebSocket para userId: $userId @ $baseUrl',
-  );
+  debugPrint('BalanceWebSocket: preparing balance stream.');
 
   // Obter token JWT do armazenamento seguro
   String? token;
   try {
     token = await ref.read(authLocalDataSourceProvider).getToken();
-    debugPrint(
-      '🔑 Token JWT obtido: ${token != null ? "✅ sim (len: ${token.length})" : "❌ não"}',
-    );
+    debugPrint('BalanceWebSocket: session credential lookup completed.');
     if (token != null) {
       if (token.startsWith('"') && token.endsWith('"')) {
         token = token.substring(1, token.length - 1).trim();
@@ -119,10 +115,10 @@ final balanceWebSocketServiceProvider =
       }
     }
     if (token != null && token.length < 10) {
-      debugPrint('⚠️ Token JWT parece inválido/curto demais');
+      debugPrint('BalanceWebSocket: session credential was rejected locally.');
     }
-  } catch (e) {
-    debugPrint('⚠️ Erro ao obter token do SharedPreferences: $e');
+  } catch (_) {
+    debugPrint('BalanceWebSocket: session credential unavailable.');
   }
 
   final deviceHash = await DeviceHelper.getDeviceHash();
@@ -133,9 +129,7 @@ final balanceWebSocketServiceProvider =
     authToken: token,
     deviceHash: deviceHash,
     onBalanceUpdate: (update) {
-      debugPrint(
-        '📨 WebSocket: Recebendo atualização para ${update.walletName}',
-      );
+      debugPrint('BalanceWebSocket: balance update received.');
 
       // ── Detect balance increase and record synthetic transaction ──
       final currentWalletState = ref.read(walletProvider);
@@ -254,7 +248,7 @@ final balanceWebSocketServiceProvider =
 
   // Desconectar quando o provider for descartado
   ref.onDispose(() {
-    debugPrint('🔌 Desconectando WebSocket');
+    debugPrint('BalanceWebSocket: disconnecting.');
     service.disconnect();
   });
 
@@ -295,7 +289,8 @@ bool _shouldKeepNotification(
 }
 
 bool _isSecurityNotification(SessionNotificationItem notification) {
-  return notification.kind == SessionNotificationItem.kindSecurityLoginDetected ||
+  return notification.kind ==
+          SessionNotificationItem.kindSecurityLoginDetected ||
       notification.kind ==
           SessionNotificationItem.kindSecurityRecoveryCompleted;
 }

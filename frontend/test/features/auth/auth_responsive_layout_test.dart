@@ -99,6 +99,11 @@ void main() {
                 'Prepare secure access',
                 '2FA required',
               ],
+              footer: SignupPrimaryFooter(
+                text: 'Continue and prepare the account',
+                onPressed: () {},
+                icon: LucideIcons.arrowRight,
+              ),
               children: [
                 SignupPanel(
                   child: Text(
@@ -107,11 +112,6 @@ void main() {
                   ),
                 ),
               ],
-              footer: SignupPrimaryFooter(
-                text: 'Continue and prepare the account',
-                onPressed: () {},
-                icon: LucideIcons.arrowRight,
-              ),
             ),
           ),
         );

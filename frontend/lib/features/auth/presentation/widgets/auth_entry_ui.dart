@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 
@@ -40,16 +41,13 @@ class AuthEntryScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: authEntryInk,
+      resizeToAvoidBottomInset: true,
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0B0B0B),
-              Color(0xFF050505),
-              authEntryInk,
-            ],
+            colors: [Color(0xFF0B0B0B), Color(0xFF050505), authEntryInk],
             stops: [0, 0.42, 1],
           ),
         ),
@@ -72,15 +70,25 @@ class AuthEntryScaffold extends StatelessWidget {
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  final responsive = context.responsive;
+                  final horizontalPadding = responsive.horizontalPadding;
+                  final resolvedPadding = padding.resolve(
+                    Directionality.of(context),
+                  );
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    padding: padding,
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      resolvedPadding.top,
+                      horizontalPadding,
+                      resolvedPadding.bottom,
+                    ),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
-                          maxWidth: 560,
+                          maxWidth: responsive.isCompact ? 520 : 560,
                           minHeight: constraints.maxHeight - AppSpacing.xxl,
                         ),
                         child: Column(
@@ -128,14 +136,18 @@ class AuthEntryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+    final titleSize = responsive.size.width < 340
+        ? 28.0
+        : responsive.isCompact
+        ? 31.0
+        : 34.0;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (onBack != null) ...[
-          AuthEntryIconButton(
-            icon: LucideIcons.arrowLeft,
-            onPressed: onBack!,
-          ),
+          AuthEntryIconButton(icon: LucideIcons.arrowLeft, onPressed: onBack!),
           const SizedBox(width: AppSpacing.md),
         ],
         Expanded(
@@ -148,7 +160,7 @@ class AuthEntryHeader extends StatelessWidget {
                   fontFamily: 'HubotSansCondensed',
                   color: authEntryFaint,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.3,
+                  letterSpacing: 0,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -157,10 +169,12 @@ class AuthEntryHeader extends StatelessWidget {
                 style: AppTypography.h1.copyWith(
                   fontFamily: 'HubotSansCondensed',
                   color: authEntryText,
-                  fontSize: 34,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w700,
                   height: 0.96,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -175,7 +189,14 @@ class AuthEntryHeader extends StatelessWidget {
         ),
         if (trailing.isNotEmpty) ...[
           const SizedBox(width: AppSpacing.md),
-          ...trailing,
+          Flexible(
+            child: Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              alignment: WrapAlignment.end,
+              children: trailing,
+            ),
+          ),
         ],
       ],
     );
@@ -200,10 +221,7 @@ class AuthEntryPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: raised ? authEntrySurfaceRaised : authEntrySurface,
       ),
-      child: Padding(
-        padding: padding,
-        child: child,
-      ),
+      child: Padding(padding: padding, child: child),
     );
   }
 }
@@ -228,13 +246,18 @@ class AuthEntryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final disabled = onPressed == null || isLoading;
     final background = outlined
-        ? Colors.transparent
+        ? (disabled ? authEntrySurface : authEntrySurfaceRaised)
         : disabled
-            ? authEntrySurfaceRaised
-            : authEntryButton;
+        ? authEntrySurfaceRaised
+        : authEntryButton;
     final foreground = outlined
         ? (disabled ? authEntryFaint : authEntryText)
         : (disabled ? authEntryMuted : authEntryInk);
+    final borderColor = outlined
+        ? (disabled
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.22))
+        : Colors.transparent;
 
     return SizedBox(
       height: 54,
@@ -243,7 +266,10 @@ class AuthEntryButton extends StatelessWidget {
         child: InkWell(
           onTap: disabled ? null : onPressed,
           child: Ink(
-            color: background,
+            decoration: BoxDecoration(
+              color: background,
+              border: Border.all(color: borderColor),
+            ),
             child: Center(
               child: isLoading
                   ? SizedBox(
@@ -263,17 +289,21 @@ class AuthEntryButton extends StatelessWidget {
                           const SizedBox(width: AppSpacing.sm),
                         ],
                         Flexible(
-                          child: Text(
-                            text,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: AppTypography.buttonText.copyWith(
-                              fontFamily: 'HubotSansCondensed',
-                              color: foreground,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                              height: 1.05,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.buttonText.copyWith(
+                                fontFamily: 'HubotSansCondensed',
+                                color: foreground,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0,
+                                height: 1.05,
+                              ),
                             ),
                           ),
                         ),
@@ -348,7 +378,7 @@ class AuthEntryNote extends StatelessWidget {
                     fontFamily: 'HubotSansCondensed',
                     color: authEntryMuted,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,
+                    letterSpacing: 0,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),

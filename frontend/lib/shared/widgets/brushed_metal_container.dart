@@ -45,8 +45,13 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
     super.initState();
     _controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 24));
-    _syncAnimationState();
     _initFallback();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncAnimationState();
   }
 
   @override
@@ -57,8 +62,13 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
     }
   }
 
+  bool get _canAnimate =>
+      widget.animate &&
+      TickerMode.valuesOf(context).enabled &&
+      !MediaQuery.disableAnimationsOf(context);
+
   void _syncAnimationState() {
-    if (widget.animate) {
+    if (_canAnimate) {
       if (!_controller.isAnimating) {
         _controller.repeat();
       }
@@ -126,7 +136,7 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
               );
             }
 
-            if (!widget.animate) {
+            if (!_canAnimate) {
               return RepaintBoundary(
                 child: CustomPaint(
                   size: Size(widget.width, widget.height),

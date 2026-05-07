@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 enum TransactionVisualFamily {
   onChain,
@@ -25,6 +26,31 @@ enum TransactionVisualDirection {
   neutral,
 }
 
+enum TransactionVisualLabel {
+  cancelled,
+  refund,
+  failed,
+  mining,
+  swap,
+  fee,
+  lightningDeposit,
+  lightningPayment,
+  lightningReceive,
+  deposit,
+  withdrawal,
+  nfcReceive,
+  nfcPayment,
+  qrReceive,
+  qrPayment,
+  paymentLinkReceive,
+  paymentLinkPayment,
+  internalReceive,
+  internalSend,
+  event,
+  onChainReceive,
+  onChainSend,
+}
+
 class TransactionVisualSpec {
   static const Color _creditColor = Color(0xFFA8C7B1);
   static const Color _debitColor = Color(0xFFD59A9A);
@@ -32,7 +58,7 @@ class TransactionVisualSpec {
 
   final TransactionVisualFamily family;
   final TransactionVisualDirection direction;
-  final String label;
+  final TransactionVisualLabel labelKey;
   final String prefix;
   final IconData icon;
   final Color iconColor;
@@ -41,7 +67,7 @@ class TransactionVisualSpec {
   const TransactionVisualSpec({
     required this.family,
     required this.direction,
-    required this.label,
+    required this.labelKey,
     required this.prefix,
     required this.icon,
     required this.iconColor,
@@ -50,6 +76,41 @@ class TransactionVisualSpec {
 
   bool get isIncoming => direction == TransactionVisualDirection.incoming;
   bool get isOutgoing => direction == TransactionVisualDirection.outgoing;
+
+  String localizedLabel(BuildContext context) {
+    final l10n = context.l10n;
+    return switch (labelKey) {
+      TransactionVisualLabel.cancelled => l10n.transactionVisualCancelled,
+      TransactionVisualLabel.refund => l10n.transactionVisualRefund,
+      TransactionVisualLabel.failed => l10n.transactionVisualFailed,
+      TransactionVisualLabel.mining => l10n.transactionVisualMining,
+      TransactionVisualLabel.swap => l10n.transactionVisualSwap,
+      TransactionVisualLabel.fee => l10n.transactionVisualFee,
+      TransactionVisualLabel.lightningDeposit =>
+        l10n.transactionVisualLightningDeposit,
+      TransactionVisualLabel.lightningPayment =>
+        l10n.transactionVisualLightningPayment,
+      TransactionVisualLabel.lightningReceive =>
+        l10n.transactionVisualLightningReceive,
+      TransactionVisualLabel.deposit => l10n.transactionVisualDeposit,
+      TransactionVisualLabel.withdrawal => l10n.transactionVisualWithdrawal,
+      TransactionVisualLabel.nfcReceive => l10n.transactionVisualNfcReceive,
+      TransactionVisualLabel.nfcPayment => l10n.transactionVisualNfcPayment,
+      TransactionVisualLabel.qrReceive => l10n.transactionVisualQrReceive,
+      TransactionVisualLabel.qrPayment => l10n.transactionVisualQrPayment,
+      TransactionVisualLabel.paymentLinkReceive =>
+        l10n.transactionVisualPaymentLinkReceive,
+      TransactionVisualLabel.paymentLinkPayment =>
+        l10n.transactionVisualPaymentLinkPayment,
+      TransactionVisualLabel.internalReceive =>
+        l10n.transactionVisualInternalReceive,
+      TransactionVisualLabel.internalSend => l10n.transactionVisualInternalSend,
+      TransactionVisualLabel.event => l10n.transactionVisualEvent,
+      TransactionVisualLabel.onChainReceive =>
+        l10n.transactionVisualOnChainReceive,
+      TransactionVisualLabel.onChainSend => l10n.transactionVisualOnChainSend,
+    };
+  }
 
   static TransactionVisualSpec fromTransaction(Transaction transaction) {
     final isOutgoing = transaction.type == TransactionType.send ||
@@ -60,7 +121,7 @@ class TransactionVisualSpec {
       return const TransactionVisualSpec(
         family: TransactionVisualFamily.cancelled,
         direction: TransactionVisualDirection.neutral,
-        label: 'Cancelado',
+        labelKey: TransactionVisualLabel.cancelled,
         prefix: '',
         icon: Icons.block_rounded,
         iconColor: Color(0xFFB38A8A),
@@ -72,8 +133,8 @@ class TransactionVisualSpec {
       return _pair(
         family: TransactionVisualFamily.refund,
         isOutgoing: false,
-        incomingLabel: 'Estorno',
-        outgoingLabel: 'Estorno',
+        incomingLabelKey: TransactionVisualLabel.refund,
+        outgoingLabelKey: TransactionVisualLabel.refund,
         icon: Icons.undo_rounded,
         iconColor: const Color(0xFFA9B3C3),
       );
@@ -83,7 +144,7 @@ class TransactionVisualSpec {
       return const TransactionVisualSpec(
         family: TransactionVisualFamily.failed,
         direction: TransactionVisualDirection.neutral,
-        label: 'Falha',
+        labelKey: TransactionVisualLabel.failed,
         prefix: '',
         icon: Icons.error_outline_rounded,
         iconColor: Color(0xFFD59A9A),
@@ -95,7 +156,7 @@ class TransactionVisualSpec {
       return const TransactionVisualSpec(
         family: TransactionVisualFamily.mining,
         direction: TransactionVisualDirection.incoming,
-        label: 'Mineração',
+        labelKey: TransactionVisualLabel.mining,
         prefix: '+',
         icon: Icons.auto_awesome_rounded,
         iconColor: Color(0xFFE3B85A),
@@ -108,7 +169,7 @@ class TransactionVisualSpec {
         return const TransactionVisualSpec(
           family: TransactionVisualFamily.swap,
           direction: TransactionVisualDirection.neutral,
-          label: 'Swap',
+          labelKey: TransactionVisualLabel.swap,
           prefix: '',
           icon: Icons.swap_horiz_rounded,
           iconColor: Color(0xFF8FA7C2),
@@ -118,7 +179,7 @@ class TransactionVisualSpec {
         return const TransactionVisualSpec(
           family: TransactionVisualFamily.fee,
           direction: TransactionVisualDirection.neutral,
-          label: 'Taxa',
+          labelKey: TransactionVisualLabel.fee,
           prefix: '-',
           icon: Icons.receipt_long_rounded,
           iconColor: Color(0xFF9AA3AE),
@@ -129,8 +190,8 @@ class TransactionVisualSpec {
           return _pair(
             family: TransactionVisualFamily.lightning,
             isOutgoing: false,
-            incomingLabel: 'Depósito Lightning',
-            outgoingLabel: 'Pagamento Lightning',
+            incomingLabelKey: TransactionVisualLabel.lightningDeposit,
+            outgoingLabelKey: TransactionVisualLabel.lightningPayment,
             icon: Icons.flash_on_rounded,
             iconColor: const Color(0xFFE3B85A),
           );
@@ -138,8 +199,8 @@ class TransactionVisualSpec {
         return _pair(
           family: TransactionVisualFamily.deposit,
           isOutgoing: false,
-          incomingLabel: 'Depósito',
-          outgoingLabel: 'Depósito',
+          incomingLabelKey: TransactionVisualLabel.deposit,
+          outgoingLabelKey: TransactionVisualLabel.deposit,
           icon: Icons.download_for_offline_rounded,
           iconColor: const Color(0xFF9EB3A4),
         );
@@ -148,8 +209,8 @@ class TransactionVisualSpec {
           return _pair(
             family: TransactionVisualFamily.lightning,
             isOutgoing: true,
-            incomingLabel: 'Recebimento Lightning',
-            outgoingLabel: 'Pagamento Lightning',
+            incomingLabelKey: TransactionVisualLabel.lightningReceive,
+            outgoingLabelKey: TransactionVisualLabel.lightningPayment,
             icon: Icons.flash_on_rounded,
             iconColor: const Color(0xFFE3B85A),
           );
@@ -158,8 +219,8 @@ class TransactionVisualSpec {
           return _pair(
             family: TransactionVisualFamily.withdrawal,
             isOutgoing: true,
-            incomingLabel: 'Saque',
-            outgoingLabel: 'Saque',
+            incomingLabelKey: TransactionVisualLabel.withdrawal,
+            outgoingLabelKey: TransactionVisualLabel.withdrawal,
             icon: Icons.upload_rounded,
             iconColor: const Color(0xFFB9A08A),
           );
@@ -174,8 +235,8 @@ class TransactionVisualSpec {
       return _pair(
         family: TransactionVisualFamily.nfc,
         isOutgoing: isOutgoing,
-        incomingLabel: 'Recebimento por NFC',
-        outgoingLabel: 'Pagamento por NFC',
+        incomingLabelKey: TransactionVisualLabel.nfcReceive,
+        outgoingLabelKey: TransactionVisualLabel.nfcPayment,
         icon: Icons.nfc_rounded,
         iconColor: const Color(0xFF93A5B5),
       );
@@ -185,8 +246,8 @@ class TransactionVisualSpec {
       return _pair(
         family: TransactionVisualFamily.qrCode,
         isOutgoing: isOutgoing,
-        incomingLabel: 'Recebimento via QR',
-        outgoingLabel: 'Pagamento via QR',
+        incomingLabelKey: TransactionVisualLabel.qrReceive,
+        outgoingLabelKey: TransactionVisualLabel.qrPayment,
         icon: Icons.qr_code_2_rounded,
         iconColor: const Color(0xFF9AA6B2),
       );
@@ -196,8 +257,8 @@ class TransactionVisualSpec {
       return _pair(
         family: TransactionVisualFamily.paymentLink,
         isOutgoing: isOutgoing,
-        incomingLabel: 'Recebimento por link',
-        outgoingLabel: 'Pagamento por link',
+        incomingLabelKey: TransactionVisualLabel.paymentLinkReceive,
+        outgoingLabelKey: TransactionVisualLabel.paymentLinkPayment,
         icon: Icons.link_rounded,
         iconColor: const Color(0xFF9FA8B3),
       );
@@ -207,8 +268,8 @@ class TransactionVisualSpec {
       return _pair(
         family: TransactionVisualFamily.internalTransfer,
         isOutgoing: isOutgoing,
-        incomingLabel: 'Recebimento interno',
-        outgoingLabel: 'Envio interno',
+        incomingLabelKey: TransactionVisualLabel.internalReceive,
+        outgoingLabelKey: TransactionVisualLabel.internalSend,
         icon: Icons.compare_arrows_rounded,
         iconColor: const Color(0xFF8794A3),
       );
@@ -218,8 +279,8 @@ class TransactionVisualSpec {
       return _pair(
         family: TransactionVisualFamily.lightning,
         isOutgoing: isOutgoing,
-        incomingLabel: 'Recebimento Lightning',
-        outgoingLabel: 'Pagamento Lightning',
+        incomingLabelKey: TransactionVisualLabel.lightningReceive,
+        outgoingLabelKey: TransactionVisualLabel.lightningPayment,
         icon: Icons.flash_on_rounded,
         iconColor: const Color(0xFFB89B64),
       );
@@ -231,7 +292,7 @@ class TransactionVisualSpec {
       return const TransactionVisualSpec(
         family: TransactionVisualFamily.unknown,
         direction: TransactionVisualDirection.neutral,
-        label: 'Evento',
+        labelKey: TransactionVisualLabel.event,
         prefix: '',
         icon: Icons.help_outline_rounded,
         iconColor: Color(0xFF9CA8B4),
@@ -242,8 +303,8 @@ class TransactionVisualSpec {
     return _pair(
       family: TransactionVisualFamily.onChain,
       isOutgoing: isOutgoing,
-      incomingLabel: 'Recebimento on-chain',
-      outgoingLabel: 'Envio on-chain',
+      incomingLabelKey: TransactionVisualLabel.onChainReceive,
+      outgoingLabelKey: TransactionVisualLabel.onChainSend,
       icon: Icons.hub_rounded,
       iconColor: const Color(0xFF9CA8B4),
     );
@@ -252,8 +313,8 @@ class TransactionVisualSpec {
   static TransactionVisualSpec _pair({
     required TransactionVisualFamily family,
     required bool isOutgoing,
-    required String incomingLabel,
-    required String outgoingLabel,
+    required TransactionVisualLabel incomingLabelKey,
+    required TransactionVisualLabel outgoingLabelKey,
     required IconData icon,
     required Color iconColor,
   }) {
@@ -262,7 +323,7 @@ class TransactionVisualSpec {
       direction: isOutgoing
           ? TransactionVisualDirection.outgoing
           : TransactionVisualDirection.incoming,
-      label: isOutgoing ? outgoingLabel : incomingLabel,
+      labelKey: isOutgoing ? outgoingLabelKey : incomingLabelKey,
       prefix: isOutgoing ? '-' : '+',
       icon: icon,
       iconColor: iconColor,

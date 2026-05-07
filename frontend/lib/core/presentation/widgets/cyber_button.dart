@@ -37,73 +37,83 @@ class _CyberButtonState extends State<CyberButton> {
         : Theme.of(context).colorScheme.onPrimary;
 
     return GestureDetector(
-      onTapDown: (_) {
-        if (!isDisabled) setState(() => _pressed = true);
-      },
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: isDisabled
-          ? null
-          : () {
-              HapticFeedback.lightImpact();
-              widget.onTap?.call();
-            },
-      child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: widget.width ?? double.infinity,
-          height: widget.height,
-          decoration: BoxDecoration(
-            gradient: isDisabled
-                ? null
-                : LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-            color: isDisabled
-                ? Theme.of(context).colorScheme.surfaceContainerHighest
-                : null,
-            borderRadius: BorderRadius.circular(AppSpacing.md),
-            boxShadow: isDisabled
-                ? null
-                : [
-                    BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.35),
-                      blurRadius: AppSpacing.md,
-                      offset: const Offset(0, AppSpacing.xs),
-                    ),
-                  ],
+          onTapDown: (_) {
+            if (!isDisabled) setState(() => _pressed = true);
+          },
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTap: isDisabled
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  widget.onTap?.call();
+                },
+          child: AnimatedScale(
+            scale: _pressed ? 0.96 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeOut,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: widget.width ?? double.infinity,
+              height: widget.height,
+              decoration: BoxDecoration(
+                gradient: isDisabled
+                    ? null
+                    : LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                color: isDisabled
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : null,
+                borderRadius: BorderRadius.circular(AppSpacing.md),
+                boxShadow: isDisabled
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.35),
+                          blurRadius: AppSpacing.md,
+                          offset: const Offset(0, AppSpacing.xs),
+                        ),
+                      ],
+              ),
+              child: Center(
+                child: widget.isLoading
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: foregroundColor,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            style: AppTypography.buttonText.copyWith(
+                              color: foregroundColor,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
           ),
-          child: Center(
-            child: widget.isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: foregroundColor,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    widget.text,
-                    style: AppTypography.buttonText.copyWith(
-                      color: foregroundColor,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    )
+        )
         .animate()
         .fade(duration: const Duration(milliseconds: 300))
         .slideY(begin: 0.05, end: 0);

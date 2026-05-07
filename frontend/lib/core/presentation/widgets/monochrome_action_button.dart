@@ -36,11 +36,11 @@ class MonochromeActionButton extends StatelessWidget {
                   HapticFeedback.lightImpact();
                   onPressed?.call();
                 },
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.zero,
           child: Ink(
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: isDisabled ? 0.03 : 0.06),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.zero,
               border: Border.all(
                 color: Colors.white.withValues(alpha: isDisabled ? 0.05 : 0.10),
               ),
@@ -55,28 +55,41 @@ class MonochromeActionButton extends StatelessWidget {
                         color: textColor.withValues(alpha: 0.76),
                       ),
                     )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (icon != null) ...[
-                          Icon(
-                            icon,
-                            size: 18,
-                            color: textColor.withValues(
-                              alpha: isDisabled ? 0.30 : 0.76,
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (icon != null) ...[
+                            Icon(
+                              icon,
+                              size: 18,
+                              color: textColor.withValues(
+                                alpha: isDisabled ? 0.30 : 0.76,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                          ],
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                text,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
+                                style: AppTypography.buttonText.copyWith(
+                                  color: textColor.withValues(
+                                    alpha: isDisabled ? 0.46 : 0.88,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.sm),
                         ],
-                        Text(
-                          text,
-                          style: AppTypography.buttonText.copyWith(
-                            color: textColor.withValues(
-                              alpha: isDisabled ? 0.30 : 0.88,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
             ),
           ),

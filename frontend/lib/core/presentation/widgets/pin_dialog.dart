@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/security/app_pin_service.dart';
 
 enum _PinMode { setup, enter }
@@ -21,10 +23,11 @@ class PinDialog extends StatefulWidget {
     final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor:
-          Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
+      barrierColor: Theme.of(
+        context,
+      ).scaffoldBackgroundColor.withValues(alpha: 0.95),
       pageBuilder: (context, anim1, anim2) => PinDialog(isSetup: isSetup),
-      transitionDuration: const Duration(milliseconds: 300),
+      transitionDuration: const Duration(milliseconds: 160),
       transitionBuilder: (context, anim1, anim2, child) {
         return FadeTransition(opacity: anim1, child: child);
       },
@@ -113,6 +116,10 @@ class _PinDialogState extends State<PinDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+    final height = responsive.size.height;
+    final tightHeight = height < 700;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CyberBackground(
@@ -120,31 +127,36 @@ class _PinDialogState extends State<PinDialog> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 64.0),
+              SizedBox(height: tightHeight ? AppSpacing.lg : 64.0),
               _buildVisualIndicator().animate().scale().fade(),
-              const SizedBox(height: AppSpacing.xl),
+              SizedBox(height: tightHeight ? AppSpacing.md : AppSpacing.xl),
               Text(
                 _title,
                 textAlign: TextAlign.center,
                 style: AppTypography.caption.copyWith(
-                  color: Colors.white54,
-                  letterSpacing: 2,
+                  color: Colors.white70,
+                  letterSpacing: 0,
+                  fontWeight: FontWeight.w700,
                 ),
               ).animate().fade().slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSpacing.sm),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                padding: EdgeInsets.symmetric(
+                  horizontal: responsive.horizontalPadding,
+                ),
                 child: Text(
                   _subtitle,
+                  maxLines: tightHeight ? 2 : 3,
+                  overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Colors.white38,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall!.copyWith(color: Colors.white70),
                 ),
               ).animate(delay: 100.ms).fade(),
-              const SizedBox(height: AppSpacing.xxl),
+              SizedBox(height: tightHeight ? AppSpacing.lg : AppSpacing.xxl),
               _buildDots().animate().fade(),
-              const SizedBox(height: AppSpacing.lg),
+              SizedBox(height: tightHeight ? AppSpacing.sm : AppSpacing.lg),
               _buildErrorMessage(),
               const Spacer(),
               _buildModernKeypad()
@@ -153,17 +165,25 @@ class _PinDialogState extends State<PinDialog> {
                   .slideY(begin: 0.2, end: 0),
               if (!widget.isSetup)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xl, top: AppSpacing.xxl),
+                  padding: EdgeInsets.only(
+                    bottom: tightHeight ? AppSpacing.md : AppSpacing.xl,
+                    top: tightHeight ? AppSpacing.md : AppSpacing.xxl,
+                  ),
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(
                       'CANCELAR',
-                      style: AppTypography.caption.copyWith(color: Colors.white38),
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ).animate(delay: 400.ms).fade()
               else
-                const SizedBox(height: AppSpacing.xxl + 48), // Padding if no button
+                SizedBox(
+                  height: tightHeight ? AppSpacing.xl : AppSpacing.xxl + 48,
+                ),
             ],
           ),
         ),
@@ -172,11 +192,7 @@ class _PinDialogState extends State<PinDialog> {
   }
 
   Widget _buildVisualIndicator() {
-    return const Icon(
-      LucideIcons.lock,
-      color: Colors.white38,
-      size: 24,
-    );
+    return const Icon(LucideIcons.lock, color: Colors.white38, size: 24);
   }
 
   Widget _buildDots() {
@@ -191,7 +207,9 @@ class _PinDialogState extends State<PinDialog> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: filled ? Colors.white54 : Colors.transparent,
-            border: Border.all(color: filled ? Colors.transparent : Colors.white24),
+            border: Border.all(
+              color: filled ? Colors.transparent : Colors.white24,
+            ),
           ),
         );
       }),
@@ -207,9 +225,10 @@ class _PinDialogState extends State<PinDialog> {
             ? Text(
                 _error!.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                    color: Colors.white54,
-                    letterSpacing: 1,
-                  ),
+                  color: Colors.white70,
+                  letterSpacing: 0,
+                  fontWeight: FontWeight.w700,
+                ),
                 key: ValueKey(_error),
               )
             : const SizedBox.shrink(),
@@ -225,13 +244,16 @@ class _PinDialogState extends State<PinDialog> {
       ['C', '0', '←'],
     ];
 
+    final responsive = context.responsive;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      padding: EdgeInsets.symmetric(horizontal: responsive.horizontalPadding),
       child: Column(
         children: keys.map((row) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: row.map((key) => Expanded(child: _buildKey(key))).toList(),
+            children: row
+                .map((key) => Expanded(child: _buildKey(key)))
+                .toList(),
           );
         }).toList(),
       ),
@@ -240,9 +262,12 @@ class _PinDialogState extends State<PinDialog> {
 
   Widget _buildKey(String key) {
     final isSpecial = key == '←' || key == 'C';
+    final responsive = context.responsive;
 
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      padding: EdgeInsets.all(
+        responsive.isTinyPhone ? AppSpacing.xs : AppSpacing.sm,
+      ),
       child: GestureDetector(
         onTapDown: (_) {
           HapticFeedback.lightImpact();
@@ -258,23 +283,21 @@ class _PinDialogState extends State<PinDialog> {
           }
         },
         child: Container(
-          height: 58,
-          decoration: const BoxDecoration(
-            color: Colors.transparent,
-          ),
+          height: responsive.size.height < 700 ? 48 : 58,
+          decoration: const BoxDecoration(color: Colors.transparent),
           alignment: Alignment.center,
           child: isSpecial && key == '←'
-              ? const Icon(LucideIcons.delete, color: Colors.white38, size: 18)
+              ? const Icon(LucideIcons.delete, color: Colors.white70, size: 18)
               : Text(
                   key,
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        color: isSpecial && key == 'C'
-                            ? Colors.white38
-                            : Colors.white54,
-                        fontFamily: 'JetBrainsMono',
-                        fontWeight: FontWeight.w400,
-                        fontSize: 24,
-                      ),
+                    color: isSpecial && key == 'C'
+                        ? Colors.white70
+                        : Colors.white,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w400,
+                    fontSize: 24,
+                  ),
                 ),
         ),
       ),

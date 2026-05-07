@@ -4,6 +4,8 @@ Documento derivado dos controllers Spring Boot reais em 2026-04-22.
 
 Referencia canônica detalhada, incluindo todos os DTOs publicos e controllers novos: [`backend/kerosene/docs/API_REFERENCE_CONTROLLERS.md`](../backend/kerosene/docs/API_REFERENCE_CONTROLLERS.md).
 
+Guia de consumo pela UI, com telas, parametros e rotas preferenciais: [`docs/FRONTEND_API_USAGE.md`](FRONTEND_API_USAGE.md).
+
 ## Cobertura Verificada
 
 Checagem mecanica realizada contra todos os `@RestController` em `backend/kerosene/src/main/java/source/**`.
@@ -14,19 +16,28 @@ Controllers atualmente cobertos nesta referencia:
 - `source.auth.controller.AccountActivationController`
 - `source.auth.controller.AccountSecurityController`
 - `source.auth.controller.AccountSecurityStatusController`
+- `source.auth.controller.AppPinController`
 - `source.auth.controller.BackupCodesController`
 - `source.auth.controller.PasskeyController`
 - `source.auth.controller.EmergencyRecoveryController`
 - `source.auth.controller.MeController`
 - `source.auth.controller.TotpController`
+- `source.common.admin.AdminOperationsController`
+- `source.common.admin.PublicSiteController`
+- `source.common.admin.SystemReleaseController`
+- `source.common.controller.HealthController`
+- `source.common.controller.RootStatusController`
 - `source.wallet.controller.WalletController`
 - `source.ledger.controller.LedgerController`
 - `source.ledger.controller.LedgerAuditController`
 - `source.ledger.audit.MerkleAuditController`
 - `source.transactions.controller.TransactionController`
 - `source.transactions.controller.NetworkPaymentsController`
+- `source.transactions.controller.BtcPayWebhookController`
+- `source.transactions.controller.DepositController`
 - `source.transactions.controller.EconomyController`
 - `source.transactions.controller.OnrampController`
+- `source.treasury.controller.TreasuryController`
 - `source.mining.controller.MiningController`
 - `source.notification.controller.NotificationController`
 - `source.security.SovereigntyStatusController`
@@ -63,6 +74,10 @@ Headers relevantes:
 | `X-Owner-TOTP` | `/v1/audit/siphon`. |
 | `X-Hardware-Signature` | `/v1/audit/siphon`. |
 | `Digest: SHA-256=<base64>` | Opcional; se presente, o filtro compara com o body. |
+| `X-Kerosene-Release-Digest` | Digest autorizado em attestation interna quando habilitada. |
+| `X-Kerosene-Release-Timestamp` | Timestamp anti-replay da attestation. |
+| `X-Kerosene-Release-Proof` | Prova HMAC da requisicao e do body. |
+| `X-Kerosene-Service-Identity` | Identidade do servico remoto; pode ser casada com mTLS. |
 
 Regras globais reais:
 
@@ -104,7 +119,7 @@ Semantica:
 - `vanguardsStateReady=false`: Tor pode estar de pe, mas o addon `vanguards` ainda nao inicializou ou perdeu o volume de estado.
 - `reason`: presente quando o componente `tor` esta `DOWN`.
 
-Observacao real: na `SecurityFilterChain` atual, `/actuator/**` ainda nao esta `permitAll`. Portanto, esse contrato e operacional/interno; ele nao deve ser tratado como endpoint publico ate a policy de seguranca ser alterada de forma explicita.
+Observacao real: na `SecurityFilterChain` atual, `/actuator/health` e `/actuator/health/**` estao `permitAll`; o restante de `/actuator/**` nao deve ser tratado como API publica.
 
 ## Matriz de Autenticacao Real
 
@@ -123,6 +138,20 @@ Pela `SecurityFilterChain`, estao `permitAll`:
 /auth/recovery/emergency/finish
 /auth/pow/challenge
 /voucher/**
+/healthz
+/health/live
+/health/ready
+/api/public/**
+/system/release
+/admin
+/admin/**
+/download
+/status
+/integrations/btcpay/webhook/**
+/actuator/health
+/actuator/health/**
+/sovereignty/ping
+/sovereignty/status
 /v3/api-docs/**
 /swagger-ui/**
 /error
@@ -205,7 +234,7 @@ Regras reais:
 - O link de ativacao usa o endereco estatico/fallback de deposito do backend e nao exige wallet primaria do usuario; isso e intencional porque a ativacao acontece antes de liberar recebimentos inbound.
 - Se ja existir link de ativacao nao expirado, o endpoint reutiliza esse link.
 - `POST /{linkId}/confirm` valida propriedade do link, `description == "ACCOUNT_ACTIVATION"` e muda o payment link para `verifying_activation`.
-- A ativacao definitiva ocorre quando `AccountActivationMonitorService` detecta confirmacoes on-chain suficientes, ou imediatamente em ambiente com `voucher.mock.accept-any-txid=true`.
+- A ativacao definitiva ocorre quando `AccountActivationMonitorService` detecta confirmacoes on-chain suficientes. A chave `voucher.mock.accept-any-txid=true` e restrita a ambientes local/teste e nao deve ser habilitada em producao.
 
 `AccountActivationStatusDTO`:
 
@@ -467,7 +496,6 @@ Base path: `/wallet`
 {
   "id": 1,
   "name": "Main wallet",
-  "passphraseHash": null,
   "createdAt": "2026-04-07T00:00:00",
   "updatedAt": "2026-04-07T00:00:00",
   "isActive": true,
@@ -488,7 +516,7 @@ Regras reais de cartao/taxa na camada de wallet:
 - `BLACK`: conta com pelo menos 6 meses e movimentacao elegivel acima de `3000` nos ultimos 30 dias. Taxa de saque `0.0070` e deposito `0.0070`.
 - A movimentacao mensal usada nessa classificacao considera a janela movel dos ultimos 30 dias sobre o historico financeiro persistido.
 - `totpUri` so e retornado na criacao da wallet. Nos endpoints de consulta ele volta `null`.
-- `passphraseHash` permanece write-only do ponto de vista da API e nao deve ser usado pelo cliente.
+- `passphraseHash`, seeds, passphrases, segredos TOTP e qualquer material sensivel nao fazem parte de `WalletResponseDTO`.
 
 ## Ledger
 
@@ -499,13 +527,13 @@ Base path: `/ledger`
 | Metodo | Path | Auth | Body/Query | Resposta |
 | --- | --- | --- | --- | --- |
 | `POST` | `/ledger/transaction` | JWT | `TransactionDTO` | `ApiResponse<Void>`. |
-| `GET` | `/ledger/history?page=0&size=50` | JWT | Query `page`, `size` max 100 | `ApiResponse<List<LedgerTransactionHistory>>`. |
+| `GET` | `/ledger/history?page=0&size=50` | JWT | Query `page`, `size` max 100 | `ApiResponse<List<LedgerSyncEventDTO>>`, sem identificadores de contraparte, contexto livre ou txid completo. |
 | `GET` | `/ledger/all` | JWT | - | `ApiResponse<List<LedgerDTO>>`. |
 | `GET` | `/ledger/find?walletName={name}` | JWT | Query `walletName` | `ApiResponse<LedgerDTO>`. |
 | `GET` | `/ledger/balance?walletName={name}` | JWT | Query `walletName` | `ApiResponse<BigDecimal>`. |
 | `POST` | `/ledger/payment-request` | JWT | `{ "amount": 1.23, "receiverWalletName": "Main" }` | `ApiResponse<InternalPaymentRequestDTO>`. |
 | `GET` | `/ledger/payment-request/{linkId}` | JWT pela security atual | Path `linkId` | `ApiResponse<PaymentRequestPublicDTO>`. |
-| `POST` | `/ledger/payment-request/{linkId}/pay` | JWT | `{ "payerWalletName": "Main", "totpCode": null, "passkeyAssertionJson": "{}", "confirmationPassphrase": null }` | `ApiResponse<InternalPaymentRequestDTO>`. |
+| `POST` | `/ledger/payment-request/{linkId}/pay` | JWT | `{ "payerWalletName": "Main", "idempotencyKey": "uuid", "totpCode": null, "passkeyAssertionJson": "{}", "confirmationPassphrase": null }` | `ApiResponse<InternalPaymentRequestDTO>`. |
 
 `TransactionDTO`:
 
@@ -592,7 +620,7 @@ Base path: `/transactions`
 
 | Metodo | Path | Auth | Body/Query | Resposta |
 | --- | --- | --- | --- | --- |
-| `GET` | `/transactions/deposit-address` | JWT | - | `ApiResponse<String>` endereco custodial dedicado para a wallet principal do usuario. Em dev, pode creditar saldo mock automaticamente com taxa de deposito conforme o cartao atual da wallet do usuario. |
+| `GET` | `/transactions/deposit-address?expectedAmountBtc={btc}` | JWT | Query `expectedAmountBtc` | `ApiResponse<String>` legado; emite endereco dedicado para a wallet principal. Novas telas devem usar `/transactions/network/onchain/address`. |
 | `GET` | `/transactions/estimate-fee?amount={btc}` | JWT | Query `amount` | `ApiResponse<EstimatedFeeDTO>`. |
 | `POST` | `/transactions/create-unsigned` | JWT | `TransactionRequestDTO` | `ApiResponse<UnsignedTransactionDTO>`. |
 | `GET` | `/transactions/status?txid={hash}` | JWT | Query `txid` | `ApiResponse<TransactionResponseDTO>`. |
@@ -600,7 +628,7 @@ Base path: `/transactions`
 | `POST` | `/transactions/create-payment-link` | JWT | `CreatePaymentLinkRequest` | `201 ApiResponse<PaymentLinkDTO>`. |
 | `GET` | `/transactions/payment-link/{linkId}` | JWT pela security atual | Path `linkId` | `ApiResponse<PaymentLinkDTO>`. Endpoint autenticado para fluxos ja logados. |
 | `POST` | `/transactions/payment-link/{linkId}/confirm` | JWT pela security atual | `ConfirmPaymentRequest` | `ApiResponse<PaymentLinkDTO>`. Endpoint autenticado para fluxos ja logados. |
-| `POST` | `/transactions/payment-link/{linkId}/complete` | JWT | Path `linkId` | `ApiResponse<PaymentLinkDTO>`. |
+| `POST` | `/transactions/payment-link/{linkId}/complete` | JWT | Path `linkId`, header `Idempotency-Key` | `ApiResponse<PaymentLinkDTO>`. |
 | `GET` | `/transactions/payment-links` | JWT | - | `ApiResponse<List<PaymentLinkDTO>>`. |
 | `POST` | `/transactions/withdraw` | JWT | `WithdrawRequestDTO` | `ApiResponse<TransactionResponseDTO>`. |
 
@@ -693,6 +721,7 @@ Base path: `/transactions`
 ```json
 {
   "txid": "blockchain-txid",
+  "idempotencyKey": "uuid",
   "fromAddress": "bc1..."
 }
 ```
@@ -701,6 +730,7 @@ Base path: `/transactions`
 
 ```json
 {
+  "idempotencyKey": "uuid",
   "fromWalletName": "Main",
   "toAddress": "bc1...",
   "amount": 0.0001,
@@ -735,9 +765,11 @@ Base path: `/transactions`
 
 Regras reais de payment links:
 
-- Sao armazenados apenas em Redis.
+- Sao armazenados de forma duravel em Postgres (`financial.payment_links`). Redis pode existir para estado operacional, mas nao e a fonte de verdade do link.
 - `status` pode assumir `pending`, `paid`, `expired`, `completed`, `verifying_onboarding` e `verifying_activation`.
 - `POST /transactions/payment-link/{linkId}/confirm` marca links normais como `paid`.
+- A confirmacao autenticada de payment link exige `idempotencyKey` no body e valida o `txid` contra rede configurada, endereco de deposito esperado, output/valor esperado e confirmacoes minimas antes de creditar saldo.
+- `POST /transactions/payment-link/{linkId}/complete` exige header `Idempotency-Key`.
 - Para onboarding (`description == "ONBOARDING_VOUCHER"` e `sessionId != null`), a confirmacao publica muda o status para `verifying_onboarding` enquanto o backend aguarda confirmacoes on-chain antes de finalizar o usuario.
 - Para ativacao de conta (`description == "ACCOUNT_ACTIVATION"` e `userId != null`), a confirmacao muda o status para `verifying_activation`; esse fluxo nao credita wallet do usuario.
 
@@ -755,7 +787,7 @@ Regras reais de payment links:
   "description": "Credit Test",
   "depositAddress": "1A1z7agoat7F9gq5TFGakzrx6R5vbR2rAP",
   "status": "paid",
-  "txid": "tx_mock_123",
+  "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "expiresAt": "2026-04-14T18:30:00",
   "createdAt": "2026-04-14T17:30:00",
   "paidAt": "2026-04-14T17:35:00",
@@ -781,7 +813,7 @@ Base path: `/transactions/network`
 
 | Metodo | Path | Auth | Body/Query | Resposta |
 | --- | --- | --- | --- | --- |
-| `POST` | `/transactions/network/onchain/address` | JWT | `OnchainAddressRequestDTO` | `201 ApiResponse<WalletNetworkAddressDTO>`. |
+| `POST` | `/transactions/network/onchain/address` | JWT | `OnchainAddressRequestDTO` com `expectedAmountBtc` | `201 ApiResponse<OnchainAddressAllocationDTO>`. |
 | `GET` | `/transactions/network/wallet-profile?walletName={name}` | JWT | Query `walletName` | `ApiResponse<WalletNetworkAddressDTO>`. |
 | `POST` | `/transactions/network/onchain/send` | JWT | `OnchainSendRequestDTO` | `ApiResponse<ExternalTransferResponseDTO>`. |
 | `POST` | `/transactions/network/lightning/invoice` | JWT | `LightningInvoiceRequestDTO` | `201 ApiResponse<LightningInvoiceResponseDTO>`. |
@@ -798,8 +830,10 @@ Regras reais:
 - Autorizacao de saida externa usa a matriz de fatores de `/auth/security/profile`: `STANDARD`/`PASSKEY` exigem passkey e nao TOTP; `SHAMIR` e `MULTISIG_2FA` exigem TOTP; `MULTISIG_2FA` threshold `3` tambem exige passkey.
 - Falha de TOTP em on-chain/Lightning retorna erro da operacao, mas nao invalida o JWT.
 - `POST /transactions/withdraw` permanece por retrocompatibilidade, mas agora cai na mesma trilha on-chain nova.
-- Endereco on-chain por carteira tenta usar o provider de custodia configurado em `custody.*` com nome default `BCX`, e faz fallback para derivacao local/xpub quando nao ha provider live.
-- Lightning invoice e pagamento usam o mesmo adapter de custodia; em `mock-mode` a resposta e deterministica para desenvolvimento.
+- Endereco on-chain de deposito e sempre novo por chamada: a UI envia `expectedAmountBtc`, o backend deriva/aloca um alias da custodia Kerosene para aquela transacao, registra watch local e credita pelo valor realmente observado on-chain.
+- Para wallets Kerosene, a alocacao prefere `bitcoin.platform.master-xpub`/`bitcoin.hot-wallet.xpub`; Bitcoin Core wallet e fallback operacional quando xpub global nao esta configurado e `transactions.bitcoin-core-wallet-address-enabled=true`.
+- O fallback local derivado estatico nao e aceito para aliases frescos de deposito, porque ele nao gera um endereco unico por transacao.
+- Lightning invoice e pagamento usam LND gRPC quando `lightning.lnd.enabled=true`; modos deterministas de desenvolvimento devem permanecer restritos a local/teste e bloqueados por guard rails em producao.
 - Depositos externos confirmados que entram no ecossistema Kerosene (por exemplo, creditos on-chain detectados localmente e mock deposit local) passam a creditar o valor liquido apos aplicar a taxa de deposito do cartao vigente; esse breakdown hoje fica registrado no historico interno, nao em um DTO publico dedicado.
 
 `OnchainAddressRequestDTO`:
@@ -807,7 +841,26 @@ Regras reais:
 ```json
 {
   "walletName": "Main",
-  "regenerate": false
+  "expectedAmountBtc": 0.0015
+}
+```
+
+`OnchainAddressAllocationDTO`:
+
+```json
+{
+  "walletName": "Main",
+  "onchainAddress": "bc1q...",
+  "expectedAmountBtc": 0.0015,
+  "network": "mainnet",
+  "provider": "KEROSENE_LOCAL",
+  "externalWalletReference": "KEROSENE_QUORUM_BIP84_EXTERNAL_42",
+  "walletMode": "KEROSENE",
+  "transferId": "uuid",
+  "transferStatus": "PENDING",
+  "confirmations": 0,
+  "requiredConfirmations": 3,
+  "blockchainTxid": null
 }
 ```
 
@@ -815,6 +868,7 @@ Regras reais:
 
 ```json
 {
+  "idempotencyKey": "uuid",
   "fromWalletName": "Main",
   "toAddress": "bc1q...",
   "amount": 0.015,
@@ -842,6 +896,7 @@ Para `SHAMIR` e `MULTISIG_2FA`, envie `totpCode`. Para `MULTISIG_2FA` threshold 
 
 ```json
 {
+  "idempotencyKey": "uuid",
   "fromWalletName": "Main",
   "paymentRequest": "lnbc...",
   "amount": 0.0005,
@@ -894,6 +949,7 @@ Os campos de autorizacao de `LightningPaymentRequestDTO` seguem exatamente a mes
   "provider": "BCX",
   "walletName": "Main",
   "destination": "bc1q...",
+  "expectedAmountBtc": 0.015,
   "amountBtc": 0.015,
   "networkFeeBtc": 0.00004500,
   "platformFeeBtc": 0.00012000,
@@ -1028,6 +1084,40 @@ Controller: `source.notification.controller.NotificationController`
 | --- | --- | --- | --- | --- |
 | `POST` | `/notifications/send` | JWT | `{ "userId": "1", "title": "Titulo", "body": "Texto" }` | `ApiResponse<String>`. |
 
+## Web Publico, Download e Operacoes Admin
+
+Controllers:
+
+- `source.common.admin.PublicSiteController`
+- `source.common.admin.AdminOperationsController`
+- `source.common.admin.SystemReleaseController`
+
+Rotas publicas:
+
+| Metodo | Path | Auth | Resposta |
+| --- | --- | --- | --- |
+| `GET` | `/api/public/mobile-download` | Publico | Links Android/iOS, versao, changelog, hashes e assinatura do app mobile. |
+| `GET` | `/system/release` | Publico operacional | Snapshot runtime de release sem segredos. |
+
+Rotas do painel empresarial:
+
+| Metodo | Path | Auth | Resposta |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/operations/overview` | JWT/admin | Resumo de health, blockchain, Lightning, Vault Raft, release, mobile e metricas. |
+| `GET` | `/api/admin/operations/health` | JWT/admin | Dependencias e readiness operacional. |
+| `GET` | `/api/admin/operations/blockchain` | JWT/admin | Bitcoin Core mainnet pruned RPC/ZMQ: altura, hash, dificuldade, mempool, fees e transacoes relevantes. |
+| `GET` | `/api/admin/operations/lightning` | JWT/admin | LND gRPC mainnet: sync, altura, peers, canais e saldos. |
+| `GET` | `/api/admin/operations/vault-raft` | JWT/admin | Leader, followers, seal/unseal, quorum e health do Vault Raft. |
+| `GET` | `/api/admin/operations/release` | JWT/admin | Manifesto autorizado, commit, build, image digest e validacao de hashes. |
+| `GET` | `/api/admin/operations/mobile` | JWT/admin | Metadados de release mobile. |
+| `GET` | `/api/admin/operations/logs` | JWT/admin | Eventos operacionais saneados, com valores sensiveis redigidos/fingerprinted. |
+
+Observacoes:
+
+- O painel web e servido por `/admin`, mas os dados operacionais vem somente dos endpoints acima.
+- Nenhum endpoint operacional deve retornar seeds, chaves privadas, tokens, unseal keys, root token do Vault ou stack trace.
+- Quando `release.attestation.remote.enabled=true`, chamadas criticas tambem precisam dos headers `X-Kerosene-Release-*`.
+
 ## Auditoria e Proof of Reserves
 
 Controllers:
@@ -1038,7 +1128,7 @@ Controllers:
 | Metodo | Path | Auth | Body/Headers | Resposta |
 | --- | --- | --- | --- | --- |
 | `GET` | `/v1/audit/stats` | JWT pela security atual | - | Mapa com `liability_to_users`, `platform_profit_pending`, `actual_onchain_balance`, `is_solvent`. |
-| `POST` | `/v1/audit/siphon` | JWT + headers | `X-Owner-TOTP`, `X-Hardware-Signature`, body mapa | Mapa com `message`, `amount_withdrawn`, `destination`. |
+| `POST` | `/v1/audit/siphon` | JWT + headers | `X-Owner-TOTP`, `X-Hardware-Signature`, body mapa | Falha fechado com `503` quando o executor de payout nao esta configurado; modo manual/local retorna `message`, `amount_withdrawn`, `destination`. |
 | `GET` | `/audit/latest-root` | JWT + `isAuthenticated()` | - | Ultimo checkpoint Merkle ou `NO_CHECKPOINT_YET`. |
 | `GET` | `/audit/history?limit=10` | JWT + `isAuthenticated()` | Query `limit`, max 50 | Lista de checkpoints. |
 | `POST` | `/audit/trigger` | JWT + `hasRole('ADMIN')` | - | Novo checkpoint Merkle. |
@@ -1051,14 +1141,14 @@ Controller: `source.security.SovereigntyStatusController`
 
 Base path: `/sovereignty`
 
-`/sovereignty/**` cai no `anyRequest().authenticated()` da security atual. Alguns endpoints ainda validam `X-Admin-Token` internamente.
+`/sovereignty/status` e `/sovereignty/ping` estao `permitAll` na security atual. Os endpoints operacionais restantes continuam autenticados e alguns ainda validam `X-Admin-Token` internamente.
 
 | Metodo | Path | Auth interna | Resposta |
 | --- | --- | --- | --- |
-| `GET` | `/sovereignty/status` | JWT | Mapa com hardware attestation, quorum, Merkle, memory protection e uptime. |
+| `GET` | `/sovereignty/status` | Publico pela security atual | Mapa com hardware attestation, quorum, Merkle, memory protection e uptime. |
 | `POST` | `/sovereignty/reattest` | JWT + `X-Admin-Token` | Mapa `message` ou erro. |
 | `GET` | `/sovereignty/telemetry` | JWT + `X-Admin-Token` | Snapshot de telemetria em RAM. |
-| `GET` | `/sovereignty/ping` | JWT | HTML simples de status. |
+| `GET` | `/sovereignty/ping` | Publico pela security atual | HTML simples de status. |
 
 ## WebSocket/STOMP
 

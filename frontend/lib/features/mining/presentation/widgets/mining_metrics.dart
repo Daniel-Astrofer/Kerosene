@@ -14,6 +14,7 @@ import 'package:teste/features/mining/presentation/models/mining_dashboard_view_
 import 'package:teste/features/mining/presentation/providers/mining_dashboard_provider.dart';
 import 'package:teste/features/mining/presentation/providers/mining_providers.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class MiningOverviewHero extends StatelessWidget {
   final MiningDashboardSnapshot snapshot;
@@ -100,8 +101,10 @@ class MiningOverviewHero extends StatelessWidget {
                         borderRadius: miningInnerBorderRadius,
                       ),
                     ),
-                    icon:
-                        const Icon(Icons.refresh_rounded, color: Colors.white),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -119,10 +122,11 @@ class MiningOverviewHero extends StatelessWidget {
                   Expanded(
                     flex: isCompact ? 0 : 4,
                     child: _PrimaryHeroStat(
-                      label: 'Altura atual',
+                      label: context.l10n.miningMetricsCurrentHeight,
                       value: snapshot.currentHeight.toDouble(),
-                      helper:
-                          'retarget em ${snapshot.network.remainingBlocks} blocos',
+                      helper: context.l10n.miningMetricsRetargetInBlocks(
+                        snapshot.network.remainingBlocks,
+                      ),
                     ),
                   ),
                   SizedBox(
@@ -152,7 +156,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: 'MRR',
+                                label: context.l10n.miningMetricsMrr,
                                 value:
                                     '${MiningFormatters.btc(viewData.miningRevenueRunRateBtcPerDay)}/dia',
                                 helper:
@@ -164,7 +168,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: 'Hashrate',
+                                label: context.l10n.miningMetricsHashrate,
                                 value: MiningFormatters.hashrate(
                                   snapshot.network.currentHashrate,
                                 ),
@@ -177,7 +181,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: 'Dificuldade',
+                                label: context.l10n.miningMetricsDifficulty,
                                 value: MiningFormatters.largeNumber(
                                   snapshot.network.currentDifficulty,
                                 ),
@@ -190,7 +194,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: 'Ritmo',
+                                label: context.l10n.miningMetricsPace,
                                 value:
                                     '${blockTimeMinutes.toStringAsFixed(1)} min/bloco',
                                 helper:
@@ -214,22 +218,22 @@ class MiningOverviewHero extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _InfoPill(
-                label: 'Última atualização',
+                label: context.l10n.miningMetricsLastUpdated,
                 value: syncMeta.lastUpdatedAt == null
-                    ? 'agora'
+                    ? context.l10n.miningMetricsNow
                     : MiningFormatters.timeOfDay(syncMeta.lastUpdatedAt!),
               ),
               _InfoPill(
-                label: 'Mempool',
+                label: context.l10n.miningMetricsMempool,
                 value:
                     '${snapshot.mempool.loadInBlocks.toStringAsFixed(1)} blocos virtuais',
               ),
               _InfoPill(
-                label: 'Taxa prioritária',
+                label: context.l10n.miningMetricsPriorityFee,
                 value: '${snapshot.feeMarket.priorityFee} sat/vB',
               ),
               _InfoPill(
-                label: 'TPS estimado',
+                label: context.l10n.miningMetricsEstimatedTps,
                 value:
                     '${snapshot.throughputTransactionsPerSecond.toStringAsFixed(1)} tx/s',
               ),
@@ -244,10 +248,7 @@ class MiningOverviewHero extends StatelessWidget {
 class MiningSyncStatusBanner extends StatelessWidget {
   final MiningSyncMeta syncMeta;
 
-  const MiningSyncStatusBanner({
-    super.key,
-    required this.syncMeta,
-  });
+  const MiningSyncStatusBanner({super.key, required this.syncMeta});
 
   @override
   Widget build(BuildContext context) {
@@ -263,10 +264,7 @@ class MiningSyncStatusBanner extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          Icon(
-            _statusIcon(syncMeta.phase),
-            color: color,
-          ),
+          Icon(_statusIcon(syncMeta.phase), color: color),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -318,8 +316,8 @@ class MiningMempoolPressureCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Pressão da mempool',
-            subtitle: 'Faixa de taxa, volume pendente e disputa por inclusão.',
+            title: context.l10n.miningMetricsMempoolPressureTitle,
+            subtitle: context.l10n.miningMetricsMempoolPressureSubtitle,
             trailing: MiningStatusBadge(
               label: viewData.congestionLabel.toUpperCase(),
               tone: _toneForCongestion(viewData.congestionLevel),
@@ -378,23 +376,24 @@ class MiningMempoolPressureCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _InfoPill(
-                label: 'Pendentes',
+                label: context.l10n.miningMetricsPending,
                 value: MiningFormatters.compactInt(
                   snapshot.mempool.pendingTransactions,
                 ),
               ),
               _InfoPill(
-                label: 'vBytes',
+                label: context.l10n.miningMetricsVbytes,
                 value:
                     '${MiningFormatters.compactInt(snapshot.mempool.virtualSize)} vB',
               ),
               _InfoPill(
-                label: 'Volume MB',
-                value:
-                    MiningFormatters.megabytes(snapshot.mempool.virtualSizeMb),
+                label: context.l10n.miningMetricsVolumeMb,
+                value: MiningFormatters.megabytes(
+                  snapshot.mempool.virtualSizeMb,
+                ),
               ),
               _InfoPill(
-                label: 'Taxas agregadas',
+                label: context.l10n.miningMetricsAggregatedFees,
                 value: MiningFormatters.btc(snapshot.mempool.totalFeesBtc),
               ),
             ],
@@ -417,8 +416,10 @@ class MiningNetworkHealthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        (snapshot.network.retargetProgressPercent / 100).clamp(0.0, 1.0);
+    final progress = (snapshot.network.retargetProgressPercent / 100).clamp(
+      0.0,
+      1.0,
+    );
 
     return MiningPanel(
       accent: miningTeal,
@@ -426,8 +427,8 @@ class MiningNetworkHealthCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Saúde da rede',
-            subtitle: 'Dificuldade, retarget e throughput recente.',
+            title: context.l10n.miningMetricsNetworkHealthTitle,
+            subtitle: context.l10n.miningMetricsNetworkHealthSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           ClipRRect(
@@ -474,7 +475,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Throughput',
+                      label: context.l10n.miningMetricsThroughput,
                       value:
                           '${snapshot.throughputTransactionsPerSecond.toStringAsFixed(1)} tx/s',
                       helper: 'média observada nos blocos visíveis',
@@ -484,7 +485,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Ocupação',
+                      label: context.l10n.miningMetricsOccupancy,
                       value: MiningFormatters.blockFill(
                         snapshot.recentAverageWeightRatio,
                       ),
@@ -495,7 +496,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Taxas no reward',
+                      label: context.l10n.miningMetricsFeesInReward,
                       value:
                           '${snapshot.rewardWindow.feeSharePercent.toStringAsFixed(1)}%',
                       helper:
@@ -506,7 +507,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Próximo ajuste',
+                      label: context.l10n.miningMetricsNextAdjustment,
                       value: snapshot.network.estimatedRetargetAt == null
                           ? 'estimando'
                           : MiningFormatters.shortDateTime(
@@ -530,10 +531,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
 class MiningLocalMonitorCard extends StatefulWidget {
   final MiningOperationState operation;
 
-  const MiningLocalMonitorCard({
-    super.key,
-    required this.operation,
-  });
+  const MiningLocalMonitorCard({super.key, required this.operation});
 
   @override
   State<MiningLocalMonitorCard> createState() => _MiningLocalMonitorCardState();
@@ -616,12 +614,14 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Monitor local',
+            title: context.l10n.miningMetricsLocalMonitorTitle,
             subtitle: isActive
-                ? 'Telemetria local estimada da operação ativa.'
-                : 'Nenhum worker local ativo.',
+                ? context.l10n.miningMetricsLocalMonitorActiveSubtitle
+                : context.l10n.miningMetricsLocalMonitorInactiveSubtitle,
             trailing: MiningStatusBadge(
-              label: isActive ? 'MINERANDO' : 'OFFLINE',
+              label: isActive
+                  ? context.l10n.miningMetricsMiningStatus
+                  : context.l10n.miningMetricsOfflineStatus,
               tone: isActive ? MiningStatusTone.live : MiningStatusTone.neutral,
               pulse: isActive,
             ),
@@ -640,7 +640,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Hashrate local',
+                      label: context.l10n.miningMetricsLocalHashrate,
                       value: isActive
                           ? MiningFormatters.hashrateFromTh(
                               operation.contractedHashrateTh,
@@ -656,7 +656,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Shares aceitos',
+                      label: context.l10n.miningMetricsAcceptedShares,
                       value: MiningFormatters.compactInt(acceptedShares),
                       helper:
                           '${MiningFormatters.percent(progress * 100)} do ciclo',
@@ -667,7 +667,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Shares rejeitados',
+                      label: context.l10n.miningMetricsRejectedShares,
                       value: MiningFormatters.compactInt(rejectedShares),
                       helper: isActive
                           ? 'taxa estimada ${(acceptedShares == 0 ? 0 : (rejectedShares / math.max(1, acceptedShares)) * 100).toStringAsFixed(2)}%'
@@ -681,7 +681,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: 'Temperatura',
+                      label: context.l10n.miningMetricsTemperature,
                       value: isActive
                           ? '${temperatureC.toStringAsFixed(1)} °C'
                           : 'n/d',
@@ -705,10 +705,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
 class MiningHashrateTrendCard extends StatelessWidget {
   final MiningDashboardSnapshot snapshot;
 
-  const MiningHashrateTrendCard({
-    super.key,
-    required this.snapshot,
-  });
+  const MiningHashrateTrendCard({super.key, required this.snapshot});
 
   @override
   Widget build(BuildContext context) {
@@ -730,13 +727,13 @@ class MiningHashrateTrendCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Tendência de hashrate',
-            subtitle: 'Curva recente da potência computacional da rede.',
+            title: context.l10n.miningMetricsHashrateTrendTitle,
+            subtitle: context.l10n.miningMetricsHashrateTrendSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           if (points.isEmpty)
             Text(
-              'Sem série temporal suficiente para traçar a curva.',
+              context.l10n.miningMetricsTrendEmpty,
               style: AppTypography.bodySmall.copyWith(color: miningMuted),
             )
           else
@@ -798,7 +795,8 @@ class MiningHashrateTrendCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               MiningFormatters.timeOfDay(
-                                  points[index].timestamp),
+                                points[index].timestamp,
+                              ),
                               style: miningMonoStyle(
                                 AppTypography.caption,
                                 color: miningMuted,
@@ -860,19 +858,16 @@ class MiningRecentBlocksCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const MiningSectionHeading(
-            title: 'Blocos recentes',
-            subtitle: 'Cadência, volume e ocupação em leitura curta.',
+          MiningSectionHeading(
+            title: context.l10n.miningMetricsRecentBlocksTitle,
+            subtitle: context.l10n.miningMetricsRecentBlocksSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           ...visible.map((block) {
             final highlight = highlightedHeights.contains(block.height);
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _RecentBlockTile(
-                block: block,
-                highlight: highlight,
-              ),
+              child: _RecentBlockTile(block: block, highlight: highlight),
             );
           }),
         ],
@@ -894,8 +889,10 @@ class MiningPoolDistributionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visible = pools.take(5).toList(growable: false);
-    final totalBlocks =
-        visible.fold<int>(0, (sum, pool) => sum + pool.blockCount);
+    final totalBlocks = visible.fold<int>(
+      0,
+      (sum, pool) => sum + pool.blockCount,
+    );
 
     return MiningPanel(
       accent: miningAmber,
@@ -903,11 +900,12 @@ class MiningPoolDistributionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: 'Pools dominantes',
-            subtitle: 'Participação recente, matching médio e blocos vazios.',
+            title: context.l10n.miningMetricsDominantPoolsTitle,
+            subtitle: context.l10n.miningMetricsDominantPoolsSubtitle,
             trailing: MiningStatusBadge(
-              label:
-                  '${viewData.leadingPoolSharePercent.toStringAsFixed(0)}% líder',
+              label: context.l10n.miningMetricsLeadingPool(
+                viewData.leadingPoolSharePercent.toStringAsFixed(0),
+              ),
               tone: MiningStatusTone.warning,
             ),
           ),
@@ -1034,7 +1032,7 @@ class MiningStateCard extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Tentar novamente'),
+              label: Text(context.l10n.miningContractRetry),
             ),
           ],
         ],
@@ -1057,10 +1055,7 @@ class _PrimaryHeroStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: miningInsetDecoration(
-        accent: miningBlue,
-        emphasized: true,
-      ),
+      decoration: miningInsetDecoration(accent: miningBlue, emphasized: true),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -1086,7 +1081,7 @@ class _PrimaryHeroStat extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 fontSize: 42,
                 height: 1.0,
-                letterSpacing: -1.2,
+                letterSpacing: 0,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -1105,10 +1100,7 @@ class _InfoPill extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoPill({
-    required this.label,
-    required this.value,
-  });
+  const _InfoPill({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1132,7 +1124,7 @@ class _InfoPill extends StatelessWidget {
               AppTypography.bodySmall,
               color: Colors.white,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
+              letterSpacing: 0,
             ),
           ),
         ],
@@ -1145,10 +1137,7 @@ class _RecentBlockTile extends StatelessWidget {
   final MiningBlockSnapshot block;
   final bool highlight;
 
-  const _RecentBlockTile({
-    required this.block,
-    required this.highlight,
-  });
+  const _RecentBlockTile({required this.block, required this.highlight});
 
   @override
   Widget build(BuildContext context) {
@@ -1175,7 +1164,7 @@ class _RecentBlockTile extends StatelessWidget {
                 style: miningMonoStyle(
                   AppTypography.bodyMedium,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
+                  letterSpacing: 0,
                 ),
               ),
             ),

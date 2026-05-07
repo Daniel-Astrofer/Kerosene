@@ -14,10 +14,11 @@ import 'package:teste/main.dart' show sharedPreferencesProvider;
 import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/widgets/state_feedback_view.dart';
 import 'package:teste/core/widgets/animated_typewriter_text.dart';
 import 'package:teste/core/theme/app_colors.dart';
@@ -43,6 +44,7 @@ import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/wallet/presentation/widgets/wallet_credit_card.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 import '../../../wallet/presentation/screens/create_wallet_screen.dart';
 import '../../../wallet/presentation/screens/deposit/deposit_amount_screen.dart';
 import '../../../wallet/presentation/screens/send_money_screen.dart';
@@ -65,37 +67,66 @@ final txPopupProvider = ChangeNotifierProvider<TxPopupNotifier>((ref) {
 const Color _homeBackgroundColor = authenticatedSurfaceBackgroundColor;
 const Color _homeLowerSurfaceColor = _homeBackgroundColor;
 
+bool _isLightningPaymentPayload(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+
+  final withoutPrefix = trimmed.toLowerCase().startsWith('lightning:')
+      ? trimmed.substring(10).trim()
+      : trimmed;
+  final lower = withoutPrefix.toLowerCase();
+
+  return RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(lower) ||
+      RegExp(r'^lnurl[0-9a-z]+$').hasMatch(lower);
+}
+
+bool _isOnChainPaymentPayload(String raw, String candidate) {
+  final trimmedRaw = raw.trim().toLowerCase();
+  final trimmedCandidate = candidate.trim();
+
+  return trimmedRaw.startsWith('bitcoin:') ||
+      RegExp(
+        r'^(1|3|bc1|m|n|2|tb1|bcrt1)[a-zA-HJ-NP-Z0-9]{20,90}$',
+      ).hasMatch(trimmedCandidate);
+}
+
+double? _extractLightningAmountBtc(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  final withoutPrefix = trimmed.toLowerCase().startsWith('lightning:')
+      ? trimmed.substring(10).trim()
+      : trimmed;
+  final match = RegExp(
+    r'^ln(?:bc|tb|bcrt)(\d+)([munp]?)1',
+  ).firstMatch(withoutPrefix.toLowerCase());
+  if (match == null) {
+    return null;
+  }
+
+  final amount = double.tryParse(match.group(1) ?? '');
+  if (amount == null || amount <= 0) {
+    return null;
+  }
+
+  final multiplier = switch (match.group(2)) {
+    'm' => 0.001,
+    'u' => 0.000001,
+    'n' => 0.000000001,
+    'p' => 0.000000000001,
+    _ => 1.0,
+  };
+  return amount * multiplier;
+}
+
 Route<T> _buildBottomUpRoute<T>({
   required WidgetBuilder builder,
   RouteSettings? settings,
 }) {
-  return PageRouteBuilder<T>(
-    settings: settings,
-    transitionDuration: const Duration(milliseconds: 320),
-    reverseTransitionDuration: const Duration(milliseconds: 240),
-    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      );
-
-      return FadeTransition(
-        opacity: Tween<double>(
-          begin: 0.78,
-          end: 1.0,
-        ).animate(curved),
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.08),
-            end: Offset.zero,
-          ).animate(curved),
-          child: child,
-        ),
-      );
-    },
-  );
+  return keroseneHorizontalRoute<T>(settings: settings, builder: builder);
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -131,12 +162,13 @@ class TxPopupNotifier extends ChangeNotifier {
     _dismissTimer = Timer(duration, hide);
   }
 
-  void show(
-      {required bool isSent,
-      required String label,
-      required String address,
-      required String amount,
-      required String time}) {
+  void show({
+    required bool isSent,
+    required String label,
+    required String address,
+    required String amount,
+    required String time,
+  }) {
     _dismissTimer?.cancel();
     _active = true;
     _status = TxPopupStatus.idle;
@@ -216,9 +248,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? '${sender.substring(0, 6)}...${sender.substring(sender.length - 4)}'
             : sender;
 
-        ref.read(txPopupProvider).show(
+        ref
+            .read(txPopupProvider)
+            .show(
               isSent: false,
-              label: 'Recebido',
+              label: context.l10n.homeTxReceived,
               address: shortAddress,
               amount: MoneyDisplay.formatAmountFromBtc(
                 btcAmount: next.amount,
@@ -228,7 +262,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 btcBrl: btcBrl,
                 signed: true,
               ),
-              time: 'agora',
+              time: context.l10n.homeNow,
             );
       },
     );
@@ -253,8 +287,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showWalletRequiredNotice() {
     AppNotice.showInfo(
       context,
-      title: 'Carteira necessária',
-      message: 'Selecione ou crie uma carteira antes de usar esta ação.',
+      title: context.l10n.homeWalletRequiredTitle,
+      message: context.l10n.homeWalletRequiredMessage,
     );
   }
 
@@ -298,9 +332,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<T?> _pushFromBottom<T>(WidgetBuilder builder) {
-    return Navigator.of(
-      context,
-    ).push<T>(_buildBottomUpRoute(builder: builder));
+    return Navigator.of(context).push<T>(_buildBottomUpRoute(builder: builder));
   }
 
   Future<void> _syncAfterFinancialAction() async {
@@ -339,14 +371,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final counterparty = result.receiver.isNotEmpty
           ? result.receiver
           : result.sender.isNotEmpty
-              ? result.sender
-              : 'Operação concluída';
+          ? result.sender
+          : context.l10n.apiDisplayCompleted;
 
       // Central notification removed per user request
 
-      ref.read(txPopupProvider).show(
+      ref
+          .read(txPopupProvider)
+          .show(
             isSent: true,
-            label: 'Enviado',
+            label: context.l10n.homeTxSent,
             address: _compactCounterparty(counterparty),
             amount: amountBtc > 0
                 ? MoneyDisplay.formatAmountFromBtc(
@@ -358,7 +392,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     signed: true,
                   )
                 : '--',
-            time: 'agora',
+            time: context.l10n.homeNow,
           );
       return;
     }
@@ -370,9 +404,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       // Central notification removed per user request
 
-      ref.read(txPopupProvider).show(
+      ref
+          .read(txPopupProvider)
+          .show(
             isSent: true,
-            label: 'Pago',
+            label: context.l10n.homeTxPaid,
             address: _compactCounterparty(counterparty),
             amount: result.amountBtc > 0
                 ? MoneyDisplay.formatAmountFromBtc(
@@ -384,7 +420,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     signed: true,
                   )
                 : '--',
-            time: 'agora',
+            time: context.l10n.homeNow,
           );
     }
   }
@@ -447,10 +483,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _openWithdrawFlow(
-        wallet: wallet,
-        entryMode: WithdrawEntryMode.onChain,
-      ),
+      _openWithdrawFlow(wallet: wallet, entryMode: WithdrawEntryMode.onChain),
     );
   }
 
@@ -464,10 +497,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _openWithdrawFlow(
-        wallet: wallet,
-        entryMode: WithdrawEntryMode.lightning,
-      ),
+      _openWithdrawFlow(wallet: wallet, entryMode: WithdrawEntryMode.lightning),
     );
   }
 
@@ -481,9 +511,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _pushFromBottom<void>(
-        (_) => ReceiveHubScreen(initialWallet: wallet),
-      ),
+      _pushFromBottom<void>((_) => ReceiveHubScreen(initialWallet: wallet)),
     );
   }
 
@@ -512,7 +540,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       AppNotice.showInfo(
         context,
         title: context.l10n.nfc,
-        message: 'NFC não está disponível neste dispositivo no momento.',
+        message: context.l10n.homeNfcUnavailable,
       );
       return;
     }
@@ -536,7 +564,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _routeSendPayload(wallet, payload);
   }
 
-  void _openSendPaymentLink(WalletState walletState) {
+  Future<void> _openSendPaymentLink(WalletState walletState) async {
     final wallet = _resolveActiveWallet(walletState);
     HapticFeedback.lightImpact();
 
@@ -545,146 +573,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
 
-    final controller = TextEditingController();
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final insets = MediaQuery.of(context).viewInsets.bottom;
-        return GlassContainer(
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            insets + AppSpacing.lg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Link de pagamento',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Cole o payload completo ou somente o ID do link para continuar.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onPrimary
-                          .withValues(alpha: 0.64),
-                      height: 1.4,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontFamily: 'JetBrainsMono',
-                    ),
-                decoration: InputDecoration(
-                  hintText: 'kerosene://payment/pay/abc123 ou abc123',
-                  hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.28),
-                      ),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.04),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton.icon(
-                onPressed: () {
-                  final normalized =
-                      _normalizePaymentLinkPayload(controller.text);
-                  if (normalized == null) {
-                    AppNotice.showWarning(
-                      context,
-                      title: 'Link inválido',
-                      message: 'Informe um link de pagamento válido.',
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context);
-                  _routeSendPayload(wallet, normalized);
-                },
-                icon: const Icon(LucideIcons.arrowUpRight),
-                label: const Text('CONTINUAR'),
-              ),
-            ],
-          ),
-        );
-      },
+    final payload = await _pushFromBottom<String>(
+      (_) => const _PaymentLinkEntryScreen(),
     );
-  }
 
-  String? _normalizePaymentLinkPayload(String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-    if (QrPaymentParser.extractPaymentLinkId(trimmed) != null) {
-      return trimmed;
-    }
-    if (QrPaymentParser.decode(trimmed) != null ||
-        trimmed.toLowerCase().startsWith('bitcoin:') ||
-        trimmed.toLowerCase().startsWith('lightning:') ||
-        _looksLikeLightningRequest(trimmed) ||
-        _looksLikeOnChainRequest(trimmed, trimmed)) {
-      return trimmed;
+    if (!mounted || payload == null || payload.trim().isEmpty) {
+      return;
     }
 
-    final uri = Uri.tryParse(trimmed);
-    if (uri != null && uri.pathSegments.isNotEmpty) {
-      final last = uri.pathSegments.last.trim();
-      if (last.isNotEmpty) {
-        return 'kerosene:link:$last';
-      }
-    }
-
-    return 'kerosene:link:$trimmed';
+    _routeSendPayload(wallet, payload);
   }
 
   void _routeSendPayload(Wallet wallet, String payload) {
@@ -694,12 +591,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     if (QrPaymentParser.extractPaymentLinkId(trimmed) != null) {
-      unawaited(
-        _openSendFlow(
-          wallet: wallet,
-          initialAddress: trimmed,
-        ),
-      );
+      unawaited(_openSendFlow(wallet: wallet, initialAddress: trimmed));
       return;
     }
 
@@ -707,11 +599,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final candidate = parsed?.address ?? trimmed;
 
     if (_looksLikeLightningRequest(candidate)) {
-      AppNotice.showInfo(
-        context,
-        title: context.l10n.lightning,
-        message:
-            'Envios Lightning ainda não estão disponíveis no backend atual. Use um destino on-chain ou transferência interna.',
+      unawaited(
+        _openWithdrawFlow(
+          wallet: wallet,
+          entryMode: WithdrawEntryMode.lightning,
+          initialDestination: candidate,
+          initialAmountBtc:
+              parsed?.amountBtc ?? _extractLightningAmountBtc(candidate),
+          initialDescription: parsed?.message ?? parsed?.label,
+        ),
       );
       return;
     }
@@ -721,7 +617,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _openWithdrawFlow(
           wallet: wallet,
           entryMode: WithdrawEntryMode.onChain,
-          initialDestination: trimmed,
+          initialDestination: candidate,
           initialAmountBtc: parsed?.amountBtc,
           initialDescription: parsed?.message,
         ),
@@ -739,27 +635,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   bool _looksLikeLightningRequest(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return false;
-    }
-
-    final withoutPrefix = trimmed.toLowerCase().startsWith('lightning:')
-        ? trimmed.substring(10).trim()
-        : trimmed;
-    final lower = withoutPrefix.toLowerCase();
-
-    return RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(lower) ||
-        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(lower);
+    return _isLightningPaymentPayload(value);
   }
 
   bool _looksLikeOnChainRequest(String raw, String candidate) {
-    final trimmedRaw = raw.trim().toLowerCase();
-    final trimmedCandidate = candidate.trim();
-
-    return trimmedRaw.startsWith('bitcoin:') ||
-        RegExp(r'^(1|3|bc1|m|n|2|tb1|bcrt1)[a-zA-HJ-NP-Z0-9]{20,90}$')
-            .hasMatch(trimmedCandidate);
+    return _isOnChainPaymentPayload(raw, candidate);
   }
 
   void _openDeposit(WalletState walletState) {
@@ -772,9 +652,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _pushFromBottom<void>(
-        (_) => DepositAmountScreen(wallet: wallet),
-      ),
+      _pushFromBottom<void>((_) => DepositAmountScreen(wallet: wallet)),
     );
   }
 
@@ -828,35 +706,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final actions = <_QuickActionData>[
       _QuickActionData(
         kind: _HomeActionIconKind.internalTransfer,
-        label: 'Enviar cheque',
-        subtitle: 'Transferência interna',
+        label: context.l10n.homeSendInternalLabel,
+        subtitle: context.l10n.homeSendInternalSubtitle,
         onTap: () => _openSend(walletState),
       ),
       _QuickActionData(
         kind: _HomeActionIconKind.sendOnChain,
-        label: 'Enviar onchain',
-        subtitle: 'Saque para endereço BTC',
+        label: context.l10n.homeSendOnchainLabel,
+        subtitle: context.l10n.homeSendOnchainSubtitle,
         onTap: () => _openSendOnChain(walletState),
       ),
       _QuickActionData(
         kind: _HomeActionIconKind.payLightning,
-        label: 'Enviar lightning',
-        subtitle: 'Invoice ou LNURL',
+        label: context.l10n.homeSendLightningLabel,
+        subtitle: context.l10n.homeSendLightningSubtitle,
         onTap: () => _openSendLightning(walletState),
       ),
       _QuickActionData(
         kind: _HomeActionIconKind.scanQr,
-        label: 'Escanear QR',
-        subtitle: 'Ler invoice ou endereco',
+        label: context.l10n.homeScanQrLabel,
+        subtitle: context.l10n.homeScanQrSubtitle,
         onTap: () {
           unawaited(_openSendQr(walletState));
         },
       ),
       _QuickActionData(
         kind: _HomeActionIconKind.payLink,
-        label: 'Link de pagamento',
-        subtitle: 'Checkout interno ou ID',
-        onTap: () => _openSendPaymentLink(walletState),
+        label: context.l10n.homePaymentLinkLabel,
+        subtitle: context.l10n.homePaymentLinkSubtitle,
+        onTap: () {
+          unawaited(_openSendPaymentLink(walletState));
+        },
       ),
     ];
 
@@ -864,8 +744,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       actions.add(
         _QuickActionData(
           kind: _HomeActionIconKind.sendNfc,
-          label: 'Pagar por NFC',
-          subtitle: 'Aproxime para iniciar',
+          label: context.l10n.homeNfcPayLabel,
+          subtitle: context.l10n.homeNfcPaySubtitle,
           onTap: () {
             unawaited(_openSendNfc(walletState));
           },
@@ -880,8 +760,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sidebarOpen = ref.watch(notificationSidebarProvider);
-    final navigationClearance =
-        AppPrimaryNavigationBar.scaffoldBottomClearance(context);
+    final navigationClearance = AppPrimaryNavigationBar.scaffoldBottomClearance(
+      context,
+    );
+    final responsive = context.responsive;
+    final contentMaxWidth = responsive.mobileContentMaxWidth;
+    final pageHorizontalPadding = responsive.horizontalPadding;
 
     final authState = ref.watch(authControllerProvider);
     final walletState = ref.watch(walletProvider);
@@ -894,10 +778,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         transactionHistoryAsync.asData?.value ?? const <Transaction>[];
     final hasLoadedTransactionHistory = transactionHistoryAsync.hasValue;
     final hasTransactions = transactionHistory.isNotEmpty;
-    final authenticatedUserId =
-        authState is AuthAuthenticated ? authState.user.id : null;
-    final hasSeenFirstUseActionPanel =
-        _hasSeenFirstUseActionPanel(authenticatedUserId);
+    final authenticatedUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : null;
+    final hasSeenFirstUseActionPanel = _hasSeenFirstUseActionPanel(
+      authenticatedUserId,
+    );
 
     if (authenticatedUserId == null) {
       _firstUseActionPanelUserId = null;
@@ -911,7 +797,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _activateFirstUseActionPanel(authenticatedUserId);
     }
 
-    final showFirstUseReadyPanel = authenticatedUserId != null &&
+    final showFirstUseReadyPanel =
+        authenticatedUserId != null &&
         isReadyActionsVariant &&
         !hasTransactions &&
         _firstUseActionPanelUserId == authenticatedUserId;
@@ -924,8 +811,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (authState is AuthAuthenticated) {
       final fullName = authState.user.name.trim();
       if (fullName.isNotEmpty) {
-        userName =
-            fullName.split(' ').first; // Pega o primeiro nome para UI limpa
+        userName = fullName
+            .split(' ')
+            .first; // Pega o primeiro nome para UI limpa
       }
     } else if (activeWallet != null) {
       userName = activeWallet.name;
@@ -956,7 +844,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 540),
+                          constraints: BoxConstraints(
+                            maxWidth: contentMaxWidth,
+                          ),
                           child: _HomeBalanceSection(
                             userName: userName,
                             activeWallet: activeWallet,
@@ -968,112 +858,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         color: _homeLowerSurfaceColor,
                         child: Center(
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 540),
+                            constraints: BoxConstraints(
+                              maxWidth: contentMaxWidth,
+                            ),
                             child: Column(
                               children: [
                                 if (showPrimaryActionPanel) ...[
                                   const SizedBox(height: AppSpacing.xl),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.lg,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: pageHorizontalPadding,
                                     ),
                                     child: _PrimaryActionPanel(
                                       icon: !hasWallet
                                           ? LucideIcons.wallet
                                           : !hasBalance
-                                              ? LucideIcons.download
-                                              : LucideIcons.arrowUpRight,
+                                          ? LucideIcons.download
+                                          : LucideIcons.arrowUpRight,
                                       title: !hasWallet
-                                          ? 'Estruture sua carteira principal'
+                                          ? context
+                                                .l10n
+                                                .homePrimaryNoWalletTitle
                                           : !hasBalance
-                                              ? 'Carteira pronta para uso'
-                                              : 'Operacoes prontas para executar',
+                                          ? context
+                                                .l10n
+                                                .homePrimaryReadyNoBalanceTitle
+                                          : context.l10n.homePrimaryReadyTitle,
                                       subtitle: !hasWallet
-                                          ? 'Crie sua carteira para habilitar recebimentos, transferencias e monitoramento com seguranca.'
+                                          ? context
+                                                .l10n
+                                                .homePrimaryNoWalletSubtitle
                                           : !hasBalance
-                                              ? 'Você pode depositar quando quiser e acompanhar a confirmacao da rede em tempo real.'
-                                              : 'Acesse as operacoes essenciais da carteira com confirmacao clara e fluxo objetivo.',
+                                          ? context
+                                                .l10n
+                                                .homePrimaryReadyNoBalanceSubtitle
+                                          : context
+                                                .l10n
+                                                .homePrimaryReadySubtitle,
                                       primaryLabel: !hasWallet
-                                          ? 'Criar carteira'
+                                          ? context.l10n.homeCreateWalletAction
                                           : !hasBalance
-                                              ? 'Depositar fundos'
-                                              : 'Enviar BTC',
+                                          ? context.l10n.homeDepositFundsAction
+                                          : context.l10n.homeSendBtcAction,
                                       primaryIconKind: !hasWallet
                                           ? _HomeActionIconKind.createWallet
                                           : !hasBalance
-                                              ? _HomeActionIconKind
-                                                  .primaryDeposit
-                                              : _HomeActionIconKind.primarySend,
+                                          ? _HomeActionIconKind.primaryDeposit
+                                          : _HomeActionIconKind.primarySend,
                                       primaryIcon: !hasWallet
                                           ? LucideIcons.plus
                                           : !hasBalance
-                                              ? LucideIcons.download
-                                              : LucideIcons.arrowUpRight,
+                                          ? LucideIcons.download
+                                          : LucideIcons.arrowUpRight,
                                       onPrimaryTap: !hasWallet
                                           ? _openCreateWallet
                                           : !hasBalance
-                                              ? () => _openDeposit(
-                                                    walletState,
-                                                  )
-                                              : () => _openSend(
-                                                    walletState,
-                                                  ),
+                                          ? () => _openDeposit(walletState)
+                                          : () => _openSend(walletState),
                                       secondaryLabel: hasWallet && hasBalance
-                                          ? 'Receber BTC'
+                                          ? context.l10n.homeReceiveBtcAction
                                           : hasWallet
-                                              ? 'Ver depositos'
-                                              : null,
+                                          ? context.l10n.homeViewDepositsAction
+                                          : null,
                                       secondaryIcon: hasWallet && hasBalance
                                           ? LucideIcons.arrowDownLeft
                                           : hasWallet
-                                              ? LucideIcons.list
-                                              : null,
+                                          ? LucideIcons.list
+                                          : null,
                                       secondaryIconKind: hasWallet && hasBalance
                                           ? _HomeActionIconKind.primaryReceive
                                           : hasWallet
-                                              ? _HomeActionIconKind.viewDeposits
-                                              : null,
+                                          ? _HomeActionIconKind.viewDeposits
+                                          : null,
                                       onSecondaryTap: hasWallet && hasBalance
-                                          ? () => _openReceiveHub(
-                                                walletState,
-                                              )
+                                          ? () => _openReceiveHub(walletState)
                                           : hasWallet
-                                              ? () => unawaited(
-                                                    _pushFromBottom<void>(
-                                                      (_) =>
-                                                          const DepositsScreen(
-                                                        showPrimaryNavigation:
-                                                            true,
-                                                      ),
-                                                    ),
-                                                  )
-                                              : null,
+                                          ? () => unawaited(
+                                              _pushFromBottom<void>(
+                                                (_) => const DepositsScreen(
+                                                  showPrimaryNavigation: true,
+                                                ),
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                   ),
                                 ],
                                 if (hasWallet) ...[
                                   const SizedBox(height: AppSpacing.xl),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.lg,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: pageHorizontalPadding,
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         _HomeActionSection(
-                                          title: 'Enviar',
+                                          title: context.l10n.homeSendTitle,
                                           actions: _buildSendActions(
                                             walletState,
                                           ),
                                         ),
-                                        const SizedBox(
-                                          height: AppSpacing.xl,
-                                        ),
+                                        const SizedBox(height: AppSpacing.xl),
                                         _ReceiveTransferTextPanel(
-                                          onTap: () => _openReceiveHub(
-                                            walletState,
-                                          ),
+                                          onTap: () =>
+                                              _openReceiveHub(walletState),
                                         ),
                                       ],
                                     ),
@@ -1085,16 +975,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 const SizedBox(height: AppSpacing.sm),
                                 Center(
                                   child: ConstrainedBox(
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 500),
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 500,
+                                    ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal:
-                                                AppSpacing.xl + AppSpacing.sm,
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: pageHorizontalPadding,
                                           ),
                                           child: Column(
                                             crossAxisAlignment:
@@ -1103,11 +993,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               Text(
                                                 context.l10n.recentTransactions,
                                                 style: theme
-                                                    .textTheme.titleMedium!
+                                                    .textTheme
+                                                    .titleMedium!
                                                     .copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0,
-                                                ),
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      letterSpacing: 0,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -1141,10 +1033,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          const _TxPopupWidget(
-            restingTop: -92.0,
-            activeTop: 12.0,
-          ),
+          const _TxPopupWidget(restingTop: -92.0, activeTop: 12.0),
           Positioned.fill(
             child: IgnorePointer(
               ignoring: !sidebarOpen,
@@ -1192,6 +1081,460 @@ class _HomeRealtimeBootstrap extends ConsumerWidget {
   }
 }
 
+enum _PaymentPayloadKind {
+  empty,
+  paymentLink,
+  onChain,
+  lightning,
+  internal,
+  invalid,
+}
+
+class _PaymentPayloadDraft {
+  final _PaymentPayloadKind kind;
+  final String normalizedPayload;
+  final String title;
+  final String destinationLabel;
+  final String? supportingLabel;
+  final String actionLabel;
+  final double? amountBtc;
+  final IconData icon;
+
+  const _PaymentPayloadDraft({
+    required this.kind,
+    required this.normalizedPayload,
+    required this.title,
+    required this.destinationLabel,
+    required this.actionLabel,
+    required this.icon,
+    this.supportingLabel,
+    this.amountBtc,
+  });
+
+  bool get canContinue =>
+      kind != _PaymentPayloadKind.empty && kind != _PaymentPayloadKind.invalid;
+
+  bool get isPaymentLink => kind == _PaymentPayloadKind.paymentLink;
+
+  String? get paymentLinkId => isPaymentLink
+      ? QrPaymentParser.extractPaymentLinkId(normalizedPayload)
+      : null;
+
+  static _PaymentPayloadDraft analyze(BuildContext context, String raw) {
+    final l10n = context.l10n;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return _PaymentPayloadDraft(
+        kind: _PaymentPayloadKind.empty,
+        normalizedPayload: '',
+        title: l10n.homePendingLinkTitle,
+        destinationLabel: l10n.homePendingLinkMessage,
+        actionLabel: l10n.homePayloadActionContinue,
+        icon: LucideIcons.link2,
+      );
+    }
+
+    final explicitLinkId = QrPaymentParser.extractPaymentLinkId(trimmed);
+    if (explicitLinkId != null) {
+      return _paymentLink(context, explicitLinkId, normalizedPayload: trimmed);
+    }
+
+    final parsed = QrPaymentParser.decode(trimmed);
+    final candidate = parsed?.address ?? trimmed;
+    if (_isLightningPaymentPayload(candidate)) {
+      final normalized = candidate.toLowerCase().startsWith('lightning:')
+          ? candidate.substring(10).trim()
+          : candidate;
+      return _PaymentPayloadDraft(
+        kind: _PaymentPayloadKind.lightning,
+        normalizedPayload: normalized,
+        title: l10n.homeLightningPaymentTitle,
+        destinationLabel: _shortPaymentValue(normalized),
+        supportingLabel:
+            parsed?.message ?? parsed?.label ?? l10n.homeInvoiceOrLnurl,
+        actionLabel: l10n.homePayloadActionContinueLightning,
+        amountBtc: parsed?.amountBtc ?? _extractLightningAmountBtc(normalized),
+        icon: LucideIcons.zap,
+      );
+    }
+
+    if (_isOnChainPaymentPayload(trimmed, candidate)) {
+      return _PaymentPayloadDraft(
+        kind: _PaymentPayloadKind.onChain,
+        normalizedPayload: trimmed,
+        title: l10n.homeOnchainPaymentTitle,
+        destinationLabel: _shortPaymentValue(candidate),
+        supportingLabel:
+            parsed?.message ?? parsed?.label ?? l10n.homeBitcoinAddress,
+        actionLabel: l10n.homePayloadActionContinueOnchain,
+        amountBtc: parsed?.amountBtc,
+        icon: LucideIcons.link,
+      );
+    }
+
+    if (trimmed.toLowerCase().startsWith('kerosene:pay') &&
+        parsed != null &&
+        parsed.address.trim().isNotEmpty) {
+      return _PaymentPayloadDraft(
+        kind: _PaymentPayloadKind.internal,
+        normalizedPayload: trimmed,
+        title: l10n.homeInternalTransferTitle,
+        destinationLabel: parsed.label?.trim().isNotEmpty == true
+            ? parsed.label!.trim()
+            : parsed.address.trim(),
+        supportingLabel: parsed.address.trim(),
+        actionLabel: l10n.homePayloadActionContinueInternal,
+        amountBtc: parsed.amountBtc,
+        icon: LucideIcons.repeat2,
+      );
+    }
+
+    if (trimmed.startsWith('@') &&
+        RegExp(r'^@[a-zA-Z0-9_]{3,30}$').hasMatch(trimmed)) {
+      final username = trimmed.substring(1);
+      return _PaymentPayloadDraft(
+        kind: _PaymentPayloadKind.internal,
+        normalizedPayload: username,
+        title: l10n.homeInternalTransferTitle,
+        destinationLabel: '@$username',
+        supportingLabel: l10n.homeKeroseneUser,
+        actionLabel: l10n.homePayloadActionContinueInternal,
+        icon: LucideIcons.repeat2,
+      );
+    }
+
+    if (RegExp(r'\s').hasMatch(trimmed)) {
+      return _PaymentPayloadDraft(
+        kind: _PaymentPayloadKind.invalid,
+        normalizedPayload: '',
+        title: l10n.homeInvalidLinkTitle,
+        destinationLabel: l10n.homeInvalidLinkMessage,
+        actionLabel: l10n.homePayloadActionContinue,
+        icon: LucideIcons.alertCircle,
+      );
+    }
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.scheme.isNotEmpty && uri.pathSegments.isNotEmpty) {
+      final last = uri.pathSegments.last.trim();
+      if (last.isNotEmpty) {
+        return _paymentLink(context, last);
+      }
+    }
+
+    return _paymentLink(context, trimmed);
+  }
+
+  static _PaymentPayloadDraft _paymentLink(
+    BuildContext context,
+    String id, {
+    String? normalizedPayload,
+  }) {
+    final l10n = context.l10n;
+    final normalizedId = id.trim();
+    return _PaymentPayloadDraft(
+      kind: _PaymentPayloadKind.paymentLink,
+      normalizedPayload: normalizedPayload ?? 'kerosene:link:$normalizedId',
+      title: l10n.homeInternalLinkTitle,
+      destinationLabel: _shortPaymentValue(normalizedId),
+      supportingLabel: l10n.homePaymentId,
+      actionLabel: l10n.homePayloadActionLoadLink,
+      icon: LucideIcons.link2,
+    );
+  }
+}
+
+String _shortPaymentValue(String value) {
+  final trimmed = value.trim();
+  if (trimmed.length <= 34) {
+    return trimmed;
+  }
+  return '${trimmed.substring(0, 18)}...${trimmed.substring(trimmed.length - 10)}';
+}
+
+class _PaymentLinkEntryScreen extends ConsumerStatefulWidget {
+  const _PaymentLinkEntryScreen();
+
+  @override
+  ConsumerState<_PaymentLinkEntryScreen> createState() =>
+      _PaymentLinkEntryScreenState();
+}
+
+class _PaymentLinkEntryScreenState
+    extends ConsumerState<_PaymentLinkEntryScreen> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData('text/plain');
+    final text = data?.text?.trim();
+    if (text == null || text.isEmpty || !mounted) {
+      return;
+    }
+
+    HapticFeedback.selectionClick();
+    setState(() {
+      _controller.text = text;
+      _controller.selection = TextSelection.collapsed(offset: text.length);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = _PaymentPayloadDraft.analyze(context, _controller.text);
+    final linkId = draft.paymentLinkId;
+    final linkAsync = linkId == null
+        ? null
+        : ref.watch(paymentLinkDetailProvider(linkId));
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
+
+    return ReceiveFlowScaffold(
+      title: context.l10n.homePaymentLinkTitle,
+      subtitle: context.l10n.homePaymentLinkSubtitle,
+      bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ReceiveFlowPanel(
+            backgroundColor: receiveFlowPanelAltColor,
+            padding: EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 8),
+                  child: ReceiveFlowSectionLabel(
+                    context.l10n.homePayloadLabel.toUpperCase(),
+                  ),
+                ),
+                const Divider(height: 1, color: receiveFlowDividerColor),
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  minLines: 4,
+                  maxLines: 7,
+                  onChanged: (_) => setState(() {}),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: receiveFlowTextColor,
+                    fontFamily: 'JetBrainsMono',
+                    height: 1.35,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: context.l10n.homePayloadHint,
+                    hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: receiveFlowFaintTextColor,
+                      height: 1.35,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ReceiveFlowSecondaryButton(
+            label: context.l10n.homePasteAction.toUpperCase(),
+            icon: LucideIcons.clipboardPaste,
+            onTap: _pasteFromClipboard,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _PaymentPayloadPreview(
+            draft: draft,
+            linkAsync: linkAsync,
+            selectedCurrency: selectedCurrency,
+            btcUsd: btcUsd,
+            btcEur: btcEur,
+            btcBrl: btcBrl,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          ReceiveFlowPrimaryButton(
+            label: draft.actionLabel,
+            icon: LucideIcons.arrowRight,
+            onTap: draft.canContinue
+                ? () => Navigator.of(context).pop(draft.normalizedPayload)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentPayloadPreview extends StatelessWidget {
+  final _PaymentPayloadDraft draft;
+  final AsyncValue<PaymentLink>? linkAsync;
+  final Currency selectedCurrency;
+  final double? btcUsd;
+  final double? btcEur;
+  final double? btcBrl;
+
+  const _PaymentPayloadPreview({
+    required this.draft,
+    required this.linkAsync,
+    required this.selectedCurrency,
+    required this.btcUsd,
+    required this.btcEur,
+    required this.btcBrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final link = linkAsync?.asData?.value;
+    final amountBtc = link?.amountBtc ?? draft.amountBtc;
+    final amountLabel = amountBtc != null && amountBtc > 0
+        ? MoneyDisplay.formatAmountFromBtc(
+            btcAmount: amountBtc,
+            currency: selectedCurrency,
+            btcUsd: btcUsd,
+            btcEur: btcEur,
+            btcBrl: btcBrl,
+          )
+        : draft.isPaymentLink
+        ? context.l10n.homeAmountFromLink
+        : context.l10n.homeAmountNotProvided;
+    final destination = link?.isInternalPaymentRequest == true
+        ? (link!.destinationHash?.trim().isNotEmpty == true
+              ? _shortPaymentValue(link.destinationHash!)
+              : context.l10n.homeDestinationLocked)
+        : draft.destinationLabel;
+    final support = linkAsync?.isLoading == true
+        ? context.l10n.homeLoadingLinkData
+        : linkAsync?.hasError == true
+        ? context.l10n.homeLinkValidationLater
+        : link?.description.trim().isNotEmpty == true
+        ? link!.description.trim()
+        : draft.supportingLabel;
+
+    return ReceiveFlowPanel(
+      backgroundColor: receiveFlowPanelColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: receiveFlowPanelRaisedColor,
+                  border: Border.all(color: receiveFlowBorderStrongColor),
+                ),
+                child: Icon(draft.icon, color: receiveFlowTextColor, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      draft.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                    ),
+                    if (support != null && support.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        support,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: receiveFlowMutedTextColor,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _PaymentPreviewRow(
+            label: context.l10n.homeNetworkLabel,
+            value: _networkLabel(context, draft.kind),
+          ),
+          const ReceiveFlowDivider(),
+          _PaymentPreviewRow(
+            label: context.l10n.homeDestinationLabel,
+            value: destination,
+          ),
+          const ReceiveFlowDivider(),
+          _PaymentPreviewRow(
+            label: context.l10n.homeAmountLabel,
+            value: amountLabel,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _networkLabel(BuildContext context, _PaymentPayloadKind kind) {
+    return switch (kind) {
+      _PaymentPayloadKind.paymentLink => context.l10n.homeNetworkInternal,
+      _PaymentPayloadKind.onChain => context.l10n.homeNetworkOnchain,
+      _PaymentPayloadKind.lightning => context.l10n.homeNetworkLightning,
+      _PaymentPayloadKind.internal => context.l10n.homeNetworkInternal,
+      _PaymentPayloadKind.invalid => context.l10n.homeNetworkInvalid,
+      _PaymentPayloadKind.empty => context.l10n.homeNetworkWaiting,
+    };
+  }
+}
+
+class _PaymentPreviewRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _PaymentPreviewRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 11),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 84,
+            child: Text(
+              label.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: receiveFlowFaintTextColor,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: receiveFlowTextColor,
+                fontFamily: value.length > 18 ? 'JetBrainsMono' : null,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HomeBalanceSection extends ConsumerWidget {
   final String userName;
   final Wallet? activeWallet;
@@ -1207,6 +1550,7 @@ class _HomeBalanceSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final responsive = context.responsive;
     final selectedCurrency = ref.watch(currencyProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
     final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
@@ -1214,8 +1558,9 @@ class _HomeBalanceSection extends ConsumerWidget {
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
     final activeBalanceBtc = activeWallet?.balance ?? 0.0;
-    final quoteCurrency =
-        selectedCurrency == Currency.btc ? Currency.brl : selectedCurrency;
+    final quoteCurrency = selectedCurrency == Currency.btc
+        ? Currency.brl
+        : selectedCurrency;
     final hasSelectedQuote = switch (quoteCurrency) {
       Currency.btc => true,
       Currency.usd => btcUsd != null && btcUsd > 0,
@@ -1232,17 +1577,24 @@ class _HomeBalanceSection extends ConsumerWidget {
     final convertedBalanceLabel = balanceSettings.isHidden
         ? '${MoneyDisplay.tickerSymbolFor(quoteCurrency)} ••••••••'
         : hasSelectedQuote
-            ? MoneyDisplay.format(
-                amount: convertedBalanceValue,
-                currency: quoteCurrency,
-              )
-            : '${quoteCurrency.code} indisponivel';
+        ? MoneyDisplay.format(
+            amount: convertedBalanceValue,
+            currency: quoteCurrency,
+          )
+        : '${quoteCurrency.code} indisponivel';
     return ColoredBox(
       color: _homeBackgroundColor,
       child: SizedBox(
-        height: 316,
+        height: responsive.isTinyPhone
+            ? 292
+            : (responsive.isCompact ? 308 : 316),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          padding: EdgeInsets.fromLTRB(
+            responsive.horizontalPadding,
+            responsive.isTinyPhone ? 14 : 18,
+            responsive.horizontalPadding,
+            responsive.isTinyPhone ? 22 : 28,
+          ),
           child: Column(
             children: [
               SizedBox(
@@ -1292,9 +1644,7 @@ class _HomeBalanceSection extends ConsumerWidget {
                             backgroundColor: const Color(0xFF11151A),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
-                              side: const BorderSide(
-                                color: Color(0xFF242A31),
-                              ),
+                              side: const BorderSide(color: Color(0xFF242A31)),
                             ),
                           ),
                         ),
@@ -1359,7 +1709,12 @@ class _HomeBalanceSection extends ConsumerWidget {
                     },
                     style: AppTypography.amountInput(isBtc: true).copyWith(
                       color: colorScheme.onPrimary.withValues(alpha: 0.94),
-                      fontSize: 42, // Adjusted for main dashboard balance
+                      fontSize: responsive.compactFontSize(
+                        tiny: 34,
+                        compact: 38,
+                        regular: 42,
+                        wide: 46,
+                      ),
                       letterSpacing: 0,
                     ),
                   ),
@@ -1388,10 +1743,7 @@ class _BalanceVisibilityButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _BalanceVisibilityButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _BalanceVisibilityButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1475,12 +1827,10 @@ class _DraggableWalletCardState extends State<_DraggableWalletCard>
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    _springAnimation = Tween<Offset>(
-      begin: Offset(_tiltX, _tiltY),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _springController, curve: Curves.easeOutBack),
-    );
+    _springAnimation =
+        Tween<Offset>(begin: Offset(_tiltX, _tiltY), end: Offset.zero).animate(
+          CurvedAnimation(parent: _springController, curve: Curves.easeOutBack),
+        );
     _springController.forward(from: 0);
   }
 
@@ -1505,8 +1855,8 @@ class _DraggableWalletCardState extends State<_DraggableWalletCard>
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: SizedBox(
-              width: 303,
-              height: 191,
+              width: 336,
+              height: 190,
               child: widget.activeWallet != null
                   ? WalletCreditCard(
                       wallet: widget.activeWallet,
@@ -1535,10 +1885,7 @@ class _PriceTick {
   final DateTime timestamp;
   final double price;
 
-  const _PriceTick({
-    required this.timestamp,
-    required this.price,
-  });
+  const _PriceTick({required this.timestamp, required this.price});
 }
 
 class _HomeLiveBitcoinBackdrop extends ConsumerStatefulWidget {
@@ -1654,12 +2001,15 @@ class _HomeLiveBitcoinBackdropState
 
   @override
   Widget build(BuildContext context) {
-    final trendIsUp = _priceHistory.length < 2 ||
+    final trendIsUp =
+        _priceHistory.length < 2 ||
         _priceHistory.last.price >= _priceHistory.first.price;
-    final lineColor =
-        trendIsUp ? const Color(0xFF15D07A) : const Color(0xFFD84C5D);
-    final lineGlowColor =
-        trendIsUp ? const Color(0x4515D07A) : const Color(0x45D84C5D);
+    final lineColor = trendIsUp
+        ? const Color(0xFF15D07A)
+        : const Color(0xFFD84C5D);
+    final lineGlowColor = trendIsUp
+        ? const Color(0x4515D07A)
+        : const Color(0x45D84C5D);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -1700,12 +2050,14 @@ class _HomeLiveBitcoinPainter extends CustomPainter {
       return;
     }
 
-    final windowStart =
-        now.subtract(_HomeLiveBitcoinBackdropState._historyWindow);
-    final visibleTicks = history
-        .where((tick) => !tick.timestamp.isBefore(windowStart))
-        .toList(growable: false)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final windowStart = now.subtract(
+      _HomeLiveBitcoinBackdropState._historyWindow,
+    );
+    final visibleTicks =
+        history
+            .where((tick) => !tick.timestamp.isBefore(windowStart))
+            .toList(growable: false)
+          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     if (visibleTicks.length < 2) {
       canvas.restore();
@@ -1755,16 +2107,18 @@ class _HomeLiveBitcoinPainter extends CustomPainter {
       final x = filtered.length == 1
           ? size.width / 2
           : -xOverscan +
-              (i / (filtered.length - 1)) * (size.width + (xOverscan * 2));
+                (i / (filtered.length - 1)) * (size.width + (xOverscan * 2));
       final clampedPrice = smoothedPrices[i].clamp(
         center - displayHalfRange,
         center + displayHalfRange,
       );
-      final normalized = ((clampedPrice - (center - displayHalfRange)) /
-              (displayHalfRange * 2))
-          .clamp(0.0, 1.0);
+      final normalized =
+          ((clampedPrice - (center - displayHalfRange)) /
+                  (displayHalfRange * 2))
+              .clamp(0.0, 1.0);
       final softened = 0.5 + (math.sin((normalized - 0.5) * math.pi) * 0.5);
-      final y = (size.height - verticalPadding) -
+      final y =
+          (size.height - verticalPadding) -
           (softened * (size.height - (verticalPadding * 2)));
       points.add(Offset(x, y));
     }
@@ -1777,12 +2131,7 @@ class _HomeLiveBitcoinPainter extends CustomPainter {
         (current.dx + next.dx) / 2,
         (current.dy + next.dy) / 2,
       );
-      path.quadraticBezierTo(
-        current.dx,
-        current.dy,
-        midpoint.dx,
-        midpoint.dy,
-      );
+      path.quadraticBezierTo(current.dx, current.dy, midpoint.dx, midpoint.dy);
     }
     path.lineTo(points.last.dx, points.last.dy);
 
@@ -1837,16 +2186,23 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
   void initState() {
     super.initState();
 
-    _spinController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 1))
-          ..repeat();
-    _spinAnimation =
-        Tween<double>(begin: 0, end: 2 * 3.14159265).animate(_spinController);
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+    _spinAnimation = Tween<double>(
+      begin: 0,
+      end: 2 * 3.14159265,
+    ).animate(_spinController);
 
     _slideController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
-    _slideAnimation =
-        CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic);
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _slideAnimation = CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -1884,17 +2240,17 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
         final accent = popupState.status == TxPopupStatus.loading
             ? theme.colorScheme.primary
             : popupState.status == TxPopupStatus.success
-                ? AppColors.success
-                : popupState.isSent
-                    ? AppColors.warning
-                    : AppColors.success;
+            ? AppColors.success
+            : popupState.isSent
+            ? AppColors.warning
+            : AppColors.success;
         final iconData = popupState.status == TxPopupStatus.loading
             ? Icons.sync_rounded
             : popupState.status == TxPopupStatus.success
-                ? Icons.check_rounded
-                : (popupState.isSent
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded);
+            ? Icons.check_rounded
+            : (popupState.isSent
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded);
 
         return Positioned(
           top: topPos,
@@ -1950,8 +2306,9 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
                                       angle: _spinAnimation.value,
                                       child: CustomPaint(
                                         size: const Size(24, 24),
-                                        painter:
-                                            _SpinningArcPainter(color: accent),
+                                        painter: _SpinningArcPainter(
+                                          color: accent,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1959,8 +2316,8 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
                                   iconData,
                                   size:
                                       popupState.status == TxPopupStatus.success
-                                          ? 16
-                                          : 14,
+                                      ? 16
+                                      : 14,
                                   color: accent,
                                 ),
                               ],
@@ -2070,32 +2427,48 @@ class _SpinningArcPainter extends CustomPainter {
 class _TransactionsList extends ConsumerWidget {
   const _TransactionsList();
 
-  static String _formatDate(DateTime dt) {
+  static String _formatDate(BuildContext context, DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return 'agora';
-    if (diff.inHours < 1) return '${diff.inMinutes}m atrás';
-    if (diff.inDays < 1) return '${diff.inHours}h atrás';
-    if (diff.inDays == 1) return 'Ontem ${_pad(dt.hour)}:${_pad(dt.minute)}';
+    if (diff.inMinutes < 1) return context.l10n.homeNow;
+    if (diff.inHours < 1) return context.l10n.homeMinutesAgo(diff.inMinutes);
+    if (diff.inDays < 1) return context.l10n.homeHoursAgo(diff.inHours);
+    if (diff.inDays == 1) {
+      return context.l10n.homeYesterdayAt(
+        '${_pad(dt.hour)}:${_pad(dt.minute)}',
+      );
+    }
     return '${_pad(dt.day)}/${_pad(dt.month)} ${_pad(dt.hour)}:${_pad(dt.minute)}';
   }
 
   static String _pad(int v) => v.toString().padLeft(2, '0');
 
-  static _StatusStyle _statusStyle(TransactionStatus s) {
+  static _StatusStyle _statusStyle(BuildContext context, TransactionStatus s) {
     switch (s) {
       case TransactionStatus.pending:
-        return const _StatusStyle(
-            'Pendente', Color(0xFFC6A96B), LucideIcons.hourglass);
+        return _StatusStyle(
+          context.l10n.pending,
+          Color(0xFFC6A96B),
+          LucideIcons.hourglass,
+        );
       case TransactionStatus.confirming:
-        return const _StatusStyle(
-            'Confirmando', Color(0xFFC6A96B), LucideIcons.loader2);
+        return _StatusStyle(
+          context.l10n.apiDisplayConfirming,
+          Color(0xFFC6A96B),
+          LucideIcons.loader2,
+        );
       case TransactionStatus.confirmed:
-        return const _StatusStyle(
-            'Confirmada', Color(0xFFA8C7B1), LucideIcons.clipboardCheck);
+        return _StatusStyle(
+          context.l10n.apiDisplayCompleted,
+          Color(0xFFA8C7B1),
+          LucideIcons.clipboardCheck,
+        );
       case TransactionStatus.failed:
-        return const _StatusStyle(
-            'Cancelada', Color(0xFFD59A9A), LucideIcons.clipboardX);
+        return _StatusStyle(
+          context.l10n.apiDisplayCancelled,
+          Color(0xFFD59A9A),
+          LucideIcons.clipboardX,
+        );
     }
   }
 
@@ -2105,13 +2478,16 @@ class _TransactionsList extends ConsumerWidget {
     final walletState = ref.watch(walletProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final responsive = context.responsive;
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
     final activeWallet = walletState is WalletLoaded
         ? walletState.selectedWallet ??
-            (walletState.wallets.isNotEmpty ? walletState.wallets.first : null)
+              (walletState.wallets.isNotEmpty
+                  ? walletState.wallets.first
+                  : null)
         : null;
 
     return filteredtxsAsync.when(
@@ -2121,23 +2497,38 @@ class _TransactionsList extends ConsumerWidget {
           final hasBalance = (activeWallet?.balance ?? 0) > 0;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            child: StateFeedbackView.empty(
+            padding: EdgeInsets.fromLTRB(
+              responsive.horizontalPadding,
+              AppSpacing.md,
+              responsive.horizontalPadding,
+              AppSpacing.xl,
+            ),
+            child: _HomeEmptyTransactionsPanel(
+              icon: !hasWallet
+                  ? LucideIcons.wallet
+                  : !hasBalance
+                  ? LucideIcons.landmark
+                  : LucideIcons.receipt,
               title: !hasWallet
-                  ? 'Crie sua primeira carteira'
+                  ? context.l10n.homeEmptyNoWalletTitle
                   : !hasBalance
-                      ? 'Adicione saldo para começar'
-                      : 'Sem transações recentes',
+                  ? context.l10n.homeEmptyNoBalanceTitle
+                  : context.l10n.homeEmptyNoTransactionsTitle,
               description: !hasWallet
-                  ? 'Você precisa de uma carteira para começar a movimentar.'
+                  ? context.l10n.homeEmptyNoWalletDescription
                   : !hasBalance
-                      ? 'Assim que entrar o primeiro depósito, suas movimentações aparecem aqui.'
-                      : 'Novas movimentações vão aparecer automaticamente nesta área.',
+                  ? context.l10n.homeEmptyNoBalanceDescription
+                  : context.l10n.homeEmptyNoTransactionsDescription,
               actionLabel: !hasWallet
-                  ? 'Criar carteira'
+                  ? context.l10n.homeCreateWalletAction
                   : !hasBalance
-                      ? 'Depositar'
-                      : 'Atualizar',
+                  ? context.l10n.homeDepositAction
+                  : context.l10n.homeRefreshAction,
+              actionIcon: !hasWallet
+                  ? LucideIcons.arrowRight
+                  : !hasBalance
+                  ? LucideIcons.download
+                  : LucideIcons.refreshCw,
               onAction: () {
                 if (!hasWallet) {
                   Navigator.of(context).push<void>(
@@ -2151,9 +2542,7 @@ class _TransactionsList extends ConsumerWidget {
                 if (!hasBalance) {
                   Navigator.of(context).push<void>(
                     _buildBottomUpRoute(
-                      builder: (_) => DepositAmountScreen(
-                        wallet: activeWallet,
-                      ),
+                      builder: (_) => DepositAmountScreen(wallet: activeWallet),
                     ),
                   );
                   return;
@@ -2169,8 +2558,8 @@ class _TransactionsList extends ConsumerWidget {
         return Column(
           children: [
             ListView.separated(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
+              padding: EdgeInsets.symmetric(
+                horizontal: responsive.horizontalPadding,
                 vertical: AppSpacing.xs,
               ),
               physics: const NeverScrollableScrollPhysics(),
@@ -2184,7 +2573,7 @@ class _TransactionsList extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final tx = visibleTxs[index];
                 final visual = TransactionVisualSpec.fromTransaction(tx);
-                final status = _statusStyle(tx.status);
+                final status = _statusStyle(context, tx.status);
                 final amountLabel = MoneyDisplay.formatAmountFromBtc(
                   btcAmount: tx.amountBTC,
                   currency: selectedCurrency,
@@ -2193,101 +2582,101 @@ class _TransactionsList extends ConsumerWidget {
                   btcBrl: btcBrl,
                 );
 
-                return InkWell(
-                  onTap: () {
-                    showGeneralDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      barrierLabel: '',
-                      barrierColor: Colors.black.withValues(alpha: 0.55),
-                      transitionDuration: const Duration(milliseconds: 400),
-                      pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
-                        tx: tx,
-                        onClose: () => Navigator.pop(context),
-                      ),
-                      transitionBuilder: (context, anim1, anim2, child) {
-                        return FadeTransition(
-                          opacity: anim1,
-                          child: child,
-                        );
-                      },
-                    );
-                  },
-                  child: ColoredBox(
-                    color: const Color(0xFF111418),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          TransactionTypeIconBadge(
-                            spec: visual,
-                            size: 34,
-                            iconSize: 17,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  visual.label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall!.copyWith(
-                                    color: colorScheme.onPrimary
-                                        .withValues(alpha: 0.88),
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      status.icon,
-                                      color: status.color,
-                                      size: 11,
+                return RepaintBoundary(
+                  child: InkWell(
+                    onTap: () {
+                      showGeneralDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        barrierLabel: '',
+                        barrierColor: Colors.black.withValues(alpha: 0.55),
+                        transitionDuration: const Duration(milliseconds: 160),
+                        pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
+                          tx: tx,
+                          onClose: () => Navigator.pop(context),
+                        ),
+                        transitionBuilder: (context, anim1, anim2, child) {
+                          return FadeTransition(opacity: anim1, child: child);
+                        },
+                      );
+                    },
+                    child: ColoredBox(
+                      color: const Color(0xFF111418),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            TransactionTypeIconBadge(
+                              spec: visual,
+                              size: 34,
+                              iconSize: 17,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    visual.localizedLabel(context),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall!.copyWith(
+                                      color: colorScheme.onPrimary.withValues(
+                                        alpha: 0.88,
+                                      ),
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0,
                                     ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        '${status.label} · ${_formatDate(tx.timestamp)}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.labelSmall!
-                                            .copyWith(
-                                          color: colorScheme.onPrimary
-                                              .withValues(alpha: 0.42),
-                                          fontSize: 10,
-                                          letterSpacing: 0,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        status.icon,
+                                        color: status.color,
+                                        size: 11,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          '${status.label} · ${_formatDate(context, tx.timestamp)}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.labelSmall!
+                                              .copyWith(
+                                                color: colorScheme.onPrimary
+                                                    .withValues(alpha: 0.42),
+                                                fontSize: 10,
+                                                letterSpacing: 0,
+                                              ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 144),
-                            child: Text(
-                              '${visual.prefix}$amountLabel',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                              style: AppTypography.number.copyWith(
-                                color: visual.amountColor,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w300,
-                                letterSpacing: 0,
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 10),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 144),
+                              child: Text(
+                                '${visual.prefix}$amountLabel',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: AppTypography.number.copyWith(
+                                  color: visual.amountColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w300,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -2296,10 +2685,10 @@ class _TransactionsList extends ConsumerWidget {
             ),
             if (txs.length > visibleTxs.length)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
+                padding: EdgeInsets.fromLTRB(
+                  responsive.horizontalPadding,
                   AppSpacing.md,
-                  AppSpacing.lg,
+                  responsive.horizontalPadding,
                   0,
                 ),
                 child: Align(
@@ -2311,26 +2700,103 @@ class _TransactionsList extends ConsumerWidget {
                             const DepositsScreen(showPrimaryNavigation: true),
                       ),
                     ),
-                    child: const Text('Ver histórico completo'),
+                    child: Text(context.l10n.homeFullHistory),
                   ),
                 ),
               ),
           ],
         );
       },
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      loading: () => Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
         child: StateFeedbackView(
           state: FeedbackState.loading,
-          title: 'A carregar…',
-          description: 'Sincronizando dispositivo.',
+          title: context.l10n.homeLoadingTransactionsTitle,
+          description: context.l10n.homeLoadingTransactionsSubtitle,
         ),
       ),
       error: (e, __) => Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
         child: StateFeedbackView.networkError(
+          context: context,
           onAction: () => ref.refresh(transactionHistoryProvider),
         ),
+      ),
+    );
+  }
+}
+
+class _HomeEmptyTransactionsPanel extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final String actionLabel;
+  final IconData actionIcon;
+  final VoidCallback onAction;
+
+  const _HomeEmptyTransactionsPanel({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.actionLabel,
+    required this.actionIcon,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: monochromePanelDecoration(
+        color: monoSurfaceAltColor,
+        borderColor: monoBorderStrongColor,
+        showShadow: false,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: monochromePanelDecoration(
+              color: monoSurfaceRaisedColor,
+              borderColor: monoBorderStrongColor,
+              showShadow: false,
+            ),
+            child: Icon(icon, color: monoTextColor, size: 18),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: monoTextColor,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: monoMutedTextColor,
+              height: 1.4,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onAction,
+              style: monochromeFilledButtonStyle(minHeight: 50),
+              icon: Icon(actionIcon, size: 16),
+              label: Text(actionLabel.toUpperCase()),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2407,7 +2873,7 @@ class _PrimaryActionPanel extends StatelessWidget {
                   title,
                   style: theme.textTheme.titleLarge!.copyWith(
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
+                    letterSpacing: 0,
                   ),
                 ),
               ),
@@ -2495,10 +2961,7 @@ class _HomeActionSection extends StatelessWidget {
   final String title;
   final List<_QuickActionData> actions;
 
-  const _HomeActionSection({
-    required this.title,
-    required this.actions,
-  });
+  const _HomeActionSection({required this.title, required this.actions});
 
   @override
   Widget build(BuildContext context) {
@@ -2512,7 +2975,7 @@ class _HomeActionSection extends StatelessWidget {
           style: theme.textTheme.titleMedium!.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.16,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -2533,7 +2996,7 @@ class _ReceiveTransferTextPanel extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Abrir tela de recebimento',
+      label: context.l10n.homeOpenReceiveScreen,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Material(
@@ -2631,25 +3094,57 @@ class _HomeQuickActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      clipBehavior: Clip.none,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var index = 0; index < actions.length; index++) ...[
-            if (index > 0) const SizedBox(width: _quickActionGap),
-            _QuickActionBtn(
-              index: index,
-              kind: actions[index].kind,
-              label: actions[index].label,
-              subtitle: actions[index].subtitle,
-              onTap: actions[index].onTap,
-            ),
-          ],
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final responsive = context.responsive;
+        final itemWidth = responsive.isTinyPhone ? 92.0 : _quickActionItemWidth;
+        final totalWidth =
+            (actions.length * itemWidth) +
+            (math.max(0, actions.length - 1) * _quickActionGap);
+
+        if (constraints.maxWidth.isFinite &&
+            totalWidth <= constraints.maxWidth) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var index = 0; index < actions.length; index++) ...[
+                if (index > 0) const SizedBox(width: _quickActionGap),
+                Expanded(
+                  child: _QuickActionBtn(
+                    index: index,
+                    kind: actions[index].kind,
+                    label: actions[index].label,
+                    subtitle: actions[index].subtitle,
+                    onTap: actions[index].onTap,
+                  ),
+                ),
+              ],
+            ],
+          );
+        }
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          clipBehavior: Clip.none,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var index = 0; index < actions.length; index++) ...[
+                if (index > 0) const SizedBox(width: _quickActionGap),
+                _QuickActionBtn(
+                  index: index,
+                  kind: actions[index].kind,
+                  label: actions[index].label,
+                  subtitle: actions[index].subtitle,
+                  itemWidth: itemWidth,
+                  onTap: actions[index].onTap,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -2665,6 +3160,7 @@ class _QuickActionBtn extends StatefulWidget {
   final _HomeActionIconKind kind;
   final String label;
   final String subtitle;
+  final double? itemWidth;
   final VoidCallback onTap;
 
   const _QuickActionBtn({
@@ -2672,6 +3168,7 @@ class _QuickActionBtn extends StatefulWidget {
     required this.kind,
     required this.label,
     required this.subtitle,
+    this.itemWidth,
     required this.onTap,
   });
 
@@ -2697,15 +3194,12 @@ class _QuickActionBtnState extends State<_QuickActionBtn>
       reverseDuration: const Duration(milliseconds: 230),
     );
 
-    Future<void>.delayed(
-      Duration(milliseconds: 120 + (widget.index * 70)),
-      () {
-        if (!mounted) {
-          return;
-        }
-        _introController.forward();
-      },
-    );
+    Future<void>.delayed(Duration(milliseconds: 120 + (widget.index * 70)), () {
+      if (!mounted) {
+        return;
+      }
+      _introController.forward();
+    });
   }
 
   @override
@@ -2736,6 +3230,9 @@ class _QuickActionBtnState extends State<_QuickActionBtn>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final itemWidth = widget.itemWidth ?? _quickActionItemWidth;
+    final buttonSize = math.min(_quickActionButtonSize, itemWidth * 0.58);
+    final iconSize = math.min(_quickActionIconSize, buttonSize * 0.42);
 
     return AnimatedBuilder(
       animation: Listenable.merge([_introController, _pressController]),
@@ -2766,14 +3263,14 @@ class _QuickActionBtnState extends State<_QuickActionBtn>
                         Colors.white.withValues(alpha: 0.06),
                       ),
                       child: SizedBox(
-                        width: _quickActionItemWidth,
+                        width: itemWidth,
                         height: 88,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: _quickActionButtonSize,
-                              height: _quickActionButtonSize,
+                              width: buttonSize,
+                              height: buttonSize,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: const Color(0xFF111418),
@@ -2786,8 +3283,10 @@ class _QuickActionBtnState extends State<_QuickActionBtn>
                                 child: _HomeActionIcon(
                                   kind: widget.kind,
                                   press: press,
-                                  iconColor:
-                                      Colors.white.withValues(alpha: 0.76),
+                                  size: iconSize,
+                                  iconColor: Colors.white.withValues(
+                                    alpha: 0.76,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2836,10 +3335,7 @@ class _HomeActionIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.translate(
       offset: Offset(0, press * 1.1),
-      child: Transform.scale(
-        scale: 1 - (press * 0.03),
-        child: _buildIcon(),
-      ),
+      child: Transform.scale(scale: 1 - (press * 0.03), child: _buildIcon()),
     );
   }
 
@@ -2933,7 +3429,7 @@ class _ActionPanelButton extends StatelessWidget {
                     style: theme.textTheme.labelLarge!.copyWith(
                       color: foregroundColor,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.12,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),

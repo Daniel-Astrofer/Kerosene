@@ -1,2 +1,0 @@
-/home/omega/.pub-cache/hosted/pub.dev/local_auth-2.3.0
-/home/omega/.pub-cache/hosted/pub.dev/local_auth-3.0.1

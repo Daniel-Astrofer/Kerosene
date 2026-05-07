@@ -132,7 +132,7 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                             barrierLabel: '',
                             barrierColor: Colors.black.withValues(alpha: 0.55),
                             transitionDuration:
-                                const Duration(milliseconds: 400),
+                                const Duration(milliseconds: 160),
                             pageBuilder: (context, anim1, anim2) =>
                                 TxDetailOverlay(
                               tx: latestTx,
@@ -163,7 +163,9 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      visual.label.toUpperCase(),
+                                      visual
+                                          .localizedLabel(context)
+                                          .toUpperCase(),
                                       style: AppTypography.caption.copyWith(
                                         color: monoMutedTextColor,
                                         fontWeight: FontWeight.w800,

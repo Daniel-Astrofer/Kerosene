@@ -15,7 +15,7 @@ class AdminTypography {
     fontSize: 48,
     fontWeight: FontWeight.w700,
     color: AdminColors.textPrimary,
-    letterSpacing: -1.5,
+    letterSpacing: 0,
     height: 1.1,
   );
 
@@ -24,7 +24,7 @@ class AdminTypography {
     fontSize: 36,
     fontWeight: FontWeight.w700,
     color: AdminColors.textPrimary,
-    letterSpacing: -1.0,
+    letterSpacing: 0,
     height: 1.15,
   );
 
@@ -34,7 +34,7 @@ class AdminTypography {
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AdminColors.textPrimary,
-    letterSpacing: -0.8,
+    letterSpacing: 0,
     height: 1.2,
   );
 
@@ -43,7 +43,7 @@ class AdminTypography {
     fontSize: 22,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
     height: 1.25,
   );
 
@@ -60,7 +60,7 @@ class AdminTypography {
     fontSize: 15,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: 0.1,
+    letterSpacing: 0,
     height: 1.35,
   );
 
@@ -95,7 +95,7 @@ class AdminTypography {
     fontSize: 11,
     fontWeight: FontWeight.w600,
     color: AdminColors.textTertiary,
-    letterSpacing: 0.8,
+    letterSpacing: 0,
     height: 1.3,
   );
 
@@ -113,7 +113,7 @@ class AdminTypography {
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AdminColors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
     height: 1.1,
   );
 
@@ -122,7 +122,7 @@ class AdminTypography {
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: -0.3,
+    letterSpacing: 0,
     height: 1.15,
   );
 
@@ -131,7 +131,7 @@ class AdminTypography {
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AdminColors.textSecondary,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     height: 1.4,
   );
 
@@ -141,7 +141,7 @@ class AdminTypography {
     fontSize: 13,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   );
 
   static const TextStyle buttonSmall = TextStyle(
@@ -149,7 +149,7 @@ class AdminTypography {
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: AdminColors.textSecondary,
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   );
 
   // ─── Table ──────────────────────────────────────
@@ -158,7 +158,7 @@ class AdminTypography {
     fontSize: 11,
     fontWeight: FontWeight.w600,
     color: AdminColors.textTertiary,
-    letterSpacing: 0.6,
+    letterSpacing: 0,
     height: 1.3,
   );
 
@@ -175,7 +175,7 @@ class AdminTypography {
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AdminColors.textPrimary,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
     height: 1.4,
   );
 }

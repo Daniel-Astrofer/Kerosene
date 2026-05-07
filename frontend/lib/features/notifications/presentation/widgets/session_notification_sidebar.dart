@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 import 'package:teste/core/presentation/widgets/push_notification_card.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/features/notifications/presentation/notification_navigation.dart';
 import 'package:teste/features/notifications/presentation/notification_visuals.dart';
@@ -33,12 +36,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
       en: 'Recent session alerts.',
       es: 'Alertas recientes de la sesión.',
     );
-    final clearLabel = _copy(
-      context,
-      pt: 'Limpar',
-      en: 'Clear',
-      es: 'Limpiar',
-    );
+    final clearLabel = _copy(context, pt: 'Limpar', en: 'Clear', es: 'Limpiar');
     final emptyStateTitle = _copy(
       context,
       pt: 'Sem alertas',
@@ -57,9 +55,15 @@ class SessionNotificationSidebar extends ConsumerWidget {
       en: unreadCount == 1 ? 'unread' : 'unread',
       es: unreadCount == 1 ? 'sin leer' : 'sin leer',
     );
+    final responsive = context.responsive;
+    final sidebarWidth = math.min(
+      336.0,
+      math.max(0.0, responsive.size.width - responsive.horizontalPadding),
+    );
+    final horizontalPadding = responsive.isTinyPhone ? 14.0 : 18.0;
 
     return Container(
-      width: 336,
+      width: sidebarWidth,
       decoration: BoxDecoration(
         color: const Color(0xFF050607),
         border: Border(
@@ -70,7 +74,12 @@ class SessionNotificationSidebar extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 14, 12),
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                18,
+                responsive.isTinyPhone ? 10 : 14,
+                12,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -82,7 +91,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
                           style: AppTypography.bodyMedium.copyWith(
                             color: const Color(0xFFF2F4F5),
                             fontWeight: FontWeight.w900,
-                            fontSize: 18,
+                            fontSize: responsive.isTinyPhone ? 16 : 18,
                             letterSpacing: 0,
                             height: 1.05,
                           ),
@@ -92,7 +101,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
                           headerSubtitle,
                           style: AppTypography.bodySmall.copyWith(
                             color: Colors.white.withValues(alpha: 0.46),
-                            fontSize: 12,
+                            fontSize: responsive.isTinyPhone ? 11 : 12,
                             height: 1.25,
                             letterSpacing: 0,
                           ),
@@ -114,12 +123,17 @@ class SessionNotificationSidebar extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Row(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0D1014),
                       border: Border.all(
@@ -136,13 +150,12 @@ class SessionNotificationSidebar extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const Spacer(),
                   TextButton(
                     onPressed: unreadCount == 0
                         ? null
                         : () => ref
-                            .read(sessionNotificationFeedProvider.notifier)
-                            .markAllRead(),
+                              .read(sessionNotificationFeedProvider.notifier)
+                              .markAllRead(),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white.withValues(
                         alpha: unreadCount == 0 ? 0.22 : 0.7,
@@ -152,19 +165,21 @@ class SessionNotificationSidebar extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    child: Text(_copy(
-                      context,
-                      pt: 'Ler tudo',
-                      en: 'Read all',
-                      es: 'Leer todo',
-                    )),
+                    child: Text(
+                      _copy(
+                        context,
+                        pt: 'Ler tudo',
+                        en: 'Read all',
+                        es: 'Leer todo',
+                      ),
+                    ),
                   ),
                   TextButton(
                     onPressed: notifications.isEmpty
                         ? null
                         : () => ref
-                            .read(sessionNotificationFeedProvider.notifier)
-                            .clear(),
+                              .read(sessionNotificationFeedProvider.notifier)
+                              .clear(),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white.withValues(
                         alpha: notifications.isEmpty ? 0.22 : 0.7,
@@ -197,13 +212,20 @@ class SessionNotificationSidebar extends ConsumerWidget {
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        0,
+                        horizontalPadding,
+                        18,
+                      ),
                       itemCount: notifications.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final item = notifications[index];
-                        final visuals =
-                            resolveNotificationVisuals(context, item);
+                        final visuals = resolveNotificationVisuals(
+                          context,
+                          item,
+                        );
                         return Container(
                           decoration: BoxDecoration(
                             border: item.read
@@ -224,14 +246,19 @@ class SessionNotificationSidebar extends ConsumerWidget {
                                 ),
                                 tone: visuals.tone,
                                 leadingIcon: visuals.icon,
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                                padding: const EdgeInsets.fromLTRB(
+                                  14,
+                                  13,
+                                  14,
+                                  13,
+                                ),
                                 borderRadius: 0,
                                 maxMessageLines: 3,
                                 onTap: () {
                                   ref
                                       .read(
-                                        sessionNotificationFeedProvider.notifier,
+                                        sessionNotificationFeedProvider
+                                            .notifier,
                                       )
                                       .markRead(item.id);
 

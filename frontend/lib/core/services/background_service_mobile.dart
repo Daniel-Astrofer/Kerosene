@@ -115,13 +115,13 @@ void onStart(ServiceInstance service) async {
     try {
       final userData = jsonDecode(userDataJson);
       userId = userData['id'];
-    } catch (e) {
-      debugPrint('BackgroundService: Error parsing user data: $e');
+    } catch (_) {
+      debugPrint('BackgroundService: cached user data could not be parsed.');
     }
   }
 
   if (token == null || userId == null) {
-    debugPrint('BackgroundService: No token/userId ($userId) found. Stopping.');
+    debugPrint('BackgroundService: session data missing. Stopping.');
     service.stopSelf();
     return;
   }
@@ -137,11 +137,9 @@ void onStart(ServiceInstance service) async {
     final int relayPort = await TorService.instance.startRelay(host, 80);
     AppConfig.apiUrl = 'http://127.0.0.1:$relayPort';
     torReady = true;
-    debugPrint(
-      'BackgroundService: Unified Tor Relay Active: ${AppConfig.apiUrl} -> $host',
-    );
-  } catch (e) {
-    debugPrint('BackgroundService: Tor start failed: $e');
+    debugPrint('BackgroundService: relay ready.');
+  } catch (_) {
+    debugPrint('BackgroundService: relay start failed.');
   }
 
   // Do not start the WebSocket if the relay is not ready.
@@ -157,9 +155,7 @@ void onStart(ServiceInstance service) async {
     userId: userId,
     authToken: token,
     onBalanceUpdate: (update) async {
-      debugPrint(
-        'BackgroundService: Update for ${update.walletName}: ${update.newBalance}',
-      );
+      debugPrint('BackgroundService: balance update received.');
 
       final prefs = await SharedPreferences.getInstance();
       final lastBalanceKey = 'last_balance_${update.walletName}';

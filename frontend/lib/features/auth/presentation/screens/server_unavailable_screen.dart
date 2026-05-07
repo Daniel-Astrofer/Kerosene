@@ -13,8 +13,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
 
   const ServerUnavailableScreen({
     super.key,
-    this.message =
-        'Não foi possível alcançar o servidor ou estabelecer conexão com a internet no momento.',
+    this.message = 'Não conseguimos estabelecer uma conexão segura no momento.',
     this.retryRouteName,
   });
 
@@ -46,7 +45,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                         color: AppColors.error.withValues(alpha: 0.2),
                         blurRadius: 40,
                         spreadRadius: 10,
-                      )
+                      ),
                     ],
                   ),
                   child: const Icon(
@@ -62,7 +61,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                   'CONEXÃO INDISPONÍVEL',
                   style: AppTypography.h1.copyWith(
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    letterSpacing: 0,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -86,10 +85,9 @@ class ServerUnavailableScreen extends ConsumerWidget {
                   isLoading: retryRouteName == null && isLoading,
                   onPressed: () {
                     if (retryRouteName != null) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        retryRouteName!,
-                        (_) => false,
-                      );
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil(retryRouteName!, (_) => false);
                       return;
                     }
 

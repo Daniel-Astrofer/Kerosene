@@ -184,9 +184,9 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
         ),
         title: _copy(
           context: context,
-          pt: 'Cadastro soberano.',
-          en: 'Sovereign registration.',
-          es: 'Registro soberano.',
+          pt: 'Cadastro privado.',
+          en: 'Private registration.',
+          es: 'Registro privado.',
         ),
         body: _copy(
           context: context,
@@ -203,9 +203,9 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
           ),
           _copy(
             context: context,
-            pt: 'Proteção contra spam via PoW',
-            en: 'Spam protection via PoW',
-            es: 'Protección contra spam vía PoW',
+            pt: 'Proteção automática contra abuso',
+            en: 'Automatic abuse protection',
+            es: 'Protección automática contra abuso',
           ),
           _copy(
             context: context,

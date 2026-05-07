@@ -13,7 +13,7 @@ class AppTypography {
     fontSize: 32,
     fontWeight: FontWeight.w700, // Bold
     color: Colors.white,
-    letterSpacing: -1.0,
+    letterSpacing: 0,
   );
 
   static final TextStyle h2 = TextStyle(
@@ -21,7 +21,7 @@ class AppTypography {
     fontSize: 24,
     fontWeight: FontWeight.w400, // Regular
     color: Colors.white,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
   );
 
   static final TextStyle h3 = TextStyle(
@@ -60,14 +60,14 @@ class AppTypography {
     fontSize: 11,
     fontWeight: FontWeight.w500, // Medium for small uppercase labels
     color: Colors.white38,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   );
 
   static final TextStyle buttonText = TextStyle(
     fontFamily: fontFamily,
     fontSize: 15,
     fontWeight: FontWeight.w600, // SemiBold
-    letterSpacing: 1.0,
+    letterSpacing: 0,
     color: Colors.white,
   );
 
@@ -77,7 +77,7 @@ class AppTypography {
     fontWeight:
         FontWeight.w300, // Lightest weight supported by Space Grotesk VF
     color: Colors.white,
-    letterSpacing: 1.0,
+    letterSpacing: 0,
   );
 
   static TextStyle amountInput({
@@ -89,7 +89,7 @@ class AppTypography {
       fontSize: isBtc ? 48 : 56,
       fontWeight: FontWeight.w300,
       color: color,
-      letterSpacing: -1.8,
+      letterSpacing: 0,
       height: 1.0,
     );
   }
@@ -109,8 +109,6 @@ class AppTypography {
       fontWeight: fontWeight ?? textStyle?.fontWeight,
       height: height ?? textStyle?.height,
       letterSpacing: letterSpacing ?? textStyle?.letterSpacing,
-    ).copyWith(
-      fontFamilyFallback: const ['JetBrainsMono', 'monospace'],
-    );
+    ).copyWith(fontFamilyFallback: const ['JetBrainsMono', 'monospace']);
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
+import 'package:teste/core/utils/safe_display_text.dart';
 import '../providers/balance_settings_provider.dart';
 
 /// Widget do card de balanço com gráfico circular
@@ -13,8 +15,12 @@ class WalletBalanceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final balanceSettings = ref.watch(balanceSettingsProvider);
+    final responsive = context.responsive;
+    final chartSize = responsive.isTinyPhone ? 132.0 : 160.0;
+    final innerSize = chartSize * 0.625;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(responsive.isTinyPhone ? 18 : 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -24,7 +30,7 @@ class WalletBalanceCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7B61FF).withOpacity(0.1),
+            color: const Color(0xFF7B61FF).withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -34,22 +40,22 @@ class WalletBalanceCard extends ConsumerWidget {
         children: [
           // Gráfico circular de balanço
           SizedBox(
-            width: 160,
-            height: 160,
+            width: chartSize,
+            height: chartSize,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // Gráfico circular
                 CustomPaint(
-                  size: const Size(160, 160),
+                  size: Size(chartSize, chartSize),
                   painter: BalanceChartPainter(
                     percentage: 0.65, // 65% do total
                   ),
                 ),
                 // Ícone central
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: innerSize,
+                  height: innerSize,
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F1229),
                     shape: BoxShape.circle,
@@ -69,33 +75,41 @@ class WalletBalanceCard extends ConsumerWidget {
           Text(
             'Balance',
             style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.7),
-                fontSize: 14),
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.7),
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 4),
 
           // Endereço da carteira (mascarado)
           Text(
-            _maskAddress(wallet.address),
+            SafeDisplayText.displayAddress(context, wallet.address),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.38),
-                fontSize: 12),
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.38),
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 12),
 
           // Saldo em BTC
-          Text(
-            balanceSettings.formatBalance(wallet.balance),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                balanceSettings.formatBalance(wallet.balance),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontSize: responsive.isTinyPhone ? 30 : 36,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -104,20 +118,15 @@ class WalletBalanceCard extends ConsumerWidget {
           Text(
             'Total Portfolio Value',
             style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.54),
-                fontSize: 14),
+              color: Theme.of(
+                context,
+              ).colorScheme.onPrimary.withValues(alpha: 0.54),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
     );
-  }
-
-  String _maskAddress(String address) {
-    if (address.length <= 8) return address;
-    return '${address.substring(0, 4)} ${address.substring(4, 8)} ${address.substring(8, 12)} ${address.substring(12, 16)}';
   }
 }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:teste/core/navigation/app_page_transitions.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
@@ -11,11 +12,7 @@ import 'package:teste/features/transactions/presentation/providers/transaction_p
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
 
-enum _TorBootstrapVisualState {
-  booting,
-  retryReady,
-  retrying,
-}
+enum _TorBootstrapVisualState { booting, retryReady, retrying }
 
 class HomeLoadingScreen extends ConsumerStatefulWidget {
   const HomeLoadingScreen({super.key});
@@ -127,11 +124,11 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
   String _genericConnectionFailureText(BuildContext context) {
     switch (Localizations.localeOf(context).languageCode) {
       case 'en':
-        return 'Could not reach the server or establish an internet connection.';
+        return 'Could not establish a secure connection right now.';
       case 'es':
-        return 'No fue posible alcanzar el servidor ni establecer conexión a internet.';
+        return 'No fue posible establecer una conexión segura ahora.';
       default:
-        return 'Não foi possível alcançar o servidor ou estabelecer conexão com a internet.';
+        return 'Não foi possível estabelecer uma conexão segura agora.';
     }
   }
 
@@ -236,12 +233,10 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const HomeScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-              FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 1000),
+        keroseneHorizontalRoute<void>(
+          transitionDuration: const Duration(milliseconds: 420),
+          reverseTransitionDuration: const Duration(milliseconds: 320),
+          builder: (_) => const HomeScreen(),
         ),
         (route) => false,
       );
@@ -256,13 +251,11 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
         ? message!.trim()
         : _genericConnectionFailureText(context);
     Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            ServerUnavailableScreen(
-                message: fallbackMessage, retryRouteName: '/home_loading'),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-            FadeTransition(opacity: animation, child: child),
-        transitionDuration: const Duration(milliseconds: 360),
+      keroseneHorizontalRoute<void>(
+        builder: (_) => ServerUnavailableScreen(
+          message: fallbackMessage,
+          retryRouteName: '/home_loading',
+        ),
       ),
       (route) => false,
     );
@@ -309,9 +302,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
         onTap: showRetryHint ? _handleRetryTap : null,
         child: Stack(
           children: [
-            Center(
-              child: _JumpingDotsLarge(controller: _ctrl),
-            ),
+            Center(child: _JumpingDotsLarge(controller: _ctrl)),
             Positioned(
               left: 28,
               right: 28,
@@ -368,8 +359,11 @@ class _SingleDot extends StatelessWidget {
     final start = index * 0.15;
     final animation = CurvedAnimation(
       parent: controller,
-      curve:
-          Interval(start, (start + 0.5).clamp(0.0, 1.0), curve: _BounceCurve()),
+      curve: Interval(
+        start,
+        (start + 0.5).clamp(0.0, 1.0),
+        curve: _BounceCurve(),
+      ),
     );
 
     return AnimatedBuilder(

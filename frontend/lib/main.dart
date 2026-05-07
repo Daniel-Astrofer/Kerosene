@@ -7,10 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bootstrap/mobile_bootstrap.dart'
     if (dart.library.html) 'bootstrap/web_bootstrap.dart' as bootstrap;
+import 'core/logging/app_log.dart';
 import 'core/providers/shared_preferences_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureAppLogging();
 
   final sharedPreferences = await SharedPreferences.getInstance();
   final container = ProviderContainer(

@@ -256,9 +256,9 @@ class AppCopy {
     es: 'Estándar',
   );
   static const signupPaymentSecuritySummarySlip39 = LocalizedCopy(
-    en: 'Backup split into shares, with quorum-based recovery.',
-    pt: 'Backup dividido em partes, com recuperação por quórum.',
-    es: 'Respaldo dividido en partes, con recuperación por quórum.',
+    en: 'Backup split into parts, with recovery only when enough parts are together.',
+    pt: 'Backup dividido em partes, com recuperacao apenas quando houver partes suficientes.',
+    es: 'Respaldo dividido en partes, con recuperacion solo cuando haya partes suficientes.',
   );
   static const signupPaymentSecuritySummaryMultisig = LocalizedCopy(
     en: 'A stronger custody model for operations with stricter process requirements.',
@@ -361,9 +361,9 @@ class AppCopy {
     es: 'Menos lectura, más acción',
   );
   static const signupPaymentNoticeBody = LocalizedCopy(
-    en: 'You do not need to understand the PoW technical detail to continue. The app completes it and advances on its own when it finishes.',
-    pt: 'Você não precisa entender o detalhe técnico do PoW para seguir. O app conclui isso e avança sozinho quando terminar.',
-    es: 'No necesitas entender el detalle técnico del PoW para continuar. La app lo completa y avanza sola cuando termina.',
+    en: 'The app performs this protection check automatically and continues when it finishes.',
+    pt: 'O app faz essa verificacao de protecao automaticamente e continua quando terminar.',
+    es: 'La app hace esta verificacion de proteccion automaticamente y continua cuando termine.',
   );
   static const signupPaymentCta = LocalizedCopy(
     en: 'Continue and prepare the account',
@@ -648,15 +648,64 @@ class AppCopy {
     pt: 'Divisão criptográfica de segredo (SSS). Segurança de nível militar.',
     es: 'División criptográfica del secreto (SSS). Seguridad de nivel militar.',
   );
-  static const createWalletCopied = LocalizedCopy(
-    en: 'COPIED TO CLIPBOARD',
-    pt: 'COPIADO PARA O CLIPBOARD',
-    es: 'COPIADO AL PORTAPAPELES',
+  static const createWalletPaperOnly = LocalizedCopy(
+    en: 'Write on paper. Digital copies are not shown here for your safety.',
+    pt: 'Anote em papel. Cópias digitais não são oferecidas aqui para sua segurança.',
+    es: 'Anótalo en papel. No ofrecemos copias digitales aquí por tu seguridad.',
   );
-  static const createWalletCopyAll = LocalizedCopy(
-    en: 'COPY ALL',
-    pt: 'COPIAR TUDO',
-    es: 'COPIAR TODO',
+
+  static const createWalletColdPublicKeyLabel = LocalizedCopy(
+    en: 'Cold wallet public key',
+    pt: 'Chave pública da carteira fria',
+    es: 'Llave pública de la billetera fría',
+  );
+
+  static const createWalletColdPublicKeyHint = LocalizedCopy(
+    en: 'xpub / zpub / vpub',
+    pt: 'xpub / zpub / vpub',
+    es: 'xpub / zpub / vpub',
+  );
+
+  static const createWalletManagementPassphraseLabel = LocalizedCopy(
+    en: 'Management passphrase',
+    pt: 'Senha de administração',
+    es: 'Contraseña de administración',
+  );
+
+  static const createWalletManagementPassphraseHint = LocalizedCopy(
+    en: 'Use a password only for managing this wallet',
+    pt: 'Use uma senha só para administrar esta carteira',
+    es: 'Usa una contraseña solo para administrar esta billetera',
+  );
+
+  static const createWalletModeLabel = LocalizedCopy(
+    en: 'Wallet mode',
+    pt: 'Modo da carteira',
+    es: 'Modo de billetera',
+  );
+
+  static const createWalletKeroseneModeTitle = LocalizedCopy(
+    en: 'Kerosene',
+    pt: 'Kerosene',
+    es: 'Kerosene',
+  );
+
+  static const createWalletKeroseneModeSubtitle = LocalizedCopy(
+    en: 'On-chain custody + Lightning',
+    pt: 'Custódia on-chain + Lightning',
+    es: 'Custodia on-chain + Lightning',
+  );
+
+  static const createWalletColdModeTitle = LocalizedCopy(
+    en: 'Cold wallet',
+    pt: 'Carteira fria',
+    es: 'Billetera fría',
+  );
+
+  static const createWalletColdModeSubtitle = LocalizedCopy(
+    en: 'Receive and monitor without moving keys',
+    pt: 'Receber e acompanhar sem mover chaves',
+    es: 'Recibir y acompañar sin mover llaves',
   );
 
   static const depositAmountZero = LocalizedCopy(
@@ -666,9 +715,9 @@ class AppCopy {
   );
 
   static const withdrawReviewLightningEmpty = LocalizedCopy(
-    en: 'Enter the Lightning invoice',
-    pt: 'Insira o Invoice Lightning',
-    es: 'Ingresa el invoice Lightning',
+    en: 'Enter the Lightning request',
+    pt: 'Insira o pedido Lightning',
+    es: 'Ingresa el pedido Lightning',
   );
   static const withdrawReviewOnChainEmpty = LocalizedCopy(
     en: 'Enter the on-chain address',
@@ -701,9 +750,9 @@ class AppCopy {
     es: 'RETIRO ON-CHAIN',
   );
   static const withdrawReviewPasteLightning = LocalizedCopy(
-    en: 'Paste Lightning Invoice',
-    pt: 'Cole o Invoice Lightning',
-    es: 'Pega el invoice Lightning',
+    en: 'Paste Lightning request',
+    pt: 'Cole o pedido Lightning',
+    es: 'Pega el pedido Lightning',
   );
   static const withdrawReviewPasteBitcoinAddress = LocalizedCopy(
     en: 'Paste Bitcoin Address',
@@ -761,19 +810,19 @@ class AppCopy {
     es: 'Direccion on-chain valida detectada',
   );
   static const withdrawDestinationDetectedLightning = LocalizedCopy(
-    en: 'Lightning invoice detected',
-    pt: 'Invoice Lightning detectado',
-    es: 'Invoice Lightning detectado',
+    en: 'Lightning request detected',
+    pt: 'Pedido Lightning detectado',
+    es: 'Pedido Lightning detectado',
   );
   static const withdrawDestinationInvalid = LocalizedCopy(
-    en: 'Enter a valid Bitcoin address or Lightning invoice.',
-    pt: 'Informe um endereco Bitcoin valido ou um invoice Lightning valido.',
-    es: 'Ingresa una direccion Bitcoin valida o un invoice Lightning valido.',
+    en: 'Enter a valid Bitcoin address or Lightning request.',
+    pt: 'Informe um endereco Bitcoin valido ou um pedido Lightning valido.',
+    es: 'Ingresa una direccion Bitcoin valida o un pedido Lightning valido.',
   );
   static const withdrawDestinationLightningUnsupported = LocalizedCopy(
-    en: 'This withdrawal endpoint currently supports only on-chain Bitcoin addresses.',
-    pt: 'Este fluxo de saque suporta apenas enderecos Bitcoin on-chain no backend atual.',
-    es: 'Este flujo de retiro solo admite direcciones Bitcoin on-chain en el backend actual.',
+    en: 'For this withdrawal, use a Bitcoin on-chain address.',
+    pt: 'Para este saque, use um endereco Bitcoin on-chain.',
+    es: 'Para este retiro, usa una direccion Bitcoin on-chain.',
   );
   static const withdrawDestinationPaste = LocalizedCopy(
     en: 'Paste',
@@ -781,9 +830,9 @@ class AppCopy {
     es: 'Pegar',
   );
   static const withdrawDestinationPasteHint = LocalizedCopy(
-    en: 'Paste an on-chain address, bitcoin: URI, or Lightning invoice.',
-    pt: 'Cole um endereco on-chain, URI bitcoin: ou invoice Lightning.',
-    es: 'Pega una direccion on-chain, URI bitcoin: o invoice Lightning.',
+    en: 'Paste an on-chain address, bitcoin: URI, or Lightning request.',
+    pt: 'Cole um endereco on-chain, URI bitcoin: ou pedido Lightning.',
+    es: 'Pega una direccion on-chain, URI bitcoin: o pedido Lightning.',
   );
   static const withdrawWalletBalanceLabel = LocalizedCopy(
     en: 'AVAILABLE BALANCE',
@@ -803,7 +852,7 @@ class AppCopy {
   static const withdrawSecurityTotpHint = LocalizedCopy(
     en: 'Enter the wallet TOTP to authorize this withdrawal.',
     pt: 'Digite o TOTP da carteira para autorizar este saque.',
-    es: 'Ingresa el TOTP de la wallet para autorizar este retiro.',
+    es: 'Ingresa el TOTP de la billetera para autorizar este retiro.',
   );
   static const withdrawDescriptionLabel = LocalizedCopy(
     en: 'DESCRIPTION',
@@ -829,6 +878,61 @@ class AppCopy {
     en: 'REVIEW',
     pt: 'REVISAR',
     es: 'REVISAR',
+  );
+  static const withdrawFeeModeTitle = LocalizedCopy(
+    en: 'HOW TO APPLY FEES',
+    pt: 'COMO APLICAR AS TAXAS',
+    es: 'COMO APLICAR LAS TASAS',
+  );
+  static const withdrawFeeModeSenderPaysTitle = LocalizedCopy(
+    en: 'Fees added',
+    pt: 'Taxas por fora',
+    es: 'Tasas por fuera',
+  );
+  static const withdrawFeeModeSenderPaysBody = LocalizedCopy(
+    en: 'The recipient receives the amount you entered. Fees are added to your total.',
+    pt: 'O destino recebe o valor digitado. As taxas entram por fora no total.',
+    es: 'El destino recibe el importe ingresado. Las tasas se suman al total.',
+  );
+  static const withdrawFeeModeRecipientPaysTitle = LocalizedCopy(
+    en: 'Fees deducted',
+    pt: 'Taxas descontadas',
+    es: 'Tasas descontadas',
+  );
+  static const withdrawFeeModeRecipientPaysBody = LocalizedCopy(
+    en: 'The total paid stays close to the amount entered. Fees are deducted from what arrives.',
+    pt: 'O total pago fica próximo do valor digitado. As taxas saem do que chega.',
+    es: 'El total pagado queda cerca del importe ingresado. Las tasas salen de lo que llega.',
+  );
+  static const withdrawReceiverReceivesLabel = LocalizedCopy(
+    en: 'Recipient receives',
+    pt: 'Destino recebe',
+    es: 'Destino recibe',
+  );
+  static const withdrawYouPayTotalLabel = LocalizedCopy(
+    en: 'You pay in total',
+    pt: 'Voce paga no total',
+    es: 'Pagas en total',
+  );
+  static const withdrawFeesDeductedLabel = LocalizedCopy(
+    en: 'Fees deducted',
+    pt: 'Taxas descontadas',
+    es: 'Tasas descontadas',
+  );
+  static const withdrawFeesAddedLabel = LocalizedCopy(
+    en: 'Estimated fees',
+    pt: 'Taxas estimadas',
+    es: 'Tasas estimadas',
+  );
+  static const withdrawFeeModeDeductedHint = LocalizedCopy(
+    en: 'In this mode, the destination receives the amount after platform and transaction fees.',
+    pt: 'Neste modo, o destino recebe o valor apos taxas da plataforma e da transacao.',
+    es: 'En este modo, el destino recibe el importe despues de tasas de plataforma y transaccion.',
+  );
+  static const withdrawFeeModeAddedHint = LocalizedCopy(
+    en: 'In this mode, the destination receives the full amount and fees are charged separately.',
+    pt: 'Neste modo, o destino recebe o valor integral e as taxas sao cobradas separadamente.',
+    es: 'En este modo, el destino recibe el importe completo y las tasas se cobran aparte.',
   );
 
   static const withdrawReceiptWallet = LocalizedCopy(
@@ -1046,9 +1150,9 @@ class AppCopy {
     es: 'Autentícate para acceder a tu billetera',
   );
   static const authReasonSovereignKeyAccess = LocalizedCopy(
-    en: 'Authenticate to access your sovereign key',
-    pt: 'Autentique para acessar sua Chave Soberana',
-    es: 'Autentícate para acceder a tu clave soberana',
+    en: 'Authenticate to access your device key',
+    pt: 'Autentique para acessar sua chave do dispositivo',
+    es: 'Autentícate para acceder a tu llave del dispositivo',
   );
   static const authReasonTransactionConfirm = LocalizedCopy(
     en: 'Use your device lock to confirm this transaction',
@@ -1208,9 +1312,9 @@ class AppCopy {
     es: 'Ideal para guardar en lugares distintos',
   );
   static const signupSecuritySlip39BulletQuorum = LocalizedCopy(
-    en: 'Allows quorum-based recovery',
-    pt: 'Permite recuperacao por quorum',
-    es: 'Permite recuperación por quórum',
+    en: 'Recovery needs enough saved parts',
+    pt: 'A recuperacao exige partes suficientes guardadas',
+    es: 'La recuperacion exige suficientes partes guardadas',
   );
   static const signupSecuritySlip39BulletDiscipline = LocalizedCopy(
     en: 'Requires stronger operational discipline',
@@ -1248,14 +1352,14 @@ class AppCopy {
     es: 'No es la mejor opción para principiantes',
   );
   static const signupSecurityMultisigConfigTitle = LocalizedCopy(
-    en: 'Vault quorum',
-    pt: 'Quorum do cofre',
-    es: 'Quorum de la boveda',
+    en: 'Vault approval rules',
+    pt: 'Regras de aprovacao do cofre',
+    es: 'Reglas de aprobacion de la boveda',
   );
   static const signupSecurityMultisigConfigBody = LocalizedCopy(
-    en: 'Configure how many independent factors will be required on each withdrawal and internal payment. Mode 2 uses passphrase + TOTP. Mode 3 adds passkey under server challenge.',
-    pt: 'Configure quantos fatores independentes serao exigidos em cada saque e pagamento interno. O modo 2 usa passphrase + TOTP. O modo 3 adiciona passkey sob desafio do servidor.',
-    es: 'Configura cuantos factores independientes se exigiran en cada retiro y pago interno. El modo 2 usa passphrase + TOTP. El modo 3 agrega passkey bajo desafio del servidor.',
+    en: 'Choose how many confirmations are required for each withdrawal and internal payment. Mode 2 uses access password + authenticator code. Mode 3 also asks for your device key.',
+    pt: 'Escolha quantas confirmacoes serao exigidas em cada saque e pagamento interno. O modo 2 usa senha de acesso + codigo do autenticador. O modo 3 tambem pede a chave do dispositivo.',
+    es: 'Elige cuantas confirmaciones se exigiran en cada retiro y pago interno. El modo 2 usa contrasena de acceso + codigo del autenticador. El modo 3 tambien pide la llave del dispositivo.',
   );
   static const signupSecurityMultisigRequiredFactors = LocalizedCopy(
     en: 'Required factors',
@@ -1298,9 +1402,9 @@ class AppCopy {
     es: 'Respaldo guiado',
   );
   static const signupSecuritySlip39ConfigIntro = LocalizedCopy(
-    en: 'You will see the shares separately on the next screen. Store each share in a different location and choose a quorum that matches your setup.',
-    pt: 'Voce vera as partes separadas na proxima tela. Guarde cada parte em um local diferente e escolha um quorum que faca sentido para a sua operacao.',
-    es: 'Verás las partes por separado en la siguiente pantalla. Guarda cada parte en un lugar distinto y elige un quórum que tenga sentido para tu operación.',
+    en: 'You will see the parts separately on the next screen. Store each part in a different safe place and choose how many parts are needed to recover.',
+    pt: 'Voce vera as partes separadas na proxima tela. Guarde cada parte em um local seguro diferente e escolha quantas partes serao necessarias para recuperar.',
+    es: 'Veras las partes por separado en la siguiente pantalla. Guarda cada parte en un lugar seguro distinto y elige cuantas partes seran necesarias para recuperar.',
   );
   static const signupSecuritySlip39TotalSharesHint = LocalizedCopy(
     en: 'How many independent shares will be generated.',
@@ -1328,21 +1432,11 @@ class AppCopy {
     es: 'Verás la frase de recuperación y harás una revisión rápida antes de continuar.',
   );
   static const signupSecurityNextScreenMultisig = LocalizedCopy(
-    en: 'The vault will be registered now and this quorum will be enforced in withdrawals and internal payments.',
-    pt: 'O cofre sera registrado agora e esse quorum passara a valer nos fluxos de saque e pagamentos internos.',
-    es: 'La boveda se registrara ahora y este quorum se aplicara en retiros y pagos internos.',
+    en: 'The vault will be activated now and these approval rules will apply to withdrawals and internal payments.',
+    pt: 'O cofre sera ativado agora e estas regras de aprovacao passarao a valer para saques e pagamentos internos.',
+    es: 'La boveda se activara ahora y estas reglas de aprobacion se aplicaran a retiros y pagos internos.',
   );
 
-  static const signupSeedShareCopiedTitle = LocalizedCopy(
-    en: 'Share copied',
-    pt: 'Parte copiada',
-    es: 'Parte copiada',
-  );
-  static const signupSeedShareCopiedBody = LocalizedCopy(
-    en: 'Paste it into a secure location and store this share separately from the others.',
-    pt: 'Cole em um local seguro e armazene esta parte separadamente das demais.',
-    es: 'Pégala en un lugar seguro y guarda esta parte separada de las demás.',
-  );
   static const signupSeedWordCountRecommended = LocalizedCopy(
     en: 'Recommended',
     pt: 'Recomendado',
@@ -1359,9 +1453,9 @@ class AppCopy {
     es: 'Guarda tu frase de recuperación',
   );
   static const signupSeedSubtitleSlip39 = LocalizedCopy(
-    en: 'The primary phrase has been split into independent shares. Store each share separately and keep the required quorum in mind.',
-    pt: 'A frase principal foi dividida em partes independentes. Guarde cada parte separadamente e mantenha o quorum necessario em mente.',
-    es: 'La frase principal fue dividida en partes independientes. Guarda cada parte por separado y ten presente el quórum necesario.',
+    en: 'The primary phrase has been split into independent parts. Store each part separately and keep the recovery rule in mind.',
+    pt: 'A frase principal foi dividida em partes independentes. Guarde cada parte separadamente e mantenha a regra de recuperacao em mente.',
+    es: 'La frase principal fue dividida en partes independientes. Guarda cada parte por separado y ten presente la regla de recuperacion.',
   );
   static const signupSeedSubtitleStandard = LocalizedCopy(
     en: 'This phrase controls account recovery. Write it down on paper, carefully, and confirm it before you continue.',
@@ -1435,26 +1529,6 @@ class AppCopy {
     es: 'Revisa tus partes',
   );
 
-  static const signupTotpSecretCopiedTitle = LocalizedCopy(
-    en: 'Secret copied',
-    pt: 'Segredo copiado',
-    es: 'Secreto copiado',
-  );
-  static const signupTotpSecretCopiedBody = LocalizedCopy(
-    en: 'Store this secret carefully in case you need to set up the authenticator again.',
-    pt: 'Guarde este segredo com cuidado caso precise configurar o autenticador novamente.',
-    es: 'Guarda este secreto con cuidado por si necesitas configurar el autenticador de nuevo.',
-  );
-  static const signupTotpCodesCopiedTitle = LocalizedCopy(
-    en: 'Codes copied',
-    pt: 'Codigos copiados',
-    es: 'Códigos copiados',
-  );
-  static const signupTotpCodesCopiedBody = LocalizedCopy(
-    en: 'Store the backup codes offline before continuing.',
-    pt: 'Guarde os codigos de backup offline antes de continuar.',
-    es: 'Guarda los códigos de respaldo offline antes de continuar.',
-  );
   static const signupTotpEyebrow = LocalizedCopy(
     en: '2FA',
     pt: '2FA',
@@ -1525,11 +1599,6 @@ class AppCopy {
     pt: 'CODIGOS DE BACKUP',
     es: 'CÓDIGOS DE RESPALDO',
   );
-  static const signupTotpCopy = LocalizedCopy(
-    en: 'Copy',
-    pt: 'Copiar',
-    es: 'Copiar',
-  );
   static const signupTotpBackupConfirm = LocalizedCopy(
     en: 'I confirm that I stored the backup codes offline before continuing.',
     pt: 'Confirmei que guardei os codigos de backup offline antes de continuar.',
@@ -1542,39 +1611,39 @@ class AppCopy {
   );
 
   static const signupPowPhaseRequestTitle = LocalizedCopy(
-    en: 'Requesting challenge',
-    pt: 'Solicitando desafio',
-    es: 'Solicitando desafío',
+    en: 'Preparing account',
+    pt: 'Preparando a conta',
+    es: 'Preparando la cuenta',
   );
   static const signupPowPhaseRequestBody = LocalizedCopy(
-    en: 'The shard is obtaining the unique PoW challenge for this account creation.',
-    pt: 'O shard esta obtendo o desafio PoW unico para esta criacao de conta.',
-    es: 'El shard esta obteniendo el desafío PoW único para esta creación de cuenta.',
+    en: 'We are preparing a protected setup for this account.',
+    pt: 'Estamos preparando uma configuracao protegida para esta conta.',
+    es: 'Estamos preparando una configuracion protegida para esta cuenta.',
   );
   static const signupPowPhaseSolveTitle = LocalizedCopy(
-    en: 'Device solving PoW',
-    pt: 'Dispositivo resolvendo PoW',
-    es: 'Dispositivo resolviendo PoW',
+    en: 'Checking security',
+    pt: 'Verificando seguranca',
+    es: 'Verificando seguridad',
   );
   static const signupPowPhaseSolveBody = LocalizedCopy(
-    en: 'The device tests nonces locally until it finds the valid cryptographic answer.',
-    pt: 'O aparelho testa nonces localmente ate encontrar a resposta criptografica valida.',
-    es: 'El dispositivo prueba nonces localmente hasta encontrar la respuesta criptográfica válida.',
+    en: 'Your device completes a quick local protection check before continuing.',
+    pt: 'Seu aparelho conclui uma verificacao local de protecao antes de continuar.',
+    es: 'Tu dispositivo completa una verificacion local de proteccion antes de continuar.',
   );
   static const signupPowPhaseProvisionTitle = LocalizedCopy(
-    en: 'Provisioning credentials',
-    pt: 'Provisionando credenciais',
-    es: 'Provisionando credenciales',
+    en: 'Protecting credentials',
+    pt: 'Protegendo credenciais',
+    es: 'Protegiendo credenciales',
   );
   static const signupPowPhaseProvisionBody = LocalizedCopy(
-    en: 'The answer was accepted and the backend is preparing the initial authenticator secret.',
-    pt: 'A resposta foi aceita e o backend esta preparando o segredo inicial do autenticador.',
-    es: 'La respuesta fue aceptada y el backend esta preparando el secreto inicial del autenticador.',
+    en: 'Your authenticator setup is being prepared securely.',
+    pt: 'A configuracao do seu autenticador esta sendo preparada com seguranca.',
+    es: 'La configuracion de tu autenticador se esta preparando con seguridad.',
   );
   static const signupPowErrorTitle = LocalizedCopy(
-    en: 'Could not resolve the PoW',
-    pt: 'Falha ao resolver o PoW',
-    es: 'No se pudo resolver el PoW',
+    en: 'Could not complete the protection check',
+    pt: 'Nao foi possivel concluir a verificacao de protecao',
+    es: 'No se pudo completar la verificacion de proteccion',
   );
   static const signupPowEyebrow = LocalizedCopy(
     en: 'Preparation',
@@ -1627,9 +1696,9 @@ class AppCopy {
     es: 'Mantén la aplicación abierta unos segundos mientras termina el cálculo.',
   );
   static const signupPowNoticeReady = LocalizedCopy(
-    en: 'Waiting for the backend to complete the transition to the next step.',
-    pt: 'Aguardando o backend concluir a transicao para o proximo passo.',
-    es: 'Esperando que el backend complete la transición al siguiente paso.',
+    en: 'Finishing this step before continuing.',
+    pt: 'Finalizando esta etapa antes de continuar.',
+    es: 'Finalizando este paso antes de continuar.',
   );
   static const signupPowStatusInProgress = LocalizedCopy(
     en: 'IN PROGRESS',
@@ -1658,9 +1727,9 @@ class AppCopy {
     es: 'Verificación cancelada',
   );
   static const passkeyVerificationChallengeExpired = LocalizedCopy(
-    en: 'Challenge expired',
-    pt: 'Desafio expirado',
-    es: 'Desafío expirado',
+    en: 'Time expired',
+    pt: 'Tempo expirado',
+    es: 'Tiempo expirado',
   );
   static const passkeyVerificationRejected = LocalizedCopy(
     en: 'Passkey rejected',
@@ -1678,9 +1747,9 @@ class AppCopy {
     es: 'Preparando la verificación',
   );
   static const passkeyVerificationHeadlineSending = LocalizedCopy(
-    en: 'Sending cryptographic proof',
-    pt: 'Enviando a prova criptografica',
-    es: 'Enviando la prueba criptográfica',
+    en: 'Confirming security',
+    pt: 'Confirmando seguranca',
+    es: 'Confirmando seguridad',
   );
   static const passkeyVerificationHeadlineDevice = LocalizedCopy(
     en: 'Confirm on your device',
@@ -1693,14 +1762,14 @@ class AppCopy {
     es: 'Passkey validada',
   );
   static const passkeyVerificationBodyPreparing = LocalizedCopy(
-    en: 'Opening the backend challenge session before requesting the local signature.',
-    pt: 'Abrindo a sessao de desafio com o backend antes de pedir a assinatura local.',
-    es: 'Abriendo la sesión de desafío con el backend antes de solicitar la firma local.',
+    en: 'Preparing the secure confirmation on this device.',
+    pt: 'Preparando a confirmacao segura neste aparelho.',
+    es: 'Preparando la confirmacion segura en este dispositivo.',
   );
   static const passkeyVerificationBodySending = LocalizedCopy(
-    en: 'Your device prepares the local credential and assembles the proof required by the backend.',
-    pt: 'Seu aparelho prepara a credencial local e monta a prova exigida pelo backend.',
-    es: 'Tu dispositivo prepara la credencial local y arma la prueba exigida por el backend.',
+    en: 'Your device is confirming that this action was approved by you.',
+    pt: 'Seu aparelho esta confirmando que esta acao foi aprovada por voce.',
+    es: 'Tu dispositivo esta confirmando que esta accion fue aprobada por ti.',
   );
   static const passkeyVerificationBodyDevice = LocalizedCopy(
     en: 'Use biometrics, PIN, or local lock to release the passkey signature.',
@@ -1750,8 +1819,8 @@ class AppCopy {
   );
   static const signupFinalPaymentAddressCopiedBody = LocalizedCopy(
     en: 'Paste the address into your wallet and confirm the last characters before sending.',
-    pt: 'Cole o endereco na sua wallet e confira os ultimos caracteres antes de enviar.',
-    es: 'Pega la dirección en tu wallet y confirma los últimos caracteres antes de enviar.',
+    pt: 'Cole o endereco na sua carteira e confira os ultimos caracteres antes de enviar.',
+    es: 'Pega la direccion en tu billetera y confirma los ultimos caracteres antes de enviar.',
   );
   static const signupFinalPaymentAmountCopiedTitle = LocalizedCopy(
     en: 'Amount copied',
@@ -1824,9 +1893,9 @@ class AppCopy {
     es: 'Pegar',
   );
   static const signupFinalPaymentTxidBody = LocalizedCopy(
-    en: 'If your wallet shows the TXID right after broadcasting the transaction, paste it here to start validation.',
-    pt: 'Se a sua wallet mostrar o TXID logo apos transmitir a transacao, cole-o aqui para iniciar a validacao.',
-    es: 'Si tu wallet muestra el TXID justo despues de transmitir la transacción, pégalo aquí para iniciar la validación.',
+    en: 'If your wallet shows the TXID right after sending the transaction, paste it here to start validation.',
+    pt: 'Se a sua carteira mostrar o TXID logo apos transmitir a transacao, cole-o aqui para iniciar a validacao.',
+    es: 'Si tu billetera muestra el TXID justo despues de transmitir la transaccion, pegalo aqui para iniciar la validacion.',
   );
   static const signupFinalPaymentTxidHint = LocalizedCopy(
     en: 'Paste the on-chain TXID here',
@@ -1945,14 +2014,14 @@ class AppCopy {
     es: 'Ingresa los 6 digitos del autenticador.',
   );
   static const transactionAuthPasskeyChallengeTitle = LocalizedCopy(
-    en: 'Passkey under challenge',
-    pt: 'Passkey sob desafio',
-    es: 'Passkey bajo desafio',
+    en: 'Passkey confirmation',
+    pt: 'Confirmacao por passkey',
+    es: 'Confirmacion por passkey',
   );
   static const transactionAuthPasskeyChallengeMessage = LocalizedCopy(
-    en: 'If this policy requires passkey, the app will request the biometric signature as soon as the server returns the operation challenge.',
-    pt: 'Se esta politica exigir passkey, o app vai solicitar a assinatura biometricamente assim que o servidor devolver o desafio da operacao.',
-    es: 'Si esta politica exige passkey, la app solicitara la firma biometrica cuando el servidor devuelva el desafio de la operacion.',
+    en: 'If this operation requires passkey, the app will ask for biometric confirmation before sending it.',
+    pt: 'Se esta operacao exigir passkey, o app vai pedir confirmacao biometrica antes do envio.',
+    es: 'Si esta operacion exige passkey, la app pedira confirmacion biometrica antes del envio.',
   );
   static const transactionAuthContinue = LocalizedCopy(
     en: 'CONTINUE',
@@ -2377,8 +2446,9 @@ class AppCopy {
     BuildContext context, {
     required int step,
   }) {
-    if (step <= 2)
+    if (step <= 2) {
       return _resolve(context, en: 'START', pt: 'COMECO', es: 'INICIO');
+    }
     if (step <= 8) {
       return _resolve(context,
           en: 'PROTECTION', pt: 'PROTECAO', es: 'PROTECCIÓN');
@@ -2761,9 +2831,9 @@ class AppCopy {
     if (isPasskeyOnly) {
       return _resolve(
         context,
-        en: 'Final passkey confirmation will be requested under server challenge.',
-        pt: 'A confirmacao final por passkey sera solicitada sob desafio do servidor.',
-        es: 'La confirmacion final por passkey se solicitara bajo desafio del servidor.',
+        en: 'Final confirmation will be requested with your passkey.',
+        pt: 'A confirmacao final sera solicitada com sua passkey.',
+        es: 'La confirmacion final se solicitara con tu passkey.',
       );
     }
 

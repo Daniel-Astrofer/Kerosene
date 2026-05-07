@@ -12,6 +12,7 @@ import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 import 'deposit_method_screen.dart';
 
 class DepositAmountScreen extends ConsumerStatefulWidget {
@@ -70,7 +71,9 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
         btcEur: btcEur,
         btcBrl: btcBrl,
       );
-      return 'Equivale a ${MoneyDisplay.formatCompact(amount: brlValue, currency: Currency.brl)}';
+      return context.l10n.depositFlowEquivalentTo(
+        MoneyDisplay.formatCompact(amount: brlValue, currency: Currency.brl),
+      );
     }
 
     final btcAmount = MoneyDisplay.convertToBtcAmount(
@@ -80,7 +83,9 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
-    return 'Voce recebe ${MoneyDisplay.formatCompact(amount: btcAmount, currency: Currency.btc)}';
+    return context.l10n.depositFlowYouReceive(
+      MoneyDisplay.formatCompact(amount: btcAmount, currency: Currency.btc),
+    );
   }
 
   int get _maxRawLength {
@@ -148,8 +153,8 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
     );
 
     return ReceiveFlowScaffold(
-      title: 'Depositar',
-      subtitle: 'Informe o valor e siga para o método de entrada.',
+      title: context.l10n.depositFlowDepositTitle,
+      subtitle: context.l10n.depositFlowAmountSubtitle,
       scrollable: false,
       bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Column(
@@ -160,7 +165,9 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ReceiveFlowSectionLabel('Moeda selecionada'),
+                ReceiveFlowSectionLabel(
+                  context.l10n.depositFlowSelectedCurrency,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   _selectedCurrency.code,
@@ -186,7 +193,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
           _buildKeypad(),
           const SizedBox(height: AppSpacing.md),
           ReceiveFlowPrimaryButton(
-            label: 'Continuar',
+            label: context.l10n.depositFlowContinue,
             onTap: _onContinue,
           ),
         ],
@@ -199,33 +206,36 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       child: Column(
         children: [
           Text(
-            'Valor do depósito',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: receiveFlowMutedTextColor,
-                ),
+            context.l10n.depositFlowAmountLabel,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: receiveFlowMutedTextColor),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            _displayAmount,
-            style: AppTypography.amountInput(
-              isBtc: _selectedCurrency == Currency.btc,
-              color: receiveFlowTextColor,
-            ).copyWith(
-              fontSize: _selectedCurrency == Currency.btc ? 42 : 46,
-              fontWeight: FontWeight.w500,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              _displayAmount,
+              style: AppTypography.amountInput(
+                isBtc: _selectedCurrency == Currency.btc,
+                color: receiveFlowTextColor,
+              ).copyWith(
+                fontSize: _selectedCurrency == Currency.btc ? 42 : 46,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              softWrap: false,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           if (quoteHint != null) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
               quoteHint,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: receiveFlowMutedTextColor,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: receiveFlowMutedTextColor),
             ),
           ],
         ],

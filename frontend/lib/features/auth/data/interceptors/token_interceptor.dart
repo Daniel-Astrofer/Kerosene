@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/providers/session_invalidation_provider.dart';
 import '../../../../core/utils/device_helper.dart';
 import '../../../../core/utils/snackbar_helper.dart';
+import '../../../../l10n/l10n_extension.dart';
 import '../datasources/auth_local_datasource.dart';
 
 class TokenInterceptor extends QueuedInterceptor {
@@ -16,6 +18,31 @@ class TokenInterceptor extends QueuedInterceptor {
   bool _redirecting = false;
 
   TokenInterceptor({required this.localDataSource, required this.apiClient});
+
+  @visibleForTesting
+  static bool shouldOverrideHostForOnionRelay({
+    required bool isWeb,
+    required String baseUrl,
+    required String onionBaseUrl,
+  }) {
+    if (isWeb) {
+      return false;
+    }
+
+    final apiHost = Uri.tryParse(baseUrl)?.host.toLowerCase();
+    final onionHost = Uri.tryParse(onionBaseUrl)?.host.toLowerCase();
+    if (apiHost == null || onionHost == null || onionHost.isEmpty) {
+      return false;
+    }
+
+    final isLocalRelay =
+        apiHost == '127.0.0.1' || apiHost == 'localhost' || apiHost == '::1';
+    final onionHostIsLocal = onionHost == '127.0.0.1' ||
+        onionHost == 'localhost' ||
+        onionHost == '::1';
+
+    return isLocalRelay && !onionHostIsLocal;
+  }
 
   @override
   Future<void> onRequest(
@@ -50,17 +77,27 @@ class TokenInterceptor extends QueuedInterceptor {
         }
       }
 
-      // 2. Mask the Host header para o Spring Boot aceitar o request via relay TCP
-      options.headers['Host'] = Uri.parse(AppConfig.onionBaseUrl).host;
+      // 2. Mobile/desktop Tor relay only: preserve the onion Host when the app
+      // sends traffic through a local 127.0.0.1 relay. Browsers forbid setting
+      // Host manually, so web admin deployments must use a real .onion origin
+      // or an explicit gateway origin instead.
+      if (shouldOverrideHostForOnionRelay(
+        isWeb: kIsWeb,
+        baseUrl: apiClient.dio.options.baseUrl,
+        onionBaseUrl: AppConfig.onionBaseUrl,
+      )) {
+        options.headers['Host'] = Uri.parse(AppConfig.onionBaseUrl).host;
+      }
 
-      if (options.headers['X-Device-Hash'] == null) {
+      if (!kIsWeb && options.headers['X-Device-Hash'] == null) {
         final deviceHash = await DeviceHelper.getDeviceHash();
         if (deviceHash.isNotEmpty) {
           options.headers['X-Device-Hash'] = deviceHash;
         }
       }
-    } catch (e) {
-      debugPrint('⚠️ TokenInterceptor error: $e');
+    } catch (_) {
+      debugPrint(
+          'TokenInterceptor: request credentials could not be prepared.');
     }
 
     handler.next(options);
@@ -74,7 +111,7 @@ class TokenInterceptor extends QueuedInterceptor {
     final newToken = response.headers.value(AppConfig.newTokenHeader);
 
     if (newToken != null && newToken.isNotEmpty) {
-      debugPrint('🔄 JWT Renewal: novo token recebido');
+      debugPrint('TokenInterceptor: session credential refreshed.');
       var cleanToken = newToken.trim();
       if (cleanToken.startsWith('Bearer ')) {
         cleanToken = cleanToken.substring(7).trim();
@@ -127,15 +164,15 @@ class TokenInterceptor extends QueuedInterceptor {
     if (isInvalidSession && !isAuthRoute && !_redirecting) {
       _redirecting = true;
       debugPrint(
-        '🔑 Sessão inválida [$statusCode/$errorCode] — limpando sessão e redirecionando para /welcome',
+        'TokenInterceptor: session invalidated [$statusCode/$errorCode].',
       );
-      if (err.response?.data != null) {
-        debugPrint('📄 Resposta do servidor: ${err.response?.data}');
-      }
 
       // 1. Limpar toda a sessão local
       try {
         await localDataSource.clearAll();
+      } catch (_) {}
+      try {
+        apiClient.ref.read(sessionInvalidationProvider.notifier).emit();
       } catch (_) {}
 
       // 2. Agendar navegação no próximo frame UI via SchedulerBinding.
@@ -146,7 +183,7 @@ class TokenInterceptor extends QueuedInterceptor {
         final navigator = SnackbarHelper.navigatorKey.currentState;
         if (navigator == null) {
           debugPrint(
-            '⚠️ navigatorKey.currentState é null — tentando de novo no próximo frame.',
+            'TokenInterceptor: navigator unavailable; retrying next frame.',
           );
           // Tentar novamente no próximo frame (pode acontecer durante splash)
           SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -163,9 +200,10 @@ class TokenInterceptor extends QueuedInterceptor {
 
         // Snackbar informativo após a navegação
         SchedulerBinding.instance.addPostFrameCallback((_) {
+          final l10n = navigator.context.l10n;
           SnackbarHelper.showWarning(
-            'Sua sessão expirou. Faça login novamente para continuar.',
-            title: 'Sessão encerrada',
+            l10n.errSessionExpired,
+            title: l10n.sessionEndedTitle,
           );
         });
       });

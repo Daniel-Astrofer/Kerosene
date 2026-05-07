@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/mining/presentation/providers/mining_dashboard_provider.dart';
 import 'package:teste/features/mining/presentation/providers/mining_providers.dart';
 import 'package:teste/features/mining/presentation/widgets/live_fee_grid.dart';
@@ -10,6 +11,7 @@ import 'package:teste/features/mining/presentation/widgets/mining_metrics.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_transaction_context_card.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class MiningScreen extends ConsumerStatefulWidget {
   final Transaction? initialTransaction;
@@ -239,18 +241,16 @@ class _MiningInitialState extends ConsumerWidget {
         return MiningStateCard(
           icon: Icons.portable_wifi_off_rounded,
           accent: miningRed,
-          title: 'Sem conectividade',
-          description:
-              'Não foi possível consultar a mempool nem obter um snapshot inicial da rede.',
+          title: context.l10n.miningStateOfflineTitle,
+          description: context.l10n.miningStateOfflineMessage,
           onRetry: onRetry,
         );
       case MiningSyncPhase.empty:
         return MiningStateCard(
           icon: Icons.inbox_outlined,
           accent: miningAmber,
-          title: 'Sem dados disponíveis',
-          description:
-              'Os endpoints responderam sem payload suficiente para montar o painel de mineração.',
+          title: context.l10n.miningStateEmptyTitle,
+          description: context.l10n.miningStateEmptyMessage,
           onRetry: onRetry,
         );
       case MiningSyncPhase.error:
@@ -263,9 +263,10 @@ class _MiningInitialState extends ConsumerWidget {
         return MiningStateCard(
           icon: Icons.error_outline_rounded,
           accent: miningAmber,
-          title: 'Falha ao iniciar o painel',
-          description: syncMeta.errorMessage ??
-              'Tente sincronizar novamente em instantes.',
+          title: context.l10n.miningStateErrorTitle,
+          description: syncMeta.errorMessage == null
+              ? context.l10n.miningStateRetryLater
+              : ErrorTranslator.translate(context.l10n, syncMeta.errorMessage!),
           onRetry: onRetry,
         );
     }

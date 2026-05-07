@@ -7,11 +7,15 @@ import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/theme/monochrome_theme.dart';
+import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/core/utils/money_display.dart';
+import 'package:teste/core/utils/safe_display_text.dart';
 import 'package:teste/features/mining/presentation/mining_explorer.dart';
 import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 import '../../../wallet/domain/entities/transaction.dart';
 
@@ -19,11 +23,7 @@ class TxDetailOverlay extends ConsumerWidget {
   final Transaction tx;
   final VoidCallback onClose;
 
-  const TxDetailOverlay({
-    super.key,
-    required this.tx,
-    required this.onClose,
-  });
+  const TxDetailOverlay({super.key, required this.tx, required this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,52 +55,57 @@ class TxDetailOverlay extends ConsumerWidget {
 
     final detailItems = <_DetailItem>[
       _DetailItem(
-        label: 'Data',
-        value: _formatTimestamp(tx.timestamp),
-      ),
+          label: context.l10n.date, value: _formatTimestamp(tx.timestamp)),
       _DetailItem(
         label: _counterpartyLabel(tx),
-        value: _abbrevValue(_counterpartyValue(tx)),
+        value: SafeDisplayText.displayIdentifier(
+          context,
+          _counterpartyValue(context, tx),
+          leading: 10,
+          trailing: 8,
+        ),
       ),
       _DetailItem(
-        label: 'Rede',
+        label: context.l10n.onchainDepositNetworkLabel,
         value: explorer.badgeLabel,
       ),
       _DetailItem(
-        label: 'Referência',
-        value: _abbrevValue(_primaryReference(tx, explorer)),
+        label: context.l10n.detailReference,
+        value: SafeDisplayText.displayIdentifier(
+          context,
+          _primaryReference(tx, explorer),
+          leading: 10,
+          trailing: 8,
+        ),
       ),
       if ((tx.invoiceId ?? '').trim().isNotEmpty)
         _DetailItem(
-          label: 'Invoice ID',
-          value: _abbrevValue(tx.invoiceId!.trim()),
+          label: context.l10n.detailRequestCode,
+          value: SafeDisplayText.displayIdentifier(context, tx.invoiceId),
         ),
       if ((tx.paymentHash ?? '').trim().isNotEmpty)
         _DetailItem(
-          label: 'Payment hash',
-          value: _abbrevValue(tx.paymentHash!.trim()),
+          label: context.l10n.detailConfirmationCode,
+          value: SafeDisplayText.displayIdentifier(context, tx.paymentHash),
         ),
       if ((tx.lightningInvoice ?? '').trim().isNotEmpty)
         _DetailItem(
-          label: 'Invoice Lightning',
-          value: tx.lightningInvoice!.trim(),
+          label: context.l10n.detailLightningCode,
+          value: SafeDisplayText.maskInvoice(tx.lightningInvoice),
           fullWidth: true,
-          maxLines: 2,
+          maxLines: 1,
         ),
       if ((tx.description ?? '').trim().isNotEmpty)
         _DetailItem(
-          label: 'Descrição',
+          label: context.l10n.description,
           value: tx.description!.trim(),
           fullWidth: true,
           maxLines: 3,
         ),
       if (tx.feeSatoshis > 0)
-        _DetailItem(
-          label: 'Taxa',
-          value: feeAmount,
-        ),
+        _DetailItem(label: context.l10n.fee, value: feeAmount),
       _DetailItem(
-        label: 'Confirmações',
+        label: context.l10n.onchainDepositConfirmationsLabel,
         value: tx.confirmations.toString(),
       ),
     ];
@@ -135,7 +140,8 @@ class TxDetailOverlay extends ConsumerWidget {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    'DETALHES DA TRANSACAO',
+                                    context.l10n.transactionDetails
+                                        .toUpperCase(),
                                     style: AppTypography.caption.copyWith(
                                       color: monoMutedTextColor,
                                       fontWeight: FontWeight.w800,
@@ -195,7 +201,9 @@ class TxDetailOverlay extends ConsumerWidget {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    visual.label.toUpperCase(),
+                                    visual
+                                        .localizedLabel(context)
+                                        .toUpperCase(),
                                     textAlign: TextAlign.center,
                                     style: Theme.of(context)
                                         .textTheme
@@ -213,7 +221,7 @@ class TxDetailOverlay extends ConsumerWidget {
                                     style: AppTypography.h2.copyWith(
                                       color: monoTextColor,
                                       fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.6,
+                                      letterSpacing: 0,
                                     ),
                                   ),
                                   if (selectedCurrency != Currency.btc) ...[
@@ -248,11 +256,19 @@ class TxDetailOverlay extends ConsumerWidget {
                               }).toList(),
                             ),
                             const SizedBox(height: 16),
+                            if (tx.canCancelPendingReceive) ...[
+                              _OverlayActionButton(
+                                label: context.l10n.onchainDepositCancelAction,
+                                icon: LucideIcons.xCircle,
+                                onTap: () => _cancelReceive(context, ref),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
                             Row(
                               children: [
                                 Expanded(
                                   child: _OverlayActionButton(
-                                    label: 'Copiar dados',
+                                    label: context.l10n.apiDisplayDataCopied,
                                     icon: LucideIcons.copy,
                                     onTap: () => _copyTransactionSummary(
                                       context,
@@ -308,6 +324,58 @@ class TxDetailOverlay extends ConsumerWidget {
     );
   }
 
+  Future<void> _cancelReceive(BuildContext context, WidgetRef ref) async {
+    final transferId = tx.externalTransferId?.trim() ?? '';
+    if (transferId.isEmpty || !tx.canCancelPendingReceive) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(context.l10n.onchainDepositCancelTitle),
+            content: Text(context.l10n.onchainDepositCancelMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(context.l10n.goBack),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(context.l10n.onchainDepositCancelAction),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await ref
+          .read(transactionRepositoryProvider)
+          .cancelInboundTransfer(transferId);
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(pagedTransactionHistoryProvider);
+      ref.invalidate(externalTransfersProvider);
+      if (context.mounted) {
+        onClose();
+        AppNotice.showSuccess(
+          context,
+          message: context.l10n.apiDisplayReceiveCancelled,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        AppNotice.showError(
+          context,
+          message: ErrorTranslator.translate(context.l10n, error.toString()),
+        );
+      }
+    }
+  }
+
   Future<void> _copyTransactionSummary(
     BuildContext context, {
     required Transaction tx,
@@ -318,21 +386,21 @@ class TxDetailOverlay extends ConsumerWidget {
     required String amountSign,
   }) async {
     final summary = <String>[
-      'Tipo: ${TransactionVisualSpec.fromTransaction(tx).label}',
-      'Status: ${tx.status.displayName}',
-      'Valor: $amountSign$primaryAmount',
-      'BTC: $cryptoAmount',
-      'Data: ${_formatTimestamp(tx.timestamp)}',
-      '${_counterpartyLabel(tx)}: ${_counterpartyValue(tx)}',
-      'Rede: ${explorer.badgeLabel}',
-      'Referência: ${_primaryReference(tx, explorer)}',
+      '${context.l10n.detailType}: ${TransactionVisualSpec.fromTransaction(tx).localizedLabel(context)}',
+      '${context.l10n.status}: ${tx.status.displayName}',
+      '${context.l10n.value}: $amountSign$primaryAmount',
+      '${context.l10n.detailBtcAmount}: $cryptoAmount',
+      '${context.l10n.date}: ${_formatTimestamp(tx.timestamp)}',
+      '${_counterpartyLabel(tx)}: ${_counterpartyValue(context, tx)}',
+      '${context.l10n.onchainDepositNetworkLabel}: ${explorer.badgeLabel}',
+      '${context.l10n.detailReference}: ${_primaryReference(tx, explorer)}',
       if ((tx.invoiceId ?? '').trim().isNotEmpty)
-        'Invoice ID: ${tx.invoiceId!.trim()}',
+        '${context.l10n.detailRequestCode}: ${tx.invoiceId!.trim()}',
       if ((tx.paymentHash ?? '').trim().isNotEmpty)
-        'Payment hash: ${tx.paymentHash!.trim()}',
+        '${context.l10n.detailConfirmationCode}: ${tx.paymentHash!.trim()}',
       if ((tx.description ?? '').trim().isNotEmpty)
-        'Descrição: ${tx.description!.trim()}',
-      if (tx.feeSatoshis > 0) 'Taxa: $feeAmount',
+        '${context.l10n.description}: ${tx.description!.trim()}',
+      if (tx.feeSatoshis > 0) '${context.l10n.fee}: $feeAmount',
     ].join('\n');
 
     await Clipboard.setData(ClipboardData(text: summary));
@@ -343,8 +411,8 @@ class TxDetailOverlay extends ConsumerWidget {
 
     AppNotice.showSuccess(
       context,
-      title: 'Dados copiados',
-      message: 'Resumo da transação copiado para a área de transferência.',
+      title: context.l10n.apiDisplayDataCopied,
+      message: context.l10n.apiDisplayTransactionSummaryCopied,
     );
   }
 
@@ -352,9 +420,9 @@ class TxDetailOverlay extends ConsumerWidget {
     return resolvePrimaryTransactionAddressLabel(tx);
   }
 
-  static String _counterpartyValue(Transaction tx) {
+  static String _counterpartyValue(BuildContext context, Transaction tx) {
     final value = resolvePrimaryTransactionAddress(tx).trim();
-    return value.isEmpty ? 'Endereço indisponível' : value;
+    return value.isEmpty ? SafeDisplayText.addressUnavailable(context) : value;
   }
 
   static IconData _railIcon(MiningExplorerDescriptor explorer) {
@@ -425,14 +493,6 @@ class TxDetailOverlay extends ConsumerWidget {
         : (tx.blockchainTxid ?? tx.id);
   }
 
-  static String _abbrevValue(String value) {
-    final normalized = value.trim();
-    if (normalized.length <= 28) {
-      return normalized;
-    }
-    return '${normalized.substring(0, 12)}...${normalized.substring(normalized.length - 10)}';
-  }
-
   static String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.day.toString().padLeft(2, '0')}/${timestamp.month.toString().padLeft(2, '0')}/${timestamp.year} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
@@ -499,10 +559,7 @@ class _SemanticBadge extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _SemanticBadge({
-    required this.icon,
-    required this.label,
-  });
+  const _SemanticBadge({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -590,10 +647,7 @@ class _OverlayIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _OverlayIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _OverlayIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -609,11 +663,7 @@ class _OverlayIconButton extends StatelessWidget {
             borderColor: monoBorderStrongColor,
             showShadow: false,
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: monoTextColor,
-          ),
+          child: Icon(icon, size: 16, color: monoTextColor),
         ),
       ),
     );

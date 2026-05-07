@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/device_helper.dart';
 import '../../domain/entities/account_security_profile.dart';
+import '../../domain/entities/admin_access.dart';
 
 abstract class SecurityRemoteDataSource {
   Future<Map<String, dynamic>> getSovereigntyStatus();
@@ -32,6 +33,20 @@ abstract class SecurityRemoteDataSource {
   Future<Map<String, dynamic>> verifyAppPin({
     required String pin,
   });
+  Future<Map<String, dynamic>> getAdminKeyStatus();
+  Future<Map<String, dynamic>> createAdminKey({
+    required String keyMaterialHash,
+    required String deviceInstallId,
+  });
+  Future<Map<String, dynamic>> revokeAdminKey();
+  Future<List<AdminAccessAttempt>> getPendingAdminAttempts();
+  Future<AdminAccessAttempt> decideAdminAttempt({
+    required String attemptId,
+    required bool approve,
+  });
+  Future<List<AdminAuthenticatedDevice>> getAdminDevices();
+  Future<void> blockAdminDevice(String deviceId);
+  Future<void> revokeAdminDevice(String deviceId);
 }
 
 class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
@@ -253,5 +268,86 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
         message: 'Erro ao validar PIN do aplicativo: $e',
       );
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAdminKeyStatus() async {
+    final response = await apiClient.get(AppConfig.authAdminKey);
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> createAdminKey({
+    required String keyMaterialHash,
+    required String deviceInstallId,
+  }) async {
+    final response = await apiClient.post(
+      AppConfig.authAdminKey,
+      data: {
+        'keyMaterialHash': keyMaterialHash,
+        'deviceInstallId': deviceInstallId,
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> revokeAdminKey() async {
+    final response = await apiClient.delete(AppConfig.authAdminKey);
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<List<AdminAccessAttempt>> getPendingAdminAttempts() async {
+    final response = await apiClient.get(AppConfig.authAdminPendingAttempts);
+    final body = response.data;
+    if (body is List) {
+      return body
+          .whereType<Map>()
+          .map((item) => AdminAccessAttempt.fromJson(
+                Map<String, dynamic>.from(item),
+              ))
+          .toList();
+    }
+    return const [];
+  }
+
+  @override
+  Future<AdminAccessAttempt> decideAdminAttempt({
+    required String attemptId,
+    required bool approve,
+  }) async {
+    final response = await apiClient.post(
+      AppConfig.authAdminAttemptDecision(attemptId),
+      data: {'decision': approve ? 'APPROVE' : 'BLOCK'},
+    );
+    return AdminAccessAttempt.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
+  }
+
+  @override
+  Future<List<AdminAuthenticatedDevice>> getAdminDevices() async {
+    final response = await apiClient.get(AppConfig.authAdminDevices);
+    final body = response.data;
+    if (body is List) {
+      return body
+          .whereType<Map>()
+          .map((item) => AdminAuthenticatedDevice.fromJson(
+                Map<String, dynamic>.from(item),
+              ))
+          .toList();
+    }
+    return const [];
+  }
+
+  @override
+  Future<void> blockAdminDevice(String deviceId) async {
+    await apiClient.post(AppConfig.authAdminDeviceBlock(deviceId));
+  }
+
+  @override
+  Future<void> revokeAdminDevice(String deviceId) async {
+    await apiClient.post(AppConfig.authAdminDeviceRevoke(deviceId));
   }
 }

@@ -15,11 +15,8 @@ import (
 )
 
 const (
-	// Permanent encrypted storage on disk
-	PersistentStorageDir = "/app/encrypted-shards"
-
-	// Volatile RAM disk (tmpfs) mapped in docker-compose
-	RamDiskDir = "/mnt/mpc-shards"
+	defaultPersistentStorageDir = "/app/encrypted-shards"
+	defaultRamDiskDir           = "/mnt/mpc-shards"
 )
 
 var (
@@ -31,22 +28,32 @@ var (
 // InitSecureEnclave simulates the Secure Boot / TEE unlocking process.
 // It decrypts the shards from persistent storage and writes them to the RAM disk.
 func InitSecureEnclave() error {
-	log.Println("[ENCLAVE] Starting Secure Boot / SGX Simulation...")
+	log.Println("[ENCLAVE] Starting secure enclave bootstrap...")
 
 	// Verify if RAM disk exists
-	if _, err := os.Stat(RamDiskDir); os.IsNotExist(err) {
-		log.Printf("[ENCLAVE] Warning: %s does not exist. Creating local dir, but it MUST be tmpfs in production.", RamDiskDir)
-		os.MkdirAll(RamDiskDir, 0700)
+	ramDiskDir := ramDiskDir()
+	if _, err := os.Stat(ramDiskDir); os.IsNotExist(err) {
+		log.Printf("[ENCLAVE] Warning: %s does not exist. Creating local dir, but it MUST be tmpfs in production.", ramDiskDir)
+		os.MkdirAll(ramDiskDir, 0700)
+	}
+
+	if requiresConfiguredMasterKey() {
+		key, err := enclaveMasterKey()
+		if err != nil {
+			return err
+		}
+		zeroBytes(key)
 	}
 
 	// Verify persistent storage
-	if _, err := os.Stat(PersistentStorageDir); os.IsNotExist(err) {
-		log.Printf("[ENCLAVE] No existing encrypted shards found at %s. Creating directory.", PersistentStorageDir)
-		os.MkdirAll(PersistentStorageDir, 0700)
+	persistentStorageDir := persistentStorageDir()
+	if _, err := os.Stat(persistentStorageDir); os.IsNotExist(err) {
+		log.Printf("[ENCLAVE] No existing encrypted shards found at %s. Creating directory.", persistentStorageDir)
+		os.MkdirAll(persistentStorageDir, 0700)
 		return nil // Nothing to decrypt yet
 	}
 
-	files, err := os.ReadDir(PersistentStorageDir)
+	files, err := os.ReadDir(persistentStorageDir)
 	if err != nil {
 		return fmt.Errorf("failed to read persistent storage: %v", err)
 	}
@@ -56,8 +63,8 @@ func InitSecureEnclave() error {
 			continue
 		}
 
-		encryptedPath := filepath.Join(PersistentStorageDir, f.Name())
-		ramPath := filepath.Join(RamDiskDir, f.Name()+".decrypted")
+		encryptedPath := filepath.Join(persistentStorageDir, f.Name())
+		ramPath := filepath.Join(ramDiskDir, f.Name()+".decrypted")
 
 		err := decryptShardToRam(encryptedPath, ramPath)
 		if err != nil {
@@ -114,13 +121,13 @@ func decryptShardToRam(encryptedPath, ramPath string) error {
 // SaveEncryptedShard is called when a new user generates a key.
 // It encrypts the generated shard and saves it to disk, while keeping plaintext ONLY in RAM.
 func SaveEncryptedShard(filename string, plaintextData []byte) error {
-	ramPath := filepath.Join(RamDiskDir, filename+".decrypted")
-	encryptedPath := filepath.Join(PersistentStorageDir, filename)
+	ramPath := filepath.Join(ramDiskDir(), filename+".decrypted")
+	encryptedPath := filepath.Join(persistentStorageDir(), filename)
 
-	if err := os.MkdirAll(RamDiskDir, 0700); err != nil {
+	if err := os.MkdirAll(ramDiskDir(), 0700); err != nil {
 		return fmt.Errorf("failed to create RAM shard dir: %v", err)
 	}
-	if err := os.MkdirAll(PersistentStorageDir, 0700); err != nil {
+	if err := os.MkdirAll(persistentStorageDir(), 0700); err != nil {
 		return fmt.Errorf("failed to create encrypted shard dir: %v", err)
 	}
 
@@ -164,7 +171,7 @@ func SaveEncryptedShard(filename string, plaintextData []byte) error {
 
 // GetShardFromRam reads the shard directly from the tmpfs.
 func GetShardFromRam(filename string) ([]byte, error) {
-	ramPath := filepath.Join(RamDiskDir, filename+".decrypted")
+	ramPath := filepath.Join(ramDiskDir(), filename+".decrypted")
 	return os.ReadFile(ramPath)
 }
 
@@ -222,4 +229,23 @@ func zeroBytes(data []byte) {
 	for i := range data {
 		data[i] = 0
 	}
+}
+
+func persistentStorageDir() string {
+	if value := strings.TrimSpace(os.Getenv("MPC_PERSISTENT_STORAGE_DIR")); value != "" {
+		return value
+	}
+	return defaultPersistentStorageDir
+}
+
+func ramDiskDir() string {
+	if value := strings.TrimSpace(os.Getenv("MPC_RAM_DISK_DIR")); value != "" {
+		return value
+	}
+	return defaultRamDiskDir
+}
+
+func requiresConfiguredMasterKey() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv("MPC_REQUIRE_MASTER_KEY")))
+	return value == "1" || value == "true" || value == "yes" || strings.EqualFold(os.Getenv("MPC_RUNTIME_MODE"), "HARDWARE_ENCLAVE")
 }

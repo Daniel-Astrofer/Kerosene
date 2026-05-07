@@ -21,7 +21,7 @@ class AdminColors {
   static const Color textPrimary = Color(0xFFF0F0F2);
   static const Color textSecondary = Color(0xFF9A9AA4);
   static const Color textTertiary = Color(0xFF6A6A74);
-  static const Color textDisabled = Color(0xFF4A4A54);
+  static const Color textDisabled = Color(0xFF70707A);
 
   // ─── Operational Status ──────────────────────────
   static const Color positive = Color(0xFF2ECC71);

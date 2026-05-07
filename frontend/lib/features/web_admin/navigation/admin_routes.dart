@@ -17,15 +17,17 @@ final adminRouteProvider =
 
 enum AdminRoute {
   dashboard('Dashboard', Icons.dashboard_outlined),
-  transactions('Transactions', Icons.swap_horiz),
+  monitoring('Monitoring', Icons.monitor_heart_outlined),
+  transactions('Integrity Proofs', Icons.fingerprint),
   lightning('Lightning', Icons.flash_on_outlined),
   onchain('On-chain', Icons.link),
-  checks('Internal Checks', Icons.receipt_long_outlined),
-  paymentLinks('Payment Links', Icons.qr_code_2_outlined),
+  checks('Hash Chain', Icons.account_tree_outlined),
+  paymentLinks('Payment Metrics', Icons.qr_code_2_outlined),
   analytics('Analytics', Icons.bar_chart),
   volatility('Volatility', Icons.show_chart),
-  companies('Accounts', Icons.business_outlined),
+  companies('Infrastructure', Icons.business_outlined),
   audit('Audit & Security', Icons.security_outlined),
+  authenticatedDevices('Dispositivos autenticados', Icons.devices_outlined),
   notifications('Notifications', Icons.notifications_none_outlined),
   settings('Settings', Icons.settings_outlined);
 

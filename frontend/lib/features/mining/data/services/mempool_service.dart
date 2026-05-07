@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:teste/core/network/api_client.dart';
 import 'package:teste/features/mining/data/models/mempool_market_models.dart';
 import 'package:teste/features/mining/data/models/mempool_transaction_models.dart';
@@ -144,9 +145,8 @@ class MempoolService {
     try {
       final response = await _client.get(path);
       return response.data;
-    } catch (e) {
-      // Log error but don't crash the whole flow
-      print('Error fetching $path: $e');
+    } catch (_) {
+      debugPrint('MempoolService: network data unavailable.');
       return null;
     }
   }

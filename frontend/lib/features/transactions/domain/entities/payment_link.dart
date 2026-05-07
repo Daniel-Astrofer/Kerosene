@@ -28,6 +28,10 @@ class PaymentLink extends Equatable {
   final DateTime? completedAt;
   final DateTime? cancelledAt;
   final String? cancelReason;
+  final String paymentRail;
+  final String paymentIntentStatus;
+  final String? settlementReference;
+  final bool terminal;
 
   const PaymentLink({
     required this.id,
@@ -40,7 +44,7 @@ class PaymentLink extends Equatable {
     required this.description,
     required this.depositAddress,
     this.visibility = 'PRIVATE',
-    this.confirmationMode = 'MANUAL_REVIEW',
+    this.confirmationMode = 'USER_ACTION_REQUIRED',
     this.amountLocked = true,
     this.referenceLabel,
     this.metadata = const {},
@@ -55,6 +59,10 @@ class PaymentLink extends Equatable {
     this.completedAt,
     this.cancelledAt,
     this.cancelReason,
+    this.paymentRail = 'ONCHAIN',
+    this.paymentIntentStatus = 'QUOTED',
+    this.settlementReference,
+    this.terminal = false,
   });
 
   bool get isPending => status == 'pending';
@@ -79,12 +87,15 @@ class PaymentLink extends Equatable {
     }
     final grossAmountBtc =
         (data['grossAmountBtc'] as num?)?.toDouble() ?? amountBtc;
-    final depositFeeBtc =
-        (data['depositFeeBtc'] as num?)?.toDouble() ?? 0;
+    final depositFeeBtc = (data['depositFeeBtc'] as num?)?.toDouble() ?? 0;
     final netAmountBtc =
         (data['netAmountBtc'] as num?)?.toDouble() ?? amountBtc;
 
     final rawStatus = data['status']?.toString() ?? 'pending';
+    final normalizedStatus = rawStatus.toLowerCase();
+    final paymentIntentStatus =
+        data['paymentIntentStatus']?.toString().toUpperCase() ??
+            _paymentIntentStatusFor(normalizedStatus);
 
     return PaymentLink(
       id: data['id']?.toString() ?? '',
@@ -99,9 +110,8 @@ class PaymentLink extends Equatable {
           data['address']?.toString() ??
           '',
       visibility: data['visibility']?.toString().toUpperCase() ?? 'PRIVATE',
-      confirmationMode:
-          data['confirmationMode']?.toString().toUpperCase() ??
-              'MANUAL_REVIEW',
+      confirmationMode: data['confirmationMode']?.toString().toUpperCase() ??
+          'USER_ACTION_REQUIRED',
       amountLocked: _parseBool(data['amountLocked'], fallback: true),
       referenceLabel: data['referenceLabel']?.toString(),
       metadata: _parseMetadata(data['metadata']),
@@ -115,7 +125,7 @@ class PaymentLink extends Equatable {
       ]),
       paymentUri: data['paymentUri']?.toString(),
       locked: _parseBool(data['locked']),
-      status: rawStatus.toLowerCase(),
+      status: normalizedStatus,
       txid: data['txid']?.toString(),
       expiresAt: data['expiresAt'] != null
           ? DateTime.tryParse(data['expiresAt'].toString())
@@ -133,6 +143,13 @@ class PaymentLink extends Equatable {
           ? DateTime.tryParse(data['cancelledAt'].toString())
           : null,
       cancelReason: data['cancelReason']?.toString(),
+      paymentRail: data['paymentRail']?.toString().toUpperCase() ?? 'ONCHAIN',
+      paymentIntentStatus: paymentIntentStatus,
+      settlementReference: data['settlementReference']?.toString(),
+      terminal: _parseBool(
+        data['terminal'],
+        fallback: _terminalPaymentIntentStatus(paymentIntentStatus),
+      ),
     );
   }
 
@@ -163,6 +180,10 @@ class PaymentLink extends Equatable {
         completedAt,
         cancelledAt,
         cancelReason,
+        paymentRail,
+        paymentIntentStatus,
+        settlementReference,
+        terminal,
       ];
 
   /// Converte PaymentLink para Transaction para exibição no histórico unificado
@@ -192,6 +213,33 @@ class PaymentLink extends Equatable {
       description: transactionDescription,
       isInternal: false,
     );
+  }
+
+  static String _paymentIntentStatusFor(String status) {
+    switch (status) {
+      case 'pending':
+        return 'QUOTED';
+      case 'paid':
+      case 'completed':
+        return 'SETTLED';
+      case 'expired':
+        return 'EXPIRED';
+      case 'cancelled':
+      case 'canceled':
+        return 'CANCELED';
+      case 'verifying_onboarding':
+      case 'verifying_activation':
+        return 'PROCESSING';
+      default:
+        return 'REQUIRES_RECONCILIATION';
+    }
+  }
+
+  static bool _terminalPaymentIntentStatus(String status) {
+    return status == 'SETTLED' ||
+        status == 'FAILED' ||
+        status == 'CANCELED' ||
+        status == 'EXPIRED';
   }
 
   static bool _parseBool(Object? value, {bool fallback = false}) {

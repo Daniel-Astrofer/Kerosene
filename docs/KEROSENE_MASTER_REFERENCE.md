@@ -1,6 +1,6 @@
 # Kerosene Master Reference
 
-Inspeção consolidada em `2026-04-23`, derivada de documentação existente, leitura estática do repositório e validação pontual de build.
+Inspeção consolidada em `2026-04-29`, derivada de documentação existente, leitura estática do repositório e validação pontual de build.
 
 Categorias de estado usadas neste documento:
 
@@ -1494,7 +1494,7 @@ sequenceDiagram
 ### 6.10 Pagamento Lightning
 
 1. Usuário cria invoice ou solicita pagamento Lightning.
-2. Para invoice inbound, o caminho principal usa `BTCPay`; para pagamento outbound, o caminho principal usa `LND`.
+2. Para invoice inbound e pagamento outbound, o caminho principal do compose usa `LND` gRPC real.
 3. Para pagamentos, o backend reserva fee máxima, valida fatores transacionais e checa liquidez em `TreasuryService`.
 4. Ao liquidar, persiste `network_transfers`.
 5. Ajusta fee efetiva e notifica o usuário.
@@ -2292,8 +2292,12 @@ Observação importante: `backend/kerosene/.env.example` cobre apenas um subconj
 
 | Variável | Default | Sensível | Observação |
 | --- | --- | --- | --- |
-| `BITCOIN_NETWORK` | `testnet` | não | rede ativa |
-| `BITCOIN_ESPLORA_BASE_URL` | vazio | não | provider Esplora opcional |
+| `BITCOIN_NETWORK` | `mainnet` | não | rede ativa no compose padrão |
+| `BITCOIN_CHAIN` | `mainnet` | não | cadeia do Bitcoin Core local |
+| `BITCOIN_PRUNE_MB` | `5500` | não | poda do node local |
+| `BITCOIN_P2P_PORT` | `8333` | não | porta P2P do Bitcoin Core |
+| `BITCOIN_INDEXER_BASE_URL` | vazio | não | indexador local opcional, nao fonte primaria |
+| `BITCOIN_ESPLORA_ENABLED` | `false` | não | Esplora so entra com opt-in explicito e endpoint local |
 | `BITCOIN_PLATFORM_MASTER_XPUB` | vazio | sensível operacionalmente | base de derivação por wallet |
 | `BITCOIN_HOT_WALLET_ADDRESS` | vazio | sim | hot wallet |
 | `BITCOIN_HOT_WALLET_XPUB` | vazio | sim | xpub hot wallet |
@@ -2325,29 +2329,27 @@ Observação importante: `backend/kerosene/.env.example` cobre apenas um subconj
 | `MPC_MASTER_KEY_B64` | vazio | sim | chave de decrypt dos shards |
 | `MPC_MASTER_KEY_FILE` | vazio | sim | alternativa em arquivo |
 
-### 12.7 Bitcoin Core, BTCPay, LND e quorum PSBT
+### 12.7 Bitcoin Core pruned, LND e quorum PSBT
 
 | Variável | Default | Sensível | Observação |
 | --- | --- | --- | --- |
-| `BITCOIN_RPC_ENABLED` | `false` | não | ativa cliente RPC do Bitcoin Core |
-| `BITCOIN_RPC_URL` | `http://127.0.0.1:8332` local / `http://bitcoind:8332` docker | sim | endpoint JSON-RPC |
-| `BITCOIN_RPC_USERNAME` | vazio | sim | usuário RPC |
+| `BITCOIN_RPC_ENABLED` | `true` no compose Docker | não | ativa cliente RPC do Bitcoin Core |
+| `BITCOIN_CORE_IMAGE` | `bitcoin/bitcoin:27.1` | não | imagem Docker oficial usada pelo no pruned local |
+| `BITCOIN_RPC_REQUIRED` | `true` no compose Docker | não | readiness falha quando RPC local indisponível |
+| `BITCOIN_RPC_PRUNED_REQUIRED` | `true` no compose Docker | não | monitor falha se o RPC nao reportar `pruned=true` |
+| `BITCOIN_RPC_URL` | `http://bitcoin-pruned-node:8332` docker | sim | endpoint JSON-RPC |
+| `BITCOIN_RPC_USER` | `kerosene` | sim | usuário RPC |
 | `BITCOIN_RPC_PASSWORD` | vazio | sim | senha RPC |
-| `BITCOIN_RPC_WALLET` | vazio | não | wallet carregada no node |
-| `BITCOIN_RPC_ZMQ_ENABLED` | `false` | não | ativa listener ZMQ |
-| `BITCOIN_RPC_ZMQ_RAWTX` | `tcp://127.0.0.1:28332` local / `tcp://bitcoind:28332` docker | não | tópico `rawtx` |
-| `BITCOIN_RPC_ZMQ_HASHBLOCK` | `tcp://127.0.0.1:28333` local / `tcp://bitcoind:28333` docker | não | tópico `hashblock` |
-| `BTCPAY_ENABLED` | `false` | não | ativa BTCPay como gateway principal de invoice/endereço |
-| `BTCPAY_BASE_URL` | vazio | sim | URL do BTCPay Server |
-| `BTCPAY_API_KEY` | vazio | sim | Greenfield API key |
-| `BTCPAY_STORE_ID` | vazio | não | store id da integração |
-| `BTCPAY_WEBHOOK_SECRET` | vazio | sim | valida HMAC do webhook |
-| `BTCPAY_ONCHAIN_PAYMENT_METHOD_ID` | `BTC-CHAIN` | não | payment method do wallet on-chain |
-| `BTCPAY_LIGHTNING_PAYMENT_METHOD_ID` | `BTC-LN` | não | payment method Lightning |
-| `BTCPAY_INVOICE_CANCEL_PATH` | vazio | não | path opcional de cancelamento |
-| `LIGHTNING_LND_ENABLED` | `false` | não | ativa cliente REST do LND |
-| `LIGHTNING_LND_BASE_URL` | vazio | sim | endpoint REST do LND |
-| `LIGHTNING_LND_MACAROON` | vazio | sim | macaroon hex |
+| `BITCOIN_RPC_WALLET` | `kerosene` | não | wallet descriptor usado para endereços on-chain reais |
+| `BITCOIN_ZMQ_ENABLED` | `true` no compose Docker | não | ativa listener ZMQ |
+| `BITCOIN_ZMQ_RAWTX` | `tcp://bitcoin-pruned-node:28332` docker | não | tópico `rawtx` |
+| `BITCOIN_ZMQ_HASHBLOCK` | `tcp://bitcoin-pruned-node:28333` docker | não | tópico `hashblock` |
+| `TRANSACTIONS_BITCOIN_CORE_WALLET_ADDRESS_ENABLED` | `true` no compose Docker | não | usa `getnewaddress` no wallet Bitcoin Core |
+| `LIGHTNING_LND_ENABLED` | `true` no compose Docker | não | ativa cliente gRPC do LND |
+| `LIGHTNING_LND_HOST` | `lnd-bitcoind` | não | host gRPC do LND |
+| `LIGHTNING_LND_PORT` | `10009` | não | porta gRPC do LND |
+| `LIGHTNING_LND_TLS_CERT_PATH` | `/lnd/tls.cert` | não | certificado TLS montado do volume LND |
+| `LIGHTNING_LND_MACAROON_PATH` | `/lnd/data/chain/bitcoin/mainnet/admin.macaroon` | sim | macaroon admin montado somente leitura |
 | `LIGHTNING_LND_PAYMENT_TIMEOUT_SECONDS` | `30` | não | timeout do pagamento outbound |
 | `CUSTODY_BASE_URL` | vazio | sim | provider legado genérico |
 | `CUSTODY_API_KEY` | vazio | sim | provider legado genérico |

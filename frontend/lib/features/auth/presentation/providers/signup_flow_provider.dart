@@ -285,7 +285,7 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
     if (state.sessionId == null) return;
 
     setLoading(true);
-    final result = await repo.createActivationDepositLink();
+    final result = await repo.getActivationStatus();
 
     result.fold((failure) => setError(failure.message), (dto) {
       setPaymentDetails(
@@ -299,9 +299,34 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
 
   Future<void> checkPaymentStatus(AuthRepository repo) async {
     if (state.sessionId == null) return;
-    if (state.paymentLinkId != null) {
-      nextStep();
-    }
+    setLoading(true);
+    final result = await repo.getActivationStatus();
+
+    result.fold((failure) => setError(failure.message), (status) {
+      if (status.activated || status.canReceiveInbound) {
+        final nextIndex = (state.currentStep.index + 1)
+            .clamp(0, SignupStep.values.length - 1);
+        updateState(state.copyWith(
+          currentStep: SignupStep.values[nextIndex],
+          paymentAddress: status.depositAddress,
+          paymentAmountBtc: status.amountBtc,
+          paymentLinkId: status.paymentLinkId,
+          isLoading: false,
+          clearError: true,
+        ));
+        return;
+      }
+
+      updateState(state.copyWith(
+        paymentAddress: status.depositAddress,
+        paymentAmountBtc: status.amountBtc,
+        paymentLinkId: status.paymentLinkId,
+        isLoading: false,
+        error: status.warningMessage.isNotEmpty
+            ? status.warningMessage
+            : 'O depósito inicial ainda não foi detectado pelo monitoramento automático.',
+      ));
+    });
   }
 
   void updateConfirmations(int confirmations) {

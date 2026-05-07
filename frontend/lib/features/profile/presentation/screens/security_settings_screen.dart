@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
@@ -54,15 +53,6 @@ class _SecuritySettingsScreenState
     }
   }
 
-  void _copy(String value, String label) {
-    Clipboard.setData(ClipboardData(text: value));
-    AppNotice.showSuccess(
-      context,
-      title: 'Copiado',
-      message: '$label copiado para a área de transferência.',
-    );
-  }
-
   void _refreshSecurityProviders() {
     ref.invalidate(securityStatusProvider);
     ref.invalidate(backupCodesStatusProvider);
@@ -78,7 +68,7 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: 'Falha no TOTP',
+            title: context.l10n.securityTotpFailureTitle,
             message: ErrorTranslator.translate(
               context.l10n,
               failure.toString(),
@@ -100,8 +90,8 @@ class _SecuritySettingsScreenState
     if (_totpCodeController.text.trim().length != 6) {
       AppNotice.showError(
         context,
-        title: 'Código inválido',
-        message: 'Digite os 6 dígitos do autenticador.',
+        title: context.l10n.securityInvalidCodeTitle,
+        message: context.l10n.securityTotpCodeRequiredMessage,
       );
       return;
     }
@@ -115,7 +105,7 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: 'Falha no TOTP',
+            title: context.l10n.securityTotpFailureTitle,
             message: ErrorTranslator.translate(
               context.l10n,
               failure.toString(),
@@ -131,8 +121,8 @@ class _SecuritySettingsScreenState
           _refreshSecurityProviders();
           AppNotice.showSuccess(
             context,
-            title: 'TOTP ativado',
-            message: 'A conta agora está protegida com autenticador.',
+            title: context.l10n.securityTotpEnabledTitle,
+            message: context.l10n.securityTotpEnabledMessage,
           );
           if (status.newlyGeneratedCodes.isNotEmpty) {
             _showBackupCodesSheet(status.newlyGeneratedCodes);
@@ -150,7 +140,7 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: 'Falha ao desativar',
+            title: context.l10n.securityTotpDisableFailedTitle,
             message: ErrorTranslator.translate(
               context.l10n,
               failure.toString(),
@@ -166,8 +156,8 @@ class _SecuritySettingsScreenState
           _refreshSecurityProviders();
           AppNotice.showSuccess(
             context,
-            title: 'TOTP desativado',
-            message: 'A conta voltou ao estado não protegido.',
+            title: context.l10n.securityTotpDisabledTitle,
+            message: context.l10n.securityTotpDisabledMessage,
           );
         },
       );
@@ -182,7 +172,7 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: 'Falha ao regenerar',
+            title: context.l10n.securityBackupRegenerateFailedTitle,
             message: ErrorTranslator.translate(
               context.l10n,
               failure.toString(),
@@ -251,7 +241,7 @@ class _SecuritySettingsScreenState
                   color: monoBorderStrongColor,
                 ),
                 Text(
-                  'BACKUP CODES',
+                  context.l10n.securityBackupCodesTitle.toUpperCase(),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: monoMutedTextColor,
                         fontWeight: FontWeight.w800,
@@ -260,7 +250,7 @@ class _SecuritySettingsScreenState
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Guarde estes codigos fora deste aparelho. Voce pode reabrir esta lista em Configuracoes > Seguranca.',
+                  context.l10n.securityBackupCodesBody,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: monoMutedTextColor,
                         height: 1.45,
@@ -295,12 +285,6 @@ class _SecuritySettingsScreenState
                       )
                       .toList(),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton(
-                  onPressed: () => _copy(codes.join('\n'), 'Backup codes'),
-                  style: monochromeFilledButtonStyle(),
-                  child: const Text('COPIAR CODIGOS'),
-                ),
               ],
             ),
           ),
@@ -320,7 +304,7 @@ class _SecuritySettingsScreenState
       if (authState is AuthError) {
         AppNotice.showError(
           context,
-          title: 'Falha ao registrar passkey',
+          title: context.l10n.securityRegisterDeviceFailedTitle,
           message: ErrorTranslator.translate(
             context.l10n,
             authState.toString(),
@@ -333,21 +317,21 @@ class _SecuritySettingsScreenState
       _refreshSecurityProviders();
       AppNotice.showSuccess(
         context,
-        title: 'Passkey registrada',
-        message: 'Este dispositivo agora está vinculado à sua conta.',
+        title: context.l10n.securityDeviceRegisteredTitle,
+        message: context.l10n.securityDeviceRegisteredMessage,
       );
     });
   }
 
-  String _passkeySubtitle(
+  String _authenticatedDevicesSubtitle(
     dynamic security,
     AccountSecurityProfile? profile,
   ) {
     final inventory = profile?.passkeys;
     if (inventory == null || !inventory.passkeyRegistered) {
       return security.passkeyRegistered
-          ? 'A conta possui passkey registrada, mas o inventário deste login ainda não foi carregado.'
-          : 'Registre uma passkey neste aparelho.';
+          ? context.l10n.securityDeviceInventoryLoadingSubtitle
+          : context.l10n.securityRegisterDeviceSubtitle;
     }
 
     if (inventory.compatibleForCurrentLogin) {
@@ -355,15 +339,15 @@ class _SecuritySettingsScreenState
           .where((device) => device.compatibleWithCurrentLogin)
           .length;
       return compatibleCount == 1
-          ? 'Existe 1 passkey compatível com este login.'
-          : 'Existem $compatibleCount passkeys compatíveis com este login.';
+          ? context.l10n.securityCompatibleDeviceOne
+          : context.l10n.securityCompatibleDeviceMany(compatibleCount);
     }
 
     if (inventory.legacyCredentialsPresent) {
-      return 'Há passkeys antigas sem metadados de origem. Este login ainda pode tentar usá-las.';
+      return context.l10n.securityLegacyDeviceSubtitle;
     }
 
-    return 'As passkeys registradas não são compatíveis com este login. Entre com senha + TOTP e vincule uma nova.';
+    return context.l10n.securityNoCompatibleDeviceSubtitle;
   }
 
   @override
@@ -401,7 +385,7 @@ class _SecuritySettingsScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Segurança',
+                        context.l10n.securityScreenTitle,
                         style:
                             Theme.of(context).textTheme.displaySmall?.copyWith(
                                   color: monoTextColor,
@@ -410,7 +394,7 @@ class _SecuritySettingsScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Passkey, TOTP, backup codes e PIN deste dispositivo.',
+                        context.l10n.securityScreenSubtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: monoMutedTextColor,
                               height: 1.4,
@@ -430,10 +414,10 @@ class _SecuritySettingsScreenState
                     _BannerCard(
                       color: Colors.white54,
                       icon: Icons.warning_amber_rounded,
-                      title: 'Conta não protegida',
+                      title: context.l10n.securityUnprotectedTitle,
                       body: security.warningMessage.isNotEmpty
                           ? security.warningMessage
-                          : 'Ative TOTP para adicionar uma camada opcional de proteção.',
+                          : context.l10n.securityUnprotectedFallback,
                     ),
                   const SizedBox(height: AppSpacing.md),
                   _StatusCard(
@@ -462,24 +446,25 @@ class _SecuritySettingsScreenState
                       ),
                     ),
                     loading: () => const _LoadingCard(),
-                    error: (_, __) => const _ErrorCard(
-                      title: 'PIN de entrada',
-                      body:
-                          'Nao foi possivel consultar o PIN numerico deste dispositivo.',
+                    error: (_, __) => _ErrorCard(
+                      title: context.l10n.securityPinEntryTitle,
+                      body: context.l10n.securityPinLoadError,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _SectionCard(
-                    title: 'Passkey',
+                    title: context.l10n.securityAuthenticatedDevicesTitle,
                     subtitle: securityProfileAsync.maybeWhen(
-                      data: (profile) => _passkeySubtitle(security, profile),
+                      data: (profile) =>
+                          _authenticatedDevicesSubtitle(security, profile),
                       orElse: () => security.passkeyRegistered
-                          ? 'A passkey está registrada para esta conta.'
-                          : 'Registre uma passkey neste aparelho.',
+                          ? context.l10n.securityRegisteredDeviceSubtitle
+                          : context.l10n.securityRegisterThisDeviceSubtitle,
                     ),
                     actionLabel: security.passkeyRegistered
-                        ? 'VINCULAR NOVA PASSKEY'
-                        : 'REGISTRAR PASSKEY',
+                        ? context.l10n.securityLinkNewDeviceAction.toUpperCase()
+                        : context.l10n.securityRegisterDeviceAction
+                            .toUpperCase(),
                     onAction: _registerPasskey,
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -488,10 +473,9 @@ class _SecuritySettingsScreenState
                       inventory: profile.passkeys,
                     ),
                     loading: () => const _LoadingCard(),
-                    error: (_, __) => const _ErrorCard(
-                      title: 'Dispositivos passkey',
-                      body:
-                          'Não foi possível consultar a compatibilidade das passkeys deste login.',
+                    error: (_, __) => _ErrorCard(
+                      title: context.l10n.securityAuthenticatedDevicesTitle,
+                      body: context.l10n.securityDeviceCompatibilityError,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -501,18 +485,17 @@ class _SecuritySettingsScreenState
                       setupSecret: _setupSecret,
                       controller: _totpCodeController,
                       busy: _busy,
-                      onCopySecret: () => _copy(_setupSecret, 'Segredo TOTP'),
                       onVerify: _verifyTotpSetup,
                     ),
                   ] else
                     _SectionCard(
-                      title: 'TOTP opcional',
+                      title: context.l10n.securityTotpOptionalTitle,
                       subtitle: security.totpEnabled
-                          ? 'Autenticador ativo. O aviso de conta não protegida desaparece.'
-                          : 'Sem TOTP. A conta fica marcada como não protegida.',
+                          ? context.l10n.securityTotpEnabledSubtitle
+                          : context.l10n.securityTotpDisabledSubtitle,
                       actionLabel: security.totpEnabled
-                          ? 'DESATIVAR TOTP'
-                          : 'ATIVAR TOTP',
+                          ? context.l10n.securityDisableTotpAction.toUpperCase()
+                          : context.l10n.securityEnableTotpAction.toUpperCase(),
                       destructive: security.totpEnabled,
                       onAction:
                           security.totpEnabled ? _disableTotp : _beginTotpSetup,
@@ -520,13 +503,17 @@ class _SecuritySettingsScreenState
                   const SizedBox(height: AppSpacing.md),
                   backupCodesAsync.when(
                     data: (backupStatus) => _SectionCard(
-                      title: 'Backup codes',
+                      title: context.l10n.securityBackupCodesTitle,
                       subtitle: security.totpEnabled
-                          ? '${backupStatus.remainingCodes} códigos restantes. Eles ficam em Configurações > Segurança.'
-                          : 'Ative o TOTP para liberar backup codes.',
+                          ? context.l10n.securityBackupCodesRemaining(
+                              backupStatus.remainingCodes,
+                            )
+                          : context.l10n.securityBackupCodesLockedSubtitle,
                       actionLabel: security.totpEnabled
-                          ? 'REGERAR CÓDIGOS'
-                          : 'AGUARDANDO TOTP',
+                          ? context.l10n.securityRegenerateCodesAction
+                              .toUpperCase()
+                          : context.l10n.securityWaitingTotpAction
+                              .toUpperCase(),
                       disabled: !security.totpEnabled,
                       onAction:
                           security.totpEnabled ? _regenerateBackupCodes : null,
@@ -535,23 +522,25 @@ class _SecuritySettingsScreenState
                               onPressed: () =>
                                   _showBackupCodesSheet(_latestGeneratedCodes),
                               style: monochromeTextButtonStyle(),
-                              child: const Text('VER ULTIMOS'),
+                              child: Text(
+                                context.l10n.securityViewLatestAction
+                                    .toUpperCase(),
+                              ),
                             )
                           : null,
                     ),
                     loading: () => const _LoadingCard(),
-                    error: (_, __) => const _ErrorCard(
-                      title: 'Backup codes',
-                      body: 'Não foi possível consultar os códigos de backup.',
+                    error: (_, __) => _ErrorCard(
+                      title: context.l10n.securityBackupCodesTitle,
+                      body: context.l10n.securityBackupCodesLoadError,
                     ),
                   ),
                 ],
               ),
               loading: () => const _LoadingCard(),
-              error: (_, __) => const _ErrorCard(
-                title: 'Segurança',
-                body:
-                    'Não foi possível consultar o estado de segurança da conta.',
+              error: (_, __) => _ErrorCard(
+                title: context.l10n.securityScreenTitle,
+                body: context.l10n.securityStatusLoadError,
               ),
             ),
           ],
@@ -641,7 +630,7 @@ class _StatusCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Estado atual',
+            context.l10n.securityCurrentStatusTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
@@ -652,12 +641,24 @@ class _StatusCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _StatusPill('Senha forte', security.passwordConfigured),
-              _StatusPill('Passkey', security.passkeyRegistered),
+              _StatusPill(
+                context.l10n.securityStrongPasswordPill,
+                security.passwordConfigured,
+              ),
+              _StatusPill(
+                context.l10n.securityDevicePill,
+                security.passkeyRegistered,
+              ),
               _StatusPill('TOTP', security.totpEnabled),
-              _StatusPill('Inbound', security.inboundEnabled),
-              _StatusPill('PIN de entrada', appPinEnabled),
-              _StatusPill('Biometria local', biometricEnabled),
+              _StatusPill(
+                context.l10n.securityInboundPill,
+                security.inboundEnabled,
+              ),
+              _StatusPill(context.l10n.securityAppPinPill, appPinEnabled),
+              _StatusPill(
+                context.l10n.securityLocalBiometricsPill,
+                biometricEnabled,
+              ),
             ],
           ),
         ],
@@ -713,7 +714,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Dispositivos passkey',
+            context.l10n.securityAuthenticatedDevicesTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
@@ -721,7 +722,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            _summaryText(inventory),
+            _summaryText(context, inventory),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: monoMutedTextColor,
                   height: 1.45,
@@ -738,11 +739,11 @@ class _PasskeyInventoryCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.key_rounded, color: summaryColor),
+                Icon(Icons.devices_rounded, color: summaryColor),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    _summaryBanner(inventory),
+                    _summaryBanner(context, inventory),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: monoTextColor,
                           height: 1.45,
@@ -762,12 +763,12 @@ class _PasskeyInventoryCard extends StatelessWidget {
               children: [
                 if (inventory.currentHost.isNotEmpty)
                   _InventoryContextChip(
-                    label: 'Host atual',
+                    label: context.l10n.securityCurrentHostLabel,
                     value: inventory.currentHost,
                   ),
                 if (inventory.currentRelyingPartyId.isNotEmpty)
                   _InventoryContextChip(
-                    label: 'RP atual',
+                    label: context.l10n.securityCurrentRpLabel,
                     value: inventory.currentRelyingPartyId,
                   ),
               ],
@@ -775,18 +776,17 @@ class _PasskeyInventoryCard extends StatelessWidget {
           ],
           if (inventory?.legacyCredentialsPresent == true) ...[
             const SizedBox(height: AppSpacing.md),
-            const _BannerCard(
+            _BannerCard(
               color: Colors.white54,
               icon: Icons.history_toggle_off_rounded,
-              title: 'Credenciais legadas detectadas',
-              body:
-                  'Existem passkeys antigas sem metadados de origem. Elas podem aparecer como compatibilidade desconhecida ate serem substituidas.',
+              title: context.l10n.securityLegacyCredentialsTitle,
+              body: context.l10n.securityLegacyCredentialsBody,
             ),
           ],
           const SizedBox(height: AppSpacing.md),
           if (inventory == null || !inventory.passkeyRegistered)
             Text(
-              'Nenhuma passkey foi vinculada para esta conta neste contexto.',
+              context.l10n.securityNoAuthenticatedDevice,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: monoMutedTextColor,
                     height: 1.45,
@@ -794,7 +794,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
             )
           else if (inventory.devices.isEmpty)
             Text(
-              'O backend informou passkey registrada, mas ainda nao retornou dispositivos detalhados para este login.',
+              context.l10n.securityDeviceDetailsUnavailable,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: monoMutedTextColor,
                     height: 1.45,
@@ -824,41 +824,45 @@ class _PasskeyInventoryCard extends StatelessWidget {
     return Colors.white24;
   }
 
-  static String _summaryText(PasskeyInventory? inventory) {
+  static String _summaryText(
+      BuildContext context, PasskeyInventory? inventory) {
     if (inventory == null) {
-      return 'O inventario de compatibilidade ainda nao foi carregado.';
+      return context.l10n.securityInventoryNotLoaded;
     }
     if (!inventory.passkeyRegistered) {
-      return 'Nenhuma passkey registrada para esta conta.';
+      return context.l10n.securityInventoryNone;
     }
     if (inventory.compatibleForCurrentLogin) {
-      return 'Ao menos uma passkey registrada pode ser usada neste login.';
+      return context.l10n.securityInventoryCompatible;
     }
     if (inventory.legacyCredentialsPresent) {
-      return 'Existem passkeys sem metadados completos. Revise os dispositivos abaixo antes de depender delas.';
+      return context.l10n.securityInventoryLegacy;
     }
-    return 'As passkeys vinculadas atualmente nao servem para este login.';
+    return context.l10n.securityInventoryIncompatible;
   }
 
-  static String _summaryBanner(PasskeyInventory? inventory) {
+  static String _summaryBanner(
+    BuildContext context,
+    PasskeyInventory? inventory,
+  ) {
     if (inventory == null) {
-      return 'Nao foi possivel determinar se este login possui uma passkey utilizavel.';
+      return context.l10n.securityInventoryUnknownBanner;
     }
     if (!inventory.passkeyRegistered) {
-      return 'Vincule uma passkey neste dispositivo para liberar confirmacoes e login compativeis com o contexto atual.';
+      return context.l10n.securityInventoryRegisterBanner;
     }
     if (inventory.compatibleForCurrentLogin) {
       final compatibleCount = inventory.devices
           .where((device) => device.compatibleWithCurrentLogin)
           .length;
       return compatibleCount > 0
-          ? '$compatibleCount dispositivo(s) podem assinar neste login agora.'
-          : 'Existe ao menos uma passkey compativel com este login.';
+          ? context.l10n.securityInventoryCompatibleCount(compatibleCount)
+          : context.l10n.securityInventoryCompatibleFallback;
     }
     if (inventory.legacyCredentialsPresent) {
-      return 'Ha credenciais legadas. Se este login falhar, entre com senha + TOTP e vincule uma nova passkey neste aparelho.';
+      return context.l10n.securityInventoryLegacyBanner;
     }
-    return 'Nenhuma passkey compativel foi encontrada para este host e relying party. Entre com senha + TOTP e vincule outra.';
+    return context.l10n.securityInventoryIncompatibleBanner;
   }
 }
 
@@ -879,20 +883,24 @@ class _AppPinSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final subtitle = status.enabled
         ? status.locked
-            ? 'PIN ativo antes da entrada no app. Bloqueado temporariamente neste dispositivo.'
-            : 'PIN ativo antes da entrada no app. ${status.remainingAttempts} tentativas restantes antes do bloqueio.'
-        : 'Proteja a entrada do app neste dispositivo com um PIN numerico independente da senha principal.';
+            ? context.l10n.securityPinActiveLockedSubtitle
+            : context.l10n.securityPinActiveAttemptsSubtitle(
+                status.remainingAttempts,
+              )
+        : context.l10n.securityPinDisabledSubtitle;
 
     return _SectionCard(
-      title: 'PIN de entrada',
+      title: context.l10n.securityPinEntryTitle,
       subtitle: subtitle,
-      actionLabel: status.enabled ? 'ALTERAR PIN' : 'ATIVAR PIN',
+      actionLabel: status.enabled
+          ? context.l10n.securityChangePinAction.toUpperCase()
+          : context.l10n.securityEnablePinAction.toUpperCase(),
       onAction: status.enabled ? onChange : onEnable,
       trailing: status.enabled
           ? TextButton(
               onPressed: onDisable,
               style: monochromeTextButtonStyle(),
-              child: const Text('DESATIVAR'),
+              child: Text(context.l10n.securityDisableAction.toUpperCase()),
             )
           : null,
     );
@@ -939,7 +947,8 @@ class _AppPinManagementSheetState
     if (_requiresNewPin &&
         _newPinController.text.trim() != _confirmPinController.text.trim()) {
       setState(
-          () => _error = 'O novo PIN e a confirmacao precisam ser iguais.');
+        () => _error = context.l10n.securityPinMismatchError,
+      );
       return;
     }
 
@@ -980,18 +989,15 @@ class _AppPinManagementSheetState
   @override
   Widget build(BuildContext context) {
     final title = switch (widget.mode) {
-      _AppPinSheetMode.enable => 'Ativar PIN de entrada',
-      _AppPinSheetMode.change => 'Alterar PIN deste dispositivo',
-      _AppPinSheetMode.disable => 'Desativar PIN de entrada',
+      _AppPinSheetMode.enable => context.l10n.securityPinEnableTitle,
+      _AppPinSheetMode.change => context.l10n.securityPinChangeTitle,
+      _AppPinSheetMode.disable => context.l10n.securityPinDisableTitle,
     };
 
     final body = switch (widget.mode) {
-      _AppPinSheetMode.enable =>
-        'O PIN sera exigido sempre que o app abrir com esta sessao neste dispositivo.',
-      _AppPinSheetMode.change =>
-        'Use o PIN atual ou um codigo TOTP da conta para cadastrar um novo PIN.',
-      _AppPinSheetMode.disable =>
-        'Use o PIN atual ou um codigo TOTP da conta para remover a barreira de entrada deste dispositivo.',
+      _AppPinSheetMode.enable => context.l10n.securityPinEnableBody,
+      _AppPinSheetMode.change => context.l10n.securityPinChangeBody,
+      _AppPinSheetMode.disable => context.l10n.securityPinDisableBody,
     };
 
     return Padding(
@@ -1040,7 +1046,7 @@ class _AppPinManagementSheetState
                 maxLength: widget.initialStatus.maxPinLength,
                 style: const TextStyle(color: monoTextColor),
                 decoration: monochromeInputDecoration(
-                  label: 'PIN atual (ou use o TOTP)',
+                  label: context.l10n.securityCurrentPinLabel,
                   counterText: '',
                 ),
               ),
@@ -1052,7 +1058,7 @@ class _AppPinManagementSheetState
                   maxLength: 6,
                   style: const TextStyle(color: monoTextColor),
                   decoration: monochromeInputDecoration(
-                    label: 'Codigo TOTP',
+                    label: context.l10n.securityTotpCodeLabel,
                     counterText: '',
                   ),
                 ),
@@ -1065,8 +1071,10 @@ class _AppPinManagementSheetState
                 maxLength: widget.initialStatus.maxPinLength,
                 style: const TextStyle(color: monoTextColor),
                 decoration: monochromeInputDecoration(
-                  label:
-                      'Novo PIN (${widget.initialStatus.minPinLength}-${widget.initialStatus.maxPinLength} digitos)',
+                  label: context.l10n.securityNewPinLabel(
+                    widget.initialStatus.minPinLength,
+                    widget.initialStatus.maxPinLength,
+                  ),
                   counterText: '',
                 ),
               ),
@@ -1077,7 +1085,7 @@ class _AppPinManagementSheetState
                 maxLength: widget.initialStatus.maxPinLength,
                 style: const TextStyle(color: monoTextColor),
                 decoration: monochromeInputDecoration(
-                  label: 'Confirmar novo PIN',
+                  label: context.l10n.securityConfirmNewPinLabel,
                   counterText: '',
                 ),
               ),
@@ -1112,8 +1120,8 @@ class _AppPinManagementSheetState
                     )
                   : Text(
                       widget.mode == _AppPinSheetMode.disable
-                          ? 'DESATIVAR PIN'
-                          : 'SALVAR PIN',
+                          ? context.l10n.securityDisablePinAction.toUpperCase()
+                          : context.l10n.securitySavePinAction.toUpperCase(),
                     ),
             ),
           ],
@@ -1202,26 +1210,65 @@ class _PasskeyDeviceRow extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
+          if (device.brand.isNotEmpty)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceBrandLabel,
+              value: device.brand,
+            ),
+          if (device.model.isNotEmpty)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceModelLabel,
+              value: device.model,
+            ),
+          if (device.serialNumber.isNotEmpty)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceSerialLabel,
+              value: device.serialNumber,
+            )
+          else if (device.deviceInstallId.isNotEmpty)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceInstallIdLabel,
+              value: device.deviceInstallId,
+            ),
+          if (device.browser.isNotEmpty)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceBrowserLabel,
+              value: device.browser,
+            ),
+          if (device.platform.isNotEmpty)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceSystemLabel,
+              value: device.platform,
+            ),
+          _DeviceMetaLine(
+            label: context.l10n.securityDeviceStatusLabel,
+            value: _statusLabel(context, device.status),
+          ),
+          if (device.firstAccessAt != null)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceFirstAccessLabel,
+              value: _dateLabel(device.firstAccessAt!),
+            ),
+          if (device.lastAccessAt != null)
+            _DeviceMetaLine(
+              label: context.l10n.securityDeviceLastAccessLabel,
+              value: _dateLabel(device.lastAccessAt!),
+            ),
           if (device.originHost.isNotEmpty)
             _DeviceMetaLine(
-              label: 'Origem',
+              label: context.l10n.securityDeviceOriginLabel,
               value: device.originHost,
             ),
           if (device.relyingPartyId.isNotEmpty)
             _DeviceMetaLine(
-              label: 'Relying party',
+              label: context.l10n.securityDeviceRelyingPartyLabel,
               value: device.relyingPartyId,
-            ),
-          if (device.credentialId != null && device.credentialId!.isNotEmpty)
-            _DeviceMetaLine(
-              label: 'Credencial',
-              value: device.credentialId!,
             ),
           const SizedBox(height: 8),
           Text(
             device.compatibleWithCurrentLogin
-                ? 'Pode ser usada neste login.'
-                : _compatibilityHint(device.compatibilityStatus),
+                ? context.l10n.securityDeviceCanUse
+                : _compatibilityHint(context, device.compatibilityStatus),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: device.compatibleWithCurrentLogin
                       ? monoTextColor
@@ -1234,15 +1281,37 @@ class _PasskeyDeviceRow extends StatelessWidget {
     );
   }
 
-  static String _compatibilityHint(PasskeyCompatibilityStatus status) {
+  static String _compatibilityHint(
+    BuildContext context,
+    PasskeyCompatibilityStatus status,
+  ) {
     switch (status) {
       case PasskeyCompatibilityStatus.compatible:
-        return 'Pode ser usada neste login.';
+        return context.l10n.securityDeviceCanUse;
       case PasskeyCompatibilityStatus.incompatible:
-        return 'Nao pode ser usada neste login atual.';
+        return context.l10n.securityDeviceCannotUse;
       case PasskeyCompatibilityStatus.unknown:
-        return 'Compatibilidade ainda nao determinada para esta credencial.';
+        return context.l10n.securityDeviceUnknownUse;
     }
+  }
+
+  static String _statusLabel(BuildContext context, String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return context.l10n.securityStatusPending;
+      case 'BLOCKED':
+        return context.l10n.securityStatusBlocked;
+      case 'REVOKED':
+        return context.l10n.securityStatusRevoked;
+      default:
+        return context.l10n.securityStatusActive;
+    }
+  }
+
+  static String _dateLabel(DateTime value) {
+    final local = value.toLocal();
+    String two(int input) => input.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year} ${two(local.hour)}:${two(local.minute)}';
   }
 }
 
@@ -1293,15 +1362,15 @@ class _PasskeyStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       PasskeyCompatibilityStatus.compatible => (
-          'COMPATIVEL',
+          context.l10n.securityCompatibleBadge.toUpperCase(),
           monoTextColor,
         ),
       PasskeyCompatibilityStatus.incompatible => (
-          'INCOMPATIVEL',
+          context.l10n.securityIncompatibleBadge.toUpperCase(),
           monoFaintTextColor,
         ),
       PasskeyCompatibilityStatus.unknown => (
-          'DESCONHECIDO',
+          context.l10n.securityUnknownBadge.toUpperCase(),
           monoMutedTextColor,
         ),
     };
@@ -1394,7 +1463,6 @@ class _TotpSetupCard extends StatelessWidget {
   final String setupSecret;
   final TextEditingController controller;
   final bool busy;
-  final VoidCallback onCopySecret;
   final VoidCallback onVerify;
 
   const _TotpSetupCard({
@@ -1402,7 +1470,6 @@ class _TotpSetupCard extends StatelessWidget {
     required this.setupSecret,
     required this.controller,
     required this.busy,
-    required this.onCopySecret,
     required this.onVerify,
   });
 
@@ -1418,7 +1485,7 @@ class _TotpSetupCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Ativar TOTP',
+            context.l10n.securityTotpSetupTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
@@ -1449,19 +1516,13 @@ class _TotpSetupCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          TextButton(
-            onPressed: onCopySecret,
-            style: monochromeTextButtonStyle(),
-            child: const Text('COPIAR SEGREDO'),
-          ),
           const SizedBox(height: AppSpacing.md),
           TextField(
             controller: controller,
             keyboardType: TextInputType.number,
             style: const TextStyle(color: monoTextColor),
             decoration: monochromeInputDecoration(
-              label: 'Codigo do autenticador',
+              label: context.l10n.securityTotpCodeLabel,
               hintText: '000000',
             ),
           ),
@@ -1479,7 +1540,7 @@ class _TotpSetupCard extends StatelessWidget {
                       color: Colors.black,
                     ),
                   )
-                : const Text('VALIDAR TOTP'),
+                : Text(context.l10n.securityValidateTotpAction.toUpperCase()),
           ),
         ],
       ),

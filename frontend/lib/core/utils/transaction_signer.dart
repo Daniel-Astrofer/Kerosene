@@ -88,14 +88,6 @@ class TransactionSigner {
   }
 }
 
-// Helper aliases to match blockchain_utils structure if needed
-// Note: real package classes need to be verified.
-// Use 'bitcoin_base' or similar if 'entryPoint' is not the correct namespace.
-// I'm using a placeholder 'entryPoint' pattern here.
-// Please check imports.
-// Actually, I'll rely on the IDE/Compiler to help me fix the exact classes.
-// I will write generic code and expect to fix imports.
-
 // Minimal Bitcoin Transaction Implementation for SegWit Signing
 class _BitcoinTx {
   int version = 2; // Version 2 for recent transactions

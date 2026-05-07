@@ -15,46 +15,83 @@ class AdminShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AdminColors.background,
-      body: Row(
-        children: [
-          const _AdminSidebar(),
-          Expanded(
-            child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final collapsed = constraints.maxWidth < 920;
+
+        return Scaffold(
+          backgroundColor: AdminColors.background,
+          body: SafeArea(
+            bottom: false,
+            child: Row(
               children: [
-                const _AdminTopBar(),
-                const Divider(height: 1, color: AdminColors.border),
+                _AdminSidebar(collapsed: collapsed),
                 Expanded(
-                  child: child,
+                  child: Column(
+                    children: [
+                      _AdminTopBar(compact: collapsed),
+                      const Divider(height: 1, color: AdminColors.border),
+                      const _AdminAccessNotice(),
+                      Expanded(child: child),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _AdminAccessNotice extends StatelessWidget {
+  const _AdminAccessNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AdminTheme.spacingLg,
+        vertical: AdminTheme.spacingSm,
+      ),
+      color: AdminColors.warningSubtle,
+      child: Text(
+        'Acesso administrativo registrado.',
+        style: AdminTypography.caption.copyWith(color: AdminColors.warning),
       ),
     );
   }
 }
 
 class _AdminSidebar extends ConsumerWidget {
-  const _AdminSidebar();
+  final bool collapsed;
+
+  const _AdminSidebar({required this.collapsed});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeRoute = ref.watch(adminRouteProvider);
 
     return Container(
-      width: AdminTheme.sidebarWidth,
+      width: collapsed
+          ? AdminTheme.sidebarCollapsedWidth
+          : AdminTheme.sidebarWidth,
       color: AdminColors.sidebarBg,
       child: Column(
         children: [
           // Logo/Brand
           Container(
             height: AdminTheme.topBarHeight,
-            padding: const EdgeInsets.symmetric(horizontal: AdminTheme.spacingLg),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AdminTheme.spacingLg,
+            ),
             alignment: Alignment.centerLeft,
             child: Row(
+              mainAxisAlignment: collapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 28,
@@ -75,17 +112,19 @@ class _AdminSidebar extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: AdminTheme.spacingMd),
-                const Text(
-                  'KEROSENE',
-                  style: TextStyle(
-                    fontFamily: 'HubotSans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AdminColors.textPrimary,
-                    letterSpacing: 2.0,
+                if (!collapsed) ...[
+                  const SizedBox(width: AdminTheme.spacingMd),
+                  const Text(
+                    'KEROSENE',
+                    style: TextStyle(
+                      fontFamily: 'HubotSans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AdminColors.textPrimary,
+                      letterSpacing: 0,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -103,11 +142,14 @@ class _AdminSidebar extends ConsumerWidget {
                   label: 'OVERVIEW',
                   items: [
                     AdminRoute.dashboard,
+                    AdminRoute.monitoring,
                     AdminRoute.analytics,
                     AdminRoute.volatility,
                   ],
                   activeRoute: activeRoute,
-                  onSelect: (r) => ref.read(adminRouteProvider.notifier).navigate(r),
+                  collapsed: collapsed,
+                  onSelect: (r) =>
+                      ref.read(adminRouteProvider.notifier).navigate(r),
                 ),
                 const SizedBox(height: AdminTheme.spacingLg),
                 _NavSection(
@@ -120,7 +162,9 @@ class _AdminSidebar extends ConsumerWidget {
                     AdminRoute.paymentLinks,
                   ],
                   activeRoute: activeRoute,
-                  onSelect: (r) => ref.read(adminRouteProvider.notifier).navigate(r),
+                  collapsed: collapsed,
+                  onSelect: (r) =>
+                      ref.read(adminRouteProvider.notifier).navigate(r),
                 ),
                 const SizedBox(height: AdminTheme.spacingLg),
                 _NavSection(
@@ -128,10 +172,13 @@ class _AdminSidebar extends ConsumerWidget {
                   items: [
                     AdminRoute.companies,
                     AdminRoute.audit,
+                    AdminRoute.authenticatedDevices,
                     AdminRoute.settings,
                   ],
                   activeRoute: activeRoute,
-                  onSelect: (r) => ref.read(adminRouteProvider.notifier).navigate(r),
+                  collapsed: collapsed,
+                  onSelect: (r) =>
+                      ref.read(adminRouteProvider.notifier).navigate(r),
                 ),
               ],
             ),
@@ -142,6 +189,9 @@ class _AdminSidebar extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(AdminTheme.spacingLg),
             child: Row(
+              mainAxisAlignment: collapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 8,
@@ -151,13 +201,18 @@ class _AdminSidebar extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: AdminTheme.spacingSm),
-                Text(
-                  'System Operational',
-                  style: AdminTypography.caption.copyWith(
-                    color: AdminColors.textTertiary,
+                if (!collapsed) ...[
+                  const SizedBox(width: AdminTheme.spacingSm),
+                  Flexible(
+                    child: Text(
+                      'System Operational',
+                      overflow: TextOverflow.ellipsis,
+                      style: AdminTypography.caption.copyWith(
+                        color: AdminColors.textTertiary,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -171,12 +226,14 @@ class _NavSection extends StatelessWidget {
   final String label;
   final List<AdminRoute> items;
   final AdminRoute activeRoute;
+  final bool collapsed;
   final ValueChanged<AdminRoute> onSelect;
 
   const _NavSection({
     required this.label,
     required this.items,
     required this.activeRoute,
+    required this.collapsed,
     required this.onSelect,
   });
 
@@ -185,26 +242,30 @@ class _NavSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AdminTheme.spacingMd,
-            0,
-            AdminTheme.spacingMd,
-            AdminTheme.spacingSm,
-          ),
-          child: Text(
-            label,
-            style: AdminTypography.label.copyWith(
-              fontSize: 10,
-              color: AdminColors.textDisabled,
+        if (!collapsed)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AdminTheme.spacingMd,
+              0,
+              AdminTheme.spacingMd,
+              AdminTheme.spacingSm,
+            ),
+            child: Text(
+              label,
+              style: AdminTypography.label.copyWith(
+                fontSize: 10,
+                color: AdminColors.textDisabled,
+              ),
             ),
           ),
+        ...items.map(
+          (route) => _NavItem(
+            route: route,
+            isActive: activeRoute == route,
+            collapsed: collapsed,
+            onTap: () => onSelect(route),
+          ),
         ),
-        ...items.map((route) => _NavItem(
-              route: route,
-              isActive: activeRoute == route,
-              onTap: () => onSelect(route),
-            )),
       ],
     );
   }
@@ -213,11 +274,13 @@ class _NavSection extends StatelessWidget {
 class _NavItem extends StatefulWidget {
   final AdminRoute route;
   final bool isActive;
+  final bool collapsed;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.route,
     required this.isActive,
+    required this.collapsed,
     required this.onTap,
   });
 
@@ -230,7 +293,7 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
+    final item = MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
@@ -254,6 +317,9 @@ class _NavItemState extends State<_NavItem> {
                 : null,
           ),
           child: Row(
+            mainAxisAlignment: widget.collapsed
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
               Icon(
                 widget.route.icon,
@@ -262,34 +328,51 @@ class _NavItemState extends State<_NavItem> {
                     ? AdminColors.sidebarTextActive
                     : AdminColors.sidebarText,
               ),
-              const SizedBox(width: AdminTheme.spacingMd),
-              Text(
-                widget.route.label,
-                style: AdminTypography.bodyMedium.copyWith(
-                  fontSize: 13,
-                  color: widget.isActive
-                      ? AdminColors.sidebarTextActive
-                      : AdminColors.sidebarText,
-                  fontWeight:
-                      widget.isActive ? FontWeight.w500 : FontWeight.w400,
+              if (!widget.collapsed) ...[
+                const SizedBox(width: AdminTheme.spacingMd),
+                Expanded(
+                  child: Text(
+                    widget.route.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AdminTypography.bodyMedium.copyWith(
+                      fontSize: 13,
+                      color: widget.isActive
+                          ? AdminColors.sidebarTextActive
+                          : AdminColors.sidebarText,
+                      fontWeight:
+                          widget.isActive ? FontWeight.w500 : FontWeight.w400,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
       ),
     );
+
+    if (!widget.collapsed) {
+      return item;
+    }
+
+    return Tooltip(
+      message: widget.route.label,
+      waitDuration: const Duration(milliseconds: 350),
+      child: item,
+    );
   }
 }
 
 class _AdminTopBar extends ConsumerWidget {
-  const _AdminTopBar();
+  final bool compact;
+
+  const _AdminTopBar({required this.compact});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeRoute = ref.watch(adminRouteProvider);
     final btcPriceAsync = ref.watch(adminBtcPriceProvider);
-    final totalBalance = ref.watch(adminTotalBalanceProvider);
 
     return Container(
       height: AdminTheme.topBarHeight,
@@ -297,80 +380,55 @@ class _AdminTopBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: AdminTheme.spacingXl),
       child: Row(
         children: [
-          Text(
-            activeRoute.label,
-            style: AdminTypography.h4,
+          Flexible(
+            child: Text(
+              activeRoute.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AdminTypography.h4,
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: AdminTheme.spacingLg),
 
           // BTC Price indicator
-          btcPriceAsync.when(
-            data: (prices) {
-              final usd = prices['btcUsd'] ?? 0;
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AdminTheme.spacingMd,
-                  vertical: AdminTheme.spacingXs,
-                ),
-                decoration: BoxDecoration(
-                  color: AdminColors.surface,
-                  border: Border.all(color: AdminColors.border),
-                  borderRadius: AdminTheme.borderRadiusXs,
-                ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                reverse: true,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.currency_bitcoin,
-                        size: 14, color: AdminColors.warning),
-                    const SizedBox(width: AdminTheme.spacingXs),
-                    Text(
-                      'BTC \$${_formatPrice(usd)}',
-                      style: AdminTypography.mono.copyWith(
-                        color: AdminColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    btcPriceAsync.when(
+                      data: (prices) {
+                        final usd = prices['btcUsd'] ?? 0;
+                        return _TopBarPill(
+                          icon: Icons.currency_bitcoin,
+                          label: 'BTC \$${_formatPrice(usd)}',
+                          iconColor: AdminColors.warning,
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
                     ),
+                    if (!compact) ...[
+                      const SizedBox(width: AdminTheme.spacingLg),
+                      _TopBarPill(
+                        icon: Icons.verified_outlined,
+                        label: 'Integrity only',
+                        iconColor: AdminColors.positive,
+                      ),
+                    ],
                   ],
                 ),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-
-          const SizedBox(width: AdminTheme.spacingLg),
-
-          // Consolidated balance
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AdminTheme.spacingMd,
-              vertical: AdminTheme.spacingXs,
-            ),
-            decoration: BoxDecoration(
-              color: AdminColors.surface,
-              border: Border.all(color: AdminColors.border),
-              borderRadius: AdminTheme.borderRadiusXs,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.account_balance_wallet_outlined,
-                    size: 14, color: AdminColors.textTertiary),
-                const SizedBox(width: AdminTheme.spacingXs),
-                Text(
-                  '${totalBalance.toStringAsFixed(8)} BTC',
-                  style: AdminTypography.mono.copyWith(
-                    color: AdminColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
           const SizedBox(width: AdminTheme.spacingLg),
 
-          // User avatar placeholder
+          // Compact account avatar.
           Container(
             width: 32,
             height: 32,
@@ -395,5 +453,48 @@ class _AdminTopBar extends ConsumerWidget {
       return '${(price / 1000).toStringAsFixed(1)}k';
     }
     return price.toStringAsFixed(2);
+  }
+}
+
+class _TopBarPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+
+  const _TopBarPill({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AdminTheme.spacingMd,
+        vertical: AdminTheme.spacingXs,
+      ),
+      decoration: BoxDecoration(
+        color: AdminColors.surface,
+        border: Border.all(color: AdminColors.border),
+        borderRadius: AdminTheme.borderRadiusXs,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: iconColor),
+          const SizedBox(width: AdminTheme.spacingXs),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AdminTypography.mono.copyWith(
+              color: AdminColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
