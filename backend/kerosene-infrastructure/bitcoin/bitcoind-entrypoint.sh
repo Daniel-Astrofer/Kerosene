@@ -10,6 +10,8 @@ p2p_port="${BITCOIN_P2P_PORT:-8333}"
 wallet_passphrase="${BITCOIN_WALLET_PASSPHRASE:-}"
 max_mempool_mb="${BITCOIN_MAX_MEMPOOL_MB:-300}"
 dbcache_mb="${BITCOIN_DBCACHE_MB:-450}"
+reindex_chainstate_once="${BITCOIN_REINDEX_CHAINSTATE_ONCE:-false}"
+reindex_once="${BITCOIN_REINDEX_ONCE:-false}"
 
 case "$prune_mb" in
   ''|*[!0-9]*)
@@ -69,7 +71,20 @@ case "$chain" in
     ;;
 esac
 
-bitcoind -conf="$bitcoin_dir/bitcoin.conf" -datadir="$bitcoin_dir" &
+bitcoind_args="-conf=$bitcoin_dir/bitcoin.conf -datadir=$bitcoin_dir"
+
+if [ "$reindex_chainstate_once" = "true" ] && [ ! -f "$bitcoin_dir/.kerosene-reindex-chainstate-complete" ]; then
+  echo "BITCOIN_REINDEX_CHAINSTATE_ONCE=true: starting Bitcoin Core with -reindex-chainstate."
+  bitcoind_args="$bitcoind_args -reindex-chainstate"
+fi
+
+if [ "$reindex_once" = "true" ] && [ ! -f "$bitcoin_dir/.kerosene-reindex-complete" ]; then
+  echo "BITCOIN_REINDEX_ONCE=true: starting Bitcoin Core with -reindex."
+  bitcoind_args="$bitcoind_args -reindex"
+fi
+
+# shellcheck disable=SC2086
+bitcoind $bitcoind_args &
 pid="$!"
 
 stop_bitcoind() {
@@ -79,6 +94,14 @@ stop_bitcoind() {
 trap stop_bitcoind INT TERM
 
 bitcoin-cli -conf="$bitcoin_dir/bitcoin.conf" -rpcwait getblockchaininfo >/dev/null
+
+if [ "$reindex_chainstate_once" = "true" ]; then
+  touch "$bitcoin_dir/.kerosene-reindex-chainstate-complete"
+fi
+
+if [ "$reindex_once" = "true" ]; then
+  touch "$bitcoin_dir/.kerosene-reindex-complete"
+fi
 
 if ! bitcoin-cli -conf="$bitcoin_dir/bitcoin.conf" listwallets | grep -F "\"$wallet\"" >/dev/null 2>&1; then
   if bitcoin-cli -conf="$bitcoin_dir/bitcoin.conf" listwalletdir | grep -F "\"name\": \"$wallet\"" >/dev/null 2>&1; then

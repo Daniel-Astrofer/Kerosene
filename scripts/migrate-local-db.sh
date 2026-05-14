@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/backend-common.sh"
 
 MIGRATION_FILE="$BACKEND_DIR/src/main/resources/db/migration.sql"
+VERSIONED_MIGRATIONS_DIR="$BACKEND_DIR/src/main/resources/db/migration"
 DB_WAIT_TIMEOUT_SECONDS=90
 DB_SERVICES=("$@")
 
@@ -13,8 +14,9 @@ usage() {
   cat <<'EOF'
 Usage: scripts/migrate-local-db.sh [db-service...]
 
-Applies backend/kerosene/src/main/resources/db/migration.sql to running local
-PostgreSQL services. If no services are provided, it targets db-is, db-ch, db-sg.
+Applies backend/kerosene/src/main/resources/db/migration.sql and incremental
+versioned migrations to running local PostgreSQL services. If no services are
+provided, it targets db-is, db-ch, db-sg.
 EOF
 }
 
@@ -28,7 +30,27 @@ if [[ "${DB_SERVICES[0]}" == "-h" || "${DB_SERVICES[0]}" == "--help" ]]; then
 fi
 
 require_file "$MIGRATION_FILE"
+require_file "$VERSIONED_MIGRATIONS_DIR/V3__wallet_destination_hash_index.sql"
 require_docker
+
+versioned_migration_files() {
+  find "$VERSIONED_MIGRATIONS_DIR" -maxdepth 1 -type f -name 'V*.sql' \
+    | sort -V \
+    | awk -F/ '
+        {
+          filename = $NF
+          if (filename !~ /^V[0-9]+__/) {
+            next
+          }
+          version = filename
+          sub(/^V/, "", version)
+          sub(/__.*/, "", version)
+          if ((version + 0) >= 3) {
+            print
+          }
+        }
+      '
+}
 
 service_is_running() {
   local service="$1"
@@ -164,12 +186,24 @@ repair_db_credentials_if_needed() {
   info "Repaired local PostgreSQL role for $service."
 }
 
-apply_migration() {
+apply_sql_file() {
   local service="$1"
-  info "Applying schema migration to $service..."
+  local file="$2"
+  info "Applying schema migration $(basename "$file") to $service..."
   compose exec -T "$service" sh -lc \
     'PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "${POSTGRES_DB:-kerosene}" -f -' \
-    < "$MIGRATION_FILE"
+    < "$file"
+}
+
+apply_migrations() {
+  local service="$1"
+  local migration
+
+  apply_sql_file "$service" "$MIGRATION_FILE"
+  while IFS= read -r migration; do
+    [[ -n "$migration" ]] || continue
+    apply_sql_file "$service" "$migration"
+  done < <(versioned_migration_files)
 }
 
 for service in "${DB_SERVICES[@]}"; do
@@ -181,7 +215,7 @@ for service in "${DB_SERVICES[@]}"; do
   info "Waiting for $service to accept connections..."
   repair_db_credentials_if_needed "$service"
   wait_for_db_service "$service" || fail "Timed out waiting for $service to become ready."
-  apply_migration "$service"
+  apply_migrations "$service"
 done
 
 info "Local database migrations completed."

@@ -23,7 +23,8 @@ FRONTEND_WEB_HOST="${FRONTEND_WEB_HOST:-127.0.0.1}"
 FRONTEND_WEB_PORT="${FRONTEND_WEB_PORT:-3000}"
 FRONTEND_PUBLIC_URL="${FRONTEND_PUBLIC_URL:-http://localhost:${FRONTEND_WEB_PORT}}"
 FRONTEND_API_URL="${FRONTEND_API_URL:-http://localhost:8080}"
-FRONTEND_PASSKEY_RP_ID="${FRONTEND_PASSKEY_RP_ID:-localhost}"
+FRONTEND_PASSKEY_RP_ID="${FRONTEND_PASSKEY_RP_ID:-kerosene-device}"
+FRONTEND_PASSKEY_ORIGIN="${FRONTEND_PASSKEY_ORIGIN:-android:apk-key-hash:kerosene}"
 
 usage() {
   cat <<'EOF'
@@ -265,12 +266,14 @@ start_frontend() {
     info "Building Flutter web frontend for $FRONTEND_PUBLIC_URL (API: $FRONTEND_API_URL)."
     (
       cd "$FRONTEND_DIR"
-      flutter build web --release \
-        --csp \
-        --no-web-resources-cdn \
+      FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn)
+      if [[ "${FLUTTER_BUILD_NO_PUB:-0}" == "1" ]]; then
+        FLUTTER_BUILD_ARGS+=(--no-pub)
+      fi
+      flutter build "${FLUTTER_BUILD_ARGS[@]}" \
         --dart-define="WEB_API_URL=$FRONTEND_API_URL" \
         --dart-define="PASSKEY_RP_ID=$FRONTEND_PASSKEY_RP_ID" \
-        --dart-define="PASSKEY_ORIGIN=$FRONTEND_PUBLIC_URL"
+        --dart-define="PASSKEY_ORIGIN=$FRONTEND_PASSKEY_ORIGIN"
     ) > "$FRONTEND_BUILD_LOG_FILE" 2>&1 || {
       warn "Flutter web build failed. See $FRONTEND_BUILD_LOG_FILE"
       tail -n 80 "$FRONTEND_BUILD_LOG_FILE" >&2 || true

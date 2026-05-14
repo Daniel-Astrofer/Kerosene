@@ -37,12 +37,25 @@ done
 [[ -f "$FRONTEND_DIR/pubspec.yaml" ]] || fail "Frontend pubspec not found at $FRONTEND_DIR/pubspec.yaml"
 command -v flutter >/dev/null 2>&1 || fail "Flutter CLI not found."
 
+if [[ -f "$ENV_FILE" ]]; then
+  load_backend_env
+fi
+
+FRONTEND_PASSKEY_RP_ID="${FRONTEND_PASSKEY_RP_ID:-${WEBAUTHN_RP_ID:-kerosene-device}}"
+FRONTEND_PASSKEY_ORIGIN="${FRONTEND_PASSKEY_ORIGIN:-android:apk-key-hash:kerosene}"
+
 mkdir -p "$FRONTEND_LOG_DIR" "$BACKEND_WEB_ADMIN_BUILD_DIR"
 
 info "Building Flutter web admin for backend-served same-origin onion access."
 (
   cd "$FRONTEND_DIR"
-  flutter build web --release --csp --no-web-resources-cdn
+  FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn)
+  if [[ "${FLUTTER_BUILD_NO_PUB:-0}" == "1" ]]; then
+    FLUTTER_BUILD_ARGS+=(--no-pub)
+  fi
+  flutter build "${FLUTTER_BUILD_ARGS[@]}" \
+    --dart-define="PASSKEY_RP_ID=$FRONTEND_PASSKEY_RP_ID" \
+    --dart-define="PASSKEY_ORIGIN=$FRONTEND_PASSKEY_ORIGIN"
 ) > "$FRONTEND_BUILD_LOG_FILE" 2>&1 || {
   tail -n 100 "$FRONTEND_BUILD_LOG_FILE" >&2 || true
   fail "Flutter web build failed. See $FRONTEND_BUILD_LOG_FILE"

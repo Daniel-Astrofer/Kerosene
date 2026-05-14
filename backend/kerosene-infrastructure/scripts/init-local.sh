@@ -248,7 +248,11 @@ ensure_local_env() {
   fi
 
   ensure_env_value APP_CORS_ALLOWED_ORIGINS "http://localhost:3000,http://localhost:8080,http://localhost:8081,http://localhost:8082" && changed=1 || true
-  ensure_env_value WEBAUTHN_RP_ID "localhost" && changed=1 || true
+  webauthn_rp_id="$(env_value WEBAUTHN_RP_ID || true)"
+  if [[ -z "$webauthn_rp_id" || "$webauthn_rp_id" == CHANGE_ME* || "$webauthn_rp_id" == "localhost" ]]; then
+    set_env_value WEBAUTHN_RP_ID "kerosene-device"
+    changed=1
+  fi
   ensure_env_value WEBAUTHN_RP_NAME "Kerosene Local" && changed=1 || true
   ensure_env_value WEBAUTHN_ORIGINS "http://localhost:3000,http://localhost:8080,http://localhost:8081,http://localhost:8082" && changed=1 || true
   ensure_env_csv_contains WEBAUTHN_ORIGINS "android:apk-key-hash:kerosene" && changed=1 || true
@@ -450,7 +454,7 @@ fix_torrc "$BACKEND_DIR/tor/torrc-ch" "10.241.0.11"
 fix_torrc "$BACKEND_DIR/tor/torrc-sg" "10.241.0.12"
 
 info "Generating $BACKEND_DIR/tor/torrc-vault..."
-printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 172.24.0.10:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
+printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 10.242.0.10:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
 
 restore_invoking_user_ownership
 

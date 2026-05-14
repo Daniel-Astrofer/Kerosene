@@ -50,7 +50,7 @@ services:
         hard: -1
     networks:
       net_vault:
-        ipv4_address: 172.24.0.10
+        ipv4_address: 10.242.0.10
 
   kerosene-tor-vault:
     build:
@@ -151,6 +151,30 @@ services:
     depends_on:
       lnd-neutrino: { condition: service_started }
 
+  lnd-unlocker:
+    image: curlimages/curl:8.10.1
+    container_name: lnd-unlocker-local
+    restart: unless-stopped
+    user: "0:0"
+    env_file: ../kerosene/.env
+    environment:
+      - BITCOIN_NETWORK=${BITCOIN_NETWORK:-mainnet}
+      - LND_HOST=${LIGHTNING_LND_HOST:-lnd-bitcoind}
+      - LND_REST_PORT=${LIGHTNING_LND_REST_PORT:-8080}
+      - LND_WALLET_PASSWORD=${LND_WALLET_PASSWORD}
+      - LND_BOOTSTRAP_TIMEOUT_SECONDS=${LIGHTNING_LND_BOOTSTRAP_TIMEOUT_SECONDS:-180}
+      - LND_BOOTSTRAP_WATCH=true
+      - LND_BOOTSTRAP_WATCH_INTERVAL_SECONDS=${LIGHTNING_LND_UNLOCK_WATCH_INTERVAL_SECONDS:-30}
+      - LND_TLS_SERVER_NAME=${LIGHTNING_LND_TLS_SERVER_NAME:-lnd-bitcoind}
+    volumes:
+      - lnd_data:/lnd
+      - ./scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
+    entrypoint: ["sh", "/lnd-bootstrap.sh"]
+    networks: [net_tor]
+    depends_on:
+      lnd-bootstrap: { condition: service_completed_successfully }
+      lnd-neutrino: { condition: service_started }
+
   # ════════════════════════════════════════════════════════════════════════════
   # BITCOIN CORE PRUNED MAINNET (primary on-chain source)
   # ════════════════════════════════════════════════════════════════════════════
@@ -170,6 +194,8 @@ services:
       - BITCOIN_RPC_PASSWORD=${BITCOIN_RPC_PASSWORD}
       - BITCOIN_RPC_WALLET=${BITCOIN_RPC_WALLET:-kerosene}
       - BITCOIN_WALLET_PASSPHRASE=${BITCOIN_WALLET_PASSPHRASE:-}
+      - BITCOIN_REINDEX_CHAINSTATE_ONCE=${BITCOIN_REINDEX_CHAINSTATE_ONCE:-false}
+      - BITCOIN_REINDEX_ONCE=${BITCOIN_REINDEX_ONCE:-false}
     volumes:
       - bitcoin_core_data:/home/bitcoin/.bitcoin
       - ./bitcoin/bitcoind-entrypoint.sh:/entrypoint.sh:ro,z
@@ -1058,7 +1084,7 @@ networks:
     internal: true    # Vault net has NO internet egress — only tor_egress for Tor
     ipam:
       config:
-        - subnet: 172.24.0.0/24
+        - subnet: 10.242.0.0/24
   net_db_is:
     driver: bridge
     internal: true
