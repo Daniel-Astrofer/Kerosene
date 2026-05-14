@@ -16,7 +16,6 @@
 !/scripts/**
 !/.github/
 !/.github/**
-!/AGENTS.md
 !/docker-compose.yml
 !/README.md
 
@@ -45,42 +44,6 @@
 /arm-vault.*
 /cert-generator.sh
 /panic.sh
-
-# Agent and assistant tooling.
-/.agent/
-/.agent/**
-/.agents/
-/.agents/**
-/.codex
-/.codex/
-/.codex/**
-/.claude/
-/.claude/**
-/.opencode
-/.openclaude-profile.json
-**/.agent/
-**/.agent/**
-**/.agents/
-**/.agents/**
-**/.codex
-**/.codex/
-**/.codex/**
-**/.claude/
-**/.claude/**
-**/.continue/
-**/.continue/**
-**/.cursor/
-**/.cursor/**
-**/.opencode
-**/.remote-control/
-**/.remote-control/**
-**/.openclaude-profile.json
-**/AGENTS.md
-!/AGENTS.md
-**/CLAUDE.md
-**/GEMINI.md
-**/mcp_config.json
-**/llms.txt
 
 # Secrets and local credentials.
 **/.env
@@ -152,7 +115,6 @@
 
 # Documentation and generated analysis outputs kept local.
 **/*.md
-!/AGENTS.md
 !/README.md
 !/docs/**/*.md
 !/docs-final/**/*.md
@@ -194,8 +156,6 @@ frontend/scripts/**
 **/~/**
 frontend/~/
 frontend/~/**
-**/.config/antigravity-perfil*/
-**/.config/antigravity-perfil*/**
 CachedExtensionVSIXs/
 CachedExtensionVSIXs/**
 **/CachedExtensionVSIXs/
