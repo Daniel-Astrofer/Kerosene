@@ -19,8 +19,8 @@ class PaymentData {
 /// Encodes and decodes payment request URIs used in QR codes and NFC tags.
 ///
 /// Supported formats:
-///   bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>
-///   kerosene:pay?address=<address>&amount=<btc>&label=<label>
+///   `bitcoin:ADDRESS?amount=BTC&label=LABEL&message=MSG`
+///   `kerosene:pay?address=ADDRESS&amount=BTC&label=LABEL`
 class QrPaymentParser {
   /// Encodes a payment request into a bitcoin: BIP-21 URI.
   static String encode({
@@ -33,7 +33,10 @@ class QrPaymentParser {
 
     if (amountBtc != null && amountBtc > 0) {
       // BIP-21 requires fixed-point, no trailing zeros
-      params['amount'] = amountBtc.toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+      params['amount'] = amountBtc
+          .toStringAsFixed(8)
+          .replaceAll(RegExp(r'0+$'), '')
+          .replaceAll(RegExp(r'\.$'), '');
     }
     if (label != null && label.isNotEmpty) {
       params['label'] = Uri.encodeQueryComponent(label);

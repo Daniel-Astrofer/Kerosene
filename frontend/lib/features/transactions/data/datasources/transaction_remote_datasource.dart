@@ -186,8 +186,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         String? serverMsg;
         try {
           if (respData is Map) {
-            serverMsg =
-                respData['message']?.toString() ??
+            serverMsg = respData['message']?.toString() ??
                 respData['error']?.toString();
           } else if (respData is String) {
             serverMsg = respData;
@@ -398,4 +397,3 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     }
   }
 }
-

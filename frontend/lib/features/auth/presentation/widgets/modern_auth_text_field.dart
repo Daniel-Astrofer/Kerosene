@@ -42,7 +42,10 @@ class ModernAuthTextField extends StatelessWidget {
                 vertical: AppSpacing.xs,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(AppSpacing.md),
                 border: Border.all(color: AppColors.white10),
               ),
@@ -57,14 +60,15 @@ class ModernAuthTextField extends StatelessWidget {
                       onChanged: onChanged,
                       validator: validator,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                        fontWeight: FontWeight.w300,
-                      ),
+                            fontWeight: FontWeight.w300,
+                          ),
                       decoration: InputDecoration(
                         hintText: hint,
-                        hintStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.white30,
-                          fontWeight: FontWeight.w300,
-                        ),
+                        hintStyle:
+                            Theme.of(context).textTheme.bodyLarge!.copyWith(
+                                  color: AppColors.white30,
+                                  fontWeight: FontWeight.w300,
+                                ),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(
                           vertical: AppSpacing.md,
@@ -87,10 +91,10 @@ class ModernAuthTextField extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
             ),
           ),
         ),

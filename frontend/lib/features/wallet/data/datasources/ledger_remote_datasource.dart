@@ -25,7 +25,7 @@ abstract class LedgerRemoteDataSource {
   });
 
   // 3.1 Payment Requests (Internal)
-  
+
   /// Creates an internal payment request link.
   Future<Map<String, dynamic>> createPaymentRequest({
     required double amount,
@@ -149,7 +149,8 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao criar solicitação de pagamento: $e');
+      throw ServerException(
+          message: 'Erro ao criar solicitação de pagamento: $e');
     }
   }
 
@@ -162,7 +163,8 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar solicitação de pagamento: $e');
+      throw ServerException(
+          message: 'Erro ao buscar solicitação de pagamento: $e');
     }
   }
 
@@ -179,7 +181,8 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao pagar solicitação de pagamento: $e');
+      throw ServerException(
+          message: 'Erro ao pagar solicitação de pagamento: $e');
     }
   }
 

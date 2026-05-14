@@ -16,7 +16,8 @@ class DepositAmountScreen extends ConsumerStatefulWidget {
   const DepositAmountScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<DepositAmountScreen> createState() => _DepositAmountScreenState();
+  ConsumerState<DepositAmountScreen> createState() =>
+      _DepositAmountScreenState();
 }
 
 class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
@@ -90,12 +91,19 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
                   const Spacer(flex: 2),
                   _buildEnterAmountLabel().animate().fade(),
                   const SizedBox(height: AppSpacing.sm),
-                  _buildAmountDisplay().animate().fade().scale(begin: const Offset(0.9, 0.9)),
+                  _buildAmountDisplay()
+                      .animate()
+                      .fade()
+                      .scale(begin: const Offset(0.9, 0.9)),
                   const Spacer(flex: 3),
-                  _buildKeypad().animate(delay: 100.ms).fade().slideY(begin: 0.2, end: 0),
+                  _buildKeypad()
+                      .animate(delay: 100.ms)
+                      .fade()
+                      .slideY(begin: 0.2, end: 0),
                   const SizedBox(height: AppSpacing.xl),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: CyberButton(
                       text: 'CONTINUAR',
                       onTap: _onContinue,
@@ -113,21 +121,29 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           Text(
             'ADICIONAR SALDO',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           const SizedBox(width: 48),
         ],
@@ -139,11 +155,12 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
     return Text(
       'VALOR DO DEPÓSITO',
       style: Theme.of(context).textTheme.labelSmall!.copyWith(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2.0,
-        fontSize: 10,
-      ),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.0,
+            fontSize: 10,
+          ),
     );
   }
 
@@ -157,12 +174,15 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
         children: [
           Text(
             'R\$ ',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold),
           ),
           Flexible(
             child: Text(
               _displayAmount,
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 64, fontFamily: 'JetBrainsMono', letterSpacing: -2),
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                  fontSize: 64, fontFamily: 'JetBrainsMono', letterSpacing: -2),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -199,7 +219,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
 
   Widget _buildKey(String key) {
     if (key.isEmpty) return const Expanded(child: SizedBox());
-    
+
     final isBackspace = key == '←';
 
     return Expanded(
@@ -209,16 +229,25 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
           height: 64,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
           child: Center(
             child: isBackspace
-                ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 20)
+                ? Icon(LucideIcons.delete,
+                    color: Theme.of(context).colorScheme.onPrimary, size: 20)
                 : Text(
                     key,
-                    style: Theme.of(context).textTheme.titleLarge!.copyWith(fontFamily: 'JetBrainsMono'),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge!
+                        .copyWith(fontFamily: 'JetBrainsMono'),
                   ),
           ),
         ),

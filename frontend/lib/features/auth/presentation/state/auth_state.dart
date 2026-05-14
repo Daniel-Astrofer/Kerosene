@@ -40,9 +40,9 @@ class AuthTotpVerified extends AuthState {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AuthTotpVerified && 
-           other.sessionId == sessionId &&
-           other.username == username;
+    return other is AuthTotpVerified &&
+        other.sessionId == sessionId &&
+        other.username == username;
   }
 
   @override
@@ -64,7 +64,9 @@ class AuthError extends AuthState {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AuthError && other.message == message && other.statusCode == statusCode;
+    return other is AuthError &&
+        other.message == message &&
+        other.statusCode == statusCode;
   }
 
   @override
@@ -100,6 +102,7 @@ class AuthRequiresLoginTotp extends AuthState {
     this.preAuthToken,
   });
 }
+
 /// Estado indicando que o desafio de hardware foi recebido e aguarda assinatura
 class AuthHardwareChallengeReceived extends AuthState {
   final String challengeHex;
@@ -170,8 +173,10 @@ class AuthPaymentRequired extends AuthState {
 /// Estado quando há falha de comunicação com o servidor mas o usuário tem token
 class AuthServerUnavailable extends AuthState {
   final String message;
-  const AuthServerUnavailable([this.message = 'Servidor indisponível no momento',]);
-  
+  const AuthServerUnavailable([
+    this.message = 'Servidor indisponível no momento',
+  ]);
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

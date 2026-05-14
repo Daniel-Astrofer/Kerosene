@@ -72,11 +72,12 @@ void main() async {
       final int relayPort = await TorService.instance.startRelay(host, 80);
       final newApiUrl = 'http://127.0.0.1:$relayPort';
       AppConfig.apiUrl = newApiUrl;
-      
+
       // Update the reactive provider so ApiClient and WebSocket rebuild
       container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
-      
-      debugPrint('🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host');
+
+      debugPrint(
+          '🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host');
     } else {
       debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
     }

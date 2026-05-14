@@ -63,5 +63,4 @@ abstract class TransactionRepository {
     String? passkeySignature,
     String? passkeyChallenge,
   });
-
 }

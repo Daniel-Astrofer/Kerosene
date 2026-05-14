@@ -5,7 +5,8 @@ import '../../data/repositories/security_repository_impl.dart';
 import '../../domain/repositories/security_repository.dart';
 import '../../domain/entities/security_status.dart';
 
-final securityRemoteDataSourceProvider = Provider<SecurityRemoteDataSource>((ref) {
+final securityRemoteDataSourceProvider =
+    Provider<SecurityRemoteDataSource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return SecurityRemoteDataSourceImpl(apiClient);
 });

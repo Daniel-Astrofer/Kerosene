@@ -29,7 +29,8 @@ class BrushedMetalContainer extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BrushedMetalContainer> createState() => _BrushedMetalContainerState();
+  ConsumerState<BrushedMetalContainer> createState() =>
+      _BrushedMetalContainerState();
 }
 
 class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
@@ -40,9 +41,9 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(seconds: 20))
-      ..repeat();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 20))
+          ..repeat();
     _initFallback();
   }
 
@@ -72,7 +73,8 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
       decoration: BoxDecoration(
         color: widget.baseColor,
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -83,7 +85,9 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
             return _MetalFallback(child: widget.child);
           },
           data: (program) {
-            if (activeTexture == null) return _MetalFallback(child: widget.child);
+            if (activeTexture == null) {
+              return _MetalFallback(child: widget.child);
+            }
 
             return AnimatedBuilder(
               animation: _controller,
@@ -162,10 +166,10 @@ class _MetalShaderPainter extends CustomPainter {
     shader.setFloat(3, tiltX);
     shader.setFloat(4, tiltY);
     // 5, 6, 7, 8: iColor
-    shader.setFloat(5, baseColor.red / 255.0);
-    shader.setFloat(6, baseColor.green / 255.0);
-    shader.setFloat(7, baseColor.blue / 255.0);
-    shader.setFloat(8, baseColor.alpha / 255.0);
+    shader.setFloat(5, baseColor.r);
+    shader.setFloat(6, baseColor.g);
+    shader.setFloat(7, baseColor.b);
+    shader.setFloat(8, baseColor.a);
     // Sampler 0: uTexture
     shader.setImageSampler(0, texture);
 
@@ -174,5 +178,8 @@ class _MetalShaderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MetalShaderPainter old) =>
-      old.time != time || old.tiltX != tiltX || old.tiltY != tiltY || old.baseColor != baseColor;
+      old.time != time ||
+      old.tiltX != tiltX ||
+      old.tiltY != tiltY ||
+      old.baseColor != baseColor;
 }

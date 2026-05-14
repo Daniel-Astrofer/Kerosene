@@ -216,7 +216,8 @@ class TorService {
                 await readExact(18);
               }
               established = true;
-              debugPrint('🧅 Tor Relay: Tunnel established to $targetHost:$targetPort');
+              debugPrint(
+                  '🧅 Tor Relay: Tunnel established to $targetHost:$targetPort');
             } else {
               final errorCode = connectRes[1];
               final errorMsg = _getSocksErrorMessage(errorCode);
@@ -316,7 +317,7 @@ class BroadcastSocket extends Stream<Uint8List> implements Socket {
   final Stream<Uint8List> _broadcastStream;
 
   BroadcastSocket(this._socket)
-    : _broadcastStream = _socket.asBroadcastStream();
+      : _broadcastStream = _socket.asBroadcastStream();
 
   BroadcastSocket.fromStream(this._socket, this._broadcastStream);
 

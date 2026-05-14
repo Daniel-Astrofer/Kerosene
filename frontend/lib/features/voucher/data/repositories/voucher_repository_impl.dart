@@ -27,7 +27,8 @@ class VoucherRepositoryImpl implements VoucherRepository {
     String txid,
   ) async {
     try {
-      final result = await remoteDataSource.confirmVoucher(pendingVoucherId, txid);
+      final result =
+          await remoteDataSource.confirmVoucher(pendingVoucherId, txid);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));

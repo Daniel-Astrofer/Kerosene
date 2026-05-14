@@ -48,7 +48,8 @@ class WithdrawReceiptScreen extends StatelessWidget {
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: CyberButton(
                 text: context.l10n.done.toUpperCase(),
-                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                onTap: () =>
+                    Navigator.of(context).popUntil((route) => route.isFirst),
               ),
             ).animate(delay: 800.ms).fade().slideY(begin: 0.2, end: 0),
             const SizedBox(height: AppSpacing.xl),
@@ -63,11 +64,12 @@ class WithdrawReceiptScreen extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.success.withOpacity(0.1),
-        border: Border.all(color: AppColors.success.withOpacity(0.2), width: 2),
+        color: AppColors.success.withValues(alpha: 0.1),
+        border: Border.all(
+            color: AppColors.success.withValues(alpha: 0.2), width: 2),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withOpacity(0.1),
+            color: AppColors.success.withValues(alpha: 0.1),
             blurRadius: 40,
             spreadRadius: 10,
           ),
@@ -78,7 +80,10 @@ class WithdrawReceiptScreen extends StatelessWidget {
         color: AppColors.success,
         size: 48,
       ),
-    ).animate().scale(curve: Curves.easeOutBack, duration: 600.ms).shimmer(delay: 800.ms);
+    )
+        .animate()
+        .scale(curve: Curves.easeOutBack, duration: 600.ms)
+        .shimmer(delay: 800.ms);
   }
 
   Widget _buildAmountSection(BuildContext context) {
@@ -87,10 +92,10 @@ class WithdrawReceiptScreen extends StatelessWidget {
         Text(
           context.l10n.withdrawSuccess.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: AppColors.success,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 4,
-          ),
+                color: AppColors.success,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4,
+              ),
         ).animate(delay: 200.ms).fade(),
         const SizedBox(height: AppSpacing.md),
         Row(
@@ -99,17 +104,17 @@ class WithdrawReceiptScreen extends StatelessWidget {
             Text(
               "₿ ",
               style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w900,
-              ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w900,
+                  ),
             ),
             Text(
               amountBtc,
               style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                fontSize: 48,
-                fontWeight: FontWeight.w200,
-                fontFamily: 'JetBrainsMono',
-              ),
+                    fontSize: 48,
+                    fontWeight: FontWeight.w200,
+                    fontFamily: 'JetBrainsMono',
+                  ),
             ),
           ],
         ).animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
@@ -119,44 +124,59 @@ class WithdrawReceiptScreen extends StatelessWidget {
 
   Widget _buildDetailsCard(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(AppSpacing.xl),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05), width: 1.5),
+        border: Border.all(
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
+            width: 1.5),
       ),
       child: Column(
         children: [
           _buildDetailRow(context, context.l10n.walletName, walletName),
-          const Divider(height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
-          _buildDetailRow(context, isLightning ? "INVOICE" : "CARTEIRA", toAddress, isAddress: true),
-          const Divider(height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
+          const Divider(
+              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
+          _buildDetailRow(
+              context, isLightning ? "INVOICE" : "CARTEIRA", toAddress,
+              isAddress: true),
+          const Divider(
+              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
           _buildDetailRow(context, "HORÁRIO", dateFormat.format(timestamp)),
-          const Divider(height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
+          const Divider(
+              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
           _buildDetailRow(context, "TAXA", "₿ $feeBtc"),
-          const Divider(height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
-          _buildDetailRow(context, "STATUS", "CONFIRMADO", color: AppColors.success),
-          const Divider(height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
+          const Divider(
+              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
+          _buildDetailRow(context, "STATUS", "CONFIRMADO",
+              color: AppColors.success),
+          const Divider(
+              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
           _buildDetailRow(context, "ID DA TRANSAÇÃO", txId, isAddress: true),
         ],
       ),
     ).animate(delay: 500.ms).fade().slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildDetailRow(BuildContext context, String label, String value, {bool isAddress = false, Color? color}) {
+  Widget _buildDetailRow(BuildContext context, String label, String value,
+      {bool isAddress = false, Color? color}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Row(
@@ -165,11 +185,12 @@ class WithdrawReceiptScreen extends StatelessWidget {
               child: Text(
                 value,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontFamily: 'JetBrainsMono',
-                  color: color ?? Theme.of(context).colorScheme.onPrimary,
-                  fontSize: isAddress ? 12 : 14,
-                  fontWeight: color != null ? FontWeight.w900 : FontWeight.w400,
-                ),
+                      fontFamily: 'JetBrainsMono',
+                      color: color ?? Theme.of(context).colorScheme.onPrimary,
+                      fontSize: isAddress ? 12 : 14,
+                      fontWeight:
+                          color != null ? FontWeight.w900 : FontWeight.w400,
+                    ),
                 maxLines: isAddress ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
               ),

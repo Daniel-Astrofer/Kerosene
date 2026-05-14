@@ -57,65 +57,65 @@ class _BitcoinRefreshIndicatorState extends State<BitcoinRefreshIndicator>
         _checkController.reset();
         await widget.onRefresh();
       },
-      builder:
-          (
-            BuildContext context,
-            RefreshIndicatorMode refreshState,
-            double pulledExtent,
-            double refreshTriggerPullDistance,
-            double refreshIndicatorExtent,
-          ) {
-            // State transition detection
-            if (refreshState == RefreshIndicatorMode.done &&
-                _lastState != RefreshIndicatorMode.done) {
-              _checkController.forward();
-            }
-            _lastState = refreshState;
+      builder: (
+        BuildContext context,
+        RefreshIndicatorMode refreshState,
+        double pulledExtent,
+        double refreshTriggerPullDistance,
+        double refreshIndicatorExtent,
+      ) {
+        // State transition detection
+        if (refreshState == RefreshIndicatorMode.done &&
+            _lastState != RefreshIndicatorMode.done) {
+          _checkController.forward();
+        }
+        _lastState = refreshState;
 
-            final double opacity = (pulledExtent / 50.0).clamp(0.0, 1.0);
-            final double scale = (pulledExtent / 100.0).clamp(0.0, 1.2);
+        final double opacity = (pulledExtent / 50.0).clamp(0.0, 1.0);
+        final double scale = (pulledExtent / 100.0).clamp(0.0, 1.2);
 
-            // Rotation logic
-            double rotation = 0;
-            if (refreshState == RefreshIndicatorMode.drag ||
-                refreshState == RefreshIndicatorMode.armed) {
-              rotation = (pulledExtent / 100.0) * 2 * pi;
-              if (_spinnerController.isAnimating) _spinnerController.stop();
-            } else if (refreshState == RefreshIndicatorMode.refresh) {
-              if (!_spinnerController.isAnimating) _spinnerController.repeat();
-              rotation = _spinnerController.value * 2 * pi;
-            } else if (refreshState == RefreshIndicatorMode.done) {
-              if (_spinnerController.isAnimating) _spinnerController.stop();
-              // Align to upright
-              rotation = 0;
-            }
+        // Rotation logic
+        double rotation = 0;
+        if (refreshState == RefreshIndicatorMode.drag ||
+            refreshState == RefreshIndicatorMode.armed) {
+          rotation = (pulledExtent / 100.0) * 2 * pi;
+          if (_spinnerController.isAnimating) _spinnerController.stop();
+        } else if (refreshState == RefreshIndicatorMode.refresh) {
+          if (!_spinnerController.isAnimating) _spinnerController.repeat();
+          rotation = _spinnerController.value * 2 * pi;
+        } else if (refreshState == RefreshIndicatorMode.done) {
+          if (_spinnerController.isAnimating) _spinnerController.stop();
+          // Align to upright
+          rotation = 0;
+        }
 
-            return Container(
-              height: refreshIndicatorExtent,
-              alignment: Alignment.center,
-              child: Opacity(
-                opacity: opacity,
-                child: Transform.scale(
-                  scale: scale, child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      _spinnerController,
-                      _checkController,
-                    ]),
-                    builder: (context, child) {
-                      return CustomPaint(
-                        size: const Size(30, 30),
-                        painter: BitcoinPainter(
-                          rotation: rotation,
-                          checkProgress: _checkAnim.value,
-                          isDone: refreshState == RefreshIndicatorMode.done,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+        return Container(
+          height: refreshIndicatorExtent,
+          alignment: Alignment.center,
+          child: Opacity(
+            opacity: opacity,
+            child: Transform.scale(
+              scale: scale,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  _spinnerController,
+                  _checkController,
+                ]),
+                builder: (context, child) {
+                  return CustomPaint(
+                    size: const Size(30, 30),
+                    painter: BitcoinPainter(
+                      rotation: rotation,
+                      checkProgress: _checkAnim.value,
+                      isDone: refreshState == RefreshIndicatorMode.done,
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -160,7 +160,7 @@ class BitcoinPainter extends CustomPainter {
 
     // Shadow/Glow
     final Paint shadowPaint = Paint()
-      ..color = Colors.orangeAccent.withOpacity(0.4)
+      ..color = Colors.orangeAccent.withValues(alpha: 0.4)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     canvas.drawCircle(center, radius, shadowPaint);
@@ -172,8 +172,8 @@ class BitcoinPainter extends CustomPainter {
         Offset(0, 0),
         Offset(size.width * 0.5, size.height),
         [
-          Colors.white.withOpacity(0.4),
-          Colors.white.withOpacity(0.0),
+          Colors.white.withValues(alpha: 0.4),
+          Colors.white.withValues(alpha: 0.0),
         ],
       );
     canvas.drawCircle(center, radius * 0.9, shinePaint);
@@ -208,10 +208,10 @@ class BitcoinPainter extends CustomPainter {
         style: TextStyle(
           fontSize: radius * 1.4,
           fontWeight: FontWeight.bold,
-          color: Colors.white.withOpacity(opacity * 0.9),
+          color: Colors.white.withValues(alpha: opacity * 0.9),
           shadows: [
             Shadow(
-              color: Colors.black.withOpacity(0.2 * opacity),
+              color: Colors.black.withValues(alpha: 0.2 * opacity),
               offset: const Offset(1, 1),
               blurRadius: 2,
             ),

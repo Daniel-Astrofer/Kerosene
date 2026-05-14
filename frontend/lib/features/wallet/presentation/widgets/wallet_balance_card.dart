@@ -24,7 +24,7 @@ class WalletBalanceCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7B61FF).withOpacity(0.1),
+            color: const Color(0xFF7B61FF).withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -68,14 +68,24 @@ class WalletBalanceCard extends ConsumerWidget {
           // Label "Balance"
           Text(
             'Balance',
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), fontSize: 14),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.7),
+                fontSize: 14),
           ),
           const SizedBox(height: 4),
 
           // Endereço da carteira (mascarado)
           Text(
             _maskAddress(wallet.address),
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.38), fontSize: 12),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.38),
+                fontSize: 12),
           ),
           const SizedBox(height: 12),
 
@@ -93,7 +103,12 @@ class WalletBalanceCard extends ConsumerWidget {
           // Label "Total Portfolio"
           Text(
             'Total Portfolio Value',
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.54), fontSize: 14),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.54),
+                fontSize: 14),
           ),
         ],
       ),

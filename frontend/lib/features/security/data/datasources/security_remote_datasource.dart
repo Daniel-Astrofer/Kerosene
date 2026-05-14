@@ -7,7 +7,7 @@ abstract class SecurityRemoteDataSource {
   Future<bool> pingSovereignty();
   Future<void> sendTelemetry(Map<String, dynamic> data);
   Future<Map<String, dynamic>> reattest();
-  
+
   // Audit Endpoints
   Future<Map<String, dynamic>> getAuditStats();
   Future<Map<String, dynamic>> getAuditSiphon();
@@ -70,7 +70,8 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar estatísticas de auditoria: $e');
+      throw ServerException(
+          message: 'Erro ao buscar estatísticas de auditoria: $e');
     }
   }
 

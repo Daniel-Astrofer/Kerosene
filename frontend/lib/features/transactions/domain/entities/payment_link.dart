@@ -46,12 +46,10 @@ class PaymentLink extends Equatable {
       id: json['id']?.toString() ?? '',
       userId: (json['userId'] as num?)?.toInt() ?? 0,
       amountBtc: amountBtc,
-      description:
-          json['description']?.toString() ??
+      description: json['description']?.toString() ??
           json['receiverWalletName']?.toString() ??
           '',
-      depositAddress:
-          json['depositAddress']?.toString() ??
+      depositAddress: json['depositAddress']?.toString() ??
           json['address']?.toString() ??
           json['receiverWalletName']?.toString() ??
           '',
@@ -74,18 +72,18 @@ class PaymentLink extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    amountBtc,
-    description,
-    depositAddress,
-    status,
-    txid,
-    expiresAt,
-    createdAt,
-    paidAt,
-    completedAt,
-  ];
+        id,
+        userId,
+        amountBtc,
+        description,
+        depositAddress,
+        status,
+        txid,
+        expiresAt,
+        createdAt,
+        paidAt,
+        completedAt,
+      ];
 
   /// Converte PaymentLink para Transaction para exibição no histórico unificado
   Transaction toTransaction() {
@@ -96,9 +94,8 @@ class PaymentLink extends Equatable {
       toAddress: depositAddress,
       amountSatoshis: (amountBtc * 100000000).round(),
       feeSatoshis: 0,
-      status: isCompleted
-          ? TransactionStatus.confirmed
-          : TransactionStatus.pending,
+      status:
+          isCompleted ? TransactionStatus.confirmed : TransactionStatus.pending,
       type: TransactionType.receive,
       confirmations: isCompleted ? 6 : 0,
       timestamp: createdAt ?? DateTime.now(),

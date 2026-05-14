@@ -232,7 +232,7 @@ class _SettingsHeader extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white10),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
             ),
             child:
                 const Icon(Icons.tune_rounded, color: Colors.white38, size: 18),
@@ -347,9 +347,9 @@ class _OverviewPill extends StatelessWidget {
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.18)),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,10 +443,11 @@ class _AppearanceSection extends ConsumerWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E5BC).withOpacity(0.1),
+                      color: const Color(0xFF00E5BC).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: const Color(0xFF00E5BC).withOpacity(0.3)),
+                          color:
+                              const Color(0xFF00E5BC).withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       appearance.fontScale.label,
@@ -464,7 +465,7 @@ class _AppearanceSection extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white10),
                 ),
@@ -483,7 +484,7 @@ class _AppearanceSection extends ConsumerWidget {
                   activeTrackColor: const Color(0xFF00E5BC),
                   inactiveTrackColor: Colors.white10,
                   thumbColor: const Color(0xFF00E5BC),
-                  overlayColor: const Color(0xFF00E5BC).withOpacity(0.12),
+                  overlayColor: const Color(0xFF00E5BC).withValues(alpha: 0.12),
                   trackHeight: 2,
                   thumbShape:
                       const RoundSliderThumbShape(enabledThumbRadius: 8),
@@ -574,12 +575,12 @@ class _ThemeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF00E5BC).withOpacity(0.08)
-              : Colors.white.withOpacity(0.03),
+              ? const Color(0xFF00E5BC).withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? const Color(0xFF00E5BC).withOpacity(0.5)
+                ? const Color(0xFF00E5BC).withValues(alpha: 0.5)
                 : Colors.white12,
             width: selected ? 1.5 : 1,
           ),
@@ -909,9 +910,10 @@ class _SecuritySection extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     error,
@@ -936,7 +938,7 @@ class _SecuritySection extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: Colors.white.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -1445,7 +1447,7 @@ class _BottomSheetContainer extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1456,9 +1458,9 @@ class _BottomSheetContainer extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: iconColor.withOpacity(0.3)),
+              border: Border.all(color: iconColor.withValues(alpha: 0.3)),
             ),
             child: Icon(icon, color: iconColor, size: 26),
           ),
@@ -1505,9 +1507,10 @@ class _DangerDialog extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                border:
+                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Icon(
                 Icons.warning_amber_rounded,
@@ -1539,7 +1542,7 @@ class _DangerDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.white12),
                       ),
@@ -1560,10 +1563,10 @@ class _DangerDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.15),
+                        color: AppColors.error.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.error.withOpacity(0.5),
+                          color: AppColors.error.withValues(alpha: 0.5),
                         ),
                       ),
                       child: Text(
@@ -1605,7 +1608,7 @@ class _SectionLabel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 14, color: color),
@@ -1614,7 +1617,7 @@ class _SectionLabel extends StatelessWidget {
         Text(
           label,
           style: AppTypography.caption.copyWith(
-            color: color.withOpacity(0.8),
+            color: color.withValues(alpha: 0.8),
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
@@ -1633,9 +1636,9 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
@@ -1654,7 +1657,7 @@ class _Divider extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: Colors.white.withOpacity(0.06),
+      color: Colors.white.withValues(alpha: 0.06),
       indent: AppSpacing.lg,
     );
   }
@@ -1694,7 +1697,9 @@ class _SelectionTile extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: 14,
           ),
-          color: selected ? accentColor.withOpacity(0.05) : Colors.transparent,
+          color: selected
+              ? accentColor.withValues(alpha: 0.05)
+              : Colors.transparent,
           child: Row(
             children: [
               if (isPill)
@@ -1705,8 +1710,8 @@ class _SelectionTile extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selected
-                        ? accentColor.withOpacity(0.15)
-                        : Colors.white.withOpacity(0.05),
+                        ? accentColor.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -1783,8 +1788,8 @@ class _SwitchTile extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: value
-                  ? iconColor.withOpacity(0.12)
-                  : Colors.white.withOpacity(0.05),
+                  ? iconColor.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
@@ -1820,8 +1825,8 @@ class _SwitchTile extends StatelessWidget {
             value: value,
             onChanged: onChanged,
             activeThumbColor: accentColor,
-            activeTrackColor: accentColor.withOpacity(0.2),
-            inactiveThumbColor: Colors.white.withOpacity(0.15),
+            activeTrackColor: accentColor.withValues(alpha: 0.2),
+            inactiveThumbColor: Colors.white.withValues(alpha: 0.15),
             inactiveTrackColor: Colors.white10,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
@@ -1870,7 +1875,7 @@ class _ActionTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
@@ -1899,7 +1904,8 @@ class _ActionTile extends StatelessWidget {
                 ),
               ),
               if (trailing != null)
-                Icon(trailing, color: Colors.white.withOpacity(0.2), size: 20),
+                Icon(trailing,
+                    color: Colors.white.withValues(alpha: 0.2), size: 20),
             ],
           ),
         ),
@@ -1921,7 +1927,7 @@ class _IconButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white10),
         ),
@@ -1994,12 +2000,13 @@ class _SheetButton extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: isOutline ? Colors.transparent : color.withOpacity(0.12),
+            color:
+                isOutline ? Colors.transparent : color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isOutline
-                  ? Colors.white.withOpacity(0.2)
-                  : color.withOpacity(0.4),
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : color.withValues(alpha: 0.4),
             ),
           ),
           child: Row(

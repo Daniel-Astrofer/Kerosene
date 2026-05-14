@@ -3,7 +3,8 @@ import '../../../../core/network/api_client.dart';
 
 abstract class VoucherRemoteDataSource {
   Future<Map<String, dynamic>> requestVoucher();
-  Future<Map<String, dynamic>> confirmVoucher(String pendingVoucherId, String txid);
+  Future<Map<String, dynamic>> confirmVoucher(
+      String pendingVoucherId, String txid);
   Future<String> getOnboardingLink(String sessionId);
   Future<void> mockConfirmOnboarding(String sessionId);
   Future<Map<String, dynamic>> testClaimVoucher(String username);
@@ -21,7 +22,8 @@ class VoucherRemoteDataSourceImpl implements VoucherRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> confirmVoucher(String pendingVoucherId, String txid) async {
+  Future<Map<String, dynamic>> confirmVoucher(
+      String pendingVoucherId, String txid) async {
     final response = await apiClient.post(
       AppConfig.voucherConfirm,
       queryParameters: {

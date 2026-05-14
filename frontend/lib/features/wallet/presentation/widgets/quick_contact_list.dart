@@ -65,15 +65,17 @@ class QuickContactList extends StatelessWidget {
                         end: Alignment.bottomRight,
                       )
                     : null,
-                color: isAdd ? null : Colors.white.withOpacity(0.05),
+                color: isAdd ? null : Colors.white.withValues(alpha: 0.05),
                 border: Border.all(
-                  color: isAdd ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                  color: isAdd
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.1),
                   width: 1.5,
                 ),
                 boxShadow: [
                   if (isAdd)
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       blurRadius: 15,
                       spreadRadius: 2,
                     ),
@@ -85,7 +87,7 @@ class QuickContactList extends StatelessWidget {
                     : Text(
                         label,
                         style: AppTypography.bodySmall.copyWith(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1,
                         ),
@@ -97,14 +99,17 @@ class QuickContactList extends StatelessWidget {
           Text(
             (name ?? label).toUpperCase(),
             style: AppTypography.caption.copyWith(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
               fontWeight: FontWeight.w900,
               fontSize: 8,
               letterSpacing: 1,
             ),
           ),
         ],
-      ).animate(delay: (index * 50).ms).fade().scale(begin: const Offset(0.8, 0.8)),
+      )
+          .animate(delay: (index * 50).ms)
+          .fade()
+          .scale(begin: const Offset(0.8, 0.8)),
     );
   }
 }

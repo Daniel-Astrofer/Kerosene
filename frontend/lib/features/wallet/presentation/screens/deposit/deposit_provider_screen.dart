@@ -32,13 +32,13 @@ class DepositProviderScreen extends ConsumerWidget {
           children: [
             _buildHeader(context),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTitle().animate().fade().slideY(begin: 0.1, end: 0),
                   const SizedBox(height: AppSpacing.xl),
-
                   _buildProviderCard(
                     context,
                     name: 'MoonPay',
@@ -65,7 +65,6 @@ class DepositProviderScreen extends ConsumerWidget {
                     badgeText: 'PRIVADO',
                     badgeColor: AppColors.warning,
                   ).animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
-                  
                   const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
@@ -104,21 +103,29 @@ class DepositProviderScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           Text(
             'PROVEDORES',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           const SizedBox(width: 48),
         ],
@@ -137,7 +144,8 @@ class DepositProviderScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         Text(
           'Selecione o melhor provedor para Pix ou Cartão.',
-          style: AppTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.5)),
+          style: AppTypography.bodyMedium
+              .copyWith(color: Colors.white.withValues(alpha: 0.5)),
         ),
       ],
     );
@@ -155,7 +163,7 @@ class DepositProviderScreen extends ConsumerWidget {
     return GlassContainer(
       padding: const EdgeInsets.all(AppSpacing.lg),
       borderRadius: BorderRadius.circular(AppSpacing.xl),
-      border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+      border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
       child: Column(
         children: [
           Row(
@@ -164,7 +172,7 @@ class DepositProviderScreen extends ConsumerWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(iconData, color: color, size: 24),
@@ -178,24 +186,31 @@ class DepositProviderScreen extends ConsumerWidget {
                       children: [
                         Text(
                           name,
-                          style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge!
+                              .copyWith(fontWeight: FontWeight.bold),
                         ),
                         if (badgeText != null) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
+                              color: color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               badgeText,
-                              style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                                color: color,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall!
+                                  .copyWith(
+                                    color: color,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
                             ),
                           ),
                         ],
@@ -204,7 +219,11 @@ class DepositProviderScreen extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       description,
-                      style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.4)),
                     ),
                   ],
                 ),
@@ -236,16 +255,19 @@ class DepositProviderScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNetworkButton({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _buildNetworkButton(
+      {required IconData icon,
+      required String label,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSpacing.md),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(AppSpacing.md),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -254,7 +276,8 @@ class DepositProviderScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+              style:
+                  AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

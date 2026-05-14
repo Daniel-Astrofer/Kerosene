@@ -51,15 +51,16 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
 
     setState(() {
       _words = words;
-      _controllers = List.generate(words.length, (index) => TextEditingController());
+      _controllers =
+          List.generate(words.length, (index) => TextEditingController());
       _focusNodes = List.generate(words.length, (index) => FocusNode());
-      
+
       _missingIndices = {};
       final random = math.Random();
-      
+
       // Ensure we don't loop forever if words are less than 3
       final int targetCount = math.min(3, words.length);
-      
+
       while (_missingIndices!.length < targetCount) {
         _missingIndices!.add(random.nextInt(words.length));
       }
@@ -82,12 +83,15 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
   }
 
   void _verify() {
-    if (_words == null || _controllers == null || _missingIndices == null) return;
+    if (_words == null || _controllers == null || _missingIndices == null) {
+      return;
+    }
 
     bool allMatch = true;
     for (int i = 0; i < _words!.length; i++) {
       if (_missingIndices!.contains(i)) {
-        if (_controllers![i].text.trim().toLowerCase() != _words![i].toLowerCase()) {
+        if (_controllers![i].text.trim().toLowerCase() !=
+            _words![i].toLowerCase()) {
           allMatch = false;
           break;
         }
@@ -98,7 +102,8 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
       setState(() => _error = null);
       widget.onNext();
     } else {
-      setState(() => _error = 'Algumas palavras estão incorretas. Verifique e tente novamente.');
+      setState(() => _error =
+          'Algumas palavras estão incorretas. Verifique e tente novamente.');
     }
   }
 
@@ -106,7 +111,8 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
   Widget build(BuildContext context) {
     if (_words == null) {
       return Center(
-        child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+        child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary),
       );
     }
 
@@ -131,15 +137,18 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Para garantir que você guardou a frase corretamente, digite todas as palavras abaixo.',
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                       textAlign: TextAlign.left,
                     ),
                     const SizedBox(height: 24),
-                    
+
                     if (_error != null) ...[
                       Text(
                         _error!,
-                        style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.error),
+                        style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                            color: Theme.of(context).colorScheme.error),
                         textAlign: TextAlign.left,
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -147,11 +156,19 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
 
                     // Grid of Words (Grid Card)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xxl),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xl, vertical: AppSpacing.xxl),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.02),
                         borderRadius: BorderRadius.circular(AppSpacing.xl),
-                        border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.2)),
+                        border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondary
+                                .withValues(alpha: 0.2)),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(AppSpacing.xl),
@@ -160,16 +177,23 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
                           child: Builder(
                             builder: (context) {
                               return Column(
-                                children: List.generate((_words!.length / 2).ceil(), (rowIndex) {
+                                children: List.generate(
+                                    (_words!.length / 2).ceil(), (rowIndex) {
                                   final int firstIndex = rowIndex * 2;
                                   final int secondIndex = rowIndex * 2 + 1;
-                                  final bool hasSecond = secondIndex < _words!.length;
+                                  final bool hasSecond =
+                                      secondIndex < _words!.length;
 
                                   return Padding(
-                                    padding: EdgeInsets.only(bottom: rowIndex == (_words!.length / 2).ceil() - 1 ? 0 : 16.0),
+                                    padding: EdgeInsets.only(
+                                        bottom: rowIndex ==
+                                                (_words!.length / 2).ceil() - 1
+                                            ? 0
+                                            : 16.0),
                                     child: Row(
                                       children: [
-                                        Expanded(child: _buildWordItem(firstIndex)),
+                                        Expanded(
+                                            child: _buildWordItem(firstIndex)),
                                         const SizedBox(width: 16),
                                         Expanded(
                                           child: hasSecond
@@ -186,10 +210,10 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
                         ),
                       ),
                     ),
-                    
+
                     const Spacer(),
                     const SizedBox(height: 32),
-                    
+
                     BouncingButton(
                       text: 'Verificar e Continuar',
                       onPressed: _verify,
@@ -206,7 +230,10 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
   }
 
   Widget _buildWordItem(int index) {
-    if (_words == null || _missingIndices == null || _controllers == null || _focusNodes == null) {
+    if (_words == null ||
+        _missingIndices == null ||
+        _controllers == null ||
+        _focusNodes == null) {
       return const SizedBox();
     }
 
@@ -219,7 +246,10 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
           Text(
             (index + 1).toString().padLeft(2, '0'),
             style: AppTypography.number.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.5),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -231,10 +261,10 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
                     controller: _controllers![index],
                     focusNode: _focusNodes![index],
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
                     cursorColor: Theme.of(context).colorScheme.primary,
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -260,10 +290,10 @@ class _SignupVerificationStepState extends State<SignupVerificationStep> {
                 : Text(
                     _words![index],
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
                   ),
           ),
         ],

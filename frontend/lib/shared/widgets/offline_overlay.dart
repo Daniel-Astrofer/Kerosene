@@ -48,7 +48,8 @@ class OfflineOverlay extends ConsumerWidget {
                                 shape: BoxShape.circle,
                                 color: Colors.redAccent.withValues(alpha: 0.12),
                                 border: Border.all(
-                                  color: Colors.redAccent.withValues(alpha: 0.25),
+                                  color:
+                                      Colors.redAccent.withValues(alpha: 0.25),
                                 ),
                               ),
                               child: const Icon(
@@ -72,14 +73,18 @@ class OfflineOverlay extends ConsumerWidget {
                             ),
                             const SizedBox(height: 10),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 40),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 40),
                               child: Text(
                                 'Nao foi possivel confirmar a conexao agora.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.onPrimary.withValues(alpha: 0.7),
+                                  )
+                                      .colorScheme
+                                      .onPrimary
+                                      .withValues(alpha: 0.7),
                                   fontSize: 14,
                                   decoration: TextDecoration.none,
                                 ),

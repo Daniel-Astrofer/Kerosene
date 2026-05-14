@@ -25,8 +25,10 @@ List<Story> sharedStories() {
     Story(
       name: 'Shared/Glassmorphism/Brushed Metal Container',
       builder: (context) {
-        final materialId = context.knobs.slider(label: 'Material ID', initial: 0.0, min: 0, max: 3);
-        final opacity = context.knobs.slider(label: 'Opacity', initial: 0.1, min: 0, max: 1);
+        final materialId = context.knobs
+            .slider(label: 'Material ID', initial: 0.0, min: 0, max: 3);
+        final opacity = context.knobs
+            .slider(label: 'Opacity', initial: 0.1, min: 0, max: 1);
         return Center(
           child: Container(
             width: 300,
@@ -41,7 +43,8 @@ List<Story> sharedStories() {
               ).colorScheme.primary.withValues(alpha: opacity),
               borderRadius: 24.0,
               child: const Center(
-                child: Text('BRUSHED METAL SHADER', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text('BRUSHED METAL SHADER',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ),
@@ -58,7 +61,8 @@ List<Story> sharedStories() {
             child: Card(
               color: Color(0xFF1E293B),
               child: Center(
-                child: Text('DRAG ME (3D EFFECT)', style: TextStyle(color: Colors.white)),
+                child: Text('DRAG ME (3D EFFECT)',
+                    style: TextStyle(color: Colors.white)),
               ),
             ),
           ),
@@ -68,10 +72,12 @@ List<Story> sharedStories() {
     Story(
       name: 'Shared/Overlays/Offline Banner',
       builder: (context) {
-        final isOffline = context.knobs.boolean(label: 'Is Offline', initial: true);
+        final isOffline =
+            context.knobs.boolean(label: 'Is Offline', initial: true);
         return ProviderScope(
           overrides: [
-            networkStatusProvider.overrideWith(() => _MockNetworkStatusNotifier(isOffline)),
+            networkStatusProvider
+                .overrideWith(() => _MockNetworkStatusNotifier(isOffline)),
           ],
           child: OfflineOverlay(
             child: const Center(child: Text('Background Content')),
@@ -82,9 +88,12 @@ List<Story> sharedStories() {
     Story(
       name: 'Shared/Wallet/Wallet Credit Card (Live Shader)',
       builder: (context) {
-        final balance = context.knobs.slider(label: 'Balance', initial: 1.25, min: 0, max: 10);
-        final colorIndex = context.knobs.slider(label: 'Color Index', initial: 0, min: 0, max: 3).toInt();
-        
+        final balance = context.knobs
+            .slider(label: 'Balance', initial: 1.25, min: 0, max: 10);
+        final colorIndex = context.knobs
+            .slider(label: 'Color Index', initial: 0, min: 0, max: 3)
+            .toInt();
+
         final mockWallet = Wallet(
           id: '1',
           name: 'Personal Wallet',

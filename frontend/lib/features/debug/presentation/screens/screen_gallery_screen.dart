@@ -55,80 +55,139 @@ class ScreenGalleryScreen extends StatelessWidget {
         title: Text(
           'DEBUG GALLERY',
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.5,
-          ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.5,
+              ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
       body: ListView(
-        padding: EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.xl),
+        padding:
+            EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.xl),
         children: [
           _buildCategory(context, 'WALLET & TRANSACTIONS', [
-            _buildScreenTile(context, 'Home Screen (Dashboard)', const HomeScreen()),
-            _buildScreenTile(context, 'Create Wallet', const CreateWalletScreen()),
-            _buildScreenTile(context, 'Send Money (Pix/Internal)', SendMoneyScreen(walletId: mockWallet.name)),
-            _buildScreenTile(context, 'Withdrawal (Premium)', WithdrawScreen(walletId: mockWallet.name)),
+            _buildScreenTile(
+                context, 'Home Screen (Dashboard)', const HomeScreen()),
+            _buildScreenTile(
+                context, 'Create Wallet', const CreateWalletScreen()),
+            _buildScreenTile(context, 'Send Money (Pix/Internal)',
+                SendMoneyScreen(walletId: mockWallet.name)),
+            _buildScreenTile(context, 'Withdrawal (Premium)',
+                WithdrawScreen(walletId: mockWallet.name)),
             _buildScreenTile(context, 'Deposits List', const DepositsScreen()),
-            _buildScreenTile(context, 'Deposit Amount', DepositAmountScreen(wallet: mockWallet)),
-            _buildScreenTile(context, 'Deposit Method', DepositMethodScreen(wallet: mockWallet, amountFiat: 1000.0)),
-            _buildScreenTile(context, 'Deposit Provider (Onramper)', DepositProviderScreen(wallet: mockWallet, amountFiat: 1000.0, method: 'Pix')),
-            _buildScreenTile(context, 'Onchain Invoice', DepositOnchainInvoiceScreen(wallet: mockWallet, amountFiat: 1000.0, providerName: 'Kerosene')),
-            _buildScreenTile(context, 'Lightning Invoice', DepositLightningInvoiceScreen(wallet: mockWallet, amountFiat: 1000.0, providerName: 'Kerosene')),
-            _buildScreenTile(context, 'Luxury QR Deposit', LuxuryQrDepositScreen(address: mockWallet.address, amountBtc: 0.001)),
+            _buildScreenTile(context, 'Deposit Amount',
+                DepositAmountScreen(wallet: mockWallet)),
+            _buildScreenTile(context, 'Deposit Method',
+                DepositMethodScreen(wallet: mockWallet, amountFiat: 1000.0)),
+            _buildScreenTile(
+                context,
+                'Deposit Provider (Onramper)',
+                DepositProviderScreen(
+                    wallet: mockWallet, amountFiat: 1000.0, method: 'Pix')),
+            _buildScreenTile(
+                context,
+                'Onchain Invoice',
+                DepositOnchainInvoiceScreen(
+                    wallet: mockWallet,
+                    amountFiat: 1000.0,
+                    providerName: 'Kerosene')),
+            _buildScreenTile(
+                context,
+                'Lightning Invoice',
+                DepositLightningInvoiceScreen(
+                    wallet: mockWallet,
+                    amountFiat: 1000.0,
+                    providerName: 'Kerosene')),
+            _buildScreenTile(
+                context,
+                'Luxury QR Deposit',
+                LuxuryQrDepositScreen(
+                    address: mockWallet.address, amountBtc: 0.001)),
             _buildScreenTile(context, 'Receive Screen', const ReceiveScreen()),
-            _buildScreenTile(context, 'Receive QR', const ReceiveQrScreen(amountDisplay: '0.002 BTC', paymentUri: 'bitcoin:bc1q...')),
-            _buildScreenTile(context, 'Wallet Details', WalletDetailsScreen(wallet: mockWallet)),
-            _buildScreenTile(context, 'Wallet Config', WalletConfigScreen(wallet: mockWallet)),
-            _buildScreenTile(context, 'Unified Transaction (History)', const UnifiedTransactionScreen(isSend: false)),
+            _buildScreenTile(
+                context,
+                'Receive QR',
+                const ReceiveQrScreen(
+                    amountDisplay: '0.002 BTC', paymentUri: 'bitcoin:bc1q...')),
+            _buildScreenTile(context, 'Wallet Details',
+                WalletDetailsScreen(wallet: mockWallet)),
+            _buildScreenTile(context, 'Wallet Config',
+                WalletConfigScreen(wallet: mockWallet)),
+            _buildScreenTile(context, 'Unified Transaction (History)',
+                const UnifiedTransactionScreen(isSend: false)),
           ]),
           _buildCategory(context, 'PROFILE & SETTINGS', [
             _buildScreenTile(context, 'Profile Main', const ProfileScreen()),
-            _buildScreenTile(context, 'Personal Data', const PersonalDataScreen()),
-            _buildScreenTile(context, 'Notification Settings', const NotificationSettingsScreen()),
-            _buildScreenTile(context, 'Security Settings', const SecuritySettingsScreen()),
+            _buildScreenTile(
+                context, 'Personal Data', const PersonalDataScreen()),
+            _buildScreenTile(context, 'Notification Settings',
+                const NotificationSettingsScreen()),
+            _buildScreenTile(
+                context, 'Security Settings', const SecuritySettingsScreen()),
             _buildScreenTile(context, 'Support / Help', const SupportScreen()),
-            _buildScreenTile(context, 'Global Settings', const SettingsScreen()),
+            _buildScreenTile(
+                context, 'Global Settings', const SettingsScreen()),
           ]),
           _buildCategory(context, 'FEATURES', [
-            _buildScreenTile(context, 'Sovereignty Status', const SovereigntyStatusScreen()),
+            _buildScreenTile(
+                context, 'Sovereignty Status', const SovereigntyStatusScreen()),
           ]),
         ],
       ),
     );
   }
 
-  Widget _buildCategory(BuildContext context, String title, List<Widget> children) {
+  Widget _buildCategory(
+      BuildContext context, String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm + AppSpacing.xs, left: AppSpacing.sm),
+          padding: EdgeInsets.only(
+              top: AppSpacing.lg,
+              bottom: AppSpacing.sm + AppSpacing.xs,
+              left: AppSpacing.sm),
           child: Text(
             title,
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2.5,
-            ),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.5,
+                ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(AppSpacing.xl),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
-          child: Column(children: children.asMap().entries.map((entry) {
+          child: Column(
+              children: children.asMap().entries.map((entry) {
             final idx = entry.key;
             final widget = entry.value;
             return Column(
               children: [
                 widget,
                 if (idx < children.length - 1)
-                  Divider(height: 1, indent: AppSpacing.md, endIndent: AppSpacing.md, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+                  Divider(
+                      height: 1,
+                      indent: AppSpacing.md,
+                      endIndent: AppSpacing.md,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.05)),
               ],
             );
           }).toList()),
@@ -139,15 +198,17 @@ class ScreenGalleryScreen extends StatelessWidget {
 
   Widget _buildScreenTile(BuildContext context, String title, Widget screen) {
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xs),
+      contentPadding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl, vertical: AppSpacing.xs),
       title: Text(
         title,
         style: Theme.of(context).textTheme.bodySmall!.copyWith(
-          color: Theme.of(context).colorScheme.onPrimary,
-          fontWeight: FontWeight.w500,
-        ),
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.w500,
+            ),
       ),
-      trailing: Icon(LucideIcons.chevronRight, color: AppColors.white20, size: 12),
+      trailing:
+          Icon(LucideIcons.chevronRight, color: AppColors.white20, size: 12),
       onTap: () {
         Navigator.push(
           context,

@@ -19,16 +19,16 @@ class NotificationService {
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
-        );
+      requestSoundPermission: true,
+      requestBadgePermission: true,
+      requestAlertPermission: true,
+    );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-        );
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+    );
 
     await flutterLocalNotificationsPlugin.initialize(
       settings: initializationSettings,
@@ -42,20 +42,19 @@ class NotificationService {
   }) async {
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
-          'kerosene_updates',
-          'Kerosene Updates',
-          channelDescription: 'Notifications for transaction updates',
-          importance: Importance.max, // MAX for Heads-up
-          priority: Priority.high,
-          showWhen: true,
-          color: Color(0xFF00FF94),
-          visibility:
-              NotificationVisibility.public, // Show content on lock screen
-          category: AndroidNotificationCategory.status,
-          styleInformation: BigTextStyleInformation(''),
-          playSound: true,
-          enableVibration: true,
-        );
+      'kerosene_updates',
+      'Kerosene Updates',
+      channelDescription: 'Notifications for transaction updates',
+      importance: Importance.max, // MAX for Heads-up
+      priority: Priority.high,
+      showWhen: true,
+      color: Color(0xFF00FF94),
+      visibility: NotificationVisibility.public, // Show content on lock screen
+      category: AndroidNotificationCategory.status,
+      styleInformation: BigTextStyleInformation(''),
+      playSound: true,
+      enableVibration: true,
+    );
 
     const NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,

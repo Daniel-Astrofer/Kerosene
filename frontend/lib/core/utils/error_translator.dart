@@ -60,7 +60,8 @@ class ErrorTranslator {
       case 'ERR_AUTH_TOTP_TIMEOUT':
         return l10n.errAuthTotpTimeout;
       case 'ERR_AUTH_PASSKEY_INVALID':
-        return l10n.passkeyErrorFinishing(l10n.errUnexpected); // Fallback to generic message
+        return l10n.passkeyErrorFinishing(
+            l10n.errUnexpected); // Fallback to generic message
       case 'ERR_AUTH_PASSKEY_TIMEOUT':
         return l10n.errTimeout;
       case 'ERR_AUTH_PASSKEY_ALREADY_REGISTERED':

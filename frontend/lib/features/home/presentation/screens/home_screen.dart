@@ -144,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (next != null && mounted) {
         showDialog(
           context: context,
-          barrierColor: AppColors.black.withOpacity(0.8),
+          barrierColor: AppColors.black.withValues(alpha: 0.8),
           builder: (_) => TransactionSuccessDialog(
             type: TransactionType.receive,
             amount: next.amount,
@@ -217,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              colorScheme.primary.withOpacity(0.15),
+                              colorScheme.primary.withValues(alpha: 0.15),
                               Colors.transparent,
                             ],
                           ),
@@ -242,8 +242,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       theme.scaffoldBackgroundColor,
-                      colorScheme.primary.withOpacity(0.08),
-                      colorScheme.secondary.withOpacity(0.12),
+                      colorScheme.primary.withValues(alpha: 0.08),
+                      colorScheme.secondary.withValues(alpha: 0.12),
                       theme.scaffoldBackgroundColor,
                     ],
                     stops: const [0.0, 0.3, 0.7, 1.0],
@@ -290,7 +290,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      colorScheme.secondary.withOpacity(0.3),
+                                      colorScheme.secondary
+                                          .withValues(alpha: 0.3),
                                       Colors.transparent
                                     ],
                                   ),
@@ -305,7 +306,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Text(
                                 context.l10n.helloUser(userName),
                                 style: AppTypography.bodyLarge.copyWith(
-                                  color: AppColors.white.withOpacity(0.5),
+                                  color: AppColors.white.withValues(alpha: 0.5),
                                   letterSpacing: -0.32,
                                 ),
                               )
@@ -363,10 +364,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     AppSpacing.lg,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.white.withOpacity(0.03),
+                                    color:
+                                        AppColors.white.withValues(alpha: 0.03),
                                     borderRadius: BorderRadius.circular(28),
                                     border: Border.all(
-                                      color: AppColors.white.withOpacity(0.08),
+                                      color: AppColors.white
+                                          .withValues(alpha: 0.08),
                                     ),
                                   ),
                                   child: Column(
@@ -423,7 +426,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         .copyWith(
                                                       color: colorScheme
                                                           .onPrimary
-                                                          .withOpacity(0.55),
+                                                          .withValues(
+                                                              alpha: 0.55),
                                                       fontWeight:
                                                           FontWeight.w100,
                                                     ),
@@ -435,7 +439,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         .copyWith(
                                                       color: colorScheme
                                                           .onPrimary
-                                                          .withOpacity(0.55),
+                                                          .withValues(
+                                                              alpha: 0.55),
                                                       fontWeight:
                                                           FontWeight.w100,
                                                       height: 2.2,
@@ -448,7 +453,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         .copyWith(
                                                       color: colorScheme
                                                           .onPrimary
-                                                          .withOpacity(0.55),
+                                                          .withValues(
+                                                              alpha: 0.55),
                                                       fontWeight:
                                                           FontWeight.w100,
                                                       height: 1.5,
@@ -462,8 +468,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                           .copyWith(
                                                         color: colorScheme
                                                             .onPrimary
-                                                            .withOpacity(
-                                                          0.25,
+                                                            .withValues(
+                                                          alpha: 0.25,
                                                         ),
                                                         fontWeight:
                                                             FontWeight.w200,
@@ -481,7 +487,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   .textTheme.displayLarge!
                                                   .copyWith(
                                                 color: colorScheme.onPrimary
-                                                    .withOpacity(0.55),
+                                                    .withValues(alpha: 0.55),
                                                 fontWeight: FontWeight.w100,
                                               ),
                                             ),
@@ -491,7 +497,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   .textTheme.titleMedium!
                                                   .copyWith(
                                                 color: colorScheme.onPrimary
-                                                    .withOpacity(0.55),
+                                                    .withValues(alpha: 0.55),
                                                 fontWeight: FontWeight.w100,
                                                 height: 2.2,
                                               ),
@@ -501,7 +507,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               style: theme.textTheme.titleLarge!
                                                   .copyWith(
                                                 color: colorScheme.onPrimary
-                                                    .withOpacity(0.55),
+                                                    .withValues(alpha: 0.55),
                                                 fontWeight: FontWeight.w100,
                                                 height: 1.5,
                                               ),
@@ -534,7 +540,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                         LucideIcons.plus,
                                                         color: colorScheme
                                                             .primary
-                                                            .withOpacity(0.5),
+                                                            .withValues(
+                                                                alpha: 0.5),
                                                         size: 32,
                                                       ),
                                                       const SizedBox(height: 8),
@@ -545,8 +552,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                             .copyWith(
                                                           color: colorScheme
                                                               .onPrimary
-                                                              .withOpacity(
-                                                            0.45,
+                                                              .withValues(
+                                                            alpha: 0.45,
                                                           ),
                                                         ),
                                                       ),
@@ -808,7 +815,7 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
                                           color: popupState.status ==
                                                   TxPopupStatus.success
                                               ? const Color(0xFF00FF11)
-                                                  .withOpacity(0.8)
+                                                  .withValues(alpha: 0.8)
                                               : const Color(0x33FFFFFF),
                                           width: 1.5,
                                         ),
@@ -869,7 +876,7 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
                                   style: AppTypography.caption.copyWith(
                                     fontFamily: 'JetBrainsMono',
                                     color: theme.colorScheme.onPrimary
-                                        .withOpacity(0.7),
+                                        .withValues(alpha: 0.7),
                                     fontSize: 9,
                                     height: 1,
                                   ),
@@ -1032,8 +1039,9 @@ class _TransactionsList extends ConsumerWidget {
   static TxIconKind? _methodIconKind(Transaction tx) {
     final desc = (tx.description ?? '').toLowerCase();
     if (desc.contains('nfc')) return TxIconKind.nfc;
-    if (desc.contains('qr') || desc.contains('qrcode'))
+    if (desc.contains('qr') || desc.contains('qrcode')) {
       return TxIconKind.qrCode;
+    }
     return null;
   }
 
@@ -1098,7 +1106,7 @@ class _TransactionsList extends ConsumerWidget {
                   context: context,
                   barrierDismissible: true,
                   barrierLabel: '',
-                  barrierColor: colorScheme.onSurface.withOpacity(0.1),
+                  barrierColor: colorScheme.onSurface.withValues(alpha: 0.1),
                   transitionDuration: const Duration(milliseconds: 400),
                   pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
                     tx: tx,
@@ -1133,10 +1141,11 @@ class _TransactionsList extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: style.bg.withOpacity(0.10),
+                            color: style.bg.withValues(alpha: 0.10),
                             shape: BoxShape.circle,
                             border: Border.all(
-                                color: style.bg.withOpacity(0.22), width: 1),
+                                color: style.bg.withValues(alpha: 0.22),
+                                width: 1),
                           ),
                           child: Center(
                             child: AnimatedTxIcon(
@@ -1162,7 +1171,8 @@ class _TransactionsList extends ConsumerWidget {
                               child: Center(
                                 child: AnimatedTxIcon(
                                   kind: methodKind,
-                                  color: colorScheme.onPrimary.withOpacity(0.7),
+                                  color: colorScheme.onPrimary
+                                      .withValues(alpha: 0.7),
                                   size: 12,
                                 ),
                               ),
@@ -1193,7 +1203,7 @@ class _TransactionsList extends ConsumerWidget {
                                       horizontal: 5, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF7B61FF)
-                                        .withOpacity(0.18),
+                                        .withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -1212,7 +1222,8 @@ class _TransactionsList extends ConsumerWidget {
                           Text(
                             _abbrevAddress(counterparty),
                             style: theme.textTheme.labelSmall!.copyWith(
-                              color: colorScheme.onPrimary.withOpacity(0.38),
+                              color:
+                                  colorScheme.onPrimary.withValues(alpha: 0.38),
                               letterSpacing: 0.2,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -1236,7 +1247,7 @@ class _TransactionsList extends ConsumerWidget {
                                   '${tx.confirmations}/6',
                                   style: theme.textTheme.labelSmall!.copyWith(
                                       color: colorScheme.onPrimary
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.3),
                                       fontSize: 9),
                                 ),
                               ],
@@ -1244,15 +1255,15 @@ class _TransactionsList extends ConsumerWidget {
                               Text(
                                 '·',
                                 style: theme.textTheme.labelSmall!.copyWith(
-                                    color:
-                                        colorScheme.onPrimary.withOpacity(0.2)),
+                                    color: colorScheme.onPrimary
+                                        .withValues(alpha: 0.2)),
                               ),
                               const SizedBox(width: AppSpacing.sm),
                               Text(
                                 _formatDate(tx.timestamp),
                                 style: theme.textTheme.labelSmall!.copyWith(
-                                    color:
-                                        colorScheme.onPrimary.withOpacity(0.28),
+                                    color: colorScheme.onPrimary
+                                        .withValues(alpha: 0.28),
                                     fontSize: 10),
                               ),
                             ],
@@ -1278,7 +1289,8 @@ class _TransactionsList extends ConsumerWidget {
                           Text(
                             'Taxa ${_formatBTC(tx.feeBTC)}',
                             style: theme.textTheme.labelSmall!.copyWith(
-                                color: colorScheme.onPrimary.withOpacity(0.25),
+                                color: colorScheme.onPrimary
+                                    .withValues(alpha: 0.25),
                                 fontSize: 9),
                           ),
                         ],
@@ -1368,9 +1380,9 @@ class _OperationalSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.03),
+        color: AppColors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.white.withOpacity(0.08)),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1385,7 +1397,7 @@ class _OperationalSummaryCard extends StatelessWidget {
           Text(
             'Conta, carteiras, privacidade e postura de custódia visíveis sem dados sintéticos.',
             style: theme.textTheme.bodySmall!.copyWith(
-              color: AppColors.white.withOpacity(0.55),
+              color: AppColors.white.withValues(alpha: 0.55),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -1409,9 +1421,10 @@ class _OperationalSummaryCard extends StatelessWidget {
                 vertical: AppSpacing.md,
               ),
               decoration: BoxDecoration(
-                color: AppColors.white.withOpacity(0.02),
+                color: AppColors.white.withValues(alpha: 0.02),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.white.withOpacity(0.06)),
+                border:
+                    Border.all(color: AppColors.white.withValues(alpha: 0.06)),
               ),
               child: Row(
                 children: [
@@ -1431,7 +1444,7 @@ class _OperationalSummaryCard extends StatelessWidget {
                   ),
                   Icon(
                     LucideIcons.chevronRight,
-                    color: AppColors.white.withOpacity(0.4),
+                    color: AppColors.white.withValues(alpha: 0.4),
                     size: 16,
                   ),
                 ],
@@ -1458,9 +1471,9 @@ class _OperationalPill extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white.withOpacity(0.04),
+        color: AppColors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.white.withOpacity(0.07)),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.07)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1469,7 +1482,7 @@ class _OperationalPill extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: AppColors.white.withOpacity(0.5),
+                  color: AppColors.white.withValues(alpha: 0.5),
                   fontWeight: FontWeight.w600,
                 ),
           ),

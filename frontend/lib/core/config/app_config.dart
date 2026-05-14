@@ -5,9 +5,12 @@ class AppConfig {
   // ==================== Node Configuration ====================
 
   /// Endereços .onion dos nós remotos
-  static const String nodeIS = 'http://wvogcwrsaeuvi7herycmsybpaft2ldwv7iye4h5xxrbcdxec5riidtyd.onion';
-  static const String nodeCH = 'http://iw5ohnsjrkbbazjaza5lidiqxqvqlqbb5g3xqyleeh3o774qwk4snrqd.onion';
-  static const String nodeSG = 'http://ltvlevluljxdc4egiv3y4qku5md5k74lrudlkiv5ws3gnd2yurdoirqd.onion';
+  static const String nodeIS =
+      'http://wvogcwrsaeuvi7herycmsybpaft2ldwv7iye4h5xxrbcdxec5riidtyd.onion';
+  static const String nodeCH =
+      'http://iw5ohnsjrkbbazjaza5lidiqxqvqlqbb5g3xqyleeh3o774qwk4snrqd.onion';
+  static const String nodeSG =
+      'http://ltvlevluljxdc4egiv3y4qku5md5k74lrudlkiv5ws3gnd2yurdoirqd.onion';
 
   /// Mapeamento de nós com nomes amigáveis
   static const Map<String, String> nodes = {
@@ -20,14 +23,14 @@ class AppConfig {
   static String activeNodeUrl = nodeIS;
 
   /// Nome do nó ativo
-  static String get activeNodeName => 
+  static String get activeNodeName =>
       nodes.entries.firstWhere((e) => e.value == activeNodeUrl).key;
 
   /// Endereço .onion base — Atualmente espelha o activeNodeUrl para compatibilidade
   static String get onionBaseUrl => activeNodeUrl;
 
   /// URL ativa da API — Aponta para o relay local (configurado no main.dart)
-  static String apiUrl = nodeIS; 
+  static String apiUrl = nodeIS;
 
   /// Timeout para requisições HTTP (em milissegundos)
   static const int connectionTimeout = 30000;
@@ -45,14 +48,16 @@ class AppConfig {
   static const String authLogin = '/auth/login';
   static const String authLoginVerify = '/auth/login/totp/verify';
   static const String authPowChallenge = '/auth/pow/challenge';
-  
+
   // 1.2 WebAuthn / Passkeys
   // 1.2 WebAuthn / Passkeys
   static const String authPasskeyChallenge = '/auth/passkey/challenge';
   static const String authPasskeyRegister = '/auth/passkey/register';
   static const String authPasskeyVerify = '/auth/passkey/verify';
-  static const String authPasskeyOnboardingStart = '/auth/passkey/onboarding/start';
-  static const String authPasskeyOnboardingFinish = '/auth/passkey/onboarding/finish';
+  static const String authPasskeyOnboardingStart =
+      '/auth/passkey/onboarding/start';
+  static const String authPasskeyOnboardingFinish =
+      '/auth/passkey/onboarding/finish';
 
   // 1.3 Profile
   static const String authMe = '/auth/me';
@@ -73,34 +78,44 @@ class AppConfig {
 
   // 3.1 Payment Requests (Internal)
   static const String ledgerPaymentRequest = '/ledger/payment-request';
-  static const String ledgerPaymentRequestPay = '/ledger/payment-request/{linkId}/pay';
+  static const String ledgerPaymentRequestPay =
+      '/ledger/payment-request/{linkId}/pay';
   static const String ledgerDelete = '/ledger';
 
   // 4. Bitcoin Transactions
-  static const String transactionsDepositAddress = '/transactions/deposit-address';
+  static const String transactionsDepositAddress =
+      '/transactions/deposit-address';
   static const String transactionsEstimateFee = '/transactions/estimate-fee';
-  static const String transactionsCreateUnsigned = '/transactions/create-unsigned';
+  static const String transactionsCreateUnsigned =
+      '/transactions/create-unsigned';
   static const String transactionsBroadcast = '/transactions/broadcast';
   static const String transactionsStatus = '/transactions/status';
   static const String transactionsWithdraw = '/transactions/withdraw';
 
   // 4.1 Payment Links (External BTC)
-  static const String transactionsCreatePaymentLink = '/transactions/create-payment-link';
-  static const String transactionsPaymentLink = '/transactions/payment-link'; // + /{linkId}
-  static const String transactionsPaymentLinkConfirm = '/transactions/payment-link/{linkId}/confirm';
-  static const String transactionsPaymentLinkComplete = '/transactions/payment-link/{linkId}/complete';
-  static const String transactionsPaymentLinksList = '/transactions/payment-links';
+  static const String transactionsCreatePaymentLink =
+      '/transactions/create-payment-link';
+  static const String transactionsPaymentLink =
+      '/transactions/payment-link'; // + /{linkId}
+  static const String transactionsPaymentLinkConfirm =
+      '/transactions/payment-link/{linkId}/confirm';
+  static const String transactionsPaymentLinkComplete =
+      '/transactions/payment-link/{linkId}/complete';
+  static const String transactionsPaymentLinksList =
+      '/transactions/payment-links';
 
   // 5. Vouchers
   static const String voucherRequest = '/voucher/request';
   static const String voucherConfirm = '/voucher/confirm';
   static const String voucherOnboardingLink = '/voucher/onboarding-link';
-  static const String voucherOnboardingMockConfirm = '/voucher/onboarding-mock-confirm';
+  static const String voucherOnboardingMockConfirm =
+      '/voucher/onboarding-mock-confirm';
   static const String voucherTestClaim = '/voucher/test-claim';
 
   // 6. Notifications
   static const String notificationsSend = '/notifications/send';
-  static const String notificationRegisterToken = '/notifications/register-token';
+  static const String notificationRegisterToken =
+      '/notifications/register-token';
 
   // 7. Sovereignty & Audit
   static const String sovereigntyStatus = '/sovereignty/status';
@@ -121,9 +136,11 @@ class AppConfig {
   static const String vaultProvision = '/v1/vault/provision';
 
   // (Legacy / Extra - Checking for compatibility)
-  static const String transactionsConfirmDeposit = '/transactions/confirm-deposit';
+  static const String transactionsConfirmDeposit =
+      '/transactions/confirm-deposit';
   static const String transactionsDeposits = '/transactions/deposits';
-  static const String transactionsDepositBalance = '/transactions/deposit-balance';
+  static const String transactionsDepositBalance =
+      '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
 
   // ==================== Storage Keys ====================
@@ -147,6 +164,7 @@ class AppConfig {
 
   /// Habilitar modo debug
   static const bool enableDebugMode = false;
+
   /// Habilitar logs
   static const bool enableLogs = true;
 

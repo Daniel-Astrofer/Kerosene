@@ -14,7 +14,7 @@ class AppRadius {
 class AppShadows {
   static final List<BoxShadow> soft = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withValues(alpha: 0.5),
       blurRadius: 10,
       offset: const Offset(0, 4),
     ),
@@ -22,7 +22,7 @@ class AppShadows {
 
   static final List<BoxShadow> neonGlow = [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.4),
+      color: AppColors.primary.withValues(alpha: 0.4),
       blurRadius: 16,
       spreadRadius: 2,
       offset: const Offset(0, 0),
@@ -44,7 +44,7 @@ class AppTheme {
       surface: AppColors.surface,
       error: AppColors.error,
       onPrimary: AppColors.white,
-      secondaryContainer: AppColors.secondary.withOpacity(0.2),
+      secondaryContainer: AppColors.secondary.withValues(alpha: 0.2),
     ),
 
     // ─── Page Transitions ────────────────────────
@@ -90,7 +90,7 @@ class AppTheme {
         borderSide: const BorderSide(color: AppColors.error, width: 1),
       ),
       hintStyle: AppTypography.bodyMedium.copyWith(
-        color: Colors.white.withOpacity(0.25),
+        color: Colors.white.withValues(alpha: 0.25),
       ),
       labelStyle: AppTypography.bodyMedium.copyWith(color: AppColors.grey),
     ),
@@ -98,7 +98,8 @@ class AppTheme {
     // ─── Button Theme (Gradient-friendly) ────────
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.transparent, // We use BouncingButton for gradients
+        backgroundColor:
+            Colors.transparent, // We use BouncingButton for gradients
         foregroundColor: AppColors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),

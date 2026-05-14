@@ -23,16 +23,16 @@ class ServerUnavailableScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(),
-                
+
                 // Animated glowing icon container
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.xxl),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.error.withOpacity(0.2),
+                        color: AppColors.error.withValues(alpha: 0.2),
                         blurRadius: 40,
                         spreadRadius: 10,
                       )
@@ -44,9 +44,9 @@ class ServerUnavailableScreen extends ConsumerWidget {
                     color: AppColors.error,
                   ),
                 ),
-                
+
                 const SizedBox(height: AppSpacing.xxl),
-                
+
                 Text(
                   'SERVIDOR INDISPONÍVEL',
                   style: AppTypography.h1.copyWith(
@@ -55,9 +55,9 @@ class ServerUnavailableScreen extends ConsumerWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: AppSpacing.md),
-                
+
                 Text(
                   'Não foi possível restabelecer a conexão com a rede agora.\nSua sessão foi preservada. Tente novamente em instantes.',
                   style: AppTypography.bodyLarge.copyWith(
@@ -66,18 +66,19 @@ class ServerUnavailableScreen extends ConsumerWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const Spacer(),
-                
+
                 BouncingButton(
                   text: 'TENTAR NOVAMENTE',
                   icon: LucideIcons.refreshCw,
-                  onPressed: () =>
-                      ref.read(authControllerProvider.notifier).retrySessionCheck(),
+                  onPressed: () => ref
+                      .read(authControllerProvider.notifier)
+                      .retrySessionCheck(),
                 ),
-                
+
                 const SizedBox(height: AppSpacing.md),
-                
+
                 TextButton(
                   onPressed: () {
                     ref.read(authControllerProvider.notifier).logout();
@@ -90,7 +91,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: AppSpacing.xl),
               ],
             ),

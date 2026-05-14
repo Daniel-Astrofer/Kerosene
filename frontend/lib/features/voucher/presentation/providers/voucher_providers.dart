@@ -4,7 +4,8 @@ import 'package:teste/features/voucher/data/datasources/voucher_remote_datasourc
 import 'package:teste/features/voucher/data/repositories/voucher_repository_impl.dart';
 import 'package:teste/features/voucher/domain/repositories/voucher_repository.dart';
 
-final voucherRemoteDataSourceProvider = Provider<VoucherRemoteDataSource>((ref) {
+final voucherRemoteDataSourceProvider =
+    Provider<VoucherRemoteDataSource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return VoucherRemoteDataSourceImpl(apiClient);
 });

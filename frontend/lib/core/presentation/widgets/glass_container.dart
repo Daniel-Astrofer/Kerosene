@@ -32,20 +32,23 @@ class GlassContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // When blur is disabled, slightly increase opacity to maintain visibility
-    final double effectiveOpacity = enableBlur
-        ? opacity
-        : (opacity + 0.05).clamp(0.0, 1.0);
+    final double effectiveOpacity =
+        enableBlur ? opacity : (opacity + 0.05).clamp(0.0, 1.0);
 
     Widget content = Container(
       width: width,
       height: height,
       padding: padding,
       decoration: BoxDecoration(
-        color: color.withOpacity(effectiveOpacity),
+        color: color.withValues(alpha: effectiveOpacity),
         borderRadius: borderRadius ?? BorderRadius.circular(20),
-        border:
-            border ??
-            Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2), width: 1.5),
+        border: border ??
+            Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.2),
+                width: 1.5),
       ),
       child: child,
     );

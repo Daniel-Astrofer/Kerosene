@@ -47,9 +47,9 @@ class _AnimatedErrorLabelState extends State<AnimatedErrorLabel> {
                 widget.errorText!,
                 textAlign: widget.textAlign,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
               )
                   .animate(key: ValueKey(widget.errorText))
                   .fadeIn(duration: 200.ms)

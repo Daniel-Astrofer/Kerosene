@@ -221,8 +221,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               size: 24,
             ),
             style: IconButton.styleFrom(
-              backgroundColor:
-                  Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
@@ -246,7 +248,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Row(
@@ -272,12 +274,15 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)
+                ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(100),
             border: Border.all(
               color: isSelected
-                  ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)
+                  ? Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1)
                   : Colors.transparent,
             ),
           ),
@@ -290,7 +295,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                       : Theme.of(context)
                           .colorScheme
                           .onPrimary
-                          .withOpacity(0.4),
+                          .withValues(alpha: 0.4),
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   letterSpacing: 1.2,
                 ),
@@ -306,7 +311,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         Text(
           context.l10n.amount.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2.0,
               ),
@@ -356,7 +364,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return Text(
       "≈ \$ ${value.toStringAsFixed(2)} USD",
       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.4),
             fontWeight: FontWeight.w500,
           ),
     );
@@ -418,13 +427,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               color: Theme.of(context)
                   .colorScheme
                   .onPrimary
-                  .withOpacity(isPressed ? 0.12 : 0.05),
+                  .withValues(alpha: isPressed ? 0.12 : 0.05),
               borderRadius: BorderRadius.circular(AppSpacing.md),
               border: Border.all(
                 color: Theme.of(context)
                     .colorScheme
                     .onPrimary
-                    .withOpacity(isPressed ? 0.16 : 0.05),
+                    .withValues(alpha: isPressed ? 0.16 : 0.05),
               ),
             ),
             alignment: Alignment.center,
@@ -478,7 +487,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     color: Theme.of(context)
                         .colorScheme
                         .onPrimary
-                        .withOpacity(0.4),
+                        .withValues(alpha: 0.4),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 2.0,
                   ),
@@ -594,7 +603,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onPrimary
-                                .withOpacity(0.2),
+                                .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -708,7 +717,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }) {
     final lineColor = isInvalid
         ? AppColors.error
-        : Theme.of(context).colorScheme.onPrimary.withOpacity(0.24);
+        : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.24);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
@@ -731,13 +740,19 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           labelStyle: Theme.of(context).textTheme.labelSmall!.copyWith(
                 color: isInvalid
                     ? AppColors.error
-                    : Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+                    : Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.5),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.8,
               ),
           hintText: hint,
           hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.3)),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -763,8 +778,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             context.l10n.noRecentContacts,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onPrimary.withOpacity(0.36),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.36),
                 ),
           );
         }
@@ -778,7 +795,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     color: Theme.of(context)
                         .colorScheme
                         .onPrimary
-                        .withOpacity(0.42),
+                        .withValues(alpha: 0.42),
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
                   ),
@@ -791,8 +808,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 shrinkWrap: true,
                 itemCount: contacts.length,
                 separatorBuilder: (_, __) => Divider(
-                  color:
-                      Theme.of(context).colorScheme.onPrimary.withOpacity(0.08),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.08),
                   height: 1,
                 ),
                 itemBuilder: (context, index) {
@@ -811,7 +830,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(0.82),
+                                .withValues(alpha: 0.82),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
@@ -841,7 +860,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onPrimary
-                                            .withOpacity(0.38),
+                                            .withValues(alpha: 0.38),
                                         fontFamily: 'JetBrainsMono',
                                       ),
                                 ),
@@ -859,7 +878,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onPrimary
-                                      .withOpacity(0.48),
+                                      .withValues(alpha: 0.48),
                                   fontWeight: FontWeight.w700,
                                 ),
                           ),
@@ -951,7 +970,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onPrimary
-                                            .withOpacity(0.4))),
+                                            .withValues(alpha: 0.4))),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -1030,7 +1049,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.3),
               fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),

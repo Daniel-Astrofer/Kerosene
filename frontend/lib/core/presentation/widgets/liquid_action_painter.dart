@@ -18,7 +18,7 @@ class LiquidActionPainter extends CustomPainter {
     if (dragOffset == Offset.zero) return;
 
     final paint = Paint()
-      ..color = color.withOpacity(0.08)
+      ..color = color.withValues(alpha: 0.08)
       ..style = PaintingStyle.fill;
 
     final dampenedDx = dragOffset.dx * 0.8;
@@ -27,20 +27,24 @@ class LiquidActionPainter extends CustomPainter {
     if (dampenedDy.abs() > dampenedDx.abs()) {
       if (dampenedDy > 0) {
         final intensity = (dampenedDy / threshold).clamp(0.0, 1.3);
-        _drawLiquidEdge(canvas, size, paint, dampenedDy, intensity, dampenedDx, EdgeDirection.top);
+        _drawLiquidEdge(canvas, size, paint, dampenedDy, intensity, dampenedDx,
+            EdgeDirection.top);
       }
     } else {
       if (dampenedDx > 0) {
         final intensity = (dampenedDx / threshold).clamp(0.0, 1.3);
-        _drawLiquidEdge(canvas, size, paint, dampenedDx, intensity, dampenedDy, EdgeDirection.left);
+        _drawLiquidEdge(canvas, size, paint, dampenedDx, intensity, dampenedDy,
+            EdgeDirection.left);
       } else if (dampenedDx < 0) {
         final intensity = (dampenedDx.abs() / threshold).clamp(0.0, 1.3);
-        _drawLiquidEdge(canvas, size, paint, dampenedDx.abs(), intensity, dampenedDy, EdgeDirection.right);
+        _drawLiquidEdge(canvas, size, paint, dampenedDx.abs(), intensity,
+            dampenedDy, EdgeDirection.right);
       }
     }
   }
 
-  void _drawLiquidEdge(Canvas canvas, Size size, Paint paint, double pull, double intensity, double tilt, EdgeDirection direction) {
+  void _drawLiquidEdge(Canvas canvas, Size size, Paint paint, double pull,
+      double intensity, double tilt, EdgeDirection direction) {
     final path = Path();
     final pullFactor = 1.4;
     final tiltFactor = 0.6;
@@ -76,7 +80,7 @@ class LiquidActionPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     final glowPaint = Paint()
-      ..color = color.withOpacity(0.04 * intensity)
+      ..color = color.withValues(alpha: 0.04 * intensity)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 40 * intensity);
     canvas.drawPath(path, glowPaint);
   }

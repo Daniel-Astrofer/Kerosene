@@ -38,19 +38,19 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.lg),
-                  
+
                   // ── Wallet Card Preview ──────────────────────────────────────
                   Hero(
                     tag: 'card_hero_${widget.wallet.address}',
                     child: WalletCreditCard(
                       wallet: widget.wallet,
-                      colorIndex: _materialIndex, 
+                      colorIndex: _materialIndex,
                       showDetails: true,
                     ),
                   ).animate().scale(curve: Curves.easeOutBack),
-                  
+
                   const SizedBox(height: AppSpacing.xxl),
-                  
+
                   // ── Settings List ──────────────────────────────────────────
                   GlassContainer(
                     width: double.infinity,
@@ -64,11 +64,14 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                           icon: LucideIcons.copy,
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            Clipboard.setData(ClipboardData(text: widget.wallet.address));
-                            SnackbarHelper.showSuccess('Endereço copiado com sucesso');
+                            Clipboard.setData(
+                                ClipboardData(text: widget.wallet.address));
+                            SnackbarHelper.showSuccess(
+                                'Endereço copiado com sucesso');
                           },
                         ),
-                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        Divider(
+                            height: AppSpacing.xl, color: AppColors.white10),
                         _CyberActionTile(
                           title: 'Bloquear Cartão',
                           subtitle: 'Desativa temporariamente este card',
@@ -80,11 +83,16 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                               HapticFeedback.mediumImpact();
                               setState(() => _isBlocked = val);
                             },
-                            activeThumbColor: Theme.of(context).colorScheme.primary,
-                            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            activeThumbColor:
+                                Theme.of(context).colorScheme.primary,
+                            activeTrackColor: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.2),
                           ),
                         ),
-                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        Divider(
+                            height: AppSpacing.xl, color: AppColors.white10),
                         _CyberActionTile(
                           title: 'Ocultar Saldo',
                           subtitle: 'Não mostrar detalhes na tela inicial',
@@ -95,21 +103,27 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
                               HapticFeedback.selectionClick();
                               setState(() => _hideBalance = val);
                             },
-                            activeThumbColor: Theme.of(context).colorScheme.primary,
-                            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            activeThumbColor:
+                                Theme.of(context).colorScheme.primary,
+                            activeTrackColor: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.2),
                           ),
                         ),
-                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        Divider(
+                            height: AppSpacing.xl, color: AppColors.white10),
                         _CyberActionTile(
                           title: 'Exportar Chave Privada',
                           subtitle: 'Visualizar semente/mnemônico',
                           icon: LucideIcons.key,
                           isDestructive: true,
                           onTap: () {
-                             // Security verify logic
+                            // Security verify logic
                           },
                         ),
-                        Divider(height: AppSpacing.xl, color: AppColors.white10),
+                        Divider(
+                            height: AppSpacing.xl, color: AppColors.white10),
                         _CyberActionTile(
                           title: 'Configurações de Tor',
                           subtitle: 'Gerenciar conexão para este nó',
@@ -124,7 +138,7 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
 
                   // ── DEBUG Area ──────────────────────────────────────────────
                   _buildDebugSection().animate(delay: 400.ms).fade(),
-                  
+
                   const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
@@ -137,21 +151,29 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
 
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           Text(
             'CONFIGURAÇÃO',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           const SizedBox(width: 48),
         ],
@@ -164,9 +186,9 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.05),
+        color: AppColors.warning.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppSpacing.md),
-        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,10 +200,10 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
               Text(
                 "DEBUG: TEXTURA DO CARD",
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: AppColors.warning,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                ),
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
               ),
             ],
           ),
@@ -189,10 +211,26 @@ class _WalletConfigScreenState extends State<WalletConfigScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _DebugMaterialBtn(label: "METAL", index: 0, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
-              _DebugMaterialBtn(label: "WOOD", index: 1, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
-              _DebugMaterialBtn(label: "DIAMOND", index: 2, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
-              _DebugMaterialBtn(label: "RUBY", index: 3, selectedIndex: _materialIndex, onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(
+                  label: "METAL",
+                  index: 0,
+                  selectedIndex: _materialIndex,
+                  onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(
+                  label: "WOOD",
+                  index: 1,
+                  selectedIndex: _materialIndex,
+                  onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(
+                  label: "DIAMOND",
+                  index: 2,
+                  selectedIndex: _materialIndex,
+                  onTap: (idx) => setState(() => _materialIndex = idx)),
+              _DebugMaterialBtn(
+                  label: "RUBY",
+                  index: 3,
+                  selectedIndex: _materialIndex,
+                  onTap: (idx) => setState(() => _materialIndex = idx)),
             ],
           ),
         ],
@@ -207,7 +245,11 @@ class _DebugMaterialBtn extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onTap;
 
-  const _DebugMaterialBtn({required this.label, required this.index, required this.selectedIndex, required this.onTap});
+  const _DebugMaterialBtn(
+      {required this.label,
+      required this.index,
+      required this.selectedIndex,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -218,19 +260,24 @@ class _DebugMaterialBtn extends StatelessWidget {
         onTap(index);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.warning : AppColors.warning.withOpacity(0.1),
+          color: isSelected
+              ? AppColors.warning
+              : AppColors.warning.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppSpacing.xs),
-          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-            color: isSelected ? Theme.of(context).colorScheme.onSurface : AppColors.warning,
-          ),
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onSurface
+                    : AppColors.warning,
+              ),
         ),
       ),
     );
@@ -256,7 +303,9 @@ class _CyberActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = isDestructive ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onPrimary;
+    final accentColor = isDestructive
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.onPrimary;
 
     return InkWell(
       onTap: onTap,
@@ -269,11 +318,15 @@ class _CyberActionTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.05),
+                color: accentColor.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(AppSpacing.sm),
-                border: Border.all(color: accentColor.withOpacity(0.1)),
+                border: Border.all(color: accentColor.withValues(alpha: 0.1)),
               ),
-              child: Icon(icon, color: isDestructive ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary, size: 20),
+              child: Icon(icon,
+                  color: isDestructive
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.primary,
+                  size: 20),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -283,24 +336,32 @@ class _CyberActionTile extends StatelessWidget {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
+                          color: accentColor,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-                    ),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.4),
+                        ),
                   ),
                 ],
               ),
             ),
-            if (trailing != null) 
-              trailing! 
-            else 
-              Icon(LucideIcons.chevronRight, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1), size: 16),
+            if (trailing != null)
+              trailing!
+            else
+              Icon(LucideIcons.chevronRight,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1),
+                  size: 16),
           ],
         ),
       ),

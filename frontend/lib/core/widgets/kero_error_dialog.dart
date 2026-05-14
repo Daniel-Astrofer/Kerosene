@@ -131,7 +131,8 @@ Future<void> showKeroErrorDialog(
 }) {
   return showDialog(
     context: context,
-    barrierColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+    barrierColor:
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
     builder: (_) => KeroErrorDialog(
       errorType: errorType,
       onSecondaryAction: onSecondaryAction,
@@ -169,10 +170,10 @@ class KeroErrorDialog extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0D0D0D),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: color.withOpacity(0.25), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               blurRadius: 40,
               spreadRadius: -4,
             ),
@@ -186,10 +187,10 @@ class KeroErrorDialog extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: color.withOpacity(0.3),
+                  color: color.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
@@ -202,7 +203,7 @@ class KeroErrorDialog extends StatelessWidget {
             Text(
               errorType.code,
               style: TextStyle(
-                color: color.withOpacity(0.6),
+                color: color.withValues(alpha: 0.6),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
@@ -229,7 +230,10 @@ class KeroErrorDialog extends StatelessWidget {
             Text(
               description,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.55),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.55),
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -245,10 +249,10 @@ class KeroErrorDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: color.withOpacity(0.12),
+                  backgroundColor: color.withValues(alpha: 0.12),
                   foregroundColor: color,
                   elevation: 0,
-                  side: BorderSide(color: color.withOpacity(0.4)),
+                  side: BorderSide(color: color.withValues(alpha: 0.4)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -276,7 +280,10 @@ class KeroErrorDialog extends StatelessWidget {
                     onSecondaryAction!();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.06),
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.06),
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

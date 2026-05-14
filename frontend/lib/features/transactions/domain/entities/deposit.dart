@@ -59,17 +59,17 @@ class Deposit extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    txid,
-    fromAddress,
-    toAddress,
-    amountBtc,
-    confirmations,
-    status,
-    createdAt,
-    confirmedAt,
-  ];
+        id,
+        userId,
+        txid,
+        fromAddress,
+        toAddress,
+        amountBtc,
+        confirmations,
+        status,
+        createdAt,
+        confirmedAt,
+      ];
 
   /// Converte Deposit para Transaction para exibição no histórico unificado
   Transaction toTransaction() {
@@ -80,9 +80,8 @@ class Deposit extends Equatable {
       toAddress: toAddress,
       amountSatoshis: (amountBtc * 100000000).round(),
       feeSatoshis: 0,
-      status: isFinished
-          ? TransactionStatus.confirmed
-          : TransactionStatus.pending,
+      status:
+          isFinished ? TransactionStatus.confirmed : TransactionStatus.pending,
       type: TransactionType.receive,
       confirmations: confirmations,
       timestamp: createdAt ?? DateTime.now(),

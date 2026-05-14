@@ -25,10 +25,10 @@ class TransactionAuthResult {
     String? confirmationPassphrase,
     String? totpCode,
   }) : this._(
-         isAuthenticated: true,
-         confirmationPassphrase: confirmationPassphrase,
-         totpCode: totpCode,
-       );
+          isAuthenticated: true,
+          confirmationPassphrase: confirmationPassphrase,
+          totpCode: totpCode,
+        );
 }
 
 /// Shows the right auth challenge for a transaction, then calls [onAuthenticated].
@@ -438,8 +438,9 @@ class _CodeTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         counterText: '',
-        errorText:
-            hasError ? (errorText ?? 'Código incorreto. Tente novamente.') : null,
+        errorText: hasError
+            ? (errorText ?? 'Código incorreto. Tente novamente.')
+            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.md),
           borderSide: BorderSide(

@@ -29,14 +29,17 @@ class ReceivedTxEventNotifier extends Notifier<ReceivedTxEvent?> {
   void updateEvent(ReceivedTxEvent? event) => state = event;
 }
 
-final receivedTxEventProvider = NotifierProvider<ReceivedTxEventNotifier, ReceivedTxEvent?>(ReceivedTxEventNotifier.new);
+final receivedTxEventProvider =
+    NotifierProvider<ReceivedTxEventNotifier, ReceivedTxEvent?>(
+        ReceivedTxEventNotifier.new);
 
 /// Provider do serviço WebSocket para atualizações de saldo em tempo real
-final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSocketService?>((
+final balanceWebSocketServiceProvider =
+    FutureProvider.autoDispose<BalanceWebSocketService?>((
   ref,
 ) async {
   final authState = ref.watch(authControllerProvider);
-  
+
   if (authState is! AuthAuthenticated) {
     debugPrint('⚠️ WebSocket: Usuário não autenticado, não conectando');
     return null;
@@ -44,12 +47,11 @@ final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSoc
 
   // Watch the reactive Tor API URL
   final baseUrl = ref.watch(torApiUrlProvider);
-  
+
   final userId = authState.user.id;
   debugPrint(
     '🔌 Iniciando WebSocket para userId: $userId @ $baseUrl',
   );
-
 
   // Obter token JWT de forma síncrona do SharedPreferences
   String? token;
@@ -110,8 +112,8 @@ final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSoc
           // Heuristic to find address in context if sender is missing
           String? extractedSender =
               (update.sender != null && update.sender!.isNotEmpty)
-              ? update.sender
-              : null;
+                  ? update.sender
+                  : null;
 
           if (extractedSender == null && update.context.isNotEmpty) {
             final words = update.context.split(' ');
@@ -139,12 +141,14 @@ final balanceWebSocketServiceProvider = FutureProvider.autoDispose<BalanceWebSoc
           // );
 
           // 2. In-App Dialog Trigger
-          ref.read(receivedTxEventProvider.notifier).updateEvent(ReceivedTxEvent(
-            amount: receivedAmount,
-            walletName: update.walletName,
-            sender: extractedSender,
-            receiver: update.receiver,
-          ));
+          ref
+              .read(receivedTxEventProvider.notifier)
+              .updateEvent(ReceivedTxEvent(
+                amount: receivedAmount,
+                walletName: update.walletName,
+                sender: extractedSender,
+                receiver: update.receiver,
+              ));
         }
       }
 

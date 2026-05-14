@@ -14,7 +14,8 @@ import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../../wallet/domain/repositories/ledger_repository.dart'; // Add this
-import '../../../wallet/presentation/providers/wallet_provider.dart' show ledgerRepositoryProvider;
+import '../../../wallet/presentation/providers/wallet_provider.dart'
+    show ledgerRepositoryProvider;
 
 // ==================== Filter Logic ====================
 
@@ -34,15 +35,17 @@ class TransactionFilterNotifier extends Notifier<TransactionFilter> {
   void updateFilter(TransactionFilter filter) => state = filter;
 }
 
-final transactionFilterProvider = NotifierProvider<TransactionFilterNotifier, TransactionFilter>(TransactionFilterNotifier.new);
+final transactionFilterProvider =
+    NotifierProvider<TransactionFilterNotifier, TransactionFilter>(
+        TransactionFilterNotifier.new);
 
 // ==================== Core Providers ====================
 
 final transactionRemoteDataSourceProvider =
     Provider<TransactionRemoteDataSource>((ref) {
-      final apiClient = ref.watch(apiClientProvider);
-      return TransactionRemoteDataSourceImpl(apiClient);
-    });
+  final apiClient = ref.watch(apiClientProvider);
+  return TransactionRemoteDataSourceImpl(apiClient);
+});
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   final remoteDataSource = ref.watch(transactionRemoteDataSourceProvider);
@@ -61,7 +64,7 @@ final transactionHistoryProvider = FutureProvider<List<Transaction>>((
 ) async {
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(page: 0, size: 50);
-  
+
   return result.fold(
     (failure) => throw Exception(failure.message),
     (transactions) {
@@ -103,11 +106,13 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<Transaction>>>((
   });
 });
 
-final transactionsByWalletProvider = FutureProvider.family<List<Transaction>, String>((ref, address) async {
+final transactionsByWalletProvider =
+    FutureProvider.family<List<Transaction>, String>((ref, address) async {
   final historyAsync = await ref.watch(transactionHistoryProvider.future);
-  return historyAsync.where((tx) => tx.fromAddress == address || tx.toAddress == address).toList();
+  return historyAsync
+      .where((tx) => tx.fromAddress == address || tx.toAddress == address)
+      .toList();
 });
-
 
 // ==================== Fee Estimation ====================
 
@@ -145,7 +150,9 @@ final depositAddressProvider = FutureProvider<String>((ref) async {
 final depositsProvider = FutureProvider<List<Deposit>>((ref) async {
   final historyAsync = await ref.watch(transactionHistoryProvider.future);
   return historyAsync
-      .where((t) => t.type == TransactionType.receive || t.type == TransactionType.deposit)
+      .where((t) =>
+          t.type == TransactionType.receive ||
+          t.type == TransactionType.deposit)
       .map((t) => Deposit(
             id: t.id.hashCode,
             userId: 0,
@@ -154,7 +161,9 @@ final depositsProvider = FutureProvider<List<Deposit>>((ref) async {
             toAddress: t.toAddress,
             amountBtc: t.amountSatoshis / 100000000,
             confirmations: t.confirmations,
-            status: t.status == TransactionStatus.confirmed ? 'credited' : 'pending',
+            status: t.status == TransactionStatus.confirmed
+                ? 'credited'
+                : 'pending',
             createdAt: t.timestamp,
           ))
       .toList();
@@ -260,21 +269,29 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
     } catch (e, stack) {
       debugPrint('>>> Notifier Error: $e');
       debugPrint('>>> Stack: $stack');
-      
+
       final errorStr = e.toString();
       if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
         try {
           // Extract challenge from error message (format: "PASSKEY_CHALLENGE_REQUIRED:<challenge>")
-          final challenge = errorStr.split('PASSKEY_CHALLENGE_REQUIRED:').last.split('"').first.trim();
-          debugPrint('>>> Notifier: Passkey challenge required. Challenge: $challenge');
-          
-          SnackbarHelper.showSuccess('Assinatura biométrica necessária para esta transação.');
-          
+          final challenge = errorStr
+              .split('PASSKEY_CHALLENGE_REQUIRED:')
+              .last
+              .split('"')
+              .first
+              .trim();
+          debugPrint(
+              '>>> Notifier: Passkey challenge required. Challenge: $challenge');
+
+          SnackbarHelper.showSuccess(
+              'Assinatura biométrica necessária para esta transação.');
+
           // Sign the challenge using Sovereign Passkey (Ed25519)
-          final signature = await SovereignAuthService.instance.signChallenge(challenge);
-          
+          final signature =
+              await SovereignAuthService.instance.signChallenge(challenge);
+
           debugPrint('>>> Notifier: Challenge signed. Retrying transaction...');
-          
+
           // Retry with signature
           final result = await _repository.sendTransaction(
             toAddress: toAddress,
@@ -289,7 +306,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
             idempotencyKey: idempotencyKey,
             requestTimestamp: requestTimestamp,
           );
-          
+
           ref.invalidate(transactionHistoryProvider);
           state = AsyncActionState(result: result);
           return result;
@@ -299,7 +316,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
           return null;
         }
       }
-      
+
       state = AsyncActionState(error: e.toString());
       return null;
     }
@@ -333,7 +350,9 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final sendTransactionProvider = NotifierProvider<SendTransactionNotifier, AsyncActionState>(SendTransactionNotifier.new);
+final sendTransactionProvider =
+    NotifierProvider<SendTransactionNotifier, AsyncActionState>(
+        SendTransactionNotifier.new);
 
 /// Notifier para confirmar depósitos
 class ConfirmDepositNotifier extends Notifier<AsyncActionState> {
@@ -368,7 +387,9 @@ class ConfirmDepositNotifier extends Notifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final confirmDepositProvider = NotifierProvider<ConfirmDepositNotifier, AsyncActionState>(ConfirmDepositNotifier.new);
+final confirmDepositProvider =
+    NotifierProvider<ConfirmDepositNotifier, AsyncActionState>(
+        ConfirmDepositNotifier.new);
 
 /// Notifier para Payment Links
 class PaymentLinkNotifier extends Notifier<AsyncActionState> {
@@ -391,7 +412,7 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         amount: amount,
         receiverWalletName: receiverWalletName,
       );
-      
+
       return result.fold(
         (failure) {
           state = AsyncActionState(error: failure.message);
@@ -419,7 +440,7 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         linkId: linkId,
         payerWalletName: payerWalletName,
       );
-      
+
       return result.fold(
         (failure) {
           state = AsyncActionState(error: failure.message);
@@ -440,7 +461,9 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final paymentLinkNotifierProvider = NotifierProvider<PaymentLinkNotifier, AsyncActionState>(PaymentLinkNotifier.new);
+final paymentLinkNotifierProvider =
+    NotifierProvider<PaymentLinkNotifier, AsyncActionState>(
+        PaymentLinkNotifier.new);
 
 /// Notifier para Saques Externos
 class WithdrawNotifier extends Notifier<AsyncActionState> {
@@ -482,15 +505,23 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
       final errorStr = e.toString();
       if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
         try {
-          final challenge = errorStr.split('PASSKEY_CHALLENGE_REQUIRED:').last.split('"').first.trim();
-          debugPrint('>>> Notifier: Passkey challenge required for withdrawal. Challenge: $challenge');
-          
-          SnackbarHelper.showSuccess('Assinatura biométrica necessária para confirmar o saque.');
-          
-          final signature = await SovereignAuthService.instance.signChallenge(challenge);
-          
+          final challenge = errorStr
+              .split('PASSKEY_CHALLENGE_REQUIRED:')
+              .last
+              .split('"')
+              .first
+              .trim();
+          debugPrint(
+              '>>> Notifier: Passkey challenge required for withdrawal. Challenge: $challenge');
+
+          SnackbarHelper.showSuccess(
+              'Assinatura biométrica necessária para confirmar o saque.');
+
+          final signature =
+              await SovereignAuthService.instance.signChallenge(challenge);
+
           debugPrint('>>> Notifier: Withdrawal challenge signed. Retrying...');
-          
+
           final result = await _repository.withdraw(
             fromWalletName: fromWalletName,
             toAddress: toAddress,
@@ -500,7 +531,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
             passkeySignature: signature,
             passkeyChallenge: challenge,
           );
-          
+
           ref.invalidate(transactionHistoryProvider);
           state = AsyncActionState(result: result);
           return result;
@@ -510,7 +541,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
           return null;
         }
       }
-      
+
       state = AsyncActionState(error: e.toString());
       return null;
     }
@@ -519,4 +550,5 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
   void reset() => state = const AsyncActionState();
 }
 
-final withdrawProvider = NotifierProvider<WithdrawNotifier, AsyncActionState>(WithdrawNotifier.new);
+final withdrawProvider =
+    NotifierProvider<WithdrawNotifier, AsyncActionState>(WithdrawNotifier.new);

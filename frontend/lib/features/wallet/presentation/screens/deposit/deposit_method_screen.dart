@@ -68,14 +68,16 @@ class DepositMethodScreen extends ConsumerWidget {
           children: [
             _buildHeader(context),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTitle().animate().fade().slideY(begin: 0.1, end: 0),
                   const SizedBox(height: AppSpacing.xxl),
-
-                  _buildCategoryLabel('FIAT GATEWAY').animate(delay: 100.ms).fade(),
+                  _buildCategoryLabel('FIAT GATEWAY')
+                      .animate(delay: 100.ms)
+                      .fade(),
                   const SizedBox(height: AppSpacing.md),
                   _buildMethodCard(
                     context,
@@ -86,10 +88,10 @@ class DepositMethodScreen extends ConsumerWidget {
                     badgeColor: Theme.of(context).colorScheme.primary,
                     onTap: () => _navigateToProvider(context, 'Fiat'),
                   ).animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
-
                   const SizedBox(height: AppSpacing.xl),
-
-                  _buildCategoryLabel('DEPÓSITO DIRETO').animate(delay: 300.ms).fade(),
+                  _buildCategoryLabel('DEPÓSITO DIRETO')
+                      .animate(delay: 300.ms)
+                      .fade(),
                   const SizedBox(height: AppSpacing.md),
                   _buildMethodCard(
                     context,
@@ -107,11 +109,16 @@ class DepositMethodScreen extends ConsumerWidget {
                     title: 'On-chain BTC',
                     subtitle: 'Depósito Bitcoin convencional',
                     badgeText: '3 CONFIRMS',
-                    badgeColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                    badgeTextColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                    badgeColor: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.2),
+                    badgeTextColor: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.4),
                     onTap: () => _navigateToProvider(context, 'On-chain'),
                   ).animate(delay: 500.ms).fade().slideY(begin: 0.1, end: 0),
-                  
                   const SizedBox(height: AppSpacing.xxl),
                   _buildFooterSecurity().animate(delay: 600.ms).fade(),
                 ],
@@ -125,27 +132,39 @@ class DepositMethodScreen extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           Text(
             'MÉTODO',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           IconButton(
             onPressed: () {},
-            icon: Icon(LucideIcons.helpCircle, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+            icon: Icon(LucideIcons.helpCircle,
+                color: Theme.of(context).colorScheme.onPrimary, size: 20),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
@@ -165,7 +184,8 @@ class DepositMethodScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         Text(
           'Escolha sua fonte de preferência para começar.',
-          style: AppTypography.bodyMedium.copyWith(color: Colors.white.withOpacity(0.5)),
+          style: AppTypography.bodyMedium
+              .copyWith(color: Colors.white.withValues(alpha: 0.5)),
         ),
       ],
     );
@@ -175,7 +195,7 @@ class DepositMethodScreen extends ConsumerWidget {
     return Text(
       label,
       style: AppTypography.caption.copyWith(
-        color: AppColors.primary.withOpacity(0.6),
+        color: AppColors.primary.withValues(alpha: 0.6),
         fontWeight: FontWeight.w900,
         letterSpacing: 2.0,
       ),
@@ -197,16 +217,17 @@ class DepositMethodScreen extends ConsumerWidget {
       child: GlassContainer(
         padding: const EdgeInsets.all(AppSpacing.lg),
         borderRadius: BorderRadius.circular(AppSpacing.xl),
-        border: Border.all(color: badgeColor.withOpacity(0.15), width: 1.5),
+        border:
+            Border.all(color: badgeColor.withValues(alpha: 0.15), width: 1.5),
         child: Row(
           children: [
             Container(
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: badgeColor.withOpacity(0.1),
+                color: badgeColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppSpacing.md),
-                border: Border.all(color: badgeColor.withOpacity(0.2)),
+                border: Border.all(color: badgeColor.withValues(alpha: 0.2)),
               ),
               child: Icon(icon, color: badgeColor, size: 24),
             ),
@@ -217,12 +238,19 @@ class DepositMethodScreen extends ConsumerWidget {
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge!
+                        .copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.4)),
                   ),
                 ],
               ),
@@ -232,23 +260,29 @@ class DepositMethodScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: badgeColor.withOpacity(0.1),
+                    color: badgeColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     badgeText,
                     style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                      color: badgeTextColor ?? badgeColor,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
+                          color: badgeTextColor ?? badgeColor,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Icon(LucideIcons.chevronRight, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2), size: 16),
+                Icon(LucideIcons.chevronRight,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.2),
+                    size: 16),
               ],
             ),
           ],
@@ -262,12 +296,13 @@ class DepositMethodScreen extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.shieldCheck, color: AppColors.primary.withOpacity(0.4), size: 14),
+          Icon(LucideIcons.shieldCheck,
+              color: AppColors.primary.withValues(alpha: 0.4), size: 14),
           const SizedBox(width: 8),
           Text(
             'BANK-GRADE ENCRYPTED SECURITY',
             style: AppTypography.caption.copyWith(
-              color: AppColors.primary.withOpacity(0.4),
+              color: AppColors.primary.withValues(alpha: 0.4),
               fontWeight: FontWeight.w900,
               fontSize: 9,
               letterSpacing: 1.0,

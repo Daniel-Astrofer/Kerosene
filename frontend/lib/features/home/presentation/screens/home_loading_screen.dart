@@ -103,7 +103,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
         ref.read(authControllerProvider.notifier).logout();
 
         Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
+          if (context.mounted) {
             Navigator.of(context)
                 .pushNamedAndRemoveUntil('/welcome', (route) => false);
           }
@@ -194,7 +194,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
                           color: Theme.of(context)
                               .colorScheme
                               .onPrimary
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           fontSize: 12,
                         ),
                       ),
@@ -203,7 +203,8 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
                         Text(
                           _errorMessage,
                           style: AppTypography.bodySmall.copyWith(
-                            color: const Color(0xFFFF0033).withOpacity(0.8),
+                            color:
+                                const Color(0xFFFF0033).withValues(alpha: 0.8),
                             fontSize: 11,
                           ),
                           textAlign: TextAlign.center,

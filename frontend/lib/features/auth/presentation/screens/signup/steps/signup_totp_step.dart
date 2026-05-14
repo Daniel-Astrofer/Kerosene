@@ -94,23 +94,22 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                   Text(
                     context.l10n.totpSetupTitle,
                     style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                      fontSize: 28,
-                      height: 1.1,
-                      letterSpacing: -0.5,
-                    ),
+                          fontSize: 28,
+                          height: 1.1,
+                          letterSpacing: -0.5,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     context.l10n.totpSetupSubtitle,
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
-                  
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -119,7 +118,10 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                         borderRadius: BorderRadius.circular(AppSpacing.md),
                         boxShadow: [
                           BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.15),
                             blurRadius: 30,
                           ),
                         ],
@@ -132,17 +134,18 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'TOTP SECRET',
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          letterSpacing: 2.0,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              letterSpacing: 2.0,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Container(
@@ -151,10 +154,16 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                           vertical: AppSpacing.md,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(AppSpacing.md),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.1),
                           ),
                         ),
                         child: Row(
@@ -162,11 +171,16 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                             Expanded(
                               child: Text(
                                 widget.totpSecret,
-                                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  fontFamily: 'monospace',
-                                  letterSpacing: 1.5,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                      fontFamily: 'monospace',
+                                      letterSpacing: 1.5,
+                                    ),
                               ),
                             ),
                             GestureDetector(
@@ -182,25 +196,31 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                       ),
                     ],
                   ),
-                  
                   if (widget.backupCodes.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.xxl),
                     Text(
                       'BACKUP CODES (SAVE THESE NOW)',
                       style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        letterSpacing: 2.0,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(AppSpacing.md),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.1),
                         ),
                       ),
                       child: Wrap(
@@ -209,9 +229,10 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                         children: widget.backupCodes
                             .map(
                               (code) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Colors.white.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -228,15 +249,14 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                       ),
                     ),
                   ],
-                  
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
                     context.l10n.totpEnter6Digits.toUpperCase(),
                     style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      letterSpacing: 2.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          letterSpacing: 2.0,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   TotpInputContainer(
@@ -254,7 +274,9 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
           BouncingButton(
             text: context.l10n.totpVerifyButton,
             isLoading: isLoading,
-            onPressed: _currentCode.length == 6 ? () => _handleVerify(_currentCode) : null,
+            onPressed: _currentCode.length == 6
+                ? () => _handleVerify(_currentCode)
+                : null,
           ),
           const SizedBox(height: AppSpacing.xxl),
         ],

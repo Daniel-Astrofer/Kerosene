@@ -30,7 +30,8 @@ class AuthTextField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.5,
@@ -42,7 +43,10 @@ class AuthTextField extends StatelessWidget {
             color: const Color(0xFF141414),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
             ),
           ),
           child: TextFormField(
@@ -57,12 +61,18 @@ class AuthTextField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.2),
                 fontSize: 14,
               ),
               prefixIcon: Icon(
                 icon,
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.4),
                 size: 20,
               ),
               suffixIcon: suffixIcon,

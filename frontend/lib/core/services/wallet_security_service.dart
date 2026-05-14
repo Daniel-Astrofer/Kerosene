@@ -13,7 +13,7 @@ class WalletSecurityService {
   WalletSecurityService({
     SecureStorageService? storageService,
     BiometricService? biometricService,
-  }) : _storageService = storageService ?? SecureStorageService(),
+  })  : _storageService = storageService ?? SecureStorageService(),
         _biometricService = biometricService ?? BiometricService();
 
   static const String _mnemonicKey = 'secure_mnemonic';
@@ -63,12 +63,16 @@ class WalletSecurityService {
   }) async {
     Uint8List? seed;
     try {
-      if (!bip39.validateMnemonic(mnemonic)) throw Exception('Invalid Mnemonic');
+      if (!bip39.validateMnemonic(mnemonic)) {
+        throw Exception('Invalid Mnemonic');
+      }
       seed = bip39.mnemonicToSeed(mnemonic);
       final root = Bip32Slip10Secp256k1.fromSeed(seed);
       final childKey = root.derivePath("m/84'/0'/0'/0/0");
       final txBytes = BytesUtils.fromHexString(txHex);
-      final signature = BitcoinSigner.fromKeyBytes(childKey.privateKey.raw).signTransaction(txBytes);
+      // ignore: deprecated_member_use
+      final signature = BitcoinSigner.fromKeyBytes(childKey.privateKey.raw)
+          .signTransaction(txBytes);
       return BytesUtils.toHexString(signature);
     } catch (e) {
       return null;

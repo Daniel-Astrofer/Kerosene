@@ -46,7 +46,8 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
     // Check if data is already loaded immediately (for edge cases)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = ref.read(walletProvider);
-      if ((state is WalletLoaded || state is WalletError) && _minDurationReached) {
+      if ((state is WalletLoaded || state is WalletError) &&
+          _minDurationReached) {
         _finishLoading();
       }
     });
@@ -54,7 +55,7 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay>
 
   Future<void> _finishLoading() async {
     if (_isTransitioning) return;
-    
+
     // Logic: Only finish if both conditions are met
     // 1. Minimum duration (3s) reached
     // 2. Data is loaded (handled by listener or callback)

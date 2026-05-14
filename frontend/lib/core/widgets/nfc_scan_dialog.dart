@@ -52,7 +52,8 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
   }
 
   void _startNfcSession() async {
-    bool isAvailable = await NfcManager.instance.checkAvailability() == NfcAvailability.enabled;
+    bool isAvailable = await NfcManager.instance.checkAvailability() ==
+        NfcAvailability.enabled;
     if (!isAvailable) {
       if (mounted) {
         setState(() {
@@ -128,10 +129,14 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
         decoration: BoxDecoration(
           color: const Color(0xFF1A1F3C),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+          border: Border.all(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00D4FF).withOpacity(0.1),
+              color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
               blurRadius: 20,
               spreadRadius: 5,
             ),
@@ -154,7 +159,10 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
               width: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05),
               ),
               child: _isScanning
                   ? const Icon(Icons.nfc, size: 80, color: Color(0xFF00D4FF))
@@ -169,7 +177,10 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
               _status,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.7),
                 fontSize: 16,
               ),
             ),
@@ -178,7 +189,11 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 "Cancel",
-                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.54)),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.54)),
               ),
             ),
           ],

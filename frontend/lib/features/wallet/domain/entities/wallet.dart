@@ -78,11 +78,10 @@ final class Wallet extends Equatable {
     final btcValue = (balanceVal is num) ? balanceVal.toDouble() : 0.0;
 
     return Wallet(
-      id:
-          (json['id'] ??
-                  json['walletId'] ??
-                  DateTime.now().millisecondsSinceEpoch)
-              .toString(),
+      id: (json['id'] ??
+              json['walletId'] ??
+              DateTime.now().millisecondsSinceEpoch)
+          .toString(),
       name: json['name'] ?? json['walletName'] ?? 'Wallet',
       address: json['address'] ?? '',
       balance: btcValue,
@@ -96,17 +95,17 @@ final class Wallet extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    name,
-    address,
-    balance,
-    derivationPath,
-    type,
-    createdAt,
-    updatedAt,
-    isActive,
-    accountSecurity,
-  ];
+        id,
+        name,
+        address,
+        balance,
+        derivationPath,
+        type,
+        createdAt,
+        updatedAt,
+        isActive,
+        accountSecurity,
+      ];
 }
 
 /// Tipos de carteira Bitcoin

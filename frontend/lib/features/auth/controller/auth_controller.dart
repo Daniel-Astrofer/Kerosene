@@ -280,14 +280,15 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> loginWithPasskey(String username) async {
     if (username.isEmpty) {
-      state = const AuthError('Por favor, insira o usuário para entrar com Passkey');
+      state = const AuthError(
+          'Por favor, insira o usuário para entrar com Passkey');
       return;
     }
     state = const AuthLoading();
-    
+
     // 1. Get challenge from backend
     final startResult = await authRepository.passkeyLoginStart(username);
-    
+
     await startResult.fold(
       (failure) async {
         state = AuthError(failure.message, statusCode: failure.statusCode);
@@ -299,20 +300,21 @@ class AuthController extends Notifier<AuthState> {
             challengeHex: challengeHex,
             username: username,
           );
-          
+
           // 3. Finish login with backend (credential already has the right structure)
           final finishResult = await authRepository.passkeyLoginFinish(
             username: username,
             credential: credential,
           );
-          
+
           finishResult.fold(
-            (failure) => state = AuthError(failure.message, statusCode: failure.statusCode),
+            (failure) => state =
+                AuthError(failure.message, statusCode: failure.statusCode),
             (loginResult) {
               if (loginResult.requiresTotp) {
                 state = AuthRequiresLoginTotp(
                   username: username,
-                  passphrase: '', 
+                  passphrase: '',
                   preAuthToken: loginResult.jwt,
                 );
               } else {
@@ -327,20 +329,20 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
-
   Future<void> registerPasskey() async {
     final currentState = state;
     if (currentState is! AuthAuthenticated) {
-      state = const AuthError('Você precisa estar logado para registrar uma passkey');
+      state = const AuthError(
+          'Você precisa estar logado para registrar uma passkey');
       return;
     }
-    
+
     final username = currentState.user.name;
     state = const AuthLoading();
 
     // 1. Get challenge from backend
     final startResult = await authRepository.passkeyRegisterStart(username);
-    
+
     await startResult.fold(
       (failure) async {
         state = AuthError(failure.message);
@@ -352,17 +354,19 @@ class AuthController extends Notifier<AuthState> {
             challengeHex: challengeHex,
             username: username,
           );
-          
+
           // 3. Finish registration with backend
-          final finishResult = await authRepository.passkeyRegisterFinish(credential);
-          
+          final finishResult =
+              await authRepository.passkeyRegisterFinish(credential);
+
           finishResult.fold(
             (failure) => state = AuthError(failure.message),
             (_) {
               // Stay authenticated
               state = AuthAuthenticated(currentState.user);
               // NotificationService doesn't have showNotification yet, just debug log
-              debugPrint('🔐 Passkey registered successfully for ${currentState.user.name}');
+              debugPrint(
+                  '🔐 Passkey registered successfully for ${currentState.user.name}');
             },
           );
         } catch (e) {
@@ -378,7 +382,7 @@ class AuthController extends Notifier<AuthState> {
     if (currentState is AuthTotpVerified) {
       username = currentState.username;
     }
-    
+
     state = const AuthLoading();
 
     // 1. Get challenge from backend
@@ -386,27 +390,29 @@ class AuthController extends Notifier<AuthState> {
       sessionId: sessionId,
       username: username,
     );
-    
+
     await result.fold(
       (failure) async {
         state = AuthError(failure.message);
       },
       (challengeHex) async {
         try {
-          final effectiveUsername = username ?? 'User_${sessionId.substring(0, 4)}';
-          
+          final effectiveUsername =
+              username ?? 'User_${sessionId.substring(0, 4)}';
+
           // 2. Register passkey (generates key pair + signs challenge with biometric)
           final credential = await passkeyService.register(
             challengeHex: challengeHex,
             username: effectiveUsername,
           );
-          
+
           // 3. Finish registration with backend
-          final finishResult = await authRepository.passkeyRegisterOnboardingFinish(
+          final finishResult =
+              await authRepository.passkeyRegisterOnboardingFinish(
             sessionId,
             credential,
           );
-          
+
           finishResult.fold(
             (failure) => state = AuthError(failure.message),
             (_) {
@@ -420,9 +426,6 @@ class AuthController extends Notifier<AuthState> {
       },
     );
   }
-
-
-
 
   Future<void> getOnboardingLink(String sessionId) async {
     _stopOnboardingPolling();
@@ -524,7 +527,7 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     state = const AuthLoading();
     final result = await authRepository.mockConfirmOnboarding(sessionId);
-    
+
     result.fold(
       (failure) => state = AuthError(failure.message),
       (_) => login(username: username, password: password),

@@ -311,8 +311,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
                         wallet: wallet,
                         isAddCard: isAddCard,
                         colorIndex: isAddCard ? 0 : vIdx,
-                        isSelected:
-                            rank == 0 &&
+                        isSelected: rank == 0 &&
                             !(!_isDragUp && _draggedVisualRank != null),
                         elevation: elevation,
                         showDetails: showDetails,
@@ -345,7 +344,10 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
           end: Alignment.bottomCenter,
           colors: [
             Theme.of(context).colorScheme.onPrimary,
-            Theme.of(context).colorScheme.onPrimary.withOpacity(1.0 - depthOpacity),
+            Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 1.0 - depthOpacity),
           ],
           stops: const [0.3, 1.0],
         ).createShader(bounds);

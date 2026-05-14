@@ -26,7 +26,7 @@ class WithdrawScreen extends ConsumerStatefulWidget {
 
 class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   Wallet? _selectedWallet;
-  
+
   int _selectedTabIndex = 0; // 0: On-chain, 1: Lightning
   String _amount = '0';
   bool _isProcessing = false;
@@ -88,29 +88,31 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             _buildHeader(context),
             const SizedBox(height: AppSpacing.lg),
             _buildTabs().animate().fade().slideY(begin: 0.1, end: 0),
-            
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
               child: Column(
                 children: [
-                  _buildAmountDisplay().animate().scale(curve: Curves.easeOutBack),
+                  _buildAmountDisplay()
+                      .animate()
+                      .scale(curve: Curves.easeOutBack),
                 ],
               ),
             ),
-
-            _buildKeypad().animate(delay: 200.ms).fade().slideY(begin: 0.1, end: 0),
-            
+            _buildKeypad()
+                .animate(delay: 200.ms)
+                .fade()
+                .slideY(begin: 0.1, end: 0),
             const SizedBox(height: AppSpacing.xl),
-            
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: CyberButton(
                 text: context.l10n.continueButton.toUpperCase(),
                 isLoading: _isProcessing,
-                onTap: (double.tryParse(_amount) ?? 0) > 0 ? _showReviewPopup : null,
+                onTap: (double.tryParse(_amount) ?? 0) > 0
+                    ? _showReviewPopup
+                    : null,
               ).animate(delay: 400.ms).fade().slideY(begin: 0.2, end: 0),
             ),
-            
             const SizedBox(height: AppSpacing.xl),
           ],
         ),
@@ -120,21 +122,29 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           const Spacer(),
           Text(
             context.l10n.saqueAction.toUpperCase(),
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 4, fontWeight: FontWeight.w900),
           ),
           const Spacer(),
           const SizedBox(width: 48),
@@ -148,9 +158,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+        border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
@@ -173,11 +187,19 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.1) : Colors.transparent,
+            color: isSelected
+                ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(100),
             boxShadow: [
               if (isSelected)
-                BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), blurRadius: 10, spreadRadius: 0),
+                BoxShadow(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    spreadRadius: 0),
             ],
           ),
           alignment: Alignment.center,
@@ -187,17 +209,28 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               Icon(
                 icon,
                 size: 14,
-                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.4),
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                  letterSpacing: 2,
-                  fontSize: 10,
-                ),
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.4),
+                      fontWeight:
+                          isSelected ? FontWeight.w900 : FontWeight.w600,
+                      letterSpacing: 2,
+                      fontSize: 10,
+                    ),
               ),
             ],
           ),
@@ -212,10 +245,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         Text(
           "VALOR DO SAQUE".toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-            fontWeight: FontWeight.w900,
-            letterSpacing: 3.0,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3.0,
+              ),
         ),
         const SizedBox(height: AppSpacing.md),
         Row(
@@ -225,16 +261,18 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           children: [
             Text(
               "₿ ",
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w900),
             ),
             Text(
               _amount,
               style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                fontSize: 64,
-                fontWeight: FontWeight.w200,
-                letterSpacing: -2.0,
-                fontFamily: 'JetBrainsMono',
-              ),
+                    fontSize: 64,
+                    fontWeight: FontWeight.w200,
+                    letterSpacing: -2.0,
+                    fontFamily: 'JetBrainsMono',
+                  ),
             ),
           ],
         ),
@@ -290,23 +328,28 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           height: 68,
           margin: const EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(AppSpacing.md),
             border: Border.all(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               width: 1.5,
             ),
           ),
           alignment: Alignment.center,
           child: isBackspace
-              ? Icon(LucideIcons.delete, color: Theme.of(context).colorScheme.onPrimary, size: 22)
+              ? Icon(LucideIcons.delete,
+                  color: Theme.of(context).colorScheme.onPrimary, size: 22)
               : Text(
                   key,
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                    fontWeight: FontWeight.w300,
-                    fontFamily: 'JetBrainsMono',
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
+                        fontWeight: FontWeight.w300,
+                        fontFamily: 'JetBrainsMono',
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                 ),
         ),
       ),
@@ -333,13 +376,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   Future<void> _executeWithdraw(String address, String totp) async {
     setState(() => _isProcessing = true);
-    
+
     final result = await ref.read(withdrawProvider.notifier).withdraw(
-      fromWalletName: _selectedWallet?.name ?? widget.walletId,
-      toAddress: address,
-      amount: double.tryParse(_amount) ?? 0,
-      totpCode: totp,
-    );
+          fromWalletName: _selectedWallet?.name ?? widget.walletId,
+          toAddress: address,
+          amount: double.tryParse(_amount) ?? 0,
+          totpCode: totp,
+        );
 
     if (mounted) {
       setState(() => _isProcessing = false);

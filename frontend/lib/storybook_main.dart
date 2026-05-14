@@ -13,9 +13,9 @@ import 'storybook/storybook_app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Minimal bootstrap for Storybook
   final sharedPreferences = await SharedPreferences.getInstance();
-  
+
   runApp(KeroseneStorybook(sharedPreferences: sharedPreferences));
 }

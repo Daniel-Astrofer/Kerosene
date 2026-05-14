@@ -34,7 +34,8 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                   backgroundColor: const Color(0xFF1A1A24),
                   color: const Color(0xFF00FF94),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     itemCount: deposits.length,
                     itemBuilder: (context, index) {
                       return Center(
@@ -63,7 +64,10 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                     Text(
                       'Error loading deposits',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -92,7 +96,8 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+        icon: Icon(Icons.arrow_back_ios_new_rounded,
+            color: Theme.of(context).colorScheme.onPrimary, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
     );
@@ -106,13 +111,17 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
           Icon(
             Icons.download_outlined,
             size: 64,
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 16),
           Text(
             'No deposits yet',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.7),
               fontSize: 16,
             ),
           ),
@@ -126,9 +135,11 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+        border: Border.all(
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,9 +213,9 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -232,12 +243,16 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5)),
+        Icon(icon,
+            size: 14,
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5)),
         const SizedBox(width: 8),
         Text(
           '$label:',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
             fontSize: 12,
           ),
         ),
@@ -248,7 +263,10 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
             child: Text(
               value,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.9),
                 fontSize: 12,
                 fontFamily: 'monospace',
               ),
@@ -260,7 +278,8 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
           Icon(
             Icons.copy,
             size: 12,
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
           ),
       ],
     );

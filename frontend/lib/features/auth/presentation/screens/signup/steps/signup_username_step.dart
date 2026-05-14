@@ -51,53 +51,50 @@ class _SignupUsernameStepState extends State<SignupUsernameStep> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 48),
-                    Text(
-                      'ESCOLHA SEU USERNAME',
-                      style: Theme.of(context).textTheme.displayLarge!,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Este será o seu identificador universal no ecossistema Kerosene.',
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 48),
-                    
-                    CyberTextField(
-                      controller: _controller,
-                      label: 'USERNAME',
-                      hint: 'ex: username',
-                      errorText: _errorText,
-                      prefixIcon: Icon(LucideIcons.user, color: Theme.of(context).colorScheme.primary, size: 20),
-                    ),
-                    
-                    const Spacer(),
-                    const SizedBox(height: 32),
-                    
-                    BouncingButton(
-                      text: 'Continuar',
-                      onPressed: _validateAndSubmit,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                  ],
-                ),
+    return LayoutBuilder(builder: (context, constraints) {
+      return CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 48),
+                  Text(
+                    'ESCOLHA SEU USERNAME',
+                    style: Theme.of(context).textTheme.displayLarge!,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Este será o seu identificador universal no ecossistema Kerosene.',
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 48),
+                  CyberTextField(
+                    controller: _controller,
+                    label: 'USERNAME',
+                    hint: 'ex: username',
+                    errorText: _errorText,
+                    prefixIcon: Icon(LucideIcons.user,
+                        color: Theme.of(context).colorScheme.primary, size: 20),
+                  ),
+                  const Spacer(),
+                  const SizedBox(height: 32),
+                  BouncingButton(
+                    text: 'Continuar',
+                    onPressed: _validateAndSubmit,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
               ),
             ),
-          ],
-        );
-      }
-    );
+          ),
+        ],
+      );
+    });
   }
 }

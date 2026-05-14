@@ -58,9 +58,9 @@ final signupUseCaseProvider = Provider<SignupUseCase>((ref) {
 
 final notificationRemoteDataSourceProvider =
     Provider<NotificationRemoteDataSource>((ref) {
-      final apiClient = ref.watch(authApiClientProvider);
-      return NotificationRemoteDataSourceImpl(apiClient);
-    });
+  final apiClient = ref.watch(authApiClientProvider);
+  return NotificationRemoteDataSourceImpl(apiClient);
+});
 
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   final remote = ref.watch(notificationRemoteDataSourceProvider);

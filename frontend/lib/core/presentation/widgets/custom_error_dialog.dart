@@ -43,10 +43,10 @@ class CustomErrorDialog extends StatelessWidget {
         decoration: BoxDecoration(
           color: CyberTheme.bgCard,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: CyberTheme.neonRed.withOpacity(0.5)),
+          border: Border.all(color: CyberTheme.neonRed.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
-              color: CyberTheme.neonRed.withOpacity(0.1),
+              color: CyberTheme.neonRed.withValues(alpha: 0.1),
               blurRadius: 20,
               spreadRadius: 5,
             ),
@@ -70,14 +70,17 @@ class CustomErrorDialog extends StatelessWidget {
             Text(
               message,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.7),
                 fontSize: 14,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            if (onRetry != null || onGoBack != null) 
+            if (onRetry != null || onGoBack != null)
               Row(
                 children: [
                   if (onGoBack != null)
@@ -88,8 +91,15 @@ class CustomErrorDialog extends StatelessWidget {
                           onGoBack!();
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                          side: BorderSide(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.24)),
+                          foregroundColor: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.7),
+                          side: BorderSide(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimary
+                                  .withValues(alpha: 0.24)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -98,7 +108,8 @@ class CustomErrorDialog extends StatelessWidget {
                         child: const Text('VOLTAR'),
                       ),
                     ),
-                  if (onGoBack != null && onRetry != null) const SizedBox(width: 12),
+                  if (onGoBack != null && onRetry != null)
+                    const SizedBox(width: 12),
                   if (onRetry != null)
                     Expanded(
                       child: ElevatedButton(

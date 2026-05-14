@@ -45,8 +45,7 @@ class TxStatus extends Equatable {
       txid: data['txid']?.toString() ?? data['id']?.toString() ?? '',
       status: data['status']?.toString() ?? 'confirmed',
       feeSatoshis: (data['feeSatoshis'] as num?)?.toInt() ?? 0,
-      amountReceived:
-          (data['amount'] as num?)?.toDouble() ??
+      amountReceived: (data['amount'] as num?)?.toDouble() ??
           (data['amountReceived'] as num?)?.toDouble() ??
           0,
       sender: senderField ?? '',
@@ -58,13 +57,13 @@ class TxStatus extends Equatable {
 
   @override
   List<Object?> get props => [
-    txid,
-    status,
-    feeSatoshis,
-    amountReceived,
-    sender,
-    receiver,
-    context,
-    message,
-  ];
+        txid,
+        status,
+        feeSatoshis,
+        amountReceived,
+        sender,
+        receiver,
+        context,
+        message,
+      ];
 }

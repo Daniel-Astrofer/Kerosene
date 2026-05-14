@@ -81,7 +81,8 @@ abstract class AuthRepository {
   Future<Either<Failure, String>> passkeyRegisterStart(String username);
 
   /// Finaliza registro de passkey para usuário logado
-  Future<Either<Failure, void>> passkeyRegisterFinish(Map<String, dynamic> credential);
+  Future<Either<Failure, void>> passkeyRegisterFinish(
+      Map<String, dynamic> credential);
 
   /// Onboarding Payment Link
   Future<Either<Failure, OnboardingPaymentLinkDto>> generateOnboardingLink(

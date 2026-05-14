@@ -146,23 +146,23 @@ class SignupFlowState extends Equatable {
 
   @override
   List<Object?> get props => [
-    currentStep,
-    seedSecurityOption,
-    slip39TotalShares,
-    slip39Threshold,
-    passphrase,
-    totpSecret,
-    qrCodeUri,
-    sessionId,
-    username,
-    paymentAddress,
-    paymentAmountBtc,
-    paymentLinkId,
-    paymentUri,
-    confirmations,
-    isLoading,
-    error,
-  ];
+        currentStep,
+        seedSecurityOption,
+        slip39TotalShares,
+        slip39Threshold,
+        passphrase,
+        totpSecret,
+        qrCodeUri,
+        sessionId,
+        username,
+        paymentAddress,
+        paymentAmountBtc,
+        paymentLinkId,
+        paymentUri,
+        confirmations,
+        isLoading,
+        error,
+      ];
 }
 
 class SignupFlowNotifier extends Notifier<SignupFlowState> {
@@ -316,4 +316,5 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
 }
 
 final signupFlowProvider =
-    NotifierProvider<SignupFlowNotifier, SignupFlowState>(SignupFlowNotifier.new);
+    NotifierProvider<SignupFlowNotifier, SignupFlowState>(
+        SignupFlowNotifier.new);

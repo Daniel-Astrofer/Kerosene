@@ -60,8 +60,7 @@ class _CyberTextFieldState extends State<CyberTextField>
   void didUpdateWidget(CyberTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Trigger shake on new API error
-    if (widget.errorText != null &&
-        widget.errorText != oldWidget.errorText) {
+    if (widget.errorText != null && widget.errorText != oldWidget.errorText) {
       _shakeController.forward(from: 0);
     }
   }
@@ -101,12 +100,15 @@ class _CyberTextFieldState extends State<CyberTextField>
             child: Text(
               widget.label.toUpperCase(),
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: hasError
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w400,
-              ),
+                    color: hasError
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.6),
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
             ),
           ),
           GlassContainer(
@@ -116,8 +118,11 @@ class _CyberTextFieldState extends State<CyberTextField>
             borderRadius: BorderRadius.circular(AppSpacing.md),
             border: Border.all(
               color: hasError
-                  ? Theme.of(context).colorScheme.error.withOpacity(0.7)
-                  : Theme.of(context).colorScheme.onPrimary.withOpacity(0.15),
+                  ? Theme.of(context).colorScheme.error.withValues(alpha: 0.7)
+                  : Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.15),
               width: 1,
             ),
             child: TextFormField(
@@ -129,14 +134,17 @@ class _CyberTextFieldState extends State<CyberTextField>
               onChanged: widget.onChanged,
               validator: widget.validator,
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
               cursorColor: Theme.of(context).colorScheme.primary,
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.2),
+                    ),
                 prefixIcon: widget.prefixIcon,
                 suffixIcon: widget.suffixIcon,
                 contentPadding: const EdgeInsets.symmetric(
@@ -155,8 +163,14 @@ class _CyberTextFieldState extends State<CyberTextField>
                   borderRadius: BorderRadius.circular(AppSpacing.md),
                   borderSide: BorderSide(
                     color: hasError
-                        ? Theme.of(context).colorScheme.error.withOpacity(0.8)
-                        : Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                        ? Theme.of(context)
+                            .colorScheme
+                            .error
+                            .withValues(alpha: 0.8)
+                        : Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.5),
                     width: 1,
                   ),
                 ),
@@ -172,8 +186,8 @@ class _CyberTextFieldState extends State<CyberTextField>
               child: Text(
                 widget.errorText!,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
               ).animate().fade(duration: 200.ms),
             ),
         ],

@@ -24,7 +24,7 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
           child: SafeArea(
             bottom: false,
             child: SizedBox(
@@ -35,19 +35,25 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     if (showBackButton)
                       IconButton(
-                        onPressed: onBackPressed ?? () => Navigator.pop(context),
+                        onPressed:
+                            onBackPressed ?? () => Navigator.pop(context),
                         icon: Icon(
                           LucideIcons.arrowLeft,
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 24,
                         ),
                         style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.05),
                           padding: const EdgeInsets.all(AppSpacing.sm),
                         ),
                       )
                     else
-                      const SizedBox(width: 48), // Spacer to balance title alignment if needed
+                      const SizedBox(
+                          width:
+                              48), // Spacer to balance title alignment if needed
 
                     const SizedBox(width: AppSpacing.sm),
 
@@ -62,14 +68,15 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
 
                     const SizedBox(width: AppSpacing.sm),
-                    
+
                     if (actions != null)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: actions!,
                       )
                     else
-                      const SizedBox(width: 48), // Spacer to balance title alignment
+                      const SizedBox(
+                          width: 48), // Spacer to balance title alignment
                   ],
                 ),
               ),

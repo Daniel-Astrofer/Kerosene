@@ -7,13 +7,15 @@ import 'package:teste/core/widgets/cyber_text_field.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'passkey_verification_screen.dart';
+
 /// Username entry screen — first step of the login flow.
 /// Navigates to PasskeyVerificationScreen.
 class LoginUsernameScreen extends ConsumerStatefulWidget {
   const LoginUsernameScreen({super.key});
 
   @override
-  ConsumerState<LoginUsernameScreen> createState() => _LoginUsernameScreenState();
+  ConsumerState<LoginUsernameScreen> createState() =>
+      _LoginUsernameScreenState();
 }
 
 class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
@@ -76,14 +78,13 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
                   Text(
                     context.l10n.welcomeBack,
                     style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                      fontSize: 32,
-                      height: 1.1,
-                      letterSpacing: -0.5,
-                    ),
+                          fontSize: 32,
+                          height: 1.1,
+                          letterSpacing: -0.5,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
-
                   CyberTextField(
                     controller: _usernameController,
                     label: context.l10n.username.toUpperCase(),
@@ -100,14 +101,11 @@ class _LoginUsernameScreenState extends ConsumerState<LoginUsernameScreen> {
                       return null;
                     },
                   ),
-
                   const SizedBox(height: 96),
-
                   BouncingButton(
                     text: context.l10n.continueButton,
                     onPressed: _handleContinue,
                   ),
-
                   const SizedBox(height: AppSpacing.xxl),
                 ],
               ),

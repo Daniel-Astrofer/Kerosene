@@ -32,7 +32,8 @@ class PasskeyVerificationScreen extends ConsumerStatefulWidget {
       _PasskeyVerificationScreenState();
 }
 
-class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationScreen>
+class _PasskeyVerificationScreenState
+    extends ConsumerState<PasskeyVerificationScreen>
     with SingleTickerProviderStateMixin {
   _VerificationStep _step = _VerificationStep.connecting;
   late final AnimationController _animController;
@@ -45,7 +46,7 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    
+
     _pulseScale = Tween<double>(begin: 0.85, end: 1.15).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
@@ -80,7 +81,8 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
       case _VerificationStep.connecting:
         return ScaleTransition(
           scale: _pulseScale,
-          child: Icon(LucideIcons.server, size: 50, color: AppColors.secondary1),
+          child:
+              Icon(LucideIcons.server, size: 50, color: AppColors.secondary1),
         );
       case _VerificationStep.sendingKeys:
         return SlideTransition(
@@ -93,14 +95,18 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
       case _VerificationStep.devicePrompt:
         return ScaleTransition(
           scale: _pulseScale,
-          child: Icon(LucideIcons.fingerprint, size: 50, color: AppColors.secondary1),
+          child: Icon(LucideIcons.fingerprint,
+              size: 50, color: AppColors.secondary1),
         );
       case _VerificationStep.authorized:
-        return Icon(LucideIcons.shieldCheck, size: 50, color: AppColors.success);
+        return Icon(LucideIcons.shieldCheck,
+            size: 50, color: AppColors.success);
       case _VerificationStep.unauthorized:
-        return Icon(LucideIcons.shieldAlert, size: 50, color: Theme.of(context).colorScheme.error);
+        return Icon(LucideIcons.shieldAlert,
+            size: 50, color: Theme.of(context).colorScheme.error);
       case _VerificationStep.userNotFound:
-        return Icon(LucideIcons.userX, size: 50, color: Theme.of(context).colorScheme.error);
+        return Icon(LucideIcons.userX,
+            size: 50, color: Theme.of(context).colorScheme.error);
     }
   }
 
@@ -123,13 +129,19 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
 
   Color _getStepColor() {
     if (_step == _VerificationStep.authorized) return AppColors.success;
-    if (_step == _VerificationStep.unauthorized || _step == _VerificationStep.userNotFound) return Theme.of(context).colorScheme.error;
+    if (_step == _VerificationStep.unauthorized ||
+        _step == _VerificationStep.userNotFound) {
+      return Theme.of(context).colorScheme.error;
+    }
     return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   Color _getIconGlowColor() {
     if (_step == _VerificationStep.authorized) return AppColors.success;
-    if (_step == _VerificationStep.unauthorized || _step == _VerificationStep.userNotFound) return Theme.of(context).colorScheme.error;
+    if (_step == _VerificationStep.unauthorized ||
+        _step == _VerificationStep.userNotFound) {
+      return Theme.of(context).colorScheme.error;
+    }
     return AppColors.secondary1;
   }
 
@@ -139,49 +151,46 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
       if (next is AuthAuthenticated) {
         if (mounted) setState(() => _step = _VerificationStep.authorized);
         await Future.delayed(const Duration(milliseconds: 1500));
-        if (mounted) {
-          HomeScreen.skipNextAuth = true;
-          Navigator.of(context).pushNamedAndRemoveUntil('/home_loading', (route) => false);
-        }
+        if (!context.mounted) return;
+        HomeScreen.skipNextAuth = true;
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/home_loading', (route) => false);
       } else if (next is AuthRequiresLoginTotp) {
         if (mounted) setState(() => _step = _VerificationStep.authorized);
         await Future.delayed(const Duration(milliseconds: 1000));
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TotpScreen(
-                username: next.username,
-                passphrase: next.passphrase,
-                isSetup: false,
-                preAuthToken: next.preAuthToken,
-              ),
+        if (!context.mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TotpScreen(
+              username: next.username,
+              passphrase: next.passphrase,
+              isSetup: false,
+              preAuthToken: next.preAuthToken,
             ),
-          );
-        }
+          ),
+        );
       } else if (next is AuthError) {
         final statusCode = next.statusCode;
         ref.read(authControllerProvider.notifier).clearError();
-        
+
         if (statusCode == 404) {
           if (mounted) setState(() => _step = _VerificationStep.userNotFound);
           await Future.delayed(const Duration(milliseconds: 2000));
-          if (mounted) {
-            Navigator.of(context).pop();
-          }
+          if (!context.mounted) return;
+          Navigator.of(context).pop();
         } else {
           if (mounted) setState(() => _step = _VerificationStep.unauthorized);
           await Future.delayed(const Duration(milliseconds: 2000));
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LoginPassphraseScreen(
-                  username: widget.username,
-                ),
+          if (!context.mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginPassphraseScreen(
+                username: widget.username,
               ),
-            );
-          }
+            ),
+          );
         }
       }
     });
@@ -204,7 +213,9 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
                 AppSpacing.md,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+                color: Theme.of(context)
+                    .scaffoldBackgroundColor
+                    .withValues(alpha: 0.5),
               ),
               child: ClipRect(
                 child: BackdropFilter(
@@ -253,7 +264,7 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                _getIconGlowColor().withOpacity(0.15),
+                                _getIconGlowColor().withValues(alpha: 0.15),
                                 Colors.transparent,
                               ],
                             ),
@@ -267,7 +278,7 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _getIconGlowColor().withOpacity(0.2),
+                              color: _getIconGlowColor().withValues(alpha: 0.2),
                               width: 1,
                             ),
                           ),
@@ -280,7 +291,7 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _getIconGlowColor().withOpacity(0.4),
+                              color: _getIconGlowColor().withValues(alpha: 0.4),
                               width: 1,
                             ),
                           ),
@@ -298,7 +309,8 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
                     const SizedBox(height: AppSpacing.xxl),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 600),
-                      transitionBuilder: (Widget child, Animation<double> animation) {
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
                         return FadeTransition(
                           opacity: animation,
                           child: SlideTransition(
@@ -312,16 +324,28 @@ class _PasskeyVerificationScreenState extends ConsumerState<PasskeyVerificationS
                       },
                       child: Container(
                         key: ValueKey<int>(_step.index),
-                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                         child: Text(
                           _buildStepText(),
-                          style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: (_step == _VerificationStep.unauthorized || _step == _VerificationStep.userNotFound) ? 6.0 : 10.0,
-                            height: 1.5,
-                            color: _getStepColor(),
-                            fontSize: (_step == _VerificationStep.unauthorized || _step == _VerificationStep.userNotFound) ? 13 : 16,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium!
+                              .copyWith(
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: (_step ==
+                                            _VerificationStep.unauthorized ||
+                                        _step == _VerificationStep.userNotFound)
+                                    ? 6.0
+                                    : 10.0,
+                                height: 1.5,
+                                color: _getStepColor(),
+                                fontSize: (_step ==
+                                            _VerificationStep.unauthorized ||
+                                        _step == _VerificationStep.userNotFound)
+                                    ? 13
+                                    : 16,
+                              ),
                           textAlign: TextAlign.center,
                         ),
                       ),

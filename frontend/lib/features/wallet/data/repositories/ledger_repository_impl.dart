@@ -24,7 +24,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, dynamic>>> findLedger(String walletName) async {
+  Future<Either<Failure, Map<String, dynamic>>> findLedger(
+      String walletName) async {
     try {
       final result = await remoteDataSource.findLedger(walletName: walletName);
       return Right(result);
@@ -48,10 +49,13 @@ class LedgerRepositoryImpl implements LedgerRepository {
   }
 
   @override
-  Future<Either<Failure, List<Transaction>>> getHistory({int page = 0, int size = 50}) async {
+  Future<Either<Failure, List<Transaction>>> getHistory(
+      {int page = 0, int size = 50}) async {
     try {
       final rawList = await remoteDataSource.getHistory(page: page, size: size);
-      final transactions = rawList.map((item) => Transaction.fromJson(item as Map<String, dynamic>)).toList();
+      final transactions = rawList
+          .map((item) => Transaction.fromJson(item as Map<String, dynamic>))
+          .toList();
       return Right(transactions);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -101,7 +105,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, dynamic>>> getPaymentRequest(String linkId) async {
+  Future<Either<Failure, Map<String, dynamic>>> getPaymentRequest(
+      String linkId) async {
     try {
       final result = await remoteDataSource.getPaymentRequest(linkId);
       return Right(result);
@@ -133,7 +138,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   @override
   Future<Either<Failure, String>> deleteLedger(String walletName) async {
     try {
-      final result = await remoteDataSource.deleteLedger(walletName: walletName);
+      final result =
+          await remoteDataSource.deleteLedger(walletName: walletName);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));

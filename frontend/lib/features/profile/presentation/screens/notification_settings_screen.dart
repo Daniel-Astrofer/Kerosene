@@ -38,7 +38,8 @@ class _NotificationSettingsScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context.l10n.notificationChannels.toUpperCase()),
+                  _buildSectionHeader(
+                      context.l10n.notificationChannels.toUpperCase()),
                   _buildSwitchItem(
                     context,
                     context.l10n.pushNotifications,
@@ -55,10 +56,9 @@ class _NotificationSettingsScreenState
                     (val) => setState(() => _emailEnabled = val),
                     Icons.email_rounded,
                   ),
-
                   const SizedBox(height: AppSpacing.xl),
-                  _buildSectionHeader(context.l10n.notificationAlerts.toUpperCase()),
-
+                  _buildSectionHeader(
+                      context.l10n.notificationAlerts.toUpperCase()),
                   _buildSwitchItem(
                     context,
                     context.l10n.transactionUpdates,
@@ -98,10 +98,13 @@ class _NotificationSettingsScreenState
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelSmall!.copyWith(
-          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-          fontWeight: FontWeight.bold,
-          letterSpacing: 2.0,
-        ),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.5),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2.0,
+            ),
       ),
     );
   }
@@ -114,9 +117,16 @@ class _NotificationSettingsScreenState
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1)),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -128,7 +138,10 @@ class _NotificationSettingsScreenState
         const SizedBox(width: AppSpacing.md),
         Text(
           context.l10n.notifications.toUpperCase(),
-          style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium!
+              .copyWith(letterSpacing: 2),
         ),
       ],
     );
@@ -146,19 +159,31 @@ class _NotificationSettingsScreenState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+        border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 20),
+            child: Icon(icon,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.7),
+                size: 20),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -168,16 +193,19 @@ class _NotificationSettingsScreenState
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-                  ),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.5),
+                      ),
                 ),
               ],
             ),
@@ -186,9 +214,12 @@ class _NotificationSettingsScreenState
             value: value,
             onChanged: onChanged,
             activeThumbColor: Theme.of(context).colorScheme.primary,
-            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-            inactiveThumbColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-            inactiveTrackColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            activeTrackColor:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            inactiveThumbColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+            inactiveTrackColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
           ),
         ],
       ),

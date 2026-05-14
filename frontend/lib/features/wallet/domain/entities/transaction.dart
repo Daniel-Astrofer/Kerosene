@@ -120,29 +120,26 @@ final class Transaction extends Equatable {
     // Original Ledger API format (New structure)
     final amountVal = (json['amount'] as num?)?.toDouble() ?? 0.0;
 
-    final senderField =
-        [
-              json['senderIdentifier'],
-              json['sender'],
-              json['from'],
-              json['fromAddress'],
-            ]
-            .map((e) => e?.toString())
-            .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+    final senderField = [
+      json['senderIdentifier'],
+      json['sender'],
+      json['from'],
+      json['fromAddress'],
+    ]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
-    final receiverField =
-        [
-              json['receiverIdentifier'],
-              json['receiver'],
-              json['to'],
-              json['toAddress'],
-            ]
-            .map((e) => e?.toString())
-            .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+    final receiverField = [
+      json['receiverIdentifier'],
+      json['receiver'],
+      json['to'],
+      json['toAddress'],
+    ]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
-    final typeField = (json['transactionType'] ?? json['type'])
-        ?.toString()
-        .toUpperCase();
+    final typeField =
+        (json['transactionType'] ?? json['type'])?.toString().toUpperCase();
     bool isSend = false;
 
     if (typeField == 'SEND' ||
@@ -154,9 +151,8 @@ final class Transaction extends Equatable {
       isSend = true;
     }
 
-    TransactionType txType = isSend
-        ? TransactionType.send
-        : TransactionType.receive;
+    TransactionType txType =
+        isSend ? TransactionType.send : TransactionType.receive;
     if (typeField == 'WITHDRAWAL') {
       txType = TransactionType.withdrawal;
     } else if (typeField == 'DEPOSIT') {
@@ -179,8 +175,7 @@ final class Transaction extends Equatable {
       timestamp: DateTime.now(),
       description:
           json['context']?.toString() ?? json['description']?.toString(),
-      isInternal:
-          typeField == 'TRANSFER' ||
+      isInternal: typeField == 'TRANSFER' ||
           typeField == 'TRANSACTION_SEND' ||
           typeField == 'TRANSACTION_RECEIVE' ||
           json['context'] == 'transfer' ||
@@ -191,20 +186,20 @@ final class Transaction extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    fromAddress,
-    toAddress,
-    amountSatoshis,
-    feeSatoshis,
-    status,
-    type,
-    confirmations,
-    timestamp,
-    blockHash,
-    blockHeight,
-    description,
-    isInternal,
-  ];
+        id,
+        fromAddress,
+        toAddress,
+        amountSatoshis,
+        feeSatoshis,
+        status,
+        type,
+        confirmations,
+        timestamp,
+        blockHash,
+        blockHeight,
+        description,
+        isInternal,
+      ];
 }
 
 /// Status da transação

@@ -25,13 +25,11 @@ class UnsignedTransaction extends Equatable {
     return UnsignedTransaction(
       rawTxHex: json['rawTxHex'] ?? '',
       txId: json['txId'] ?? '',
-      inputs:
-          (json['inputs'] as List?)
+      inputs: (json['inputs'] as List?)
               ?.map((e) => TransactionInput.fromJson(e))
               .toList() ??
           [],
-      outputs:
-          (json['outputs'] as List?)
+      outputs: (json['outputs'] as List?)
               ?.map((e) => TransactionOutput.fromJson(e))
               .toList() ??
           [],
@@ -44,15 +42,15 @@ class UnsignedTransaction extends Equatable {
 
   @override
   List<Object?> get props => [
-    rawTxHex,
-    txId,
-    inputs,
-    outputs,
-    totalAmount,
-    fee,
-    fromAddress,
-    toAddress,
-  ];
+        rawTxHex,
+        txId,
+        inputs,
+        outputs,
+        totalAmount,
+        fee,
+        fromAddress,
+        toAddress,
+      ];
 }
 
 class TransactionInput extends Equatable {

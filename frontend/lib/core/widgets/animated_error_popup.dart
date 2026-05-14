@@ -45,7 +45,7 @@ class AnimatedErrorPopup extends StatefulWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss Error',
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, anim1, anim2) {
         return Center(
@@ -102,9 +102,8 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = widget.isSuccess
-        ? const Color(0xFF00FF94)
-        : const Color(0xFFFF0055);
+    final baseColor =
+        widget.isSuccess ? const Color(0xFF00FF94) : const Color(0xFFFF0055);
 
     // Split message logic: "Description. Faltam X BTC"
     String mainMessage = widget.message;
@@ -127,156 +126,196 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
         borderRadius: BorderRadius.circular(32),
         blur: 20,
         opacity: 0.1,
-        border: Border.all(color: baseColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: baseColor.withValues(alpha: 0.3), width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-          children: [
-            // Centered Animated Icon
-            RepaintBoundary(
-              child: ScaleTransition(
-                scale: _pulseAnimation,
-                child: Container(
-                  width: 72,
-                  height: 72,
+            children: [
+              // Centered Animated Icon
+              RepaintBoundary(
+                child: ScaleTransition(
+                  scale: _pulseAnimation,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: baseColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: baseColor.withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      widget.isSuccess
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.error_outline_rounded,
+                      color: baseColor,
+                      size: 40,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Title
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Main Message
+              Text(
+                mainMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.6),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+
+              // Extra Data Section (Structured)
+              if (extraData != null) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: baseColor.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: baseColor.withOpacity(0.2),
-                        blurRadius: 20,
-                        spreadRadius: 2,
+                    color: baseColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: baseColor.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: baseColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          extraData,
+                          style: TextStyle(
+                            color: baseColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    widget.isSuccess
-                        ? Icons.check_circle_outline_rounded
-                        : Icons.error_outline_rounded,
-                    color: baseColor,
-                    size: 40,
-                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
+              ],
 
-            // Title
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 32),
 
-            // Main Message
-            Text(
-              mainMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-
-            // Extra Data Section (Structured)
-            if (extraData != null) ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: baseColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: baseColor.withOpacity(0.2)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      color: baseColor,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
+              // Action Buttons
+              if (widget.onRetry != null || widget.onGoBack != null) ...[
+                if (widget.onRetry != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        widget.onRetry!();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: baseColor,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSurface,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                       child: Text(
-                        extraData,
-                        style: TextStyle(
-                          color: baseColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'monospace',
+                        AppLocalizations.of(context)?.tryAgain ?? 'Try Again',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 32),
-
-            // Action Buttons
-            if (widget.onRetry != null || widget.onGoBack != null) ...[
-              if (widget.onRetry != null)
+                  ),
+                if (widget.onRetry != null && widget.onGoBack != null)
+                  const SizedBox(height: 12),
+                if (widget.onGoBack != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        widget.onGoBack!();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        side: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.2),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)?.goBack ?? 'Go Back',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+              ] else ...[
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      widget.onRetry!();
-                    },
+                    onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: baseColor,
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.05),
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.1),
+                        ),
                       ),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)?.tryAgain ?? 'Try Again',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              if (widget.onRetry != null && widget.onGoBack != null)
-                const SizedBox(height: 12),
-              if (widget.onGoBack != null)
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      widget.onGoBack!();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)?.goBack ?? 'Go Back',
+                      AppLocalizations.of(context)?.done ?? 'Done',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -284,35 +323,9 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
                     ),
                   ),
                 ),
-            ] else ...[
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)?.done ?? 'Done',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ],
-          ],
-        ),
+          ),
         ),
       ),
     );

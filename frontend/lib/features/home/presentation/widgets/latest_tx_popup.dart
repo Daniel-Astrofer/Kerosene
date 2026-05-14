@@ -15,7 +15,8 @@ class LatestTxPopup extends ConsumerStatefulWidget {
   ConsumerState<LatestTxPopup> createState() => _LatestTxPopupState();
 }
 
-class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTickerProviderStateMixin {
+class _LatestTxPopupState extends ConsumerState<LatestTxPopup>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
   Transaction? _lastShownTx;
@@ -82,7 +83,10 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
                       context: context,
                       barrierDismissible: true,
                       barrierLabel: '',
-                      barrierColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                      barrierColor: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.1),
                       transitionDuration: const Duration(milliseconds: 400),
                       pageBuilder: (context, anim1, anim2) => TxDetailOverlay(
                         tx: latestTx,
@@ -93,7 +97,8 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
                           opacity: anim1,
                           child: ScaleTransition(
                             scale: Tween<double>(begin: 0.88, end: 1.0).animate(
-                              CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+                              CurvedAnimation(
+                                  parent: anim1, curve: Curves.easeOutBack),
                             ),
                             child: child,
                           ),
@@ -103,7 +108,8 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
                   },
                   child: Container(
                     width: 340,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     color: Colors.transparent, // Ensure full area is tappable
                     child: Row(
                       children: [
@@ -126,7 +132,8 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
                               Text(
                                 _formatBTC(latestTx.amountBTC),
                                 style: AppTypography.number.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
                                   fontSize: 18,
                                 ),
                               ),
@@ -140,14 +147,19 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
                             Text(
                               _formatDate(latestTx.timestamp),
                               style: AppTypography.caption.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.4),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.4),
                               ),
                             ),
                             const SizedBox(height: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(latestTx.status).withValues(alpha: 0.15),
+                                color: _getStatusColor(latestTx.status)
+                                    .withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -201,7 +213,9 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Theme.of(context).scaffoldBackgroundColor,
-              border: Border.all(color: _getColorFor(tx.type).withValues(alpha: 0.5), width: 1),
+              border: Border.all(
+                  color: _getColorFor(tx.type).withValues(alpha: 0.5),
+                  width: 1),
             ),
             child: Icon(
               LucideIcons.bitcoin,
@@ -216,31 +230,45 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
 
   IconData _getIconFor(TransactionType type) {
     switch (type) {
-      case TransactionType.receive: return LucideIcons.arrowDownLeft;
-      case TransactionType.send: return LucideIcons.arrowUpRight;
-      case TransactionType.deposit: return LucideIcons.download;
-      case TransactionType.withdrawal: return LucideIcons.upload;
-      default: return LucideIcons.arrowRight;
+      case TransactionType.receive:
+        return LucideIcons.arrowDownLeft;
+      case TransactionType.send:
+        return LucideIcons.arrowUpRight;
+      case TransactionType.deposit:
+        return LucideIcons.download;
+      case TransactionType.withdrawal:
+        return LucideIcons.upload;
+      default:
+        return LucideIcons.arrowRight;
     }
   }
 
   Color _getColorFor(TransactionType type) {
     switch (type) {
       case TransactionType.receive:
-      case TransactionType.deposit: return AppColors.success;
-      case TransactionType.send: return AppColors.error;
-      case TransactionType.withdrawal: return AppColors.warning;
-      default: return AppColors.secondary;
+      case TransactionType.deposit:
+        return AppColors.success;
+      case TransactionType.send:
+        return AppColors.error;
+      case TransactionType.withdrawal:
+        return AppColors.warning;
+      default:
+        return AppColors.secondary;
     }
   }
 
   String _getLabelFor(TransactionType type) {
     switch (type) {
-      case TransactionType.receive: return 'Recebido';
-      case TransactionType.send: return 'Enviado';
-      case TransactionType.deposit: return 'Depósito';
-      case TransactionType.withdrawal: return 'Saque';
-      default: return 'Transação';
+      case TransactionType.receive:
+        return 'Recebido';
+      case TransactionType.send:
+        return 'Enviado';
+      case TransactionType.deposit:
+        return 'Depósito';
+      case TransactionType.withdrawal:
+        return 'Saque';
+      default:
+        return 'Transação';
     }
   }
 
@@ -255,10 +283,14 @@ class _LatestTxPopupState extends ConsumerState<LatestTxPopup> with SingleTicker
 
   Color _getStatusColor(TransactionStatus s) {
     switch (s) {
-      case TransactionStatus.confirmed: return AppColors.success;
-      case TransactionStatus.pending: return AppColors.warning;
-      case TransactionStatus.failed: return AppColors.error;
-      default: return AppColors.grey;
+      case TransactionStatus.confirmed:
+        return AppColors.success;
+      case TransactionStatus.pending:
+        return AppColors.warning;
+      case TransactionStatus.failed:
+        return AppColors.error;
+      default:
+        return AppColors.grey;
     }
   }
 

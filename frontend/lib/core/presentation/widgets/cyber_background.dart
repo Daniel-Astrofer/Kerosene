@@ -34,8 +34,8 @@ class CyberBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF2962FF).withOpacity(0.15),
-                    const Color(0xFF2962FF).withOpacity(0.0),
+                    const Color(0xFF2962FF).withValues(alpha: 0.15),
+                    const Color(0xFF2962FF).withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -52,21 +52,21 @@ class CyberBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF7B61FF).withOpacity(0.1),
-                    const Color(0xFF7B61FF).withOpacity(0.0),
+                    const Color(0xFF7B61FF).withValues(alpha: 0.1),
+                    const Color(0xFF7B61FF).withValues(alpha: 0.0),
                   ],
                 ),
               ),
             ),
           ),
-          
+
           if (extraOverlays != null) ...extraOverlays!,
 
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 Widget content = child;
-                
+
                 if (useScroll) {
                   content = SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -90,7 +90,7 @@ class CyberBackground extends StatelessWidget {
                     ),
                   );
                 }
-                
+
                 return content;
               },
             ),

@@ -43,11 +43,14 @@ class _BouncingButtonState extends State<BouncingButton> {
     final isDisabled = widget.onPressed == null || widget.isLoading;
 
     final isSolid = widget.variant == BouncingButtonVariant.solid;
-    
-    final disabledContentColor = Theme.of(context).colorScheme.onPrimary.withOpacity(0.4);
+
+    final disabledContentColor =
+        Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.4);
     final foregroundColor = isDisabled
         ? disabledContentColor
-        : (isSolid ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.secondary);
+        : (isSolid
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.secondary);
 
     // When gradient is active, do NOT set color — Flutter ignores gradient if color is also set.
     final hasGradient = isSolid && !isDisabled && widget.color == null;
@@ -59,7 +62,9 @@ class _BouncingButtonState extends State<BouncingButton> {
 
     final borderColor = isSolid
         ? Colors.transparent
-        : (isDisabled ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.secondary);
+        : (isDisabled
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.secondary);
 
     return AnimatedScale(
       scale: _pressed ? 0.95 : 1.0,
@@ -91,7 +96,8 @@ class _BouncingButtonState extends State<BouncingButton> {
                     widget.onPressed?.call();
                   },
             borderRadius: BorderRadius.circular(AppSpacing.md),
-            splashColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+            splashColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1),
             highlightColor: Colors.transparent,
             child: Center(
               child: widget.isLoading

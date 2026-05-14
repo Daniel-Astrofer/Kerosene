@@ -93,13 +93,20 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
 
   Duration _primaryDuration(TxIconKind k) {
     switch (k) {
-      case TxIconKind.nfc: return const Duration(milliseconds: 1600);
-      case TxIconKind.pending: return const Duration(seconds: 2);
-      case TxIconKind.swap: return const Duration(milliseconds: 1800);
-      case TxIconKind.qrCode: return const Duration(milliseconds: 2400);
-      case TxIconKind.confirmed: return const Duration(milliseconds: 700);
-      case TxIconKind.failed: return const Duration(milliseconds: 500);
-      default: return const Duration(milliseconds: 1400);
+      case TxIconKind.nfc:
+        return const Duration(milliseconds: 1600);
+      case TxIconKind.pending:
+        return const Duration(seconds: 2);
+      case TxIconKind.swap:
+        return const Duration(milliseconds: 1800);
+      case TxIconKind.qrCode:
+        return const Duration(milliseconds: 2400);
+      case TxIconKind.confirmed:
+        return const Duration(milliseconds: 700);
+      case TxIconKind.failed:
+        return const Duration(milliseconds: 500);
+      default:
+        return const Duration(milliseconds: 1400);
     }
   }
 
@@ -110,7 +117,8 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
       case TxIconKind.deposit:
       case TxIconKind.withdrawal:
         return const Duration(milliseconds: 800);
-      default: return const Duration(seconds: 1);
+      default:
+        return const Duration(seconds: 1);
     }
   }
 
@@ -146,21 +154,36 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
     double t2,
   ) {
     switch (kind) {
-      case TxIconKind.send: return _SendPainter(color: color, t: t, t2: t2);
-      case TxIconKind.receive: return _ReceivePainter(color: color, t: t, t2: t2);
-      case TxIconKind.deposit: return _DepositPainter(color: color, t: t, t2: t2);
-      case TxIconKind.withdrawal: return _WithdrawalPainter(color: color, t: t, t2: t2);
-      case TxIconKind.swap: return _SwapPainter(color: color, t: t);
-      case TxIconKind.fee: return _FeePainter(color: color, t: t);
-      case TxIconKind.qrCode: return _QrPainter(color: color, t: t);
-      case TxIconKind.nfc: return _NfcPainter(color: color, t: t);
-      case TxIconKind.pending: return _PendingPainter(color: color, t: t);
-      case TxIconKind.confirmed: return _ConfirmedPainter(color: color, t: t);
-      case TxIconKind.failed: return _FailedPainter(color: color, t: t);
-      case TxIconKind.clock: return _ClockPainter(color: color, t: t);
-      case TxIconKind.address: return _AddressPainter(color: color, t: t);
-      case TxIconKind.network: return _NetworkPainter(color: color, t: t);
-      case TxIconKind.card: return _CardPainter(color: color, t: t);
+      case TxIconKind.send:
+        return _SendPainter(color: color, t: t, t2: t2);
+      case TxIconKind.receive:
+        return _ReceivePainter(color: color, t: t, t2: t2);
+      case TxIconKind.deposit:
+        return _DepositPainter(color: color, t: t, t2: t2);
+      case TxIconKind.withdrawal:
+        return _WithdrawalPainter(color: color, t: t, t2: t2);
+      case TxIconKind.swap:
+        return _SwapPainter(color: color, t: t);
+      case TxIconKind.fee:
+        return _FeePainter(color: color, t: t);
+      case TxIconKind.qrCode:
+        return _QrPainter(color: color, t: t);
+      case TxIconKind.nfc:
+        return _NfcPainter(color: color, t: t);
+      case TxIconKind.pending:
+        return _PendingPainter(color: color, t: t);
+      case TxIconKind.confirmed:
+        return _ConfirmedPainter(color: color, t: t);
+      case TxIconKind.failed:
+        return _FailedPainter(color: color, t: t);
+      case TxIconKind.clock:
+        return _ClockPainter(color: color, t: t);
+      case TxIconKind.address:
+        return _AddressPainter(color: color, t: t);
+      case TxIconKind.network:
+        return _NetworkPainter(color: color, t: t);
+      case TxIconKind.card:
+        return _CardPainter(color: color, t: t);
     }
   }
 }
@@ -170,7 +193,7 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
 
 class _SendPainter extends CustomPainter {
   final Color color;
-  final double t;  // 0..1 repeating (arrow travels up)
+  final double t; // 0..1 repeating (arrow travels up)
   final double t2; // 0..1 reverse (opacity pulse)
 
   _SendPainter({required this.color, required this.t, required this.t2});
@@ -207,7 +230,7 @@ class _SendPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
-      Paint()..color = color.withOpacity(0.5 + 0.5 * t2),
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
     );
   }
 
@@ -255,7 +278,7 @@ class _ReceivePainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
-      Paint()..color = color.withOpacity(0.5 + 0.5 * t2),
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
     );
   }
 
@@ -287,7 +310,8 @@ class _DepositPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     // Floor (tray)
-    canvas.drawLine(Offset(size.width * 0.18, floorY), Offset(size.width * 0.82, floorY), paint);
+    canvas.drawLine(Offset(size.width * 0.18, floorY),
+        Offset(size.width * 0.82, floorY), paint);
 
     // Stem above floor
     final stemTop = size.height * 0.15;
@@ -307,7 +331,7 @@ class _DepositPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
-      Paint()..color = color.withOpacity(0.5 + 0.5 * t2),
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
     );
   }
 
@@ -338,7 +362,8 @@ class _WithdrawalPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    canvas.drawLine(Offset(size.width * 0.18, floorY), Offset(size.width * 0.82, floorY), paint);
+    canvas.drawLine(Offset(size.width * 0.18, floorY),
+        Offset(size.width * 0.82, floorY), paint);
 
     final stemTop = size.height * 0.15;
     final stemBot = floorY - sw * 1.5;
@@ -357,7 +382,7 @@ class _WithdrawalPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
-      Paint()..color = color.withOpacity(0.5 + 0.5 * t2),
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
     );
   }
 
@@ -391,7 +416,8 @@ class _SwapPainter extends CustomPainter {
 
     // Left arc (counter-clockwise rotating)
     canvas.drawArc(
-      Rect.fromCenter(center: Offset(cx - r * 0.4, cy), width: r * 1.6, height: r * 1.6),
+      Rect.fromCenter(
+          center: Offset(cx - r * 0.4, cy), width: r * 1.6, height: r * 1.6),
       pi + angle,
       pi * 1.2,
       false,
@@ -399,7 +425,8 @@ class _SwapPainter extends CustomPainter {
     );
     // Right arc (clockwise rotating)
     canvas.drawArc(
-      Rect.fromCenter(center: Offset(cx + r * 0.4, cy), width: r * 1.6, height: r * 1.6),
+      Rect.fromCenter(
+          center: Offset(cx + r * 0.4, cy), width: r * 1.6, height: r * 1.6),
       -angle,
       pi * 1.2,
       false,
@@ -408,14 +435,23 @@ class _SwapPainter extends CustomPainter {
 
     // Arrowhead on left arc (bottom)
     final la = pi + angle + pi * 1.2;
-    final tip1 = Offset(cx - r * 0.4 + r * 0.8 * cos(la), cy + r * 0.8 * sin(la));
+    final tip1 =
+        Offset(cx - r * 0.4 + r * 0.8 * cos(la), cy + r * 0.8 * sin(la));
     final arrow1 = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = sw
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(tip1, Offset(tip1.dx - sw * 3.5 * cos(la - 0.6), tip1.dy - sw * 3.5 * sin(la - 0.6)), arrow1);
-    canvas.drawLine(tip1, Offset(tip1.dx - sw * 3.5 * cos(la + 0.6), tip1.dy - sw * 3.5 * sin(la + 0.6)), arrow1);
+    canvas.drawLine(
+        tip1,
+        Offset(tip1.dx - sw * 3.5 * cos(la - 0.6),
+            tip1.dy - sw * 3.5 * sin(la - 0.6)),
+        arrow1);
+    canvas.drawLine(
+        tip1,
+        Offset(tip1.dx - sw * 3.5 * cos(la + 0.6),
+            tip1.dy - sw * 3.5 * sin(la + 0.6)),
+        arrow1);
   }
 
   @override
@@ -438,7 +474,7 @@ class _FeePainter extends CustomPainter {
     final alpha = 0.5 + 0.5 * t;
 
     final paint = Paint()
-      ..color = color.withOpacity(alpha)
+      ..color = color.withValues(alpha: alpha)
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.06
       ..strokeCap = StrokeCap.round
@@ -471,23 +507,23 @@ class _QrPainter extends CustomPainter {
   _QrPainter({required this.color, required this.t});
 
   static const _matrix = [
-    [1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1],
-    [1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1],
-    [1,0,1,1,1,0,1,0,0,0,1,0,1,1,1,0,1],
-    [1,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1],
-    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-    [0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0],
-    [0,0,1,0,1,0,0,1,1,0,0,1,0,1,1,0,0],
-    [0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0],
-    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-    [1,1,1,1,1,1,1,0,0,0,1,0,0,0,0,1,0],
-    [1,0,0,0,0,0,1,0,1,0,1,1,0,1,0,0,1],
-    [1,0,1,1,1,0,1,0,1,0,0,0,1,0,1,1,0],
-    [1,0,1,1,1,0,1,0,0,1,1,0,0,1,0,0,1],
-    [1,0,0,0,0,0,1,0,1,0,0,1,1,0,0,1,0],
-    [1,1,1,1,1,1,1,0,0,0,1,0,1,0,1,0,1],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0],
+    [0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+    [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
   ];
 
   @override
@@ -506,17 +542,18 @@ class _QrPainter extends CustomPainter {
         final revealed = cellCenterY <= scanY ? 1.0 : 0.25;
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            Rect.fromLTWH(x + cell * 0.08, y + cell * 0.08, cell * 0.84, cell * 0.84),
+            Rect.fromLTWH(
+                x + cell * 0.08, y + cell * 0.08, cell * 0.84, cell * 0.84),
             Radius.circular(cell * 0.15),
           ),
-          Paint()..color = color.withOpacity(revealed),
+          Paint()..color = color.withValues(alpha: revealed),
         );
       }
     }
 
     // Scan line
     final linePaint = Paint()
-      ..color = color.withOpacity(0.7)
+      ..color = color.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawLine(Offset(0, scanY), Offset(size.width, scanY), linePaint);
@@ -526,7 +563,7 @@ class _QrPainter extends CustomPainter {
       Offset(0, scanY),
       Offset(size.width, scanY),
       Paint()
-        ..color = color.withOpacity(0.15)
+        ..color = color.withValues(alpha: 0.15)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)
         ..strokeWidth = 6
         ..style = PaintingStyle.stroke,
@@ -563,7 +600,7 @@ class _NfcPainter extends CustomPainter {
       final r = size.width * (radii[i] + 0.06 * phase);
 
       paint
-        ..color = color.withOpacity(alpha)
+        ..color = color.withValues(alpha: alpha)
         ..strokeWidth = size.width * 0.055 * (1 - phase * 0.5);
 
       canvas.drawArc(
@@ -579,18 +616,21 @@ class _NfcPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(cx, cy),
       size.width * 0.07,
-      Paint()..color = color.withOpacity(0.85),
+      Paint()..color = color.withValues(alpha: 0.85),
     );
 
     // "Phone edge" line
     final phoneX = size.width * 0.62;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(phoneX, cy), width: size.width * 0.14, height: size.height * 0.7),
+        Rect.fromCenter(
+            center: Offset(phoneX, cy),
+            width: size.width * 0.14,
+            height: size.height * 0.7),
         Radius.circular(size.width * 0.06),
       ),
       Paint()
-        ..color = color.withOpacity(0.6)
+        ..color = color.withValues(alpha: 0.6)
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.width * 0.055,
     );
@@ -681,14 +721,14 @@ class _ConfirmedPainter extends CustomPainter {
       Offset(cx, cy),
       size.width * 0.42,
       Paint()
-        ..color = color.withOpacity(t * 0.18)
+        ..color = color.withValues(alpha: t * 0.18)
         ..style = PaintingStyle.fill,
     );
     canvas.drawCircle(
       Offset(cx, cy),
       size.width * 0.42,
       Paint()
-        ..color = color.withOpacity(t)
+        ..color = color.withValues(alpha: t)
         ..style = PaintingStyle.stroke
         ..strokeWidth = sw * 0.6,
     );
@@ -703,7 +743,8 @@ class _ConfirmedPainter extends CustomPainter {
 
     final pm = path.computeMetrics();
     for (final m in pm) {
-      final extracted = m.extractPath(0, m.length * Curves.easeOut.transform(t));
+      final extracted =
+          m.extractPath(0, m.length * Curves.easeOut.transform(t));
       canvas.drawPath(
         extracted,
         Paint()
@@ -740,7 +781,7 @@ class _FailedPainter extends CustomPainter {
       Offset(cx, cy),
       size.width * 0.42,
       Paint()
-        ..color = color.withOpacity(t * 0.15)
+        ..color = color.withValues(alpha: t * 0.15)
         ..style = PaintingStyle.fill,
     );
 
@@ -754,7 +795,7 @@ class _FailedPainter extends CustomPainter {
       ..lineTo(pad, size.height - pad);
 
     final strokePaint = Paint()
-      ..color = color.withOpacity(t)
+      ..color = color.withValues(alpha: t)
       ..style = PaintingStyle.stroke
       ..strokeWidth = sw
       ..strokeCap = StrokeCap.round;
@@ -772,6 +813,7 @@ class _FailedPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _FailedPainter o) => o.t != t;
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLOCK
 class _ClockPainter extends CustomPainter {
@@ -784,12 +826,24 @@ class _ClockPainter extends CustomPainter {
     final cy = size.height / 2;
     final r = size.width * 0.42;
     final sw = size.width * 0.06;
-    final paint = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = sw..strokeCap = StrokeCap.round;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round;
     canvas.drawCircle(Offset(cx, cy), r, paint);
     // Hour hand static, minute hand pulses
-    canvas.drawLine(Offset(cx, cy), Offset(cx + r * 0.3 * cos(-pi/3), cy + r * 0.3 * sin(-pi/3)), paint);
-    canvas.drawLine(Offset(cx, cy), Offset(cx + r * 0.6 * cos(-pi/3 + (t * 0.1)), cy + r * 0.6 * sin(-pi/3 + (t * 0.1))), paint);
+    canvas.drawLine(
+        Offset(cx, cy),
+        Offset(cx + r * 0.3 * cos(-pi / 3), cy + r * 0.3 * sin(-pi / 3)),
+        paint);
+    canvas.drawLine(
+        Offset(cx, cy),
+        Offset(cx + r * 0.6 * cos(-pi / 3 + (t * 0.1)),
+            cy + r * 0.6 * sin(-pi / 3 + (t * 0.1))),
+        paint);
   }
+
   @override
   bool shouldRepaint(covariant _ClockPainter o) => o.t != t;
 }
@@ -805,14 +859,22 @@ class _AddressPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final sw = w * 0.06;
-    final paint = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = sw..strokeCap = StrokeCap.round;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round;
     final p1 = Offset(w * 0.2, h * 0.82);
     final p2 = Offset(w * 0.8, h * 0.18);
     canvas.drawCircle(p1, w * 0.12, paint);
     canvas.drawCircle(p2, w * 0.12, paint);
-    final path = Path()..moveTo(p1.dx + w * 0.08, p1.dy - w * 0.08)..lineTo(p2.dx - w * 0.08, p2.dy + w * 0.08);
-    canvas.drawPath(path, paint..color = color.withOpacity(0.3 + 0.3 * t));
+    final path = Path()
+      ..moveTo(p1.dx + w * 0.08, p1.dy - w * 0.08)
+      ..lineTo(p2.dx - w * 0.08, p2.dy + w * 0.08);
+    canvas.drawPath(
+        path, paint..color = color.withValues(alpha: 0.3 + 0.3 * t));
   }
+
   @override
   bool shouldRepaint(covariant _AddressPainter o) => o.t != t;
 }
@@ -828,16 +890,30 @@ class _NetworkPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final sw = w * 0.05;
-    final paint = Paint()..color = color..style = PaintingStyle.fill..strokeWidth = sw;
-    final points = [Offset(w * 0.5, h * 0.15), Offset(w * 0.15, h * 0.5), Offset(w * 0.85, h * 0.5), Offset(w * 0.5, h * 0.85)];
-    for (var p in points) { canvas.drawCircle(p, w * 0.08, paint); }
-    final linePaint = Paint()..color = color.withOpacity(0.2 + 0.3 * t)..style = PaintingStyle.stroke..strokeWidth = sw * 0.6;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..strokeWidth = sw;
+    final points = [
+      Offset(w * 0.5, h * 0.15),
+      Offset(w * 0.15, h * 0.5),
+      Offset(w * 0.85, h * 0.5),
+      Offset(w * 0.5, h * 0.85)
+    ];
+    for (var p in points) {
+      canvas.drawCircle(p, w * 0.08, paint);
+    }
+    final linePaint = Paint()
+      ..color = color.withValues(alpha: 0.2 + 0.3 * t)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw * 0.6;
     canvas.drawLine(points[0], points[1], linePaint);
     canvas.drawLine(points[0], points[2], linePaint);
     canvas.drawLine(points[1], points[3], linePaint);
     canvas.drawLine(points[2], points[3], linePaint);
     canvas.drawLine(points[1], points[2], linePaint);
   }
+
   @override
   bool shouldRepaint(covariant _NetworkPainter o) => o.t != t;
 }
@@ -853,11 +929,21 @@ class _CardPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final sw = w * 0.06;
-    final paint = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = sw..strokeCap = StrokeCap.round;
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.1, h * 0.28, w * 0.8, h * 0.44), Radius.circular(w * 0.1)), paint);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round;
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(w * 0.1, h * 0.28, w * 0.8, h * 0.44),
+            Radius.circular(w * 0.1)),
+        paint);
     // Card chip
-    canvas.drawRect(Rect.fromLTWH(w * 0.22, h * 0.42, w * 0.15, h * 0.15), Paint()..color = color.withOpacity(0.4 + 0.4 * t));
+    canvas.drawRect(Rect.fromLTWH(w * 0.22, h * 0.42, w * 0.15, h * 0.15),
+        Paint()..color = color.withValues(alpha: 0.4 + 0.4 * t));
   }
+
   @override
   bool shouldRepaint(covariant _CardPainter o) => o.t != t;
 }

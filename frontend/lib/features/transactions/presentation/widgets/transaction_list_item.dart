@@ -25,20 +25,29 @@ class TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isReceive = transaction.type == TransactionType.receive || transaction.type == TransactionType.deposit;
-    final IconData icon = isReceive ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
-    final Color color = isReceive ? AppColors.success : Theme.of(context).colorScheme.error;
+    final bool isReceive = transaction.type == TransactionType.receive ||
+        transaction.type == TransactionType.deposit;
+    final IconData icon =
+        isReceive ? LucideIcons.arrowDownLeft : LucideIcons.arrowUpRight;
+    final Color color =
+        isReceive ? AppColors.success : Theme.of(context).colorScheme.error;
     final String label = isReceive ? 'Recebido' : 'Enviado';
     final String prefix = isReceive ? '+' : '-';
-    
+
     // Fallback for types that are not receive/send
-    final finalIcon = transaction.type == TransactionType.swap ? LucideIcons.arrowLeftRight : icon;
-    final finalColor = transaction.type == TransactionType.swap ? Theme.of(context).colorScheme.secondary : color;
-    final finalLabel = transaction.type == TransactionType.swap ? 'Swap' : label;
+    final finalIcon = transaction.type == TransactionType.swap
+        ? LucideIcons.arrowLeftRight
+        : icon;
+    final finalColor = transaction.type == TransactionType.swap
+        ? Theme.of(context).colorScheme.secondary
+        : color;
+    final finalLabel =
+        transaction.type == TransactionType.swap ? 'Swap' : label;
     final finalPrefix = transaction.type == TransactionType.swap ? '' : prefix;
 
-    final counterparty = isReceive ? transaction.fromAddress : transaction.toAddress;
-    final displayAddress = counterparty.length > 12 
+    final counterparty =
+        isReceive ? transaction.fromAddress : transaction.toAddress;
+    final displayAddress = counterparty.length > 12
         ? '${counterparty.substring(0, 6)}…${counterparty.substring(counterparty.length - 4)}'
         : counterparty;
 
@@ -50,9 +59,9 @@ class TransactionListItem extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: finalColor.withOpacity(0.1),
+              color: finalColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: finalColor.withOpacity(0.2)),
+              border: Border.all(color: finalColor.withValues(alpha: 0.2)),
             ),
             child: Icon(finalIcon, color: finalColor, size: 20),
           ),
@@ -63,12 +72,18 @@ class TransactionListItem extends StatelessWidget {
               children: [
                 Text(
                   finalLabel,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary),
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onPrimary),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   displayAddress,
-                  style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
+                  style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.4)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -80,14 +95,18 @@ class TransactionListItem extends StatelessWidget {
               Text(
                 '$finalPrefix${_formatBTC(transaction.amountBTC)}',
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: finalColor,
-                ),
+                      fontWeight: FontWeight.w700,
+                      color: finalColor,
+                    ),
               ),
               const SizedBox(height: 2),
               Text(
                 _formatDate(transaction.timestamp),
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)),
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.3)),
               ),
             ],
           ),

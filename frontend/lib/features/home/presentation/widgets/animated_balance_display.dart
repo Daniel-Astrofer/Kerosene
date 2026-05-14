@@ -136,7 +136,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
         final currentStyle = isDecimalPart
             ? style.copyWith(
                 fontSize: (style.fontSize ?? 40) * 0.5,
-                color: style.color?.withOpacity(0.8),
+                color: style.color?.withValues(alpha: 0.8),
               )
             : style;
 
@@ -146,7 +146,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
             style: char == '.' || char == ','
                 ? style.copyWith(
                     fontSize: (style.fontSize ?? 40) * 0.7,
-                    color: style.color?.withOpacity(0.5),
+                    color: style.color?.withValues(alpha: 0.5),
                   )
                 : currentStyle,
             key: ValueKey('static_$index'),

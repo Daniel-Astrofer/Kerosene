@@ -140,13 +140,13 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .secondary
-                                      .withOpacity(0.1),
+                                      .withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: Theme.of(context)
                                         .colorScheme
                                         .secondary
-                                        .withOpacity(0.2),
+                                        .withValues(alpha: 0.2),
                                   ),
                                 ),
                                 child: Icon(
@@ -174,7 +174,7 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onPrimary
-                                      .withOpacity(0.55),
+                                      .withValues(alpha: 0.55),
                                   height: 1.4,
                                 ),
                                 textAlign: TextAlign.center,
@@ -186,7 +186,7 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onPrimary
-                                      .withOpacity(0.45),
+                                      .withValues(alpha: 0.45),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -203,13 +203,13 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
                               color: Theme.of(context)
                                   .colorScheme
                                   .onPrimary
-                                  .withOpacity(0.03),
+                                  .withValues(alpha: 0.03),
                               borderRadius: BorderRadius.circular(999),
                               border: Border.all(
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onPrimary
-                                      .withOpacity(0.08)),
+                                      .withValues(alpha: 0.08)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.max,
@@ -265,14 +265,14 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
                               color: Theme.of(context)
                                   .colorScheme
                                   .onPrimary
-                                  .withOpacity(0.02),
+                                  .withValues(alpha: 0.02),
                               borderRadius:
                                   BorderRadius.circular(AppSpacing.xl),
                               border: Border.all(
                                   color: Theme.of(context)
                                       .colorScheme
                                       .secondary
-                                      .withOpacity(0.3)),
+                                      .withValues(alpha: 0.3)),
                               boxShadow: [],
                             ),
                             child: ClipRRect(
@@ -368,7 +368,10 @@ class _LoginPassphraseScreenState extends ConsumerState<LoginPassphraseScreen> {
           Text(
             (index + 1).toString().padLeft(2, '0'),
             style: AppTypography.number.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.5),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

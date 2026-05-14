@@ -42,15 +42,24 @@ class SecuritySettingsScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                              Theme.of(context).colorScheme.primary.withOpacity(0.05)
+                              Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.1),
+                              Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.05)
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -59,10 +68,16 @@ class SecuritySettingsScreen extends ConsumerWidget {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.3),
                                 ),
                               ),
                               child: Icon(
@@ -78,19 +93,29 @@ class SecuritySettingsScreen extends ConsumerWidget {
                                 children: [
                                   Text(
                                     context.l10n.sovereigntyStatus,
-                                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
                                     context.l10n.sovereigntyStatusDesc,
-                                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontSize: 11,
-                                      letterSpacing: 0.5,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall!
+                                        .copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          fontSize: 11,
+                                          letterSpacing: 0.5,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -162,10 +187,16 @@ class SecuritySettingsScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.05),
                       ),
                     ),
                     child: Row(
@@ -179,9 +210,13 @@ class SecuritySettingsScreen extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             context.l10n.enableTwoFactorInfo,
-                            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall!.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary
+                                          .withValues(alpha: 0.7),
+                                    ),
                           ),
                         ),
                       ],
@@ -208,19 +243,31 @@ class SecuritySettingsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+        border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 24),
+            child: Icon(icon,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.7),
+                size: 24),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -230,16 +277,19 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-                  ),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.5),
+                      ),
                 ),
               ],
             ),
@@ -248,9 +298,12 @@ class SecuritySettingsScreen extends ConsumerWidget {
             value: value,
             onChanged: onChanged,
             activeThumbColor: Theme.of(context).colorScheme.primary,
-            activeTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-            inactiveThumbColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-            inactiveTrackColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            activeTrackColor:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            inactiveThumbColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+            inactiveTrackColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
           ),
         ],
       ),
@@ -265,9 +318,16 @@ class SecuritySettingsScreen extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1)),
             ),
             child: Icon(
               Icons.arrow_back_rounded,
@@ -279,7 +339,10 @@ class SecuritySettingsScreen extends ConsumerWidget {
         const SizedBox(width: AppSpacing.md),
         Text(
           context.l10n.security.toUpperCase(),
-          style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium!
+              .copyWith(letterSpacing: 2),
         ),
       ],
     );
@@ -295,9 +358,13 @@ class SecuritySettingsScreen extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.03),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+        border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .onPrimary
+                .withValues(alpha: 0.05)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -309,10 +376,18 @@ class SecuritySettingsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), size: 24),
+                child: Icon(icon,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.7),
+                    size: 24),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -322,16 +397,19 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-                      ),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.5),
+                          ),
                     ),
                   ],
                 ),

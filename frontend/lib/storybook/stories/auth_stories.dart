@@ -32,7 +32,8 @@ List<Story> authStories() {
     // ─── Onboarding ─────────────────────────────────────
     Story(
       name: 'Auth/Welcome Screen',
-      description: 'Initial landing screen with logo animation and CTA buttons.',
+      description:
+          'Initial landing screen with logo animation and CTA buttons.',
       builder: (context) => const WelcomeScreen(),
     ),
 
@@ -80,7 +81,8 @@ List<Story> authStories() {
           passphrase: _mockPassphrase,
           isSetup: isSetup,
           totpSecret: 'JBSWY3DPEHPK3PXP',
-          qrCodeUri: 'otpauth://totp/Kerosene:storybook?secret=JBSWY3DPEHPK3PXP&issuer=Kerosene',
+          qrCodeUri:
+              'otpauth://totp/Kerosene:storybook?secret=JBSWY3DPEHPK3PXP&issuer=Kerosene',
         );
       },
     ),

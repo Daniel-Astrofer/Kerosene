@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -25,7 +24,8 @@ class WithdrawReviewPopup extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<WithdrawReviewPopup> createState() => _WithdrawReviewPopupState();
+  ConsumerState<WithdrawReviewPopup> createState() =>
+      _WithdrawReviewPopupState();
 }
 
 class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
@@ -45,7 +45,9 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
   void _nextStep() {
     if (_currentStep == 0) {
       if (_addressController.text.trim().isEmpty) {
-        SnackbarHelper.showError(widget.isLightning ? "Insira o Invoice Lightning" : "Insira o endereço On-chain");
+        SnackbarHelper.showError(widget.isLightning
+            ? "Insira o Invoice Lightning"
+            : "Insira o endereço On-chain");
         return;
       }
       setState(() => _currentStep = 1);
@@ -83,7 +85,8 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
       return;
     }
 
-    widget.onConfirm(_addressController.text.trim(), _totpController.text.trim(), true);
+    widget.onConfirm(
+        _addressController.text.trim(), _totpController.text.trim(), true);
     setState(() => _isLoading = false);
   }
 
@@ -95,8 +98,11 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.xxl)),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), width: 1.5),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppSpacing.xxl)),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            width: 1.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -119,7 +125,10 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -129,18 +138,23 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
           widget.isLightning ? "LIGHTNING WITHDRAWAL" : "ON-CHAIN WITHDRAWAL",
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
         ),
         const SizedBox(height: AppSpacing.xxl),
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
           child: Row(
             children: [
@@ -154,9 +168,14 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
                 child: TextField(
                   controller: _addressController,
                   autofocus: true,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontFamily: 'JetBrainsMono', fontSize: 14),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall!
+                      .copyWith(fontFamily: 'JetBrainsMono', fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: widget.isLightning ? "Paste Lightning Invoice" : "Paste Bitcoin Address",
+                    hintText: widget.isLightning
+                        ? "Paste Lightning Invoice"
+                        : "Paste Bitcoin Address",
                     border: InputBorder.none,
                     isDense: true,
                   ),
@@ -189,10 +208,10 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
           "SECURITY VERIFICATION",
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
         ),
         const SizedBox(height: AppSpacing.xl),
         _buildSecurityItem(
@@ -212,18 +231,26 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
         Text(
           "ENTER TOTP CODE",
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
           child: TextField(
             controller: _totpController,
@@ -231,10 +258,10 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
             maxLength: 6,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.displaySmall!.copyWith(
-              fontFamily: 'JetBrainsMono',
-              letterSpacing: 10,
-              fontSize: 24,
-            ),
+                  fontFamily: 'JetBrainsMono',
+                  letterSpacing: 10,
+                  fontSize: 24,
+                ),
             decoration: const InputDecoration(
               border: InputBorder.none,
               counterText: "",
@@ -252,28 +279,38 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
     );
   }
 
-  Widget _buildSecurityItem({required IconData icon, required String label, required String status, required Color color}) {
+  Widget _buildSecurityItem(
+      {required IconData icon,
+      required String label,
+      required String status,
+      required Color color}) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.02),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(AppSpacing.md),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(width: AppSpacing.md),
-          Text(label, style: Theme.of(context).textTheme.labelMedium!.copyWith(fontWeight: FontWeight.w900, letterSpacing: 1)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelMedium!
+                  .copyWith(fontWeight: FontWeight.w900, letterSpacing: 1)),
           const Spacer(),
-          Text(status, style: Theme.of(context).textTheme.labelSmall!.copyWith(color: color, fontWeight: FontWeight.w900, letterSpacing: 1)),
+          Text(status,
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: color, fontWeight: FontWeight.w900, letterSpacing: 1)),
         ],
       ),
     );
   }
 
   Future<void> _scanQr() async {
-     final result = await Navigator.push<String>(
+    final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );

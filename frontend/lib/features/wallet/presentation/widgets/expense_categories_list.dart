@@ -36,7 +36,7 @@ class ExpenseCategoriesList extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: category.color.withOpacity(0.1),
+                color: category.color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(category.icon, color: category.color, size: 24),
@@ -45,7 +45,7 @@ class ExpenseCategoriesList extends StatelessWidget {
             Text(
               category.name.toUpperCase(),
               style: AppTypography.caption.copyWith(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1,
                 fontSize: 8,

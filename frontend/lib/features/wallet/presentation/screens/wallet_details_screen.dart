@@ -16,13 +16,15 @@ class WalletDetailsScreen extends ConsumerStatefulWidget {
   const WalletDetailsScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<WalletDetailsScreen> createState() => _WalletDetailsScreenState();
+  ConsumerState<WalletDetailsScreen> createState() =>
+      _WalletDetailsScreenState();
 }
 
 class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
   @override
   Widget build(BuildContext context) {
-    final transactionsAsync = ref.watch(transactionsByWalletProvider(widget.wallet.address));
+    final transactionsAsync =
+        ref.watch(transactionsByWalletProvider(widget.wallet.address));
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -44,7 +46,8 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
                             const SizedBox(height: AppSpacing.xl),
                             _buildActionSection(),
                             const SizedBox(height: AppSpacing.xxl),
-                            _buildSectionHeader(context.l10n.recentTransactions.toUpperCase()),
+                            _buildSectionHeader(
+                                context.l10n.recentTransactions.toUpperCase()),
                           ],
                         ),
                       ),
@@ -55,18 +58,24 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
                           : SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                                  child: TransactionListItem(transaction: txs[index]),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.lg),
+                                  child: TransactionListItem(
+                                      transaction: txs[index]),
                                 ),
                                 childCount: txs.length,
                               ),
                             ),
                       loading: () => SliverFillRemaining(
-                        child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
+                        child: Center(
+                            child: CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.primary)),
                       ),
-                      error: (err, _) => SliverFillRemaining(child: _buildErrorState(err.toString())),
+                      error: (err, _) => SliverFillRemaining(
+                          child: _buildErrorState(err.toString())),
                     ),
-                    const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+                    const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.xxl)),
                   ],
                 ),
               ),
@@ -79,23 +88,37 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary),
-            style: IconButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary),
+            style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
           Text(
             widget.wallet.name.toUpperCase(),
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           IconButton(
             onPressed: () {},
-            icon: Icon(LucideIcons.settings, color: Theme.of(context).colorScheme.onPrimary),
-            style: IconButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+            icon: Icon(LucideIcons.settings,
+                color: Theme.of(context).colorScheme.onPrimary),
+            style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05)),
           ),
         ],
       ),
@@ -112,23 +135,30 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
           Text(
             context.l10n.totalBalanceGeneric.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-              letterSpacing: 2,
-            ),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.3),
+                  letterSpacing: 2,
+                ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             "₿ ${widget.wallet.balance.toStringAsFixed(8)}",
             style: Theme.of(context).textTheme.displayLarge!.copyWith(
-              fontSize: 40,
-              color: Theme.of(context).colorScheme.primary,
-              fontFamily: 'JetBrainsMono',
-            ),
+                  fontSize: 40,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontFamily: 'JetBrainsMono',
+                ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             "≈ \$ ${(widget.wallet.balance * 65000).toStringAsFixed(2)} USD",
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4)),
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.4)),
           ),
         ],
       ),
@@ -138,9 +168,13 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
   Widget _buildActionSection() {
     return Row(
       children: [
-        Expanded(child: _buildActionButton(context.l10n.send.toUpperCase(), LucideIcons.arrowUpRight)),
+        Expanded(
+            child: _buildActionButton(
+                context.l10n.send.toUpperCase(), LucideIcons.arrowUpRight)),
         const SizedBox(width: AppSpacing.md),
-        Expanded(child: _buildActionButton(context.l10n.receive.toUpperCase(), LucideIcons.arrowDownLeft)),
+        Expanded(
+            child: _buildActionButton(
+                context.l10n.receive.toUpperCase(), LucideIcons.arrowDownLeft)),
       ],
     );
   }
@@ -153,7 +187,11 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
           const SizedBox(height: AppSpacing.xs),
-          Text(label, style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w900)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall!
+                  .copyWith(fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -165,13 +203,19 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
         Text(
           title,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w900,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.4),
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w900,
+              ),
         ),
         const Spacer(),
-        Icon(LucideIcons.listFilter, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2), size: 16),
+        Icon(LucideIcons.listFilter,
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+            size: 16),
       ],
     );
   }
@@ -181,11 +225,20 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(LucideIcons.ghost, color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05), size: 80),
+          Icon(LucideIcons.ghost,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
+              size: 80),
           const SizedBox(height: AppSpacing.md),
           Text(
             context.l10n.noTransactions.toUpperCase(),
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.2)),
           ),
         ],
       ),
@@ -198,7 +251,10 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Text(
           "${context.l10n.errorLoadingData.toUpperCase()}: $error",
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(color: Theme.of(context).colorScheme.error),
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall!
+              .copyWith(color: Theme.of(context).colorScheme.error),
           textAlign: TextAlign.center,
         ),
       ),

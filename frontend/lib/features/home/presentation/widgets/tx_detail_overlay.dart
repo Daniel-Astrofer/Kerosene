@@ -29,7 +29,7 @@ class TxDetailOverlay extends StatelessWidget {
 
     return Scaffold(
       backgroundColor:
-          Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
+          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
       body: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: InkWell(
@@ -61,18 +61,18 @@ class TxDetailOverlay extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF101B35).withOpacity(0.85),
+                        color: const Color(0xFF101B35).withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: Theme.of(context)
                               .colorScheme
                               .onPrimary
-                              .withOpacity(0.1),
+                              .withValues(alpha: 0.1),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: amountColor.withOpacity(0.15),
+                            color: amountColor.withValues(alpha: 0.15),
                             blurRadius: 40,
                             spreadRadius: 5,
                           ),
@@ -88,10 +88,10 @@ class TxDetailOverlay extends StatelessWidget {
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
-                                color: amountColor.withOpacity(0.1),
+                                color: amountColor.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: amountColor.withOpacity(0.3),
+                                  color: amountColor.withValues(alpha: 0.3),
                                   width: 2,
                                 ),
                               ),
@@ -110,7 +110,7 @@ class TxDetailOverlay extends StatelessWidget {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onPrimary
-                                    .withOpacity(0.7),
+                                    .withValues(alpha: 0.7),
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 1.2,
                               ),
@@ -237,13 +237,17 @@ class TxDetailOverlay extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: AnimatedTxIcon(
               kind: kind,
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.7),
               size: 18,
             ),
           ),
@@ -255,7 +259,10 @@ class TxDetailOverlay extends StatelessWidget {
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.4),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -289,13 +296,13 @@ class TxDetailOverlay extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           color: isPrimary
-              ? (color ?? const Color(0xFF00E5BC)).withOpacity(0.15)
-              : Colors.white.withOpacity(0.05),
+              ? (color ?? const Color(0xFF00E5BC)).withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isPrimary
-                ? (color ?? const Color(0xFF00E5BC)).withOpacity(0.3)
-                : Colors.white.withOpacity(0.1),
+                ? (color ?? const Color(0xFF00E5BC)).withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.1),
             width: 1.5,
           ),
         ),

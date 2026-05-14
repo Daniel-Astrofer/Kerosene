@@ -70,9 +70,13 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         setState(() {
           _sessionId = next.sessionId;
         });
-        if (_currentStep == 6) _nextStep(); // Advance from TOTP to Hardware Register
+        if (_currentStep == 6) {
+          _nextStep(); // Advance from TOTP to Hardware Register
+        }
       } else if (next is AuthHardwareVerified) {
-        if (_currentStep == 7) _nextStep(); // Advance from Hardware to Final Payment
+        if (_currentStep == 7) {
+          _nextStep(); // Advance from Hardware to Final Payment
+        }
       } else if (next is AuthRequiresLoginTotp) {
         // Mock payment was confirmed and auto-login triggered a TOTP requirement
         Navigator.of(context).push(
@@ -87,7 +91,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         );
       } else if (next is AuthAuthenticated) {
         // Final success - go to home
-        Navigator.of(context).pushNamedAndRemoveUntil('/home_loading', (route) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/home_loading', (route) => false);
       }
     });
 
@@ -101,7 +106,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
               title: _currentStep >= 5 ? 'FINALIZAR' : 'CRIAR CONTA',
               onBackPressed: _prevStep,
             ),
-            
+
             // Progress Indicator (9 segments)
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -117,28 +122,37 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                       margin: EdgeInsets.only(right: index < 8 ? 4 : 0),
                       height: 4,
                       decoration: BoxDecoration(
-                        color: isActive 
-                            ? Theme.of(context).colorScheme.primary 
-                            : Theme.of(context).colorScheme.onPrimary.withOpacity(0.15),
+                        color: isActive
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(2),
-                        boxShadow: isActive ? [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                            blurRadius: 4,
-                          )
-                        ] : [],
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                )
+                              ]
+                            : [],
                       ),
                     ),
                   );
                 }),
               ),
             ),
-            
+
             // Step Views
             Expanded(
               child: PageView(
                 controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Enforce validation
+                physics:
+                    const NeverScrollableScrollPhysics(), // Enforce validation
                 onPageChanged: (index) => setState(() => _currentStep = index),
                 children: [
                   SignupRequirementsStep(onNext: _nextStep),
@@ -160,7 +174,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                     mnemonic: _mnemonic,
                     onNext: _nextStep,
                   ),
-                  SignupPaymentStep( // This widget is the "Forge" step
+                  SignupPaymentStep(
+                    // This widget is the "Forge" step
                     username: _username,
                     mnemonic: _mnemonic,
                   ),
@@ -194,4 +209,3 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     );
   }
 }
-

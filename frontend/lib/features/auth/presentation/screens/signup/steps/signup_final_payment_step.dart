@@ -23,10 +23,12 @@ class SignupFinalPaymentStep extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SignupFinalPaymentStep> createState() => _SignupFinalPaymentStepState();
+  ConsumerState<SignupFinalPaymentStep> createState() =>
+      _SignupFinalPaymentStepState();
 }
 
-class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep> {
+class _SignupFinalPaymentStepState
+    extends ConsumerState<SignupFinalPaymentStep> {
   late final TextEditingController _txidController;
 
   @override
@@ -34,7 +36,9 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
     super.initState();
     _txidController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(authControllerProvider.notifier).getOnboardingLink(widget.sessionId);
+      ref
+          .read(authControllerProvider.notifier)
+          .getOnboardingLink(widget.sessionId);
     });
   }
 
@@ -69,18 +73,21 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl, vertical: AppSpacing.md),
             child: authState is AuthPaymentRequired
                 ? _buildPaymentUI(authState)
-                : authState is AuthLoading 
-                  ? const Center(child: Padding(
-                    padding: EdgeInsets.only(top: 100),
-                    child: CircularProgressIndicator(),
-                  ))
-                  : const Center(child: Padding(
-                    padding: EdgeInsets.only(top: 100),
-                    child: Text('Aguardando dados de pagamento...'),
-                  )),
+                : authState is AuthLoading
+                    ? const Center(
+                        child: Padding(
+                        padding: EdgeInsets.only(top: 100),
+                        child: CircularProgressIndicator(),
+                      ))
+                    : const Center(
+                        child: Padding(
+                        padding: EdgeInsets.only(top: 100),
+                        child: Text('Aguardando dados de pagamento...'),
+                      )),
           ),
         ),
       ],
@@ -95,53 +102,57 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
         Text(
           'ATIVAR CONTA',
           style: Theme.of(context).textTheme.displayLarge!.copyWith(
-            fontSize: 28,
-            letterSpacing: 0.5,
-          ),
+                fontSize: 28,
+                letterSpacing: 0.5,
+              ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xl),
         Text(
           'Para finalizar a criação da sua carteira soberana, é necessário um depósito inicial para cobrir as taxas de abertura de canal e registro na mainnet.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.5,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xl),
-        
+
         // Amount Card
         Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppSpacing.md),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
               Text(
                 'VALOR A DEPOSITAR',
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 '${state.amountBtc.toStringAsFixed(8)} BTC',
                 style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
-                ),
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                    ),
               ),
             ],
           ),
         ),
-        
+
         const SizedBox(height: AppSpacing.xl),
 
         // QR Code
@@ -153,7 +164,10 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
               borderRadius: BorderRadius.circular(AppSpacing.md),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.15),
                   blurRadius: 30,
                 ),
               ],
@@ -165,25 +179,31 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
             ),
           ),
         ),
-        
+
         const SizedBox(height: AppSpacing.xl),
 
         // Address Field
         Text(
           'ENDEREÇO BTC (ON-CHAIN)',
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            letterSpacing: 2,
-            fontWeight: FontWeight.bold,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.md),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(AppSpacing.sm),
-            border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1)),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.1)),
           ),
           child: Row(
             children: [
@@ -201,7 +221,8 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => _copyAddress(state.depositAddress),
-                child: Icon(LucideIcons.copy, size: 18, color: Theme.of(context).colorScheme.primary),
+                child: Icon(LucideIcons.copy,
+                    size: 18, color: Theme.of(context).colorScheme.primary),
               ),
             ],
           ),
@@ -212,10 +233,10 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
         Text(
           'TXID DA TRANSAÇÃO',
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            letterSpacing: 2,
-            fontWeight: FontWeight.bold,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: AppSpacing.sm),
         TextField(
@@ -231,20 +252,30 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
           decoration: InputDecoration(
             hintText: 'Cole aqui o TXID on-chain',
             hintStyle: AppTypography.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.6),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+            fillColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.sm),
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.1),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.sm),
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.1),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -264,15 +295,20 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppSpacing.sm),
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.18),
               ),
             ),
             child: Row(
               children: [
-                if (state.isSubmitting || state.paymentStatus == 'verifying_onboarding') ...[
+                if (state.isSubmitting ||
+                    state.paymentStatus == 'verifying_onboarding') ...[
                   SizedBox(
                     width: 16,
                     height: 16,
@@ -287,9 +323,9 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
                   child: Text(
                     state.statusMessage!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      height: 1.4,
-                    ),
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          height: 1.4,
+                        ),
                   ),
                 ),
               ],
@@ -302,16 +338,16 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.08),
+              color: AppColors.error.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppSpacing.sm),
-              border: Border.all(color: AppColors.error.withOpacity(0.2)),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
             ),
             child: Text(
               state.errorMessage!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.error,
-                height: 1.4,
-              ),
+                    color: AppColors.error,
+                    height: 1.4,
+                  ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -330,7 +366,9 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
                   state.paymentStatus == 'completed'
               ? null
               : () {
-                  ref.read(authControllerProvider.notifier).submitOnboardingPayment(
+                  ref
+                      .read(authControllerProvider.notifier)
+                      .submitOnboardingPayment(
                         linkId: state.paymentLinkId,
                         txid: _txidController.text,
                         username: widget.username,
@@ -342,9 +380,12 @@ class _SignupFinalPaymentStepState extends ConsumerState<SignupFinalPaymentStep>
         Text(
           'A conta será ativada automaticamente após 3 confirmações na rede.',
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
-            fontSize: 10,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withValues(alpha: 0.6),
+                fontSize: 10,
+              ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xxl),

@@ -23,10 +23,10 @@ class SignupPaymentStep extends ConsumerWidget {
   void _createWallet(WidgetRef ref) {
     final flowState = ref.read(signupFlowProvider);
     ref.read(authControllerProvider.notifier).signup(
-      username: username,
-      password: mnemonic,
-      accountSecurity: _mapAccountSecurity(flowState.seedSecurityOption),
-    );
+          username: username,
+          password: mnemonic,
+          accountSecurity: _mapAccountSecurity(flowState.seedSecurityOption),
+        );
   }
 
   String _mapAccountSecurity(SeedSecurityOption option) {
@@ -49,7 +49,8 @@ class SignupPaymentStep extends ConsumerWidget {
         showCustomErrorDialog(
           context,
           ErrorTranslator.translate(context.l10n, next.message),
-          onGoBack: () => ref.read(authControllerProvider.notifier).clearError(),
+          onGoBack: () =>
+              ref.read(authControllerProvider.notifier).clearError(),
         );
       }
     });
@@ -73,7 +74,8 @@ class SignupPaymentStep extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'A rede Kerosene exige uma pequena taxa de depósito inicial para validar sua conta no Vault de forma descentralizada.',
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
@@ -84,7 +86,10 @@ class SignupPaymentStep extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.xl),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -103,8 +108,10 @@ class SignupPaymentStep extends ConsumerWidget {
                       Text(
                         'Sua identidade criptográfica foi gerada. Clique abaixo para registrar sua conta e abrir seu canal na rede.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                         textAlign: TextAlign.center,
                       ),
                     ],

@@ -28,8 +28,8 @@ class LoginResult {
   final bool requiresTotp;
 
   const LoginResult({
-    this.userId = '', 
-    this.jwt = '', 
+    this.userId = '',
+    this.jwt = '',
     this.requiresTotp = false,
   });
 
@@ -40,19 +40,25 @@ class LoginResult {
     if (data == null) {
       return const LoginResult(requiresTotp: true);
     }
-    
+
     String raw;
     if (data is Map) {
-      raw = (data['data'] ?? data['token'] ?? data['jwt'] ?? data['sessionId'] ?? '').toString().trim();
+      raw = (data['data'] ??
+              data['token'] ??
+              data['jwt'] ??
+              data['sessionId'] ??
+              '')
+          .toString()
+          .trim();
       if (raw.isEmpty) {
         raw = data.toString().trim();
       }
     } else {
       raw = data.toString().trim();
     }
-    
+
     final spaceIdx = raw.indexOf(' ');
-    
+
     if (spaceIdx <= 0) {
       // No space: either a pre_auth_token (UUID-like) or a final JWT.
       if (raw.contains('.')) {
@@ -62,13 +68,13 @@ class LoginResult {
       if (raw.isNotEmpty && !raw.startsWith('{')) {
         return LoginResult(requiresTotp: true, jwt: raw);
       }
-      
+
       if (data is Map && data.containsKey('token')) {
-         return LoginResult(
-           userId: (data['userId'] ?? '').toString(),
-           jwt: (data['token'] ?? data['jwt'] ?? '').toString(),
-           requiresTotp: false,
-         );
+        return LoginResult(
+          userId: (data['userId'] ?? '').toString(),
+          jwt: (data['token'] ?? data['jwt'] ?? '').toString(),
+          requiresTotp: false,
+        );
       }
 
       throw AuthException(
@@ -113,7 +119,8 @@ class OnboardingPaymentLinkDto {
     return OnboardingPaymentLinkDto(
       linkId: (json['id'] ?? json['linkId'] ?? '').toString(),
       amountBtc: btc,
-      depositAddress: (json['address'] ?? json['depositAddress'] ?? '').toString(),
+      depositAddress:
+          (json['address'] ?? json['depositAddress'] ?? '').toString(),
       type: (json['type'] ?? 'ONBOARDING_VOUCHER').toString(),
       status: (json['status'] ?? 'pending').toString(),
     );
@@ -167,7 +174,8 @@ abstract class AuthRemoteDataSource {
   Future<String> passkeyLoginStart(String username);
 
   /// Finaliza login via passkey — retorna LoginResult com JWT
-  Future<LoginResult> passkeyLoginFinish(String username, Map<String, dynamic> credential);
+  Future<LoginResult> passkeyLoginFinish(
+      String username, Map<String, dynamic> credential);
 
   /// Inicia registro de passkey para usuário logado — retorna challenge JSON
   Future<String> passkeyRegisterStart(String username);
@@ -311,28 +319,33 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           totpSecret = uri?.queryParameters['secret'] ?? '';
         } else {
           totpSecret = parsedBody;
-          qrCodeUri = 'otpauth://totp/Kerosene:$username?secret=$totpSecret&issuer=Kerosene';
+          qrCodeUri =
+              'otpauth://totp/Kerosene:$username?secret=$totpSecret&issuer=Kerosene';
         }
       } else if (parsedBody is Map) {
         Map dataMap = parsedBody;
         if (dataMap.containsKey('data') && dataMap['data'] is Map) {
           dataMap = dataMap['data'];
         }
-        
+
         // API v5.8: field is `otpUri`
-        qrCodeUri = (dataMap['otpUri'] ?? 
-                    dataMap['otp_uri'] ?? 
-                    dataMap['qrCodeUri'] ?? 
-                    dataMap['qr_code_uri'] ?? 
-                    dataMap['uri'] ?? '').toString();
-        
-        totpSecret = (dataMap['setupKey'] ?? 
-                      dataMap['setup_key'] ?? 
-                      dataMap['totpSecret'] ?? 
-                      dataMap['totp_secret'] ?? 
-                      dataMap['secret'] ?? 
-                      dataMap['secret_key'] ?? '').toString();
-        
+        qrCodeUri = (dataMap['otpUri'] ??
+                dataMap['otp_uri'] ??
+                dataMap['qrCodeUri'] ??
+                dataMap['qr_code_uri'] ??
+                dataMap['uri'] ??
+                '')
+            .toString();
+
+        totpSecret = (dataMap['setupKey'] ??
+                dataMap['setup_key'] ??
+                dataMap['totpSecret'] ??
+                dataMap['totp_secret'] ??
+                dataMap['secret'] ??
+                dataMap['secret_key'] ??
+                '')
+            .toString();
+
         if (totpSecret.isEmpty && qrCodeUri.startsWith('otpauth://')) {
           final uri = Uri.tryParse(qrCodeUri);
           totpSecret = uri?.queryParameters['secret'] ?? '';
@@ -349,11 +362,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
               .toList();
         }
 
-        debugPrint('🔐 TOTP Data extracted. Secret length: ${totpSecret.length}, BackupCodes: ${backupCodes.length}');
+        debugPrint(
+            '🔐 TOTP Data extracted. Secret length: ${totpSecret.length}, BackupCodes: ${backupCodes.length}');
       }
 
       if (totpSecret.isEmpty || totpSecret.startsWith('{')) {
-        throw ServerException(message: 'Invalid TOTP secret received from server.');
+        throw ServerException(
+            message: 'Invalid TOTP secret received from server.');
       }
 
       return SignupInitResult(
@@ -476,7 +491,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao finalizar registro de passkey: $e');
+      throw ServerException(
+          message: 'Erro ao finalizar registro de passkey: $e');
     }
   }
 
@@ -509,11 +525,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'signature': credential['signature'],
           'authData': credential['authData'],
           'clientDataJSON': credential['clientDataJSON'],
-          'credentialId': credential['credentialId'] ?? credential['credential_id'] ?? credential['id'],
+          'credentialId': credential['credentialId'] ??
+              credential['credential_id'] ??
+              credential['id'],
         },
       );
       return LoginResult.fromResponseData(response.data);
-
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao finalizar login via passkey: $e');
@@ -544,7 +561,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao finalizar registro de passkey: $e');
+      throw ServerException(
+          message: 'Erro ao finalizar registro de passkey: $e');
     }
   }
 
@@ -587,31 +605,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final body = response.data;
       if (body is Map) {
-        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
+        return OnboardingPaymentLinkDto.fromJson(
+            Map<String, dynamic>.from(body));
       }
       throw const ServerException(
         message: 'Resposta inválida ao confirmar pagamento de onboarding.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao confirmar pagamento de onboarding: $e');
+      throw ServerException(
+          message: 'Erro ao confirmar pagamento de onboarding: $e');
     }
   }
 
   @override
-  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId) async {
+  Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(
+      String linkId) async {
     try {
-      final response = await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
+      final response =
+          await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
       final body = response.data;
       if (body is Map) {
-        return OnboardingPaymentLinkDto.fromJson(Map<String, dynamic>.from(body));
+        return OnboardingPaymentLinkDto.fromJson(
+            Map<String, dynamic>.from(body));
       }
       throw const ServerException(
         message: 'Resposta inválida ao consultar status do onboarding.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao consultar status do onboarding: $e');
+      throw ServerException(
+          message: 'Erro ao consultar status do onboarding: $e');
     }
   }
 
@@ -634,9 +658,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String txid,
   }) async {
     try {
-      final cleanVoucherId = voucherId.startsWith('pay_') 
-          ? voucherId.substring(4) 
-          : voucherId;
+      final cleanVoucherId =
+          voucherId.startsWith('pay_') ? voucherId.substring(4) : voucherId;
 
       await apiClient.post(
         AppConfig.voucherConfirm,
@@ -682,7 +705,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
       }
 
-      throw ServerException(message: 'Formato de resposta inválido em /auth/me');
+      throw ServerException(
+          message: 'Formato de resposta inválido em /auth/me');
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao obter usuário: $e');

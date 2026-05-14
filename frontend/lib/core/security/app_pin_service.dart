@@ -10,7 +10,7 @@ class AppPinService {
   final SecureStorageService _storage;
 
   AppPinService({SecureStorageService? storage})
-    : _storage = storage ?? SecureStorageService();
+      : _storage = storage ?? SecureStorageService();
 
   /// Returns true if an in-app PIN has already been set.
   Future<bool> hasPinSet() async {

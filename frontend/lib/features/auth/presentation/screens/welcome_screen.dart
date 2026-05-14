@@ -53,77 +53,79 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 24),
-
-              // Logo and Platform Name side-by-side
-              // Logo and Platform Name side-by-side
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onLongPress: () {
-                        // Secret shortcut for developers
-                        Navigator.pushNamed(context, '/gallery');
-                      },
-                      child: const KeroseneLogo(size: 60),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Kerosene',
-                      style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        letterSpacing: 0,
-                        height: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              Text(
-                AppLocalizations.of(context)!.welcomeSlogan,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: AppColors.white,
-                  height: 1.4,
-
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  BouncingButton(
-                    text: AppLocalizations.of(context)!.signIn,
-                    onPressed: () => Navigator.pushNamed(context, '/login'),
-                    variant: BouncingButtonVariant.solid,
-                  ),
-                  const SizedBox(height: 16),
-                  BouncingButton(
-                    text: AppLocalizations.of(context)!.createAccount,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PresentationScreen(),
+                  const SizedBox(height: 24),
+
+                  // Logo and Platform Name side-by-side
+                  // Logo and Platform Name side-by-side
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onLongPress: () {
+                            // Secret shortcut for developers
+                            Navigator.pushNamed(context, '/gallery');
+                          },
+                          child: const KeroseneLogo(size: 60),
                         ),
-                      );
-                    },
-                    variant: BouncingButtonVariant.outlined,
+                        const SizedBox(width: 16),
+                        Text(
+                          'Kerosene',
+                          style: Theme.of(context)
+                              .textTheme
+                              .displayLarge!
+                              .copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                letterSpacing: 0,
+                                height: 1.0,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
+
+                  const SizedBox(height: 24),
+                  Text(
+                    AppLocalizations.of(context)!.welcomeSlogan,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          color: AppColors.white,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      BouncingButton(
+                        text: AppLocalizations.of(context)!.signIn,
+                        onPressed: () => Navigator.pushNamed(context, '/login'),
+                        variant: BouncingButtonVariant.solid,
+                      ),
+                      const SizedBox(height: 16),
+                      BouncingButton(
+                        text: AppLocalizations.of(context)!.createAccount,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PresentationScreen(),
+                            ),
+                          );
+                        },
+                        variant: BouncingButtonVariant.outlined,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
-        ),
-      ),
         ],
       ),
     );

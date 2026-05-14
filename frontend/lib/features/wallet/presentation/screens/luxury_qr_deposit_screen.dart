@@ -54,13 +54,22 @@ class LuxuryQrDepositScreen extends StatelessWidget {
                   if (amountBtc != null && amountBtc! > 0)
                     _buildAmountHeader().animate().fade().scale(),
                   const SizedBox(height: AppSpacing.lg),
-                  _buildQrCard().animate(delay: 100.ms).fade().scale(curve: Curves.easeOutBack),
+                  _buildQrCard()
+                      .animate(delay: 100.ms)
+                      .fade()
+                      .scale(curve: Curves.easeOutBack),
                   const SizedBox(height: AppSpacing.xl),
                   _buildSubtitles().animate(delay: 200.ms).fade(),
                   const SizedBox(height: AppSpacing.xl),
-                  _buildAddressSection(context).animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
+                  _buildAddressSection(context)
+                      .animate(delay: 300.ms)
+                      .fade()
+                      .slideY(begin: 0.1, end: 0),
                   const SizedBox(height: AppSpacing.lg),
-                  _buildActionRow(context).animate(delay: 400.ms).fade().slideY(begin: 0.1, end: 0),
+                  _buildActionRow(context)
+                      .animate(delay: 400.ms)
+                      .fade()
+                      .slideY(begin: 0.1, end: 0),
                   const SizedBox(height: AppSpacing.xxl),
                   if (amountBtc == null || amountBtc! <= 0)
                     CyberButton(
@@ -79,21 +88,29 @@ class LuxuryQrDepositScreen extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft, color: Theme.of(context).colorScheme.onPrimary, size: 24),
+            icon: Icon(LucideIcons.chevronLeft,
+                color: Theme.of(context).colorScheme.onPrimary, size: 24),
             style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.05),
               padding: const EdgeInsets.all(AppSpacing.sm),
             ),
           ),
           Text(
             'RECEBER BTC',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(letterSpacing: 2),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium!
+                .copyWith(letterSpacing: 2),
           ),
           const SizedBox(width: 48),
         ],
@@ -106,11 +123,15 @@ class LuxuryQrDepositScreen extends StatelessWidget {
       children: [
         Text(
           amountBtc!.toStringAsFixed(8),
-          style: AppTypography.h1.copyWith(fontSize: 48, fontFamily: 'JetBrainsMono'),
+          style: AppTypography.h1
+              .copyWith(fontSize: 48, fontFamily: 'JetBrainsMono'),
         ),
         Text(
           'BTC',
-          style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.3), fontWeight: FontWeight.bold, letterSpacing: 2),
+          style: AppTypography.caption.copyWith(
+              color: Colors.white.withValues(alpha: 0.3),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2),
         ),
       ],
     );
@@ -131,8 +152,10 @@ class LuxuryQrDepositScreen extends StatelessWidget {
             data: _qrData,
             version: QrVersions.auto,
             size: 200,
-            eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
-            dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+            eyeStyle:
+                QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+            dataModuleStyle: QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square, color: Colors.black),
           ),
         ),
       ),
@@ -150,7 +173,8 @@ class LuxuryQrDepositScreen extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Envie apenas Bitcoin (BTC) para este endereço.\nO envio de outros ativos resultará em perda permanente.',
-          style: AppTypography.bodySmall.copyWith(color: Colors.white.withOpacity(0.4), height: 1.4),
+          style: AppTypography.bodySmall.copyWith(
+              color: Colors.white.withValues(alpha: 0.4), height: 1.4),
           textAlign: TextAlign.center,
         ),
       ],
@@ -164,22 +188,30 @@ class LuxuryQrDepositScreen extends StatelessWidget {
         Text(
           'SEU ENDEREÇO BTC',
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            fontSize: 10,
-          ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.3),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                fontSize: 10,
+              ),
         ),
         const SizedBox(height: AppSpacing.sm),
         GlassContainer(
-          padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.xs, top: AppSpacing.xs, bottom: AppSpacing.xs),
+          padding: const EdgeInsets.only(
+              left: AppSpacing.md,
+              right: AppSpacing.xs,
+              top: AppSpacing.xs,
+              bottom: AppSpacing.xs),
           borderRadius: BorderRadius.circular(AppSpacing.md),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   _shortAddress,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontFamily: 'JetBrainsMono', letterSpacing: 0.5),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      fontFamily: 'JetBrainsMono', letterSpacing: 0.5),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -190,10 +222,12 @@ class LuxuryQrDepositScreen extends StatelessWidget {
                   Clipboard.setData(ClipboardData(text: address));
                   SnackbarHelper.showSuccess('Endereço copiado!');
                 },
-                icon: Icon(LucideIcons.copy, color: Theme.of(context).colorScheme.onPrimary, size: 18),
+                icon: Icon(LucideIcons.copy,
+                    color: Theme.of(context).colorScheme.onPrimary, size: 18),
                 style: IconButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.all(10),
                 ),
               ),
@@ -226,7 +260,10 @@ class LuxuryQrDepositScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSecondaryActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _buildSecondaryActionButton(
+      {required IconData icon,
+      required String label,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSpacing.md),
@@ -240,7 +277,8 @@ class LuxuryQrDepositScreen extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               label,
-              style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
+              style:
+                  AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

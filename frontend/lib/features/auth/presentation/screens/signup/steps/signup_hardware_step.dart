@@ -19,7 +19,9 @@ class SignupHardwareStep extends ConsumerWidget {
   });
 
   void _handleRegister(WidgetRef ref) {
-    ref.read(authControllerProvider.notifier).registerPasskeyOnboarding(sessionId);
+    ref
+        .read(authControllerProvider.notifier)
+        .registerPasskeyOnboarding(sessionId);
   }
 
   @override
@@ -56,23 +58,21 @@ class SignupHardwareStep extends ConsumerWidget {
                 Text(
                   'SEGURANÇA BIOMÉTRICA',
                   style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                    fontSize: 24,
-                    letterSpacing: 0.5,
-                  ),
+                        fontSize: 24,
+                        letterSpacing: 0.5,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Para sua proteção, vinculamos sua conta ao hardware deste dispositivo. Isso impede acessos não autorizados mesmo se sua semente for exposta.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
                   textAlign: TextAlign.center,
                 ),
-                
                 const Spacer(),
-                
                 Center(
                   child: Stack(
                     alignment: Alignment.center,
@@ -82,7 +82,10 @@ class SignupHardwareStep extends ConsumerWidget {
                         height: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
                         ),
                       ),
                       Icon(
@@ -93,17 +96,13 @@ class SignupHardwareStep extends ConsumerWidget {
                     ],
                   ),
                 ),
-                
                 const Spacer(),
-                
                 const SizedBox(height: AppSpacing.xxl),
-                
                 BouncingButton(
                   text: 'REGISTRAR DISPOSITIVO',
                   isLoading: isLoading,
                   onPressed: () => _handleRegister(ref),
                 ),
-                
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -117,9 +116,9 @@ class SignupHardwareStep extends ConsumerWidget {
                     Text(
                       'Proteção Nível Bancário ATIVA',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                        letterSpacing: 1,
-                      ),
+                            color: Theme.of(context).colorScheme.secondary,
+                            letterSpacing: 1,
+                          ),
                     ),
                   ],
                 ),

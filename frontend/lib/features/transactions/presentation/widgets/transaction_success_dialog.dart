@@ -83,7 +83,8 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
           width: 280,
           height: 320,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(color: Colors.white10),
           ),
@@ -101,7 +102,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: _color.withOpacity(0.4),
+                        color: _color.withValues(alpha: 0.4),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -113,7 +114,9 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                         )
                       : ScaleTransition(
                           scale: _checkAnimation,
-                          child: Icon(_icon, color: Theme.of(context).colorScheme.onSurface, size: 48),
+                          child: Icon(_icon,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              size: 48),
                         ),
                 ),
               ),
@@ -147,11 +150,14 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
                     Text(
                       widget.counterparty != null
                           ? (_isReceived
-                                ? "From: ${widget.counterparty}"
-                                : "To: ${widget.counterparty}")
+                              ? "From: ${widget.counterparty}"
+                              : "To: ${widget.counterparty}")
                           : "Transaction Completed",
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.5),
                         fontSize: 14,
                         letterSpacing: 0.5,
                       ),

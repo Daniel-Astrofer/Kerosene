@@ -24,16 +24,22 @@ class RecentTransactionsList extends StatelessWidget {
             children: [
               Icon(
                 LucideIcons.ghost,
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.1),
                 size: 48,
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Nenhuma transação encontrada',
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-                  letterSpacing: 1,
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.3),
+                      letterSpacing: 1,
+                    ),
               ),
             ],
           ),
@@ -45,7 +51,8 @@ class RecentTransactionsList extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: transactions.length,
-      separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+      separatorBuilder: (context, index) =>
+          const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
         return TransactionItemWidget(transaction: transactions[index])
             .animate(delay: (index * 50).ms)
@@ -75,7 +82,8 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
         t.type == TransactionType.withdrawal ||
         t.amountBTC < 0;
 
-    final Color statusColor = isSent ? Theme.of(context).colorScheme.error : AppColors.success;
+    final Color statusColor =
+        isSent ? Theme.of(context).colorScheme.error : AppColors.success;
 
     return GestureDetector(
       onTap: () {
@@ -85,13 +93,16 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
         borderRadius: BorderRadius.circular(AppSpacing.lg),
         padding: EdgeInsets.zero,
         border: Border.all(
-          color: _isExpanded ? statusColor.withOpacity(0.3) : Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
+          color: _isExpanded
+              ? statusColor.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
           width: 1,
         ),
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.md),
               child: Row(
                 children: [
                   // Icon Block
@@ -99,13 +110,16 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppSpacing.sm),
-                      border: Border.all(color: statusColor.withOpacity(0.2)),
+                      border:
+                          Border.all(color: statusColor.withValues(alpha: 0.2)),
                     ),
                     child: Center(
                       child: Icon(
-                        isSent ? LucideIcons.arrowUpRight : LucideIcons.arrowDownLeft,
+                        isSent
+                            ? LucideIcons.arrowUpRight
+                            : LucideIcons.arrowDownLeft,
                         color: statusColor,
                         size: 20,
                       ),
@@ -119,22 +133,28 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          t.description ?? "TRANSAÇÃO #${t.id.substring(0, 6).toUpperCase()}",
-                          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
+                          t.description ??
+                              "TRANSAÇÃO #${t.id.substring(0, 6).toUpperCase()}",
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           timeago.format(t.timestamp).toUpperCase(),
-                          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 9,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall!.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimary
+                                        .withValues(alpha: 0.3),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 9,
+                                  ),
                         ),
                       ],
                     ),
@@ -158,11 +178,16 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
               firstChild: const SizedBox(width: double.infinity, height: 0),
               secondChild: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Divider(color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05)),
+                    Divider(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.05)),
                     const SizedBox(height: AppSpacing.sm),
                     _buildDetailRow('TXID', t.id),
                     const SizedBox(height: AppSpacing.xs),
@@ -172,7 +197,9 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                   ],
                 ),
               ),
-              crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: _isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 300),
               sizeCurve: Curves.easeOutCubic,
             ),
@@ -191,20 +218,32 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
       children: [
         Text(
           isSent ? '-' : '+',
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(color: color, fontWeight: FontWeight.bold, fontFamily: 'JetBrainsMono'),
+          style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'JetBrainsMono'),
         ),
         Text(
           parts[0],
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: color, fontWeight: FontWeight.w900, fontFamily: 'JetBrainsMono'),
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'JetBrainsMono'),
         ),
         Text(
           '.${parts[1]}',
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: color.withOpacity(0.6), fontWeight: FontWeight.w500, fontFamily: 'JetBrainsMono'),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+              color: color.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w500,
+              fontFamily: 'JetBrainsMono'),
         ),
         const SizedBox(width: 4),
         Text(
           'BTC',
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: color.withOpacity(0.4), fontWeight: FontWeight.w900, fontSize: 8),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+              color: color.withValues(alpha: 0.4),
+              fontWeight: FontWeight.w900,
+              fontSize: 8),
         ),
       ],
     );
@@ -231,9 +270,14 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isProcessing ? AppColors.warning.withOpacity(0.1) : baseColor.withOpacity(0.1),
+        color: isProcessing
+            ? AppColors.warning.withValues(alpha: 0.1)
+            : baseColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: isProcessing ? AppColors.warning.withOpacity(0.3) : baseColor.withOpacity(0.3)),
+        border: Border.all(
+            color: isProcessing
+                ? AppColors.warning.withValues(alpha: 0.3)
+                : baseColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -242,18 +286,19 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
             const SizedBox(
               width: 6,
               height: 6,
-              child: CircularProgressIndicator(strokeWidth: 1, color: AppColors.warning),
+              child: CircularProgressIndicator(
+                  strokeWidth: 1, color: AppColors.warning),
             ),
             const SizedBox(width: 4),
           ],
           Text(
             text,
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: isProcessing ? AppColors.warning : baseColor,
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-            ),
+                  color: isProcessing ? AppColors.warning : baseColor,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
           ),
         ],
       ),
@@ -269,20 +314,26 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-              fontWeight: FontWeight.bold,
-              fontSize: 9,
-            ),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.2),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 9,
+                ),
           ),
         ),
         Expanded(
           child: SelectableText(
             value,
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.5),
-              fontFamily: 'JetBrainsMono',
-              fontSize: 9,
-            ),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.5),
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 9,
+                ),
           ),
         ),
       ],

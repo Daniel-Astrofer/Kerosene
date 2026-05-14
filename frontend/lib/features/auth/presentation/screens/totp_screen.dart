@@ -78,17 +78,18 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (next is AuthAuthenticated) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home_loading', (route) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/home_loading', (route) => false);
       } else if (next is AuthTotpVerified) {
-         // After TOTP is verified, go to Onboarding Payment if it's signup
-         Navigator.of(context).pushReplacementNamed(
-           '/onboarding_payment',
-           arguments: {
-             'sessionId': next.sessionId,
-             'username': widget.username,
-             'password': widget.passphrase,
-           },
-         );
+        // After TOTP is verified, go to Onboarding Payment if it's signup
+        Navigator.of(context).pushReplacementNamed(
+          '/onboarding_payment',
+          arguments: {
+            'sessionId': next.sessionId,
+            'username': widget.username,
+            'password': widget.passphrase,
+          },
+        );
       } else if (next is AuthError) {
         showCustomErrorDialog(
           context,
@@ -129,36 +130,39 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
 
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: AppSpacing.md),
-                      
+
                       // Heading
                       Text(
-                        widget.isSetup 
-                            ? context.l10n.totpSetupTitle 
+                        widget.isSetup
+                            ? context.l10n.totpSetupTitle
                             : context.l10n.totpTitle,
                         style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                          fontSize: 28,
-                          height: 1.1,
-                          letterSpacing: -0.5,
-                        ),
+                              fontSize: 28,
+                              height: 1.1,
+                              letterSpacing: -0.5,
+                            ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Text(
-                        widget.isSetup 
-                            ? context.l10n.totpSetupSubtitle 
+                        widget.isSetup
+                            ? context.l10n.totpSetupSubtitle
                             : context.l10n.totpSubtitle,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.5,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              height: 1.5,
+                            ),
                         textAlign: TextAlign.center,
                       ),
-                      
+
                       const SizedBox(height: AppSpacing.xxl),
 
                       if (widget.isSetup) ...[
@@ -168,10 +172,14 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.onPrimary,
-                              borderRadius: BorderRadius.circular(AppSpacing.md),
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.md),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.15),
                                   blurRadius: 30,
                                 ),
                               ],
@@ -185,7 +193,8 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                                 : Icon(
                                     LucideIcons.qrCode,
                                     size: 120,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
                                   ),
                           ),
                         ),
@@ -197,11 +206,16 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                           children: [
                             Text(
                               'TOTP SECRET',
-                              style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                letterSpacing: 2.0,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall!
+                                  .copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    letterSpacing: 2.0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Container(
@@ -210,22 +224,35 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                                 vertical: AppSpacing.md,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(AppSpacing.md),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.05),
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.md),
                                 border: Border.all(
-                                  color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary
+                                      .withValues(alpha: 0.1),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      widget.totpSecret ?? '•••• •••• •••• ••••',
-                                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                        fontFamily: 'monospace',
-                                        letterSpacing: 1.5,
-                                      ),
+                                      widget.totpSecret ??
+                                          '•••• •••• •••• ••••',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary,
+                                            fontFamily: 'monospace',
+                                            letterSpacing: 1.5,
+                                          ),
                                     ),
                                   ),
                                   GestureDetector(
@@ -249,7 +276,10 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                           child: Icon(
                             LucideIcons.shieldCheck,
                             size: 80,
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xxl + AppSpacing.md),
@@ -259,10 +289,12 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                       Text(
                         context.l10n.totpEnter6Digits.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          letterSpacing: 2.0,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              letterSpacing: 2.0,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       TotpInputContainer(
@@ -276,12 +308,12 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
 
                       // Submit Button (Manual fallback)
                       BouncingButton(
-                        text: widget.isSetup 
-                            ? context.l10n.totpVerifyButton 
+                        text: widget.isSetup
+                            ? context.l10n.totpVerifyButton
                             : context.l10n.totpVerifyContinue,
                         isLoading: isLoading,
-                        onPressed: _currentCode.length == 6 
-                            ? () => _handleVerify(_currentCode) 
+                        onPressed: _currentCode.length == 6
+                            ? () => _handleVerify(_currentCode)
                             : null,
                       ),
                       const SizedBox(height: AppSpacing.xxl),

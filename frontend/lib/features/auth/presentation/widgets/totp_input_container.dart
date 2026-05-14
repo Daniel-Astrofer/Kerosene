@@ -73,7 +73,7 @@ class _TotpInputContainerState extends State<TotpInputContainer>
             );
           },
         ),
-        
+
         // Hidden TextField over the grid
         Positioned.fill(
           child: Theme(
@@ -96,10 +96,11 @@ class _TotpInputContainerState extends State<TotpInputContainer>
               autocorrect: false,
               cursorWidth: 0,
               cursorHeight: 0,
-              contextMenuBuilder: (context, editableTextState) => const SizedBox.shrink(),
+              contextMenuBuilder: (context, editableTextState) =>
+                  const SizedBox.shrink(),
               style: const TextStyle(
-                color: Colors.transparent, 
-                fontSize: 0, 
+                color: Colors.transparent,
+                fontSize: 0,
                 height: 0,
                 decorationColor: Colors.transparent,
                 backgroundColor: Colors.transparent,
@@ -123,7 +124,6 @@ class _TotpInputContainerState extends State<TotpInputContainer>
   }
 }
 
-
 class _TotpGridPainter extends CustomPainter {
   final String text;
   final bool isFocused;
@@ -141,17 +141,18 @@ class _TotpGridPainter extends CustomPainter {
     const double spacing = 12.0;
 
     // Calculate dynamic cell width to fit available width perfectly
-    final double cellWidth = (size.width - (spacing * (numCells - 1))) / numCells;
+    final double cellWidth =
+        (size.width - (spacing * (numCells - 1))) / numCells;
     final double cellHeight = size.height;
 
     final Paint bgPaint = Paint()..color = AppColors.surfaceLight;
     final Paint borderPaint = Paint()
-      ..color = Colors.white.withOpacity(0.10)
+      ..color = Colors.white.withValues(alpha: 0.10)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
     final Paint focusedBorderPaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.5 + (pulseValue * 0.5))
+      ..color = AppColors.primary.withValues(alpha: 0.5 + (pulseValue * 0.5))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
@@ -175,10 +176,10 @@ class _TotpGridPainter extends CustomPainter {
       final bool isCurrentFocus = isFocused && text.length == i;
       if (isCurrentFocus) {
         canvas.drawRRect(roundedRect, focusedBorderPaint);
-        
+
         // Glow effect
         final Paint glowPaint = Paint()
-          ..color = AppColors.primary.withOpacity(0.15 * pulseValue)
+          ..color = AppColors.primary.withValues(alpha: 0.15 * pulseValue)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
         canvas.drawRRect(roundedRect, glowPaint);
       } else {
@@ -195,12 +196,12 @@ class _TotpGridPainter extends CustomPainter {
           ),
         );
         textPainter.layout();
-        
+
         final Offset textOffset = Offset(
           left + (cellWidth - textPainter.width) / 2,
           (cellHeight - textPainter.height) / 2,
         );
-        
+
         textPainter.paint(canvas, textOffset);
       }
     }

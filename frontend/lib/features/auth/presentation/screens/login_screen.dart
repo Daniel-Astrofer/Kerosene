@@ -64,7 +64,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
-      if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      if (_usernameController.text.isEmpty ||
+          _passwordController.text.isEmpty) {
         return;
       }
       ref.read(authControllerProvider.notifier).login(
@@ -144,172 +145,190 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         context.l10n.secureAccess,
-                      style: Theme.of(context).textTheme.displayLarge!,
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
+                        style: Theme.of(context).textTheme.displayLarge!,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
 
-                    // Logo placeholder
-                    Container(
-                      width: 80,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.white10,
-                        borderRadius: BorderRadius.circular(AppSpacing.sm),
+                      // Logo placeholder
+                      Container(
+                        width: 80,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.white10,
+                          borderRadius: BorderRadius.circular(AppSpacing.sm),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(LucideIcons.wallet,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            size: AppSpacing.md),
                       ),
-                      alignment: Alignment.center,
-                      child: Icon(LucideIcons.wallet, color: Theme.of(context).colorScheme.onPrimary, size: AppSpacing.md),
-                    ),
-                    SizedBox(height: AppSpacing.xl),
+                      SizedBox(height: AppSpacing.xl),
 
-                    CyberTextField(
-                      controller: _usernameController,
-                      label: context.l10n.username.toUpperCase(),
-                      hint: 'astroferas',
-                      prefixIcon: Icon(
-                        LucideIcons.user,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      validator: (value) {
-                         if (value == null || value.isEmpty) {
-                           return context.l10n.required;
-                         }
-                         return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    CyberTextField(
-                      controller: _passwordController,
-                      label: context.l10n.passphrase.toUpperCase(),
-                      hint: '••••••••',
-                      prefixIcon: Icon(
-                        LucideIcons.lock,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      isPassword: _obscurePassword,
-                      validator: (value) {
-                         if (value == null || value.isEmpty) {
-                           return context.l10n.required;
-                         }
-                         return null;
-                      },
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? LucideIcons.eye
-                              : LucideIcons.eyeOff,
-                          color: AppColors.white30,
+                      CyberTextField(
+                        controller: _usernameController,
+                        label: context.l10n.username.toUpperCase(),
+                        hint: 'astroferas',
+                        prefixIcon: Icon(
+                          LucideIcons.user,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 20,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return context.l10n.required;
+                          }
+                          return null;
                         },
                       ),
-                    ),
-
-                    SizedBox(height: AppSpacing.xl + AppSpacing.xs),
-
-                    // Remember Me Toggle
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
+                      const SizedBox(height: AppSpacing.lg),
+                      CyberTextField(
+                        controller: _passwordController,
+                        label: context.l10n.passphrase.toUpperCase(),
+                        hint: '••••••••',
+                        prefixIcon: Icon(
+                          LucideIcons.lock,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        isPassword: _obscurePassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return context.l10n.required;
+                          }
+                          return null;
+                        },
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? LucideIcons.eye
+                                : LucideIcons.eyeOff,
+                            color: AppColors.white30,
+                            size: 20,
+                          ),
+                          onPressed: () {
                             setState(() {
-                              _rememberMe = !_rememberMe;
+                              _obscurePassword = !_obscurePassword;
                             });
                           },
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
+                        ),
+                      ),
+
+                      SizedBox(height: AppSpacing.xl + AppSpacing.xs),
+
+                      // Remember Me Toggle
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _rememberMe = !_rememberMe;
+                              });
+                            },
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: _rememberMe
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : AppColors.white30,
+                                      width: 1.5,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(AppSpacing.xs),
                                     color: _rememberMe
                                         ? Theme.of(context).colorScheme.primary
-                                        : AppColors.white30,
-                                    width: 1.5,
+                                        : Colors.transparent,
                                   ),
-                                  borderRadius: BorderRadius.circular(AppSpacing.xs),
-                                  color: _rememberMe
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.transparent,
+                                  child: _rememberMe
+                                      ? Icon(
+                                          LucideIcons.check,
+                                          size: 14,
+                                          color: Theme.of(context)
+                                              .scaffoldBackgroundColor,
+                                        )
+                                      : null,
                                 ),
-                                child: _rememberMe
-                                    ? Icon(
-                                        LucideIcons.check,
-                                        size: 14,
-                                        color: Theme.of(context).scaffoldBackgroundColor,
-                                      )
-                                    : null,
-                              ),
-                              Text(
-                                context.l10n.rememberMe,
-                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                                  color: AppColors.white50,
+                                Text(
+                                  context.l10n.rememberMe,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall!
+                                      .copyWith(
+                                        color: AppColors.white50,
+                                      ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
-
-                    // Continue Button
-                    BouncingButton(
-                      text: context.l10n.continueButton,
-                      isLoading: isLoading,
-                      onPressed: _handleLogin,
-                    ),
-
-                    SizedBox(height: AppSpacing.xxl),
-
-                    // Forgot Password & SignUp Link
-                    TextButton(
-                      onPressed: () {
-                        // Action for forgot password
-                      },
-                      child: Text(
-                        context.l10n.forgotPassword,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: AppSpacing.sm),
-                    Center(
-                      child: GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/signup'),
-                        child: Text.rich(
-                          TextSpan(
-                            text: '${context.l10n.newHere} ',
-                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: AppColors.textMuted,
+                              ],
                             ),
-                            children: [
-                              TextSpan(
-                                text: context.l10n.signUpNow,
-                                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                  decoration: TextDecoration.underline,
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
+
+                      // Continue Button
+                      BouncingButton(
+                        text: context.l10n.continueButton,
+                        isLoading: isLoading,
+                        onPressed: _handleLogin,
+                      ),
+
+                      SizedBox(height: AppSpacing.xxl),
+
+                      // Forgot Password & SignUp Link
+                      TextButton(
+                        onPressed: () {
+                          // Action for forgot password
+                        },
+                        child: Text(
+                          context.l10n.forgotPassword,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                        ),
+                      ),
+                      SizedBox(height: AppSpacing.sm),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/signup'),
+                          child: Text.rich(
+                            TextSpan(
+                              text: '${context.l10n.newHere} ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                              children: [
+                                TextSpan(
+                                  text: context.l10n.signUpNow,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium!
+                                      .copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                      ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: AppSpacing.xxl),
-                  ],
+                      SizedBox(height: AppSpacing.xxl),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ),
           ),

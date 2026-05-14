@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:teste/features/auth/presentation/state/auth_state.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/domain/entities/user.dart';
 import 'package:teste/core/services/price_websocket_service.dart';
@@ -17,16 +16,25 @@ class MockAuthController extends AuthController {
   }
 
   @override
-  Future<void> login({required String username, required String password}) async {}
-  
+  Future<void> login(
+      {required String username, required String password}) async {}
+
   @override
   Future<void> loginWithPasskey(String username) async {}
-  
+
   @override
-  Future<void> verifyTotp({required String username, required String passphrase, required String totpSecret, required String totpCode}) async {}
-  
+  Future<void> verifyTotp(
+      {required String username,
+      required String passphrase,
+      required String totpSecret,
+      required String totpCode}) async {}
+
   @override
-  Future<void> verifyLoginTotp({required String username, required String passphrase, required String totpCode, String? preAuthToken}) async {}
+  Future<void> verifyLoginTotp(
+      {required String username,
+      required String passphrase,
+      required String totpCode,
+      String? preAuthToken}) async {}
 
   @override
   void clearError() {}
@@ -35,7 +43,7 @@ class MockAuthController extends AuthController {
 /// Mock Price WebSocket Service for Storybook.
 class MockPriceWebSocketService implements PriceWebSocketService {
   final _priceController = StreamController<double>.broadcast();
-  
+
   @override
   Stream<double> get priceStream => _priceController.stream;
 

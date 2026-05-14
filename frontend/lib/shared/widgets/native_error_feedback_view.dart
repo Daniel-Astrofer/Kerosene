@@ -51,71 +51,71 @@ class _NativeErrorFeedbackViewState extends State<NativeErrorFeedbackView>
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
-          children: [
-            const Spacer(flex: 3),
-            // Breathing Animated Geometric Art
-            Center(
-              child: AnimatedBuilder(
-                animation: _breathingController,
-                builder: (context, child) {
-                  final scale = 1.0 + (_breathingController.value * 0.05);
-                  final opacity = 0.7 + (_breathingController.value * 0.3);
-                  return Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: CustomPaint(
-                        size: const Size(200, 200),
-                        painter: _ErrorGeometricPainter(
-                          progress: _breathingController.value,
+            children: [
+              const Spacer(flex: 3),
+              // Breathing Animated Geometric Art
+              Center(
+                child: AnimatedBuilder(
+                  animation: _breathingController,
+                  builder: (context, child) {
+                    final scale = 1.0 + (_breathingController.value * 0.05);
+                    final opacity = 0.7 + (_breathingController.value * 0.3);
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(
+                        opacity: opacity,
+                        child: CustomPaint(
+                          size: const Size(200, 200),
+                          painter: _ErrorGeometricPainter(
+                            progress: _breathingController.value,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text(
-              widget.title,
-              style: Theme.of(context).textTheme.titleLarge!,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Text(
-                widget.message,
-                style: Theme.of(context).textTheme.bodyMedium!,
+              const SizedBox(height: AppSpacing.xxl),
+              Text(
+                widget.title,
+                style: Theme.of(context).textTheme.titleLarge!,
                 textAlign: TextAlign.center,
               ),
-            ),
-            const Spacer(flex: 2),
-            BouncingButtonWrapper(
-              onTap: widget.onRetry,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text(
+                  widget.message,
+                  style: Theme.of(context).textTheme.bodyMedium!,
+                  textAlign: TextAlign.center,
                 ),
-                child: Center(
-                  child: Text(
-                    'TENTAR NOVAMENTE',
-                    style: AppTypography.buttonText.copyWith(
-                      color: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              const Spacer(flex: 2),
+              BouncingButtonWrapper(
+                onTap: widget.onRetry,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(AppSpacing.md),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'TENTAR NOVAMENTE',
+                      style: AppTypography.buttonText.copyWith(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
         ),
       ),
-    ),
-   );
+    );
   }
 }
 
@@ -127,7 +127,7 @@ class _ErrorGeometricPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.error.withOpacity(0.8)
+      ..color = AppColors.error.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
@@ -148,7 +148,7 @@ class _ErrorGeometricPainter extends CustomPainter {
 
     // Inner decorative lines
     final innerPaint = Paint()
-      ..color = AppColors.error.withOpacity(0.4)
+      ..color = AppColors.error.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

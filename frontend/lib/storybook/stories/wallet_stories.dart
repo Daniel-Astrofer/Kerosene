@@ -41,7 +41,8 @@ List<Story> walletStories() {
     // ─── Home & Dashboard ───────────────────────────────
     Story(
       name: 'Wallet/Home Dashboard',
-      description: 'Main dashboard with balance, wallets, and recent transactions.',
+      description:
+          'Main dashboard with balance, wallets, and recent transactions.',
       builder: (context) => const HomeScreen(),
     ),
     Story(
@@ -58,7 +59,8 @@ List<Story> walletStories() {
     ),
     Story(
       name: 'Wallet/Details',
-      description: 'Individual wallet detail view with balance and transactions.',
+      description:
+          'Individual wallet detail view with balance and transactions.',
       builder: (context) => WalletDetailsScreen(wallet: _mockWallet),
     ),
     Story(

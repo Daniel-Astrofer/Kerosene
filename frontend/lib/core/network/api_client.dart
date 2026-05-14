@@ -264,8 +264,7 @@ class ApiClient {
           final statusCode = error.response?.statusCode;
           final errorStr = error.error?.toString();
           return AppException(
-            message:
-                error.message ??
+            message: error.message ??
                 errorStr ??
                 'Erro desconhecido (HTTP $statusCode)',
             statusCode: statusCode,
@@ -308,25 +307,28 @@ extension ApiClientProxy on ApiClient {
     if (kIsWeb) return;
 
     final torService = ref.read(torServiceProvider);
-    final isStaging = _dio.options.baseUrl.contains('127.0.0.1') || _dio.options.baseUrl.contains('localhost');
-    
+    final isStaging = _dio.options.baseUrl.contains('127.0.0.1') ||
+        _dio.options.baseUrl.contains('localhost');
+
     // Only apply proxy if the base URL is an .onion address
     if (_dio.options.baseUrl.contains('.onion') && !isStaging) {
       final adapter = _dio.httpClientAdapter as IOHttpClientAdapter;
-      adapter.onHttpClientCreate = (client) {
+      adapter.createHttpClient = () {
+        final client = HttpClient();
         final settings = [
           ProxySettings(InternetAddress.loopbackIPv4, torService.socksPort),
         ];
         SocksTCPClient.assignToHttpClient(client, settings);
-        
-        // Tor often uses self-signed or specific certs in some configs, 
+
+        // Tor often uses self-signed or specific certs in some configs,
         // but for .onion it's usually over HTTP anyway (Tor provides the security).
         client.badCertificateCallback = (cert, host, port) => true;
-        
+
         return client;
       };
-      
-      debugPrint('🧅 ApiClient: Configured SOCKS5 proxy for .onion on port ${torService.socksPort}');
+
+      debugPrint(
+          '🧅 ApiClient: Configured SOCKS5 proxy for .onion on port ${torService.socksPort}');
     }
   }
 }

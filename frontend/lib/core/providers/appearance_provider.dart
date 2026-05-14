@@ -97,8 +97,10 @@ class AppearanceNotifier extends Notifier<AppearanceState> {
     final fontIndex = prefs.getInt(_fontKey) ?? AppFontScale.normal.index;
 
     state = AppearanceState(
-      themeVariant: AppThemeVariant.values[themeIndex.clamp(0, AppThemeVariant.values.length - 1)],
-      fontScale: AppFontScale.values[fontIndex.clamp(0, AppFontScale.values.length - 1)],
+      themeVariant: AppThemeVariant
+          .values[themeIndex.clamp(0, AppThemeVariant.values.length - 1)],
+      fontScale: AppFontScale
+          .values[fontIndex.clamp(0, AppFontScale.values.length - 1)],
     );
   }
 
@@ -116,4 +118,5 @@ class AppearanceNotifier extends Notifier<AppearanceState> {
 }
 
 final appearanceProvider =
-    NotifierProvider<AppearanceNotifier, AppearanceState>(AppearanceNotifier.new);
+    NotifierProvider<AppearanceNotifier, AppearanceState>(
+        AppearanceNotifier.new);

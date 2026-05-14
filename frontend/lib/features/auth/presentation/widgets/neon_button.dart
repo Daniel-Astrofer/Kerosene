@@ -25,7 +25,7 @@ class NeonButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.sm + AppSpacing.xs),
         boxShadow: [
           BoxShadow(
-            color: baseColor.withOpacity(0.4),
+            color: baseColor.withValues(alpha: 0.4),
             blurRadius: 20,
             spreadRadius: 2,
             offset: const Offset(0, 0),
@@ -41,10 +41,10 @@ class NeonButton extends StatelessWidget {
             child: Text(
               text,
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-              ),
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
             ),
           ),
         ),

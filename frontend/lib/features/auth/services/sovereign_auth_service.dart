@@ -14,8 +14,8 @@ class SovereignAuthService {
   SovereignAuthService({
     FlutterSecureStorage? secureStorage,
     LocalAuthentication? localAuth,
-  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-       _localAuth = localAuth ?? LocalAuthentication();
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _localAuth = localAuth ?? LocalAuthentication();
 
   /// Gera um novo par de chaves Ed25519 e salva o seed no SecureStorage.
   /// Retorna a chave pública em Base64.
@@ -35,7 +35,8 @@ class SovereignAuthService {
     await _secureStorage.write(
       key: _privateKeyKey,
       value: base64Encode(seed),
-      iOptions: const IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+      iOptions:
+          const IOSOptions(accessibility: KeychainAccessibility.first_unlock),
       aOptions: const AndroidOptions(),
     );
 
@@ -56,7 +57,8 @@ class SovereignAuthService {
     // 2. Recuperar Seed
     final seedBase64 = await _secureStorage.read(key: _privateKeyKey);
     if (seedBase64 == null) {
-      throw Exception('Chave privada não encontrada. É necessário registrar o Hardware Auth primeiro.');
+      throw Exception(
+          'Chave privada não encontrada. É necessário registrar o Hardware Auth primeiro.');
     }
 
     final seed = base64Decode(seedBase64);
@@ -86,10 +88,10 @@ class SovereignAuthService {
       final isSupported = await _localAuth.isDeviceSupported();
 
       if (!canCheck || !isSupported) {
-        // Se o dispositivo não suporta biometria, podemos decidir se permitimos 
-        // fallback para PIN do SO ou se bloqueamos. 
+        // Se o dispositivo não suporta biometria, podemos decidir se permitimos
+        // fallback para PIN do SO ou se bloqueamos.
         // Para Sovereign Auth, o ideal é hardware-backed.
-        return true; // Fallback se não houver biometria configurada? 
+        return true; // Fallback se não houver biometria configurada?
       }
 
       return await _localAuth.authenticate(

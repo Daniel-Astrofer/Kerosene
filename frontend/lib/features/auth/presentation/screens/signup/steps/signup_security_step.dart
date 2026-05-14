@@ -233,10 +233,10 @@ class _SecurityDetail extends StatelessWidget {
                                 height: 256,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: titleColor.withOpacity(0.1),
+                                  color: titleColor.withValues(alpha: 0.1),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: titleColor.withOpacity(0.1),
+                                      color: titleColor.withValues(alpha: 0.1),
                                       blurRadius: 40,
                                       spreadRadius: 20,
                                     ),
@@ -265,8 +265,9 @@ class _SecurityDetail extends StatelessWidget {
                                           shape: BoxShape.circle,
                                           gradient: RadialGradient(
                                             colors: [
-                                              titleColor.withOpacity(0.15),
-                                              titleColor.withOpacity(0.0),
+                                              titleColor.withValues(
+                                                  alpha: 0.15),
+                                              titleColor.withValues(alpha: 0.0),
                                             ],
                                           ),
                                         ),
@@ -277,8 +278,8 @@ class _SecurityDetail extends StatelessWidget {
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                              color:
-                                                  titleColor.withOpacity(0.2)),
+                                              color: titleColor.withValues(
+                                                  alpha: 0.2)),
                                         ),
                                         child: Center(
                                           child: icon2 != null

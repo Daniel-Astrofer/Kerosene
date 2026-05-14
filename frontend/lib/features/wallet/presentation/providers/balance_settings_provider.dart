@@ -33,7 +33,7 @@ class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
 
   @override
   BalanceSettings build() {
-    // We'll initialize from prefs asynchronously if possible, 
+    // We'll initialize from prefs asynchronously if possible,
     // but for now let's use a simpler approach or just return default and load later.
     _loadPrefs();
     return const BalanceSettings();
@@ -60,13 +60,20 @@ class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
     // Cycle between 8, 4, 2, 0
     final current = state.decimalPlaces;
     int next;
-    if (current == 8) next = 4;
-    else if (current == 4) next = 2;
-    else if (current == 2) next = 0;
-    else next = 8;
-    
+    if (current == 8) {
+      next = 4;
+    } else if (current == 4) {
+      next = 2;
+    } else if (current == 2) {
+      next = 0;
+    } else {
+      next = 8;
+    }
+
     setDecimalPlaces(next);
   }
 }
 
-final balanceSettingsProvider = NotifierProvider<BalanceSettingsNotifier, BalanceSettings>(BalanceSettingsNotifier.new);
+final balanceSettingsProvider =
+    NotifierProvider<BalanceSettingsNotifier, BalanceSettings>(
+        BalanceSettingsNotifier.new);
