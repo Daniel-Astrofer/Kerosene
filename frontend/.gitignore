@@ -12,6 +12,31 @@
 .swiftpm/
 migrate_working_dir/
 
+# Local AI/tooling mounts and notes
+.agents/
+.codex/
+.claude/
+CLAUDE.md
+
+# Local command output, diagnostics, and screenshots
+/Run
+/Process
+/Get
+/=1.45.0
+*_log.txt
+*_out.txt
+*_output.txt
+analyze_output_v*.txt
+flutter_outdated.txt
+flutter_pub_up.txt
+flutter_up.txt
+pub_get_*.txt
+diff_pubspec.txt
+dirs.txt
+test_echo.txt
+screenshots/
+*screenshot*
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -32,6 +57,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+android/local.properties
 
 # Symbolication related
 app.*.symbols

@@ -80,7 +80,6 @@ flutter:
 
   assets:
     - 'assets/presentationimage.png'
-    - 'assets/images/'
     - 'assets/lottie/'
     - 'assets/sounds/'
     - 'assets/logo/'

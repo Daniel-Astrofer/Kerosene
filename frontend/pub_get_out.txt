@@ -1,5 +1,0 @@
-Resolving dependencies...
-Because no versions of bip39 match >1.0.6 <2.0.0 and bip39 1.0.6 depends on pointycastle ^3.0.0-nullsafety.2, bip39 ^1.0.6 requires pointycastle ^3.0.0-nullsafety.2.
-And because blockchain_utils >=6.0.0 depends on pointycastle ^4.0.0, bip39 ^1.0.6 is incompatible with blockchain_utils >=6.0.0.
-So, because teste depends on both blockchain_utils ^6.0.0 and bip39 ^1.0.6, version solving failed.
-Failed to update packages.
