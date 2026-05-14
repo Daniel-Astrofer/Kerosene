@@ -113,6 +113,8 @@
 # Build output, caches and IDE state.
 **/.gradle/
 **/.gradle/**
+**/.kotlin/
+**/.kotlin/**
 **/.dart_tool/
 **/.dart_tool/**
 **/.pub-cache/
