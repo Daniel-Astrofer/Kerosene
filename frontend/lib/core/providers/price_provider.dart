@@ -22,6 +22,18 @@ final btcPriceProvider = StreamProvider<double>((ref) {
   return service.priceStream;
 });
 
+final btcTickerProvider = StreamProvider<PriceTickerSnapshot>((ref) {
+  final service = ref.watch(priceWebSocketServiceProvider);
+  return service.tickerStream;
+});
+
+final btcDailyChangePercentProvider = Provider<double?>((ref) {
+  final tickerAsync = ref.watch(btcTickerProvider);
+  return tickerAsync.whenOrNull(
+    data: (ticker) => ticker.dailyChangePercent,
+  );
+});
+
 /// Provider for latest BTC price (synchronous access).
 /// Falls back to backend HTTP price when the external WebSocket feed is unavailable.
 final latestBtcPriceProvider = Provider<double?>((ref) {

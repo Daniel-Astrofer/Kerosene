@@ -31,6 +31,8 @@ abstract class LedgerRepository {
     String? totpCode,
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
+    String? idempotencyKey,
+    int? requestTimestamp,
   });
 
   Future<Either<Failure, String>> deleteLedger(String walletName);

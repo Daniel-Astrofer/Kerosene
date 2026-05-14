@@ -71,9 +71,10 @@ class AppConfig {
     'PASSKEY_ORIGIN',
     defaultValue: 'android:apk-key-hash:kerosene',
   );
+  static const String defaultPasskeyRpId = 'kerosene-device';
   static const String passkeyRpId = String.fromEnvironment(
     'PASSKEY_RP_ID',
-    defaultValue: '',
+    defaultValue: defaultPasskeyRpId,
   );
 
   static String get effectivePasskeyRpId {
@@ -81,22 +82,7 @@ class AppConfig {
     if (explicit.isNotEmpty) {
       return explicit;
     }
-
-    try {
-      final onionHost = Uri.parse(onionBaseUrl).host.trim();
-      if (onionHost.isNotEmpty) {
-        return onionHost;
-      }
-    } catch (_) {}
-
-    try {
-      final apiHost = Uri.parse(apiUrl).host.trim();
-      if (apiHost.isNotEmpty) {
-        return apiHost;
-      }
-    } catch (_) {}
-
-    return 'localhost';
+    return defaultPasskeyRpId;
   }
 
   // 1.3 Profile

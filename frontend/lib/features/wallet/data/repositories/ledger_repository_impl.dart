@@ -39,7 +39,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, dynamic>>> findLedger(String walletName) async {
+  Future<Either<Failure, Map<String, dynamic>>> findLedger(
+      String walletName) async {
     try {
       final result = await remoteDataSource.findLedger(walletName: walletName);
       return Right(result);
@@ -73,7 +74,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   }
 
   @override
-  Future<Either<Failure, List<Transaction>>> getHistory({int page = 0, int size = 50}) async {
+  Future<Either<Failure, List<Transaction>>> getHistory(
+      {int page = 0, int size = 50}) async {
     final currentUserId = await _currentUserId();
     final storageKey = _historyStorageKey(currentUserId);
     try {
@@ -119,7 +121,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
       for (final transaction in local) transaction.id: transaction,
       for (final transaction in remoteTransactions) transaction.id: transaction,
     };
-    final merged = byId.values.toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final merged = byId.values.toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     final capped = merged.take(500).toList();
     await localHistoryStorage.write(
       key: storageKey,
@@ -175,11 +178,13 @@ class LedgerRepositoryImpl implements LedgerRepository {
     String? context,
   }) async {
     try {
+      final idempotencyKey = const Uuid().v4();
       final result = await remoteDataSource.sendInternalTransaction(
         senderWalletName: senderWalletName,
         receiverWalletName: receiverWalletName,
         amount: amount,
-        idempotencyKey: const Uuid().v4(),
+        idempotencyKey: idempotencyKey,
+        requestTimestamp: DateTime.now().millisecondsSinceEpoch,
       );
       return Right(result);
     } on ServerException catch (e) {
@@ -218,7 +223,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, dynamic>>> getPaymentRequest(String linkId) async {
+  Future<Either<Failure, Map<String, dynamic>>> getPaymentRequest(
+      String linkId) async {
     try {
       final result = await remoteDataSource.getPaymentRequest(linkId);
       return Right(result);
@@ -241,6 +247,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
     String? totpCode,
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
+    String? idempotencyKey,
+    int? requestTimestamp,
   }) async {
     try {
       final result = await remoteDataSource.payPaymentRequest(
@@ -249,6 +257,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
         totpCode: totpCode,
         confirmationPassphrase: confirmationPassphrase,
         passkeyAssertionJson: passkeyAssertionJson,
+        idempotencyKey: idempotencyKey,
+        requestTimestamp: requestTimestamp,
       );
       return Right(result);
     } on AppException catch (e) {
@@ -266,7 +276,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
   @override
   Future<Either<Failure, String>> deleteLedger(String walletName) async {
     try {
-      final result = await remoteDataSource.deleteLedger(walletName: walletName);
+      final result =
+          await remoteDataSource.deleteLedger(walletName: walletName);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(

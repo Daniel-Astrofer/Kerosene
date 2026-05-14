@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
-import 'package:teste/core/presentation/widgets/recent_transaction_destinations_section.dart';
 import 'package:teste/core/providers/recent_transaction_destinations_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/services/audio_service.dart';
+import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/features/security/domain/entities/account_security_profile.dart';
 import 'package:teste/features/security/presentation/providers/security_provider.dart';
-import 'package:teste/features/transactions/presentation/screens/payment_confirmation_screen.dart';
 
 import '../../../../core/utils/qr_payment_parser.dart';
 import '../../../../core/widgets/transaction_auth_gate.dart';
@@ -26,7 +23,6 @@ import '../providers/wallet_provider.dart';
 import '../state/wallet_state.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../domain/entities/wallet.dart';
-import '../../presentation/widgets/receive_flow_ui.dart';
 
 class SendMoneyScreen extends ConsumerStatefulWidget {
   final String? walletId;
@@ -45,17 +41,27 @@ class SendMoneyScreen extends ConsumerStatefulWidget {
 }
 
 class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
+  static const Color _internalBlack = Color(0xFF000000);
+  static const Color _internalSurface = Color(0xFF111111);
+  static const Color _internalSurfaceHigh = Color(0xFF1F1F1F);
+  static const Color _internalBorder = Color(0xFF2C2C2E);
+  static const Color _internalText = Color(0xFFFFFFFF);
+  static const Color _internalMutedText = Color(0xFFA3A3A3);
+  static const Color _internalOutline = Color(0xFF666666);
+  static const Color _internalValidBlue = Color(0xFF1978E5);
+  static const Color _internalSuccessGreen = Color(0xFF4ADE80);
+
   String? _pendingPaymentLinkId;
   String _lockedRecipientAddress = '';
   double _lockedAmountBtc = 0.0;
   String? _lockedRecipientLabel;
-  String? _lockedDestinationHash;
   bool _autoConfirmationScheduled = false;
 
   final _receiverController = TextEditingController();
 
   String _amount = '0';
   late Currency _selectedCurrency;
+  bool _amountKeyboardExpanded = false;
 
   int _currentStep = 0;
   final _pageController = PageController();
@@ -63,7 +69,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedCurrency = ref.read(currencyProvider);
+    _selectedCurrency = Currency.btc;
     if (widget.initialAmountBtc != null) {
       _lockedAmountBtc = widget.initialAmountBtc!;
     }
@@ -134,319 +140,167 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final hasLockedDestination =
         _pendingPaymentLinkId != null || _lockedRecipientAddress.isNotEmpty;
 
-    return ReceiveFlowScaffold(
-      title: context.l10n.send,
-      subtitle: hasLockedDestination
-          ? 'Destino e valor bloqueados. Revise o envio.'
-          : 'Informe o endereço ou usuário, escolha o valor e revise.',
-      scrollable: false,
-      bodyPadding: EdgeInsets.zero,
-      onBack: () => _handleBack(hasLockedDestination),
-      chromeRadius: 0,
-      child: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          if (!hasLockedDestination) _buildDestinationStep(context),
-          _buildAmountStep(
-            context,
-            btcUsd: btcUsd,
-            btcEur: btcEur,
-            btcBrl: btcBrl,
-            amountBtc: amountBtc,
-            isLoading: isLoading,
-          ),
-        ],
+    return Scaffold(
+      backgroundColor: _internalBlack,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            if (!hasLockedDestination) _buildDestinationStep(context),
+            _buildAmountStep(
+              context,
+              btcUsd: btcUsd,
+              btcEur: btcEur,
+              btcBrl: btcBrl,
+              amountBtc: amountBtc,
+              isLoading: isLoading,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   void _handleBack(bool hasLockedDestination) {
-    if (_currentStep == 1 && !hasLockedDestination) {
+    if (_currentStep > 0 && !hasLockedDestination) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
       );
-      setState(() => _currentStep = 0);
+      setState(() => _currentStep -= 1);
       return;
     }
 
     Navigator.pop(context);
   }
 
-  Widget _buildManualFlowHero(BuildContext context) {
-    return ReceiveFlowPanel(
-      radius: 0,
-      backgroundColor: receiveFlowPanelAltColor,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ReceiveFlowSectionLabel('ENVIO'),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Digite o endereço ou nome de usuário.',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: receiveFlowTextColor,
+  Widget _buildInternalTopBar(BuildContext context) {
+    return SizedBox(
+      height: 64,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                final hasLockedDestination = _pendingPaymentLinkId != null ||
+                    _lockedRecipientAddress.isNotEmpty;
+                _handleBack(hasLockedDestination);
+              },
+              icon: const Icon(LucideIcons.arrowLeft, size: 22),
+              tooltip: context.l10n.authBackAction,
+              style: IconButton.styleFrom(
+                foregroundColor: _internalText,
+                minimumSize: const Size.square(40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                'Enviar',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.ebGaramond(
+                  color: _internalText,
+                  fontSize: 24,
                   fontWeight: FontWeight.w500,
                   height: 1.2,
+                  letterSpacing: 0,
                 ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Use um destino interno da Kerosene e siga para o valor.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: receiveFlowMutedTextColor,
-                  height: 1.35,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: receiveFlowPanelColor,
-              borderRadius: BorderRadius.circular(0),
-              border: Border.all(color: receiveFlowBorderColor),
+              ),
             ),
-            child: const Icon(
-              LucideIcons.arrowUpRight,
-              color: receiveFlowTextColor,
-              size: 18,
-            ),
-          ),
-        ],
-      ),
-    ).animate().fade().slideY(begin: -0.2, end: 0);
-  }
-
-  Widget _buildRecipientSummaryPanel() {
-    final recipientValue = _currentRecipientValue();
-    final recipientLabel = _currentRecipientLabel();
-    final recipientSubtitle = _currentRecipientSubtitle();
-
-    return ReceiveFlowPanel(
-      radius: 0,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      backgroundColor: receiveFlowPanelAltColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ReceiveFlowSectionLabel('DESTINO'),
-          const SizedBox(height: AppSpacing.sm),
-          SelectableText(
-            recipientLabel.isEmpty ? recipientValue : recipientLabel,
-            maxLines: 2,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: receiveFlowTextColor,
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
-                ),
-          ),
-          if (recipientSubtitle != null) ...[
-            const SizedBox(height: 6),
-            SelectableText(
-              recipientSubtitle,
-              maxLines: 3,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: receiveFlowMutedTextColor,
-                    fontFamily: 'JetBrainsMono',
-                    height: 1.35,
-                  ),
-            ),
+            const SizedBox(width: 40),
           ],
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildAmountDisplay({
-    required double? btcUsd,
-    required double? btcEur,
-    required double? btcBrl,
-  }) {
-    final primaryAmount = _lockedAmountBtc > 0
-        ? MoneyDisplay.convertFromBtcAmount(
-            btcAmount: _lockedAmountBtc,
-            currency: _selectedCurrency,
-            btcUsd: btcUsd,
-            btcEur: btcEur,
-            btcBrl: btcBrl,
-          )
-        : _amountAsDouble();
-    final primaryAmountLabel = _lockedAmountBtc > 0
-        ? MoneyDisplay.format(
-            amount: primaryAmount,
-            currency: _selectedCurrency,
-            withSymbol: false,
-          )
-        : MoneyDisplay.formatEditableInput(
-            rawValue: _amount,
-            currency: _selectedCurrency,
-            withSymbol: false,
-          );
-
-    return ReceiveFlowPanel(
-      radius: 0,
-      child: Column(
-        children: [
-          Text(
-            context.l10n.amount.toUpperCase(),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: receiveFlowMutedTextColor,
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                "${MoneyDisplay.tickerSymbolFor(_selectedCurrency)} ",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: receiveFlowMutedTextColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    primaryAmountLabel,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: AppTypography.amountInput(
-                      isBtc: _selectedCurrency == Currency.btc,
-                      color: receiveFlowTextColor,
-                    ).copyWith(fontWeight: FontWeight.w500),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFiatReferenceLine({required double amountBtc}) {
-    return Text(
-      'Equivale a ${MoneyDisplay.format(amount: amountBtc, currency: Currency.btc)}',
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: receiveFlowMutedTextColor,
-            fontWeight: FontWeight.w500,
-          ),
     );
   }
 
   Widget _buildKeypad() {
-    return ReceiveFlowPanel(
-      radius: 0,
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        children: [
-          Row(children: [_buildKey('1'), _buildKey('2'), _buildKey('3')]),
-          Row(children: [_buildKey('4'), _buildKey('5'), _buildKey('6')]),
-          Row(children: [_buildKey('7'), _buildKey('8'), _buildKey('9')]),
-          Row(children: [_buildKey('.'), _buildKey('0'), _buildKey('←')]),
-        ],
+    return Column(
+      children: [
+        Row(children: [_buildKey('1'), _buildKey('2'), _buildKey('3')]),
+        Row(children: [_buildKey('4'), _buildKey('5'), _buildKey('6')]),
+        Row(children: [_buildKey('7'), _buildKey('8'), _buildKey('9')]),
+        Row(children: [_buildKey('.'), _buildKey('0'), _buildKey('←')]),
+      ],
+    );
+  }
+
+  Widget _buildInternalPrimaryButton({
+    required String label,
+    IconData? icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: FilledButton(
+        onPressed: enabled && !isLoading ? onTap : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: _internalText,
+          foregroundColor: _internalBlack,
+          disabledBackgroundColor: _internalText.withValues(alpha: 0.22),
+          disabledForegroundColor: _internalText.withValues(alpha: 0.42),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+          textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+              ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: _internalBlack,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label.toUpperCase()),
+                  if (icon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(icon, size: 18),
+                  ],
+                ],
+              ),
       ),
     );
   }
 
   Widget _buildKey(String key) {
     final isBackspace = key == '←';
-    return ReceiveFlowKeypadButton(
-      radius: 0,
-      onTap: () => _onKeyTap(key),
-      child: isBackspace
-          ? const Icon(
-              LucideIcons.delete,
-              color: receiveFlowTextColor,
-              size: 18,
-            )
-          : Text(
-              key,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: receiveFlowTextColor,
-                    fontFamily: 'JetBrainsMono',
-                    fontWeight: FontWeight.w400,
-                  ),
-            ),
-    );
-  }
+    final display = key == '.' ? '.' : key;
 
-  Widget _buildLockedAmountView({
-    required double? btcUsd,
-    required double? btcEur,
-    required double? btcBrl,
-  }) {
-    final lockedPrimaryAmount = MoneyDisplay.convertFromBtcAmount(
-      btcAmount: _lockedAmountBtc,
-      currency: _selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-    return ReceiveFlowPanel(
-      radius: 0,
-      backgroundColor: receiveFlowPanelAltColor,
-      child: Column(
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              MoneyDisplay.formatCompact(
-                amount: lockedPrimaryAmount,
-                currency: _selectedCurrency,
-              ),
-              maxLines: 1,
-              softWrap: false,
-              style: AppTypography.amountInput(
-                isBtc: _selectedCurrency == Currency.btc,
-                color: receiveFlowTextColor,
-              ).copyWith(
-                fontSize: _selectedCurrency == Currency.btc ? 40 : 46,
-                letterSpacing: 0,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          if (_selectedCurrency != Currency.btc)
-            Text(
-              MoneyDisplay.formatCompact(
-                amount: _lockedAmountBtc,
-                currency: Currency.btc,
-              ),
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: receiveFlowMutedTextColor,
-                  ),
-            ),
-          if (_selectedCurrency != Currency.btc)
-            const SizedBox(height: AppSpacing.sm),
-          if (_lockedRecipientLabel != null) ...[
-            Text(
-              "DESTINO: ${_lockedRecipientLabel!.toUpperCase()}",
-              style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                    color: receiveFlowTextColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          Text(
-            context.l10n.fixedAmountByRequest,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: receiveFlowFaintTextColor,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2.0,
+    return Expanded(
+      child: SizedBox(
+        height: 58,
+        child: TextButton(
+          onPressed: () => _onKeyTap(key),
+          style: TextButton.styleFrom(
+            foregroundColor: isBackspace ? _internalOutline : _internalText,
+            shape: const CircleBorder(),
+            textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
                 ),
           ),
-        ],
+          child: isBackspace
+              ? const Icon(LucideIcons.delete, size: 24)
+              : Text(display),
+        ),
       ),
     );
   }
@@ -454,7 +308,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   void _handleContinue() async {
     final walletState = ref.read(walletProvider);
     final currentWallet = _resolveWallet(walletState);
-    if (currentWallet == null) return;
+    if (currentWallet == null) {
+      SnackbarHelper.showError('Carteira não carregada.');
+      return;
+    }
     final btcUsd = ref.read(latestBtcPriceProvider);
     final btcEur = ref.read(btcEurPriceProvider);
     final btcBrl = ref.read(btcBrlPriceProvider);
@@ -465,6 +322,21 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     );
 
     HapticFeedback.mediumImpact();
+
+    if (!_isValidInternalDestination(_currentRecipientValue())) {
+      SnackbarHelper.showError('Destino interno inválido.');
+      return;
+    }
+
+    if (amountBtc <= 0) {
+      SnackbarHelper.showError(context.l10n.errorAmountRequired);
+      return;
+    }
+
+    if (currentWallet.balance > 0 && amountBtc > currentWallet.balance) {
+      SnackbarHelper.showError('Saldo insuficiente para esta transferência.');
+      return;
+    }
 
     await _openPaymentConfirmation(
       wallet: currentWallet,
@@ -523,48 +395,82 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               destination.kind == RecentTransactionDestinationKind.internal,
         )
         .toList(growable: false);
+    final destination = _receiverController.text.trim();
+    final isValidDestination = _isValidInternalDestination(destination);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildManualFlowHero(context),
-          const SizedBox(height: AppSpacing.xl),
-          _buildStepInput(
-            label: context.l10n.sendMoneyDestinationLabel,
-            controller: _receiverController,
-            hint: context.l10n.sendMoneyDestinationHint,
-            icon: LucideIcons.user,
-          ),
-          if (recentInternalDestinations.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            RecentTransactionDestinationsSection(
-              title: context.l10n.sendMoneyRecentTitle,
-              destinations: recentInternalDestinations,
-              onSelect: _applyRecentInternalDestination,
-              maxItems: 6,
-              radius: 0,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildInternalTopBar(context),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Insira o endereço de destino ou nome de usuário.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: _internalMutedText,
+                            fontSize: 18,
+                            height: 1.6,
+                            letterSpacing: 0,
+                          ),
+                    ),
+                    const SizedBox(height: 40),
+                    _buildInternalDestinationInput(
+                      context,
+                      isValidDestination: isValidDestination,
+                    ),
+                    if (destination.isNotEmpty && !isValidDestination) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Use somente o usuário Kerosene ou o hash compartilhado pela carteira.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _internalMutedText,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                    if (recentInternalDestinations.isNotEmpty) ...[
+                      const SizedBox(height: 36),
+                      Text(
+                        'RECENTES',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: _internalOutline,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      for (final destination
+                          in recentInternalDestinations.take(6))
+                        _buildInternalRecentDestination(destination),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ],
-          const SizedBox(height: AppSpacing.xxl),
-          ReceiveFlowPrimaryButton(
-            label: context.l10n.sendMoneyGoToAmount,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+          child: _buildInternalPrimaryButton(
+            label: 'Continuar',
             icon: LucideIcons.arrowRight,
-            radius: 0,
+            enabled: isValidDestination,
             onTap: () {
-              if (_receiverController.text.trim().isEmpty) {
+              if (!isValidDestination) {
                 SnackbarHelper.showError(
-                  context.l10n.sendMoneyMissingDestination,
-                );
-                return;
-              }
-              if (_isExternalBitcoinTarget(_receiverController.text.trim())) {
-                SnackbarHelper.showError(
-                  context.l10n.sendMoneyExternalUseWithdraw,
+                  destination.isEmpty
+                      ? context.l10n.sendMoneyMissingDestination
+                      : 'Destino interno inválido.',
                 );
                 return;
               }
@@ -576,7 +482,156 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               setState(() => _currentStep = 1);
             },
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInternalDestinationInput(
+    BuildContext context, {
+    required bool isValidDestination,
+  }) {
+    final hasValue = _receiverController.text.trim().isNotEmpty;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: hasValue && isValidDestination
+                ? _internalValidBlue
+                : _internalOutline,
+            width: hasValue && isValidDestination ? 2 : 1,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _receiverController,
+            onChanged: (_) => setState(() {}),
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            cursorColor:
+                isValidDestination ? _internalValidBlue : _internalText,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _internalText,
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 14,
+                  height: 1.5,
+                  letterSpacing: 0,
+                ),
+            decoration: InputDecoration(
+              hintText: 'usuario ou hash da carteira',
+              hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _internalOutline.withValues(alpha: 0.7),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.fromLTRB(16, 16, 96, 16),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Escanear QR',
+                    onPressed: _scanInternalDestination,
+                    icon: const Icon(LucideIcons.scanLine, size: 20),
+                    color: hasValue && isValidDestination
+                        ? _internalValidBlue
+                        : _internalMutedText,
+                  ),
+                  if (hasValue && isValidDestination)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 14),
+                      child: Icon(
+                        LucideIcons.checkCircle,
+                        color: _internalValidBlue,
+                        size: 20,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInternalRecentDestination(
+    RecentTransactionDestination destination,
+  ) {
+    final label = destination.label?.trim();
+    final title = label == null || label.isEmpty ? destination.address : label;
+    final subtitle = label == null || label.isEmpty
+        ? _compactInternalValue(destination.address)
+        : _compactInternalValue(destination.address);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: _internalSurface,
+        child: InkWell(
+          onTap: () => _applyRecentInternalDestination(destination),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _internalSurface,
+              border: Border.all(color: Colors.transparent),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _internalSurfaceHigh,
+                    border: Border.all(color: _internalBorder),
+                  ),
+                  child: const Icon(
+                    LucideIcons.user,
+                    color: _internalOutline,
+                    size: 19,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: _internalText,
+                              fontSize: 16,
+                              height: 1.35,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _internalMutedText,
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -589,114 +644,217 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required double amountBtc,
     required bool isLoading,
   }) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xl,
-      ),
-      child: Column(
-        children: [
-          _buildRecipientSummaryPanel(),
-          const SizedBox(height: AppSpacing.lg),
-          if (_pendingPaymentLinkId == null &&
-              _lockedRecipientAddress.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: _buildAmountDisplay(
-                btcUsd: btcUsd,
-                btcEur: btcEur,
-                btcBrl: btcBrl,
-              ),
-            ),
-            if (_selectedCurrency != Currency.btc && amountBtc > 0) ...[
-              _buildFiatReferenceLine(amountBtc: amountBtc),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            RepaintBoundary(child: _buildKeypad()),
-          ] else ...[
-            _buildLockedAmountView(
-              btcUsd: btcUsd,
-              btcEur: btcEur,
-              btcBrl: btcBrl,
-            ),
-          ],
-          const SizedBox(height: AppSpacing.xl),
-          ReceiveFlowPrimaryButton(
-            label: context.l10n.sendMoneyReview,
-            icon: LucideIcons.arrowRight,
-            isLoading: isLoading,
-            radius: 0,
-            onTap: amountBtc > 0 ? _handleContinue : null,
-          ),
-        ],
-      ),
+    final recipient = _currentRecipientLabel();
+    final amountLabel = _lockedAmountBtc > 0
+        ? _formatBtcValue(_lockedAmountBtc)
+        : MoneyDisplay.formatEditableInput(
+            rawValue: _amount,
+            currency: Currency.btc,
+            withSymbol: false,
+          );
+    final fiatLabel = _formatFiatReference(
+      btcAmount: amountBtc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
     );
-  }
+    final wallet = _resolveWallet(ref.read(walletProvider));
+    final balanceLabel = wallet == null
+        ? '--'
+        : '${_formatBtcValue(wallet.balance, decimalPlaces: 6)} BTC';
+    final locked = _pendingPaymentLinkId != null ||
+        _lockedRecipientAddress.isNotEmpty ||
+        _lockedAmountBtc > 0;
 
-  Widget _buildStepInput({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    int? maxLength,
-  }) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: receiveFlowPanelColor,
-        borderRadius: BorderRadius.circular(0),
-        border: Border.all(color: receiveFlowBorderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.sm,
-            ),
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: receiveFlowFaintTextColor,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.6,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildInternalTopBar(context),
+        Expanded(
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
                   ),
-            ),
-          ),
-          Divider(height: 1, color: receiveFlowBorderColor),
-          TextField(
-            controller: controller,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: receiveFlowTextColor,
-                  fontWeight: FontWeight.w500,
+                  decoration: BoxDecoration(
+                    color: _internalSurface,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: _internalBorder),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        LucideIcons.user,
+                        color: _internalOutline,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Para: $recipient',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: _internalText,
+                              fontSize: 16,
+                              height: 1.4,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
-            maxLength: maxLength,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: receiveFlowFaintTextColor),
-              counterText: '',
-              filled: false,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.md,
               ),
-              prefixIcon: Icon(
-                icon,
-                color: receiveFlowMutedTextColor,
-                size: 20,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: locked
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                setState(
+                                  () => _amountKeyboardExpanded =
+                                      !_amountKeyboardExpanded,
+                                );
+                              },
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    amountLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.junge(
+                                      color: _internalText,
+                                      fontSize: 54,
+                                      fontWeight: FontWeight.w100,
+                                      height: 1.05,
+                                      letterSpacing: 0,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'BTC',
+                                  style: GoogleFonts.junge(
+                                    color: _internalText,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w100,
+                                    height: 1,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              fiatLabel,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: _internalOutline,
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 14,
+                                    height: 1.4,
+                                    letterSpacing: 0.2,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _internalSurface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _internalBorder),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'SALDO DISPONÍVEL',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: _internalOutline,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.1,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              balanceLabel,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: _internalMutedText,
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
+              if (!locked)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeInOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _amountKeyboardExpanded
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(40, 0, 40, 20),
+                          child: RepaintBoundary(child: _buildKeypad()),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+          decoration: BoxDecoration(
+            color: _internalBlack,
+            border: Border(
+              top: BorderSide(
+                color: _internalBorder.withValues(alpha: 0.3),
+              ),
             ),
           ),
-        ],
-      ),
+          child: _buildInternalPrimaryButton(
+            label: 'Revisar',
+            enabled: amountBtc > 0 && !isLoading,
+            isLoading: isLoading,
+            onTap: _handleContinue,
+          ),
+        ),
+      ],
     );
   }
 
@@ -714,18 +872,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return label;
   }
 
-  String? _currentRecipientSubtitle() {
-    final value = _currentRecipientValue();
-    final label = _lockedRecipientLabel?.trim();
-    if (label == null ||
-        label.isEmpty ||
-        label == value ||
-        label == 'Destino bloqueado') {
-      return null;
-    }
-    return value;
-  }
-
   Future<void> _openPaymentConfirmation({
     required Wallet wallet,
     required double amount,
@@ -733,130 +879,36 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required double total,
     required String toAddress,
   }) async {
-    final selectedCurrency = ref.read(currencyProvider);
     final btcUsd = ref.read(latestBtcPriceProvider);
     final btcEur = ref.read(btcEurPriceProvider);
     final btcBrl = ref.read(btcBrlPriceProvider);
     final isPaymentLink = _pendingPaymentLinkId != null;
     final recipientLabel = _currentRecipientLabel();
-    final destinationSubtitle =
-        isPaymentLink ? null : _currentRecipientSubtitle();
-    final amountLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: amount,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-    final totalLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: total,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
     final btcAmountLabel = MoneyDisplay.format(
       amount: amount,
       currency: Currency.btc,
     );
-    final btcTotalLabel = MoneyDisplay.format(
-      amount: total,
-      currency: Currency.btc,
-    );
-    final balanceLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: wallet.balance,
-      currency: selectedCurrency,
+    final fiatAmountLabel = _formatFiatReference(
+      btcAmount: amount,
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
-
-    final details = <PaymentConfirmationDetail>[
-      PaymentConfirmationDetail(
-        label: context.l10n.sendMoneyDetailType,
-        value: isPaymentLink
-            ? context.l10n.sendMoneyTypePaymentLink
-            : context.l10n.sendMoneyTypeInternalTransfer,
-        icon: isPaymentLink ? LucideIcons.link : LucideIcons.repeat2,
-      ),
-      PaymentConfirmationDetail(
-        label: context.l10n.sendMoneyDetailValue,
-        value: amountLabel,
-        icon: LucideIcons.bitcoin,
-        emphasized: true,
-      ),
-      if (selectedCurrency != Currency.btc)
-        PaymentConfirmationDetail(
-          label: context.l10n.sendMoneyDetailValueBtc,
-          value: btcAmountLabel,
-          icon: LucideIcons.coins,
-        ),
-      PaymentConfirmationDetail(
-        label: context.l10n.networkFee,
-        value: context.l10n.free,
-        icon: LucideIcons.badgeDollarSign,
-        valueColor: receiveFlowTextColor,
-      ),
-      PaymentConfirmationDetail(
-        label: context.l10n.total,
-        value: totalLabel,
-        icon: LucideIcons.receipt,
-        emphasized: true,
-      ),
-      if (selectedCurrency != Currency.btc)
-        PaymentConfirmationDetail(
-          label: context.l10n.sendMoneyDetailTotalBtc,
-          value: btcTotalLabel,
-          icon: LucideIcons.equal,
-        ),
-      PaymentConfirmationDetail(
-        label: context.l10n.sendMoneyDetailBalanceBefore,
-        value: balanceLabel,
-        icon: LucideIcons.walletCards,
-      ),
-      if (_pendingPaymentLinkId != null)
-        PaymentConfirmationDetail(
-          label: context.l10n.sendMoneyDetailLinkId,
-          value: _pendingPaymentLinkId!,
-          icon: LucideIcons.fingerprint,
-          monospace: true,
-        ),
-      if (isPaymentLink && _lockedDestinationHash != null)
-        PaymentConfirmationDetail(
-          label: context.l10n.sendMoneyDetailDestinationHash,
-          value: _lockedDestinationHash!,
-          icon: LucideIcons.lock,
-          monospace: true,
-          copyable: true,
-          copyMessage: context.l10n.sendMoneyDestinationHashCopied,
-        ),
-    ];
+    final note = isPaymentLink
+        ? 'Pagamento por link interno'
+        : 'Transferência interna Kerosene';
 
     final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => PaymentConfirmationScreen<dynamic>(
-          title: isPaymentLink
-              ? context.l10n.sendMoneyConfirmPayment
-              : context.l10n.reviewSend,
-          eyebrow: isPaymentLink
-              ? context.l10n.sendMoneyLockedRequestEyebrow
-              : context.l10n.sendMoneyFinalReviewEyebrow,
-          amountPrimary: amountLabel,
-          amountSecondary: btcAmountLabel,
-          sourceLabel: context.l10n.sendMoneySourceLabel,
-          sourceValue: wallet.name,
-          destinationLabel: context.l10n.sendMoneyDestinationToLabel,
-          destinationValue: recipientLabel,
-          destinationSubtitle: destinationSubtitle,
-          networkLabel: context.l10n.sendMoneyInternalNetwork,
-          notice: isPaymentLink
-              ? context.l10n.sendMoneyLockedNotice
-              : context.l10n.sendMoneyReviewNotice,
-          securityMessage: context.l10n.sendMoneySecurityMessage,
-          confirmText: context.l10n.confirm,
-          cancelText: context.l10n.cancel,
-          details: details,
-          onConfirm: (confirmationContext, _) => _confirmPayment(
+        builder: (_) => _InternalTransferReviewScreen<dynamic>(
+          recipientLabel: recipientLabel,
+          recipientAddress: toAddress,
+          amountBtcLabel: btcAmountLabel,
+          fiatAmountLabel: fiatAmountLabel,
+          feeLabel: context.l10n.free,
+          note: note,
+          sourceWallet: wallet.name,
+          onConfirm: (confirmationContext) => _confirmPayment(
             confirmationContext: confirmationContext,
             wallet: wallet,
             amount: amount,
@@ -990,12 +1042,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     final parsed = QrPaymentParser.decode(data);
     if (parsed != null && parsed.isComplete) {
-      if (_isExternalBitcoinTarget(parsed.address)) {
-        SnackbarHelper.showError(
-          context.l10n.sendMoneyExternalQrUseWithdraw,
-        );
-        return;
-      }
       setState(() {
         _lockedRecipientAddress = parsed.address;
         if (parsed.amountBtc != null && parsed.amountBtc! > 0) {
@@ -1013,6 +1059,17 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       HapticFeedback.lightImpact();
       SnackbarHelper.showSuccess(context.l10n.sendMoneyRequestDataLoaded);
     } else {
+      final candidate = data.trim();
+      if (_isValidInternalDestination(candidate)) {
+        setState(() {
+          _receiverController.text = candidate;
+          _receiverController.selection = TextSelection.fromPosition(
+            TextPosition(offset: candidate.length),
+          );
+        });
+        HapticFeedback.lightImpact();
+        return;
+      }
       SnackbarHelper.showError(context.l10n.sendMoneyInvalidQrRequest);
     }
   }
@@ -1053,8 +1110,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
         setState(() {
           _pendingPaymentLinkId = linkId;
-          _lockedDestinationHash =
-              destinationHash.isNotEmpty ? destinationHash : null;
           _lockedRecipientLabel = destinationHash.isNotEmpty
               ? _shortHash(destinationHash)
               : context.l10n.sendMoneyLockedDestination;
@@ -1167,12 +1222,483 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 8)}';
   }
 
-  bool _isExternalBitcoinTarget(String value) {
-    final normalized = value.trim().toLowerCase();
-    return normalized.startsWith('bitcoin:') ||
-        normalized.startsWith('bc1') ||
-        normalized.startsWith('tb1') ||
-        normalized.startsWith('bcrt1') ||
-        RegExp(r'^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$').hasMatch(value.trim());
+  Future<void> _scanInternalDestination() async {
+    final payload = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    final value = payload?.trim();
+    if (!mounted || value == null || value.isEmpty) {
+      return;
+    }
+
+    final parsed = QrPaymentParser.decode(value);
+    final candidate = parsed?.address.trim().isNotEmpty == true
+        ? parsed!.address.trim()
+        : value;
+
+    setState(() {
+      _receiverController.text = candidate;
+      _receiverController.selection = TextSelection.fromPosition(
+        TextPosition(offset: candidate.length),
+      );
+      if (parsed?.amountBtc != null && parsed!.amountBtc! > 0) {
+        _lockedAmountBtc = parsed.amountBtc!;
+        _amount = _formatBtcValue(parsed.amountBtc!);
+      }
+    });
+  }
+
+  bool _isValidInternalDestination(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty ||
+        trimmed.startsWith('@') ||
+        trimmed.toLowerCase().startsWith('bitcoin:')) {
+      return false;
+    }
+    if (RegExp(r'^[A-Za-z0-9_]{3,50}$').hasMatch(trimmed)) {
+      return true;
+    }
+    return RegExp(r'^[a-fA-F0-9]{32,128}$').hasMatch(trimmed);
+  }
+
+  String _compactInternalValue(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length <= 18) {
+      return trimmed;
+    }
+    return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 6)}';
+  }
+
+  String _formatBtcValue(double value, {int decimalPlaces = 8}) {
+    return MoneyDisplay.format(
+      amount: value,
+      currency: Currency.btc,
+      withSymbol: false,
+      decimalPlaces: decimalPlaces,
+    );
+  }
+
+  String _formatFiatReference({
+    required double btcAmount,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+  }) {
+    return '≈ ${MoneyDisplay.formatAmountFromBtc(
+      btcAmount: btcAmount,
+      currency: Currency.brl,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    )}';
+  }
+}
+
+class _InternalTransferReviewScreen<T> extends StatefulWidget {
+  final String recipientLabel;
+  final String recipientAddress;
+  final String amountBtcLabel;
+  final String fiatAmountLabel;
+  final String feeLabel;
+  final String note;
+  final String sourceWallet;
+  final Future<T?> Function(BuildContext context) onConfirm;
+
+  const _InternalTransferReviewScreen({
+    required this.recipientLabel,
+    required this.recipientAddress,
+    required this.amountBtcLabel,
+    required this.fiatAmountLabel,
+    required this.feeLabel,
+    required this.note,
+    required this.sourceWallet,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_InternalTransferReviewScreen<T>> createState() =>
+      _InternalTransferReviewScreenState<T>();
+}
+
+class _InternalTransferReviewScreenState<T>
+    extends State<_InternalTransferReviewScreen<T>> {
+  bool _isSubmitting = false;
+  T? _result;
+
+  Future<void> _confirm() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    final result = await widget.onConfirm(context);
+    if (!mounted) return;
+    setState(() {
+      _isSubmitting = false;
+      _result = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    if (result != null) {
+      return _InternalTransferSuccessView<T>(
+        result: result,
+        recipientLabel: widget.recipientLabel,
+        amountBtcLabel: widget.amountBtcLabel,
+        fiatAmountLabel: widget.fiatAmountLabel,
+        feeLabel: widget.feeLabel,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: _SendMoneyScreenState._internalBlack,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed:
+                      _isSubmitting ? null : () => Navigator.of(context).pop(),
+                  icon: const Icon(LucideIcons.arrowLeft, size: 22),
+                  style: IconButton.styleFrom(
+                    foregroundColor: _SendMoneyScreenState._internalText,
+                    backgroundColor: _SendMoneyScreenState._internalSurface,
+                    side: const BorderSide(
+                      color: _SendMoneyScreenState._internalBorder,
+                    ),
+                    minimumSize: const Size.square(40),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Revisar transferência',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.ebGaramond(
+                            color: _SendMoneyScreenState._internalText,
+                            fontSize: 38,
+                            fontWeight: FontWeight.w500,
+                            height: 1.1,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        _InternalReviewRow(
+                          label: 'Para',
+                          value: widget.recipientLabel,
+                          trailingIcon: LucideIcons.chevronRight,
+                        ),
+                        if (widget.recipientAddress.trim().isNotEmpty &&
+                            widget.recipientAddress.trim() !=
+                                widget.recipientLabel.trim())
+                          _InternalReviewRow(
+                            label: 'ID',
+                            value: widget.recipientAddress.trim(),
+                          ),
+                        _InternalReviewRow(
+                          label: 'Valor',
+                          value: widget.amountBtcLabel,
+                          helper: widget.fiatAmountLabel,
+                          valueLarge: true,
+                        ),
+                        _InternalReviewRow(
+                          label: 'Taxa',
+                          value: widget.feeLabel,
+                        ),
+                        _InternalReviewRow(
+                          label: 'Origem',
+                          value: widget.sourceWallet,
+                        ),
+                        _InternalReviewRow(
+                          label: 'Nota',
+                          value: widget.note,
+                          alignTop: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 16, 32, 36),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton.icon(
+                      onPressed: _isSubmitting ? null : _confirm,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _SendMoneyScreenState._internalText,
+                        foregroundColor: _SendMoneyScreenState._internalBlack,
+                        disabledBackgroundColor: _SendMoneyScreenState
+                            ._internalText
+                            .withValues(alpha: 0.32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      icon: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _SendMoneyScreenState._internalBlack,
+                              ),
+                            )
+                          : const Icon(LucideIcons.arrowRight, size: 20),
+                      label: const Text(
+                        'Confirmar transferência',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        LucideIcons.shieldCheck,
+                        color: _SendMoneyScreenState._internalMutedText,
+                        size: 13,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'TRANSAÇÃO PROTEGIDA',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: _SendMoneyScreenState._internalMutedText,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InternalReviewRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? helper;
+  final IconData? trailingIcon;
+  final bool valueLarge;
+  final bool alignTop;
+
+  const _InternalReviewRow({
+    required this.label,
+    required this.value,
+    this.helper,
+    this.trailingIcon,
+    this.valueLarge = false,
+    this.alignTop = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Color(0x14FFFFFF)),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            alignTop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: _SendMoneyScreenState._internalMutedText,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
+          ),
+          const SizedBox(width: 28),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        value,
+                        maxLines: alignTop ? 3 : 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: _SendMoneyScreenState._internalText,
+                              fontSize: valueLarge ? 20 : 15,
+                              fontWeight: FontWeight.w600,
+                              height: 1.35,
+                            ),
+                      ),
+                    ),
+                    if (trailingIcon != null) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        trailingIcon,
+                        color: _SendMoneyScreenState._internalMutedText,
+                        size: 14,
+                      ),
+                    ],
+                  ],
+                ),
+                if (helper != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    helper!,
+                    textAlign: TextAlign.right,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: _SendMoneyScreenState._internalMutedText,
+                          fontSize: 11,
+                          height: 1.25,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InternalTransferSuccessView<T> extends StatelessWidget {
+  final T result;
+  final String recipientLabel;
+  final String amountBtcLabel;
+  final String fiatAmountLabel;
+  final String feeLabel;
+
+  const _InternalTransferSuccessView({
+    required this.result,
+    required this.recipientLabel,
+    required this.amountBtcLabel,
+    required this.fiatAmountLabel,
+    required this.feeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _SendMoneyScreenState._internalBlack,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 56, 24, 40),
+          child: Column(
+            children: [
+              const Spacer(),
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _SendMoneyScreenState._internalSuccessGreen
+                      .withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: _SendMoneyScreenState._internalSuccessGreen,
+                  ),
+                ),
+                child: const Icon(
+                  LucideIcons.check,
+                  color: _SendMoneyScreenState._internalSuccessGreen,
+                  size: 42,
+                ),
+              )
+                  .animate()
+                  .scale(
+                    begin: const Offset(0.72, 0.72),
+                    end: const Offset(1, 1),
+                    curve: Curves.easeOutBack,
+                    duration: 420.ms,
+                  )
+                  .fadeIn(duration: 240.ms),
+              const SizedBox(height: 28),
+              Text(
+                'Transferência concluída',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.ebGaramond(
+                  color: _SendMoneyScreenState._internalText,
+                  fontSize: 38,
+                  fontWeight: FontWeight.w500,
+                  height: 1.08,
+                  letterSpacing: 0,
+                ),
+              ).animate().fadeIn(delay: 80.ms, duration: 280.ms),
+              const SizedBox(height: 10),
+              Text(
+                'Os fundos foram enviados dentro da Kerosene.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _SendMoneyScreenState._internalMutedText,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
+              ),
+              const SizedBox(height: 44),
+              _InternalReviewRow(label: 'Para', value: recipientLabel),
+              _InternalReviewRow(
+                label: 'Valor',
+                value: amountBtcLabel,
+                helper: fiatAmountLabel,
+                valueLarge: true,
+              ),
+              _InternalReviewRow(label: 'Taxa', value: feeLabel),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(result),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _SendMoneyScreenState._internalText,
+                    foregroundColor: _SendMoneyScreenState._internalBlack,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: const Text(
+                    'Concluir',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

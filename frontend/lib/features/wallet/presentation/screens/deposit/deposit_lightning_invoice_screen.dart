@@ -123,15 +123,14 @@ class _DepositLightningInvoiceScreenState
         btcBrl: btcBrl,
       );
 
-      final invoice = await ref
-          .read(transactionRepositoryProvider)
-          .createLightningInvoice(
-            idempotencyKey: _invoiceIdempotencyKey,
-            walletName: widget.wallet.name,
-            amount: amountBtc,
-            memo: 'Deposito Lightning ${widget.wallet.name}',
-            expiresInSeconds: 900,
-          );
+      final invoice =
+          await ref.read(transactionRepositoryProvider).createLightningInvoice(
+                idempotencyKey: _invoiceIdempotencyKey,
+                walletName: widget.wallet.name,
+                amount: amountBtc,
+                memo: 'Deposito Lightning ${widget.wallet.name}',
+                expiresInSeconds: 900,
+              );
 
       if (!mounted) {
         return;
@@ -355,30 +354,30 @@ class _DepositLightningInvoiceScreenState
             .toUpperCase();
     return switch (normalized) {
       'COMPLETED' || 'SETTLED' || 'PAID' => _copy(
-        pt: 'O pagamento Lightning foi confirmado.',
-        en: 'The Lightning payment was confirmed.',
-        es: 'El pago Lightning fue confirmado.',
-      ),
+          pt: 'O pagamento Lightning foi confirmado.',
+          en: 'The Lightning payment was confirmed.',
+          es: 'El pago Lightning fue confirmado.',
+        ),
       'CANCELLED' => _copy(
-        pt: 'Este pedido foi cancelado e não aceita mais pagamento.',
-        en: 'This request was cancelled and no longer accepts payment.',
-        es: 'Este pedido fue cancelado y ya no acepta pago.',
-      ),
+          pt: 'Este pedido foi cancelado e não aceita mais pagamento.',
+          en: 'This request was cancelled and no longer accepts payment.',
+          es: 'Este pedido fue cancelado y ya no acepta pago.',
+        ),
       'EXPIRED' => _copy(
-        pt: 'A janela de pagamento expirou. Gere um novo pedido para continuar.',
-        en: 'The payment window expired. Create a new request to continue.',
-        es: 'La ventana de pago expiró. Crea un nuevo pedido para continuar.',
-      ),
+          pt: 'A janela de pagamento expirou. Gere um novo pedido para continuar.',
+          en: 'The payment window expired. Create a new request to continue.',
+          es: 'La ventana de pago expiró. Crea un nuevo pedido para continuar.',
+        ),
       'FAILED' => _copy(
-        pt: 'Não foi possível concluir este pagamento Lightning. Gere um novo pedido para tentar novamente.',
-        en: 'We could not complete this Lightning payment. Create a new request and try again.',
-        es: 'No pudimos completar este pago Lightning. Crea un nuevo pedido e inténtalo otra vez.',
-      ),
+          pt: 'Não foi possível concluir este pagamento Lightning. Gere um novo pedido para tentar novamente.',
+          en: 'We could not complete this Lightning payment. Create a new request and try again.',
+          es: 'No pudimos completar este pago Lightning. Crea un nuevo pedido e inténtalo otra vez.',
+        ),
       _ => _copy(
-        pt: 'Aguardando pagamento Lightning. Esta tela será atualizada automaticamente.',
-        en: 'Waiting for the Lightning payment. This screen updates automatically.',
-        es: 'Esperando el pago Lightning. Esta pantalla se actualiza automáticamente.',
-      ),
+          pt: 'Aguardando pagamento Lightning. Esta tela será atualizada automaticamente.',
+          en: 'Waiting for the Lightning payment. This screen updates automatically.',
+          es: 'Esperando el pago Lightning. Esta pantalla se actualiza automáticamente.',
+        ),
     };
   }
 
@@ -388,8 +387,7 @@ class _DepositLightningInvoiceScreenState
       return;
     }
 
-    final confirmed =
-        await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: Text(
@@ -409,7 +407,7 @@ class _DepositLightningInvoiceScreenState
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(_copy(pt: 'Voltar', en: 'Back', es: 'Volver')),
+                child: Text(context.l10n.depositLedgerBackAction),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
@@ -585,8 +583,8 @@ class _DepositLightningInvoiceScreenState
                   es: 'El pedido expira automáticamente. Si vence, crea uno nuevo.',
                 ),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: receiveFlowFaintTextColor,
-                ),
+                      color: receiveFlowFaintTextColor,
+                    ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -655,19 +653,19 @@ class _DepositLightningInvoiceScreenState
               currency: widget.inputCurrency,
             ),
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              color: receiveFlowTextColor,
-              fontSize: 36,
-              fontFamily: AppTypography.numericFontFamily,
-              fontWeight: FontWeight.w500,
-            ),
+                  color: receiveFlowTextColor,
+                  fontSize: 36,
+                  fontFamily: AppTypography.numericFontFamily,
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             MoneyDisplay.format(amount: receiveBtc, currency: Currency.btc),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: receiveFlowMutedTextColor,
-              fontFamily: AppTypography.numericFontFamily,
-            ),
+                  color: receiveFlowMutedTextColor,
+                  fontFamily: AppTypography.numericFontFamily,
+                ),
           ),
         ],
       ),
@@ -690,9 +688,9 @@ class _DepositLightningInvoiceScreenState
             Text(
               _statusLabel,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: receiveFlowTextColor,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: receiveFlowTextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ],
         ),
@@ -714,8 +712,8 @@ class _DepositLightningInvoiceScreenState
                 child: Text(
                   ':',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: receiveFlowMutedTextColor,
-                  ),
+                        color: receiveFlowMutedTextColor,
+                      ),
                 ),
               ),
               _buildTimerBlock(_formattedSeconds),
@@ -735,10 +733,10 @@ class _DepositLightningInvoiceScreenState
       child: Text(
         value,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: receiveFlowTextColor,
-          fontFamily: AppTypography.numericFontFamily,
-          fontWeight: FontWeight.w500,
-        ),
+              color: receiveFlowTextColor,
+              fontFamily: AppTypography.numericFontFamily,
+              fontWeight: FontWeight.w500,
+            ),
       ),
     );
   }
@@ -866,9 +864,9 @@ class _DepositLightningInvoiceScreenState
             invoice.paymentRequest,
             style: AppTypography.technicalMono(
               textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: receiveFlowTextColor,
-                height: 1.4,
-              ),
+                    color: receiveFlowTextColor,
+                    height: 1.4,
+                  ),
             ),
           ),
         ],

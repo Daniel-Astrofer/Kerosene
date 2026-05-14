@@ -23,7 +23,7 @@ void main() {
     expect(AppConfig.activeNodeUrl, 'http://localhost:8080');
     expect(AppConfig.isTorEnabled, isFalse);
     expect(container.read(torApiUrlProvider), 'http://localhost:8080');
-    expect(AppConfig.effectivePasskeyRpId, 'localhost');
+    expect(AppConfig.effectivePasskeyRpId, 'kerosene-device');
   });
 
   test('configureResolvedApiUrl marks onion API routes as Tor-enabled', () {
@@ -44,6 +44,7 @@ void main() {
     expect(AppConfig.activeNodeUrl, 'http://abc123.onion');
     expect(AppConfig.isTorEnabled, isTrue);
     expect(container.read(torApiUrlProvider), 'http://abc123.onion');
+    expect(AppConfig.effectivePasskeyRpId, 'kerosene-device');
   });
 
   test('pure application address resolves to public landing', () {

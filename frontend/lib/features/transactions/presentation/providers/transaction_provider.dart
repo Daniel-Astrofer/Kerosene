@@ -630,6 +630,8 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
     String? passkeyAssertionJson,
   }) async {
     state = const AsyncActionState(isLoading: true);
+    final operationIdempotencyKey = const Uuid().v4();
+    final requestTimestamp = DateTime.now().millisecondsSinceEpoch;
     try {
       final result = await _ledgerRepository.payPaymentRequest(
         linkId: linkId,
@@ -637,6 +639,8 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         totpCode: totpCode,
         confirmationPassphrase: confirmationPassphrase,
         passkeyAssertionJson: passkeyAssertionJson,
+        idempotencyKey: operationIdempotencyKey,
+        requestTimestamp: requestTimestamp,
       );
 
       return result.fold<Future<PaymentLink?>>(
@@ -646,6 +650,8 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
           payerWalletName: payerWalletName,
           totpCode: totpCode,
           confirmationPassphrase: confirmationPassphrase,
+          idempotencyKey: operationIdempotencyKey,
+          requestTimestamp: requestTimestamp,
         ),
         (data) async => _completePayment(data),
       );
@@ -656,6 +662,8 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         payerWalletName: payerWalletName,
         totpCode: totpCode,
         confirmationPassphrase: confirmationPassphrase,
+        idempotencyKey: operationIdempotencyKey,
+        requestTimestamp: requestTimestamp,
       );
     }
   }
@@ -666,6 +674,8 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
     required String payerWalletName,
     String? totpCode,
     String? confirmationPassphrase,
+    required String idempotencyKey,
+    required int requestTimestamp,
   }) async {
     final errorStr = error.toString();
     final challenge = _extractPasskeyChallenge(error);
@@ -686,6 +696,8 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
             totpCode: totpCode,
             confirmationPassphrase: confirmationPassphrase,
             passkeyAssertionJson: assertionJson,
+            idempotencyKey: idempotencyKey,
+            requestTimestamp: requestTimestamp,
           );
 
           final failure =

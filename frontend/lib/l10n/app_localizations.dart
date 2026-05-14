@@ -4792,6 +4792,42 @@ abstract class AppLocalizations {
   /// **'Invoice, LNURL, or Lightning Address'**
   String get homeSendLightningSubtitle;
 
+  /// No description provided for @homeSendMethodOnchainLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain'**
+  String get homeSendMethodOnchainLabel;
+
+  /// No description provided for @homeSendMethodOnchainSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to any Bitcoin network address.'**
+  String get homeSendMethodOnchainSubtitle;
+
+  /// No description provided for @homeSendMethodLightningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning'**
+  String get homeSendMethodLightningLabel;
+
+  /// No description provided for @homeSendMethodLightningSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send instantly over Lightning Network.'**
+  String get homeSendMethodLightningSubtitle;
+
+  /// No description provided for @homeSendMethodInternalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene internal'**
+  String get homeSendMethodInternalLabel;
+
+  /// No description provided for @homeSendMethodInternalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant transfer with no fee.'**
+  String get homeSendMethodInternalSubtitle;
+
   /// No description provided for @homeScanQrLabel.
   ///
   /// In en, this message translates to:
@@ -5176,6 +5212,108 @@ abstract class AppLocalizations {
   /// **'Open receive screen'**
   String get homeOpenReceiveScreen;
 
+  /// No description provided for @homeReceiveActionShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive'**
+  String get homeReceiveActionShort;
+
+  /// No description provided for @homeGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning, {name}'**
+  String homeGreetingMorning(String name);
+
+  /// No description provided for @homeGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon, {name}'**
+  String homeGreetingAfternoon(String name);
+
+  /// No description provided for @homeGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening, {name}'**
+  String homeGreetingEvening(String name);
+
+  /// No description provided for @homeBalanceTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL BALANCE'**
+  String get homeBalanceTotalLabel;
+
+  /// No description provided for @homeLiveQuoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Live quote'**
+  String get homeLiveQuoteLabel;
+
+  /// No description provided for @homeKeroseneWalletLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'KEROSENE WALLET'**
+  String get homeKeroseneWalletLabel;
+
+  /// No description provided for @homeOnchainWalletLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ON-CHAIN WALLET'**
+  String get homeOnchainWalletLabel;
+
+  /// No description provided for @homeOtherWalletsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OTHER'**
+  String get homeOtherWalletsLabel;
+
+  /// No description provided for @homeSecurityBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin under your control.'**
+  String get homeSecurityBannerTitle;
+
+  /// No description provided for @homeSecurityBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End-to-end security to protect what is yours.'**
+  String get homeSecurityBannerSubtitle;
+
+  /// No description provided for @homeLearnMoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more'**
+  String get homeLearnMoreAction;
+
+  /// No description provided for @homeSendBitcoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Bitcoin'**
+  String get homeSendBitcoinTitle;
+
+  /// No description provided for @homeSendBitcoinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to send your bitcoins.'**
+  String get homeSendBitcoinSubtitle;
+
+  /// No description provided for @homeTodayAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Today, {time}'**
+  String homeTodayAt(String time);
+
+  /// No description provided for @homeCounterpartyTo.
+  ///
+  /// In en, this message translates to:
+  /// **'to'**
+  String get homeCounterpartyTo;
+
+  /// No description provided for @homeCounterpartyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from'**
+  String get homeCounterpartyFrom;
+
   /// No description provided for @authAccountAccessTitle.
   ///
   /// In en, this message translates to:
@@ -5338,6 +5476,36 @@ abstract class AppLocalizations {
   /// **'Choose your Kerosene access credentials.'**
   String get authCreateAccountSubtitle;
 
+  /// No description provided for @authSignupUsernameSubtitleDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a username. It will be used to identify you in Kerosene.'**
+  String get authSignupUsernameSubtitleDetailed;
+
+  /// No description provided for @authSignupUsernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get authSignupUsernameLabel;
+
+  /// No description provided for @authSignupUsernameRuleMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum of 3 characters'**
+  String get authSignupUsernameRuleMin;
+
+  /// No description provided for @authSignupUsernameRuleCharset.
+  ///
+  /// In en, this message translates to:
+  /// **'Only lowercase letters (a-z), numbers (0-9), and underscore (_)'**
+  String get authSignupUsernameRuleCharset;
+
+  /// No description provided for @authSignupUsernameRuleLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be shown in lowercase'**
+  String get authSignupUsernameRuleLowercase;
+
   /// No description provided for @authUsernameMinError.
   ///
   /// In en, this message translates to:
@@ -5355,6 +5523,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use at least 12 characters with uppercase, lowercase, number, and symbol.'**
   String get authPasswordStrengthMessage;
+
+  /// No description provided for @authSignupPassphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a strong passphrase'**
+  String get authSignupPassphraseTitle;
+
+  /// No description provided for @authSignupPassphraseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'It protects your account and assets. Nobody at Kerosene has access to it.'**
+  String get authSignupPassphraseSubtitle;
+
+  /// No description provided for @authSignupPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get authSignupPassphraseLabel;
+
+  /// No description provided for @authSignupPassphraseRuleMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum of 12 characters'**
+  String get authSignupPassphraseRuleMin;
+
+  /// No description provided for @authSignupPassphraseRuleUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 1 uppercase letter'**
+  String get authSignupPassphraseRuleUppercase;
+
+  /// No description provided for @authSignupPassphraseRuleLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 1 lowercase letter'**
+  String get authSignupPassphraseRuleLowercase;
+
+  /// No description provided for @authSignupPassphraseRuleNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 1 number'**
+  String get authSignupPassphraseRuleNumber;
+
+  /// No description provided for @authSignupPassphraseRuleSymbol.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 1 symbol'**
+  String get authSignupPassphraseRuleSymbol;
+
+  /// No description provided for @authSignupConfirmPassphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your passphrase'**
+  String get authSignupConfirmPassphraseTitle;
+
+  /// No description provided for @authSignupConfirmPassphraseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it again to confirm.'**
+  String get authSignupConfirmPassphraseSubtitle;
+
+  /// No description provided for @authSignupConfirmPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm passphrase'**
+  String get authSignupConfirmPassphraseLabel;
+
+  /// No description provided for @authSignupPassphraseRiskAcknowledgement.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand that my passphrase is the only way to access my account. Kerosene cannot reset or recover it. If I lose my passphrase, I may permanently lose access to my assets.'**
+  String get authSignupPassphraseRiskAcknowledgement;
+
+  /// No description provided for @authSignupCreatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating your account securely'**
+  String get authSignupCreatingTitle;
+
+  /// No description provided for @authSignupCreatingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This may take a few seconds.'**
+  String get authSignupCreatingSubtitle;
+
+  /// No description provided for @authSignupCreatingChallenge.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting security challenge'**
+  String get authSignupCreatingChallenge;
+
+  /// No description provided for @authSignupCreatingPow.
+  ///
+  /// In en, this message translates to:
+  /// **'Solving proof of work'**
+  String get authSignupCreatingPow;
+
+  /// No description provided for @authSignupCreatingAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating your account'**
+  String get authSignupCreatingAccount;
+
+  /// No description provided for @authSignupPowNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of work helps protect our network from abuse and bots.'**
+  String get authSignupPowNote;
+
+  /// No description provided for @authSignupTotpOptionalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect your account even more (optional)'**
+  String get authSignupTotpOptionalTitle;
+
+  /// No description provided for @authSignupTotpOptionalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable TOTP for an extra security layer.'**
+  String get authSignupTotpOptionalSubtitle;
+
+  /// No description provided for @authSignupTotpScanInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the QR code with your authenticator app'**
+  String get authSignupTotpScanInstruction;
+
+  /// No description provided for @authSignupTotpCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get authSignupTotpCodeLabel;
+
+  /// No description provided for @authSignupRecoveryCodesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery codes'**
+  String get authSignupRecoveryCodesTitle;
+
+  /// No description provided for @authSignupRecoveryCodesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Store them somewhere safe. They can be used to recover your account.'**
+  String get authSignupRecoveryCodesBody;
+
+  /// No description provided for @authSignupSkipForNowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get authSignupSkipForNowAction;
+
+  /// No description provided for @authSignupConfirmTotpAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm TOTP'**
+  String get authSignupConfirmTotpAction;
+
+  /// No description provided for @authSignupPasskeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register passkey on this device'**
+  String get authSignupPasskeyTitle;
+
+  /// No description provided for @authSignupPasskeySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A passkey is required to guarantee secure access to your account.'**
+  String get authSignupPasskeySubtitle;
+
+  /// No description provided for @authSignupPasskeyBiometricBullet.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your biometrics or screen lock'**
+  String get authSignupPasskeyBiometricBullet;
+
+  /// No description provided for @authSignupPasskeyPasswordBullet.
+  ///
+  /// In en, this message translates to:
+  /// **'More secure than traditional passwords'**
+  String get authSignupPasskeyPasswordBullet;
+
+  /// No description provided for @authSignupPasskeyDeviceBullet.
+  ///
+  /// In en, this message translates to:
+  /// **'Only this device will have access'**
+  String get authSignupPasskeyDeviceBullet;
+
+  /// No description provided for @authSignupRegisterPasskeyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Register passkey'**
+  String get authSignupRegisterPasskeyAction;
+
+  /// No description provided for @authSignupSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created successfully'**
+  String get authSignupSuccessTitle;
+
+  /// No description provided for @authSignupSuccessPreparingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your access securely.'**
+  String get authSignupSuccessPreparingSubtitle;
+
+  /// No description provided for @authSignupSuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirecting to your wallet...'**
+  String get authSignupSuccessSubtitle;
+
+  /// No description provided for @authSignupTotpCodeRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit TOTP code to confirm.'**
+  String get authSignupTotpCodeRequiredMessage;
 
   /// No description provided for @authAccountCredentialsTitle.
   ///
@@ -10962,6 +11346,522 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unavailable'**
   String get miningBlocksUnavailable;
+
+  /// No description provided for @landingNavProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get landingNavProduct;
+
+  /// No description provided for @landingNavSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get landingNavSecurity;
+
+  /// No description provided for @landingNavBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get landingNavBusiness;
+
+  /// No description provided for @landingNavInfrastructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Infrastructure'**
+  String get landingNavInfrastructure;
+
+  /// No description provided for @landingNavFaq.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQ'**
+  String get landingNavFaq;
+
+  /// No description provided for @landingLoginAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get landingLoginAction;
+
+  /// No description provided for @landingCreateAccountAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get landingCreateAccountAction;
+
+  /// No description provided for @landingBusinessPanelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View business panel'**
+  String get landingBusinessPanelAction;
+
+  /// No description provided for @landingSalesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to sales'**
+  String get landingSalesAction;
+
+  /// No description provided for @landingHeroEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Bitcoin financial infrastructure'**
+  String get landingHeroEyebrow;
+
+  /// No description provided for @landingHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Bitcoin bank.'**
+  String get landingHeroTitle;
+
+  /// No description provided for @landingHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene makes Bitcoin safer, more accessible, and more useful for people and businesses, with privacy, operational transparency, and real control over your assets.'**
+  String get landingHeroSubtitle;
+
+  /// No description provided for @landingHeroFeatureOnchainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain + Lightning'**
+  String get landingHeroFeatureOnchainTitle;
+
+  /// No description provided for @landingHeroFeatureOnchainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquidity and speed in one place.'**
+  String get landingHeroFeatureOnchainBody;
+
+  /// No description provided for @landingHeroFeatureInternalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal transfers'**
+  String get landingHeroFeatureInternalTitle;
+
+  /// No description provided for @landingHeroFeatureInternalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move balances between Kerosene users.'**
+  String get landingHeroFeatureInternalBody;
+
+  /// No description provided for @landingHeroFeatureSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Institutional security'**
+  String get landingHeroFeatureSecurityTitle;
+
+  /// No description provided for @landingHeroFeatureSecurityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Private architecture with continuous audit.'**
+  String get landingHeroFeatureSecurityBody;
+
+  /// No description provided for @landingWhatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What Kerosene does'**
+  String get landingWhatTitle;
+
+  /// No description provided for @landingFeatureWalletsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin wallets'**
+  String get landingFeatureWalletsTitle;
+
+  /// No description provided for @landingFeatureWalletsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and manage accounts and wallets with autonomy and security.'**
+  String get landingFeatureWalletsBody;
+
+  /// No description provided for @landingFeatureOnchainReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain receiving'**
+  String get landingFeatureOnchainReceiveTitle;
+
+  /// No description provided for @landingFeatureOnchainReceiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive Bitcoin by on-chain address with full control over your assets.'**
+  String get landingFeatureOnchainReceiveBody;
+
+  /// No description provided for @landingFeatureLightningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning'**
+  String get landingFeatureLightningTitle;
+
+  /// No description provided for @landingFeatureLightningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and pay Lightning invoices with speed and low cost.'**
+  String get landingFeatureLightningBody;
+
+  /// No description provided for @landingFeatureInternalTransfersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal transfers'**
+  String get landingFeatureInternalTransfersTitle;
+
+  /// No description provided for @landingFeatureInternalTransfersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move balances between Kerosene users instantly and privately.'**
+  String get landingFeatureInternalTransfersBody;
+
+  /// No description provided for @landingFeaturePaymentLinksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment links'**
+  String get landingFeaturePaymentLinksTitle;
+
+  /// No description provided for @landingFeaturePaymentLinksBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create links and payment requests to receive Bitcoin easily.'**
+  String get landingFeaturePaymentLinksBody;
+
+  /// No description provided for @landingFeatureRealtimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Real time'**
+  String get landingFeatureRealtimeTitle;
+
+  /// No description provided for @landingFeatureRealtimeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Track balances and transactions in real time with full transparency.'**
+  String get landingFeatureRealtimeBody;
+
+  /// No description provided for @landingAudienceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For people and businesses'**
+  String get landingAudienceTitle;
+
+  /// No description provided for @landingPeopleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For people'**
+  String get landingPeopleTitle;
+
+  /// No description provided for @landingPeopleDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily use with privacy and control.'**
+  String get landingPeopleDaily;
+
+  /// No description provided for @landingPeopleCustody.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure custody with institutional standards.'**
+  String get landingPeopleCustody;
+
+  /// No description provided for @landingPeopleSeparation.
+  ///
+  /// In en, this message translates to:
+  /// **'Separation between operational balance and observable cold wallets.'**
+  String get landingPeopleSeparation;
+
+  /// No description provided for @landingPeopleLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Login with passkey or TOTP.'**
+  String get landingPeopleLogin;
+
+  /// No description provided for @landingBusinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For businesses'**
+  String get landingBusinessTitle;
+
+  /// No description provided for @landingBusinessPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete web panel for teams and admins.'**
+  String get landingBusinessPanel;
+
+  /// No description provided for @landingBusinessOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational management of wallets and users.'**
+  String get landingBusinessOperations;
+
+  /// No description provided for @landingBusinessMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Infrastructure and liquidity monitoring.'**
+  String get landingBusinessMonitoring;
+
+  /// No description provided for @landingBusinessVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Real-time financial and operational view.'**
+  String get landingBusinessVision;
+
+  /// No description provided for @landingArchitectureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Architecture prepared for sensitive scenarios.'**
+  String get landingArchitectureTitle;
+
+  /// No description provided for @landingArchitectureSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene was designed beyond superficial integrations. A private, resilient, auditable Bitcoin infrastructure built for the long term.'**
+  String get landingArchitectureSubtitle;
+
+  /// No description provided for @landingArchitectureBitcoinCoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin Core'**
+  String get landingArchitectureBitcoinCoreTitle;
+
+  /// No description provided for @landingArchitectureBitcoinCoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Base layer for validation and consensus.'**
+  String get landingArchitectureBitcoinCoreBody;
+
+  /// No description provided for @landingArchitectureLightningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning'**
+  String get landingArchitectureLightningTitle;
+
+  /// No description provided for @landingArchitectureLightningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant and efficient payments.'**
+  String get landingArchitectureLightningBody;
+
+  /// No description provided for @landingArchitectureVaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault'**
+  String get landingArchitectureVaultTitle;
+
+  /// No description provided for @landingArchitectureVaultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Cold storage with security policy.'**
+  String get landingArchitectureVaultBody;
+
+  /// No description provided for @landingArchitectureMpcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MPC'**
+  String get landingArchitectureMpcTitle;
+
+  /// No description provided for @landingArchitectureMpcBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Distributed signatures without a single point of failure.'**
+  String get landingArchitectureMpcBody;
+
+  /// No description provided for @landingArchitectureTorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tor'**
+  String get landingArchitectureTorTitle;
+
+  /// No description provided for @landingArchitectureTorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy and anonymous routing.'**
+  String get landingArchitectureTorBody;
+
+  /// No description provided for @landingArchitectureShardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Regional shards'**
+  String get landingArchitectureShardsTitle;
+
+  /// No description provided for @landingArchitectureShardsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Infrastructure distributed by regions.'**
+  String get landingArchitectureShardsBody;
+
+  /// No description provided for @landingArchitectureLedgerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal ledger'**
+  String get landingArchitectureLedgerTitle;
+
+  /// No description provided for @landingArchitectureLedgerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Private and consistent accounting.'**
+  String get landingArchitectureLedgerBody;
+
+  /// No description provided for @landingArchitectureAuditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit'**
+  String get landingArchitectureAuditTitle;
+
+  /// No description provided for @landingArchitectureAuditBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous audit and operational transparency.'**
+  String get landingArchitectureAuditBody;
+
+  /// No description provided for @landingSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security at every layer.'**
+  String get landingSecurityTitle;
+
+  /// No description provided for @landingSecurityPasskeysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkeys and TOTP'**
+  String get landingSecurityPasskeysTitle;
+
+  /// No description provided for @landingSecurityPasskeysBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Modern authentication with passkeys and TOTP 2FA to protect access.'**
+  String get landingSecurityPasskeysBody;
+
+  /// No description provided for @landingSecurityVaultMpcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault and MPC'**
+  String get landingSecurityVaultMpcTitle;
+
+  /// No description provided for @landingSecurityVaultMpcBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody with MPC and distributed vaults for maximum resilience.'**
+  String get landingSecurityVaultMpcBody;
+
+  /// No description provided for @landingSecurityPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy by default'**
+  String get landingSecurityPrivacyTitle;
+
+  /// No description provided for @landingSecurityPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy incorporated across the whole operation, by design.'**
+  String get landingSecurityPrivacyBody;
+
+  /// No description provided for @landingSecurityAuditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational audit'**
+  String get landingSecurityAuditTitle;
+
+  /// No description provided for @landingSecurityAuditBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous monitoring, private logs, and independent audit.'**
+  String get landingSecurityAuditBody;
+
+  /// No description provided for @landingFinalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More control. Less exposure. More predictability.'**
+  String get landingFinalTitle;
+
+  /// No description provided for @landingFinalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene is private Bitcoin financial infrastructure for people and businesses that want to store, use, and move value with more control, security, and independence.'**
+  String get landingFinalBody;
+
+  /// No description provided for @landingFooterRights.
+  ///
+  /// In en, this message translates to:
+  /// **'© 2024 Kerosene. All rights reserved.'**
+  String get landingFooterRights;
+
+  /// No description provided for @landingFooterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get landingFooterStatus;
+
+  /// No description provided for @landingStatusOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational'**
+  String get landingStatusOnline;
+
+  /// No description provided for @landingStatusChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get landingStatusChecking;
+
+  /// No description provided for @landingStatusDegraded.
+  ///
+  /// In en, this message translates to:
+  /// **'Degraded'**
+  String get landingStatusDegraded;
+
+  /// No description provided for @landingStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get landingStatusUnavailable;
+
+  /// No description provided for @landingStatusAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'authorized'**
+  String get landingStatusAuthorized;
+
+  /// No description provided for @landingStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get landingStatusUnknown;
+
+  /// No description provided for @landingStatusPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene public status'**
+  String get landingStatusPageTitle;
+
+  /// No description provided for @landingStatusPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness and release published without secrets, tokens, or sensitive configuration.'**
+  String get landingStatusPageSubtitle;
+
+  /// No description provided for @landingStatusRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Release'**
+  String get landingStatusRelease;
+
+  /// No description provided for @landingStatusService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get landingStatusService;
+
+  /// No description provided for @landingStatusRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get landingStatusRegion;
+
+  /// No description provided for @landingStatusBuild.
+  ///
+  /// In en, this message translates to:
+  /// **'Build'**
+  String get landingStatusBuild;
+
+  /// No description provided for @landingStatusManifest.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifest'**
+  String get landingStatusManifest;
 }
 
 class _AppLocalizationsDelegate

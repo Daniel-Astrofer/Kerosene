@@ -2585,6 +2585,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeSendLightningSubtitle => 'Invoice, LNURL o Lightning Address';
 
   @override
+  String get homeSendMethodOnchainLabel => 'On-chain';
+
+  @override
+  String get homeSendMethodOnchainSubtitle =>
+      'Envía a cualquier dirección Bitcoin en la red.';
+
+  @override
+  String get homeSendMethodLightningLabel => 'Lightning';
+
+  @override
+  String get homeSendMethodLightningSubtitle =>
+      'Envía instantáneamente por Lightning Network.';
+
+  @override
+  String get homeSendMethodInternalLabel => 'Interno Kerosene';
+
+  @override
+  String get homeSendMethodInternalSubtitle =>
+      'Transferencia instantánea y sin tarifa.';
+
+  @override
   String get homeScanQrLabel => 'Escanear QR';
 
   @override
@@ -2789,6 +2810,67 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeOpenReceiveScreen => 'Abrir pantalla de recepción';
 
   @override
+  String get homeReceiveActionShort => 'Recibir';
+
+  @override
+  String homeGreetingMorning(String name) {
+    return 'Buen día, $name';
+  }
+
+  @override
+  String homeGreetingAfternoon(String name) {
+    return 'Buenas tardes, $name';
+  }
+
+  @override
+  String homeGreetingEvening(String name) {
+    return 'Buenas noches, $name';
+  }
+
+  @override
+  String get homeBalanceTotalLabel => 'SALDO TOTAL';
+
+  @override
+  String get homeLiveQuoteLabel => 'Cotización activa';
+
+  @override
+  String get homeKeroseneWalletLabel => 'BILLETERA KEROSENE';
+
+  @override
+  String get homeOnchainWalletLabel => 'BILLETERA ON-CHAIN';
+
+  @override
+  String get homeOtherWalletsLabel => 'OTROS';
+
+  @override
+  String get homeSecurityBannerTitle => 'Bitcoins bajo tu control.';
+
+  @override
+  String get homeSecurityBannerSubtitle =>
+      'Seguridad de punta para proteger lo que es tuyo.';
+
+  @override
+  String get homeLearnMoreAction => 'Saber más';
+
+  @override
+  String get homeSendBitcoinTitle => 'Enviar Bitcoin';
+
+  @override
+  String get homeSendBitcoinSubtitle =>
+      'Elige cómo quieres enviar tus bitcoins.';
+
+  @override
+  String homeTodayAt(String time) {
+    return 'Hoy, $time';
+  }
+
+  @override
+  String get homeCounterpartyTo => 'para';
+
+  @override
+  String get homeCounterpartyFrom => 'de';
+
+  @override
   String get authAccountAccessTitle => 'Acceso a la cuenta';
 
   @override
@@ -2878,6 +2960,23 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige tus credenciales de acceso a Kerosene.';
 
   @override
+  String get authSignupUsernameSubtitleDetailed =>
+      'Elige un nombre de usuario. Se usará para identificarte en Kerosene.';
+
+  @override
+  String get authSignupUsernameLabel => 'Nombre de usuario';
+
+  @override
+  String get authSignupUsernameRuleMin => 'Mínimo de 3 caracteres';
+
+  @override
+  String get authSignupUsernameRuleCharset =>
+      'Solo letras minúsculas (a-z), números (0-9) y guion bajo (_)';
+
+  @override
+  String get authSignupUsernameRuleLowercase => 'Se mostrará en minúsculas';
+
+  @override
   String get authUsernameMinError => 'Usa al menos 3 caracteres.';
 
   @override
@@ -2887,6 +2986,128 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get authPasswordStrengthMessage =>
       'Usa al menos 12 caracteres con mayúscula, minúscula, número y símbolo.';
+
+  @override
+  String get authSignupPassphraseTitle => 'Crea una passphrase fuerte';
+
+  @override
+  String get authSignupPassphraseSubtitle =>
+      'Protege tu cuenta y tus activos. Nadie en Kerosene tiene acceso a ella.';
+
+  @override
+  String get authSignupPassphraseLabel => 'Passphrase';
+
+  @override
+  String get authSignupPassphraseRuleMin => 'Mínimo de 12 caracteres';
+
+  @override
+  String get authSignupPassphraseRuleUppercase => 'Al menos 1 letra mayúscula';
+
+  @override
+  String get authSignupPassphraseRuleLowercase => 'Al menos 1 letra minúscula';
+
+  @override
+  String get authSignupPassphraseRuleNumber => 'Al menos 1 número';
+
+  @override
+  String get authSignupPassphraseRuleSymbol => 'Al menos 1 símbolo';
+
+  @override
+  String get authSignupConfirmPassphraseTitle => 'Confirma tu passphrase';
+
+  @override
+  String get authSignupConfirmPassphraseSubtitle =>
+      'Escríbela de nuevo para confirmar.';
+
+  @override
+  String get authSignupConfirmPassphraseLabel => 'Confirmar passphrase';
+
+  @override
+  String get authSignupPassphraseRiskAcknowledgement =>
+      'Entiendo que mi passphrase es la única forma de acceder a mi cuenta. Kerosene no puede restablecerla ni recuperarla. Si pierdo mi passphrase, puedo perder acceso a mis activos permanentemente.';
+
+  @override
+  String get authSignupCreatingTitle => 'Creando tu cuenta de forma segura';
+
+  @override
+  String get authSignupCreatingSubtitle => 'Esto puede tardar unos segundos.';
+
+  @override
+  String get authSignupCreatingChallenge => 'Obteniendo desafío de seguridad';
+
+  @override
+  String get authSignupCreatingPow => 'Resolviendo prueba de trabajo';
+
+  @override
+  String get authSignupCreatingAccount => 'Creando tu cuenta';
+
+  @override
+  String get authSignupPowNote =>
+      'La prueba de trabajo ayuda a proteger nuestra red contra abusos y bots.';
+
+  @override
+  String get authSignupTotpOptionalTitle =>
+      'Protege aún más tu cuenta (opcional)';
+
+  @override
+  String get authSignupTotpOptionalSubtitle =>
+      'Activa TOTP para una capa extra de seguridad.';
+
+  @override
+  String get authSignupTotpScanInstruction =>
+      'Escanea el código QR con tu app autenticadora';
+
+  @override
+  String get authSignupTotpCodeLabel => 'Código de 6 dígitos';
+
+  @override
+  String get authSignupRecoveryCodesTitle => 'Códigos de recuperación';
+
+  @override
+  String get authSignupRecoveryCodesBody =>
+      'Guárdalos en un lugar seguro. Pueden usarse para recuperar tu cuenta.';
+
+  @override
+  String get authSignupSkipForNowAction => 'Omitir por ahora';
+
+  @override
+  String get authSignupConfirmTotpAction => 'Confirmar TOTP';
+
+  @override
+  String get authSignupPasskeyTitle => 'Registrar passkey en este dispositivo';
+
+  @override
+  String get authSignupPasskeySubtitle =>
+      'La passkey es obligatoria para garantizar acceso seguro a tu cuenta.';
+
+  @override
+  String get authSignupPasskeyBiometricBullet =>
+      'Usa tu biometría o bloqueo de pantalla';
+
+  @override
+  String get authSignupPasskeyPasswordBullet =>
+      'Más seguro que las contraseñas tradicionales';
+
+  @override
+  String get authSignupPasskeyDeviceBullet =>
+      'Solo este dispositivo tendrá acceso';
+
+  @override
+  String get authSignupRegisterPasskeyAction => 'Registrar passkey';
+
+  @override
+  String get authSignupSuccessTitle => 'Cuenta creada con éxito';
+
+  @override
+  String get authSignupSuccessPreparingSubtitle =>
+      'Preparando tu acceso con seguridad.';
+
+  @override
+  String get authSignupSuccessSubtitle => 'Redirigiendo a tu billetera...';
+
+  @override
+  String get authSignupTotpCodeRequiredMessage =>
+      'Ingresa el código TOTP de 6 dígitos para confirmar.';
 
   @override
   String get authAccountCredentialsTitle => 'Cuenta y credenciales';
@@ -6079,4 +6300,295 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get miningBlocksUnavailable => 'indisponible';
+
+  @override
+  String get landingNavProduct => 'Producto';
+
+  @override
+  String get landingNavSecurity => 'Seguridad';
+
+  @override
+  String get landingNavBusiness => 'Empresas';
+
+  @override
+  String get landingNavInfrastructure => 'Infraestructura';
+
+  @override
+  String get landingNavFaq => 'FAQ';
+
+  @override
+  String get landingLoginAction => 'Entrar';
+
+  @override
+  String get landingCreateAccountAction => 'Crear cuenta';
+
+  @override
+  String get landingBusinessPanelAction => 'Ver panel empresarial';
+
+  @override
+  String get landingSalesAction => 'Hablar con ventas';
+
+  @override
+  String get landingHeroEyebrow => 'Infraestructura financiera Bitcoin privada';
+
+  @override
+  String get landingHeroTitle => 'Tu banco Bitcoin.';
+
+  @override
+  String get landingHeroSubtitle =>
+      'Kerosene hace que Bitcoin sea más seguro, accesible y útil para personas y empresas, con privacidad, transparencia operativa y control real de tus activos.';
+
+  @override
+  String get landingHeroFeatureOnchainTitle => 'On-chain + Lightning';
+
+  @override
+  String get landingHeroFeatureOnchainBody =>
+      'Liquidez y velocidad en el mismo lugar.';
+
+  @override
+  String get landingHeroFeatureInternalTitle => 'Transferencias internas';
+
+  @override
+  String get landingHeroFeatureInternalBody =>
+      'Mueve saldo entre usuarios Kerosene.';
+
+  @override
+  String get landingHeroFeatureSecurityTitle => 'Seguridad institucional';
+
+  @override
+  String get landingHeroFeatureSecurityBody =>
+      'Arquitectura privada con auditoría continua.';
+
+  @override
+  String get landingWhatTitle => 'Qué hace Kerosene';
+
+  @override
+  String get landingFeatureWalletsTitle => 'Billeteras Bitcoin';
+
+  @override
+  String get landingFeatureWalletsBody =>
+      'Crea y administra cuentas y billeteras con autonomía y seguridad.';
+
+  @override
+  String get landingFeatureOnchainReceiveTitle => 'Recepción on-chain';
+
+  @override
+  String get landingFeatureOnchainReceiveBody =>
+      'Recibe Bitcoin por dirección on-chain con control total sobre tus activos.';
+
+  @override
+  String get landingFeatureLightningTitle => 'Lightning';
+
+  @override
+  String get landingFeatureLightningBody =>
+      'Crea y paga invoices Lightning con velocidad y bajo costo.';
+
+  @override
+  String get landingFeatureInternalTransfersTitle => 'Transferencias internas';
+
+  @override
+  String get landingFeatureInternalTransfersBody =>
+      'Mueve saldo entre usuarios Kerosene de forma instantánea y privada.';
+
+  @override
+  String get landingFeaturePaymentLinksTitle => 'Payment links';
+
+  @override
+  String get landingFeaturePaymentLinksBody =>
+      'Crea enlaces y solicitudes de pago para recibir Bitcoin con facilidad.';
+
+  @override
+  String get landingFeatureRealtimeTitle => 'Tiempo real';
+
+  @override
+  String get landingFeatureRealtimeBody =>
+      'Sigue saldos y transacciones en tiempo real con total transparencia.';
+
+  @override
+  String get landingAudienceTitle => 'Para personas y empresas';
+
+  @override
+  String get landingPeopleTitle => 'Para personas';
+
+  @override
+  String get landingPeopleDaily => 'Uso diario con privacidad y control.';
+
+  @override
+  String get landingPeopleCustody =>
+      'Custodia segura con estándar institucional.';
+
+  @override
+  String get landingPeopleSeparation =>
+      'Separación entre saldo operativo y cold wallets observables.';
+
+  @override
+  String get landingPeopleLogin => 'Login con passkey o TOTP.';
+
+  @override
+  String get landingBusinessTitle => 'Para empresas';
+
+  @override
+  String get landingBusinessPanel =>
+      'Panel web completo para equipos y admins.';
+
+  @override
+  String get landingBusinessOperations =>
+      'Gestión operativa de billeteras y usuarios.';
+
+  @override
+  String get landingBusinessMonitoring =>
+      'Monitoreo de infraestructura y liquidez.';
+
+  @override
+  String get landingBusinessVision =>
+      'Visión financiera y operativa en tiempo real.';
+
+  @override
+  String get landingArchitectureTitle =>
+      'Arquitectura preparada para escenarios sensibles.';
+
+  @override
+  String get landingArchitectureSubtitle =>
+      'Kerosene fue diseñada más allá de integraciones superficiales. Una infraestructura Bitcoin privada, resiliente, auditable y construida para largo plazo.';
+
+  @override
+  String get landingArchitectureBitcoinCoreTitle => 'Bitcoin Core';
+
+  @override
+  String get landingArchitectureBitcoinCoreBody =>
+      'Capa base de validación y consenso.';
+
+  @override
+  String get landingArchitectureLightningTitle => 'Lightning';
+
+  @override
+  String get landingArchitectureLightningBody =>
+      'Pagos instantáneos y eficientes.';
+
+  @override
+  String get landingArchitectureVaultTitle => 'Vault';
+
+  @override
+  String get landingArchitectureVaultBody =>
+      'Almacenamiento en frío con política de seguridad.';
+
+  @override
+  String get landingArchitectureMpcTitle => 'MPC';
+
+  @override
+  String get landingArchitectureMpcBody =>
+      'Firmas distribuidas sin punto único de falla.';
+
+  @override
+  String get landingArchitectureTorTitle => 'Tor';
+
+  @override
+  String get landingArchitectureTorBody => 'Privacidad y ruteo anónimo.';
+
+  @override
+  String get landingArchitectureShardsTitle => 'Shards regionales';
+
+  @override
+  String get landingArchitectureShardsBody =>
+      'Infraestructura distribuida por regiones.';
+
+  @override
+  String get landingArchitectureLedgerTitle => 'Ledger interno';
+
+  @override
+  String get landingArchitectureLedgerBody =>
+      'Contabilidad privada y consistente.';
+
+  @override
+  String get landingArchitectureAuditTitle => 'Auditoría';
+
+  @override
+  String get landingArchitectureAuditBody =>
+      'Auditoría continua y transparencia operativa.';
+
+  @override
+  String get landingSecurityTitle => 'Seguridad en cada capa.';
+
+  @override
+  String get landingSecurityPasskeysTitle => 'Passkeys y TOTP';
+
+  @override
+  String get landingSecurityPasskeysBody =>
+      'Autenticación moderna con passkeys y 2FA TOTP para proteger accesos.';
+
+  @override
+  String get landingSecurityVaultMpcTitle => 'Vault y MPC';
+
+  @override
+  String get landingSecurityVaultMpcBody =>
+      'Custodia con MPC y vaults distribuidos para máxima resiliencia.';
+
+  @override
+  String get landingSecurityPrivacyTitle => 'Privacidad por defecto';
+
+  @override
+  String get landingSecurityPrivacyBody =>
+      'Privacidad incorporada en toda la operación, por diseño.';
+
+  @override
+  String get landingSecurityAuditTitle => 'Auditoría operativa';
+
+  @override
+  String get landingSecurityAuditBody =>
+      'Monitoreo continuo, logs privados y auditoría independiente.';
+
+  @override
+  String get landingFinalTitle =>
+      'Más control. Menos exposición. Más previsibilidad.';
+
+  @override
+  String get landingFinalBody =>
+      'Kerosene es infraestructura financiera Bitcoin privada para personas y empresas que quieren guardar, usar y mover valor con más control, seguridad e independencia.';
+
+  @override
+  String get landingFooterRights =>
+      '© 2024 Kerosene. Todos los derechos reservados.';
+
+  @override
+  String get landingFooterStatus => 'Status';
+
+  @override
+  String get landingStatusOnline => 'Operacional';
+
+  @override
+  String get landingStatusChecking => 'Verificando';
+
+  @override
+  String get landingStatusDegraded => 'Degradado';
+
+  @override
+  String get landingStatusUnavailable => 'No disponible';
+
+  @override
+  String get landingStatusAuthorized => 'autorizado';
+
+  @override
+  String get landingStatusUnknown => 'desconocido';
+
+  @override
+  String get landingStatusPageTitle => 'Status público Kerosene';
+
+  @override
+  String get landingStatusPageSubtitle =>
+      'Readiness y release publicados sin secretos, tokens ni configuración sensible.';
+
+  @override
+  String get landingStatusRelease => 'Release';
+
+  @override
+  String get landingStatusService => 'Servicio';
+
+  @override
+  String get landingStatusRegion => 'Región';
+
+  @override
+  String get landingStatusBuild => 'Build';
+
+  @override
+  String get landingStatusManifest => 'Manifesto';
 }

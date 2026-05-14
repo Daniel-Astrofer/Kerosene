@@ -35,15 +35,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Criar conta'), findsOneWidget);
-    expect(find.text('Conta e credenciais'), findsOneWidget);
     expect(
-      find.textContaining(
-        'Se você perder a senha sem os códigos de recuperação',
-      ),
+      find.text(
+          'Por favor, escolha um nome de usuário.\nEle será sua identificação exclusiva\nna Kerosene.'),
       findsOneWidget,
     );
     expect(
-      find.textContaining('Escolha seu identificador público'),
+      find.textContaining('Mínimo de 3 caracteres'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Apenas letras minúsculas'),
       findsOneWidget,
     );
     expect(find.textContaining('18 palavras'), findsNothing);

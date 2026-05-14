@@ -222,6 +222,7 @@ class WalletRepositoryImpl implements WalletRepository {
         receiverWalletName: toAddress,
         amount: amountSatoshis / 100000000.0,
         idempotencyKey: const Uuid().v4(),
+        requestTimestamp: DateTime.now().millisecondsSinceEpoch,
       );
 
       return Right(Transaction.fromJson(result));

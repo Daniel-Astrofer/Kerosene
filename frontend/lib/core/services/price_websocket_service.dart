@@ -3,6 +3,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
 
+class PriceTickerSnapshot {
+  final double priceUsd;
+  final double? dailyChangePercent;
+
+  const PriceTickerSnapshot({
+    required this.priceUsd,
+    required this.dailyChangePercent,
+  });
+}
+
 /// Service for real-time BTC price updates via WebSocket
 /// Primary: Binance, Backup: Coinbase.
 /// External market feeds stay on clearnet; only the sovereign backend uses Tor.
@@ -10,6 +20,7 @@ class PriceWebSocketService {
   IOWebSocketChannel? _primaryChannel;
   IOWebSocketChannel? _backupChannel;
   final _priceController = StreamController<double>.broadcast();
+  final _tickerController = StreamController<PriceTickerSnapshot>.broadcast();
   Timer? _reconnectTimer;
   bool _isDisposed = false;
   bool _usingBackup = false;
@@ -18,6 +29,7 @@ class PriceWebSocketService {
   static const int _maxRetries = 5;
 
   Stream<double> get priceStream => _priceController.stream;
+  Stream<PriceTickerSnapshot> get tickerStream => _tickerController.stream;
 
   void connect() {
     if (_isDisposed) return;
@@ -44,8 +56,15 @@ class PriceWebSocketService {
           try {
             final json = jsonDecode(data);
             final price = double.parse(json['c']); // Current price
+            final dailyChangePercent = double.tryParse('${json['P']}');
             if (!_isDisposed) {
               _priceController.add(price);
+              _tickerController.add(
+                PriceTickerSnapshot(
+                  priceUsd: price,
+                  dailyChangePercent: dailyChangePercent,
+                ),
+              );
             }
             _usingBackup = false;
             debugPrint(
@@ -104,8 +123,18 @@ class PriceWebSocketService {
             final json = jsonDecode(data);
             if (json['type'] == 'ticker' && json['price'] != null) {
               final price = double.parse(json['price']);
+              final open24h = double.tryParse('${json['open_24h']}');
+              final dailyChangePercent = open24h != null && open24h > 0
+                  ? ((price - open24h) / open24h) * 100
+                  : null;
               if (!_isDisposed) {
                 _priceController.add(price);
+                _tickerController.add(
+                  PriceTickerSnapshot(
+                    priceUsd: price,
+                    dailyChangePercent: dailyChangePercent,
+                  ),
+                );
               }
               debugPrint(
                 '>>> PriceWebSocket: Coinbase price: \$${price.toStringAsFixed(2)}',
@@ -165,5 +194,6 @@ class PriceWebSocketService {
     _primaryChannel?.sink.close();
     _backupChannel?.sink.close();
     _priceController.close();
+    _tickerController.close();
   }
 }

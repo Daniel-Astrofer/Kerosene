@@ -25,21 +25,25 @@ class BitcoinRefreshIndicator extends StatelessWidget {
             refreshState == RefreshIndicatorMode.refresh;
         final isVisible =
             pulledExtent > 0 || refreshState == RefreshIndicatorMode.done;
+        final opacity =
+            isVisible ? Curves.easeOutCubic.transform(pullProgress) : 0.0;
 
         return SizedBox(
           height: refreshIndicatorExtent,
           child: Center(
-            child: AnimatedOpacity(
-              opacity: isVisible ? Curves.easeOut.transform(pullProgress) : 0,
-              duration: const Duration(milliseconds: 120),
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  value: isRefreshing ? null : pullProgress,
-                  strokeWidth: 2.4,
-                  color: Colors.white.withValues(alpha: 0.84),
-                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+            child: RepaintBoundary(
+              child: Opacity(
+                opacity: opacity,
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    value: isRefreshing ? null : pullProgress,
+                    strokeWidth: 2.4,
+                    strokeCap: StrokeCap.round,
+                    color: Colors.white.withValues(alpha: 0.84),
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  ),
                 ),
               ),
             ),

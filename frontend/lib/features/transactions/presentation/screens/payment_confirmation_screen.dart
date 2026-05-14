@@ -317,7 +317,7 @@ class _FlowEndpointRow extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: receiveFlowPanelRaisedColor,
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: receiveFlowBorderStrongColor),
           ),
           child: Icon(icon, color: receiveFlowTextColor, size: 18),
@@ -531,7 +531,7 @@ class _ReceiptDetailRow extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: receiveFlowPanelAltColor,
-                  borderRadius: BorderRadius.circular(0),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: receiveFlowBorderStrongColor),
                 ),
                 child: SingleChildScrollView(

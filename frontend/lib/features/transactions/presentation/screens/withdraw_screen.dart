@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
@@ -24,6 +25,7 @@ import 'package:teste/features/transactions/domain/entities/fee_estimate.dart';
 import 'package:teste/features/transactions/domain/entities/withdraw_fee_quote_calculation.dart';
 import 'package:teste/features/transactions/presentation/screens/payment_confirmation_screen.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
@@ -111,6 +113,14 @@ class WithdrawScreen extends ConsumerStatefulWidget {
 }
 
 class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
+  static const Color _lightningBackgroundColor = Color(0xFF000000);
+  static const Color _lightningSurfaceColor = Color(0xFF111111);
+  static const Color _lightningBorderColor = Color(0xFF333333);
+  static const Color _lightningOutlineColor = Color(0xFF414753);
+  static const Color _lightningTextColor = Color(0xFFFFFFFF);
+  static const Color _lightningMutedTextColor = Color(0xFFA0A0A0);
+  static const Color _lightningVariantTextColor = Color(0xFFC1C6D5);
+
   static const double _defaultLightningRoutingFeeBtc = 0.00000100;
   static const Duration _feeEstimateDebounceDuration =
       Duration(milliseconds: 280);
@@ -128,7 +138,9 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedCurrency = ref.read(currencyProvider);
+    _selectedCurrency = widget.entryMode == WithdrawEntryMode.lightning
+        ? Currency.btc
+        : ref.read(currencyProvider);
     if (widget.initialDestination != null &&
         widget.initialDestination!.trim().isNotEmpty) {
       _addressController.text = widget.initialDestination!.trim();
@@ -302,7 +314,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final invoiceLower = withoutLightningPrefix.toLowerCase();
 
     if (RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(invoiceLower) ||
-        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(invoiceLower)) {
+        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(invoiceLower) ||
+        _looksLikeLightningAddress(withoutLightningPrefix)) {
       return _WithdrawDestinationAnalysis(
         type: _WithdrawDestinationType.lightning,
         normalizedValue: withoutLightningPrefix,
@@ -334,6 +347,16 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   bool _looksLikeBitcoinAddress(String value) {
     return looksLikeBitcoinAddress(value);
+  }
+
+  bool _looksLikeLightningAddress(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length > 254 || trimmed.contains(RegExp(r'\s'))) {
+      return false;
+    }
+    return RegExp(
+      r'^[a-zA-Z0-9._%+\-]{1,64}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$',
+    ).hasMatch(trimmed);
   }
 
   String _destinationLabel(
@@ -1122,6 +1145,25 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         destination.type != _WithdrawDestinationType.empty;
     final recentDestinations = _recentDestinationsForCurrentFlow();
 
+    if (!_useLegacyExternalWithdrawFlow()) {
+      return _buildLightningTransferFlow(
+        context,
+        wallet: wallet,
+        destination: destination,
+        feeQuote: feeQuote,
+        treasuryOverview: treasuryOverview,
+        expectedOnchainNetwork: expectedOnchainNetwork,
+        btcUsd: btcUsd,
+        btcEur: btcEur,
+        btcBrl: btcBrl,
+        canGoToAmountStep: canGoToAmountStep,
+        canContinueAmount: canContinueAmount,
+        isSubmittingWithdraw: isSubmittingWithdraw,
+        selfCustodyBlocked: selfCustodyBlocked,
+        treasuryLightningBlocked: treasuryLightningBlocked,
+      );
+    }
+
     return ReceiveFlowScaffold(
       title: _screenTitle(context),
       subtitle: widget.entryMode == WithdrawEntryMode.lightning
@@ -1249,16 +1291,1228 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   }
 
   void _handleBack() {
-    if (_currentStep == 1) {
+    if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
       );
-      setState(() => _currentStep = 0);
+      setState(() => _currentStep -= 1);
       return;
     }
 
     Navigator.pop(context);
+  }
+
+  bool _useLegacyExternalWithdrawFlow() => false;
+
+  Widget _buildLightningTransferFlow(
+    BuildContext context, {
+    required Wallet wallet,
+    required _WithdrawDestinationAnalysis destination,
+    required _WithdrawFeeQuote feeQuote,
+    required TreasuryOverview? treasuryOverview,
+    required BitcoinNetworkKind expectedOnchainNetwork,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    required bool canGoToAmountStep,
+    required bool canContinueAmount,
+    required bool isSubmittingWithdraw,
+    required bool selfCustodyBlocked,
+    required bool treasuryLightningBlocked,
+  }) {
+    return Scaffold(
+      backgroundColor: _lightningBackgroundColor,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildLightningInvoiceStep(
+              context,
+              destination: destination,
+              expectedOnchainNetwork: expectedOnchainNetwork,
+              canContinue: canGoToAmountStep,
+            ),
+            _buildLightningAmountStep(
+              context,
+              wallet: wallet,
+              feeQuote: feeQuote,
+              btcUsd: btcUsd,
+              btcEur: btcEur,
+              btcBrl: btcBrl,
+              canContinue: canContinueAmount,
+              selfCustodyBlocked: selfCustodyBlocked,
+              treasuryLightningBlocked: treasuryLightningBlocked,
+            ),
+            _buildLightningReviewStep(
+              context,
+              wallet: wallet,
+              destination: destination,
+              feeQuote: feeQuote,
+              treasuryOverview: treasuryOverview,
+              btcUsd: btcUsd,
+              btcEur: btcEur,
+              btcBrl: btcBrl,
+              isSubmittingWithdraw: isSubmittingWithdraw,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLightningTopBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _handleBack,
+            icon: const Icon(LucideIcons.arrowLeft, size: 22),
+            tooltip: context.l10n.authBackAction,
+            style: IconButton.styleFrom(
+              foregroundColor: _lightningTextColor,
+              backgroundColor: _lightningSurfaceColor,
+              side: const BorderSide(color: _lightningOutlineColor),
+              minimumSize: const Size.square(40),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const Spacer(),
+          const SizedBox(width: 40, height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightningInvoiceStep(
+    BuildContext context, {
+    required _WithdrawDestinationAnalysis destination,
+    required BitcoinNetworkKind expectedOnchainNetwork,
+    required bool canContinue,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildLightningTopBar(context),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 430),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _externalDestinationTitle(),
+                      style: GoogleFonts.ebGaramond(
+                        textStyle: Theme.of(context).textTheme.displaySmall,
+                        color: _lightningTextColor,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w500,
+                        height: 1.1,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      _externalDestinationInstruction(),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: _lightningMutedTextColor,
+                            fontSize: 14,
+                            height: 1.45,
+                            letterSpacing: 0,
+                          ),
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: _addressController,
+                      onChanged: (_) => setState(() {}),
+                      minLines: 1,
+                      maxLines: 1,
+                      cursorColor: _lightningTextColor,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.done,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: _lightningTextColor,
+                            fontSize: 16,
+                            fontFamily: 'JetBrainsMono',
+                            letterSpacing: 0,
+                          ),
+                      decoration: InputDecoration(
+                        hintText: _externalDestinationHint(),
+                        hintStyle:
+                            Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.34),
+                                  fontSize: 16,
+                                  letterSpacing: 0,
+                                ),
+                        suffixIcon: IconButton(
+                          tooltip: 'Escanear QR',
+                          onPressed: _scanLightningDestination,
+                          icon: const Icon(LucideIcons.scanLine, size: 22),
+                          color: _lightningTextColor,
+                        ),
+                        border: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: _lightningTextColor),
+                        ),
+                        enabledBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: _lightningTextColor),
+                        ),
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: _lightningTextColor,
+                            width: 1.4,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (destination.type != _WithdrawDestinationType.empty &&
+                        !canContinue)
+                      Text(
+                        _destinationValidationText(
+                          context,
+                          destination,
+                          expectedOnchainNetwork,
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _lightningMutedTextColor,
+                              height: 1.35,
+                            ),
+                      ),
+                    const SizedBox(height: 24),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildLightningSecondaryAction(
+                        label: 'Colar',
+                        icon: LucideIcons.clipboard,
+                        onTap: _pasteDestination,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          _buildLightningPrimaryButton(
+            context,
+            label: 'Continuar',
+            icon: LucideIcons.arrowRight,
+            enabled: canContinue,
+            onTap: () => _continueExternalDestination(
+              destination,
+              expectedOnchainNetwork: expectedOnchainNetwork,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightningAmountStep(
+    BuildContext context, {
+    required Wallet wallet,
+    required _WithdrawFeeQuote feeQuote,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    required bool canContinue,
+    required bool selfCustodyBlocked,
+    required bool treasuryLightningBlocked,
+  }) {
+    final amountBtc = _parsedAmountBtc(
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    final fiatLabel = _lightningFiatReference(
+      btcAmount: amountBtc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildLightningTopBar(context),
+          const SizedBox(height: 24),
+          Text(
+            'Qual o valor?',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  color: _lightningTextColor,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                  letterSpacing: 0,
+                ),
+          ),
+          const SizedBox(height: 32),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: _lightningSurfaceColor,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: _lightningBorderColor),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _externalNetworkIcon(),
+                    color: _lightningTextColor,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '${_externalNetworkLabel()} • Disponível: ${_formatBtcPlain(wallet.balance, decimalPlaces: 4)} BTC',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: _lightningMutedTextColor,
+                            fontSize: 14,
+                            height: 1.35,
+                            letterSpacing: 0,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (selfCustodyBlocked || treasuryLightningBlocked) ...[
+            const SizedBox(height: 16),
+            Text(
+              selfCustodyBlocked
+                  ? context.l10n.withdrawUiColdWalletSendBlocked
+                  : context.l10n.withdrawUiLiquidityBlockedMessage,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _lightningMutedTextColor,
+                    height: 1.4,
+                  ),
+            ),
+          ],
+          const Spacer(),
+          Column(
+            children: [
+              Transform.scale(
+                scale: 1.36,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _displayAmount,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.ebGaramond(
+                          textStyle: Theme.of(context).textTheme.displaySmall,
+                          color: _lightningTextColor,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w600,
+                          height: 1,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'BTC',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: _lightningMutedTextColor,
+                            fontSize: 14,
+                            height: 1,
+                            letterSpacing: 0,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                fiatLabel,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _lightningMutedTextColor,
+                      fontSize: 14,
+                      height: 1.35,
+                      letterSpacing: 0,
+                    ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          _buildLightningKeypad(context),
+          const SizedBox(height: 20),
+          _buildLightningPrimaryButton(
+            context,
+            label: 'Continuar',
+            icon: LucideIcons.arrowRight,
+            enabled: canContinue,
+            onTap: () => _continueExternalAmount(
+              wallet: wallet,
+              feeQuote: feeQuote,
+              selfCustodyBlocked: selfCustodyBlocked,
+              treasuryLightningBlocked: treasuryLightningBlocked,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightningReviewStep(
+    BuildContext context, {
+    required Wallet wallet,
+    required _WithdrawDestinationAnalysis destination,
+    required _WithdrawFeeQuote feeQuote,
+    required TreasuryOverview? treasuryOverview,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    required bool isSubmittingWithdraw,
+  }) {
+    final amountBtc = feeQuote.amountBtc;
+    final feeSats = (feeQuote.networkFeeBtc * 100000000).round();
+    final platformFeeLabel = _lightningFiatReference(
+      btcAmount: feeQuote.platformFeeBtc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+      includeApproxPrefix: false,
+    );
+    final networkFeeFiat = _lightningFiatReference(
+      btcAmount: feeQuote.networkFeeBtc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+      includeApproxPrefix: false,
+    );
+    final totalDebited = MoneyDisplay.format(
+      amount: feeQuote.totalDebitedBtc,
+      currency: Currency.btc,
+    );
+    final networkFeeValue = widget.entryMode == WithdrawEntryMode.lightning
+        ? '$feeSats sats'
+        : MoneyDisplay.format(
+            amount: feeQuote.networkFeeBtc,
+            currency: Currency.btc,
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildLightningTopBar(context),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _externalReviewTitle(),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.ebGaramond(
+                        textStyle: Theme.of(context).textTheme.displaySmall,
+                        color: _lightningTextColor,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w600,
+                        height: 1.1,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Verifique os detalhes antes de confirmar.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: _lightningMutedTextColor,
+                            fontSize: 14,
+                            height: 1.35,
+                          ),
+                    ),
+                    const SizedBox(height: 48),
+                    Column(
+                      children: [
+                        Text(
+                          'VALOR A ENVIAR',
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: _lightningMutedTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.6,
+                                  ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            const Text(
+                              '₿',
+                              style: TextStyle(
+                                color: _lightningVariantTextColor,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                _formatBtcPlain(amountBtc),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineLarge
+                                    ?.copyWith(
+                                      color: _lightningTextColor,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.1,
+                                      letterSpacing: 0,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _lightningFiatReference(
+                            btcAmount: amountBtc,
+                            btcUsd: btcUsd,
+                            btcEur: btcEur,
+                            btcBrl: btcBrl,
+                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: _lightningMutedTextColor,
+                                    fontSize: 14,
+                                    height: 1.35,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 42),
+                    _buildLightningReviewItem(
+                      context,
+                      icon: LucideIcons.wallet,
+                      label: 'De',
+                      value: wallet.name,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildLightningReviewItem(
+                      context,
+                      icon: _externalNetworkIcon(),
+                      label: _externalReviewDestinationLabel(),
+                      value: _shortExternalDestinationValue(
+                        destination.normalizedValue,
+                      ),
+                      monospace: true,
+                    ),
+                    const SizedBox(height: 24),
+                    _buildLightningFeeLine(
+                      context,
+                      label: _externalNetworkFeeLabel(),
+                      value: networkFeeValue,
+                      helper: networkFeeFiat,
+                    ),
+                    if (feeQuote.platformFeeBtc > 0) ...[
+                      const SizedBox(height: 16),
+                      _buildLightningFeeLine(
+                        context,
+                        label: 'Taxa Kerosene',
+                        value: MoneyDisplay.format(
+                          amount: feeQuote.platformFeeBtc,
+                          currency: Currency.btc,
+                        ),
+                        helper: platformFeeLabel,
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    _buildLightningFeeLine(
+                      context,
+                      label: 'Total debitado',
+                      value: totalDebited,
+                      helper: treasuryOverview == null
+                          ? 'Liquidez em verificação'
+                          : _treasuryLiquidityStateLabel(
+                              context, treasuryOverview),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: _buildLightningPrimaryButton(
+            context,
+            label: _externalConfirmLabel(),
+            icon: _externalNetworkIcon(),
+            enabled: !isSubmittingWithdraw,
+            isLoading: isSubmittingWithdraw,
+            onTap: () => _submitExternalPayment(
+              wallet: wallet,
+              destination: destination,
+              feeQuote: feeQuote,
+              treasuryOverview: treasuryOverview,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLightningReviewItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    bool monospace = false,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: _lightningBorderColor),
+          ),
+          child: Icon(icon, color: _lightningTextColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _lightningMutedTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                    ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _lightningTextColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: monospace ? 'JetBrainsMono' : null,
+                      height: 1.25,
+                      letterSpacing: 0,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLightningFeeLine(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required String helper,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: _lightningMutedTextColor,
+                        fontSize: 14,
+                        height: 1.35,
+                      ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                LucideIcons.info,
+                color: _lightningMutedTextColor,
+                size: 15,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _lightningTextColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              helper,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: _lightningMutedTextColor,
+                    fontSize: 12,
+                    height: 1.25,
+                  ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLightningSecondaryAction({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: _lightningTextColor, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _lightningTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLightningPrimaryButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: enabled && !isLoading ? onTap : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: _lightningTextColor,
+          foregroundColor: _lightningBackgroundColor,
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.22),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.42),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+        ),
+        icon: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: _lightningBackgroundColor,
+                ),
+              )
+            : Icon(icon, size: 18),
+        label: Text(label),
+      ),
+    );
+  }
+
+  Widget _buildLightningKeypad(BuildContext context) {
+    const rows = [
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+      ['.', '0', '←'],
+    ];
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          children: [
+            for (final row in rows)
+              Row(
+                children: [
+                  for (final key in row)
+                    Expanded(
+                      child: _buildLightningKeypadButton(context, key),
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLightningKeypadButton(BuildContext context, String key) {
+    final isBackspace = key == '←';
+    final label = key == '.' ? ',' : key;
+
+    return SizedBox(
+      height: 64,
+      child: TextButton(
+        onPressed: () => _onKeyTap(key),
+        style: TextButton.styleFrom(
+          foregroundColor:
+              isBackspace ? _lightningMutedTextColor : _lightningTextColor,
+          shape: const CircleBorder(),
+          textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+        ),
+        child: isBackspace
+            ? const Icon(LucideIcons.delete, size: 22)
+            : Text(label),
+      ),
+    );
+  }
+
+  void _goToStep(int step) {
+    if (!_pageController.hasClients) {
+      setState(() => _currentStep = step);
+      return;
+    }
+    setState(() => _currentStep = step);
+    _pageController.animateToPage(
+      step,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  void _continueExternalDestination(
+    _WithdrawDestinationAnalysis destination, {
+    required BitcoinNetworkKind expectedOnchainNetwork,
+  }) {
+    FocusScope.of(context).unfocus();
+    if (widget.entryMode == WithdrawEntryMode.lightning &&
+        !destination.isLightning) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.lightning,
+        message: context.l10n.withdrawUiLightningDestinationRequiredForFlow,
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.onChain &&
+        destination.isLightning) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.lightning,
+        message: context.l10n.withdrawUiLightningDestinationWrongFlow,
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.onChain &&
+        !destination.isOnChain) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawAddressLabel,
+        message: AppCopy.withdrawDestinationInvalid.resolve(context),
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.onChain &&
+        destination.isNetworkMismatch) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawAddressLabel,
+        message: context.l10n.withdrawUiConfiguredNetworkMismatch(
+          bitcoinNetworkDisplayName(expectedOnchainNetwork),
+        ),
+      );
+      return;
+    }
+    if (_addressController.text.trim() != destination.normalizedValue) {
+      _addressController.text = destination.normalizedValue;
+    }
+    _goToStep(1);
+  }
+
+  void _continueExternalAmount({
+    required Wallet wallet,
+    required _WithdrawFeeQuote feeQuote,
+    required bool selfCustodyBlocked,
+    required bool treasuryLightningBlocked,
+  }) {
+    if (selfCustodyBlocked) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawConfirmButton,
+        message: context.l10n.withdrawUiColdWalletSendBlocked,
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.lightning &&
+        treasuryLightningBlocked) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.lightning,
+        message: context.l10n.withdrawUiLiquidityBlockedMessage,
+      );
+      return;
+    }
+    if (_parsedAmount <= 0) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawConfirmButton,
+        message: context.l10n.errorAmountRequired,
+      );
+      return;
+    }
+
+    if (widget.entryMode == WithdrawEntryMode.onChain && !feeQuote.isReady) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawFeeSection,
+        message: feeQuote.isLoading
+            ? context.l10n.withdrawUiWaitFeeEstimate
+            : context.l10n.withdrawUiFeeEstimateUnavailable,
+      );
+      return;
+    }
+    if (wallet.balance > 0 && feeQuote.totalDebitedBtc > wallet.balance) {
+      AppNotice.showWarning(
+        context,
+        title: AppCopy.withdrawWalletBalanceLabel.resolve(context),
+        message: AppCopy.withdrawInsufficientBalance.resolve(context),
+      );
+      return;
+    }
+    _goToStep(2);
+  }
+
+  Future<void> _submitExternalPayment({
+    required Wallet wallet,
+    required _WithdrawDestinationAnalysis destination,
+    required _WithdrawFeeQuote feeQuote,
+    required TreasuryOverview? treasuryOverview,
+  }) async {
+    if (wallet.isSelfCustody) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawConfirmButton,
+        message: context.l10n.withdrawUiColdWalletSendBlocked,
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.lightning &&
+        treasuryOverview != null &&
+        !treasuryOverview.lightningSendsAllowed) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.lightning,
+        message: _treasuryLiquidityMessage(context, treasuryOverview),
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.lightning &&
+        !destination.isLightning) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.lightning,
+        message: context.l10n.withdrawUiLightningDestinationRequiredForFlow,
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.onChain &&
+        !destination.isOnChain) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawAddressLabel,
+        message: AppCopy.withdrawDestinationInvalid.resolve(context),
+      );
+      return;
+    }
+    if (_parsedAmount <= 0 || !feeQuote.hasAmount) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawConfirmButton,
+        message: context.l10n.errorAmountRequired,
+      );
+      return;
+    }
+    if (widget.entryMode == WithdrawEntryMode.onChain && !feeQuote.isReady) {
+      AppNotice.showWarning(
+        context,
+        title: context.l10n.withdrawFeeSection,
+        message: feeQuote.isLoading
+            ? context.l10n.withdrawUiWaitFeeEstimate
+            : context.l10n.withdrawUiFeeEstimateUnavailable,
+      );
+      return;
+    }
+    if (wallet.balance > 0 && feeQuote.totalDebitedBtc > wallet.balance) {
+      AppNotice.showWarning(
+        context,
+        title: AppCopy.withdrawWalletBalanceLabel.resolve(context),
+        message: AppCopy.withdrawInsufficientBalance.resolve(context),
+      );
+      return;
+    }
+
+    final securityProfile = await _resolveSecurityProfile(wallet);
+    if (!mounted) return;
+
+    String? totpCode;
+    if (securityProfile.requiresTotp) {
+      totpCode = await _requestLightningTotpCode();
+      if (!mounted || totpCode == null) {
+        return;
+      }
+    }
+
+    final result = await _handleWithdraw(
+      confirmationContext: context,
+      wallet: wallet,
+      destination: destination,
+      feeQuote: feeQuote,
+      securityProfile: securityProfile,
+      totpCode: totpCode,
+    );
+
+    if (!mounted) return;
+    if (result != null) {
+      Navigator.of(context).pop(result);
+    }
+  }
+
+  Future<String?> _requestLightningTotpCode() async {
+    final controller = TextEditingController();
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            backgroundColor: _lightningSurfaceColor,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            title: Text(
+              AppCopy.withdrawReviewEnterTotp.resolve(dialogContext),
+              style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(
+                    color: _lightningTextColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 6,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(
+                    color: _lightningTextColor,
+                    fontFamily: 'JetBrainsMono',
+                    letterSpacing: 3,
+                  ),
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '000000',
+                hintStyle: TextStyle(
+                  color: _lightningMutedTextColor.withValues(alpha: 0.55),
+                ),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: _lightningBorderColor),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: _lightningTextColor),
+                ),
+              ),
+              onSubmitted: (_) {
+                Navigator.of(dialogContext).pop(controller.text.trim());
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(context.l10n.withdrawCancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(controller.text.trim());
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: _lightningTextColor,
+                  foregroundColor: _lightningBackgroundColor,
+                ),
+                child: Text(context.l10n.withdrawUiContinue),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Future<void> _scanLightningDestination() async {
+    final payload = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    final value = payload?.trim();
+    if (!mounted || value == null || value.isEmpty) {
+      return;
+    }
+    setState(() {
+      _addressController.text = value;
+      _addressController.selection = TextSelection.fromPosition(
+        TextPosition(offset: value.length),
+      );
+    });
+  }
+
+  String _externalDestinationTitle() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Enviar via Lightning'
+        : 'Enviar On-chain';
+  }
+
+  String _externalDestinationInstruction() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Insira uma fatura Lightning, LNURL ou endereço relâmpago para iniciar a transferência.'
+        : 'Insira o endereço Bitcoin de destino para iniciar a transferência.';
+  }
+
+  String _externalDestinationHint() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'lnbc...'
+        : 'bc1...';
+  }
+
+  String _externalNetworkLabel() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Lightning'
+        : 'On-chain';
+  }
+
+  IconData _externalNetworkIcon() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? LucideIcons.zap
+        : LucideIcons.link;
+  }
+
+  String _externalReviewTitle() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Revisar pagamento'
+        : 'Revisar envio';
+  }
+
+  String _externalReviewDestinationLabel() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Para (Invoice)'
+        : 'Para (Endereço)';
+  }
+
+  String _externalNetworkFeeLabel() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Taxa Lightning'
+        : 'Taxa da rede';
+  }
+
+  String _externalConfirmLabel() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Confirmar Pagamento'
+        : 'Confirmar envio';
+  }
+
+  String _formatBtcPlain(double amount, {int decimalPlaces = 8}) {
+    return MoneyDisplay.format(
+      amount: amount,
+      currency: Currency.btc,
+      withSymbol: false,
+      decimalPlaces: decimalPlaces,
+    );
+  }
+
+  String _lightningFiatReference({
+    required double btcAmount,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    bool includeApproxPrefix = true,
+  }) {
+    final value = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: btcAmount,
+      currency: Currency.brl,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    return includeApproxPrefix ? '≈ $value' : value;
+  }
+
+  String _shortExternalDestinationValue(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '--';
+    }
+    if (trimmed.length <= 18) {
+      return trimmed;
+    }
+    return '${trimmed.substring(0, 12)}...';
   }
 
   Widget _buildAmountCard(
@@ -1317,7 +2571,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 ? 0
                 : (amountBtc / wallet.balance).clamp(0.0, 1.0),
             minHeight: 6,
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(999),
             color: receiveFlowTextColor,
             backgroundColor: receiveFlowDividerColor,
           ),
@@ -1411,7 +2665,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         DecoratedBox(
           decoration: BoxDecoration(
             color: receiveFlowPanelColor,
-            borderRadius: BorderRadius.circular(0),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: receiveFlowBorderStrongColor),
           ),
           child: TextField(
@@ -1520,17 +2774,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               filled: true,
               fillColor: receiveFlowPanelAltColor,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(10),
                 borderSide:
                     const BorderSide(color: receiveFlowBorderStrongColor),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(10),
                 borderSide:
                     const BorderSide(color: receiveFlowBorderStrongColor),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: receiveFlowMutedTextColor),
               ),
             ),
@@ -1931,7 +3185,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: receiveFlowPanelAltColor,
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: receiveFlowBorderStrongColor),
               ),
               child: Text(
@@ -1948,7 +3202,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: receiveFlowPanelAltColor,
-                borderRadius: BorderRadius.circular(0),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: receiveFlowBorderStrongColor),
               ),
               child: Text(
@@ -2098,14 +3352,14 @@ class _FeeModeOption extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(0),
+      borderRadius: BorderRadius.circular(10),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: selected ? receiveFlowPanelAltColor : receiveFlowPanelColor,
-          borderRadius: BorderRadius.circular(0),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: borderColor),
         ),
         child: Row(
