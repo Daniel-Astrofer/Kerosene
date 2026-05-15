@@ -118,7 +118,7 @@ class LiveFeeGrid extends StatelessWidget {
                     'Faixa de inclusão imediata',
                     style: AppTypography.caption.copyWith(
                       color: miningMuted,
-                      fontFamily: 'HubotSansCondensed',
+                      fontFamily: 'IBM Plex Sans',
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.0,
                     ),
@@ -178,7 +178,7 @@ class _FeeTile extends StatelessWidget {
             label.toUpperCase(),
             style: AppTypography.caption.copyWith(
               color: accent,
-              fontFamily: 'HubotSansCondensed',
+              fontFamily: 'IBM Plex Sans',
               fontWeight: FontWeight.w800,
               letterSpacing: 1.0,
             ),
@@ -305,7 +305,7 @@ class _BandLabel extends StatelessWidget {
           label,
           style: AppTypography.caption.copyWith(
             color: miningMuted,
-            fontFamily: 'HubotSansCondensed',
+            fontFamily: 'IBM Plex Sans',
           ),
         ),
         const SizedBox(height: AppSpacing.xs),

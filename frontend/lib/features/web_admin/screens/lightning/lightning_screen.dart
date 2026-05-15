@@ -41,10 +41,12 @@ class LightningScreen extends ConsumerWidget {
                 final activeChannels = _asInt(node['numActiveChannels']);
                 final inactiveChannels = _asInt(node['numInactiveChannels']);
                 final pendingChannels = _asInt(node['numPendingChannels']);
-                final totalChannels = activeChannels + inactiveChannels + pendingChannels;
+                final totalChannels =
+                    activeChannels + inactiveChannels + pendingChannels;
                 final localBalance = _asInt(node['localBalanceSats']);
                 final remoteBalance = _asInt(node['remoteBalanceSats']);
-                final walletBalance = _asInt(node['walletConfirmedBalanceSats']);
+                final walletBalance =
+                    _asInt(node['walletConfirmedBalanceSats']);
 
                 return Column(
                   children: [
@@ -60,22 +62,26 @@ class LightningScreen extends ConsumerWidget {
                         AdminMetricCard(
                           label: 'Block Height',
                           value: '${node['blockHeight'] ?? 0}',
-                          subtitle: 'synced chain ${node['syncedToChain'] == true}',
+                          subtitle:
+                              'synced chain ${node['syncedToChain'] == true}',
                           icon: Icons.layers_outlined,
                         ),
                         AdminMetricCard(
                           label: 'Peers',
                           value: '$peers',
-                          subtitle: 'graph synced ${node['syncedToGraph'] == true}',
+                          subtitle:
+                              'graph synced ${node['syncedToGraph'] == true}',
                           icon: Icons.hub_outlined,
                         ),
                         AdminMetricCard(
                           label: 'Channels',
                           value: '$totalChannels',
-                          subtitle: '$activeChannels active | $pendingChannels pending',
+                          subtitle:
+                              '$activeChannels active | $pendingChannels pending',
                           icon: Icons.account_tree_outlined,
-                          accentColor:
-                              pendingChannels == 0 ? AdminColors.positive : AdminColors.warning,
+                          accentColor: pendingChannels == 0
+                              ? AdminColors.positive
+                              : AdminColors.warning,
                         ),
                       ],
                     ),
@@ -86,14 +92,20 @@ class LightningScreen extends ConsumerWidget {
                         spacing: 24,
                         runSpacing: 12,
                         children: [
-                          _KeyValue('Primary source', '${data['primarySource']}'),
-                          _KeyValue('Checked at', '${data['checkedAt'] ?? 'unknown'}'),
-                          _KeyValue('Alias', '${node['alias'] ?? 'not configured'}'),
-                          _KeyValue('Version', '${node['version'] ?? 'unknown'}'),
+                          _KeyValue(
+                              'Primary source', '${data['primarySource']}'),
+                          _KeyValue('Checked at',
+                              '${data['checkedAt'] ?? 'unknown'}'),
+                          _KeyValue(
+                              'Alias', '${node['alias'] ?? 'not configured'}'),
+                          _KeyValue(
+                              'Version', '${node['version'] ?? 'unknown'}'),
                           _KeyValue('Node key', _short(node['identityPubkey'])),
                           _KeyValue('Block hash', _short(node['blockHash'])),
-                          _KeyValue('Synced to chain', '${node['syncedToChain'] == true}'),
-                          _KeyValue('Synced to graph', '${node['syncedToGraph'] == true}'),
+                          _KeyValue('Synced to chain',
+                              '${node['syncedToChain'] == true}'),
+                          _KeyValue('Synced to graph',
+                              '${node['syncedToGraph'] == true}'),
                         ],
                       ),
                     ),
@@ -131,7 +143,8 @@ class LightningScreen extends ConsumerWidget {
                         children: const [
                           _BoundaryRow(
                             label: 'Visible here',
-                            value: 'node status, sync flags, channel counts, aggregate balances',
+                            value:
+                                'node status, sync flags, channel counts, aggregate balances',
                             variant: AdminBadgeVariant.info,
                           ),
                           _BoundaryRow(
@@ -285,7 +298,9 @@ Color _statusColor(String status) {
   if (normalized == 'UP' || normalized == 'OK' || normalized == 'ONLINE') {
     return AdminColors.positive;
   }
-  if (normalized == 'DOWN' || normalized == 'ERROR') return AdminColors.negative;
+  if (normalized == 'DOWN' || normalized == 'ERROR') {
+    return AdminColors.negative;
+  }
   return AdminColors.warning;
 }
 

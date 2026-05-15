@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teste/core/network/api_client_provider.dart';
 
-final publicMobileDownloadProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final publicMobileDownloadProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
   final response = await ref.watch(apiClientProvider).get(
         '/api/public/mobile-download',
       );
@@ -11,7 +12,8 @@ final publicMobileDownloadProvider = FutureProvider<Map<String, dynamic>>((ref) 
   return <String, dynamic>{};
 });
 
-final publicReadinessProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final publicReadinessProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
   final response = await ref.watch(apiClientProvider).get('/health/ready');
   if (response.data is Map) {
     return Map<String, dynamic>.from(response.data as Map);

@@ -111,15 +111,15 @@ class _Header extends StatelessWidget {
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: monoTextColor,
-                  fontSize: responsive.compactFontSize(
-                    tiny: 22,
-                    compact: 24,
-                    regular: 25,
-                  ),
-                  height: 1.05,
-                  fontWeight: FontWeight.w700,
-                ),
+                      color: monoTextColor,
+                      fontSize: responsive.compactFontSize(
+                        tiny: 22,
+                        compact: 24,
+                        regular: 25,
+                      ),
+                      height: 1.05,
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
             ),
           ],
@@ -128,9 +128,9 @@ class _Header extends StatelessWidget {
         Text(
           subtitle,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: monoMutedTextColor,
-            height: 1.4,
-          ),
+                color: monoMutedTextColor,
+                height: 1.4,
+              ),
         ),
       ],
     );
@@ -235,9 +235,8 @@ class _BitcoinAccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isInternal = account.isInternal;
-    final balance = isInternal
-        ? account.balanceAvailableSats
-        : account.observedBalanceSats;
+    final balance =
+        isInternal ? account.balanceAvailableSats : account.observedBalanceSats;
     final note = isInternal
         ? context.l10n.bitcoinAccountsKeroseneCardNote
         : context.l10n.bitcoinAccountsColdWalletNote;
@@ -284,10 +283,10 @@ class _BitcoinAccountCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: monoTextColor,
-              fontWeight: FontWeight.w700,
-              height: 1.1,
-            ),
+                  color: monoTextColor,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -295,9 +294,9 @@ class _BitcoinAccountCard extends StatelessWidget {
                 ? context.l10n.bitcoinAccountsAvailableBalance
                 : context.l10n.bitcoinAccountsObservedBalance,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: monoMutedTextColor,
-              letterSpacing: 0,
-            ),
+                  color: monoMutedTextColor,
+                  letterSpacing: 0,
+                ),
           ),
           const SizedBox(height: 4),
           FittedBox(
@@ -307,24 +306,24 @@ class _BitcoinAccountCard extends StatelessWidget {
               _formatSats(balance),
               maxLines: 1,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: monoTextColor,
-                fontFamily: AppTypography.numericFontFamily,
-                fontSize: context.responsive.compactFontSize(
-                  tiny: 24,
-                  compact: 26,
-                  regular: 28,
-                ),
-                fontWeight: FontWeight.w700,
-              ),
+                    color: monoTextColor,
+                    fontFamily: AppTypography.numericFontFamily,
+                    fontSize: context.responsive.compactFontSize(
+                      tiny: 24,
+                      compact: 26,
+                      regular: 28,
+                    ),
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             note,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: monoMutedTextColor,
-              height: 1.35,
-            ),
+                  color: monoMutedTextColor,
+                  height: 1.35,
+                ),
           ),
           if (isInternal &&
               (account.balancePendingSats > 0 ||
@@ -389,9 +388,9 @@ class _MiniMetric extends StatelessWidget {
         child: Text(
           '$label · ${_formatSats(sats)}',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: monoMutedTextColor,
-            letterSpacing: 0,
-          ),
+                color: monoMutedTextColor,
+                letterSpacing: 0,
+              ),
         ),
       ),
     );
@@ -473,7 +472,8 @@ class _ColdWalletCreationScreenState
       0,
       words.length ~/ 2,
       max(0, words.length - 1),
-    }.toList()..sort();
+    }.toList()
+      ..sort();
     for (final controller in _verificationControllers) {
       controller.dispose();
     }
@@ -584,14 +584,14 @@ class _ColdWalletCreationScreenState
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: monoTextColor,
-                        fontSize: responsive.compactFontSize(
-                          tiny: 19,
-                          compact: 21,
-                          regular: 22,
-                        ),
-                        fontWeight: FontWeight.w700,
-                      ),
+                            color: monoTextColor,
+                            fontSize: responsive.compactFontSize(
+                              tiny: 19,
+                              compact: 21,
+                              regular: 22,
+                            ),
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                   ),
                 ],
@@ -715,9 +715,9 @@ class _ColdWalletCreationScreenState
                       child: Text(
                         context.l10n.coldWalletBackupTitle,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: monoTextColor,
-                          fontWeight: FontWeight.w700,
-                        ),
+                              color: monoTextColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ),
                   ],
@@ -847,17 +847,17 @@ class _ColdWalletLevelTile extends StatelessWidget {
                     Text(
                       level.title(context),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: monoTextColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+                            color: monoTextColor,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       level.body(context),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: monoMutedTextColor,
-                        height: 1.35,
-                      ),
+                            color: monoMutedTextColor,
+                            height: 1.35,
+                          ),
                     ),
                   ],
                 ),
@@ -893,9 +893,9 @@ class _ChecklistTile extends StatelessWidget {
       title: Text(
         text,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: monoMutedTextColor,
-          height: 1.35,
-        ),
+              color: monoMutedTextColor,
+              height: 1.35,
+            ),
       ),
     );
   }
@@ -931,9 +931,9 @@ class _SeedWordBadge extends StatelessWidget {
             Text(
               word,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: monoTextColor,
-                fontWeight: FontWeight.w700,
-              ),
+                    color: monoTextColor,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ],
         ),
@@ -1092,10 +1092,8 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
 
   Widget _buildLiveRequest(BuildContext context) {
     final result = _result!;
-    final qrSize = context.responsive
-        .clampWidth(210)
-        .clamp(168.0, 210.0)
-        .toDouble();
+    final qrSize =
+        context.responsive.clampWidth(210).clamp(168.0, 210.0).toDouble();
 
     return Column(
       children: [
@@ -1121,9 +1119,9 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
           address: result.address,
           style: AppTypography.technicalMono(
             textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: monoTextColor,
-              fontWeight: FontWeight.w700,
-            ),
+                  color: monoTextColor,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -1309,14 +1307,14 @@ class _SheetScaffold extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: monoTextColor,
-                    fontSize: responsive.compactFontSize(
-                      tiny: 18,
-                      compact: 19,
-                      regular: 20,
-                    ),
-                    fontWeight: FontWeight.w700,
-                  ),
+                        color: monoTextColor,
+                        fontSize: responsive.compactFontSize(
+                          tiny: 18,
+                          compact: 19,
+                          regular: 20,
+                        ),
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 child,
@@ -1341,9 +1339,9 @@ class _SectionTitle extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: monoTextColor,
-          fontWeight: FontWeight.w700,
-        ),
+              color: monoTextColor,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
@@ -1366,10 +1364,10 @@ class _Pill extends StatelessWidget {
         child: Text(
           text,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: monoMutedTextColor,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0,
-          ),
+                color: monoMutedTextColor,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
         ),
       ),
     );
@@ -1428,18 +1426,18 @@ class _StatePanel extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: monoTextColor,
-              fontWeight: FontWeight.w700,
-            ),
+                  color: monoTextColor,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             message,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: monoMutedTextColor,
-              height: 1.35,
-            ),
+                  color: monoMutedTextColor,
+                  height: 1.35,
+                ),
           ),
           const SizedBox(height: AppSpacing.md),
           FilledButton(

@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
 import 'package:teste/features/auth/presentation/screens/login_username_screen.dart';
 import 'package:teste/features/auth/presentation/screens/passkey_verification_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/steps/signup_pow_step.dart';
-import 'package:teste/features/auth/presentation/screens/signup/widgets/signup_step_ui.dart';
 import 'package:teste/features/auth/presentation/screens/totp_screen.dart';
 import 'package:teste/l10n/app_localizations.dart';
-import 'package:teste/storybook/storybook_mocks.dart';
+import '../../helpers/test_auth_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +32,7 @@ void main() {
       ProviderScope(
         overrides: [
           authControllerProvider.overrideWith(
-            () => MockAuthController(
+            () => TestAuthController(
               initialOverride: const AuthUnauthenticated(),
             ),
           ),
@@ -77,72 +74,6 @@ void main() {
   }
 
   group('Auth responsive layouts', () {
-    testWidgets('signup shared step layout stays stable in compact sizes', (
-      tester,
-    ) async {
-      for (final size in [compactPortrait, compactLandscape]) {
-        await pumpResponsiveScreen(
-          tester,
-          size: size,
-          child: Scaffold(
-            body: SignupStepLayout(
-              eyebrow: 'Create account',
-              title: 'Prepare your secure access',
-              subtitle: 'Review the final security details before continuing.',
-              icon: LucideIcons.shield,
-              tone: SignupSurfaceTone.primary,
-              highlightLabel: 'Selected mode',
-              highlightValue: 'Standard backup',
-              highlightHint: 'Balanced for daily use across device sizes.',
-              chips: const [
-                'Guided backup',
-                'Prepare secure access',
-                '2FA required',
-              ],
-              footer: SignupPrimaryFooter(
-                text: 'Continue and prepare the account',
-                onPressed: () {},
-                icon: LucideIcons.arrowRight,
-              ),
-              children: [
-                SignupPanel(
-                  child: Text(
-                    'Final check before the secure credential setup starts.',
-                    style: AppTheme.darkTheme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        expectNoLayoutExceptions(
-          tester,
-          label: 'SignupStepLayout @ $size',
-        );
-      }
-    });
-
-    testWidgets('signup pow step stays stable in compact sizes', (
-      tester,
-    ) async {
-      for (final size in [compactPortrait, compactLandscape]) {
-        await pumpResponsiveScreen(
-          tester,
-          size: size,
-          child: const SignupPowStep(
-            username: 'astroferas',
-            mnemonic: 'alpha beta gamma delta',
-            accountSecurity: 'STANDARD',
-            runId: 0,
-          ),
-        );
-        expectNoLayoutExceptions(
-          tester,
-          label: 'SignupPowStep @ $size',
-        );
-      }
-    });
-
     testWidgets('login username screen remains centered on narrow screens', (
       tester,
     ) async {

@@ -104,7 +104,7 @@ class _AdminSidebar extends ConsumerWidget {
                     child: Text(
                       'K',
                       style: TextStyle(
-                        fontFamily: 'HubotSans',
+                        fontFamily: 'IBM Plex Sans',
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -117,7 +117,7 @@ class _AdminSidebar extends ConsumerWidget {
                   const Text(
                     'KEROSENE',
                     style: TextStyle(
-                      fontFamily: 'HubotSans',
+                      fontFamily: 'IBM Plex Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AdminColors.textPrimary,

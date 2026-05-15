@@ -60,7 +60,8 @@ class VolatilityScreen extends ConsumerWidget {
                       AdminMetricCard(
                         label: 'Aggregate Volume USD',
                         value: '\$${_fmtPrice(volumeUsd)}',
-                        subtitle: '${kpis.totalVolumeBtc.toStringAsFixed(8)} BTC aggregate',
+                        subtitle:
+                            '${kpis.totalVolumeBtc.toStringAsFixed(8)} BTC aggregate',
                         icon: Icons.bar_chart,
                       ),
                     ],
@@ -71,9 +72,18 @@ class VolatilityScreen extends ConsumerWidget {
                       _ExposureCard(
                         title: 'Aggregate flow',
                         rows: [
-                          ('Total inflow', '${kpis.inflowBtc.toStringAsFixed(8)} BTC'),
-                          ('Total outflow', '${kpis.outflowBtc.toStringAsFixed(8)} BTC'),
-                          ('Net flow', '${kpis.netFlowBtc.toStringAsFixed(8)} BTC'),
+                          (
+                            'Total inflow',
+                            '${kpis.inflowBtc.toStringAsFixed(8)} BTC'
+                          ),
+                          (
+                            'Total outflow',
+                            '${kpis.outflowBtc.toStringAsFixed(8)} BTC'
+                          ),
+                          (
+                            'Net flow',
+                            '${kpis.netFlowBtc.toStringAsFixed(8)} BTC'
+                          ),
                           ('Fees USD', '\$${feesUsd.toStringAsFixed(2)}'),
                         ],
                       ),

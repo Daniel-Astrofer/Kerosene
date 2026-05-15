@@ -111,7 +111,9 @@ class _LedgerIntegrityCard extends StatelessWidget {
       child: sov.when(
         data: (data) {
           final value = data['ledgerIntegrity'];
-          final integrity = value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
+          final integrity = value is Map
+              ? Map<String, dynamic>.from(value)
+              : <String, dynamic>{};
           if (integrity.isEmpty) {
             return Text(
               'Ledger integrity data unavailable',

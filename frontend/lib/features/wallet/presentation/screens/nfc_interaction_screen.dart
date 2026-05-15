@@ -330,7 +330,7 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                 fontWeight: FontWeight.w200,
                 letterSpacing: 0,
                 color: Theme.of(context).colorScheme.primary,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBM Plex Mono',
               ),
           textAlign: TextAlign.center,
         ),

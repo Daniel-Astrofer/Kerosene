@@ -19,6 +19,8 @@ class PriceTickerSnapshot {
 class PriceWebSocketService {
   IOWebSocketChannel? _primaryChannel;
   IOWebSocketChannel? _backupChannel;
+  StreamSubscription<dynamic>? _primarySubscription;
+  StreamSubscription<dynamic>? _backupSubscription;
   final _priceController = StreamController<double>.broadcast();
   final _tickerController = StreamController<PriceTickerSnapshot>.broadcast();
   Timer? _reconnectTimer;
@@ -40,6 +42,7 @@ class PriceWebSocketService {
   Future<void> _connectPrimary() async {
     if (_isConnecting || _isDisposed) return;
     _isConnecting = true;
+    _closePrimary();
 
     try {
       debugPrint('>>> PriceWebSocket: Connecting to Binance via clearnet...');
@@ -51,21 +54,18 @@ class PriceWebSocketService {
       debugPrint('>>> PriceWebSocket: Binance connected.');
       _retryCount = 0;
 
-      _primaryChannel!.stream.listen(
+      _primarySubscription = _primaryChannel!.stream.listen(
         (data) {
           try {
             final json = jsonDecode(data);
             final price = double.parse(json['c']); // Current price
             final dailyChangePercent = double.tryParse('${json['P']}');
-            if (!_isDisposed) {
-              _priceController.add(price);
-              _tickerController.add(
-                PriceTickerSnapshot(
-                  priceUsd: price,
-                  dailyChangePercent: dailyChangePercent,
-                ),
-              );
-            }
+            _emitTicker(
+              PriceTickerSnapshot(
+                priceUsd: price,
+                dailyChangePercent: dailyChangePercent,
+              ),
+            );
             _usingBackup = false;
             debugPrint(
               '>>> PriceWebSocket: Binance price: \$${price.toStringAsFixed(2)}',
@@ -76,10 +76,13 @@ class PriceWebSocketService {
         },
         onError: (error) {
           debugPrint('>>> PriceWebSocket: Binance error: $error');
+          _closePrimary();
           _connectBackup();
         },
         onDone: () {
           debugPrint('>>> PriceWebSocket: Binance connection closed');
+          _primarySubscription = null;
+          _primaryChannel = null;
           if (!_isDisposed && !_usingBackup) {
             _scheduleReconnect();
           }
@@ -95,6 +98,7 @@ class PriceWebSocketService {
 
   Future<void> _connectBackup() async {
     if (_usingBackup || _isDisposed) return;
+    _closeBackup();
 
     try {
       debugPrint(
@@ -117,7 +121,7 @@ class PriceWebSocketService {
       });
       _backupChannel!.sink.add(subscribeMessage);
 
-      _backupChannel!.stream.listen(
+      _backupSubscription = _backupChannel!.stream.listen(
         (data) {
           try {
             final json = jsonDecode(data);
@@ -127,15 +131,12 @@ class PriceWebSocketService {
               final dailyChangePercent = open24h != null && open24h > 0
                   ? ((price - open24h) / open24h) * 100
                   : null;
-              if (!_isDisposed) {
-                _priceController.add(price);
-                _tickerController.add(
-                  PriceTickerSnapshot(
-                    priceUsd: price,
-                    dailyChangePercent: dailyChangePercent,
-                  ),
-                );
-              }
+              _emitTicker(
+                PriceTickerSnapshot(
+                  priceUsd: price,
+                  dailyChangePercent: dailyChangePercent,
+                ),
+              );
               debugPrint(
                 '>>> PriceWebSocket: Coinbase price: \$${price.toStringAsFixed(2)}',
               );
@@ -146,10 +147,13 @@ class PriceWebSocketService {
         },
         onError: (error) {
           debugPrint('>>> PriceWebSocket: Coinbase error: $error');
+          _closeBackup();
           _scheduleReconnect();
         },
         onDone: () {
           debugPrint('>>> PriceWebSocket: Coinbase connection closed');
+          _backupSubscription = null;
+          _backupChannel = null;
           if (!_isDisposed) {
             _scheduleReconnect();
           }
@@ -187,12 +191,52 @@ class PriceWebSocketService {
     });
   }
 
+  void _emitTicker(PriceTickerSnapshot ticker) {
+    if (_isDisposed ||
+        _priceController.isClosed ||
+        _tickerController.isClosed) {
+      return;
+    }
+    _priceController.add(ticker.priceUsd);
+    _tickerController.add(ticker);
+  }
+
+  void _closePrimary() {
+    final subscription = _primarySubscription;
+    _primarySubscription = null;
+    if (subscription != null) {
+      unawaited(subscription.cancel());
+    }
+
+    final channel = _primaryChannel;
+    _primaryChannel = null;
+    if (channel != null) {
+      unawaited(channel.sink.close());
+    }
+  }
+
+  void _closeBackup() {
+    final subscription = _backupSubscription;
+    _backupSubscription = null;
+    if (subscription != null) {
+      unawaited(subscription.cancel());
+    }
+
+    final channel = _backupChannel;
+    _backupChannel = null;
+    if (channel != null) {
+      unawaited(channel.sink.close());
+    }
+  }
+
   void dispose() {
     debugPrint('>>> PriceWebSocket: Disposing...');
     _isDisposed = true;
+    _isConnecting = false;
     _reconnectTimer?.cancel();
-    _primaryChannel?.sink.close();
-    _backupChannel?.sink.close();
+    _reconnectTimer = null;
+    _closePrimary();
+    _closeBackup();
     _priceController.close();
     _tickerController.close();
   }

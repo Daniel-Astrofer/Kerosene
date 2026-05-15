@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:teste/core/navigation/app_page_transitions.dart';
 import '../providers/appearance_provider.dart';
 import 'app_colors.dart';
@@ -102,7 +103,7 @@ class AppTheme {
       scaffoldBackgroundColor: palette.background,
       canvasColor: palette.background,
       dividerColor: palette.border,
-      fontFamily: 'HubotSans',
+      fontFamily: AppTypography.fontFamily,
       useMaterial3: true,
       colorScheme: ColorScheme.dark(
         primary: AppColors.primary,
@@ -125,12 +126,22 @@ class AppTheme {
         selectionColor: AppColors.white.withValues(alpha: 0.22),
         selectionHandleColor: AppColors.white,
       ),
-      textTheme: TextTheme(
+      textTheme:
+          GoogleFonts.ibmPlexSansTextTheme(ThemeData.dark().textTheme).copyWith(
         displayLarge: AppTypography.h1,
+        displayMedium: AppTypography.h1,
+        displaySmall: AppTypography.h2,
+        headlineLarge: AppTypography.h1,
+        headlineMedium: AppTypography.h2,
+        headlineSmall: AppTypography.h3,
         titleLarge: AppTypography.h2,
         titleMedium: AppTypography.h3,
+        titleSmall: AppTypography.bodyLarge,
         bodyLarge: AppTypography.bodyLarge,
         bodyMedium: AppTypography.bodyMedium,
+        bodySmall: AppTypography.bodySmall,
+        labelLarge: AppTypography.buttonText,
+        labelMedium: AppTypography.caption,
         labelSmall: AppTypography.caption,
       ),
       inputDecorationTheme: InputDecorationTheme(

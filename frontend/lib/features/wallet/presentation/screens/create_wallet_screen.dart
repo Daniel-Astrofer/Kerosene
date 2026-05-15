@@ -638,7 +638,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
               style: const TextStyle(
                   color: Colors.white38,
                   fontSize: 10,
-                  fontFamily: 'monospace')),
+                  fontFamily: 'IBM Plex Mono')),
           const SizedBox(width: 8),
           Text(word,
               style: const TextStyle(

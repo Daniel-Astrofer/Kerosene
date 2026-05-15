@@ -234,7 +234,7 @@ class TxDetailOverlay extends ConsumerWidget {
                                           .bodySmall
                                           ?.copyWith(
                                             color: monoMutedTextColor,
-                                            fontFamily: 'JetBrainsMono',
+                                            fontFamily: 'IBM Plex Mono',
                                             fontWeight: FontWeight.w600,
                                           ),
                                     ),
@@ -544,7 +544,7 @@ class _DetailTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: monoTextColor,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBM Plex Mono',
                   fontWeight: FontWeight.w600,
                   height: 1.3,
                 ),

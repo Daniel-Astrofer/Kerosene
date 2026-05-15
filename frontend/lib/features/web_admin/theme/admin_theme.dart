@@ -40,7 +40,7 @@ class AdminTheme {
       scaffoldBackgroundColor: AdminColors.background,
       canvasColor: AdminColors.background,
       dividerColor: AdminColors.border,
-      fontFamily: 'HubotSans',
+      fontFamily: AdminTypography.fontFamily,
       useMaterial3: true,
       colorScheme: const ColorScheme.dark(
         primary: AdminColors.textPrimary,
@@ -59,7 +59,7 @@ class AdminTheme {
         selectionColor: AdminColors.textPrimary.withValues(alpha: 0.18),
         selectionHandleColor: AdminColors.textPrimary,
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: AdminTypography.displayLarge,
         headlineLarge: AdminTypography.h1,
         headlineMedium: AdminTypography.h2,

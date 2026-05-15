@@ -464,7 +464,7 @@ class _PasskeyUserChip extends StatelessWidget {
       child: Text(
         '@$username',
         style: AppTypography.caption.copyWith(
-          fontFamily: 'JetBrainsMono',
+          fontFamily: 'IBM Plex Mono',
           color: authEntryMuted,
           letterSpacing: 0.6,
           fontWeight: FontWeight.w600,

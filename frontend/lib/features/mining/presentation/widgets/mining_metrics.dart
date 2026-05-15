@@ -51,7 +51,7 @@ class MiningOverviewHero extends StatelessWidget {
                       'NETWORK MINING',
                       style: AppTypography.caption.copyWith(
                         color: miningBlue,
-                        fontFamily: 'HubotSansCondensed',
+                        fontFamily: 'IBM Plex Sans',
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.6,
                       ),
@@ -60,7 +60,7 @@ class MiningOverviewHero extends StatelessWidget {
                     Text(
                       'Leitura operacional da rede Bitcoin.',
                       style: AppTypography.h1.copyWith(
-                        fontFamily: 'HubotSansCondensed',
+                        fontFamily: 'IBM Plex Sans',
                         fontWeight: FontWeight.w700,
                         fontSize: 34,
                         height: 0.98,
@@ -1065,7 +1065,7 @@ class _PrimaryHeroStat extends StatelessWidget {
               label.toUpperCase(),
               style: AppTypography.caption.copyWith(
                 color: miningBlue,
-                fontFamily: 'HubotSansCondensed',
+                fontFamily: 'IBM Plex Sans',
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.0,
               ),
@@ -1114,7 +1114,7 @@ class _InfoPill extends StatelessWidget {
             '$label: ',
             style: AppTypography.caption.copyWith(
               color: miningMuted,
-              fontFamily: 'HubotSansCondensed',
+              fontFamily: 'IBM Plex Sans',
               letterSpacing: 0.9,
             ),
           ),

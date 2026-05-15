@@ -1792,7 +1792,7 @@ class _HomeEducationCarouselState
                               card.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.ebGaramond(
+                              style: GoogleFonts.ibmPlexSerif(
                                 textStyle: theme.textTheme.titleMedium,
                                 color: Colors.white,
                                 fontSize: _homeFontSize(20),
@@ -2466,7 +2466,7 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
                       children: [
                         Text(
                           _localizedTransferTitle(context),
-                          style: GoogleFonts.ebGaramond(
+                          style: GoogleFonts.ibmPlexSerif(
                             textStyle: Theme.of(context).textTheme.displaySmall,
                             color: Colors.white,
                             fontSize: isNarrow ? 38 : 42,
@@ -2516,7 +2516,7 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
                         const SizedBox(height: 48),
                         Text(
                           _localizedLearnMoreTitle(context),
-                          style: GoogleFonts.ebGaramond(
+                          style: GoogleFonts.ibmPlexSerif(
                             textStyle: Theme.of(context).textTheme.titleLarge,
                             color: Colors.white,
                             fontSize: 28,
@@ -3087,7 +3087,7 @@ class _PaymentLinkEntryScreenState
                   onChanged: (_) => setState(() {}),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: receiveFlowTextColor,
-                        fontFamily: 'JetBrainsMono',
+                        fontFamily: 'IBM Plex Mono',
                         height: 1.35,
                       ),
                   decoration: InputDecoration(
@@ -3286,7 +3286,7 @@ class _PaymentPreviewRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowTextColor,
-                    fontFamily: value.length > 18 ? 'JetBrainsMono' : null,
+                    fontFamily: value.length > 18 ? 'IBM Plex Mono' : null,
                     fontWeight: FontWeight.w300,
                     height: 1.3,
                   ),
@@ -3474,7 +3474,7 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
                       _localizedGreeting(context, widget.userName),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         textStyle: theme.textTheme.titleLarge,
                         color: Colors.white,
                         fontSize: responsive.compactFontSize(
@@ -3772,7 +3772,7 @@ class _HomeBalanceCard extends ConsumerWidget {
                     compact: _homeFontSize(isTotal ? 42 : 38),
                     regular: _homeFontSize(isTotal ? 46 : 42),
                   ),
-                  fontFamily: GoogleFonts.junge().fontFamily,
+                  fontFamily: AppTypography.titleFontFamily,
                   fontWeight: FontWeight.w300,
                   letterSpacing: 0,
                 ),
@@ -4371,7 +4371,7 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTypography.caption.copyWith(
-                                    fontFamily: 'JetBrainsMono',
+                                    fontFamily: 'IBM Plex Mono',
                                     color: AppNotificationStyle.bodyColor,
                                     fontSize: 10,
                                     height: 1.1,
