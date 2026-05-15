@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart' as crypto;
@@ -6,23 +7,18 @@ import 'package:crypto/crypto.dart' as crypto;
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../core/utils/device_helper.dart';
 import '../models/user_model.dart';
 
 // ─── DTO returned from signup ─────────────────────────────────────────────────
 class SignupInitResult {
-  final String sessionId;
   final String totpSecret;
   final String qrCodeUri;
   final List<String> backupCodes;
-  final bool totpOptional;
 
   const SignupInitResult({
-    required this.sessionId,
     required this.totpSecret,
     required this.qrCodeUri,
     this.backupCodes = const [],
-    this.totpOptional = true,
   });
 }
 
@@ -95,33 +91,7 @@ class LoginResult {
   }
 }
 
-class AdminLoginResult {
-  final String status;
-  final bool requiresMobileApproval;
-  final String attemptId;
-  final String token;
-  final String message;
-
-  const AdminLoginResult({
-    this.status = '',
-    this.requiresMobileApproval = false,
-    this.attemptId = '',
-    this.token = '',
-    this.message = '',
-  });
-
-  factory AdminLoginResult.fromJson(Map<String, dynamic> json) {
-    return AdminLoginResult(
-      status: (json['status'] ?? '').toString(),
-      requiresMobileApproval: json['requiresMobileApproval'] == true,
-      attemptId: (json['attemptId'] ?? '').toString(),
-      token: (json['token'] ?? '').toString(),
-      message: (json['message'] ?? '').toString(),
-    );
-  }
-}
-
-// ─── Legacy DTO kept for compile compatibility with older onboarding widgets ─
+// ─── DTO returned from voucher/onboarding-link ───────────────────────────────
 class OnboardingPaymentLinkDto {
   final String linkId;
   final double amountBtc;
@@ -157,176 +127,6 @@ class OnboardingPaymentLinkDto {
   }
 }
 
-class ActivationStatusResult {
-  final bool activated;
-  final bool canReceiveInbound;
-  final bool requiresActivationDeposit;
-  final String paymentLinkId;
-  final double amountBtc;
-  final String depositAddress;
-  final String paymentStatus;
-  final String warningMessage;
-
-  const ActivationStatusResult({
-    this.activated = false,
-    this.canReceiveInbound = false,
-    this.requiresActivationDeposit = true,
-    this.paymentLinkId = '',
-    this.amountBtc = 0,
-    this.depositAddress = '',
-    this.paymentStatus = 'pending',
-    this.warningMessage =
-        'Para receber fundos dentro da plataforma, deposite algum valor primeiro.',
-  });
-
-  factory ActivationStatusResult.fromJson(Map<String, dynamic> json) {
-    final payload = json['data'] is Map<String, dynamic>
-        ? Map<String, dynamic>.from(json['data'] as Map<String, dynamic>)
-        : json;
-    return ActivationStatusResult(
-      activated: payload['activated'] == true,
-      canReceiveInbound: payload['canReceiveInbound'] == true,
-      requiresActivationDeposit: payload['requiresActivationDeposit'] != false,
-      paymentLinkId: (payload['paymentLinkId'] ?? '').toString(),
-      amountBtc: (payload['requiredAmountBtc'] as num?)?.toDouble() ?? 0,
-      depositAddress: (payload['depositAddress'] ?? '').toString(),
-      paymentStatus: (payload['paymentStatus'] ?? 'pending').toString(),
-      warningMessage: (payload['warningMessage'] ?? '').toString(),
-    );
-  }
-}
-
-class AccountSecurityStatusResult {
-  final bool passwordConfigured;
-  final bool passkeyRegistered;
-  final bool totpEnabled;
-  final int backupCodesRemaining;
-  final bool unprotected;
-  final String warningMessage;
-  final bool accountActivated;
-  final bool inboundEnabled;
-
-  const AccountSecurityStatusResult({
-    this.passwordConfigured = false,
-    this.passkeyRegistered = false,
-    this.totpEnabled = false,
-    this.backupCodesRemaining = 0,
-    this.unprotected = true,
-    this.warningMessage = '',
-    this.accountActivated = false,
-    this.inboundEnabled = false,
-  });
-
-  factory AccountSecurityStatusResult.fromJson(Map<String, dynamic> json) {
-    final payload = json['data'] is Map<String, dynamic>
-        ? Map<String, dynamic>.from(json['data'] as Map<String, dynamic>)
-        : json;
-    return AccountSecurityStatusResult(
-      passwordConfigured: payload['passwordConfigured'] == true,
-      passkeyRegistered: payload['passkeyRegistered'] == true,
-      totpEnabled: payload['totpEnabled'] == true,
-      backupCodesRemaining:
-          (payload['backupCodesRemaining'] as num?)?.toInt() ?? 0,
-      unprotected: payload['unprotected'] != false,
-      warningMessage: (payload['warningMessage'] ?? '').toString(),
-      accountActivated: payload['accountActivated'] == true,
-      inboundEnabled: payload['inboundEnabled'] == true,
-    );
-  }
-}
-
-class BackupCodesStatusResult {
-  final bool enabled;
-  final int remainingCodes;
-  final List<String> newlyGeneratedCodes;
-
-  const BackupCodesStatusResult({
-    this.enabled = false,
-    this.remainingCodes = 0,
-    this.newlyGeneratedCodes = const [],
-  });
-
-  factory BackupCodesStatusResult.fromJson(Map<String, dynamic> json) {
-    final payload = json['data'] is Map<String, dynamic>
-        ? Map<String, dynamic>.from(json['data'] as Map<String, dynamic>)
-        : json;
-    return BackupCodesStatusResult(
-      enabled: payload['enabled'] == true,
-      remainingCodes: (payload['remainingCodes'] as num?)?.toInt() ?? 0,
-      newlyGeneratedCodes:
-          ((payload['newlyGeneratedCodes'] ?? const <dynamic>[]) as List)
-              .map((item) => item.toString())
-              .toList(),
-    );
-  }
-}
-
-class TotpSetupResult {
-  final String otpUri;
-  final String secret;
-
-  const TotpSetupResult({
-    this.otpUri = '',
-    this.secret = '',
-  });
-
-  factory TotpSetupResult.fromJson(Map<String, dynamic> json) {
-    final payload = json['data'] is Map<String, dynamic>
-        ? Map<String, dynamic>.from(json['data'] as Map<String, dynamic>)
-        : json;
-    return TotpSetupResult(
-      otpUri: (payload['otpUri'] ?? '').toString(),
-      secret: (payload['secret'] ?? '').toString(),
-    );
-  }
-}
-
-class EmergencyRecoveryStartResult {
-  final String recoverySessionId;
-  final String otpUri;
-  final String passkeyChallenge;
-  final int expiresInSeconds;
-  final int requiredRecoveryCodes;
-
-  const EmergencyRecoveryStartResult({
-    required this.recoverySessionId,
-    required this.otpUri,
-    required this.passkeyChallenge,
-    required this.expiresInSeconds,
-    required this.requiredRecoveryCodes,
-  });
-
-  factory EmergencyRecoveryStartResult.fromJson(Map<String, dynamic> json) {
-    return EmergencyRecoveryStartResult(
-      recoverySessionId: (json['recoverySessionId'] ?? '').toString(),
-      otpUri: (json['otpUri'] ?? '').toString(),
-      passkeyChallenge: (json['passkeyChallenge'] ?? '').toString(),
-      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt() ?? 600,
-      requiredRecoveryCodes:
-          (json['requiredRecoveryCodes'] as num?)?.toInt() ?? 3,
-    );
-  }
-}
-
-class EmergencyRecoveryFinishResult {
-  final String username;
-  final List<String> newBackupCodes;
-
-  const EmergencyRecoveryFinishResult({
-    required this.username,
-    required this.newBackupCodes,
-  });
-
-  factory EmergencyRecoveryFinishResult.fromJson(Map<String, dynamic> json) {
-    return EmergencyRecoveryFinishResult(
-      username: (json['username'] ?? '').toString(),
-      newBackupCodes: ((json['newBackupCodes'] ?? const <dynamic>[]) as List)
-          .map((item) => item.toString())
-          .toList(),
-    );
-  }
-}
-
 // ─── Abstract interface ───────────────────────────────────────────────────────
 abstract class AuthRemoteDataSource {
   /// Obter desafio PoW
@@ -337,15 +137,12 @@ abstract class AuthRemoteDataSource {
     required String username,
     required String passphrase,
     required String accountSecurity,
-    int? shamirTotalShares,
-    int? shamirThreshold,
-    int? multisigThreshold,
   });
 
   /// Verifica TOTP de cadastro — retorna sessionId (Redis)
   Future<String> verifySignupTotp({
-    required String sessionId,
-    String? totpCode,
+    required String username,
+    required String totpCode,
   });
 
   /// Login — returns LoginResult with userId and JWT
@@ -353,15 +150,6 @@ abstract class AuthRemoteDataSource {
     required String username,
     required String passphrase,
   });
-
-  Future<AdminLoginResult> startAdminLogin({
-    required String username,
-    required String password,
-    required String adminKeyProof,
-    required DeviceMetadata deviceMetadata,
-  });
-
-  Future<AdminLoginResult> pollAdminLogin(String attemptId);
 
   /// Verifica TOTP de login — retorna JWT
   Future<String> verifyLoginTotp({
@@ -377,7 +165,7 @@ abstract class AuthRemoteDataSource {
   });
 
   /// Finaliza registro de passkey durante onboarding
-  Future<LoginResult> passkeyRegisterOnboardingFinish(
+  Future<void> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   );
@@ -395,42 +183,8 @@ abstract class AuthRemoteDataSource {
   /// Finaliza registro de passkey para usuário logado
   Future<void> passkeyRegisterFinish(Map<String, dynamic> credential);
 
-  /// Inicia emergency recovery com PoW e múltiplos recovery codes.
-  Future<EmergencyRecoveryStartResult> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  });
-
-  /// Finaliza emergency recovery com novo TOTP e nova passkey.
-  Future<EmergencyRecoveryFinishResult> finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  });
-
-  Future<ActivationStatusResult> getActivationStatus();
-
-  Future<ActivationStatusResult> createActivationDepositLink();
-
-  Future<ActivationStatusResult> confirmActivationPayment({
-    required String linkId,
-    required String txid,
-  });
-
-  Future<AccountSecurityStatusResult> getSecurityStatus();
-
-  Future<TotpSetupResult> setupTotp();
-
-  Future<BackupCodesStatusResult> verifyTotpSetup({
-    required String totpCode,
-  });
-
-  Future<void> disableTotp();
-
-  Future<BackupCodesStatusResult> getBackupCodesStatus();
-
-  Future<BackupCodesStatusResult> regenerateBackupCodes();
+  /// Gera link de pagamento de onboarding
+  Future<OnboardingPaymentLinkDto> generateOnboardingLink(String sessionId);
 
   /// Confirma a transação enviada para o payment link de onboarding
   Future<OnboardingPaymentLinkDto> confirmOnboardingPayment({
@@ -440,6 +194,15 @@ abstract class AuthRemoteDataSource {
 
   /// Consulta o estado atual do payment link de onboarding
   Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(String linkId);
+
+  /// Mock de confirmação de onboarding (atalho para devs)
+  Future<void> mockConfirmOnboarding(String sessionId);
+
+  /// Confirmação de voucher (com suporte a mock_tx_)
+  Future<void> confirmVoucher({
+    required String voucherId,
+    required String txid,
+  });
 
   /// Refresh token (usando cookie)
   Future<String> refreshToken();
@@ -491,13 +254,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
       }
       throw ServerException(
-        message: 'Não conseguimos preparar a proteção da conta agora.',
+        message: 'PoW challenge missing from response: $body',
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos preparar a proteção da conta agora.',
-      );
+      throw ServerException(message: 'Erro ao obter desafio PoW: $e');
     }
   }
 
@@ -508,9 +269,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String username,
     required String passphrase,
     required String accountSecurity,
-    int? shamirTotalShares,
-    int? shamirThreshold,
-    int? multisigThreshold,
   }) async {
     try {
       // 1. Get PoW challenge
@@ -519,17 +277,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // 2. Solve — brute force nonce (offloads heavy lifting to an Isolate)
       final nonce = await compute(_solvePoWTask, challenge);
 
-      // 3. Call /auth/signup.
-      // Keep `passphrase` on the wire for compatibility with older auth clients/contracts.
+      // 3. Call /auth/signup — API v5.8 expects: username, passphrase, challenge, nonce
       final response = await apiClient.post(
         AppConfig.authSignup,
         data: {
           'username': username,
           'passphrase': passphrase,
           'accountSecurity': accountSecurity,
-          if (shamirTotalShares != null) 'shamirTotalShares': shamirTotalShares,
-          if (shamirThreshold != null) 'shamirThreshold': shamirThreshold,
-          if (multisigThreshold != null) 'multisigThreshold': multisigThreshold,
           'challenge': challenge,
           'nonce': nonce,
         },
@@ -538,7 +292,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // ApiResponseInterceptor already unwraps the ApiResponse envelope.
       // API v5.8 returns: { otpUri: "otpauth://...", backupCodes: ["12345678", ...] }
       final body = response.data;
-      debugPrint('🌐 [SIGNUP] Response received from auth service.');
+      debugPrint('🌐 [SIGNUP] Body received: $body');
 
       dynamic parsedBody = body;
       if (body is String) {
@@ -557,8 +311,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       String qrCodeUri = '';
       String totpSecret = '';
       List<String> backupCodes = [];
-      String sessionId = '';
-      bool totpOptional = true;
 
       if (parsedBody is String) {
         if (parsedBody.startsWith('otpauth://')) {
@@ -610,32 +362,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
               .toList();
         }
 
-        sessionId = (dataMap['sessionId'] ?? '').toString();
-        totpOptional = dataMap['totpOptional'] != false;
-
         debugPrint(
-          '🔐 TOTP setup metadata extracted. BackupCodes: ${backupCodes.length}',
-        );
+            '🔐 TOTP Data extracted. Secret length: ${totpSecret.length}, BackupCodes: ${backupCodes.length}');
       }
 
       if (totpSecret.isEmpty || totpSecret.startsWith('{')) {
         throw ServerException(
-          message:
-              'Não conseguimos preparar o autenticador agora. Tente novamente.',
-        );
+            message: 'Invalid TOTP secret received from server.');
       }
 
       return SignupInitResult(
-        sessionId: sessionId,
         totpSecret: totpSecret,
         qrCodeUri: qrCodeUri,
         backupCodes: backupCodes,
-        totpOptional: totpOptional,
       );
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos iniciar seu cadastro agora.');
+      throw ServerException(message: 'Erro ao iniciar cadastro: $e');
     }
   }
 
@@ -643,30 +386,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<String> verifySignupTotp({
-    required String sessionId,
-    String? totpCode,
+    required String username,
+    required String totpCode,
   }) async {
     try {
       final response = await apiClient.post(
         AppConfig.authSignupVerify,
-        data: {
-          'sessionId': sessionId,
-          if (totpCode != null && totpCode.isNotEmpty) 'totpCode': totpCode,
-        },
+        data: {'username': username, 'totpCode': totpCode},
       );
       final body = response.data;
-      final verifiedSessionId =
-          body is String ? body.trim() : body?.toString().trim();
-      if (verifiedSessionId == null || verifiedSessionId.isEmpty) {
+      final sessionId = body is String ? body.trim() : body?.toString().trim();
+      if (sessionId == null || sessionId.isEmpty) {
         throw ServerException(
-          message: 'Não conseguimos confirmar o código agora.',
+          message: 'Signup TOTP verify: sessionId não retornado',
         );
       }
-      return verifiedSessionId;
+      return sessionId;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos confirmar o código agora.');
+      throw ServerException(message: 'Erro ao verificar TOTP de cadastro: $e');
     }
   }
 
@@ -680,55 +418,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final response = await apiClient.post(
         AppConfig.authLogin,
-        data: {'username': username, 'password': passphrase},
+        data: {'username': username, 'passphrase': passphrase},
       );
       return LoginResult.fromResponseData(response.data);
     } on AuthException {
       rethrow;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Não conseguimos entrar na sua conta.');
-    }
-  }
-
-  @override
-  Future<AdminLoginResult> startAdminLogin({
-    required String username,
-    required String password,
-    required String adminKeyProof,
-    required DeviceMetadata deviceMetadata,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.authAdminLogin,
-        data: {
-          'username': username,
-          'password': password,
-          'adminKeyProof': adminKeyProof,
-          ...deviceMetadata.toJson(),
-        },
-      );
-      return AdminLoginResult.fromJson(
-        Map<String, dynamic>.from(response.data as Map),
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Não conseguimos iniciar o acesso admin.');
-    }
-  }
-
-  @override
-  Future<AdminLoginResult> pollAdminLogin(String attemptId) async {
-    try {
-      final response =
-          await apiClient.get(AppConfig.authAdminLoginPoll(attemptId));
-      return AdminLoginResult.fromJson(
-        Map<String, dynamic>.from(response.data as Map),
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos confirmar o acesso admin.');
+      throw ServerException(message: 'Erro ao fazer login: $e');
     }
   }
 
@@ -748,13 +445,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'totpCode': totpCode,
           'preAuthToken': preAuthToken,
         },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $preAuthToken',
+          },
+        ),
       );
       final result = LoginResult.fromResponseData(response.data);
       return result.jwt;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos confirmar o código agora.');
+      throw ServerException(message: 'Erro ao verificar 2FA de login: $e');
     }
   }
 
@@ -773,27 +474,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos iniciar a confirmação por passkey.');
+      throw ServerException(message: 'Erro ao iniciar registro de passkey: $e');
     }
   }
 
   @override
-  Future<LoginResult> passkeyRegisterOnboardingFinish(
+  Future<void> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   ) async {
     try {
-      final response = await apiClient.post(
+      await apiClient.post(
         AppConfig.authPasskeyOnboardingFinish,
         queryParameters: {'sessionId': sessionId},
         data: credential,
       );
-      return LoginResult.fromResponseData(response.data);
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-          message: 'Não conseguimos concluir a confirmação por passkey.');
+          message: 'Erro ao finalizar registro de passkey: $e');
     }
   }
 
@@ -809,8 +508,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos iniciar a entrada por passkey.');
+      throw ServerException(message: 'Erro ao iniciar login via passkey: $e');
     }
   }
 
@@ -835,8 +533,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return LoginResult.fromResponseData(response.data);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos concluir a entrada por passkey.');
+      throw ServerException(message: 'Erro ao finalizar login via passkey: $e');
     }
   }
 
@@ -850,8 +547,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return response.data.toString();
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos iniciar a confirmação por passkey.');
+      throw ServerException(message: 'Erro ao iniciar registro de passkey: $e');
     }
   }
 
@@ -866,252 +562,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-          message: 'Não conseguimos concluir a confirmação por passkey.');
+          message: 'Erro ao finalizar registro de passkey: $e');
     }
   }
 
-  // ─── Emergency Recovery ───────────────────────────────────────────────────────
+  // ─── Voucher onboarding link ──────────────────────────────────────────────────
 
   @override
-  Future<EmergencyRecoveryStartResult> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  }) async {
-    try {
-      final challenge = await getPowChallenge();
-      final nonce = await compute(_solvePoWTask, challenge);
-
-      final response = await apiClient.post(
-        AppConfig.authRecoveryEmergencyStart,
-        data: {
-          'username': username,
-          'newPassphrase': newPassphrase,
-          'recoveryCodes': recoveryCodes,
-          'challenge': challenge,
-          'nonce': nonce,
-        },
-      );
-
-      final body = response.data;
-      if (body is Map<String, dynamic>) {
-        return EmergencyRecoveryStartResult.fromJson(body);
-      }
-      if (body is String) {
-        final trimmed = body.trim();
-        if (trimmed.startsWith('{')) {
-          final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
-          return EmergencyRecoveryStartResult.fromJson(parsed);
-        }
-      }
-
-      throw const ServerException(
-        message: 'Não conseguimos iniciar a recuperação agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos iniciar a recuperação agora.',
-      );
-    }
-  }
-
-  @override
-  Future<EmergencyRecoveryFinishResult> finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  }) async {
+  Future<OnboardingPaymentLinkDto> generateOnboardingLink(
+    String sessionId,
+  ) async {
     try {
       final response = await apiClient.post(
-        AppConfig.authRecoveryEmergencyFinish,
-        data: {
-          'recoverySessionId': recoverySessionId,
-          'totpCode': totpCode,
-          'publicKey': credential['publicKey'] ?? credential['public_key'],
-          'publicKeyCose':
-              credential['publicKeyCose'] ?? credential['public_key_cose'],
-          'deviceName': credential['deviceName'] ?? credential['device_name'],
-          'signature': credential['signature'],
-          'authData': credential['authData'],
-          'clientDataJSON': credential['clientDataJSON'],
-          'credentialId': credential['credentialId'] ??
-              credential['credential_id'] ??
-              credential['id'],
-          'userHandle': credential['userHandle'] ?? credential['user_handle'],
-        },
+        AppConfig.voucherOnboardingLink,
+        queryParameters: {'sessionId': sessionId},
       );
-
       final body = response.data;
-      if (body is Map<String, dynamic>) {
-        return EmergencyRecoveryFinishResult.fromJson(body);
-      }
-      if (body is String) {
-        final trimmed = body.trim();
-        if (trimmed.startsWith('{')) {
-          final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
-          return EmergencyRecoveryFinishResult.fromJson(parsed);
-        }
-      }
-
-      throw const ServerException(
-        message: 'Não conseguimos concluir a recuperação agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos concluir a recuperação agora.',
-      );
-    }
-  }
-
-  // ─── Account activation deposit flow ─────────────────────────────────────────
-
-  @override
-  Future<ActivationStatusResult> getActivationStatus() async {
-    try {
-      final response = await apiClient.get(AppConfig.authActivationStatus);
-      final body = response.data;
+      final Map<String, dynamic> data;
       if (body is Map) {
-        return ActivationStatusResult.fromJson(Map<String, dynamic>.from(body));
+        data = Map<String, dynamic>.from(body);
+      } else {
+        data = <String, dynamic>{};
       }
-      throw const ServerException(
-        message: 'Não conseguimos atualizar a ativação agora.',
-      );
+      return OnboardingPaymentLinkDto.fromJson(data);
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos atualizar a ativação agora.');
-    }
-  }
-
-  @override
-  Future<ActivationStatusResult> createActivationDepositLink() async {
-    return getActivationStatus();
-  }
-
-  @override
-  Future<ActivationStatusResult> confirmActivationPayment({
-    required String linkId,
-    required String txid,
-  }) async {
-    throw const ValidationException(
-      message:
-          'A confirmação manual por TXID foi descontinuada. Faça o depósito pelo fluxo de recebimento do app e aguarde o monitoramento automático.',
-      errorCode: 'ERR_ACTIVATION_MANUAL_CONFIRM_DISABLED',
-    );
-  }
-
-  @override
-  Future<AccountSecurityStatusResult> getSecurityStatus() async {
-    try {
-      final response = await apiClient.get(AppConfig.authSecurityStatus);
-      final body = response.data;
-      if (body is Map) {
-        return AccountSecurityStatusResult.fromJson(
-          Map<String, dynamic>.from(body),
-        );
-      }
-      throw const ServerException(
-        message: 'Não conseguimos atualizar a segurança da conta agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos atualizar a segurança da conta agora.');
-    }
-  }
-
-  @override
-  Future<TotpSetupResult> setupTotp() async {
-    try {
-      final response = await apiClient.post(AppConfig.authTotpSetup);
-      final body = response.data;
-      if (body is Map) {
-        return TotpSetupResult.fromJson(Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Não conseguimos configurar o autenticador agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos configurar o autenticador agora.');
-    }
-  }
-
-  @override
-  Future<BackupCodesStatusResult> verifyTotpSetup({
-    required String totpCode,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.authTotpVerify,
-        data: {'totpCode': totpCode},
-      );
-      final body = response.data;
-      if (body is Map) {
-        return BackupCodesStatusResult.fromJson(
-            Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Não conseguimos confirmar o autenticador agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos confirmar o autenticador agora.');
-    }
-  }
-
-  @override
-  Future<void> disableTotp() async {
-    try {
-      await apiClient.delete(AppConfig.authTotpDisable);
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos desativar o autenticador agora.');
-    }
-  }
-
-  @override
-  Future<BackupCodesStatusResult> getBackupCodesStatus() async {
-    try {
-      final response = await apiClient.get(AppConfig.authBackupCodes);
-      final body = response.data;
-      if (body is Map) {
-        return BackupCodesStatusResult.fromJson(
-            Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Não conseguimos consultar os códigos de recuperação agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message:
-              'Não conseguimos consultar os códigos de recuperação agora.');
-    }
-  }
-
-  @override
-  Future<BackupCodesStatusResult> regenerateBackupCodes() async {
-    try {
-      final response =
-          await apiClient.post(AppConfig.authBackupCodesRegenerate);
-      final body = response.data;
-      if (body is Map) {
-        return BackupCodesStatusResult.fromJson(
-            Map<String, dynamic>.from(body));
-      }
-      throw const ServerException(
-        message: 'Não conseguimos gerar novos códigos de recuperação agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos gerar novos códigos de recuperação agora.');
+      throw ServerException(message: 'Erro ao gerar link de onboarding: $e');
     }
   }
 
@@ -1120,11 +596,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String linkId,
     required String txid,
   }) async {
-    throw const ValidationException(
-      message:
-          'Pagamentos de onboarding não aceitam confirmação manual por TXID. O backend credita automaticamente quando a rede confirma o depósito.',
-      errorCode: 'ERR_ONBOARDING_MANUAL_CONFIRM_DISABLED',
-    );
+    try {
+      final response = await apiClient.post(
+        '${AppConfig.transactionsPaymentLink}/$linkId/confirm',
+        data: {
+          'txid': txid,
+        },
+      );
+      final body = response.data;
+      if (body is Map) {
+        return OnboardingPaymentLinkDto.fromJson(
+            Map<String, dynamic>.from(body));
+      }
+      throw const ServerException(
+        message: 'Resposta inválida ao confirmar pagamento de onboarding.',
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+          message: 'Erro ao confirmar pagamento de onboarding: $e');
+    }
   }
 
   @override
@@ -1139,12 +630,47 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             Map<String, dynamic>.from(body));
       }
       throw const ServerException(
-        message: 'Não conseguimos atualizar esta etapa agora.',
+        message: 'Resposta inválida ao consultar status do onboarding.',
       );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-          message: 'Não conseguimos atualizar esta etapa agora.');
+          message: 'Erro ao consultar status do onboarding: $e');
+    }
+  }
+
+  @override
+  Future<void> mockConfirmOnboarding(String sessionId) async {
+    try {
+      await apiClient.post(
+        AppConfig.voucherOnboardingMockConfirm,
+        queryParameters: {'sessionId': sessionId},
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao forçar confirmação: $e');
+    }
+  }
+
+  @override
+  Future<void> confirmVoucher({
+    required String voucherId,
+    required String txid,
+  }) async {
+    try {
+      final cleanVoucherId =
+          voucherId.startsWith('pay_') ? voucherId.substring(4) : voucherId;
+
+      await apiClient.post(
+        AppConfig.voucherConfirm,
+        queryParameters: {
+          'pendingVoucherId': cleanVoucherId,
+          'txid': txid,
+        },
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao confirmar voucher: $e');
     }
   }
 
@@ -1180,11 +706,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       throw ServerException(
-          message: 'Não conseguimos carregar os dados da sua conta agora.');
+          message: 'Formato de resposta inválido em /auth/me');
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Não conseguimos carregar os dados da sua conta agora.');
+      throw ServerException(message: 'Erro ao obter usuário: $e');
     }
   }
 }

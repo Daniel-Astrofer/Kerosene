@@ -128,28 +128,23 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
               ),
             ),
             const SizedBox(width: 12),
-            Flexible(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                child: Text(
-                  widget.loadingTexts[_currentTextIndex],
-                  key: ValueKey<int>(_currentTextIndex),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: widget.baseColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    letterSpacing: 0,
-                    shadows: [
-                      Shadow(
-                        color: widget.baseColor.withValues(
-                          alpha: _glowAnimation.value * 0.5,
-                        ),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: Text(
+                widget.loadingTexts[_currentTextIndex],
+                key: ValueKey<int>(_currentTextIndex),
+                style: TextStyle(
+                  color: widget.baseColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  letterSpacing: 0.5,
+                  shadows: [
+                    Shadow(
+                      color: widget.baseColor
+                          .withValues(alpha: _glowAnimation.value * 0.5),
+                      blurRadius: 8,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -162,14 +157,11 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
   Widget _buildIdleState() {
     return Text(
       widget.text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
       style: TextStyle(
         color: Theme.of(context).scaffoldBackgroundColor,
         fontWeight: FontWeight.w800,
         fontSize: 16,
-        letterSpacing: 0,
+        letterSpacing: 0.5,
       ),
     );
   }

@@ -13,21 +13,12 @@ class AddFundsInitial extends AddFundsState {
   const AddFundsInitial();
 }
 
-enum AddFundsLoadingStep {
-  general,
-  depositAddress,
-  createTransaction,
-  signTransaction,
-  broadcastTransaction,
-  paymentRequest,
-}
-
 class AddFundsLoading extends AddFundsState {
-  final AddFundsLoadingStep step;
-  const AddFundsLoading({this.step = AddFundsLoadingStep.general});
+  final String message;
+  const AddFundsLoading({this.message = 'Loading...'});
 
   @override
-  List<Object?> get props => [step];
+  List<Object?> get props => [message];
 }
 
 class AddFundsLoadedDepositAddress extends AddFundsState {
@@ -66,20 +57,16 @@ class AddFundsWaitingConfirmation extends AddFundsState {
   List<Object?> get props => [txid];
 }
 
-enum AddFundsSuccessKind {
-  depositConfirmed,
-}
-
 class AddFundsSuccess extends AddFundsState {
   final String txid;
-  final AddFundsSuccessKind kind;
+  final String message;
   const AddFundsSuccess({
     required this.txid,
-    this.kind = AddFundsSuccessKind.depositConfirmed,
+    this.message = 'Deposit Confirmed!',
   });
 
   @override
-  List<Object?> get props => [txid, kind];
+  List<Object?> get props => [txid, message];
 }
 
 class AddFundsError extends AddFundsState {

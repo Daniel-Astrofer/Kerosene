@@ -8,22 +8,27 @@
 !/backend/**
 !/frontend/
 !/frontend/**
-!/docs/
-!/docs/**
-!/docs-final/
-!/docs-final/**
-!/scripts/
-!/scripts/**
-!/.github/
-!/.github/**
-!/docker-compose.yml
-!/README.md
 
 # Root-level material kept local only.
+/docs/
+/docs/**
+!/docs/
+!/docs/README.md
+!/docs/API_REFERENCE.md
+!/docs/ARCHITECTURE.md
+!/docs/INFRASTRUCTURE.md
+!/docs/APK.md
+/scripts/
+/scripts/**
+!/scripts/
+!/scripts/backend-common.sh
+!/scripts/init-local.sh
+!/scripts/start-local.sh
+!/scripts/stop-local.sh
+!/scripts/logs-local.sh
+!/scripts/arm-vault.sh
 /assets/
 /assets/**
-/backups/
-/backups/**
 /screenshots/
 /screenshots/**
 /vault/
@@ -37,6 +42,7 @@
 /gradlew
 /gradlew.bat
 /README*
+!/README.md
 /DAYLY_LOG.md
 /*.html
 /projeto_completo_kerosene.txt
@@ -44,6 +50,41 @@
 /arm-vault.*
 /cert-generator.sh
 /panic.sh
+
+# Agent and assistant tooling.
+/.agent/
+/.agent/**
+/.agents/
+/.agents/**
+/.codex
+/.codex/
+/.codex/**
+/.claude/
+/.claude/**
+/.opencode
+/.openclaude-profile.json
+**/.agent/
+**/.agent/**
+**/.agents/
+**/.agents/**
+**/.codex
+**/.codex/
+**/.codex/**
+**/.claude/
+**/.claude/**
+**/.continue/
+**/.continue/**
+**/.cursor/
+**/.cursor/**
+**/.opencode
+**/.remote-control/
+**/.remote-control/**
+**/.openclaude-profile.json
+**/AGENTS.md
+**/CLAUDE.md
+**/GEMINI.md
+**/mcp_config.json
+**/llms.txt
 
 # Secrets and local credentials.
 **/.env
@@ -76,8 +117,6 @@
 # Build output, caches and IDE state.
 **/.gradle/
 **/.gradle/**
-**/.kotlin/
-**/.kotlin/**
 **/.dart_tool/
 **/.dart_tool/**
 **/.pub-cache/
@@ -86,8 +125,6 @@
 **/.pub/**
 **/build/
 **/build/**
-**/*.root-owned-*
-**/*.root-owned-*/**
 **/target/
 **/target/**
 **/out/
@@ -113,27 +150,6 @@
 **/.DS_Store
 **/Thumbs.db
 
-# Documentation and generated analysis outputs kept local.
-**/*.md
-!/README.md
-!/docs/**/*.md
-!/docs-final/**/*.md
-!/backend/**/docs/**/*.md
-!/backend/kerosene/*.md
-!/.gitignore
-!/.gitattributes
-frontend/*.txt
-frontend/**/*.txt
-!frontend/**/CMakeLists.txt
-!frontend/FRONTEND_GUIDELINES.md
-frontend/*.png
-frontend/Get
-frontend/Process
-frontend/Run
-frontend/=*
-frontend/scripts/
-frontend/scripts/**
-
 # Platform-local generated files.
 **/android/local.properties
 **/android/app/debug/
@@ -146,26 +162,12 @@ frontend/scripts/**
 **/windows/flutter/ephemeral/
 
 # Accidentally copied home/tooling directories.
-~
-~/**
-**/~
-**/~/**
 ~/
 ~/**
 **/~/
 **/~/**
-frontend/~/
-frontend/~/**
 CachedExtensionVSIXs/
 CachedExtensionVSIXs/**
-**/CachedExtensionVSIXs/
-**/CachedExtensionVSIXs/**
 .trash/
 .trash/**
-**/.trash/
-**/.trash/**
-**/workspaceStorage/
-**/workspaceStorage/**
-**/.metadata/
-**/.metadata/**
 flutter_linux_*-stable.tar.xz

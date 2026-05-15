@@ -43,8 +43,8 @@ class LightningInvoice extends Equatable {
       lightningAddress: json['lightningAddress']?.toString() ?? '',
       amountBtc: (json['amountBtc'] as num?)?.toDouble() ?? 0,
       provider: json['provider']?.toString() ?? '',
-      expiresAt: DateTime.tryParse(json['expiresAt']?.toString() ?? '')
-          ?.toLocal(),
+      expiresAt:
+          DateTime.tryParse(json['expiresAt']?.toString() ?? '')?.toLocal(),
       status: json['status']?.toString() ?? 'PENDING',
     );
   }

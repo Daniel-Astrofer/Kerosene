@@ -86,9 +86,8 @@ class AppNotificationSurface extends StatelessWidget {
     final accent = AppNotificationStyle.accentFor(tone);
 
     return Container(
-      constraints: minHeight == null
-          ? null
-          : BoxConstraints(minHeight: minHeight!),
+      constraints:
+          minHeight == null ? null : BoxConstraints(minHeight: minHeight!),
       decoration: BoxDecoration(
         color: AppNotificationStyle.surfaceColor,
         borderRadius: BorderRadius.circular(borderRadius),

@@ -20,17 +20,28 @@ class CyberTheme {
   static final LinearGradient bgGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [bgDeep, bgDeep, const Color(0xFF050510), const Color(0xFF0A0A1F)],
+    colors: [
+      bgDeep,
+      bgDeep,
+      const Color(0xFF050510),
+      const Color(0xFF0A0A1F),
+    ],
     stops: const [0.0, 0.6, 0.9, 1.0],
   );
 
   // ─── Typography ──────────────────────────────────────
   static TextStyle heading({double size = 24, Color color = Colors.white}) {
-    return AppTypography.h2.copyWith(fontSize: size, color: color);
+    return AppTypography.h2.copyWith(
+      fontSize: size,
+      color: color,
+    );
   }
 
   static TextStyle label({double size = 12, Color color = Colors.white70}) {
-    return AppTypography.caption.copyWith(fontSize: size, color: color);
+    return AppTypography.caption.copyWith(
+      fontSize: size,
+      color: color,
+    );
   }
 
   // ─── Decorations ─────────────────────────────────────
@@ -66,10 +77,10 @@ class CyberTheme {
       hintText: hint,
       prefixIcon: Icon(icon, color: neonCyan.withValues(alpha: 0.7), size: 20),
       suffixIcon: suffix,
-      labelStyle: const TextStyle(color: Colors.white70, fontSize: 13),
-      hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+      labelStyle: const TextStyle(color: Colors.white60, fontSize: 13),
+      hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.06),
+      fillColor: Colors.white.withValues(alpha: 0.03),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -87,10 +98,6 @@ class CyberTheme {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: neonRed, width: 1),
       ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: neonRed, width: 1.5),
-      ),
     );
   }
 
@@ -100,11 +107,13 @@ class CyberTheme {
       foregroundColor: bgDeep,
       elevation: 0,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       textStyle: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w800,
-        letterSpacing: 0,
+        letterSpacing: 1,
       ),
     );
   }

@@ -33,11 +33,7 @@ import '../state/create_wallet_state.dart';
 final ledgerRepositoryProvider = Provider<LedgerRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   final remoteDataSource = LedgerRemoteDataSourceImpl(apiClient);
-  final authLocalDataSource = ref.watch(authLocalDataSourceProvider);
-  return LedgerRepositoryImpl(
-    remoteDataSource: remoteDataSource,
-    authLocalDataSource: authLocalDataSource,
-  );
+  return LedgerRepositoryImpl(remoteDataSource: remoteDataSource);
 });
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
@@ -153,8 +149,6 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
-    String? xpub,
-    String walletMode = 'KEROSENE',
   }) async {
     state = const CreateWalletLoading();
 
@@ -162,8 +156,6 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
       name: name,
       passphrase: passphrase,
       accountSecurity: accountSecurity,
-      xpub: xpub,
-      walletMode: walletMode,
     );
 
     result.fold(
@@ -192,10 +184,8 @@ class WalletNotifier extends Notifier<WalletState> {
   // o HomeScreen.initState chama refresh() via addPostFrameCallback.
 
   /// Carrega carteiras e taxa de câmbio
-  Future<void> _loadWallets({bool isRefresh = false}) async {
-    if (!isRefresh || state is! WalletLoaded) {
-      state = const WalletLoading();
-    }
+  Future<void> _loadWallets() async {
+    state = const WalletLoading();
 
     final walletsResult = await getWalletsUseCase();
 
@@ -224,7 +214,7 @@ class WalletNotifier extends Notifier<WalletState> {
 
   /// Recarrega carteiras
   Future<void> refresh() async {
-    await _loadWallets(isRefresh: true);
+    await _loadWallets();
   }
 
   /// Seleciona uma carteira
@@ -245,7 +235,7 @@ class WalletNotifier extends Notifier<WalletState> {
     result.fold(
       (failure) {
         // Log error mas não muda estado para não interromper UX
-        debugPrint('Wallet balance refresh failed.');
+        debugPrint('Erro ao atualizar saldo: ${failure.message}');
       },
       (updatedWallet) {
         final currentState = state as WalletLoaded;
@@ -274,7 +264,9 @@ class WalletNotifier extends Notifier<WalletState> {
 
     state = currentState.copyWith(wallets: updatedWallets);
 
-    debugPrint('Wallet balance refreshed from realtime feed.');
+    debugPrint(
+      '💰 Saldo atualizado via WebSocket: $walletName = $newBalance BTC',
+    );
   }
 }
 
@@ -352,34 +344,14 @@ class SendMoneyNotifier extends Notifier<SendMoneyState> {
     // Estimar taxa
     state = const SendMoneyEstimatingFee();
 
-    final feeSatoshis = await _estimateNetworkFeeSats(amountSatoshis);
-    if (feeSatoshis == null || feeSatoshis <= 0) {
-      state = const SendMoneyError(
-        'Não conseguimos calcular a taxa de rede agora. Tente novamente.',
-      );
-      return;
-    }
+    // TODO: Implementar estimativa de taxa real via TransactionRepository?
+    const feeSatoshis = 1000; // ~1000 sats para tx padrão
 
     state = SendMoneyReady(
       toAddress: toAddress,
       amountSatoshis: amountSatoshis,
       feeSatoshis: feeSatoshis,
     );
-  }
-
-  Future<int?> _estimateNetworkFeeSats(int amountSatoshis) async {
-    try {
-      final estimate =
-          await transactionRepository.estimateFee(amountSatoshis / 100000000.0);
-      final estimatedStandardSats =
-          (estimate.estimatedStandardBtc * 100000000).ceil();
-      if (estimatedStandardSats > 0) {
-        return estimatedStandardSats;
-      }
-      return (estimate.standardSatPerByte * 250).ceil();
-    } catch (_) {
-      return null;
-    }
   }
 
   /// Executa envio de Bitcoin
@@ -444,7 +416,13 @@ class SendMoneyNotifier extends Notifier<SendMoneyState> {
             broadcastResult.fold(
               (failure) => state = SendMoneyError(failure.message),
               (txStatus) {
-                // Keep local state in sync until history refresh returns.
+                // Sucesso!
+                // Converter TxStatus para Transaction entity se necessário ou apenas sucesso
+                // O estado espera 'Transaction'. Vamos criar um mock ou buscar?
+                // TxStatus tem txid.
+
+                // Simular Transaction object a partir de txStatus
+                // Ou refetch transactions.
                 state = SendMoneySuccess(
                   Transaction(
                     id: txStatus.txid,

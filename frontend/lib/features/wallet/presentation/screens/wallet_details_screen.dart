@@ -16,7 +16,8 @@ class WalletDetailsScreen extends ConsumerStatefulWidget {
   const WalletDetailsScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<WalletDetailsScreen> createState() => _WalletDetailsScreenState();
+  ConsumerState<WalletDetailsScreen> createState() =>
+      _WalletDetailsScreenState();
 }
 
 class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
@@ -26,8 +27,8 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
         ref.watch(transactionsByWalletProvider(widget.wallet.address));
 
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
-      body: CyberBackground.authenticated(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
         useScroll: false,
         child: SafeArea(
           child: Column(

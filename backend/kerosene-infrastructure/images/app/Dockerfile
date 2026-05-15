@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # ═══════════════════════════════════════════════════════════════════════════════
 # Kerosene App — Production Dockerfile
 # ─────────────────────────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@
 FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /workspace
+ENV GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs=-Xmx1024m -Dorg.gradle.console=plain"
 
 # ── Layer 1: Gradle wrapper (cached independently) ────────────────────────────
 COPY gradlew gradlew.bat ./
@@ -25,13 +27,15 @@ RUN chmod +x gradlew
 
 # ── Layer 2: Dependency resolution (cache until build.gradle.kts changes) ─────
 COPY build.gradle.kts settings.gradle.kts ./
-RUN ./gradlew dependencies --no-daemon --quiet || true
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew dependencies --no-daemon --quiet >/dev/null || true
 
 # ── Layer 3: Source compilation ───────────────────────────────────────────────
 COPY src src/
 COPY docker docker/
 COPY web-admin-build web-admin-build/
-RUN ./gradlew bootJar --no-daemon -x test
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew bootJar --no-daemon -x test --quiet
 RUN javac docker/Healthcheck.java -d /workspace/healthcheck
 
 # ── Stage 2: Runtime (Distroless — minimal attack surface) ────────────────────

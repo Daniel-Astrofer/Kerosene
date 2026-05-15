@@ -1,30 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/money_display.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 
-class TransactionSuccessDialog extends ConsumerStatefulWidget {
+class TransactionSuccessDialog extends StatefulWidget {
   final TransactionType type;
-  final double? amountBtc;
+  final double? amount;
   final String? counterparty;
 
   const TransactionSuccessDialog({
     super.key,
     this.type = TransactionType.send,
-    this.amountBtc,
+    this.amount,
     this.counterparty,
   });
 
   @override
-  ConsumerState<TransactionSuccessDialog> createState() =>
+  State<TransactionSuccessDialog> createState() =>
       _TransactionSuccessDialogState();
 }
 
-class _TransactionSuccessDialogState
-    extends ConsumerState<TransactionSuccessDialog>
+class _TransactionSuccessDialogState extends State<TransactionSuccessDialog>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -32,9 +26,8 @@ class _TransactionSuccessDialogState
   late Animation<double> _opacityAnimation;
 
   bool get _isReceived => widget.type == TransactionType.receive;
-  Color get _color => AppNotificationStyle.accentFor(
-        _isReceived ? AppNotificationTone.success : AppNotificationTone.warning,
-      );
+  Color get _color =>
+      _isReceived ? const Color(0xFF00FF94) : const Color(0xFF7B61FF);
   IconData get _icon => _isReceived ? Icons.arrow_downward : Icons.arrow_upward;
 
   @override
@@ -82,146 +75,97 @@ class _TransactionSuccessDialogState
 
   @override
   Widget build(BuildContext context) {
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final primaryAmount = widget.amountBtc == null
-        ? null
-        : MoneyDisplay.formatAmountFromBtc(
-            btcAmount: widget.amountBtc!,
-            currency: selectedCurrency,
-            btcUsd: btcUsd,
-            btcEur: btcEur,
-            btcBrl: btcBrl,
-          );
-    final secondaryAmount =
-        widget.amountBtc == null || selectedCurrency == Currency.btc
-            ? null
-            : MoneyDisplay.format(
-                amount: widget.amountBtc!,
-                currency: Currency.btc,
-              );
-
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Center(
         child: Container(
-          width: 296,
-          constraints: const BoxConstraints(minHeight: 196),
+          width: 280,
+          height: 320,
           decoration: BoxDecoration(
-            color: AppNotificationStyle.surfaceColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppNotificationStyle.borderColor,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.20),
-                blurRadius: 20,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white10),
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                    child: widget.type == TransactionType.send
-                        ? CustomPaint(
-                            painter: _CheckmarkPainter(
-                              progress: _checkAnimation,
-                              color: _color,
-                            ),
-                          )
-                        : ScaleTransition(
-                            scale: _checkAnimation,
-                            child: Icon(_icon, color: _color, size: 24),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FadeTransition(
-                  opacity: _opacityAnimation,
-                  child: Column(
-                    children: [
-                      Text(
-                        _isReceived ? "Received!" : "Sent!",
-                        style: TextStyle(
-                          color: AppNotificationStyle.titleColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      if (primaryAmount != null) ...[
-                        Text(
-                          primaryAmount,
-                          style: TextStyle(
-                            color: _color,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        if (secondaryAmount != null) ...[
-                          Text(
-                            secondaryAmount,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimary
-                                  .withValues(alpha: 0.68),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 4),
-                      ],
-                      Text(
-                        widget.counterparty != null
-                            ? (_isReceived
-                                ? "From: ${widget.counterparty}"
-                                : "To: ${widget.counterparty}")
-                            : "Transaction Completed",
-                        style: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.72),
-                          fontSize: 12,
-                          letterSpacing: 0,
-                        ),
-                        textAlign: TextAlign.center,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: _color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _color.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        spreadRadius: 5,
                       ),
                     ],
                   ),
+                  child: widget.type == TransactionType.send
+                      ? CustomPaint(
+                          painter: _CheckmarkPainter(progress: _checkAnimation),
+                        )
+                      : ScaleTransition(
+                          scale: _checkAnimation,
+                          child: Icon(_icon,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              size: 48),
+                        ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 32),
+              FadeTransition(
+                opacity: _opacityAnimation,
+                child: Column(
+                  children: [
+                    Text(
+                      _isReceived ? "Received!" : "Sent!",
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (widget.amount != null) ...[
+                      Text(
+                        "${widget.amount!.toStringAsFixed(8)} BTC",
+                        style: TextStyle(
+                          color: _color,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                    Text(
+                      widget.counterparty != null
+                          ? (_isReceived
+                              ? "From: ${widget.counterparty}"
+                              : "To: ${widget.counterparty}")
+                          : "Transaction Completed",
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.5),
+                        fontSize: 14,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -231,18 +175,14 @@ class _TransactionSuccessDialogState
 
 class _CheckmarkPainter extends CustomPainter {
   final Animation<double> progress;
-  final Color color;
 
-  _CheckmarkPainter({
-    required this.progress,
-    required this.color,
-  }) : super(repaint: progress);
+  _CheckmarkPainter({required this.progress}) : super(repaint: progress);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color
-      ..strokeWidth = 4
+      ..color = Colors.black
+      ..strokeWidth = 6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
@@ -283,7 +223,6 @@ class _CheckmarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CheckmarkPainter oldDelegate) {
-    return oldDelegate.progress.value != progress.value ||
-        oldDelegate.color != color;
+    return oldDelegate.progress.value != progress.value;
   }
 }

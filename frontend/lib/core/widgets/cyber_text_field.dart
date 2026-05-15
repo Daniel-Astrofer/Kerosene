@@ -77,8 +77,8 @@ class _CyberTextFieldState extends State<CyberTextField>
       builder: (context, child) {
         final dx = hasError
             ? 6.0 *
-                  (0.5 - (_shakeAnim.value * 3 % 1).abs()).abs() *
-                  (_shakeAnim.value < 0.5 ? 1 : -1)
+                (0.5 - (_shakeAnim.value * 3 % 1).abs()).abs() *
+                (_shakeAnim.value < 0.5 ? 1 : -1)
             : 0.0;
         return Transform.translate(offset: Offset(dx, 0), child: child);
       },
@@ -94,14 +94,14 @@ class _CyberTextFieldState extends State<CyberTextField>
             child: Text(
               widget.label.toUpperCase(),
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: hasError
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(
-                        context,
-                      ).colorScheme.onPrimary.withValues(alpha: 0.72),
-                letterSpacing: 0,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: hasError
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onPrimary.withValues(alpha: 0.72),
+                    letterSpacing: 0,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
           GlassContainer(
@@ -126,16 +126,16 @@ class _CyberTextFieldState extends State<CyberTextField>
               onChanged: widget.onChanged,
               validator: widget.validator,
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
               cursorColor: Theme.of(context).colorScheme.primary,
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onPrimary.withValues(alpha: 0.48),
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimary.withValues(alpha: 0.48),
+                    ),
                 prefixIcon: widget.prefixIcon,
                 suffixIcon: widget.suffixIcon,
                 contentPadding: const EdgeInsets.symmetric(
@@ -164,9 +164,9 @@ class _CyberTextFieldState extends State<CyberTextField>
                   ),
                 ),
                 errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
           ),
@@ -179,8 +179,8 @@ class _CyberTextFieldState extends State<CyberTextField>
               child: Text(
                 widget.errorText!,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
               ).animate().fade(duration: 200.ms),
             ),
         ],

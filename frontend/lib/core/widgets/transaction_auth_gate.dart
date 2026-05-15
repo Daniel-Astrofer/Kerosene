@@ -638,7 +638,7 @@ class _LabeledField extends StatelessWidget {
           : TextAlign.start,
       style: theme.textTheme.titleMedium!.copyWith(
         fontFamily:
-            keyboardType == TextInputType.number ? 'JetBrainsMono' : null,
+            keyboardType == TextInputType.number ? 'IBM Plex Mono' : null,
         letterSpacing: keyboardType == TextInputType.number ? 6 : 0,
       ),
       decoration: InputDecoration(

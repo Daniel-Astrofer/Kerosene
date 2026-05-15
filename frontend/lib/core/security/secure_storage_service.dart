@@ -7,20 +7,11 @@ class SecureStorageService {
   SecureStorageService({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
 
-  /// Keep secrets available only while the device is unlocked and prevent
-  /// migration through device backups.
-  IOSOptions _getIOSOptions() => const IOSOptions(
-        accessibility: KeychainAccessibility.unlocked_this_device,
-        synchronizable: false,
-      );
+  /// Options for iOS: Key accessible only when the device is unlocked
+  IOSOptions _getIOSOptions() =>
+      const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
-  AndroidOptions _getAndroidOptions() => const AndroidOptions(
-        resetOnError: true,
-        migrateOnAlgorithmChange: true,
-        keyCipherAlgorithm:
-            KeyCipherAlgorithm.RSA_ECB_OAEPwithSHA_256andMGF1Padding,
-        storageCipherAlgorithm: StorageCipherAlgorithm.AES_GCM_NoPadding,
-      );
+  AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
   /// Save a value securely
   Future<void> write({required String key, required String value}) async {

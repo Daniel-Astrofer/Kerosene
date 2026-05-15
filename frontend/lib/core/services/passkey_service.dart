@@ -1,10 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:crypto/crypto.dart';
-
-import '../config/app_config.dart';
-import '../utils/device_helper.dart';
 import 'sovereign_auth_service.dart';
 
 /// Passkey service that delegates to SovereignAuthService (Ed25519 + biometric).
@@ -18,16 +14,10 @@ import 'sovereign_auth_service.dart';
 ///   Registration: { publicKey, publicKeyCose, credentialId, userHandle, deviceName, signature, authData, clientDataJSON }
 ///   Login:        { username, signature, authData, clientDataJSON }
 class PasskeyService {
-  final PasskeyCryptographyService _cryptographyService;
+  PasskeyService._();
+  static final PasskeyService instance = PasskeyService._();
 
-  PasskeyService({
-    PasskeyCryptographyService? cryptographyService,
-  }) : _cryptographyService =
-            cryptographyService ?? SovereignAuthService.instance;
-
-  PasskeyService._internal() : this();
-
-  static final PasskeyService instance = PasskeyService._internal();
+  final SovereignAuthService _sovereignAuth = SovereignAuthService.instance;
 
   /// Registers a new passkey for the user.
   ///
@@ -37,25 +27,37 @@ class PasskeyService {
     required String challengeHex,
     required String username,
   }) async {
-    final publicKey = await _cryptographyService.generateKeyPair();
-    final assertion = await _buildAssertionContext(
-      challengeHex: challengeHex,
-      requestType: _PasskeyRequestType.registration,
-    );
-    final signature = await _cryptographyService.signBytes(
-      assertion.signaturePayload,
-    );
+    // 1. Generate fresh key pair (stored in secure storage)
+    final pubKeyBytes = await _sovereignAuth.generateKeyPair();
+
+    // 2. Build synthetic clientDataJSON and authData
+    final clientDataJsonBytes = utf8.encode(jsonEncode({
+      'type': 'webauthn.create',
+      'challenge': _toBase64Url(_hexToBytes(challengeHex)),
+      'origin': 'android:apk-key-hash:kerosene',
+      'crossOrigin': false,
+    }));
+    final clientDataJson = _toBase64Url(clientDataJsonBytes);
+    final authDataBytes = _buildAuthenticatorDataBytes();
+
+    // 3. Compute signature over (authData + sha256(UTF8(clientDataJSON_string)))
+    final clientDataHash = sha256.convert(clientDataJsonBytes).bytes;
+    final signatureData =
+        Uint8List.fromList([...authDataBytes, ...clientDataHash]);
+
+    // 4. Sign (triggers biometric prompt)
+    final signatureBytes = await _sovereignAuth.signBytes(signatureData);
+
+    // 5. Build final payload (Mixed Base64 as per documentation)
+    final deviceName = await _sovereignAuth.getDeviceName();
+
     // ATTENTION: All byte-heavy fields are Base64 (Standard)
     // Signature, authData, clientDataJSON are Base64URL
-    final publicKeyBase64 = _toBase64(publicKey);
-    final publicKeyCoseBase64 = _toBase64(_buildPublicKeyCose(publicKey));
-    final signatureBase64Url = _toBase64Url(signature);
-    final authDataBase64Url = _toBase64Url(assertion.authDataBytes);
+    final publicKeyBase64 = _toBase64(pubKeyBytes);
+    final publicKeyCoseBase64 = _toBase64(_buildPublicKeyCose(pubKeyBytes));
+    final signatureBase64Url = _toBase64Url(signatureBytes);
+    final authDataBase64Url = _toBase64Url(authDataBytes);
     final userHandleBase64 = _toBase64(utf8.encode(username));
-    final deviceMetadata = await DeviceHelper.getDeviceMetadata();
-    final deviceName = deviceMetadata.deviceName.isNotEmpty
-        ? deviceMetadata.deviceName
-        : await _cryptographyService.getDeviceName();
 
     return {
       'publicKey': publicKeyBase64,
@@ -68,10 +70,9 @@ class PasskeyService {
       'user_handle': userHandleBase64,
       'deviceName': deviceName,
       'device_name': deviceName,
-      ...deviceMetadata.toJson(),
       'signature': signatureBase64Url,
       'authData': authDataBase64Url,
-      'clientDataJSON': assertion.clientDataJson,
+      'clientDataJSON': clientDataJson,
     };
   }
 
@@ -83,30 +84,41 @@ class PasskeyService {
     required String challengeHex,
     required String username,
   }) async {
-    final publicKey = await _cryptographyService.getPublicKey();
-    if (publicKey == null) {
+    // 1. Get the stored public key
+    final pubKeyBytes = await _sovereignAuth.getPublicKey();
+    if (pubKeyBytes == null) {
       throw Exception(
           'Nenhuma passkey registrada neste dispositivo. Faça o registro primeiro.');
     }
 
-    final assertion = await _buildAssertionContext(
-      challengeHex: challengeHex,
-      requestType: _PasskeyRequestType.authentication,
-    );
-    final signature = await _cryptographyService.signBytes(
-      assertion.signaturePayload,
-    );
-    final signatureBase64Url = _toBase64Url(signature);
-    final authDataBase64Url = _toBase64Url(assertion.authDataBytes);
+    // 2. Build synthetic authData and clientDataJSON
+    final clientDataJsonBytes = utf8.encode(jsonEncode({
+      'type': 'webauthn.get',
+      'challenge': _toBase64Url(_hexToBytes(challengeHex)),
+      'origin': 'android:apk-key-hash:kerosene',
+      'crossOrigin': false,
+    }));
+    final clientDataJson = _toBase64Url(clientDataJsonBytes);
+    final authDataBytes = _buildAuthenticatorDataBytes();
+
+    // 3. Compute signature over (authData + sha256(UTF8(clientDataJSON_string)))
+    final clientDataHash = sha256.convert(clientDataJsonBytes).bytes;
+    final signatureData =
+        Uint8List.fromList([...authDataBytes, ...clientDataHash]);
+
+    // 4. Sign (triggers biometric prompt)
+    final signatureBytes = await _sovereignAuth.signBytes(signatureData);
+    final signatureBase64Url = _toBase64Url(signatureBytes);
+    final authDataBase64Url = _toBase64Url(authDataBytes);
 
     return {
       'username': username,
       'signature': signatureBase64Url,
       'authData': authDataBase64Url,
-      'clientDataJSON': assertion.clientDataJson,
-      'credentialId': _toBase64(publicKey),
-      'credential_id': _toBase64(publicKey),
-      'id': _toBase64(publicKey),
+      'clientDataJSON': clientDataJson,
+      'credentialId': _toBase64(pubKeyBytes),
+      'credential_id': _toBase64(pubKeyBytes),
+      'id': _toBase64(pubKeyBytes),
     };
   }
 
@@ -120,47 +132,17 @@ class PasskeyService {
 
   /// Checks if a passkey is already registered on this device.
   Future<bool> hasRegisteredPasskey() async {
-    return _cryptographyService.hasRegisteredKey();
+    final pubKey = await _sovereignAuth.getPublicKey();
+    return pubKey != null;
   }
 
-  Future<_PasskeyAssertionContext> _buildAssertionContext({
-    required String challengeHex,
-    required _PasskeyRequestType requestType,
-  }) async {
-    final clientDataJsonBytes = utf8.encode(
-      jsonEncode({
-        'type': requestType.clientDataType,
-        'challenge': _toBase64Url(_hexToBytes(challengeHex)),
-        'origin': AppConfig.passkeyOrigin,
-        'crossOrigin': false,
-      }),
-    );
-    final authDataBytes = _buildAuthenticatorDataBytes(
-      await _cryptographyService.nextSignatureCounter(),
-    );
-    final clientDataHash = sha256.convert(clientDataJsonBytes).bytes;
-
-    return _PasskeyAssertionContext(
-      clientDataJson: _toBase64Url(clientDataJsonBytes),
-      authDataBytes: authDataBytes,
-      signaturePayload: Uint8List.fromList([
-        ...authDataBytes,
-        ...clientDataHash,
-      ]),
-    );
-  }
-
-  /// Builds synthetic authenticatorData bytes (37 bytes).
-  Uint8List _buildAuthenticatorDataBytes(int signatureCounter) {
-    final rpIdHash =
-        sha256.convert(utf8.encode(AppConfig.effectivePasskeyRpId)).bytes;
-    final counterBytes = ByteData(4)
-      ..setUint32(0, signatureCounter, Endian.big);
-    return Uint8List.fromList([
-      ...rpIdHash,
-      0x05,
-      ...counterBytes.buffer.asUint8List(),
-    ]);
+  /// Builds a minimal synthetic authenticatorData bytes (37 bytes).
+  Uint8List _buildAuthenticatorDataBytes() {
+    // 32 zero bytes for rpIdHash (not validated for .onion typically)
+    // flags: 0x05 = UP (bit 0) + UV (bit 2) = user present + user verified
+    // counter: 4 zero bytes
+    final data = List<int>.filled(32, 0) + [0x05] + [0, 0, 0, 0];
+    return Uint8List.fromList(data);
   }
 
   /// Helper to convert Hex to Uint8List
@@ -183,25 +165,4 @@ class PasskeyService {
   String _toBase64Url(List<int> bytes) {
     return base64Url.encode(bytes).replaceAll('=', '');
   }
-}
-
-enum _PasskeyRequestType {
-  registration('webauthn.create'),
-  authentication('webauthn.get');
-
-  final String clientDataType;
-
-  const _PasskeyRequestType(this.clientDataType);
-}
-
-class _PasskeyAssertionContext {
-  final String clientDataJson;
-  final Uint8List authDataBytes;
-  final Uint8List signaturePayload;
-
-  const _PasskeyAssertionContext({
-    required this.clientDataJson,
-    required this.authDataBytes,
-    required this.signaturePayload,
-  });
 }

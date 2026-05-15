@@ -78,7 +78,8 @@ class MonitoringScreen extends ConsumerWidget {
                 _AsyncMetric(
                   title: 'Release',
                   asyncValue: release,
-                  valueBuilder: (data) => data['authorized'] == true ? 'AUTHORIZED' : 'BLOCKED',
+                  valueBuilder: (data) =>
+                      data['authorized'] == true ? 'AUTHORIZED' : 'BLOCKED',
                   subtitleBuilder: (data) => '${data['reason'] ?? 'unknown'}',
                   icon: Icons.verified_user_outlined,
                 ),
@@ -228,7 +229,8 @@ class _LightningPanel extends StatelessWidget {
               _KeyValue('Block hash', '${node['blockHash'] ?? ''}'),
               _KeyValue('Peers', '${node['numPeers'] ?? 0}'),
               _KeyValue('Active channels', '${node['numActiveChannels'] ?? 0}'),
-              _KeyValue('Pending channels', '${node['numPendingChannels'] ?? 0}'),
+              _KeyValue(
+                  'Pending channels', '${node['numPendingChannels'] ?? 0}'),
               _KeyValue(
                 'Local balance',
                 '${node['localBalanceSats'] ?? 0} sats',

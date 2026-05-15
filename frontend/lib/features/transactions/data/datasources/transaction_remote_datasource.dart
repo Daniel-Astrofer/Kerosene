@@ -225,10 +225,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     final message = payload['message']?.toString().trim().isNotEmpty == true
         ? payload['message']!.toString().trim()
         : (payload['error']?.toString().trim().isNotEmpty == true
-              ? payload['error']!.toString().trim()
-              : (error.message?.trim().isNotEmpty == true
-                    ? error.message!.trim()
-                    : 'Não conseguimos concluir sua solicitação agora.'));
+            ? payload['error']!.toString().trim()
+            : (error.message?.trim().isNotEmpty == true
+                ? error.message!.trim()
+                : 'Não conseguimos concluir sua solicitação agora.'));
     final rawCode = payload['errorCode']?.toString().trim();
     final errorCode = rawCode == null || rawCode.isEmpty ? null : rawCode;
     final errorData = payload['data'];
@@ -333,9 +333,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     int? requestTimestamp,
   }) async {
     try {
-      final normalizedSender = fromAddress.trim().isNotEmpty
-          ? fromAddress.trim()
-          : '';
+      final normalizedSender =
+          fromAddress.trim().isNotEmpty ? fromAddress.trim() : '';
       final response = await apiClient.post(
         AppConfig.ledgerTransaction,
         data: {
@@ -355,8 +354,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       final data = _parseJsonResponse(response.data);
       if (data.isEmpty) {
-        final fallbackTxid =
-            idempotencyKey ??
+        final fallbackTxid = idempotencyKey ??
             requestTimestamp?.toString() ??
             DateTime.now().microsecondsSinceEpoch.toString();
         return TxStatus(

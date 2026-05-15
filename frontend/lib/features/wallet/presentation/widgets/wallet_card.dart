@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/l10n/l10n_extension.dart';
 import '../../domain/entities/wallet.dart';
 
 import 'package:teste/shared/widgets/brushed_metal_container.dart';
@@ -33,7 +31,9 @@ class WalletCard extends StatefulWidget {
   State<WalletCard> createState() => _WalletCardState();
 
   String _shortAddress(String address) {
-    return SafeDisplayText.maskAddress(address);
+    if (address.isEmpty) return '—';
+    if (address.length <= 16) return address;
+    return '${address.substring(0, 8)}...${address.substring(address.length - 8)}';
   }
 }
 
@@ -47,35 +47,7 @@ class _WalletCardState extends State<WalletCard>
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncRotationState();
-  }
-
-  @override
-  void didUpdateWidget(covariant WalletCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSelected != oldWidget.isSelected) {
-      _syncRotationState();
-    }
-  }
-
-  bool get _shouldRotate =>
-      widget.isSelected &&
-      TickerMode.valuesOf(context).enabled &&
-      !MediaQuery.disableAnimationsOf(context);
-
-  void _syncRotationState() {
-    if (_shouldRotate) {
-      _rotationController.repeat();
-    } else {
-      _rotationController.stop();
-      _rotationController.value = 0;
-    }
+    )..repeat();
   }
 
   @override
@@ -121,7 +93,7 @@ class _WalletCardState extends State<WalletCard>
             ListTile(
               leading: Icon(LucideIcons.edit,
                   color: Theme.of(context).colorScheme.onPrimary),
-              title: Text(context.l10n.walletEditNameAction.toUpperCase(),
+              title: Text('EDITAR NOME',
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall!
@@ -134,7 +106,7 @@ class _WalletCardState extends State<WalletCard>
             ListTile(
               leading: Icon(LucideIcons.trash2,
                   color: Theme.of(context).colorScheme.error),
-              title: Text(context.l10n.removeWallet.toUpperCase(),
+              title: Text('REMOVER CARTEIRA',
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: Theme.of(context).colorScheme.error,
                       fontWeight: FontWeight.w900,
@@ -177,7 +149,7 @@ class _WalletCardState extends State<WalletCard>
                     return CustomPaint(
                       painter: _NeonGlowPainter(
                         color: primaryColor,
-                        rotation: _shouldRotate ? _rotationController.value : 0,
+                        rotation: _rotationController.value,
                         intensity: widget.isSelected ? 1.0 : 0.4,
                       ),
                     );

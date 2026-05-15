@@ -542,10 +542,10 @@ class _PresentationCopyColumn extends StatelessWidget {
         Text(
           slide.title,
           style: AppTypography.h1.copyWith(
-            fontFamily: 'serif',
+            fontFamily: AppTypography.titleFontFamily,
             color: authEntryText,
             fontSize: titleSize,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w300,
             height: 0.98,
             letterSpacing: 0,
           ),
@@ -571,7 +571,7 @@ class _PresentationCopyColumn extends StatelessWidget {
           '${pageIndex + 1} / $totalPages',
           style: AppTypography.caption.copyWith(
             color: Colors.white.withValues(alpha: 0.42),
-            fontFamily: 'JetBrainsMono',
+            fontFamily: 'IBM Plex Mono',
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
           ),
@@ -595,7 +595,7 @@ class _BrandMark extends StatelessWidget {
           'KEROSENE',
           style: AppTypography.h3.copyWith(
             color: Colors.white.withValues(alpha: 0.92),
-            fontFamily: AppTypography.spaceGroteskVariableFamily,
+            fontFamily: AppTypography.fontFamily,
             fontSize: 30,
             fontWeight: FontWeight.w700,
             letterSpacing: 4.2,
@@ -855,7 +855,7 @@ class _HomePreviewContent extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22 * scale,
-                      fontFamily: AppTypography.spaceGroteskVariableFamily,
+                      fontFamily: AppTypography.fontFamily,
                       fontWeight: FontWeight.w800,
                       height: 1.05,
                       letterSpacing: 0,

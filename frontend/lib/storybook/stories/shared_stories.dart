@@ -86,7 +86,7 @@ List<Story> sharedStories() {
       },
     ),
     Story(
-      name: 'Shared/Wallet/Wallet Credit Card',
+      name: 'Shared/Wallet/Wallet Credit Card (Live Shader)',
       builder: (context) {
         final balance = context.knobs
             .slider(label: 'Balance', initial: 1.25, min: 0, max: 10);
@@ -108,7 +108,7 @@ List<Story> sharedStories() {
         return Center(
           child: SizedBox(
             width: 303,
-            height: 191,
+            height: 175,
             child: WalletCreditCard(
               wallet: mockWallet.copyWith(balance: balance),
               colorIndex: colorIndex,

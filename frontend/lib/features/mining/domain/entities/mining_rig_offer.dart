@@ -35,8 +35,7 @@ class MiningRigOffer extends Equatable {
       algorithm: json['algorithm']?.toString() ?? '',
       hashUnit: json['hashUnit']?.toString() ?? '',
       availableHashrate: (json['availableHashrate'] as num?)?.toDouble() ?? 0,
-      pricePerUnitDayBtc:
-          (json['pricePerUnitDayBtc'] as num?)?.toDouble() ?? 0,
+      pricePerUnitDayBtc: (json['pricePerUnitDayBtc'] as num?)?.toDouble() ?? 0,
       projectedBtcYieldPerUnitDay:
           (json['projectedBtcYieldPerUnitDay'] as num?)?.toDouble() ?? 0,
       minRentalHours: (json['minRentalHours'] as num?)?.toInt() ?? 1,

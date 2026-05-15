@@ -6,7 +6,7 @@ precision highp float;
 uniform vec2 iResolution;
 uniform float iTime;
 uniform vec2 iTilt;
-uniform vec4 iColor;
+uniform vec4 iColor; 
 uniform sampler2D uTexture;
 
 out vec4 fragColor;
@@ -85,13 +85,13 @@ void main()
     vec2 fragCoord = FlutterFragCoord();
     // Normalizing coordinates
     vec2 q = (2.0*fragCoord-iResolution.xy)/iResolution.y*1.5;
-
+    
     // Parallax logic using iTilt - NO iTime for static cards
     q += iTilt * 0.8;
-
+    
     vec2 o, n;
     float f = func(q, o, n);
-
+    
     // Emerald Gem colors (Deep Greens and Whites)
     vec3 col = vec3(0.0, 0.25, 0.15); // Deep emerald
     col = mix( col, vec3(0.1, 0.5, 0.3), f ); // Lighter emerald
@@ -104,7 +104,7 @@ void main()
     vec2 ex = vec2( 2.0 / iResolution.x, 0.0 );
     vec2 ey = vec2( 0.0, 2.0 / iResolution.y );
     vec3 nor = normalize( vec3( funcs(q+ex) - f, ex.x, funcs(q+ey) - f ) );
-
+    
     vec3 lig = normalize( vec3( 0.9, -0.2, -0.4 ) );
     float dif = clamp( 0.3+0.7*dot( nor, lig ), 0.0, 1.0 );
 
@@ -116,28 +116,17 @@ void main()
     col = vec3(1.0)-col;
     col = col*col;
     col *= vec3(1.1, 1.4, 1.1); // Green brilliance bias
-
-    // Wallet Text Texture pass (Optimized with depth)
+    
+    // Wallet Text Texture pass
     vec2 p_uv = fragCoord / iResolution.xy;
     vec2 tex_uv = vec2(p_uv.x, 1.0 - p_uv.y);
-    float alphaC = texture(uTexture, tex_uv).a;
-    float alphaR = texture(uTexture, tex_uv + vec2(0.002, 0.0)).a;
-    float alphaB = texture(uTexture, tex_uv + vec2(0.0, -0.002)).a;
-
-    // Branchless text engraving with highlights
-    float burnMask = smoothstep(0.05, 0.15, alphaC);
-    col = mix(col, vec3(0.95, 1.0, 0.98), burnMask * 0.7);
-
-    float dX = alphaR - alphaC;
-    float dY = alphaB - alphaC;
-    float textHighlight = clamp((dX - dY) * 1.5, 0.0, 1.0);
-    float textShadow = clamp((-dX + dY) * 1.0, 0.0, 1.0);
-
-    col += textHighlight * vec3(1.0) * 0.8;
-    col -= textShadow * 0.6;
-
+    float tx = texture(uTexture, tex_uv).a;
+    if(tx > 0.05) {
+        col = mix(col, vec3(1.0, 1.0, 1.0), tx * 0.8);
+    }
+    
     // Vignette
 	col *= 0.5 + 0.5 * sqrt(16.0*p_uv.x*p_uv.y*(1.0-p_uv.x)*(1.0-p_uv.y));
-
+	
 	fragColor = vec4( col, 1.0 );
 }

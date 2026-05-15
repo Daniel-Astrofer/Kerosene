@@ -2008,9 +2008,9 @@ List<_LandingCardData> _securityCards(BuildContext context) {
 TextStyle _displayStyle(BuildContext context, double size) {
   final compact = MediaQuery.sizeOf(context).width < 760;
   return TextStyle(
-    fontFamily: AppTypography.spaceGroteskVariableFamily,
+    fontFamily: AppTypography.titleFontFamily,
     fontSize: compact ? math.min(size, 52) : size,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w300,
     height: 1.02,
     letterSpacing: 0,
     color: Colors.white,
@@ -2020,9 +2020,9 @@ TextStyle _displayStyle(BuildContext context, double size) {
 TextStyle _sectionTitleStyle(BuildContext context, double size) {
   final compact = MediaQuery.sizeOf(context).width < 760;
   return TextStyle(
-    fontFamily: AppTypography.spaceGroteskVariableFamily,
+    fontFamily: AppTypography.titleFontFamily,
     fontSize: compact ? math.min(size, 34) : size,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w300,
     height: 1.12,
     letterSpacing: 0,
     color: Colors.white,
@@ -2041,7 +2041,7 @@ TextStyle _eyebrowStyle() {
 
 TextStyle _monoStyle(Color color) {
   return TextStyle(
-    fontFamily: AppTypography.fontFamily,
+    fontFamily: AppTypography.monoFontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w800,
     height: 1.35,

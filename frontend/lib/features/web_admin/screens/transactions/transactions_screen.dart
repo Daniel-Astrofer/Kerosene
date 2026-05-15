@@ -173,7 +173,8 @@ class _AuditRootsTimeline extends StatelessWidget {
       child: asyncValue.when(
         data: (entries) {
           if (entries.isEmpty) {
-            return Text('No audit checkpoints found', style: AdminTypography.bodyMedium);
+            return Text('No audit checkpoints found',
+                style: AdminTypography.bodyMedium);
           }
           return Column(
             children: entries.take(20).map((entry) {

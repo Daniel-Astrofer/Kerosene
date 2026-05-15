@@ -5,7 +5,7 @@ import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
 import 'package:teste/l10n/app_localizations.dart';
-import 'package:teste/storybook/storybook_mocks.dart';
+import '../../helpers/test_auth_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +16,7 @@ void main() {
       ProviderScope(
         overrides: [
           authControllerProvider.overrideWith(
-            () => MockAuthController(
+            () => TestAuthController(
               initialOverride: const AuthUnauthenticated(),
             ),
           ),

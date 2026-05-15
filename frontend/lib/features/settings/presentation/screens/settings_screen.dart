@@ -74,13 +74,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       parent: _headerController,
       curve: Curves.easeOut,
     );
-    _headerSlide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _headerController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+    _headerSlide =
+        Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _headerController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _headerController.forward();
     Future.delayed(const Duration(milliseconds: 40), () {
@@ -149,8 +149,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildSection(
                                   icon: Icons.shield_outlined,
                                   label: context
-                                      .l10n
-                                      .settingsUiSecurityAccessSection
+                                      .l10n.settingsUiSecurityAccessSection
                                       .toUpperCase(),
                                   color: Colors.white70,
                                   child: const _SecuritySection(),
@@ -159,8 +158,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildSection(
                                   icon: Icons.admin_panel_settings_outlined,
                                   label: context
-                                      .l10n
-                                      .settingsUiEnterpriseAccessSection
+                                      .l10n.settingsUiEnterpriseAccessSection
                                       .toUpperCase(),
                                   color: Colors.white70,
                                   child: const _EnterpriseAccessSection(),
@@ -177,8 +175,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildSection(
                                   icon: Icons.manage_accounts_outlined,
                                   label: context
-                                      .l10n
-                                      .settingsUiAccountAccessSection
+                                      .l10n.settingsUiAccountAccessSection
                                       .toUpperCase(),
                                   color: Colors.white70,
                                   child: const _CredentialsSection(),
@@ -187,8 +184,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildSection(
                                   icon: Icons.notifications_outlined,
                                   label: context
-                                      .l10n
-                                      .settingsUiNotificationsSection
+                                      .l10n.settingsUiNotificationsSection
                                       .toUpperCase(),
                                   color: Colors.white70,
                                   child: const _NotificationsSection(),
@@ -197,8 +193,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildSection(
                                   icon: Icons.palette_outlined,
                                   label: context
-                                      .l10n
-                                      .settingsUiAppearanceSection
+                                      .l10n.settingsUiAppearanceSection
                                       .toUpperCase(),
                                   color: Colors.white70,
                                   child: const _AppearanceSection(),
@@ -207,8 +202,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildSection(
                                   icon: Icons.language_rounded,
                                   label: context
-                                      .l10n
-                                      .settingsUiLocaleCurrencySection
+                                      .l10n.settingsUiLocaleCurrencySection
                                       .toUpperCase(),
                                   color: Colors.white70,
                                   child: const _LocaleSection(),
@@ -358,10 +352,10 @@ class _SettingsOverviewCard extends ConsumerWidget {
     final biometricLabel = biometricState.isLoading
         ? context.l10n.settingsUiChecking
         : biometricState.isSupported
-        ? (biometricState.isEnabled
-              ? context.l10n.settingsUiActive
-              : context.l10n.settingsUiInactive)
-        : context.l10n.settingsUiUnavailable;
+            ? (biometricState.isEnabled
+                ? context.l10n.settingsUiActive
+                : context.l10n.settingsUiInactive)
+            : context.l10n.settingsUiUnavailable;
 
     return _Card(
       children: [
@@ -1093,9 +1087,8 @@ class _EnterpriseAccessSection extends ConsumerWidget {
             requireConfirmation: true,
             confirmed: confirmed,
             onConfirmationChanged: (value) => setState(() => confirmed = value),
-            onConfirm: confirmed
-                ? () => Navigator.pop(dialogContext, true)
-                : null,
+            onConfirm:
+                confirmed ? () => Navigator.pop(dialogContext, true) : null,
           ),
         );
       },
@@ -1108,9 +1101,7 @@ class _EnterpriseAccessSection extends ConsumerWidget {
     final key = _generateAdminKey();
     final keyHash = crypto.sha256.convert(utf8.encode(key)).toString();
     final metadata = await DeviceHelper.getDeviceMetadata();
-    final result = await ref
-        .read(securityRepositoryProvider)
-        .createAdminKey(
+    final result = await ref.read(securityRepositoryProvider).createAdminKey(
           keyMaterialHash: keyHash,
           deviceInstallId: metadata.deviceInstallId,
         );
@@ -1228,7 +1219,7 @@ class _EnterpriseAccessSection extends ConsumerWidget {
               key,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBM Plex Mono',
               ),
             ),
           ],
@@ -1569,8 +1560,8 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
       }
 
       setState(() => _isSaving = true);
-      final permissionsGranted = await NotificationService()
-          .requestPermissions();
+      final permissionsGranted =
+          await NotificationService().requestPermissions();
       if (!mounted) {
         return;
       }
@@ -1815,8 +1806,7 @@ class _BottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderTone =
-        Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
+    final borderTone = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
         monoBorderStrongColor;
 
     return Container(
@@ -2192,12 +2182,10 @@ class _SelectionTile extends StatelessWidget {
                   height: 38,
                   alignment: Alignment.center,
                   decoration: monochromePanelDecoration(
-                    color: selected
-                        ? monoSurfaceRaisedColor
-                        : monoSurfaceAltColor,
-                    borderColor: selected
-                        ? selectedBorder
-                        : monoBorderStrongColor,
+                    color:
+                        selected ? monoSurfaceRaisedColor : monoSurfaceAltColor,
+                    borderColor:
+                        selected ? selectedBorder : monoBorderStrongColor,
                     showShadow: false,
                   ),
                   child: Text(
@@ -2278,8 +2266,7 @@ class _SwitchTile extends StatelessWidget {
     final responsive = context.responsive;
     final activeBorder =
         Color.lerp(monoTextColor, iconColor, 0.08) ?? monoTextColor;
-    final activeTrack =
-        Color.lerp(monoSurfaceRaisedColor, accentColor, 0.08) ??
+    final activeTrack = Color.lerp(monoSurfaceRaisedColor, accentColor, 0.08) ??
         monoSurfaceRaisedColor;
 
     return Padding(
@@ -2368,8 +2355,7 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
-    final iconBorder =
-        Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
+    final iconBorder = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
         monoBorderStrongColor;
     final effectiveTitleColor = titleColor == null
         ? monoTextColor

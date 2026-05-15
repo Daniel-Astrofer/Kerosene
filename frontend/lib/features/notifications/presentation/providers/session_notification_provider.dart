@@ -40,7 +40,8 @@ class SessionNotificationFeedNotifier
   }
 
   Future<void> reloadFromServer() async {
-    final result = await ref.read(notificationRepositoryProvider).getNotifications();
+    final result =
+        await ref.read(notificationRepositoryProvider).getNotifications();
     result.fold(
       (_) {},
       (items) => _replaceState(_merge(items, state)),
@@ -64,12 +65,14 @@ class SessionNotificationFeedNotifier
     _replaceState(updated);
 
     if (target.canSyncRead) {
-      unawaited(ref.read(notificationRepositoryProvider).markAsRead(notificationId));
+      unawaited(
+          ref.read(notificationRepositoryProvider).markAsRead(notificationId));
     }
   }
 
   Future<void> markAllRead() async {
-    final unreadIds = state.where((item) => !item.read).map((item) => item.id).toList();
+    final unreadIds =
+        state.where((item) => !item.read).map((item) => item.id).toList();
     if (unreadIds.isEmpty) {
       return;
     }

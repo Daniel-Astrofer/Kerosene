@@ -36,7 +36,8 @@ class OnchainScreen extends ConsumerWidget {
                 final chain = _map(data['chain']);
                 final mempool = _map(data['mempool']);
                 final fees = _map(data['fees']);
-                final relevant = (data['relevantTransactions'] as List?) ?? const [];
+                final relevant =
+                    (data['relevantTransactions'] as List?) ?? const [];
                 return Column(
                   children: [
                     AdminResponsiveGrid(
@@ -59,7 +60,8 @@ class OnchainScreen extends ConsumerWidget {
                         ),
                         AdminMetricCard(
                           label: 'Fee Rate',
-                          value: '${fees['fastestFee'] ?? fees['halfHourFee'] ?? 0} sat/vB',
+                          value:
+                              '${fees['fastestFee'] ?? fees['halfHourFee'] ?? 0} sat/vB',
                           icon: Icons.payments_outlined,
                           accentColor: AdminColors.warning,
                         ),
@@ -72,11 +74,14 @@ class OnchainScreen extends ConsumerWidget {
                         spacing: 24,
                         runSpacing: 12,
                         children: [
-                          _KeyValue('Primary source', '${data['primarySource']}'),
+                          _KeyValue(
+                              'Primary source', '${data['primarySource']}'),
                           _KeyValue('Network', '${data['network']}'),
-                          _KeyValue('Best hash', _short(chain['bestBlockHash'])),
+                          _KeyValue(
+                              'Best hash', _short(chain['bestBlockHash'])),
                           _KeyValue('Pruned', '${chain['pruned'] ?? false}'),
-                          _KeyValue('Prune height', '${chain['pruneHeight'] ?? 0}'),
+                          _KeyValue(
+                              'Prune height', '${chain['pruneHeight'] ?? 0}'),
                           _KeyValue('Indexer', '${data['indexer']}'),
                         ],
                       ),
@@ -201,7 +206,8 @@ class _EventRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.fingerprint, color: AdminColors.textTertiary, size: 15),
+          const Icon(Icons.fingerprint,
+              color: AdminColors.textTertiary, size: 15),
           const SizedBox(width: AdminTheme.spacingMd),
           Expanded(
             child: Text(
@@ -225,7 +231,9 @@ Color _statusColor(String status) {
   if (normalized == 'UP' || normalized == 'OK' || normalized == 'ONLINE') {
     return AdminColors.positive;
   }
-  if (normalized == 'DOWN' || normalized == 'ERROR') return AdminColors.negative;
+  if (normalized == 'DOWN' || normalized == 'ERROR') {
+    return AdminColors.negative;
+  }
   return AdminColors.warning;
 }
 

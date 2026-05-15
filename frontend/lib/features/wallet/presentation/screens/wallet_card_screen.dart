@@ -86,13 +86,13 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
 
     final content = switch (walletState) {
       WalletLoading() || WalletInitial() => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF8FA0B2)),
-      ),
+          child: CircularProgressIndicator(color: Color(0xFF8FA0B2)),
+        ),
       WalletError(:final message) => _SolidMessage(
-        icon: LucideIcons.alertCircle,
-        title: context.l10n.walletCardUnavailableTitle,
-        message: message,
-      ),
+          icon: LucideIcons.alertCircle,
+          title: context.l10n.walletCardUnavailableTitle,
+          message: message,
+        ),
       WalletLoaded() => _buildLoadedContent(walletState),
     };
 
@@ -127,8 +127,7 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
   }
 
   Widget _buildLoadedContent(WalletLoaded loaded) {
-    final wallet =
-        loaded.selectedWallet ??
+    final wallet = loaded.selectedWallet ??
         (loaded.wallets.isNotEmpty ? loaded.wallets.first : null);
 
     if (wallet == null) {
@@ -498,7 +497,7 @@ class _ShowcaseCard extends StatelessWidget {
                           _displayNumber(),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: spec.textColor,
-                            fontFamily: 'JetBrainsMono',
+                            fontFamily: 'IBM Plex Mono',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.7,
@@ -511,11 +510,10 @@ class _ShowcaseCard extends StatelessWidget {
                             Expanded(
                               child: _ShowcaseCardField(
                                 label: 'CARD HOLDER',
-                                value:
-                                    (isCurrent
-                                            ? wallet.effectiveCardHolderName
-                                            : wallet.name)
-                                        .toUpperCase(),
+                                value: (isCurrent
+                                        ? wallet.effectiveCardHolderName
+                                        : wallet.name)
+                                    .toUpperCase(),
                                 textColor: spec.textColor,
                                 mutedTextColor: spec.mutedTextColor,
                               ),
@@ -659,10 +657,10 @@ class _TimelineRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _walletCardFaintText,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0,
-              ),
+                    color: _walletCardFaintText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
             ),
           ),
           Expanded(
@@ -671,10 +669,10 @@ class _TimelineRow extends StatelessWidget {
               maxLines: responsive.isTinyPhone ? 2 : 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _walletCardText,
-                fontFamily: 'JetBrainsMono',
-                height: 1.35,
-              ),
+                    color: _walletCardText,
+                    fontFamily: 'IBM Plex Mono',
+                    height: 1.35,
+                  ),
             ),
           ),
         ],
@@ -701,18 +699,17 @@ class _ShowcaseCardField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: mutedTextColor,
-            fontSize: 8,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
-          ),
+                color: mutedTextColor,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
         ),
         const SizedBox(height: 4),
         SizedBox(
@@ -724,10 +721,10 @@ class _ShowcaseCardField extends StatelessWidget {
               value,
               maxLines: 1,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
             ),
           ),
         ),
@@ -982,17 +979,17 @@ class _FeeInfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _walletCardMutedText,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: _walletCardMutedText,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
           Text(
             value,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: _walletCardText,
-              fontWeight: FontWeight.w800,
-            ),
+                  color: _walletCardText,
+                  fontWeight: FontWeight.w800,
+                ),
           ),
         ],
       ),
@@ -1036,17 +1033,17 @@ class _EligibilityRow extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _walletCardText,
-                    fontWeight: FontWeight.w700,
-                  ),
+                        color: _walletCardText,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _walletCardMutedText,
-                    height: 1.45,
-                  ),
+                        color: _walletCardMutedText,
+                        height: 1.45,
+                      ),
                 ),
               ],
             ),
@@ -1078,18 +1075,18 @@ class _InfoChip extends StatelessWidget {
             TextSpan(
               text: '$label: ',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _walletCardFaintText,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
+                    color: _walletCardFaintText,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
             ),
             TextSpan(
               text: value,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _walletCardText,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
-              ),
+                    color: _walletCardText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
             ),
           ],
         ),
@@ -1209,16 +1206,16 @@ class _CardShowcaseSpec {
   }) : isHidden = false;
 
   const _CardShowcaseSpec.hidden()
-    : id = 'hidden',
-      depositRate = null,
-      withdrawalRate = null,
-      miningRate = null,
-      walletCardType = null,
-      fillColor = const Color(0x0AFFFFFF),
-      borderColor = const Color(0x26FFFFFF),
-      textColor = const Color(0xFFF4F6F8),
-      mutedTextColor = const Color(0xB3F4F6F8),
-      isHidden = true;
+      : id = 'hidden',
+        depositRate = null,
+        withdrawalRate = null,
+        miningRate = null,
+        walletCardType = null,
+        fillColor = const Color(0x0AFFFFFF),
+        borderColor = const Color(0x26FFFFFF),
+        textColor = const Color(0xFFF4F6F8),
+        mutedTextColor = const Color(0xB3F4F6F8),
+        isHidden = true;
 
   String title(BuildContext context) {
     return switch (id) {

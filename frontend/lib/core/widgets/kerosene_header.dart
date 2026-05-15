@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 
 /// Glass-morphism top bar with blurred background.
@@ -38,8 +37,8 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
                       IconButton(
                         onPressed:
                             onBackPressed ?? () => Navigator.pop(context),
-                        icon: AnimatedGlyphIcon(
-                          icon: LucideIcons.arrowLeft,
+                        icon: Icon(
+                          LucideIcons.arrowLeft,
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 24,
                         ),
@@ -64,8 +63,6 @@ class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {
                               title!,
                               style: Theme.of(context).textTheme.titleMedium!,
                               textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             )
                           : const SizedBox.shrink(),
                     ),

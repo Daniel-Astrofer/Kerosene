@@ -183,12 +183,14 @@ services:
     container_name: bitcoin-pruned-node-local
     hostname: bitcoin-pruned-node
     restart: unless-stopped
+    mem_limit: ${BITCOIN_MEM_LIMIT:-768m}
+    cpus: "${BITCOIN_CPUS:-1.0}"
     env_file: ../kerosene/.env
     environment:
       - BITCOIN_CHAIN=${BITCOIN_CHAIN:-mainnet}
-      - BITCOIN_PRUNE_MB=${BITCOIN_PRUNE_MB:-5500}
-      - BITCOIN_MAX_MEMPOOL_MB=${BITCOIN_MAX_MEMPOOL_MB:-300}
-      - BITCOIN_DBCACHE_MB=${BITCOIN_DBCACHE_MB:-450}
+      - BITCOIN_PRUNE_MB=${BITCOIN_PRUNE_MB:-550}
+      - BITCOIN_MAX_MEMPOOL_MB=${BITCOIN_MAX_MEMPOOL_MB:-64}
+      - BITCOIN_DBCACHE_MB=${BITCOIN_DBCACHE_MB:-64}
       - BITCOIN_P2P_PORT=${BITCOIN_P2P_PORT:-8333}
       - BITCOIN_RPC_USER=${BITCOIN_RPC_USER:-kerosene}
       - BITCOIN_RPC_PASSWORD=${BITCOIN_RPC_PASSWORD}

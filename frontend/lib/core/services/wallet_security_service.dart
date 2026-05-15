@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:safe_device/safe_device.dart';
-import 'package:teste/core/constants/app_copy.dart';
 
 import '../security/secure_storage_service.dart';
 import '../security/biometric_service.dart';
@@ -34,8 +33,8 @@ class WalletSecurityService {
     try {
       await _storageService.write(key: _mnemonicKey, value: mnemonic);
       return true;
-    } catch (_) {
-      debugPrint('WalletSecurityService: recovery phrase could not be saved.');
+    } catch (e) {
+      debugPrint('Error saving mnemonic: $e');
       return false;
     }
   }
@@ -46,7 +45,7 @@ class WalletSecurityService {
       if (!canAuthenticate) return null;
 
       final bool didAuthenticate = await _biometricService.authenticate(
-        localizedReason: AppCopy.authReasonWalletAccess.en,
+        localizedReason: 'Por favor, autentique-se para acessar sua carteira',
       );
 
       if (didAuthenticate) {
@@ -71,10 +70,9 @@ class WalletSecurityService {
       final root = Bip32Slip10Secp256k1.fromSeed(seed);
       final childKey = root.derivePath("m/84'/0'/0'/0/0");
       final txBytes = BytesUtils.fromHexString(txHex);
-      final signature =
-          BitcoinKeySigner.fromKeyBytes(childKey.privateKey.raw).signECDSADer(
-        txBytes,
-      );
+      // ignore: deprecated_member_use
+      final signature = BitcoinSigner.fromKeyBytes(childKey.privateKey.raw)
+          .signTransaction(txBytes);
       return BytesUtils.toHexString(signature);
     } catch (e) {
       return null;

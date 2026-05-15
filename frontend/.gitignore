@@ -13,6 +13,12 @@
 migrate_working_dir/
 .local-quarantine/
 
+# Local AI/tooling mounts and notes
+.agents/
+.codex/
+.claude/
+CLAUDE.md
+
 # Local command output, diagnostics, and screenshots
 /Run
 /Process

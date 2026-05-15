@@ -94,11 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         if (context.mounted) {
           HomeScreen.skipNextAuth = true;
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/home_loading',
-            (route) => false,
-          );
+          Navigator.pushReplacementNamed(context, '/home_loading');
         }
       } else if (next is AuthRequiresLoginTotp) {
         Navigator.push(
@@ -116,7 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (context.mounted) {
           showCustomErrorDialog(
             context,
-            ErrorTranslator.translate(context.l10n, next.toString()),
+            ErrorTranslator.translate(context.l10n, next.message),
             onRetry: () {
               ref.read(authControllerProvider.notifier).clearError();
               if (_usernameController.text.isNotEmpty &&
@@ -135,7 +131,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       body: CyberBackground(
-        simpleGradient: true,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -148,37 +143,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       const SizedBox(height: AppSpacing.md),
-                      Image.asset(
-                        'assets/logo/kerosene-logo.png',
-                        height: 52,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 80,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: AppColors.white10,
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            LucideIcons.wallet,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            size: AppSpacing.md,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
                       Text(
-                        context.l10n.authAccountAccessTitle,
+                        context.l10n.secureAccess,
                         style: Theme.of(context).textTheme.displayLarge!,
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: AppSpacing.xxl + AppSpacing.sm),
 
+                      // Logo placeholder
+                      Container(
+                        width: 80,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.white10,
+                          borderRadius: BorderRadius.circular(AppSpacing.sm),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(LucideIcons.wallet,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            size: AppSpacing.md),
+                      ),
+                      SizedBox(height: AppSpacing.xl),
+
                       CyberTextField(
                         controller: _usernameController,
                         label: context.l10n.username.toUpperCase(),
-                        hint: '',
+                        hint: 'astroferas',
                         prefixIcon: Icon(
                           LucideIcons.user,
                           color: Theme.of(context).colorScheme.primary,
@@ -194,8 +184,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.lg),
                       CyberTextField(
                         controller: _passwordController,
-                        label:
-                            context.l10n.authAccountPasswordLabel.toUpperCase(),
+                        label: context.l10n.passphrase.toUpperCase(),
                         hint: '••••••••',
                         prefixIcon: Icon(
                           LucideIcons.lock,
@@ -250,7 +239,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           : AppColors.white30,
                                       width: 1.5,
                                     ),
-                                    borderRadius: BorderRadius.zero,
+                                    borderRadius:
+                                        BorderRadius.circular(AppSpacing.xs),
                                     color: _rememberMe
                                         ? Theme.of(context).colorScheme.primary
                                         : Colors.transparent,

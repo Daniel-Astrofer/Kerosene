@@ -73,7 +73,7 @@ void main() {
     // Lighting composition
     vec3 finalColor = albedo * diff * 0.75 + albedo * 0.25 + vec3(1.0) * spec;
     
-    // Engraving for the text (Optimized)
+    // Engraving for the text
     vec2 texUV = vec2(uv.x, 1.0 - uv.y);
     float alphaC = texture(uTexture, texUV).a;
     float alphaR = texture(uTexture, texUV + vec2(0.002, 0.0)).a;
@@ -82,25 +82,23 @@ void main() {
     float dX = alphaR - alphaC;
     float dY = alphaB - alphaC;
     
-    // Branchless pyrography (burned wood) effect
-    float burnMask = smoothstep(0.05, 0.15, alphaC);
-    vec3 burntColor = finalColor * vec3(0.30, 0.15, 0.05); // Darker, more contrasty burn
-    finalColor = mix(finalColor, burntColor, burnMask);
+    if (alphaC > 0.05) {
+        // Pyrography (burned wood) effect
+        finalColor *= vec3(0.35, 0.20, 0.10); // Burnt warm dark brown
+    }
     
-    // Sharper highlights and shadows for better clarity
-    float lightInfluence = dX * L.x + dY * L.y;
-    float edgeHighlight = smoothstep(0.001, 0.02, lightInfluence);
-    float edgeShadow = smoothstep(0.001, 0.02, -lightInfluence);
+    float edgeHighlight = max(0.0, dX * L.x + dY * L.y);
+    float edgeShadow = max(0.0, -(dX * L.x + dY * L.y));
     
-    finalColor += edgeHighlight * vec3(1.0, 0.9, 0.7) * 0.75;
-    finalColor -= edgeShadow * 0.65;
+    finalColor += edgeHighlight * vec3(0.9, 0.8, 0.6) * 0.6;
+    finalColor -= edgeShadow * 0.5;
 
     // Soft border shadow for premium feel
     float vignette = length(uv - 0.5) * 1.2;
     finalColor *= smoothstep(1.0, 0.4, vignette);
 
     // Tone mapping
-    finalColor = pow(clamp(finalColor, 0.0, 1.0), vec3(1.0/1.8));
+    finalColor = pow(clamp(finalColor, 0.0, 1.0), vec3(1.0/1.8)); // Slightly lower gamma to keep it soft
 
     fragColor = vec4(finalColor, 1.0);
 }

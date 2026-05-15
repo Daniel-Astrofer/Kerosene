@@ -10,25 +10,21 @@ import 'package:teste/features/auth/presentation/screens/signup/signup_flow_scre
 import 'package:teste/features/auth/presentation/screens/totp_screen.dart';
 import 'package:teste/features/auth/presentation/screens/biometric_auth_screen.dart';
 import 'package:teste/features/auth/presentation/screens/unknown_device_screen.dart';
-import 'package:teste/features/auth/presentation/models/signup_seed_material.dart';
-import 'package:teste/features/auth/presentation/providers/signup_flow_provider.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_requirements_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_security_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_username_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_seed_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_verification_step.dart';
+import 'package:teste/features/auth/presentation/screens/signup/steps/signup_payment_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_totp_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_hardware_step.dart';
+import 'package:teste/features/auth/presentation/screens/signup/steps/signup_final_payment_step.dart';
 
+/// Mock username for stories that require auth context.
 const _mockUsername = 'satoshi_storybook';
 const _mockPassphrase =
     'abandon ability able about above absent absorb abstract absurd abuse access accident';
 const _mockSessionId = 'mock_session_123';
-const _mockSeedMaterial = SignupSeedMaterial(
-  primaryMnemonic: _mockPassphrase,
-  securityOption: SeedSecurityOption.standard,
-  wordCount: 12,
-);
 
 /// Returns all authentication-related stories for the Storybook catalog.
 List<Story> authStories() {
@@ -109,7 +105,7 @@ List<Story> authStories() {
     // ─── Signup Flow (Integrated) ────────────────────────
     Story(
       name: 'Auth/Signup — Main Flow',
-      description: 'Top-level signup orchestrator screen (10 steps).',
+      description: 'Top-level signup orchestrator screen (9 steps).',
       builder: (context) => const SignupFlowScreen(),
     ),
 
@@ -131,18 +127,20 @@ List<Story> authStories() {
     ),
     Story(
       name: 'Auth/Signup/Steps — 4. Seed Phrase',
-      builder: (context) => SignupSeedStep(
-        seedSecurityOption: SeedSecurityOption.standard,
-        slip39Threshold: 3,
-        slip39TotalShares: 5,
-        onNext: (s) {},
-      ),
+      builder: (context) => SignupSeedStep(onNext: (s) {}),
     ),
     Story(
       name: 'Auth/Signup/Steps — 5. Seed Verification',
       builder: (context) => SignupVerificationStep(
-        seedMaterial: _mockSeedMaterial,
+        mnemonic: _mockPassphrase,
         onNext: () {},
+      ),
+    ),
+    Story(
+      name: 'Auth/Signup/Steps — 6. Forge (Finalize)',
+      builder: (context) => SignupPaymentStep(
+        username: _mockUsername,
+        mnemonic: _mockPassphrase,
       ),
     ),
     Story(
@@ -160,6 +158,14 @@ List<Story> authStories() {
       builder: (context) => SignupHardwareStep(
         sessionId: _mockSessionId,
         onVerified: () {},
+      ),
+    ),
+    Story(
+      name: 'Auth/Signup/Steps — 9. Final Payment',
+      builder: (context) => SignupFinalPaymentStep(
+        sessionId: _mockSessionId,
+        username: _mockUsername,
+        password: _mockPassphrase,
       ),
     ),
   ];

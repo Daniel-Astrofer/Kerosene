@@ -44,7 +44,7 @@ class _SmartWalletStackState extends State<SmartWalletStack>
   final Map<int, double> _peekDrag = {};
   int? _draggingRank;
 
-  static const double _cardHeight = 212.0;
+  static const double _cardHeight = 200.0;
   static const double _peekOffset = 35.0;
   static const int _maxPeek = 3;
 

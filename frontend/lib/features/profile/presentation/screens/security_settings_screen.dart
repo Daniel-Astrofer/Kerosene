@@ -276,7 +276,7 @@ class _SecuritySettingsScreenState
                             code,
                             style: const TextStyle(
                               color: monoTextColor,
-                              fontFamily: 'JetBrainsMono',
+                              fontFamily: 'IBM Plex Mono',
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                             ),
@@ -1164,7 +1164,7 @@ class _InventoryContextChip extends StatelessWidget {
               text: value,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBM Plex Mono',
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1343,7 +1343,7 @@ class _DeviceMetaLine extends StatelessWidget {
               text: value,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBM Plex Mono',
               ),
             ),
           ],
@@ -1512,7 +1512,7 @@ class _TotpSetupCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: monoTextColor,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBM Plex Mono',
                   fontWeight: FontWeight.w700,
                 ),
           ),

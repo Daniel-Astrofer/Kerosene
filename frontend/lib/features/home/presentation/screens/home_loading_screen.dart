@@ -1,19 +1,15 @@
 import 'dart:async';
-import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:teste/core/navigation/app_page_transitions.dart';
-import 'package:teste/core/providers/price_provider.dart';
+import 'package:teste/core/providers/shader_provider.dart';
 import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/auth/presentation/screens/server_unavailable_screen.dart';
-import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
-
-enum _TorBootstrapVisualState { booting, retryReady, retrying }
+import 'package:teste/features/home/presentation/screens/home_screen.dart';
+import 'package:teste/features/auth/controller/auth_controller.dart';
 
 class HomeLoadingScreen extends ConsumerStatefulWidget {
   const HomeLoadingScreen({super.key});
@@ -24,47 +20,39 @@ class HomeLoadingScreen extends ConsumerStatefulWidget {
 
 class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
+  late AnimationController _ctrl;
+  double _uIsDelayed = 0.0;
   Timer? _timeoutTimer;
-  Timer? _manualRetryTimer;
   bool _isNavigating = false;
   bool _minDurationPassed = false;
-  bool _isSyncing = false;
-  int _retryCount = 0;
-  _TorBootstrapVisualState _visualState = _TorBootstrapVisualState.booting;
-
-  static const Duration _minDisplayDuration = Duration(seconds: 3);
-  static const Duration _slowConnectionTimeout = Duration(seconds: 15);
-  static const Duration _manualRetryTimeout = Duration(seconds: 10);
-  static const int _maxSessionRepairAttempts = 2;
+  bool _hasError = false;
+  String _errorMessage = "";
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
+    _ctrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 20))
+          ..repeat();
 
-    Timer(_minDisplayDuration, () {
-      if (!mounted) return;
-      setState(() => _minDurationPassed = true);
-      _maybeProceedToHome(
-        ref.read(walletProvider),
-        ref.read(latestBtcPriceProvider),
-      );
+    // Mandatory 3-second display of the HODL shader for premium feel
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _minDurationPassed = true);
     });
 
-    _timeoutTimer = Timer(_slowConnectionTimeout, () {
-      if (!mounted || _isNavigating) return;
-      final walletState = ref.read(walletProvider);
-      final btcUsd = ref.read(latestBtcPriceProvider);
-      if (_isBootstrapReady(walletState, btcUsd)) return;
-      _showRetryPrompt();
+    // 15s Timeout to show red shader (error/slow connection)
+    _timeoutTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && !_hasError) {
+        setState(() {
+          _uIsDelayed = 1.0;
+        });
+      }
     });
 
+    // Trigger wallet loading
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_refreshBootstrapData(force: true));
+      ref.read(walletProvider.notifier).refresh();
+      ref.invalidate(transactionHistoryProvider);
     });
   }
 
@@ -72,324 +60,184 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
   void dispose() {
     _ctrl.dispose();
     _timeoutTimer?.cancel();
-    _manualRetryTimer?.cancel();
     super.dispose();
   }
 
-  bool _isAuthFailureMessage(String message) {
-    final normalized = message.toLowerCase();
-    return normalized.contains('usuário não autenticado') ||
-        normalized.contains('usuario nao autenticado') ||
-        normalized.contains('unauthorized') ||
-        normalized.contains('forbidden') ||
-        normalized.contains('401') ||
-        normalized.contains('403');
-  }
-
-  bool _hasLiveQuote(double? btcUsd) => btcUsd != null && btcUsd > 0;
-
-  bool _isBootstrapReady(WalletState walletState, double? btcUsd) {
-    return walletState is WalletLoaded && _hasLiveQuote(btcUsd);
-  }
-
-  void _restartPriceFeed() {
-    ref.invalidate(priceWebSocketServiceProvider);
-    ref.invalidate(btcPriceProvider);
-    ref.invalidate(backendBtcRatesProvider);
-  }
-
-  void _cancelRetryTimers() {
-    _timeoutTimer?.cancel();
-    _manualRetryTimer?.cancel();
-  }
-
-  void _showRetryPrompt() {
-    if (!mounted || _isNavigating) return;
-    if (_visualState == _TorBootstrapVisualState.retryReady) return;
-    setState(() {
-      _visualState = _TorBootstrapVisualState.retryReady;
-    });
-  }
-
-  String _retryHintText(BuildContext context) {
-    switch (Localizations.localeOf(context).languageCode) {
-      case 'en':
-        return 'Tap to try again';
-      case 'es':
-        return 'Toca para reintentar';
-      default:
-        return 'Toque para tentar novamente';
-    }
-  }
-
-  String _genericConnectionFailureText(BuildContext context) {
-    switch (Localizations.localeOf(context).languageCode) {
-      case 'en':
-        return 'Could not establish a secure connection right now.';
-      case 'es':
-        return 'No fue posible establecer una conexión segura ahora.';
-      default:
-        return 'Não foi possível estabelecer uma conexão segura agora.';
-    }
-  }
-
-  String _fallbackMessageFrom(WalletState walletState) {
-    if (walletState is WalletError && walletState.message.trim().isNotEmpty) {
-      return walletState.message.trim();
-    }
-    return _genericConnectionFailureText(context);
-  }
-
-  Future<void> _refreshBootstrapData({bool force = false}) async {
-    if (!mounted || _isNavigating) return;
-
-    final walletState = ref.read(walletProvider);
-    final btcUsd = ref.read(latestBtcPriceProvider);
-
-    if (!force && (_isBootstrapReady(walletState, btcUsd) || _isSyncing)) {
-      _maybeProceedToHome(walletState, btcUsd);
-      return;
-    }
-
-    _isSyncing = true;
-    try {
-      if (force || !_hasLiveQuote(btcUsd)) _restartPriceFeed();
-      ref.invalidate(transactionHistoryProvider);
-      await ref.read(walletProvider.notifier).refresh();
-    } finally {
-      _isSyncing = false;
-    }
-  }
-
-  Future<void> _handleRetryTap() async {
-    if (_visualState != _TorBootstrapVisualState.retryReady || _isNavigating) {
-      return;
-    }
-
-    setState(() {
-      _visualState = _TorBootstrapVisualState.retrying;
-    });
-
-    _manualRetryTimer?.cancel();
-    _manualRetryTimer = Timer(_manualRetryTimeout, () {
-      if (!mounted || _isNavigating) return;
-      final walletState = ref.read(walletProvider);
-      final btcUsd = ref.read(latestBtcPriceProvider);
-      if (_isBootstrapReady(walletState, btcUsd)) return;
-      _navigateToFallback(message: _fallbackMessageFrom(walletState));
-    });
-
-    await _refreshBootstrapData(force: true);
-    if (!mounted || _isNavigating) return;
-
-    final authState = ref.read(authControllerProvider);
-    if (authState is AuthServerUnavailable) {
-      _navigateToFallback(message: authState.message);
-      return;
-    }
-
-    final walletState = ref.read(walletProvider);
-    final btcUsd = ref.read(latestBtcPriceProvider);
-    if (walletState is WalletError &&
-        !_isAuthFailureMessage(walletState.message)) {
-      _navigateToFallback(message: _fallbackMessageFrom(walletState));
-      return;
-    }
-    _maybeProceedToHome(walletState, btcUsd);
-  }
-
-  Future<void> _repairSessionAndRetry() async {
-    if (!mounted || _isNavigating) return;
-    if (_retryCount >= _maxSessionRepairAttempts) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
-      return;
-    }
-
-    _retryCount += 1;
-    await ref.read(authControllerProvider.notifier).retrySessionCheck();
-
-    if (!mounted || _isNavigating) return;
-    final authState = ref.read(authControllerProvider);
-    if (authState is AuthAuthenticated) {
-      await _refreshBootstrapData(force: true);
-      return;
-    }
-    Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
-  }
-
-  void _maybeProceedToHome(WalletState walletState, double? btcUsd) {
-    if (_isNavigating || !_minDurationPassed) return;
-    if (!_isBootstrapReady(walletState, btcUsd)) return;
-    _cancelRetryTimers();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isNavigating) return;
-      _navigateToHome();
-    });
-  }
-
   void _navigateToHome() {
-    if (_isNavigating) return;
+    if (_isNavigating || _hasError) return;
     _isNavigating = true;
-    _cancelRetryTimers();
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        keroseneHorizontalRoute<void>(
-          transitionDuration: const Duration(milliseconds: 420),
-          reverseTransitionDuration: const Duration(milliseconds: 320),
-          builder: (_) => const HomeScreen(),
-        ),
-        (route) => false,
-      );
-    });
-  }
+    _timeoutTimer?.cancel();
 
-  void _navigateToFallback({String? message}) {
-    if (_isNavigating || !mounted) return;
-    _isNavigating = true;
-    _cancelRetryTimers();
-    final fallbackMessage = message?.trim().isNotEmpty == true
-        ? message!.trim()
-        : _genericConnectionFailureText(context);
-    Navigator.of(context).pushAndRemoveUntil(
-      keroseneHorizontalRoute<void>(
-        builder: (_) => ServerUnavailableScreen(
-          message: fallbackMessage,
-          retryRouteName: '/home_loading',
-        ),
-      ),
-      (route) => false,
-    );
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const HomeScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 1000),
+          ),
+          (route) => false,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final shaderAsync = ref.watch(bitcoinShaderProvider);
     final walletState = ref.watch(walletProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
 
     ref.listen<WalletState>(walletProvider, (_, next) {
-      if (next is WalletLoaded) {
-        _retryCount = 0;
-        _maybeProceedToHome(next, ref.read(latestBtcPriceProvider));
-      } else if (next is WalletError) {
-        if (_isAuthFailureMessage(next.message)) {
-          if (mounted && _visualState != _TorBootstrapVisualState.retrying) {
-            setState(() => _visualState = _TorBootstrapVisualState.retrying);
-          }
-          unawaited(_repairSessionAndRetry());
-        } else if (_visualState == _TorBootstrapVisualState.retrying) {
-          _navigateToFallback(message: _fallbackMessageFrom(next));
-        } else {
-          _showRetryPrompt();
+      if (next is WalletError) {
+        if (mounted) {
+          setState(() {
+            _uIsDelayed = 1.0;
+            _hasError = true;
+            _errorMessage = next.message;
+          });
         }
+        ref.read(authControllerProvider.notifier).logout();
+
+        Future.delayed(const Duration(seconds: 3), () {
+          if (context.mounted) {
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/welcome', (route) => false);
+          }
+        });
       }
     });
 
-    ref.listen<double?>(latestBtcPriceProvider, (_, next) {
-      if (_hasLiveQuote(next)) {
-        _retryCount = 0;
-        _maybeProceedToHome(ref.read(walletProvider), next);
-      }
-    });
-
-    _maybeProceedToHome(walletState, btcUsd);
-
-    final showRetryHint = _visualState == _TorBootstrapVisualState.retryReady;
+    // Only move away if data is loaded AND minimum animation time completed
+    if (walletState is WalletLoaded &&
+        _uIsDelayed == 0.0 &&
+        _minDurationPassed &&
+        !_hasError) {
+      _navigateToHome();
+    }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF020202),
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: showRetryHint ? _handleRetryTap : null,
-        child: Stack(
-          children: [
-            Center(child: _JumpingDotsLarge(controller: _ctrl)),
-            Positioned(
-              left: 28,
-              right: 28,
-              bottom: 64,
-              child: AnimatedOpacity(
-                opacity: showRetryHint ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOut,
-                child: Text(
-                  _retryHintText(context),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: const Color(0xFFFF6B76).withValues(alpha: 0.86),
-                    fontSize: 12,
-                    height: 1.35,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.1,
+      backgroundColor: Colors.black,
+      body: shaderAsync.when(
+        data: (program) => AnimatedBuilder(
+          animation: _ctrl,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // DRAWING DIRECTLY TO CANVAS INSTEAD OF SHADERMASK
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _FullPageShaderPainter(
+                      shader: program.fragmentShader()
+                        ..setFloat(0, MediaQuery.of(context).size.width)
+                        ..setFloat(1, MediaQuery.of(context).size.height)
+                        ..setFloat(2, _ctrl.value * 20.0) // iTime
+                        ..setFloat(3, _uIsDelayed), // uIsDelayed
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ],
+
+                // OVERLAY TEXT
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 240),
+                      Text(
+                        // If error, show error text, else check if delayed
+                        _hasError
+                            ? "FALHA DE AUTENTICAÇÃO"
+                            : (_uIsDelayed > 0.5
+                                ? "CONEXÃO LENTA"
+                                : "SINCRONIZANDO"),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: _uIsDelayed > 0.5
+                              ? const Color(0xFFFF0033)
+                              : const Color(0xFF00E5BC),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: _hasError ? 4.0 : 10.0,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 140,
+                            height: 1.5,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  _uIsDelayed > 0.5
+                                      ? const Color(0xFFFF0033)
+                                      : const Color(0xFF00E5BC),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _hasError
+                            ? "Acesso negado."
+                            : (_uIsDelayed > 0.5
+                                ? "Tentando carregar seus dados..."
+                                : "Garantindo segurança total para seus ativos"),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.3),
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (_hasError) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorMessage,
+                          style: AppTypography.bodySmall.copyWith(
+                            color:
+                                const Color(0xFFFF0033).withValues(alpha: 0.8),
+                            fontSize: 11,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: Color(0xFF00E5BC))),
+        error: (e, __) => Center(
+            child: Text("Error: $e",
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.onPrimary))),
       ),
     );
   }
 }
 
-class _JumpingDotsLarge extends StatelessWidget {
-  final AnimationController controller;
-  const _JumpingDotsLarge({required this.controller});
+class _FullPageShaderPainter extends CustomPainter {
+  final FragmentShader shader;
+  _FullPageShaderPainter({required this.shader});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: _SingleDot(index: index, controller: controller),
-        );
-      }),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..shader = shader;
+    canvas.drawRect(Offset.zero & size, paint);
   }
-}
-
-class _SingleDot extends StatelessWidget {
-  final int index;
-  final AnimationController controller;
-  const _SingleDot({required this.index, required this.controller});
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        final phase = (controller.value + index * 0.18) % 1.0;
-        final wave = (math.sin(phase * math.pi * 2) + 1) / 2;
-        final eased = Curves.easeInOutCubic.transform(wave);
-        final double dy = -12.0 * eased;
-        final double scale = 0.86 + (0.18 * eased);
-        final double opacity = 0.34 + (0.56 * eased);
-        final double glowOpacity = 0.08 + (0.22 * eased);
-
-        return Transform.translate(
-          offset: Offset(0, dy),
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: opacity),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: glowOpacity),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

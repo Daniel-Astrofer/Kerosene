@@ -35,9 +35,12 @@ class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
   static const int minDecimalPlaces = 2;
   static const int maxDecimalPlaces = 8;
   SharedPreferences? _prefs;
+  bool _disposed = false;
 
   @override
   BalanceSettings build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
     _loadPrefs();
     return const BalanceSettings();
   }
@@ -52,6 +55,9 @@ class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
 
   Future<void> _loadPrefs() async {
     final prefs = await _ensurePrefs();
+    if (_disposed) {
+      return;
+    }
     final isHidden = prefs.getBool(_hideKey) ?? false;
     final decimalPlaces = _normalizeDecimalPlaces(prefs.getInt(_decimalsKey));
     state = BalanceSettings(isHidden: isHidden, decimalPlaces: decimalPlaces);
@@ -60,15 +66,13 @@ class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
   void toggleVisibility() {
     state = state.copyWith(isHidden: !state.isHidden);
     final isHidden = state.isHidden;
-    unawaited(
-        _ensurePrefs().then((prefs) => prefs.setBool(_hideKey, isHidden)));
+    unawaited(_persistBool(_hideKey, isHidden));
   }
 
   void setDecimalPlaces(int value) {
     final nextValue = _normalizeDecimalPlaces(value);
     state = state.copyWith(decimalPlaces: nextValue);
-    unawaited(
-        _ensurePrefs().then((prefs) => prefs.setInt(_decimalsKey, nextValue)));
+    unawaited(_persistInt(_decimalsKey, nextValue));
   }
 
   void increaseDecimals() {
@@ -103,6 +107,22 @@ class BalanceSettingsNotifier extends Notifier<BalanceSettings> {
     final safeIndex = currentIndex == -1 ? 0 : currentIndex;
     final nextIndex = (safeIndex + 1) % values.length;
     setDecimalPlaces(values[nextIndex]);
+  }
+
+  Future<void> _persistBool(String key, bool value) async {
+    final prefs = await _ensurePrefs();
+    if (_disposed) {
+      return;
+    }
+    await prefs.setBool(key, value);
+  }
+
+  Future<void> _persistInt(String key, int value) async {
+    final prefs = await _ensurePrefs();
+    if (_disposed) {
+      return;
+    }
+    await prefs.setInt(key, value);
   }
 }
 
