@@ -8,6 +8,10 @@ source "$SCRIPT_DIR/backend-common.sh"
 ARM_VAULT=1
 BUILD=1
 DETACH=1
+INIT=1
+LITE=0
+REGION="is"
+PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-2}"
 START_FRONTEND=0
 FRONTEND_BUILD=1
 COMPOSE_SERVICES=()
@@ -31,8 +35,12 @@ usage() {
 Usage: scripts/start-local.sh [options] [compose-service...]
 
 Options:
+  --lite         Start only Vault plus one app shard for faster local testing.
+  --region R     Region for --lite: is, ch, or sg. Default: is.
+  --no-init      Skip local bootstrap file regeneration.
   --no-arm       Do not call scripts/arm-vault.sh after containers start.
   --no-build     Start without rebuilding Docker images or Flutter web.
+  --parallel N   Limit Docker Compose build/start parallelism. Default: 2.
   --frontend-server
                  Also start a separate localhost Flutter web server for dev.
                  Tor Browser access does not use this; the backend serves web.
@@ -61,6 +69,50 @@ maybe_enable_redis_overcommit() {
   else
     warn "Host vm.overcommit_memory=${current:-unknown}. Redis will warn until you run: sudo sysctl -w vm.overcommit_memory=1"
   fi
+}
+
+configure_lite_services() {
+  if [[ "$LITE" -ne 1 || "${#COMPOSE_SERVICES[@]}" -gt 0 ]]; then
+    return
+  fi
+
+  COMPOSE_SERVICES=(
+    kerosene-vault
+    kerosene-tor-vault
+    kerosene-vault-arm
+    vault-raft-data-init
+    vault-raft-1
+    vault-raft-2
+    vault-raft-3
+    vault-raft-bootstrap
+    "db-$REGION"
+    "redis-$REGION"
+    "mpc-sidecar-$REGION"
+    "shard-identity-init-$REGION"
+    "kerosene-app-$REGION"
+    "kerosene-tor-$REGION"
+  )
+}
+
+repair_stale_local_networks() {
+  local net_vault="${COMPOSE_PROJECT_NAME}_net_vault"
+  local subnets labels
+
+  if ! docker network inspect "$net_vault" >/dev/null 2>&1; then
+    return
+  fi
+
+  labels="$(docker network inspect -f '{{index .Labels "com.docker.compose.project"}} {{index .Labels "com.docker.compose.network"}}' "$net_vault" 2>/dev/null || true)"
+  [[ "$labels" == "$COMPOSE_PROJECT_NAME net_vault" ]] || return
+
+  subnets="$(docker network inspect -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' "$net_vault" 2>/dev/null || true)"
+  if grep -qw '10.242.0.0/24' <<<"$subnets"; then
+    return
+  fi
+
+  warn "$net_vault exists with subnet '${subnets:-unknown}', but this compose file requires 10.242.0.0/24."
+  warn "Stopping the local compose stack so Docker can recreate the network without deleting volumes."
+  compose down --remove-orphans >/dev/null || warn "Could not stop stale compose stack before network repair."
 }
 
 service_has_master_key() {
@@ -185,6 +237,27 @@ print_onion_addresses() {
 wait_for_master_keys_and_print_onions() {
   local deadline now
   deadline=$(( $(date +%s) + MASTER_KEY_WAIT_TIMEOUT_SECONDS ))
+
+  if [[ "$LITE" -eq 1 ]]; then
+    local service="kerosene-app-$REGION"
+    info "Waiting for ${REGION^^} shard to provision the master key..."
+    while true; do
+      if service_has_master_key "$service"; then
+        info "${REGION^^} shard provisioned the master key."
+        print_onion_addresses
+        return 0
+      fi
+
+      now=$(date +%s)
+      if (( now >= deadline )); then
+        warn "Timed out waiting for ${REGION^^} shard to provision the master key."
+        print_onion_addresses
+        return 1
+      fi
+
+      sleep 2
+    done
+  fi
 
   info "Waiting for IS, CH, and SG shards to provision the master key..."
   while true; do
@@ -330,8 +403,22 @@ start_frontend() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --lite) LITE=1 ;;
+    --region)
+      shift
+      [[ $# -gt 0 ]] || fail "--region requires one of: is, ch, sg"
+      REGION="${1,,}"
+      ;;
+    --region=*) REGION="${1#*=}"; REGION="${REGION,,}" ;;
+    --no-init) INIT=0 ;;
     --no-arm) ARM_VAULT=0 ;;
     --no-build) BUILD=0; FRONTEND_BUILD=0 ;;
+    --parallel)
+      shift
+      [[ $# -gt 0 ]] || fail "--parallel requires a positive integer"
+      PARALLEL_LIMIT="$1"
+      ;;
+    --parallel=*) PARALLEL_LIMIT="${1#*=}" ;;
     --frontend-server) START_FRONTEND=1 ;;
     --no-frontend) START_FRONTEND=0 ;;
     --no-frontend-build) FRONTEND_BUILD=0 ;;
@@ -342,10 +429,19 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-"$INFRA_DIR/scripts/init-local.sh"
+[[ "$REGION" =~ ^(is|ch|sg)$ ]] || fail "--region must be one of: is, ch, sg"
+[[ "$PARALLEL_LIMIT" =~ ^[1-9][0-9]*$ ]] || fail "--parallel must be a positive integer"
+configure_lite_services
+
+if [[ "$INIT" -eq 1 ]]; then
+  "$INFRA_DIR/scripts/init-local.sh"
+else
+  info "Skipping local bootstrap regeneration (--no-init)."
+fi
 require_docker
 maybe_enable_redis_overcommit
 prepare_backend_web_admin
+repair_stale_local_networks
 
 UP_ARGS=(up)
 if [[ "$DETACH" -eq 1 ]]; then
@@ -355,18 +451,33 @@ if [[ "$BUILD" -eq 1 ]]; then
   UP_ARGS+=(--build)
 fi
 
+export COMPOSE_PARALLEL_LIMIT="$PARALLEL_LIMIT"
+export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+
 info "Starting local backend cluster with $COMPOSE_FILE"
+if [[ "$LITE" -eq 1 ]]; then
+  info "Lite mode enabled for region ${REGION^^}: ${COMPOSE_SERVICES[*]}"
+fi
+info "Docker Compose parallel limit: $COMPOSE_PARALLEL_LIMIT"
 if ! compose "${UP_ARGS[@]}" "${COMPOSE_SERVICES[@]}"; then
   print_compose_start_diagnostics
   exit 1
 fi
 
 if [[ "$DETACH" -eq 1 ]]; then
-  refresh_vault_raft_bootstrap
+  if [[ "$LITE" -eq 1 ]]; then
+    info "Lite mode skips full-cluster Vault Raft refresh."
+  else
+    refresh_vault_raft_bootstrap
+  fi
 fi
 
 if [[ "$DETACH" -eq 1 ]]; then
-  "$SCRIPT_DIR/migrate-local-db.sh"
+  if [[ "$LITE" -eq 1 ]]; then
+    "$SCRIPT_DIR/migrate-local-db.sh" "db-$REGION"
+  else
+    "$SCRIPT_DIR/migrate-local-db.sh"
+  fi
 else
   warn "Foreground mode skips automatic local DB migrations. Run scripts/migrate-local-db.sh in another terminal if you reuse persisted volumes."
 fi
