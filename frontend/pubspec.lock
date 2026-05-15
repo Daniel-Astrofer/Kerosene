@@ -1460,9 +1460,10 @@ packages:
   tor:
     dependency: "direct main"
     description:
-      path: "vendor/tor-0.1.1"
-      relative: true
-    source: path
+      name: tor
+      sha256: "87555f874704e6a379a98c7bb99e081da177a9bc8700550793417c9d39832513"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.1"
   typed_data:
     dependency: transitive
