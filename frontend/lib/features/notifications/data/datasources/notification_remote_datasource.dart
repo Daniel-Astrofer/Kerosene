@@ -1,18 +1,9 @@
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/errors/exceptions.dart';
-import 'package:teste/core/network/api_client.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../../../../core/network/api_client.dart';
 
 abstract class NotificationRemoteDataSource {
-  Future<List<SessionNotificationItem>> getNotifications();
-  Future<void> markAsRead(String notificationId);
-  Future<void> registerDeviceToken({
-    required String platform,
-    required String token,
-    String? deviceId,
-    String? appVersion,
-  });
-  Future<void> revokeDeviceToken(String tokenId);
+  Future<void> registerToken(String token);
 }
 
 class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
@@ -21,80 +12,17 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   NotificationRemoteDataSourceImpl(this.apiClient);
 
   @override
-  Future<List<SessionNotificationItem>> getNotifications() async {
+  Future<void> registerToken(String token) async {
     try {
-      final response = await apiClient.get(AppConfig.notificationsList);
-      final body = response.data;
-
-      if (body is! List) {
-        return const [];
-      }
-
-      return body
-          .whereType<Map>()
-          .map((item) => SessionNotificationItem.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
-          .toList();
-    } catch (error) {
-      if (error is AppException) {
-        rethrow;
-      }
-      throw ServerException(message: 'Erro ao carregar notificações: $error');
-    }
-  }
-
-  @override
-  Future<void> markAsRead(String notificationId) async {
-    try {
-      await apiClient.put(
-        AppConfig.notificationsRead.replaceFirst('{id}', notificationId),
-      );
-    } catch (error) {
-      if (error is AppException) {
-        rethrow;
-      }
-      throw ServerException(
-          message: 'Erro ao marcar notificação como lida: $error');
-    }
-  }
-
-  @override
-  Future<void> registerDeviceToken({
-    required String platform,
-    required String token,
-    String? deviceId,
-    String? appVersion,
-  }) async {
-    try {
+      // The backend expects the token in the body: { "token": "..." }
+      // Headers (X-Device-Hash) are handled by TokenInterceptor.
       await apiClient.post(
         AppConfig.notificationRegisterToken,
-        data: {
-          'platform': platform,
-          'token': token,
-          if (deviceId != null) 'deviceId': deviceId,
-          if (appVersion != null) 'appVersion': appVersion,
-        },
+        data: {'token': token},
       );
-    } catch (error) {
-      if (error is AppException) {
-        rethrow;
-      }
-      throw ServerException(
-          message: 'Erro ao registrar token de notificação: $error');
-    }
-  }
-
-  @override
-  Future<void> revokeDeviceToken(String tokenId) async {
-    try {
-      await apiClient.delete('/notifications/device-tokens/$tokenId');
-    } catch (error) {
-      if (error is AppException) {
-        rethrow;
-      }
-      throw ServerException(
-          message: 'Erro ao revogar token de notificação: $error');
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(message: 'Erro ao registrar token FCM: $e');
     }
   }
 }

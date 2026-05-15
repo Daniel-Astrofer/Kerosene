@@ -1,19 +1,8 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user.dart';
-import '../../../../core/utils/device_helper.dart';
 import '../../data/datasources/auth_remote_datasource.dart'
-    show
-        SignupInitResult,
-        ActivationStatusResult,
-        AccountSecurityStatusResult,
-        BackupCodesStatusResult,
-        AdminLoginResult,
-        LoginResult,
-        TotpSetupResult,
-        OnboardingPaymentLinkDto,
-        EmergencyRecoveryStartResult,
-        EmergencyRecoveryFinishResult;
+    show SignupInitResult, OnboardingPaymentLinkDto, LoginResult;
 
 /// Interface do repositório de autenticação
 abstract class AuthRepository {
@@ -23,23 +12,11 @@ abstract class AuthRepository {
     required String passphrase,
   });
 
-  Future<Either<Failure, AdminLoginResult>> startAdminLogin({
-    required String username,
-    required String password,
-    required String adminKeyProof,
-    required DeviceMetadata deviceMetadata,
-  });
-
-  Future<Either<Failure, AdminLoginResult>> pollAdminLogin(String attemptId);
-
   /// Signup — resolve PoW e retorna {totpSecret, qrCodeUri}
   Future<Either<Failure, SignupInitResult>> signup({
     required String username,
     required String passphrase,
     String accountSecurity,
-    int? shamirTotalShares,
-    int? shamirThreshold,
-    int? multisigThreshold,
   });
 
   /// Fazer logout
@@ -62,8 +39,10 @@ abstract class AuthRepository {
 
   /// Verificar TOTP de cadastro — retorna sessionId (Redis, temporário)
   Future<Either<Failure, String>> verifyTotp({
-    required String sessionId,
-    String? totpCode,
+    required String username,
+    required String passphrase,
+    required String totpCode,
+    String? totpSecret,
   });
 
   /// Verificar TOTP de Login (2FA) — retorna User com JWT
@@ -84,7 +63,7 @@ abstract class AuthRepository {
   });
 
   /// Finaliza registro de passkey durante onboarding (finish)
-  Future<Either<Failure, LoginResult>> passkeyRegisterOnboardingFinish(
+  Future<Either<Failure, void>> passkeyRegisterOnboardingFinish(
     String sessionId,
     Map<String, dynamic> credential,
   );
@@ -105,43 +84,10 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> passkeyRegisterFinish(
       Map<String, dynamic> credential);
 
-  /// Inicia emergency recovery com nova passphrase e recovery codes.
-  Future<Either<Failure, EmergencyRecoveryStartResult>> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  });
-
-  /// Finaliza emergency recovery com novo TOTP e nova passkey.
-  Future<Either<Failure, EmergencyRecoveryFinishResult>>
-      finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  });
-
-  Future<Either<Failure, ActivationStatusResult>> getActivationStatus();
-
-  Future<Either<Failure, ActivationStatusResult>> createActivationDepositLink();
-
-  Future<Either<Failure, ActivationStatusResult>> confirmActivationPayment({
-    required String linkId,
-    required String txid,
-  });
-
-  Future<Either<Failure, AccountSecurityStatusResult>> getSecurityStatus();
-
-  Future<Either<Failure, TotpSetupResult>> setupTotp();
-
-  Future<Either<Failure, BackupCodesStatusResult>> verifyTotpSetup({
-    required String totpCode,
-  });
-
-  Future<Either<Failure, void>> disableTotp();
-
-  Future<Either<Failure, BackupCodesStatusResult>> getBackupCodesStatus();
-
-  Future<Either<Failure, BackupCodesStatusResult>> regenerateBackupCodes();
+  /// Onboarding Payment Link
+  Future<Either<Failure, OnboardingPaymentLinkDto>> generateOnboardingLink(
+    String sessionId,
+  );
 
   /// Confirma a TX do onboarding e inicia monitoramento on-chain
   Future<Either<Failure, OnboardingPaymentLinkDto>> confirmOnboardingPayment({
@@ -153,4 +99,13 @@ abstract class AuthRepository {
   Future<Either<Failure, OnboardingPaymentLinkDto>> getOnboardingPaymentLink(
     String linkId,
   );
+
+  /// Mock Confirm Onboarding (Dev shortcut)
+  Future<Either<Failure, void>> mockConfirmOnboarding(String sessionId);
+
+  /// Confirm Voucher payment
+  Future<Either<Failure, void>> confirmVoucher({
+    required String voucherId,
+    required String txid,
+  });
 }

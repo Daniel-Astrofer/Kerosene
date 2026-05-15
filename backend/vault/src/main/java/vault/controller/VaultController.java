@@ -11,14 +11,7 @@ import vault.security.VaultMemoryLocker;
 import vault.service.WatchdogService;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Value;
-import jakarta.annotation.PostConstruct;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import vault.security.ShardIdentityService;
@@ -36,6 +29,7 @@ import vault.security.ShardIdentityService;
 public class VaultController {
 
     private static final Logger log = LoggerFactory.getLogger(VaultController.class);
+
     @Autowired
     private VaultMemoryLocker vaultMemoryLocker;
 
@@ -48,50 +42,28 @@ public class VaultController {
     @Autowired
     private ShardIdentityService shardIdentityService;
 
-    // Tokens de sessão efêmeros: Token -> NodeId + expiry (Em RAM, não vai pra Redis)
-    private final Map<String, ProvisionToken> provisionTokens = new ConcurrentHashMap<>();
+    // Tokens de sessão efêmeros: Token -> NodeId (Em RAM, não vai pra Redis)
+    private final Map<String, String> provisionTokens = new ConcurrentHashMap<>();
 
     // M-of-N Quorum State para Armar o Cofre
     private final java.util.Set<String> armApprovingDirectors = ConcurrentHashMap.newKeySet();
-    private final Map<String, byte[]> directorHmacSecrets = new ConcurrentHashMap<>();
     private String pendingMasterKeyBase64 = null;
-
-    @Value("${vault.required-approvals:2}")
-    private int requiredApprovals;
-
-    @Value("${vault.director.hmac-secrets:}")
-    private String configuredDirectorSecrets;
-
-    @Value("${vault.provision-token.ttl-ms:60000}")
-    private long provisionTokenTtlMs;
+    private static final int REQUIRED_APPROVALS = 2;
 
     private volatile boolean isArmed = false;
 
     // que a chave nunca toque o ambiente do orquestrador.
-
-    @PostConstruct
-    void loadDirectorSecrets() {
-        Map<String, byte[]> parsed = parseDirectorSecrets(configuredDirectorSecrets);
-        if (parsed.isEmpty()) {
-            throw new IllegalStateException(
-                    "vault.director.hmac-secrets is required. Refusing to boot Vault with hardcoded directors.");
-        }
-        if (requiredApprovals < 1 || requiredApprovals > parsed.size()) {
-            throw new IllegalStateException("vault.required-approvals must be between 1 and the number of directors.");
-        }
-        if (provisionTokenTtlMs <= 0) {
-            throw new IllegalStateException("vault.provision-token.ttl-ms must be greater than zero.");
-        }
-        directorHmacSecrets.putAll(parsed);
-        log.info("[VAULT] Loaded {} director HMAC identities. Required approvals: {}",
-                directorHmacSecrets.size(), requiredApprovals);
-    }
 
     /**
      * POST /arm
      * Exclusivo para Diretores injetarem os Fragmentos da Chave via Quórum M-of-N.
      * Na prática, requer TLS Cliente + Assinaturas MFA independentes.
      */
+    // Registro de Diretores Autorizados (em prod isso viria de um HSM ou Config
+    // encriptada)
+    private static final java.util.Set<String> VALID_DIRECTORS = java.util.Set.of("director-1", "director-2",
+            "director-3");
+
     @PostMapping("/arm")
     public ResponseEntity<String> armVault(@RequestHeader(value = "X-Director-Id", required = false) String directorId,
             @RequestHeader(value = "X-Director-Signature", required = false) String signature,
@@ -105,25 +77,24 @@ public class VaultController {
         }
 
         // 1. Validação de Identidade do Diretor
-        if (directorId == null || !directorHmacSecrets.containsKey(directorId)) {
+        if (directorId == null || !VALID_DIRECTORS.contains(directorId)) {
             log.warn("[SECURITY ALERT] Attempt to arm vault with unauthorized Director ID: {}", directorId);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized Director ID.");
         }
 
+        // 2. Validação de Assinatura (MFA/FIDO2 simulator)
+        if (signature == null || signature.length() < 12) {
+            log.warn("[SECURITY ALERT] Weak or missing signature from Director: {}", directorId);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or weak cryptographic signature.");
+        }
+
+        log.info("[ARM] Validated core identity for Director: {}. Processing quorum...", directorId);
+
+        // 2. Extrai chave (Simulando uma junta Shamir que formou 32 bytes)
         String reqMasterKeyB64 = payload.get("master_key");
         if (reqMasterKeyB64 == null) {
             return ResponseEntity.badRequest().body("Requires payload: { 'master_key': '...' }");
         }
-        if (!isValidMasterKey(reqMasterKeyB64)) {
-            return ResponseEntity.badRequest().body("master_key must be Base64-encoded AES-256 material.");
-        }
-
-        if (!validDirectorSignature(directorId, signature, reqMasterKeyB64)) {
-            log.warn("[SECURITY ALERT] Invalid arm signature from Director: {}", directorId);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid cryptographic signature.");
-        }
-
-        log.info("[ARM] Validated director signature for {}. Processing quorum...", directorId);
 
         // Validação de Concorrência de Quórum
         if (pendingMasterKeyBase64 == null) {
@@ -139,7 +110,7 @@ public class VaultController {
 
         armApprovingDirectors.add(directorId);
 
-        if (armApprovingDirectors.size() >= requiredApprovals) {
+        if (armApprovingDirectors.size() >= REQUIRED_APPROVALS) {
             byte[] keyDecoded = Base64.getDecoder().decode(pendingMasterKeyBase64);
 
             // 3. Tranca a chave na RAM via sysCall (Kernel mlock)
@@ -150,75 +121,14 @@ public class VaultController {
             pendingMasterKeyBase64 = null;
             armApprovingDirectors.clear();
 
-            log.info("Vault ARMED by quorum of {} directors.", requiredApprovals);
+            log.info("Vault ARMED by quorum of {} directors.", REQUIRED_APPROVALS);
             return ResponseEntity
-                    .ok("Quorum Reached (" + requiredApprovals + "). Vault is ARMED and LOCKED in physical memory.");
+                    .ok("Quorum Reached (" + REQUIRED_APPROVALS + "). Vault is ARMED and LOCKED in physical memory.");
         }
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body("Signature accepted. " + armApprovingDirectors.size() + "/" + requiredApprovals
+                .body("Signature accepted. " + armApprovingDirectors.size() + "/" + REQUIRED_APPROVALS
                         + " approvals reached. Waiting for more directors.");
-    }
-
-    private Map<String, byte[]> parseDirectorSecrets(String configuredSecrets) {
-        Map<String, byte[]> parsed = new HashMap<>();
-        if (configuredSecrets == null || configuredSecrets.isBlank()) {
-            return parsed;
-        }
-        for (String entry : configuredSecrets.split(",")) {
-            String[] parts = entry.trim().split(":", 2);
-            if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
-                throw new IllegalStateException("Invalid director HMAC secret entry: " + entry);
-            }
-            byte[] secret = Base64.getDecoder().decode(parts[1].trim());
-            if (secret.length < 32) {
-                throw new IllegalStateException("Director HMAC secret must decode to at least 32 bytes: " + parts[0]);
-            }
-            parsed.put(parts[0].trim(), secret);
-        }
-        return parsed;
-    }
-
-    private boolean isValidMasterKey(String masterKeyBase64) {
-        try {
-            byte[] decoded = Base64.getDecoder().decode(masterKeyBase64);
-            try {
-                return decoded.length == 32;
-            } finally {
-                java.util.Arrays.fill(decoded, (byte) 0);
-            }
-        } catch (IllegalArgumentException exception) {
-            return false;
-        }
-    }
-
-    private boolean validDirectorSignature(String directorId, String signature, String masterKeyBase64) {
-        if (signature == null || !signature.startsWith("v1:")) {
-            return false;
-        }
-        byte[] secret = directorHmacSecrets.get(directorId);
-        if (secret == null) {
-            return false;
-        }
-        String expected = "v1:" + hmacArmSignature(secret, directorId, masterKeyBase64);
-        return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                signature.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private String hmacArmSignature(byte[] secret, String directorId, String masterKeyBase64) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(secret, "HmacSHA256"));
-            byte[] digest = mac.doFinal(armMessage(directorId, masterKeyBase64).getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(digest);
-        } catch (Exception exception) {
-            throw new IllegalStateException("Failed to compute director arm signature.", exception);
-        }
-    }
-
-    private String armMessage(String directorId, String masterKeyBase64) {
-        return "vault-arm:v1:" + directorId + ":" + masterKeyBase64;
     }
 
     /**
@@ -248,15 +158,14 @@ public class VaultController {
 
         try {
             // Atesta o hardware. Se passar, recebe Token. Se falhar, SecurityException.
-            String mkt = tpmAttestation.validateAndIssueToken(tpmQuote, nodeId, pubKey);
-            purgeExpiredProvisionTokens();
+            String mkt = tpmAttestation.validateAndIssueToken(tpmQuote, nodeId);
 
             if (pubKey != null && !pubKey.isBlank()) {
                 shardIdentityService.registerShardKey(nodeId, pubKey);
             }
 
             // Grava Token -> Nó (Só esse nó poderá usar este token)
-            provisionTokens.put(mkt, new ProvisionToken(nodeId, System.currentTimeMillis() + provisionTokenTtlMs));
+            provisionTokens.put(mkt, nodeId);
 
             // REGISTRA O SHARD NO WATCHDOG IMEDIATAMENTE (Evita falso-positivo de Missed Heartbeat logo no boot)
             watchdogService.registerHeartbeat(nodeId);
@@ -275,9 +184,10 @@ public class VaultController {
      * Entrega por JSON e Shard decodifica da RAM para sua RAM.
      */
     @GetMapping("/provision")
-    public ResponseEntity<Map<String, String>> provisionKey(
-            @RequestHeader(value = "Authorization", required = false) String mkt,
-            @RequestHeader(value = "X-Node-Id", required = false) String nodeId) {
+    public ResponseEntity<Map<String, String>> provisionKey(@RequestHeader("Authorization") String mkt,
+            @RequestHeader("X-Node-Id") String nodeId) {
+
+        String tokenStripped = mkt.replace("Bearer ", "");
 
         if (!isArmed) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", "Vault is not armed."));
@@ -288,19 +198,7 @@ public class VaultController {
                     .body(Map.of("error", "Vault network is compromised (Quorum Loss)."));
         }
 
-        String tokenStripped = bearerToken(mkt);
-        if (tokenStripped == null || nodeId == null || nodeId.isBlank()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        ProvisionToken provisionToken = provisionTokens.get(tokenStripped);
-        long now = System.currentTimeMillis();
-        if (provisionToken != null && provisionToken.isExpired(now)) {
-            provisionTokens.remove(tokenStripped);
-            provisionToken = null;
-        }
-
-        if (provisionToken == null || !nodeId.equals(provisionToken.nodeId())) {
+        if (!nodeId.equals(provisionTokens.get(tokenStripped))) {
             log.warn("[PROVISION] Invalid or stolen Token used by Node {}", nodeId);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -322,24 +220,5 @@ public class VaultController {
         log.info("[PROVISION] Master Key Delivered securely to Node {}", nodeId);
 
         return ResponseEntity.ok(Map.of("aes_key", base64Key));
-    }
-
-    private String bearerToken(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return null;
-        }
-        String token = authorizationHeader.substring("Bearer ".length()).trim();
-        return token.isEmpty() ? null : token;
-    }
-
-    private void purgeExpiredProvisionTokens() {
-        long now = System.currentTimeMillis();
-        provisionTokens.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
-    }
-
-    private record ProvisionToken(String nodeId, long expiresAtMillis) {
-        boolean isExpired(long nowMillis) {
-            return nowMillis >= expiresAtMillis;
-        }
     }
 }

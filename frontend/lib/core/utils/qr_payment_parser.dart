@@ -1,32 +1,26 @@
 /// Represents a decoded payment request from QR or NFC.
 class PaymentData {
   final String address;
-  final String? paymentLinkId;
   final double? amountBtc;
   final String? label;
   final String? message;
 
   const PaymentData({
     required this.address,
-    this.paymentLinkId,
     this.amountBtc,
     this.label,
     this.message,
   });
 
   /// Whether this data has enough info to pre-fill a send form.
-  bool get isComplete => address.isNotEmpty || isPaymentLink;
-
-  bool get isPaymentLink => paymentLinkId != null && paymentLinkId!.isNotEmpty;
+  bool get isComplete => address.isNotEmpty;
 }
 
 /// Encodes and decodes payment request URIs used in QR codes and NFC tags.
 ///
 /// Supported formats:
-///   `bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>`
-///   `kerosene:pay?address=<address>&amount=<btc>&label=<label>`
-///   `kerosene://pay/<id>`
-///   `kerosene:link:<id>`
+///   `bitcoin:ADDRESS?amount=BTC&label=LABEL&message=MSG`
+///   `kerosene:pay?address=ADDRESS&amount=BTC&label=LABEL`
 class QrPaymentParser {
   /// Encodes a payment request into a bitcoin: BIP-21 URI.
   static String encode({
@@ -76,75 +70,12 @@ class QrPaymentParser {
     return 'kerosene:pay?$query';
   }
 
-  /// Encodes a locked Kerosene payment request. The id is resolved by the
-  /// backend; amount and destination are intentionally not encoded in the QR.
-  static String encodePaymentLink(String linkId) {
-    return 'kerosene://payment/pay/${Uri.encodeComponent(linkId)}';
-  }
-
-  static String? extractPaymentLinkId(String raw) {
-    if (raw.isEmpty) return null;
-
-    final trimmed = raw.trim();
-    final lower = trimmed.toLowerCase();
-
-    if (lower.startsWith('kerosene:link:')) {
-      final id = trimmed.substring('kerosene:link:'.length).trim();
-      return id.isEmpty ? null : id;
-    }
-
-    final uri = Uri.tryParse(trimmed);
-    if (uri == null) return null;
-
-    if (uri.scheme.isEmpty && uri.pathSegments.isNotEmpty) {
-      if (uri.pathSegments.first.toLowerCase() == 'pay' &&
-          uri.pathSegments.length > 1) {
-        final id = uri.pathSegments[1].trim();
-        return id.isEmpty ? null : id;
-      }
-    }
-
-    if (uri.scheme.toLowerCase() == 'kerosene') {
-      if (uri.host.toLowerCase() == 'pay' && uri.pathSegments.isNotEmpty) {
-        final id = uri.pathSegments.first.trim();
-        return id.isEmpty ? null : id;
-      }
-
-      if (uri.pathSegments.isNotEmpty &&
-          uri.pathSegments.first.toLowerCase() == 'pay' &&
-          uri.pathSegments.length > 1) {
-        final id = uri.pathSegments[1].trim();
-        return id.isEmpty ? null : id;
-      }
-    }
-
-    if ((uri.scheme == 'http' || uri.scheme == 'https') &&
-        uri.pathSegments.isNotEmpty) {
-      final payIndex = uri.pathSegments.indexWhere(
-        (segment) => segment.toLowerCase() == 'pay',
-      );
-      if (payIndex >= 0 && payIndex + 1 < uri.pathSegments.length) {
-        final id = uri.pathSegments[payIndex + 1].trim();
-        return id.isEmpty ? null : id;
-      }
-    }
-
-    return null;
-  }
-
   /// Decodes any payment URI into a [PaymentData] object.
   /// Returns null if the data cannot be parsed.
   static PaymentData? decode(String raw) {
     if (raw.isEmpty) return null;
 
     final trimmed = raw.trim();
-    final paymentLinkId = extractPaymentLinkId(trimmed);
-    if (paymentLinkId != null) {
-      return PaymentData(
-        address: '',
-        paymentLinkId: paymentLinkId,
-      );
-    }
 
     // bitcoin: BIP-21 URI
     if (trimmed.toLowerCase().startsWith('bitcoin:')) {
@@ -154,6 +85,11 @@ class QrPaymentParser {
     // kerosene:pay?...
     if (trimmed.toLowerCase().startsWith('kerosene:pay')) {
       return _parseKeroseneUri(trimmed);
+    }
+
+    // kerosene:link:<id> — payment link (handled upstream)
+    if (trimmed.toLowerCase().startsWith('kerosene:link:')) {
+      return null;
     }
 
     // Plain address (no scheme) — looks like a bitcoin address
@@ -230,9 +166,8 @@ class QrPaymentParser {
 
   static bool _looksLikeBitcoinAddress(String s) {
     // Mainnet: start with 1, 3, or bc1
-    // Testnet/regtest: start with m, n, 2, tb1, or bcrt1
-    return RegExp(r'^(1|3|bc1|m|n|2|tb1|bcrt1)[a-zA-HJ-NP-Z0-9]{20,90}$')
-        .hasMatch(s);
+    // Testnet: start with m, n, 2, or tb1
+    return RegExp(r'^(1|3|bc1|m|n|2|tb1)[a-zA-HJ-NP-Z0-9]{20,90}$').hasMatch(s);
   }
 
   static bool _looksLikeUsername(String s) {

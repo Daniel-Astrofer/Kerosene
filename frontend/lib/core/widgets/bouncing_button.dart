@@ -1,8 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:teste/core/presentation/widgets/animated_glyph_icon.dart';
+import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 
@@ -43,120 +41,90 @@ class _BouncingButtonState extends State<BouncingButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onPressed == null || widget.isLoading;
+
     final isSolid = widget.variant == BouncingButtonVariant.solid;
-    final horizontalPadding =
-        widget.width == double.infinity ? AppSpacing.lg : AppSpacing.md;
 
+    final disabledContentColor =
+        Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.4);
     final foregroundColor = isDisabled
-        ? const Color(0xFFA0A09B) // authEntryMuted
+        ? disabledContentColor
         : (isSolid
-            ? const Color(0xFF020202) // authEntryInk
-            : widget.color ?? const Color(0xFFECECE6));
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.secondary);
 
+    // When gradient is active, do NOT set color — Flutter ignores gradient if color is also set.
+    final hasGradient = isSolid && !isDisabled && widget.color == null;
     final flatColor = isSolid
         ? (isDisabled
-            ? const Color(0xFF131313) // authEntrySurfaceRaised
-            : widget.color ?? const Color(0xFFECECE6)) // authEntryButton
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : widget.color) // null when no custom color → gradient takes over
         : Colors.transparent;
 
     final borderColor = isSolid
         ? Colors.transparent
         : (isDisabled
-            ? const Color(0xFF131313)
-            : widget.color ?? const Color(0xFFECECE6));
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.secondary);
 
     return AnimatedScale(
-      scale: _pressed ? 0.98 : 1.0,
-      duration: const Duration(milliseconds: 100),
+      scale: _pressed ? 0.95 : 1.0,
+      duration: const Duration(milliseconds: 150),
       curve: Curves.easeOutBack,
       child: Container(
         width: widget.width,
+        height: widget.height,
         decoration: BoxDecoration(
-          color: flatColor,
-          borderRadius: BorderRadius.zero,
-          border: isSolid ? null : Border.all(color: borderColor, width: 1.5),
+          // color must be null when gradient is used — they are mutually exclusive in Flutter
+          color: hasGradient ? null : flatColor,
+          gradient: hasGradient ? AppColors.primaryGradient : null,
+          borderRadius: BorderRadius.circular(AppSpacing.md),
+          border: isSolid ? null : Border.all(color: borderColor, width: 2),
+          boxShadow: [],
         ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: widget.height),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onHighlightChanged: (isHighlighted) {
-                if (!isDisabled) {
-                  setState(() => _pressed = isHighlighted);
-                }
-              },
-              onTap: isDisabled
-                  ? null
-                  : () {
-                      HapticFeedback.lightImpact();
-                      widget.onPressed?.call();
-                    },
-              borderRadius: BorderRadius.zero,
-              splashColor: Theme.of(
-                context,
-              ).colorScheme.onPrimary.withValues(alpha: 0.1),
-              highlightColor: Colors.transparent,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final availableTextWidth = math.max(
-                    0,
-                    constraints.maxWidth -
-                        (horizontalPadding * 2) -
-                        (widget.icon != null ? 28 : 0),
-                  );
-
-                  return Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: AppSpacing.md,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onHighlightChanged: (isHighlighted) {
+              if (!isDisabled) {
+                setState(() => _pressed = isHighlighted);
+              }
+            },
+            onTap: isDisabled
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                    widget.onPressed?.call();
+                  },
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            splashColor:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1),
+            highlightColor: Colors.transparent,
+            child: Center(
+              child: widget.isLoading
+                  ? SizedBox(
+                      width: AppSpacing.lg,
+                      height: AppSpacing.lg,
+                      child: CircularProgressIndicator(
+                        color: foregroundColor,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.icon != null) ...[
+                          Icon(widget.icon, color: foregroundColor, size: 20),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
+                        Text(
+                          widget.text,
+                          style: AppTypography.buttonText.copyWith(
+                            color: foregroundColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Center(
-                      child: widget.isLoading
-                          ? SizedBox(
-                              width: AppSpacing.lg,
-                              height: AppSpacing.lg,
-                              child: CircularProgressIndicator(
-                                color: foregroundColor,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (widget.icon != null) ...[
-                                  AnimatedGlyphIcon(
-                                    icon: widget.icon!,
-                                    color: foregroundColor,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                ],
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: availableTextWidth.toDouble(),
-                                  ),
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      widget.text,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                      softWrap: false,
-                                      style: AppTypography.buttonText.copyWith(
-                                        color: foregroundColor,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  );
-                },
-              ),
             ),
           ),
         ),

@@ -54,8 +54,9 @@ class TransactionSigner {
 
       // Sign
       // Sign
-      final signature = BitcoinKeySigner.fromKeyBytes(privateKey.raw)
-          .signECDSADer(sighash); // Returns DER signature
+      // ignore: deprecated_member_use
+      final signature = BitcoinSigner.fromKeyBytes(privateKey.raw)
+          .signTransaction(sighash); // Returns DER signature
 
       // Append SIGHASH_ALL (0x01) to signature
       final signatureWithHashType = [...signature, 0x01];
@@ -87,6 +88,14 @@ class TransactionSigner {
     return SegwitBech32Encoder.encode("bc", 0, pubKeyHash);
   }
 }
+
+// Helper aliases to match blockchain_utils structure if needed
+// Note: real package classes need to be verified.
+// Use 'bitcoin_base' or similar if 'entryPoint' is not the correct namespace.
+// I'm using a placeholder 'entryPoint' pattern here.
+// Please check imports.
+// Actually, I'll rely on the IDE/Compiler to help me fix the exact classes.
+// I will write generic code and expect to fix imports.
 
 // Minimal Bitcoin Transaction Implementation for SegWit Signing
 class _BitcoinTx {

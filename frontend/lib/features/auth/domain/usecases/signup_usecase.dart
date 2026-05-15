@@ -11,28 +11,15 @@ class SignupParams extends Equatable {
   final String username;
   final String passphrase;
   final String accountSecurity;
-  final int? shamirTotalShares;
-  final int? shamirThreshold;
-  final int? multisigThreshold;
 
   const SignupParams({
     required this.username,
     required this.passphrase,
     this.accountSecurity = 'STANDARD',
-    this.shamirTotalShares,
-    this.shamirThreshold,
-    this.multisigThreshold,
   });
 
   @override
-  List<Object?> get props => [
-        username,
-        passphrase,
-        accountSecurity,
-        shamirTotalShares,
-        shamirThreshold,
-        multisigThreshold,
-      ];
+  List<Object> get props => [username, passphrase, accountSecurity];
 }
 
 // ─── UseCase ─────────────────────────────────────────────────────────────────
@@ -55,7 +42,7 @@ class SignupUseCase {
     }
     if (params.passphrase.isEmpty) {
       return const Left(
-        ValidationFailure(message: 'Senha não pode estar vazia'),
+        ValidationFailure(message: 'Passphrase não pode estar vazia'),
       );
     }
 
@@ -63,9 +50,6 @@ class SignupUseCase {
       username: params.username,
       passphrase: params.passphrase,
       accountSecurity: params.accountSecurity,
-      shamirTotalShares: params.shamirTotalShares,
-      shamirThreshold: params.shamirThreshold,
-      multisigThreshold: params.multisigThreshold,
     );
   }
 }

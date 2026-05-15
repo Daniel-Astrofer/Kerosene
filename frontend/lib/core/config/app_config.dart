@@ -6,11 +6,11 @@ class AppConfig {
 
   /// Endereços .onion dos nós remotos
   static const String nodeIS =
-      'http://epef24frbttdyirb45zif4smrkmhfd4di34my7wdhadzomfcpcf5fbyd.onion';
+      'http://wvogcwrsaeuvi7herycmsybpaft2ldwv7iye4h5xxrbcdxec5riidtyd.onion';
   static const String nodeCH =
-      'http://aznllofvisv5xryqumr7ikbprgjvhyh6izyyslhgx4v3lsgydoegixid.onion';
+      'http://iw5ohnsjrkbbazjaza5lidiqxqvqlqbb5g3xqyleeh3o774qwk4snrqd.onion';
   static const String nodeSG =
-      'http://vck7thw2lk4yoxwtwwmwdndbwxjfkvdxck2ys25lkzrqiusbclak2kqd.onion';
+      'http://ltvlevluljxdc4egiv3y4qku5md5k74lrudlkiv5ws3gnd2yurdoirqd.onion';
 
   /// Mapeamento de nós com nomes amigáveis
   static const Map<String, String> nodes = {
@@ -54,65 +54,13 @@ class AppConfig {
   static const String authPasskeyChallenge = '/auth/passkey/challenge';
   static const String authPasskeyRegister = '/auth/passkey/register';
   static const String authPasskeyVerify = '/auth/passkey/verify';
-  static const String authPasskeyDevices = '/auth/passkey/devices';
   static const String authPasskeyOnboardingStart =
       '/auth/passkey/onboarding/start';
   static const String authPasskeyOnboardingFinish =
       '/auth/passkey/onboarding/finish';
-  static String authPasskeyDeviceBlock(String deviceInstallId) =>
-      '/auth/passkey/devices/$deviceInstallId/block';
-  static String authPasskeyDeviceRevoke(String deviceInstallId) =>
-      '/auth/passkey/devices/$deviceInstallId/revoke';
-  static const String authRecoveryEmergencyStart =
-      '/auth/recovery/emergency/start';
-  static const String authRecoveryEmergencyFinish =
-      '/auth/recovery/emergency/finish';
-  static const String passkeyOrigin = String.fromEnvironment(
-    'PASSKEY_ORIGIN',
-    defaultValue: 'android:apk-key-hash:kerosene',
-  );
-  static const String defaultPasskeyRpId = 'kerosene-device';
-  static const String passkeyRpId = String.fromEnvironment(
-    'PASSKEY_RP_ID',
-    defaultValue: defaultPasskeyRpId,
-  );
-
-  static String get effectivePasskeyRpId {
-    final explicit = passkeyRpId.trim();
-    if (explicit.isNotEmpty) {
-      return explicit;
-    }
-    return defaultPasskeyRpId;
-  }
 
   // 1.3 Profile
   static const String authMe = '/auth/me';
-  static const String authSecurityProfile = '/auth/security/profile';
-  static const String authAppPin = '/auth/security/app-pin';
-  static const String authAppPinVerify = '/auth/security/app-pin/verify';
-  static const String authSecurityStatus = '/auth/security-status';
-  static const String authActivationStatus = '/auth/activation-status';
-  static const String authActivationDepositLink =
-      '/auth/activation-status/deposit-link';
-  static const String authBackupCodes = '/auth/backup-codes';
-  static const String authBackupCodesRegenerate =
-      '/auth/backup-codes/regenerate';
-  static const String authTotpSetup = '/auth/totp/setup';
-  static const String authTotpVerify = '/auth/totp/verify';
-  static const String authTotpDisable = '/auth/totp';
-  static const String authAdminLogin = '/auth/admin/login';
-  static const String authAdminKey = '/auth/admin/key';
-  static const String authAdminPendingAttempts =
-      '/auth/admin/access-attempts/pending';
-  static const String authAdminDevices = '/auth/admin/devices';
-  static String authAdminLoginPoll(String attemptId) =>
-      '/auth/admin/login/$attemptId';
-  static String authAdminAttemptDecision(String attemptId) =>
-      '/auth/admin/access-attempts/$attemptId/decision';
-  static String authAdminDeviceBlock(String deviceId) =>
-      '/auth/admin/devices/$deviceId/block';
-  static String authAdminDeviceRevoke(String deviceId) =>
-      '/auth/admin/devices/$deviceId/revoke';
 
   // 2. Wallets
   static const String walletCreate = '/wallet/create';
@@ -143,20 +91,6 @@ class AppConfig {
   static const String transactionsBroadcast = '/transactions/broadcast';
   static const String transactionsStatus = '/transactions/status';
   static const String transactionsWithdraw = '/transactions/withdraw';
-  static const String transactionsNetworkOnchainAddress =
-      '/transactions/network/onchain/address';
-  static const String transactionsNetworkWalletProfile =
-      '/transactions/network/wallet-profile';
-  static const String transactionsNetworkOnchainSend =
-      '/transactions/network/onchain/send';
-  static const String transactionsNetworkLightningInvoice =
-      '/transactions/network/lightning/invoice';
-  static const String transactionsNetworkLightningPay =
-      '/transactions/network/lightning/pay';
-  static const String transactionsNetworkTransfers =
-      '/transactions/network/transfers';
-  static const String depositRoot = '/deposit';
-  static const String treasuryOverview = '/treasury/overview';
 
   // 4.1 Payment Links (External BTC)
   static const String transactionsCreatePaymentLink =
@@ -169,42 +103,16 @@ class AppConfig {
       '/transactions/payment-link/{linkId}/complete';
   static const String transactionsPaymentLinksList =
       '/transactions/payment-links';
-  static const String transactionsOnrampUrls = '/api/onramp/urls';
 
-  // 4.2 Bitcoin Accounts
-  static const String bitcoinAccounts = '/bitcoin/accounts';
-  static const String bitcoinAccountsInternalCard =
-      '/bitcoin/accounts/internal-card';
-  static const String bitcoinAccountsColdWallet =
-      '/bitcoin/accounts/cold-wallet';
-  static const String bitcoinReceivePublic = '/bitcoin/receive';
-  static const String bitcoinReceiveRequests = '/bitcoin/receive-requests';
-  static String bitcoinAccountReceiveRequests(String accountId) =>
-      '/bitcoin/accounts/$accountId/receive-requests';
-  static String bitcoinReceiveRequestStatus(String id) =>
-      '/bitcoin/receive-requests/$id/status';
-  static String bitcoinReceiveRequestExpire(String id) =>
-      '/bitcoin/receive-requests/$id/expire';
-  static String bitcoinReceiveRequestHide(String id) =>
-      '/bitcoin/receive-requests/$id/hide';
-  static String bitcoinReceiveRequestUserAction(String id) =>
-      '/bitcoin/receive-requests/$id/user-action';
-  static String bitcoinColdWalletPsbt(String coldWalletId) =>
-      '/bitcoin/cold-wallets/$coldWalletId/psbt';
-  static String bitcoinColdWalletUtxos(String coldWalletId) =>
-      '/bitcoin/cold-wallets/$coldWalletId/utxos';
-  static const String bitcoinTaxEvents = '/bitcoin/tax-events';
-  static String bitcoinTaxEventsExport(String format) =>
-      '/bitcoin/tax-events/export?format=$format';
-  static String bitcoinTaxEventClassify(String eventId) =>
-      '/bitcoin/tax-events/$eventId/classify';
-  static String bitcoinPsbt(String workflowId) => '/bitcoin/psbt/$workflowId';
-  static String bitcoinPsbtSigned(String workflowId) =>
-      '/bitcoin/psbt/$workflowId/signed';
+  // 5. Vouchers
+  static const String voucherRequest = '/voucher/request';
+  static const String voucherConfirm = '/voucher/confirm';
+  static const String voucherOnboardingLink = '/voucher/onboarding-link';
+  static const String voucherOnboardingMockConfirm =
+      '/voucher/onboarding-mock-confirm';
+  static const String voucherTestClaim = '/voucher/test-claim';
 
   // 6. Notifications
-  static const String notificationsList = '/notifications';
-  static const String notificationsRead = '/notifications/{id}/read';
   static const String notificationsSend = '/notifications/send';
   static const String notificationRegisterToken =
       '/notifications/register-token';
@@ -222,38 +130,18 @@ class AppConfig {
   static const String auditMerkleHistory = '/audit/history';
   static const String auditMerkleTrigger = '/audit/trigger';
 
-  // 7.3 Enterprise operations
-  static const String adminOperationsOverview =
-      '/api/admin/operations/overview';
-  static const String adminOperationsHealth = '/api/admin/operations/health';
-  static const String adminOperationsBlockchain =
-      '/api/admin/operations/blockchain';
-  static const String adminOperationsLightning =
-      '/api/admin/operations/lightning';
-  static const String adminOperationsVaultRaft =
-      '/api/admin/operations/vault-raft';
-  static const String adminOperationsRelease = '/api/admin/operations/release';
-  static const String adminOperationsLogs = '/api/admin/operations/logs';
-  static const String adminOperationsMobile = '/api/admin/operations/mobile';
-  static const String adminOperationsMetrics = '/api/admin/operations/metrics';
-
   // 8. Vault System
   static const String vaultArm = '/v1/vault/arm';
   static const String vaultAttest = '/v1/vault/attest';
   static const String vaultProvision = '/v1/vault/provision';
 
-  // Legacy constants kept for compile compatibility. Deposit history and
-  // balance must use /transactions/network/transfers.
+  // (Legacy / Extra - Checking for compatibility)
   static const String transactionsConfirmDeposit =
       '/transactions/confirm-deposit';
   static const String transactionsDeposits = '/transactions/deposits';
   static const String transactionsDepositBalance =
       '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
-
-  // 4.3 Mining Marketplace
-  static const String miningRigs = '/mining/rigs';
-  static const String miningAllocations = '/mining/allocations';
 
   // ==================== Storage Keys ====================
 
@@ -306,7 +194,7 @@ class AppConfig {
   // ==================== App Info ====================
 
   /// Nome da aplicação
-  static const String appName = 'Kerosene Bank';
+  static const String appName = 'Kerosene';
 
   /// Versão da aplicação
   static const String appVersion = '1.0.0';

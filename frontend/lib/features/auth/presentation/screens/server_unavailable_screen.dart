@@ -8,20 +8,10 @@ import 'package:teste/core/widgets/bouncing_button.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 
 class ServerUnavailableScreen extends ConsumerWidget {
-  final String message;
-  final String? retryRouteName;
-
-  const ServerUnavailableScreen({
-    super.key,
-    this.message = 'Não conseguimos estabelecer uma conexão segura no momento.',
-    this.retryRouteName,
-  });
+  const ServerUnavailableScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-    final isLoading = authState is AuthLoading;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
@@ -45,7 +35,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                         color: AppColors.error.withValues(alpha: 0.2),
                         blurRadius: 40,
                         spreadRadius: 10,
-                      ),
+                      )
                     ],
                   ),
                   child: const Icon(
@@ -58,10 +48,10 @@ class ServerUnavailableScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xxl),
 
                 Text(
-                  'CONEXÃO INDISPONÍVEL',
+                  'SERVIDOR INDISPONÍVEL',
                   style: AppTypography.h1.copyWith(
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
+                    letterSpacing: -0.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -69,7 +59,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
 
                 Text(
-                  message,
+                  'Não foi possível restabelecer a conexão com a rede agora.\nSua sessão foi preservada. Tente novamente em instantes.',
                   style: AppTypography.bodyLarge.copyWith(
                     color: AppColors.white70,
                     height: 1.5,
@@ -82,19 +72,9 @@ class ServerUnavailableScreen extends ConsumerWidget {
                 BouncingButton(
                   text: 'TENTAR NOVAMENTE',
                   icon: LucideIcons.refreshCw,
-                  isLoading: retryRouteName == null && isLoading,
-                  onPressed: () {
-                    if (retryRouteName != null) {
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil(retryRouteName!, (_) => false);
-                      return;
-                    }
-
-                    ref
-                        .read(authControllerProvider.notifier)
-                        .retrySessionCheck();
-                  },
+                  onPressed: () => ref
+                      .read(authControllerProvider.notifier)
+                      .retrySessionCheck(),
                 ),
 
                 const SizedBox(height: AppSpacing.md),

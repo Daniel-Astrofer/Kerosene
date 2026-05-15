@@ -8,23 +8,27 @@
 !/backend/**
 !/frontend/
 !/frontend/**
-!/docs/
-!/docs/**
-!/docs-final/
-!/docs-final/**
-!/scripts/
-!/scripts/**
-!/.github/
-!/.github/**
-!/AGENTS.md
-!/docker-compose.yml
-!/README.md
 
 # Root-level material kept local only.
+/docs/
+/docs/**
+!/docs/
+!/docs/README.md
+!/docs/API_REFERENCE.md
+!/docs/ARCHITECTURE.md
+!/docs/INFRASTRUCTURE.md
+!/docs/APK.md
+/scripts/
+/scripts/**
+!/scripts/
+!/scripts/backend-common.sh
+!/scripts/init-local.sh
+!/scripts/start-local.sh
+!/scripts/stop-local.sh
+!/scripts/logs-local.sh
+!/scripts/arm-vault.sh
 /assets/
 /assets/**
-/backups/
-/backups/**
 /screenshots/
 /screenshots/**
 /vault/
@@ -38,6 +42,7 @@
 /gradlew
 /gradlew.bat
 /README*
+!/README.md
 /DAYLY_LOG.md
 /*.html
 /projeto_completo_kerosene.txt
@@ -76,7 +81,6 @@
 **/.remote-control/**
 **/.openclaude-profile.json
 **/AGENTS.md
-!/AGENTS.md
 **/CLAUDE.md
 **/GEMINI.md
 **/mcp_config.json
@@ -121,8 +125,6 @@
 **/.pub/**
 **/build/
 **/build/**
-**/*.root-owned-*
-**/*.root-owned-*/**
 **/target/
 **/target/**
 **/out/
@@ -148,28 +150,6 @@
 **/.DS_Store
 **/Thumbs.db
 
-# Documentation and generated analysis outputs kept local.
-**/*.md
-!/AGENTS.md
-!/README.md
-!/docs/**/*.md
-!/docs-final/**/*.md
-!/backend/**/docs/**/*.md
-!/backend/kerosene/*.md
-!/.gitignore
-!/.gitattributes
-frontend/*.txt
-frontend/**/*.txt
-!frontend/**/CMakeLists.txt
-!frontend/FRONTEND_GUIDELINES.md
-frontend/*.png
-frontend/Get
-frontend/Process
-frontend/Run
-frontend/=*
-frontend/scripts/
-frontend/scripts/**
-
 # Platform-local generated files.
 **/android/local.properties
 **/android/app/debug/
@@ -182,28 +162,12 @@ frontend/scripts/**
 **/windows/flutter/ephemeral/
 
 # Accidentally copied home/tooling directories.
-~
-~/**
-**/~
-**/~/**
 ~/
 ~/**
 **/~/
 **/~/**
-frontend/~/
-frontend/~/**
-**/.config/antigravity-perfil*/
-**/.config/antigravity-perfil*/**
 CachedExtensionVSIXs/
 CachedExtensionVSIXs/**
-**/CachedExtensionVSIXs/
-**/CachedExtensionVSIXs/**
 .trash/
 .trash/**
-**/.trash/
-**/.trash/**
-**/workspaceStorage/
-**/workspaceStorage/**
-**/.metadata/
-**/.metadata/**
 flutter_linux_*-stable.tar.xz

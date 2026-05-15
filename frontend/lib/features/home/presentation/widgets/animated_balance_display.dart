@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -14,13 +12,6 @@ class AnimatedBalanceDisplay extends StatefulWidget {
   final bool enableFlash;
   final String? prefix;
   final bool isHidden;
-  final String locale;
-  final double decimalScaleFactor;
-  final double separatorScaleFactor;
-  final double digitWidthFactor;
-  final double characterSpacing;
-  final VoidCallback? onDecimalTap;
-  final bool animateInitialValue;
 
   const AnimatedBalanceDisplay({
     super.key,
@@ -30,13 +21,6 @@ class AnimatedBalanceDisplay extends StatefulWidget {
     this.enableFlash = false,
     this.prefix,
     this.isHidden = false,
-    this.locale = 'en_US',
-    this.decimalScaleFactor = 0.5,
-    this.separatorScaleFactor = 0.7,
-    this.digitWidthFactor = 0.64,
-    this.characterSpacing = 0.8,
-    this.onDecimalTap,
-    this.animateInitialValue = true,
   });
 
   @override
@@ -82,7 +66,9 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.decimalPattern(widget.locale);
+    // We use a simple fixed format for now, or we could pass a custom string.
+    // For universal use, let's support commas if balance is large.
+    final formatter = NumberFormat.decimalPattern();
     formatter.minimumFractionDigits = widget.decimalPlaces;
     formatter.maximumFractionDigits = widget.decimalPlaces;
 
@@ -90,8 +76,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
     final fullString = (widget.prefix ?? '') + balanceStr;
 
     if (widget.isHidden) {
-      final hiddenPrefix = widget.prefix ?? '';
-      return _buildRow('$hiddenPrefix••••••••', widget.style);
+      return _buildRow('••••••••', widget.style);
     }
 
     if (!widget.enableFlash) {
@@ -121,8 +106,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: List.generate(fullString.length, (index) {
           return Padding(
-            padding:
-                EdgeInsets.symmetric(horizontal: widget.characterSpacing * 0.5),
+            padding: const EdgeInsets.symmetric(horizontal: 1.0),
             child: Text(
               fullString[index],
               style: style.copyWith(
@@ -134,104 +118,52 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
         }),
       );
     }
-    final dotIndex = fullString.lastIndexOf('.');
-    final commaIndex = fullString.lastIndexOf(',');
+    // Encontrar o ponto decimal
+    final dotIndex = fullString.indexOf('.');
+    final commaIndex = fullString.indexOf(',');
     final separatorIndex = dotIndex != -1 ? dotIndex : commaIndex;
-    final leadingChars = separatorIndex == -1
-        ? _buildCharacters(
-            fullString: fullString,
-            style: style,
-            separatorIndex: separatorIndex,
-            start: 0,
-            end: fullString.length,
-          )
-        : _buildCharacters(
-            fullString: fullString,
-            style: style,
-            separatorIndex: separatorIndex,
-            start: 0,
-            end: separatorIndex,
-          );
-    final decimalChars = separatorIndex == -1
-        ? const <Widget>[]
-        : _buildCharacters(
-            fullString: fullString,
-            style: style,
-            separatorIndex: separatorIndex,
-            start: separatorIndex,
-            end: fullString.length,
-          );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        ...leadingChars,
-        if (decimalChars.isNotEmpty)
-          GestureDetector(
-            onTap: widget.onDecimalTap,
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: decimalChars,
-            ),
-          ),
-      ],
-    );
-  }
+      children: List.generate(fullString.length, (index) {
+        final char = fullString[index];
+        final isDigit = RegExp(r'[0-9]').hasMatch(char);
 
-  List<Widget> _buildCharacters({
-    required String fullString,
-    required TextStyle style,
-    required int separatorIndex,
-    required int start,
-    required int end,
-  }) {
-    return List.generate(end - start, (offset) {
-      final index = start + offset;
-      final char = fullString[index];
-      final isDigit = RegExp(r'[0-9]').hasMatch(char);
-      final isDecimalPart = separatorIndex != -1 && index > separatorIndex;
-      final currentStyle = isDecimalPart
-          ? style.copyWith(
-              fontSize: (style.fontSize ?? 40) * widget.decimalScaleFactor,
-              color: style.color?.withValues(alpha: 0.8),
-            )
-          : style;
+        // Se estivermos após o separador decimal, diminuímos a escala
+        final bool isDecimalPart =
+            separatorIndex != -1 && index > separatorIndex;
+        final currentStyle = isDecimalPart
+            ? style.copyWith(
+                fontSize: (style.fontSize ?? 40) * 0.5,
+                color: style.color?.withValues(alpha: 0.8),
+              )
+            : style;
 
-      late final Widget child;
+        if (!isDigit) {
+          return Text(
+            char,
+            style: char == '.' || char == ','
+                ? style.copyWith(
+                    fontSize: (style.fontSize ?? 40) * 0.7,
+                    color: style.color?.withValues(alpha: 0.5),
+                  )
+                : currentStyle,
+            key: ValueKey('static_$index'),
+          );
+        }
 
-      if (!isDigit) {
-        child = Text(
-          char,
-          style: char == '.' || char == ','
-              ? style.copyWith(
-                  fontSize:
-                      (style.fontSize ?? 40) * widget.separatorScaleFactor,
-                  color: style.color?.withValues(alpha: 0.5),
-                )
-              : currentStyle,
-          key: ValueKey('static_$index'),
-        );
-      } else {
+        // Staggered delay: 30ms per digit
         final delay = Duration(milliseconds: index * 50);
 
-        child = _RollingDigit(
+        return _RollingDigit(
           key: ValueKey('rolling_${fullString.length - index}'),
           digit: char,
           style: currentStyle,
           delay: delay,
-          widthFactor: widget.digitWidthFactor,
-          animateInitialValue: widget.animateInitialValue,
         );
-      }
-
-      return Padding(
-        padding:
-            EdgeInsets.symmetric(horizontal: widget.characterSpacing * 0.5),
-        child: child,
-      );
-    });
+      }),
+    );
   }
 }
 
@@ -239,16 +171,12 @@ class _RollingDigit extends StatefulWidget {
   final String digit;
   final TextStyle style;
   final Duration delay;
-  final double widthFactor;
-  final bool animateInitialValue;
 
   const _RollingDigit({
     super.key,
     required this.digit,
     required this.style,
     this.delay = Duration.zero,
-    this.widthFactor = 0.64,
-    this.animateInitialValue = true,
   });
 
   @override
@@ -257,12 +185,6 @@ class _RollingDigit extends StatefulWidget {
 
 class _RollingDigitState extends State<_RollingDigit>
     with SingleTickerProviderStateMixin {
-  static const double _visibleExtent = 1.35;
-  static const double _edgeOpacity = 0.16;
-  static const double _edgeScale = 0.82;
-  static const double _maxTiltRadians = 0.78;
-  static const double _perspective = 0.0024;
-
   late AnimationController _controller;
   late Animation<double> _animation;
   late int _targetDigit;
@@ -287,21 +209,17 @@ class _RollingDigitState extends State<_RollingDigit>
       curve: Curves.easeOutQuart, // Smoother deceleration for odometer
     );
 
-    if (widget.animateInitialValue) {
-      // Initial "spin up" effect.
-      Future.delayed(widget.delay, () {
-        if (mounted) {
-          setState(() {
-            // Determine rotations only ONCE at start.
-            _rotations = 1;
-            _previousDigit = (_targetDigit + 7) % 10;
-          });
-          _controller.forward(from: 0.0);
-        }
-      });
-    } else {
-      _controller.value = 1.0;
-    }
+    // Initial "spin up" effect
+    Future.delayed(widget.delay, () {
+      if (mounted) {
+        setState(() {
+          // Determine rotations only ONCE at start
+          _rotations = 1;
+          _previousDigit = (_targetDigit + 7) % 10;
+        });
+        _controller.forward(from: 0.0);
+      }
+    });
   }
 
   @override
@@ -330,124 +248,40 @@ class _RollingDigitState extends State<_RollingDigit>
   @override
   Widget build(BuildContext context) {
     final double fontSize = widget.style.fontSize ?? 40;
-    final double height = fontSize * 1.32;
+    final double height = fontSize * 1.25;
 
     return SizedBox(
       height: height,
-      width: fontSize * widget.widthFactor,
+      width: fontSize * 0.55,
       child: ClipRect(
         child: AnimatedBuilder(
           animation: _animation,
           builder: (context, _) {
             final t = _animation.value;
-            if (t >= 0.999) {
-              return _StaticDigit(
-                digit: widget.digit,
-                style: widget.style,
-              );
-            }
 
             int diff = _targetDigit - _previousDigit;
             if (diff < 0) diff += 10;
 
             final totalSteps = (_rotations * 10) + diff;
-            final baseColor =
-                widget.style.color ?? Theme.of(context).colorScheme.onPrimary;
-            final visibleDigits = <({double distance, Widget child})>[];
 
-            for (int i = 0; i <= totalSteps; i++) {
-              final rawOffset = (i - (t * totalSteps)) * height;
-              final normalizedOffset = rawOffset / height;
-              final distance = normalizedOffset.abs();
-
-              if (distance > _visibleExtent) {
-                continue;
-              }
-
-              final centerProgress =
-                  (1 - (distance / _visibleExtent)).clamp(0.0, 1.0).toDouble();
-              final easedCenter = Curves.easeOutCubic.transform(centerProgress);
-              final opacity = _edgeOpacity + ((1 - _edgeOpacity) * easedCenter);
-              final scale = _edgeScale + ((1 - _edgeScale) * easedCenter);
-              final tilt = normalizedOffset * _maxTiltRadians;
-              final curvedOffset = math.sin(
-                      (normalizedOffset / _visibleExtent) * (math.pi / 2)) *
-                  height *
-                  _visibleExtent;
-
-              visibleDigits.add((
-                distance: distance,
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, _perspective)
-                    ..translateByDouble(0.0, curvedOffset, 0.0, 1.0)
-                    ..rotateX(tilt)
-                    ..scaleByDouble(scale, scale, 1.0, 1.0),
-                  child: Center(
-                    child: Text(
-                      ((_previousDigit + i) % 10).toString(),
-                      style: widget.style.copyWith(
-                        color: baseColor.withValues(
-                          alpha: (baseColor.a * opacity).clamp(0.0, 1.0),
+            return RepaintBoundary(
+              child: Stack(
+                children: [
+                  for (int i = 0; i <= totalSteps; i++)
+                    Transform.translate(
+                      offset: Offset(0, (i - (t * totalSteps)) * height),
+                      child: Center(
+                        child: Text(
+                          ((_previousDigit + i) % 10).toString(),
+                          style: widget.style,
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ));
-            }
-
-            visibleDigits.sort(
-              (a, b) => b.distance.compareTo(a.distance),
-            );
-
-            return RepaintBoundary(
-              child: ShaderMask(
-                shaderCallback: (bounds) {
-                  return const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.white,
-                      Colors.white,
-                      Colors.transparent,
-                    ],
-                    stops: [0.0, 0.2, 0.8, 1.0],
-                  ).createShader(bounds);
-                },
-                blendMode: BlendMode.dstIn,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    for (final digit in visibleDigits) digit.child,
-                  ],
-                ),
+                ],
               ),
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _StaticDigit extends StatelessWidget {
-  final String digit;
-  final TextStyle style;
-
-  const _StaticDigit({
-    required this.digit,
-    required this.style,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        digit,
-        style: style,
       ),
     );
   }
