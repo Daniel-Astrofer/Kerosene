@@ -27,6 +27,15 @@ subprojects {
             }
         }
     }
+
+    if (project.name == "tor") {
+        tasks.configureEach {
+            when (name) {
+                "mergeDebugJniLibFolders" -> dependsOn("cargokitCargoBuildTorDebug")
+                "mergeReleaseJniLibFolders" -> dependsOn("cargokitCargoBuildTorRelease")
+            }
+        }
+    }
 }
 
 subprojects {
