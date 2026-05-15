@@ -328,7 +328,8 @@ extension ApiClientProxy on ApiClient {
       };
 
       debugPrint(
-          '🧅 ApiClient: Configured SOCKS5 proxy for .onion on port ${torService.socksPort}');
+        '🧅 ApiClient: Configured SOCKS5 proxy for .onion on port ${torService.socksPort}',
+      );
     }
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,7 +32,25 @@ import 'core/utils/snackbar_helper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 0. GLobal Error Handling (Production Crash Defenders)
+  _configureGlobalErrorHandling();
+  _configureImageCache();
+
+  // SharedPreferences is needed before the ProviderContainer is built. Keep
+  // everything else out of the critical path so the first frame renders fast.
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  final container = ProviderContainer(
+    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
+  );
+
+  runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_startAppServices(container));
+  });
+}
+
+void _configureGlobalErrorHandling() {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('🚨 GLOBAL FLUTTER ERROR CAUGHT: ${details.exception}');
@@ -40,62 +60,56 @@ void main() async {
     debugPrint('🚨 ASYNC PLATFORM ERROR CAUGHT: $error');
     return true; // Prevent default crash behavior
   };
+}
 
-  // Initialize Local Notifications (for foreground handling)
-  await local_notifications.NotificationService().init();
+void _configureImageCache() {
+  // Keep a generous cache for premium textures without reserving hundreds of MB
+  // on low-memory devices.
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 160 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 180;
+}
 
-  // Initialize Background Service (WebSocket/Balance Monitor)
-  await initializeBackgroundService();
+Future<void> _startAppServices(ProviderContainer container) async {
+  await Future.wait([
+    _runStartupTask(
+      'Local notifications',
+      () => local_notifications.NotificationService().init(),
+    ),
+    _runStartupTask('Background service', initializeBackgroundService),
+    _runStartupTask('Audio service', AudioService.instance.init),
+    _runStartupTask('Tor network', () => _bootstrapTor(container)),
+  ]);
+}
 
-  // Initialize Audio Service (Pre-cache synth sounds)
-  await AudioService.instance.init();
-
-  // Inicializar SharedPreferences
-  final sharedPreferences = await SharedPreferences.getInstance();
-
-  final container = ProviderContainer(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-    ],
-  );
-
-  // 🧅 INITIALIZE TOR MANDATORY (Only Network Layer)
+Future<void> _runStartupTask(String name, Future<void> Function() task) async {
   try {
-    debugPrint('🚀 Starting Tor Network Bootstrap...');
-    final bool torStarted = await TorService.instance.start();
-    AppConfig.isTorEnabled = torStarted;
+    await task();
+  } catch (error, stackTrace) {
+    debugPrint('$name startup failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+}
 
-    if (torStarted) {
-      debugPrint('✅ Tor Network Ready.');
-      // Start local relay to the .onion backend
-      final host = Uri.parse(AppConfig.onionBaseUrl).host;
-      final int relayPort = await TorService.instance.startRelay(host, 80);
-      final newApiUrl = 'http://127.0.0.1:$relayPort';
-      AppConfig.apiUrl = newApiUrl;
+Future<void> _bootstrapTor(ProviderContainer container) async {
+  debugPrint('🚀 Starting Tor Network Bootstrap...');
+  final bool torStarted = await TorService.instance.start();
+  AppConfig.isTorEnabled = torStarted;
 
-      // Update the reactive provider so ApiClient and WebSocket rebuild
-      container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
-
-      debugPrint(
-          '🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host');
-    } else {
-      debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
-    }
-  } catch (e) {
-    debugPrint('❌ CRITICAL ERROR: Tor or Relay failed to start: $e');
-    AppConfig.isTorEnabled = false;
+  if (!torStarted) {
+    debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
+    return;
   }
 
-  // Aumentar o limite do cachê de imagens para acomodar texturas premium
-  // 500MB de cache e 300 imagens simultâneas
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024;
-  PaintingBinding.instance.imageCache.maximumSize = 300;
+  debugPrint('✅ Tor Network Ready.');
+  final host = Uri.parse(AppConfig.onionBaseUrl).host;
+  final int relayPort = await TorService.instance.startRelay(host, 80);
+  final newApiUrl = 'http://127.0.0.1:$relayPort';
+  AppConfig.apiUrl = newApiUrl;
 
-  runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const MyApp(),
-    ),
+  container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
+
+  debugPrint(
+    '🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host',
   );
 }
 
@@ -126,7 +140,8 @@ class MyApp extends ConsumerWidget {
         }
         return supportedLocales.first; // Retorna EN por padrão se não suportado
       },
-      builder: (context, child) => OfflineOverlay(child: child!),
+      builder: (context, child) =>
+          OfflineOverlay(child: child ?? const SizedBox.shrink()),
       home: Consumer(
         builder: (context, ref, child) {
           final authState = ref.watch(authControllerProvider);

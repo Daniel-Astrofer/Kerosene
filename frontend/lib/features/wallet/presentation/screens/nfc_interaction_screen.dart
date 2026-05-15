@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:nfc_manager/ndef_record.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/nfc_manager_android.dart' as nfc_android;
-import 'package:nfc_manager/nfc_manager_ios.dart' as nfc_ios;
+import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/core/theme/app_spacing.dart';
@@ -78,43 +78,13 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
 
         try {
           if (widget.paymentUri != null) {
-            // WRITE MODE
-            // Assuming Android/iOS bridge handles standard NDEF formatting through raw maps
-            // if we use the underlying tag format. But normally nfc_manager requires specific platform tags.
-            // Since `Ndef` isn't directly exposed in this version of nfc_manager without ndef package,
-            // we will use internal serialization or ndef package if available.
-            // But actually we are running out of time so I will mock the write logic
-            // which can be implemented correctly with the nfc_manager_ndef plugin in a real device.
-            await Future.delayed(const Duration(milliseconds: 800));
+            await _writePaymentUri(tag, widget.paymentUri!);
             _handleSuccess("PAGAMENTO PRONTO PARA RECEBIMENTO (NFC)");
           } else {
-            // READ MODE
-            final androidNdef = nfc_android.NdefAndroid.from(tag);
-            final iosNdef = nfc_ios.NdefIos.from(tag);
-            final ndefMessage = androidNdef != null
-                ? androidNdef.cachedNdefMessage ??
-                    await androidNdef.getNdefMessage()
-                : iosNdef != null
-                    ? iosNdef.cachedNdefMessage ?? await iosNdef.readNdef()
-                    : null;
-
-            if (ndefMessage == null) {
-              _handleError("TAG INVÁLIDA (NÃO É NDEF)");
+            final fullUri = await _readPaymentUri(tag);
+            if (fullUri != null) {
+              _handleSuccessRead(fullUri);
               return;
-            }
-
-            for (final record in ndefMessage.records) {
-              final payload = record.payload;
-              if (payload.isNotEmpty) {
-                final contentBytes = payload.skip(1).toList();
-                final fullUri = utf8.decode(contentBytes, allowMalformed: true);
-
-                final parsed = QrPaymentParser.decode(fullUri);
-                if (parsed != null && parsed.isComplete) {
-                  _handleSuccessRead(fullUri);
-                  return;
-                }
-              }
             }
             _handleError("PAGAMENTO NÃO ENCONTRADO NA TAG");
           }
@@ -123,6 +93,88 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
         }
       },
     );
+  }
+
+  Future<void> _writePaymentUri(NfcTag tag, String uri) async {
+    final ndef = Ndef.from(tag);
+    if (ndef == null) {
+      throw Exception('TAG INVÁLIDA (NÃO É NDEF)');
+    }
+    if (!ndef.isWritable) {
+      throw Exception('TAG NFC SOMENTE LEITURA');
+    }
+
+    final message = NdefMessage(
+      records: [
+        NdefRecord(
+          typeNameFormat: TypeNameFormat.wellKnown,
+          type: Uint8List.fromList(ascii.encode('U')),
+          identifier: Uint8List(0),
+          payload: Uint8List.fromList([0x00, ...utf8.encode(uri)]),
+        ),
+      ],
+    );
+
+    if (message.byteLength > ndef.maxSize) {
+      throw Exception('PAYLOAD NFC MAIOR QUE A CAPACIDADE DA TAG');
+    }
+
+    await ndef.write(message: message);
+  }
+
+  Future<String?> _readPaymentUri(NfcTag tag) async {
+    final ndef = Ndef.from(tag);
+    if (ndef == null) {
+      throw Exception('TAG INVÁLIDA (NÃO É NDEF)');
+    }
+
+    final message = ndef.cachedMessage ?? await ndef.read();
+    if (message == null) return null;
+
+    for (final record in message.records) {
+      final uri = _decodeRecord(record);
+      if (uri == null) continue;
+
+      final parsed = QrPaymentParser.decode(uri);
+      if (parsed != null && parsed.isComplete) {
+        return uri;
+      }
+    }
+
+    return null;
+  }
+
+  String? _decodeRecord(NdefRecord record) {
+    if (record.payload.isEmpty) return null;
+
+    final type = ascii.decode(record.type, allowInvalid: true);
+    if (record.typeNameFormat == TypeNameFormat.wellKnown && type == 'U') {
+      final prefix = _uriPrefix(record.payload.first);
+      final suffix =
+          utf8.decode(record.payload.skip(1).toList(), allowMalformed: true);
+      return '$prefix$suffix';
+    }
+
+    if (record.typeNameFormat == TypeNameFormat.wellKnown && type == 'T') {
+      final languageLength = record.payload.first & 0x3F;
+      final textStart = 1 + languageLength;
+      if (record.payload.length <= textStart) return null;
+      return utf8.decode(record.payload.skip(textStart).toList(),
+          allowMalformed: true);
+    }
+
+    return utf8.decode(record.payload, allowMalformed: true);
+  }
+
+  String _uriPrefix(int code) {
+    const prefixes = <int, String>{
+      0x00: '',
+      0x01: 'http://www.',
+      0x02: 'https://www.',
+      0x03: 'http://',
+      0x04: 'https://',
+    };
+    return prefixes[code] ?? '';
   }
 
   void _handleError(String msg) {
@@ -283,8 +335,7 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(
-                          alpha: 0.2 * (1.0 - _rippleController.value),
-                        ),
+                        alpha: 0.2 * (1.0 - _rippleController.value)),
                     width: 2,
                   ),
                 ),
@@ -300,8 +351,7 @@ class _NfcInteractionScreenState extends State<NfcInteractionScreen>
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(
-                          alpha: 0.1 * (1.0 - _rippleController.value),
-                        ),
+                        alpha: 0.1 * (1.0 - _rippleController.value)),
                     width: 1,
                   ),
                 ),
