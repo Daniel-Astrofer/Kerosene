@@ -16,7 +16,8 @@ class WalletDetailsScreen extends ConsumerStatefulWidget {
   const WalletDetailsScreen({super.key, required this.wallet});
 
   @override
-  ConsumerState<WalletDetailsScreen> createState() => _WalletDetailsScreenState();
+  ConsumerState<WalletDetailsScreen> createState() =>
+      _WalletDetailsScreenState();
 }
 
 class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {

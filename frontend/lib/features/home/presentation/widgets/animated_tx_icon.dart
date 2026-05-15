@@ -22,8 +22,6 @@ enum TxIconKind {
   address,
   network,
   card,
-  sendLightning,
-  receiveLightning,
 }
 
 class AnimatedTxIcon extends StatefulWidget {
@@ -82,11 +80,6 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
         break;
       case TxIconKind.failed:
         _primary.forward();
-        break;
-      case TxIconKind.sendLightning:
-      case TxIconKind.receiveLightning:
-        _primary.repeat();
-        _secondary.repeat(reverse: true);
         break;
       case TxIconKind.fee:
       case TxIconKind.clock:
@@ -191,10 +184,6 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
         return _NetworkPainter(color: color, t: t);
       case TxIconKind.card:
         return _CardPainter(color: color, t: t);
-      case TxIconKind.sendLightning:
-        return _SendLightningPainter(color: color, t: t, t2: t2);
-      case TxIconKind.receiveLightning:
-        return _ReceiveLightningPainter(color: color, t: t, t2: t2);
     }
   }
 }
@@ -204,31 +193,53 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
 
 class _SendPainter extends CustomPainter {
   final Color color;
-  final double t; // 0..1 movement
-  final double t2; // 0..1 pulse
+  final double t; // 0..1 repeating (arrow travels up)
+  final double t2; // 0..1 reverse (opacity pulse)
 
   _SendPainter({required this.color, required this.t, required this.t2});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.44;
-    final cy = h * 0.52;
-    final radius = w * 0.32;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final sw = size.width * 0.055;
 
-    _drawCyberCoin(canvas, Offset(cx, cy), radius, const Color(0xFFF7931A), t2);
-    _drawBitcoinLogo(canvas, Offset(cx, cy), radius * 0.7, Colors.white);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    // Premium Animated Arrow (Up-Right)
-    final arrowOffset = Curves.easeOutCubic.transform(t) * (w * 0.12);
-    final arrowBase = Offset(w * 0.7 + arrowOffset, h * 0.32 - arrowOffset);
-    _drawCyberArrow(canvas, arrowBase, w * 0.28, color, 1);
+    // Stem — fades in at bottom
+    final stemTop = cy * 0.2;
+    final stemBot = cy * 1.6;
+    canvas.drawLine(Offset(cx, stemBot), Offset(cx, stemTop), paint);
+
+    // Arrowhead at top
+    final hw = size.width * 0.22;
+    final ht = size.height * 0.22;
+    final path = Path()
+      ..moveTo(cx - hw, stemTop + ht)
+      ..lineTo(cx, stemTop)
+      ..lineTo(cx + hw, stemTop + ht);
+    canvas.drawPath(path, paint);
+
+    // Animated dot sliding up the stem
+    final dotY = stemBot - (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    canvas.drawCircle(
+      Offset(cx, dotY),
+      sw * 1.1,
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
+    );
   }
 
   @override
   bool shouldRepaint(covariant _SendPainter o) => o.t != t || o.t2 != t2;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECEIVE — arrow dropping down
 
 class _ReceivePainter extends CustomPainter {
   final Color color;
@@ -239,19 +250,36 @@ class _ReceivePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.56;
-    final cy = h * 0.48;
-    final radius = w * 0.32;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final sw = size.width * 0.055;
 
-    _drawCyberCoin(canvas, Offset(cx, cy), radius, const Color(0xFFF7931A), t2);
-    _drawBitcoinLogo(canvas, Offset(cx, cy), radius * 0.7, Colors.white);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    // Premium Animated Arrow (Down-Left)
-    final arrowOffset = Curves.easeOutCubic.transform(t) * (w * 0.12);
-    final arrowBase = Offset(w * 0.3 - arrowOffset, h * 0.68 + arrowOffset);
-    _drawCyberArrow(canvas, arrowBase, w * 0.28, color, -1);
+    final stemTop = cy * 0.2;
+    final stemBot = cy * 1.6;
+    canvas.drawLine(Offset(cx, stemTop), Offset(cx, stemBot), paint);
+
+    final hw = size.width * 0.22;
+    final hb = size.height * 0.78;
+    final path = Path()
+      ..moveTo(cx - hw, hb - size.height * 0.1)
+      ..lineTo(cx, hb)
+      ..lineTo(cx + hw, hb - size.height * 0.1);
+    canvas.drawPath(path, paint);
+
+    // dot travels down
+    final dotY = stemTop + (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    canvas.drawCircle(
+      Offset(cx, dotY),
+      sw * 1.1,
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
+    );
   }
 
   @override
@@ -270,22 +298,45 @@ class _DepositPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-    final cy = h * 0.62;
-    final radius = w * 0.32;
+    final cx = size.width / 2;
+    final sw = size.width * 0.055;
+    final floorY = size.height * 0.78;
 
-    _drawCyberCoin(canvas, Offset(cx, cy), radius, const Color(0xFFF7931A), t2);
-    _drawBitcoinLogo(canvas, Offset(cx, cy), radius * 0.7, Colors.white);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    // Arrow dropping into coin
-    final arrowB = Curves.easeOut.transform(t) * (h * 0.1);
-    _drawCyberArrow(canvas, Offset(cx, h * 0.36 + arrowB), w * 0.28, color, 0);
+    // Floor (tray)
+    canvas.drawLine(Offset(size.width * 0.18, floorY),
+        Offset(size.width * 0.82, floorY), paint);
+
+    // Stem above floor
+    final stemTop = size.height * 0.15;
+    final stemBot = floorY - sw;
+    canvas.drawLine(Offset(cx, stemTop), Offset(cx, stemBot), paint);
+
+    // Arrowhead
+    final hw = size.width * 0.22;
+    final path = Path()
+      ..moveTo(cx - hw, stemBot - size.height * 0.18)
+      ..lineTo(cx, stemBot)
+      ..lineTo(cx + hw, stemBot - size.height * 0.18);
+    canvas.drawPath(path, paint);
+
+    // Dot sliding down
+    final dotY = stemTop + (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    canvas.drawCircle(
+      Offset(cx, dotY),
+      sw * 1.1,
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _DepositPainter o) => o.t != t || o.t2 != t2;
+  bool shouldRepaint(covariant _DepositPainter o) => o.t != t;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -300,31 +351,43 @@ class _WithdrawalPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-    final cy = h * 0.38;
-    final radius = w * 0.32;
+    final cx = size.width / 2;
+    final sw = size.width * 0.055;
+    final floorY = size.height * 0.82;
 
-    _drawCyberCoin(canvas, Offset(cx, cy), radius, const Color(0xFFF7931A), t2);
-    _drawBitcoinLogo(canvas, Offset(cx, cy), radius * 0.7, Colors.white);
-
-    // Arrow shooting up from coin
-    final arrowB = Curves.easeOut.transform(t) * (h * 0.1);
-    final tip = Offset(cx, h * 0.22 - arrowB);
-
-    // Custom Up Arrow
-    final p = Paint()
+    final paint = Paint()
       ..color = color
-      ..strokeWidth = w * 0.05
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(tip, Offset(cx, tip.dy + w * 0.2), p);
-    canvas.drawLine(tip, Offset(cx - w * 0.1, tip.dy + w * 0.1), p);
-    canvas.drawLine(tip, Offset(cx + w * 0.1, tip.dy + w * 0.1), p);
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawLine(Offset(size.width * 0.18, floorY),
+        Offset(size.width * 0.82, floorY), paint);
+
+    final stemTop = size.height * 0.15;
+    final stemBot = floorY - sw * 1.5;
+    canvas.drawLine(Offset(cx, stemBot), Offset(cx, stemTop), paint);
+
+    final hw = size.width * 0.22;
+    final ht = size.height * 0.22;
+    final path = Path()
+      ..moveTo(cx - hw, stemTop + ht)
+      ..lineTo(cx, stemTop)
+      ..lineTo(cx + hw, stemTop + ht);
+    canvas.drawPath(path, paint);
+
+    // Dot travels up from floor
+    final dotY = stemBot - (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    canvas.drawCircle(
+      Offset(cx, dotY),
+      sw * 1.1,
+      Paint()..color = color.withValues(alpha: 0.5 + 0.5 * t2),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _WithdrawalPainter o) => o.t != t || o.t2 != t2;
+  bool shouldRepaint(covariant _WithdrawalPainter o) => o.t != t;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -332,53 +395,75 @@ class _WithdrawalPainter extends CustomPainter {
 
 class _SwapPainter extends CustomPainter {
   final Color color;
-  final double t; // 0..1 movement
+  final double t; // 0..1 repeating
 
   _SwapPainter({required this.color, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-    final cy = h * 0.5;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final sw = size.width * 0.055;
+    final r = size.width * 0.22;
 
-    // Two rotating arcs with neon pulse
-    final p = Paint()
+    final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.08
+      ..strokeWidth = sw
       ..strokeCap = StrokeCap.round;
 
     final angle = t * 2 * pi;
 
-    // Arc 1
-    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: w * 0.35),
-        angle, pi * 0.7, false, p);
-    // Arc 2
-    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: w * 0.35),
-        angle + pi, pi * 0.7, false, p);
+    // Left arc (counter-clockwise rotating)
+    canvas.drawArc(
+      Rect.fromCenter(
+          center: Offset(cx - r * 0.4, cy), width: r * 1.6, height: r * 1.6),
+      pi + angle,
+      pi * 1.2,
+      false,
+      paint,
+    );
+    // Right arc (clockwise rotating)
+    canvas.drawArc(
+      Rect.fromCenter(
+          center: Offset(cx + r * 0.4, cy), width: r * 1.6, height: r * 1.6),
+      -angle,
+      pi * 1.2,
+      false,
+      paint,
+    );
 
-    // Bitcoin Logo Center
-    _drawBitcoinLogo(
-        canvas, Offset(cx, cy), w * 0.3, color.withValues(alpha: 0.8));
-
-    // Glow pulse
-    canvas.drawCircle(
-        Offset(cx, cy),
-        w * 0.45,
-        Paint()
-          ..color = color.withValues(alpha: 0.05)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+    // Arrowhead on left arc (bottom)
+    final la = pi + angle + pi * 1.2;
+    final tip1 =
+        Offset(cx - r * 0.4 + r * 0.8 * cos(la), cy + r * 0.8 * sin(la));
+    final arrow1 = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+        tip1,
+        Offset(tip1.dx - sw * 3.5 * cos(la - 0.6),
+            tip1.dy - sw * 3.5 * sin(la - 0.6)),
+        arrow1);
+    canvas.drawLine(
+        tip1,
+        Offset(tip1.dx - sw * 3.5 * cos(la + 0.6),
+            tip1.dy - sw * 3.5 * sin(la + 0.6)),
+        arrow1);
   }
 
   @override
   bool shouldRepaint(covariant _SwapPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FEE — lightning bolt with pulse
+
 class _FeePainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // 0..1 reverse-bouncing (pulse)
 
   _FeePainter({required this.color, required this.t});
 
@@ -386,8 +471,26 @@ class _FeePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    _drawNeonBolt(
-        canvas, Offset(w * 0.5, h * 0.5), w * 0.8, const Color(0xFFFFC107), t);
+    final alpha = 0.5 + 0.5 * t;
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: alpha)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.06
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    // Lightning bolt
+    final path = Path()
+      ..moveTo(w * 0.58, h * 0.1)
+      ..lineTo(w * 0.30, h * 0.52)
+      ..lineTo(w * 0.50, h * 0.52)
+      ..lineTo(w * 0.42, h * 0.9)
+      ..lineTo(w * 0.70, h * 0.48)
+      ..lineTo(w * 0.50, h * 0.48)
+      ..close();
+
+    canvas.drawPath(path, paint..style = PaintingStyle.fill);
   }
 
   @override
@@ -399,59 +502,71 @@ class _FeePainter extends CustomPainter {
 
 class _QrPainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // scan line progress 0..1
 
   _QrPainter({required this.color, required this.t});
 
+  static const _matrix = [
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0],
+    [0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0],
+    [1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+  ];
+
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
+    final n = _matrix.length;
+    final cell = size.width / n;
+    final scanY = t * size.height;
 
-    // Matrix Glow
-    final rect = Rect.fromLTWH(w * 0.1, h * 0.1, w * 0.8, h * 0.8);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, Radius.circular(w * 0.1)),
-      Paint()
-        ..color = color.withValues(alpha: 0.05)
-        ..style = PaintingStyle.fill,
-    );
+    for (int row = 0; row < n; row++) {
+      for (int col = 0; col < n; col++) {
+        if (_matrix[row][col] == 0) continue;
+        final x = col * cell;
+        final y = row * cell;
+        final cellCenterY = y + cell / 2;
+        // Cells below scan line are dimmer (scanner reveals them)
+        final revealed = cellCenterY <= scanY ? 1.0 : 0.25;
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(
+                x + cell * 0.08, y + cell * 0.08, cell * 0.84, cell * 0.84),
+            Radius.circular(cell * 0.15),
+          ),
+          Paint()..color = color.withValues(alpha: revealed),
+        );
+      }
+    }
 
-    // Draw stylized Corners
-    final p = Paint()
-      ..color = color
-      ..strokeWidth = 2
+    // Scan line
+    final linePaint = Paint()
+      ..color = color.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    const len = 0.2;
-    canvas.drawLine(
-        Offset(rect.left, rect.top + w * len), Offset(rect.left, rect.top), p);
-    canvas.drawLine(
-        Offset(rect.left, rect.top), Offset(rect.left + w * len, rect.top), p);
-    canvas.drawLine(Offset(rect.right - w * len, rect.top),
-        Offset(rect.right, rect.top), p);
-    canvas.drawLine(Offset(rect.right, rect.top),
-        Offset(rect.right, rect.top + w * len), p);
-    canvas.drawLine(Offset(rect.left, rect.bottom - w * len),
-        Offset(rect.left, rect.bottom), p);
-    canvas.drawLine(Offset(rect.left, rect.bottom),
-        Offset(rect.left + w * len, rect.bottom), p);
-    canvas.drawLine(Offset(rect.right - w * len, rect.bottom),
-        Offset(rect.right, rect.bottom), p);
-    canvas.drawLine(Offset(rect.right, rect.bottom),
-        Offset(rect.right, rect.bottom - w * len), p);
+      ..strokeWidth = 1.5;
+    canvas.drawLine(Offset(0, scanY), Offset(size.width, scanY), linePaint);
 
-    _drawBitcoinLogo(canvas, Offset(w * 0.5, h * 0.5), w * 0.3,
-        color.withValues(alpha: 0.3));
-
-    final scanY = rect.top + (rect.height * t);
+    // Glow on scan line
     canvas.drawLine(
-      Offset(rect.left, scanY),
-      Offset(rect.right, scanY),
+      Offset(0, scanY),
+      Offset(size.width, scanY),
       Paint()
-        ..color = color
-        ..strokeWidth = 2
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+        ..color = color.withValues(alpha: 0.15)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)
+        ..strokeWidth = 6
+        ..style = PaintingStyle.stroke,
     );
   }
 
@@ -459,126 +574,239 @@ class _QrPainter extends CustomPainter {
   bool shouldRepaint(covariant _QrPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NFC — concentric arcs radiating outward + pulsing
+
 class _NfcPainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // 0..1 repeating
 
   _NfcPainter({required this.color, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-    final cy = h * 0.5;
+    final cx = size.width * 0.35;
+    final cy = size.height / 2;
 
-    _drawBitcoinLogo(canvas, Offset(cx, cy), w * 0.3, color);
-
-    final p = Paint()
-      ..color = color
+    final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
+    const radii = [0.18, 0.32, 0.46];
     for (int i = 0; i < 3; i++) {
-      final waveT = (t + (i * 0.33)) % 1.0;
-      p.strokeWidth = (1 - waveT) * 4;
-      p.color = color.withValues(alpha: 1 - waveT);
-      canvas.drawCircle(Offset(cx, cy), w * 0.3 + (waveT * w * 0.3), p);
+      final delay = i / 3.0;
+      final phase = ((t - delay) % 1.0 + 1.0) % 1.0;
+      final alpha = (1.0 - phase);
+      final r = size.width * (radii[i] + 0.06 * phase);
+
+      paint
+        ..color = color.withValues(alpha: alpha)
+        ..strokeWidth = size.width * 0.055 * (1 - phase * 0.5);
+
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(cx, cy), radius: r),
+        -pi * 0.6,
+        pi * 1.2,
+        false,
+        paint,
+      );
     }
+
+    // Central device dot
+    canvas.drawCircle(
+      Offset(cx, cy),
+      size.width * 0.07,
+      Paint()..color = color.withValues(alpha: 0.85),
+    );
+
+    // "Phone edge" line
+    final phoneX = size.width * 0.62;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: Offset(phoneX, cy),
+            width: size.width * 0.14,
+            height: size.height * 0.7),
+        Radius.circular(size.width * 0.06),
+      ),
+      Paint()
+        ..color = color.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.055,
+    );
   }
 
   @override
   bool shouldRepaint(covariant _NfcPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PENDING — rotating clock face
+
 class _PendingPainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // 0..1 repeating
 
   _PendingPainter({required this.color, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-    final cy = h * 0.5;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width * 0.40;
+    final sw = size.width * 0.055;
 
-    final p = Paint()
-      ..color = color.withValues(alpha: 0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawCircle(Offset(cx, cy), w * 0.42, p);
-
-    final p2 = Paint()
+    final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = sw
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: w * 0.42),
-        t * 2 * pi, pi * 0.6, false, p2);
 
-    _drawBitcoinLogo(
-        canvas, Offset(cx, cy), w * 0.35, color.withValues(alpha: 0.8));
+    // Circle
+    canvas.drawCircle(Offset(cx, cy), r, paint);
+
+    // Hour hand (slow)
+    final hourAngle = -pi / 2 + t * pi;
+    canvas.drawLine(
+      Offset(cx, cy),
+      Offset(cx + r * 0.45 * cos(hourAngle), cy + r * 0.45 * sin(hourAngle)),
+      paint,
+    );
+
+    // Minute hand (fast)
+    final minAngle = -pi / 2 + t * 2 * pi;
+    canvas.drawLine(
+      Offset(cx, cy),
+      Offset(cx + r * 0.65 * cos(minAngle), cy + r * 0.65 * sin(minAngle)),
+      paint,
+    );
+
+    // Center dot
+    canvas.drawCircle(Offset(cx, cy), sw * 0.7, Paint()..color = color);
+
+    // Tick marks
+    for (int i = 0; i < 12; i++) {
+      final a = (i / 12) * 2 * pi;
+      final inner = r * 0.82;
+      final outer = r * 0.97;
+      canvas.drawLine(
+        Offset(cx + inner * cos(a), cy + inner * sin(a)),
+        Offset(cx + outer * cos(a), cy + outer * sin(a)),
+        paint..strokeWidth = sw * (i % 3 == 0 ? 1.5 : 0.8),
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant _PendingPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIRMED — checkmark draws itself (path trim animation)
+
 class _ConfirmedPainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // 0..1 one-shot
 
   _ConfirmedPainter({required this.color, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
     final cy = size.height / 2;
-    final p = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.08
-      ..strokeCap = StrokeCap.round;
+    final sw = size.width * 0.07;
 
+    // Circle fades in
+    canvas.drawCircle(
+      Offset(cx, cy),
+      size.width * 0.42,
+      Paint()
+        ..color = color.withValues(alpha: t * 0.18)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawCircle(
+      Offset(cx, cy),
+      size.width * 0.42,
+      Paint()
+        ..color = color.withValues(alpha: t)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = sw * 0.6,
+    );
+
+    if (t < 0.01) return;
+
+    // Checkmark path trim
     final path = Path()
-      ..moveTo(size.width * 0.2, cy)
-      ..lineTo(size.width * 0.4, size.height * 0.7)
-      ..lineTo(size.width * 0.8, size.height * 0.3);
-    final metrics = path.computeMetrics().first;
-    canvas.drawPath(metrics.extractPath(0, metrics.length * t), p);
+      ..moveTo(size.width * 0.25, cy * 1.02)
+      ..lineTo(size.width * 0.44, size.height * 0.70)
+      ..lineTo(size.width * 0.75, size.height * 0.32);
+
+    final pm = path.computeMetrics();
+    for (final m in pm) {
+      final extracted =
+          m.extractPath(0, m.length * Curves.easeOut.transform(t));
+      canvas.drawPath(
+        extracted,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = sw
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant _ConfirmedPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FAILED — X draws itself
+
 class _FailedPainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // 0..1 one-shot
 
   _FailedPainter({required this.color, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final p = Paint()
-      ..color = color
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final sw = size.width * 0.07;
+    final pad = size.width * 0.22;
+
+    canvas.drawCircle(
+      Offset(cx, cy),
+      size.width * 0.42,
+      Paint()
+        ..color = color.withValues(alpha: t * 0.15)
+        ..style = PaintingStyle.fill,
+    );
+
+    // First diagonal
+    final p1 = Path()
+      ..moveTo(pad, pad)
+      ..lineTo(size.width - pad, size.height - pad);
+    // Second diagonal
+    final p2 = Path()
+      ..moveTo(size.width - pad, pad)
+      ..lineTo(pad, size.height - pad);
+
+    final strokePaint = Paint()
+      ..color = color.withValues(alpha: t)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.08
+      ..strokeWidth = sw
       ..strokeCap = StrokeCap.round;
 
-    final p1 = Path()
-      ..moveTo(w * 0.2, h * 0.2)
-      ..lineTo(w * 0.8, h * 0.8);
-    final p2 = Path()
-      ..moveTo(w * 0.8, h * 0.2)
-      ..lineTo(w * 0.2, h * 0.8);
-
-    for (var path in [p1, p2]) {
-      final m = path.computeMetrics().first;
-      canvas.drawPath(m.extractPath(0, m.length * t), p);
+    for (final path in [p1, p2]) {
+      for (final m in path.computeMetrics()) {
+        canvas.drawPath(
+          m.extractPath(0, m.length * Curves.easeOut.transform(t)),
+          strokePaint,
+        );
+      }
     }
   }
 
@@ -586,145 +814,73 @@ class _FailedPainter extends CustomPainter {
   bool shouldRepaint(covariant _FailedPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CLOCK
 class _ClockPainter extends CustomPainter {
   final Color color;
-  final double t;
+  final double t; // 0..1 reverse-bouncing pulse
   _ClockPainter({required this.color, required this.t});
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r = size.width * 0.4;
-    final p = Paint()
+    final r = size.width * 0.42;
+    final sw = size.width * 0.06;
+    final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-    canvas.drawCircle(Offset(cx, cy), r, p);
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(Offset(cx, cy), r, paint);
+    // Hour hand static, minute hand pulses
     canvas.drawLine(
         Offset(cx, cy),
-        Offset(cx + r * 0.6 * cos(t * 2 * pi), cy + r * 0.6 * sin(t * 2 * pi)),
-        p);
+        Offset(cx + r * 0.3 * cos(-pi / 3), cy + r * 0.3 * sin(-pi / 3)),
+        paint);
+    canvas.drawLine(
+        Offset(cx, cy),
+        Offset(cx + r * 0.6 * cos(-pi / 3 + (t * 0.1)),
+            cy + r * 0.6 * sin(-pi / 3 + (t * 0.1))),
+        paint);
   }
 
   @override
   bool shouldRepaint(covariant _ClockPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ADDRESS
 class _AddressPainter extends CustomPainter {
   final Color color;
   final double t;
-
   _AddressPainter({required this.color, required this.t});
-
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final stroke = w * 0.055;
-    final cy = h * 0.5;
-
-    final framePaint = Paint()
+    final sw = w * 0.06;
+    final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.16)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 1.9
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-
-    final leftCard = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.12, h * 0.26, w * 0.22, h * 0.48),
-      Radius.circular(w * 0.07),
-    );
-    final rightCard = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.66, h * 0.26, w * 0.22, h * 0.48),
-      Radius.circular(w * 0.07),
-    );
-
-    canvas.drawRRect(leftCard, glowPaint);
-    canvas.drawRRect(rightCard, glowPaint);
-    canvas.drawRRect(leftCard, framePaint);
-    canvas.drawRRect(rightCard, framePaint);
-
-    final leftTextPaint = Paint()
-      ..color = color.withValues(alpha: 0.68)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 0.52
+      ..strokeWidth = sw
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(w * 0.16, h * 0.42),
-      Offset(w * 0.28, h * 0.42),
-      leftTextPaint,
-    );
-    canvas.drawLine(
-      Offset(w * 0.16, h * 0.52),
-      Offset(w * 0.26, h * 0.52),
-      leftTextPaint,
-    );
-    canvas.drawLine(
-      Offset(w * 0.72, h * 0.42),
-      Offset(w * 0.84, h * 0.42),
-      leftTextPaint,
-    );
-    canvas.drawLine(
-      Offset(w * 0.72, h * 0.52),
-      Offset(w * 0.82, h * 0.52),
-      leftTextPaint,
-    );
-
-    final connectorStart = Offset(w * 0.38, cy);
-    final connectorEnd = Offset(w * 0.62, cy);
-    final connectorPaint = Paint()
-      ..color = color.withValues(alpha: 0.34)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 0.78
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(connectorStart, connectorEnd, connectorPaint);
-
-    final headX = (connectorStart.dx + (w * 0.03)) +
-        ((connectorEnd.dx - (w * 0.03)) - (connectorStart.dx + (w * 0.03))) *
-            Curves.easeInOut.transform(t);
-    final pulsePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-      Offset(headX, cy),
-      w * 0.048,
-      Paint()
-        ..color = color.withValues(alpha: 0.22)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-    );
-    canvas.drawCircle(Offset(headX, cy), w * 0.04, pulsePaint);
-
-    final arrowPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 0.8
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final arrowTip = Offset(w * 0.62, cy);
-    canvas.drawLine(Offset(w * 0.46, cy), arrowTip, arrowPaint);
-    canvas.drawLine(
-      arrowTip,
-      Offset(w * 0.56, cy - (h * 0.08)),
-      arrowPaint,
-    );
-    canvas.drawLine(
-      arrowTip,
-      Offset(w * 0.56, cy + (h * 0.08)),
-      arrowPaint,
-    );
+    final p1 = Offset(w * 0.2, h * 0.82);
+    final p2 = Offset(w * 0.8, h * 0.18);
+    canvas.drawCircle(p1, w * 0.12, paint);
+    canvas.drawCircle(p2, w * 0.12, paint);
+    final path = Path()
+      ..moveTo(p1.dx + w * 0.08, p1.dy - w * 0.08)
+      ..lineTo(p2.dx - w * 0.08, p2.dy + w * 0.08);
+    canvas.drawPath(
+        path, paint..color = color.withValues(alpha: 0.3 + 0.3 * t));
   }
 
   @override
-  bool shouldRepaint(covariant _AddressPainter oldDelegate) =>
-      oldDelegate.t != t;
+  bool shouldRepaint(covariant _AddressPainter o) => o.t != t;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NETWORK
 class _NetworkPainter extends CustomPainter {
   final Color color;
   final double t;
@@ -748,7 +904,7 @@ class _NetworkPainter extends CustomPainter {
       canvas.drawCircle(p, w * 0.08, paint);
     }
     final linePaint = Paint()
-      ..color = color.withValues(alpha: 0.2 + (0.3 * t))
+      ..color = color.withValues(alpha: 0.2 + 0.3 * t)
       ..style = PaintingStyle.stroke
       ..strokeWidth = sw * 0.6;
     canvas.drawLine(points[0], points[1], linePaint);
@@ -785,250 +941,9 @@ class _CardPainter extends CustomPainter {
         paint);
     // Card chip
     canvas.drawRect(Rect.fromLTWH(w * 0.22, h * 0.42, w * 0.15, h * 0.15),
-        Paint()..color = color.withValues(alpha: 0.4 + (0.4 * t)));
+        Paint()..color = color.withValues(alpha: 0.4 + 0.4 * t));
   }
 
   @override
   bool shouldRepaint(covariant _CardPainter o) => o.t != t;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PREMIUM DRAWING HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-void _drawCyberCoin(
-    Canvas canvas, Offset center, double radius, Color color, double pulse) {
-  final paint = Paint()
-    ..shader = RadialGradient(
-      colors: [
-        color,
-        color.withValues(alpha: 0.8),
-        color.withValues(alpha: 0.4),
-      ],
-      stops: const [0.6, 0.9, 1.0],
-    ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-  // 1. Glow
-  canvas.drawCircle(
-    center,
-    radius + (4 * pulse),
-    Paint()
-      ..color = color.withValues(alpha: 0.15 + (0.1 * pulse))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-  );
-
-  // 2. Base
-  canvas.drawCircle(center, radius, paint);
-
-  // 3. Ring
-  canvas.drawCircle(
-    center,
-    radius * 0.9,
-    Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2,
-  );
-}
-
-void _drawBitcoinLogo(Canvas canvas, Offset center, double size, Color color) {
-  final cx = center.dx;
-  final cy = center.dy;
-  final s = size;
-
-  final bPaint = Paint()
-    ..color = color
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = s * 0.14
-    ..strokeCap = StrokeCap.round;
-
-  // Main vertical bar
-  canvas.drawLine(Offset(cx - s * 0.1, cy - s * 0.5),
-      Offset(cx - s * 0.1, cy + s * 0.5), bPaint);
-
-  final bPath = Path()
-    ..moveTo(cx - s * 0.1, cy - s * 0.5)
-    ..quadraticBezierTo(cx + s * 0.6, cy - s * 0.5, cx + s * 0.5, cy - s * 0.2)
-    ..quadraticBezierTo(cx + s * 0.4, cy, cx - s * 0.1, cy)
-    ..moveTo(cx - s * 0.1, cy)
-    ..quadraticBezierTo(cx + s * 0.7, cy, cx + s * 0.6, cy + s * 0.25)
-    ..quadraticBezierTo(cx + s * 0.5, cy + s * 0.5, cx - s * 0.1, cy + s * 0.5);
-  canvas.drawPath(bPath, bPaint);
-
-  // Ticks
-  canvas.drawLine(Offset(cx + s * 0.1, cy - s * 0.65),
-      Offset(cx + s * 0.1, cy - s * 0.5), bPaint);
-  canvas.drawLine(Offset(cx + s * 0.3, cy - s * 0.65),
-      Offset(cx + s * 0.3, cy - s * 0.5), bPaint);
-  canvas.drawLine(Offset(cx + s * 0.1, cy + s * 0.5),
-      Offset(cx + s * 0.1, cy + s * 0.65), bPaint);
-  canvas.drawLine(Offset(cx + s * 0.3, cy + s * 0.5),
-      Offset(cx + s * 0.3, cy + s * 0.65), bPaint);
-}
-
-void _drawCyberArrow(
-    Canvas canvas, Offset tip, double len, Color color, int direction) {
-  final paint = Paint()
-    ..color = color
-    ..strokeWidth = len * 0.18
-    ..strokeCap = StrokeCap.round
-    ..strokeJoin = StrokeJoin.round
-    ..style = PaintingStyle.stroke;
-
-  Offset start;
-  if (direction == 1) {
-    // Up-Right
-    start = Offset(tip.dx - len, tip.dy + len);
-  } else if (direction == -1) {
-    // Down-Left
-    start = Offset(tip.dx + len, tip.dy - len);
-  } else {
-    // Down (direction 0)
-    start = Offset(tip.dx, tip.dy - len);
-  }
-
-  // Trail effect (shadow/glow)
-  canvas.drawLine(
-    start,
-    tip,
-    Paint()
-      ..color = color.withValues(alpha: 0.2)
-      ..strokeWidth = paint.strokeWidth * 1.5
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-  );
-
-  canvas.drawLine(start, tip, paint);
-
-  final headSize = len * 0.4;
-  if (direction == 1) {
-    // Up-Right
-    canvas.drawLine(
-        tip, Offset(tip.dx - headSize, tip.dy + headSize * 0.1), paint);
-    canvas.drawLine(
-        tip, Offset(tip.dx - headSize * 0.1, tip.dy + headSize), paint);
-  } else if (direction == -1) {
-    // Down-Left
-    canvas.drawLine(
-        tip, Offset(tip.dx + headSize, tip.dy - headSize * 0.1), paint);
-    canvas.drawLine(
-        tip, Offset(tip.dx + headSize * 0.1, tip.dy - headSize), paint);
-  } else {
-    // Down
-    canvas.drawLine(
-        tip, Offset(tip.dx - headSize * 0.5, tip.dy - headSize * 0.5), paint);
-    canvas.drawLine(
-        tip, Offset(tip.dx + headSize * 0.5, tip.dy - headSize * 0.5), paint);
-  }
-}
-
-void _drawNeonBolt(
-    Canvas canvas, Offset center, double size, Color color, double pulse) {
-  final cx = center.dx;
-  final cy = center.dy;
-  final s = size;
-
-  final path = Path()
-    ..moveTo(cx + s * 0.15, cy - s * 0.45)
-    ..lineTo(cx - s * 0.35, cy + s * 0.05)
-    ..lineTo(cx - s * 0.05, cy + s * 0.05)
-    ..lineTo(cx - s * 0.15, cy + s * 0.45)
-    ..lineTo(cx + s * 0.35, cy - s * 0.05)
-    ..lineTo(cx + s * 0.05, cy - s * 0.05)
-    ..close();
-
-  // Glow
-  canvas.drawPath(
-    path,
-    Paint()
-      ..color = color.withValues(alpha: 0.3 * (0.8 + 0.2 * pulse))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
-  );
-
-  // Main Bolt
-  canvas.drawPath(
-    path,
-    Paint()
-      ..color = color.withValues(alpha: 0.9)
-      ..style = PaintingStyle.fill,
-  );
-}
-
-class _SendLightningPainter extends CustomPainter {
-  final Color color;
-  final double t;
-  final double t2;
-
-  _SendLightningPainter(
-      {required this.color, required this.t, required this.t2});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.45;
-    final cy = h * 0.55;
-
-    _drawNeonBolt(canvas, Offset(cx, cy), w * 0.7, const Color(0xFFFFC107), t);
-
-    final arrowMove = Curves.easeInOut.transform(t2) * (w * 0.1);
-    final arrowBase = Offset(w * 0.7 + arrowMove, h * 0.3 - arrowMove);
-    _drawCyberArrow(canvas, arrowBase, w * 0.28, color, 1);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SendLightningPainter o) =>
-      o.t != t || o.t2 != t2;
-}
-
-class _ReceiveLightningPainter extends CustomPainter {
-  final Color color;
-  final double t;
-  final double t2;
-
-  _ReceiveLightningPainter(
-      {required this.color, required this.t, required this.t2});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w * 0.5;
-    final cy = h * 0.58;
-
-    final arrowB = Curves.easeInOut.transform(t2) * (h * 0.08);
-    final arrowBase = Offset(cx, h * 0.28 + arrowB);
-    _drawCyberArrow(canvas, arrowBase, w * 0.3, const Color(0xFFF7931A), 0);
-
-    final deviceRect = Rect.fromCenter(
-        center: Offset(cx, cy), width: w * 0.65, height: h * 0.42);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(deviceRect, Radius.circular(w * 0.05)),
-      Paint()
-        ..color = Colors.black.withValues(alpha: 0.8)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(deviceRect, Radius.circular(w * 0.05)),
-      Paint()
-        ..color = color.withValues(alpha: 0.2)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0,
-    );
-
-    _drawNeonBolt(canvas, Offset(cx, cy), w * 0.45, const Color(0xFFFFC107), t);
-
-    final scanY = deviceRect.top + (deviceRect.height * t);
-    canvas.drawLine(
-      Offset(deviceRect.left, scanY),
-      Offset(deviceRect.right, scanY),
-      Paint()
-        ..color = color.withValues(alpha: 0.8)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _ReceiveLightningPainter o) =>
-      o.t != t || o.t2 != t2;
 }

@@ -6,9 +6,6 @@ class TxStatus extends Equatable {
   final String status;
   final int feeSatoshis;
   final double amountReceived;
-  final double networkFeeBtc;
-  final double platformFeeBtc;
-  final double totalDebitedBtc;
   final String sender;
   final String receiver;
   final String? context;
@@ -21,26 +18,14 @@ class TxStatus extends Equatable {
     required this.status,
     required this.feeSatoshis,
     required this.amountReceived,
-    this.networkFeeBtc = 0,
-    this.platformFeeBtc = 0,
-    this.totalDebitedBtc = 0,
     this.sender = '',
     this.receiver = '',
     this.context,
     this.message,
   });
 
-  bool get isConfirmed => const {
-        'confirmed',
-        'completed',
-        'settled',
-        'paid',
-      }.contains(status.toLowerCase());
-  bool get isBroadcasted => const {
-        'broadcasted',
-        'accepted',
-        'pending',
-      }.contains(status.toLowerCase());
+  bool get isConfirmed => status == 'confirmed';
+  bool get isBroadcasted => status == 'broadcasted' || status == 'accepted';
 
   factory TxStatus.fromJson(Map<String, dynamic> json) {
     // Handle the nested 'data' object returned by /ledger/transaction
@@ -57,26 +42,14 @@ class TxStatus extends Equatable {
         .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
     return TxStatus(
-      txid: data['txid']?.toString() ??
-          data['externalReference']?.toString() ??
-          data['id']?.toString() ??
-          '',
+      txid: data['txid']?.toString() ?? data['id']?.toString() ?? '',
       status: data['status']?.toString() ?? 'confirmed',
-      feeSatoshis: (data['feeSatoshis'] as num?)?.toInt() ??
-          (((data['networkFeeBtc'] as num?)?.toDouble() ?? 0) * 100000000)
-              .round(),
+      feeSatoshis: (data['feeSatoshis'] as num?)?.toInt() ?? 0,
       amountReceived: (data['amount'] as num?)?.toDouble() ??
           (data['amountReceived'] as num?)?.toDouble() ??
-          (data['amountBtc'] as num?)?.toDouble() ??
           0,
-      networkFeeBtc: (data['networkFeeBtc'] as num?)?.toDouble() ?? 0,
-      platformFeeBtc: (data['platformFeeBtc'] as num?)?.toDouble() ?? 0,
-      totalDebitedBtc: (data['totalDebitedBtc'] as num?)?.toDouble() ?? 0,
-      sender: senderField ?? data['walletName']?.toString() ?? '',
-      receiver: receiverField ??
-          data['destination']?.toString() ??
-          data['paymentRequest']?.toString() ??
-          '',
+      sender: senderField ?? '',
+      receiver: receiverField ?? '',
       context: data['context']?.toString() ?? data['description']?.toString(),
       message: json['message']?.toString(),
     );
@@ -88,9 +61,6 @@ class TxStatus extends Equatable {
         status,
         feeSatoshis,
         amountReceived,
-        networkFeeBtc,
-        platformFeeBtc,
-        totalDebitedBtc,
         sender,
         receiver,
         context,

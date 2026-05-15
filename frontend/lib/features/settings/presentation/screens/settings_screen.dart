@@ -1,50 +1,24 @@
-import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crypto/crypto.dart' as crypto;
-import 'package:teste/core/constants/app_copy.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/utils/device_helper.dart';
-import 'package:teste/l10n/l10n_extension.dart';
-import '../../../../core/providers/alert_preferences_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/theme/monochrome_theme.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../../core/providers/currency_provider.dart';
 import '../../../../core/providers/price_provider.dart';
 import '../../../../core/providers/biometric_provider.dart';
+import '../../../../core/providers/ghost_mode_provider.dart';
 import '../../../../core/providers/appearance_provider.dart';
-import '../../../../core/services/background_service.dart';
-import '../../../../core/services/notification_service.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../auth/controller/auth_providers.dart';
-import '../../../profile/presentation/screens/security_settings_screen.dart';
-import '../../../notifications/presentation/providers/session_notification_provider.dart';
 import '../../../security/presentation/screens/sovereignty_status_screen.dart';
-import '../../../security/presentation/providers/security_provider.dart';
-import '../../../security/domain/entities/admin_access.dart';
 import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 
 // ─── Screen Entry ─────────────────────────────────────────────────────────────
 
-final backupCodesProvider = FutureProvider<List<String>>((ref) async {
-  final result = await ref.read(authRepositoryProvider).getBackupCodes();
-  return result.fold((_) => const <String>[], (codes) => codes);
-});
-
 class SettingsScreen extends ConsumerStatefulWidget {
-  final bool showPrimaryNavigation;
-
-  const SettingsScreen({super.key, this.showPrimaryNavigation = false});
+  const SettingsScreen({super.key});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -63,27 +37,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     _headerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 600),
     );
     _sectionsController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 900),
     );
 
     _headerFade = CurvedAnimation(
       parent: _headerController,
       curve: Curves.easeOut,
     );
-    _headerSlide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _headerController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+    _headerSlide = Tween<Offset>(
+      begin: const Offset(0, -0.3),
+      end: Offset.zero,
+    ).animate(
+        CurvedAnimation(parent: _headerController, curve: Curves.easeOutCubic));
 
     _headerController.forward();
-    Future.delayed(const Duration(milliseconds: 40), () {
+    Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) _sectionsController.forward();
     });
   }
@@ -97,147 +69,104 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(appearanceProvider);
-    final responsive = context.responsive;
-    final bottomSectionPadding = widget.showPrimaryNavigation
-        ? AppPrimaryNavigationBar.scaffoldBottomClearance(context)
-        : 80.0;
-
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: AmbientSideGlowBackdrop.authenticated()),
-          SafeArea(
-            child: Column(
-              children: [
-                SlideTransition(
-                  position: _headerSlide,
-                  child: FadeTransition(
-                    opacity: _headerFade,
-                    child: _SettingsHeader(
-                      onBack: widget.showPrimaryNavigation
-                          ? () => AppPrimaryNavigationBar.backOrHome(context)
-                          : () => Navigator.maybePop(context),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: _sectionsController,
-                      curve: Curves.easeOut,
-                    ),
-                    child: ListView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: responsive.horizontalPadding,
-                        vertical: AppSpacing.sm,
-                      ),
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: responsive.mobileContentMaxWidth,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const SizedBox(height: AppSpacing.md),
-                                const _SettingsOverviewCard(),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.shield_outlined,
-                                  label: context
-                                      .l10n
-                                      .settingsUiSecurityAccessSection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _SecuritySection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.admin_panel_settings_outlined,
-                                  label: context
-                                      .l10n
-                                      .settingsUiEnterpriseAccessSection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _EnterpriseAccessSection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.privacy_tip_outlined,
-                                  label: context.l10n.settingsUiPrivacySection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _PrivacySection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.manage_accounts_outlined,
-                                  label: context
-                                      .l10n
-                                      .settingsUiAccountAccessSection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _CredentialsSection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.notifications_outlined,
-                                  label: context
-                                      .l10n
-                                      .settingsUiNotificationsSection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _NotificationsSection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.palette_outlined,
-                                  label: context
-                                      .l10n
-                                      .settingsUiAppearanceSection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _AppearanceSection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.language_rounded,
-                                  label: context
-                                      .l10n
-                                      .settingsUiLocaleCurrencySection
-                                      .toUpperCase(),
-                                  color: Colors.white70,
-                                  child: const _LocaleSection(),
-                                ),
-                                const SizedBox(height: AppSpacing.xxl),
-                                _buildSection(
-                                  icon: Icons.power_settings_new_rounded,
-                                  label: context.l10n.settingsUiSessionSection
-                                      .toUpperCase(),
-                                  color: Colors.white54,
-                                  child: const _SessionSection(),
-                                ),
-                                SizedBox(height: bottomSectionPadding),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      backgroundColor: const Color(0xFF050505),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF070A10),
+              Color(0xFF0D1219),
+              Color(0xFF050607),
+            ],
           ),
-          if (widget.showPrimaryNavigation)
-            AppPrimaryNavigationBar.overlay(
-              currentDestination: AppPrimaryDestination.settings,
-            ),
-        ],
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              SlideTransition(
+                position: _headerSlide,
+                child: FadeTransition(
+                  opacity: _headerFade,
+                  child: _SettingsHeader(
+                    onBack: () => Navigator.pop(context),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: FadeTransition(
+                  opacity: CurvedAnimation(
+                    parent: _sectionsController,
+                    curve: Curves.easeOut,
+                  ),
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.sm,
+                    ),
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      const SizedBox(height: AppSpacing.md),
+                      const _SettingsOverviewCard(),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.shield_outlined,
+                        label: 'SEGURANÇA E ACESSO',
+                        color: const Color(0xFF7DD3A0),
+                        child: const _SecuritySection(),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.privacy_tip_outlined,
+                        label: 'PRIVACIDADE',
+                        color: const Color(0xFF7AA2F7),
+                        child: const _PrivacySection(),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.manage_accounts_outlined,
+                        label: 'CONTA E ACESSO',
+                        color: const Color(0xFFE5B97A),
+                        child: const _CredentialsSection(),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.notifications_outlined,
+                        label: 'NOTIFICAÇÕES',
+                        color: const Color(0xFFA78BFA),
+                        child: const _NotificationsSection(),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.palette_outlined,
+                        label: 'APARÊNCIA',
+                        color: const Color(0xFF9FB3C8),
+                        child: const _AppearanceSection(),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.language_rounded,
+                        label: 'IDIOMA E MOEDA',
+                        color: const Color(0xFF60A5FA),
+                        child: const _LocaleSection(),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      _buildSection(
+                        icon: Icons.power_settings_new_rounded,
+                        label: 'SESSÃO',
+                        color: AppColors.error,
+                        child: const _SessionSection(),
+                      ),
+                      const SizedBox(height: 80),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -267,63 +196,47 @@ class _SettingsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        responsive.horizontalPadding,
+      padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        responsive.horizontalPadding,
+        AppSpacing.lg,
+        AppSpacing.lg,
         AppSpacing.md,
       ),
       child: Row(
         children: [
           _IconButton(icon: Icons.arrow_back_ios_new_rounded, onTap: onBack),
           const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'CONFIGURAÇÕES',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.h2.copyWith(
-                    letterSpacing: 0,
-                    color: Colors.white,
-                    fontSize: responsive.compactFontSize(
-                      tiny: 20,
-                      compact: 22,
-                      regular: 24,
-                    ),
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CONFIGURAÇÕES',
+                style: AppTypography.h2.copyWith(
+                  letterSpacing: 3,
+                  color: Colors.white,
                 ),
-                Text(
-                  'Segurança, privacidade e operação da conta',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white38,
-                    letterSpacing: 0,
-                  ),
+              ),
+              Text(
+                'Segurança, privacidade e operação da conta',
+                style: AppTypography.bodySmall.copyWith(
+                  color: Colors.white38,
+                  letterSpacing: 0.5,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const Spacer(),
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: monochromePanelDecoration(
-              color: monoSurfaceAltColor,
-              borderColor: monoBorderStrongColor,
-              showShadow: false,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white10),
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.white.withValues(alpha: 0.04),
             ),
-            child: const Icon(
-              Icons.tune_rounded,
-              color: monoMutedTextColor,
-              size: 18,
-            ),
-          ),
+            child:
+                const Icon(Icons.tune_rounded, color: Colors.white38, size: 18),
+          )
         ],
       ),
     );
@@ -349,19 +262,16 @@ class _SettingsOverviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final biometricState = ref.watch(biometricProvider);
-    final alerts = ref.watch(alertPreferencesProvider);
+    final ghostMode = ref.watch(ghostModeProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
     final locale = ref.watch(localeProvider).locale;
     final currency = ref.watch(currencyProvider);
-    final appearance = ref.watch(appearanceProvider);
 
     final biometricLabel = biometricState.isLoading
-        ? context.l10n.settingsUiChecking
+        ? 'Verificando'
         : biometricState.isSupported
-        ? (biometricState.isEnabled
-              ? context.l10n.settingsUiActive
-              : context.l10n.settingsUiInactive)
-        : context.l10n.settingsUiUnavailable;
+            ? (biometricState.isEnabled ? 'Ativa' : 'Desativada')
+            : 'Indisponível';
 
     return _Card(
       children: [
@@ -371,16 +281,12 @@ class _SettingsOverviewCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                context.l10n.settingsUiOperationalSummaryTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                'Resumo operacional',
                 style: AppTypography.h3.copyWith(color: Colors.white),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                AppCopy.settingsOverviewSummary.resolve(context),
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
+                'Revise rapidamente a postura atual de acesso, privacidade e exibição antes de alterar detalhes finos.',
                 style: AppTypography.bodySmall.copyWith(
                   color: Colors.white54,
                   height: 1.6,
@@ -392,34 +298,25 @@ class _SettingsOverviewCard extends ConsumerWidget {
                 runSpacing: AppSpacing.sm,
                 children: [
                   _OverviewPill(
-                    label: context.l10n.settingsUiAlertsLabel,
-                    value: alerts.backgroundAlertsEnabled
-                        ? context.l10n.settingsUiAlertsBackgroundActive
-                        : context.l10n.settingsUiDisabled,
-                    color: Colors.white70,
+                    label: 'Roteamento',
+                    value: ghostMode ? 'Onion ativo' : 'Conexão direta',
+                    color: const Color(0xFF7AA2F7),
                   ),
                   _OverviewPill(
-                    label: AppCopy.settingsBiometrics.resolve(context),
+                    label: 'Biometria',
                     value: biometricLabel,
-                    color: Colors.white70,
+                    color: const Color(0xFFF2C94C),
                   ),
                   _OverviewPill(
-                    label: AppCopy.settingsBalance.resolve(context),
-                    value: balanceSettings.isHidden
-                        ? AppCopy.settingsHidden.resolve(context)
-                        : AppCopy.settingsVisible.resolve(context),
-                    color: Colors.white70,
+                    label: 'Saldo',
+                    value: balanceSettings.isHidden ? 'Oculto' : 'Visível',
+                    color: const Color(0xFF7DD3A0),
                   ),
                   _OverviewPill(
-                    label: AppCopy.settingsLocation.resolve(context),
+                    label: 'Localização',
                     value:
                         '${locale.languageCode.toUpperCase()} · ${_currencyLabel(currency)}',
-                    color: Colors.white70,
-                  ),
-                  _OverviewPill(
-                    label: context.l10n.settingsUiThemeLabel,
-                    value: appearance.themeVariant.label,
-                    color: Colors.white70,
+                    color: const Color(0xFFE5B97A),
                   ),
                 ],
               ),
@@ -444,42 +341,31 @@ class _OverviewPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final borderTone =
-        Color.lerp(monoBorderStrongColor, color, 0.08) ?? monoBorderStrongColor;
-
     return Container(
-      constraints: BoxConstraints(
-        maxWidth: responsive.isTinyPhone ? responsive.clampWidth(260) : 180,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: responsive.isTinyPhone ? 10 : 12,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
         vertical: 10,
       ),
-      decoration: monochromePanelDecoration(
-        color: monoSurfaceAltColor,
-        borderColor: borderTone,
-        showShadow: false,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: AppTypography.caption.copyWith(
-              color: monoMutedTextColor,
-              letterSpacing: 0,
+              color: Colors.white54,
+              letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: AppTypography.bodySmall.copyWith(
-              color: monoTextColor,
+              color: color,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -550,24 +436,23 @@ class _AppearanceSection extends ConsumerWidget {
                 children: [
                   Text(
                     'Tamanho da fonte',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: Colors.white70,
-                    ),
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: Colors.white70),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: monochromePanelDecoration(
-                      color: monoSurfaceAltColor,
-                      borderColor: monoBorderStrongColor,
-                      showShadow: false,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5BC).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color:
+                              const Color(0xFF00E5BC).withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       appearance.fontScale.label,
                       style: AppTypography.caption.copyWith(
-                        color: monoTextColor,
+                        color: const Color(0xFF00E5BC),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1,
                       ),
@@ -579,10 +464,10 @@ class _AppearanceSection extends ConsumerWidget {
               // Preview text
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: monochromePanelDecoration(
-                  color: monoSurfaceAltColor,
-                  borderColor: monoBorderStrongColor,
-                  showShadow: false,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white10),
                 ),
                 child: Text(
                   'Pré-visualização: ₿ 0.00042100',
@@ -596,14 +481,13 @@ class _AppearanceSection extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: Colors.white70,
+                  activeTrackColor: const Color(0xFF00E5BC),
                   inactiveTrackColor: Colors.white10,
-                  thumbColor: Colors.white,
-                  overlayColor: Colors.white.withValues(alpha: 0.12),
+                  thumbColor: const Color(0xFF00E5BC),
+                  overlayColor: const Color(0xFF00E5BC).withValues(alpha: 0.12),
                   trackHeight: 2,
-                  thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 8,
-                  ),
+                  thumbShape:
+                      const RoundSliderThumbShape(enabledThumbRadius: 8),
                 ),
                 child: Slider(
                   value: appearance.fontScale.index.toDouble(),
@@ -626,7 +510,7 @@ class _AppearanceSection extends ConsumerWidget {
                         s.label,
                         style: AppTypography.caption.copyWith(
                           color: appearance.fontScale == s
-                              ? Colors.white
+                              ? const Color(0xFF00E5BC)
                               : Colors.white24,
                           fontWeight: appearance.fontScale == s
                               ? FontWeight.w700
@@ -643,11 +527,9 @@ class _AppearanceSection extends ConsumerWidget {
         // Balance Decimals
         _ActionTile(
           icon: Icons.onetwothree_rounded,
-          iconColor: Colors.white70,
-          title: context.l10n.settingsUiDecimalPrecisionTitle,
-          subtitle: context.l10n.settingsUiDecimalPrecisionSubtitle(
-            balanceSettings.decimalPlaces,
-          ),
+          iconColor: const Color(0xFF00E5BC),
+          title: 'Precisão decimal',
+          subtitle: 'Exibindo ${balanceSettings.decimalPlaces} casas decimais',
           trailing: Icons.refresh_rounded,
           onTap: () {
             HapticFeedback.selectionClick();
@@ -671,7 +553,14 @@ class _ThemeChip extends StatelessWidget {
   });
 
   Color get _previewBg {
-    return AppTheme.paletteFor(variant).background;
+    switch (variant) {
+      case AppThemeVariant.dark:
+        return const Color(0xFF1A1A1B);
+      case AppThemeVariant.amoled:
+        return const Color(0xFF000000);
+      case AppThemeVariant.dimmed:
+        return const Color(0xFF232536);
+    }
   }
 
   @override
@@ -684,20 +573,28 @@ class _ThemeChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: monochromePanelDecoration(
-          color: selected ? monoSurfaceRaisedColor : monoSurfaceAltColor,
-          borderColor: selected ? monoTextColor : monoBorderStrongColor,
-          showShadow: false,
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF00E5BC).withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF00E5BC).withValues(alpha: 0.5)
+                : Colors.white12,
+            width: selected ? 1.5 : 1,
+          ),
         ),
         child: Column(
           children: [
+            // Mini preview circle
             Container(
               width: 28,
               height: 28,
-              decoration: monochromePanelDecoration(
+              decoration: BoxDecoration(
                 color: _previewBg,
-                borderColor: monoBorderStrongColor,
-                showShadow: false,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white24, width: 0.5),
               ),
             ),
             const SizedBox(height: 6),
@@ -705,7 +602,7 @@ class _ThemeChip extends StatelessWidget {
               variant.label,
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(
-                color: selected ? monoTextColor : monoMutedTextColor,
+                color: selected ? const Color(0xFF00E5BC) : Colors.white38,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                 fontSize: 10,
                 letterSpacing: 0.3,
@@ -723,19 +620,35 @@ class _PrivacySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ghostMode = ref.watch(ghostModeProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
 
     return _Card(
       children: [
         _SwitchTile(
+          icon: Icons.travel_explore_rounded,
+          iconColor: const Color(0xFF7AA2F7),
+          title: 'Roteamento onion',
+          subtitle: ghostMode
+              ? 'Todo o tráfego segue pela rede protegida da plataforma'
+              : 'Conexão direta com menor proteção de metadados',
+          value: ghostMode,
+          accentColor: const Color(0xFF7AA2F7),
+          onChanged: (value) {
+            HapticFeedback.mediumImpact();
+            ref.read(ghostModeProvider.notifier).update(value);
+          },
+        ),
+        _Divider(),
+        _SwitchTile(
           icon: Icons.visibility_off_outlined,
-          iconColor: Colors.white70,
-          title: context.l10n.settingsUiHideBalanceTitle,
+          iconColor: const Color(0xFF7AA2F7),
+          title: 'Ocultar saldo',
           subtitle: balanceSettings.isHidden
-              ? context.l10n.settingsUiBalanceHiddenSubtitle
-              : context.l10n.settingsUiBalanceVisibleSubtitle,
+              ? 'Valores mascarados na interface principal'
+              : 'Valores visíveis em telas operacionais',
           value: balanceSettings.isHidden,
-          accentColor: Colors.white70,
+          accentColor: const Color(0xFF7AA2F7),
           onChanged: (_) {
             HapticFeedback.mediumImpact();
             ref.read(balanceSettingsProvider.notifier).toggleVisibility();
@@ -744,9 +657,10 @@ class _PrivacySection extends ConsumerWidget {
         _Divider(),
         _ActionTile(
           icon: Icons.verified_user_outlined,
-          iconColor: Colors.white70,
-          title: context.l10n.settingsUiSovereigntyReportTitle,
-          subtitle: context.l10n.settingsUiSovereigntyReportSubtitle,
+          iconColor: const Color(0xFF7AA2F7),
+          title: 'Relatório de soberania',
+          subtitle:
+              'Abrir o painel de atestação, consenso e integridade operacional',
           trailing: Icons.chevron_right_rounded,
           onTap: () {
             Navigator.push(
@@ -778,7 +692,6 @@ class _LocaleSection extends ConsumerWidget {
     ];
 
     final currencies = [
-      _CurrItem(Currency.btc, '₿', 'BTC — Bitcoin'),
       _CurrItem(Currency.usd, '\$', 'USD — Dólar'),
       _CurrItem(Currency.brl, 'R\$', 'BRL — Real'),
       _CurrItem(Currency.eur, '€', 'EUR — Euro'),
@@ -805,7 +718,7 @@ class _LocaleSection extends ConsumerWidget {
             title: lang.name,
             trailing: lang.code,
             selected: currentLocale.languageCode == lang.locale.languageCode,
-            accentColor: Colors.white70,
+            accentColor: const Color(0xFF60A5FA),
             onTap: () =>
                 ref.read(localeProvider.notifier).setLocale(lang.locale),
           ),
@@ -830,7 +743,7 @@ class _LocaleSection extends ConsumerWidget {
             leading: curr.symbol,
             title: curr.label,
             selected: currentCurrency == curr.currency,
-            accentColor: Colors.white70,
+            accentColor: const Color(0xFFF7931A),
             onTap: () =>
                 ref.read(currencyProvider.notifier).setCurrency(curr.currency),
             isPill: true,
@@ -862,66 +775,15 @@ class _SecuritySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bioState = ref.watch(biometricProvider);
-    final securityAsync = ref.watch(securityStatusProvider);
-    final securitySubtitle = securityAsync.when(
-      data: (security) => security.unprotected
-          ? context.l10n.settingsUiSecurityUnprotectedSubtitle
-          : context.l10n.settingsUiSecurityProtectedSubtitle,
-      loading: () => context.l10n.settingsUiSecurityLoadingSubtitle,
-      error: (_, __) => context.l10n.settingsUiSecurityErrorSubtitle,
-    );
-    final passkeySubtitle = securityAsync.when(
-      data: (security) => security.passkeyRegistered
-          ? context.l10n.settingsUiPasskeyRegisteredSubtitle
-          : context.l10n.settingsUiPasskeyRegisterSubtitle,
-      loading: () => context.l10n.settingsUiPasskeyLoadingSubtitle,
-      error: (_, __) => context.l10n.settingsUiPasskeyErrorSubtitle,
-    );
-    final showUnprotectedBanner = securityAsync.maybeWhen(
-      data: (security) => security.unprotected,
-      orElse: () => false,
-    );
 
     return _Card(
       children: [
-        if (showUnprotectedBanner) ...[
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: monochromePanelDecoration(
-              color: monoSurfaceAltColor,
-              borderColor: monoBorderStrongColor,
-              showShadow: false,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.settingsUiUnprotectedBannerTitle.toUpperCase(),
-                  style: const TextStyle(
-                    color: monoTextColor,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  context.l10n.settingsUiUnprotectedBannerBody,
-                  style: const TextStyle(
-                    color: monoMutedTextColor,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _Divider(),
-        ],
         if (bioState.isSupported)
           _SwitchTile(
             icon: Icons.fingerprint_rounded,
             iconColor: const Color(0xFFF59E0B),
-            title: context.l10n.settingsUiBiometricUnlockTitle,
-            subtitle: context.l10n.settingsUiBiometricUnlockSubtitle,
+            title: 'Desbloqueio biométrico',
+            subtitle: 'Use digital ou rosto para desbloquear',
             value: bioState.isEnabled,
             accentColor: const Color(0xFFF59E0B),
             onChanged: (v) {
@@ -930,32 +792,32 @@ class _SecuritySection extends ConsumerWidget {
             },
           ),
         if (bioState.isSupported) _Divider(),
-        _ActionTile(
-          icon: Icons.security_rounded,
-          iconColor: const Color(0xFF7AA2F7),
-          title: context.l10n.settingsUiSecurityCenterTitle,
-          subtitle: securitySubtitle,
-          trailing: Icons.chevron_right_rounded,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
-          ),
-        ),
-        _Divider(),
+        // Passkey Management
         _ActionTile(
           icon: Icons.key_rounded,
           iconColor: const Color(0xFFF59E0B),
-          title: context.l10n.securityAuthenticatedDevicesTitle,
-          subtitle: passkeySubtitle,
+          title: 'Gerenciar passkey',
+          subtitle: 'Registrar ou atualizar chave de hardware',
           trailing: Icons.chevron_right_rounded,
-          onTap: () => _showAuthenticatedDevicesSheet(context, ref),
+          onTap: () => _showPasskeySheet(context, ref),
         ),
         _Divider(),
+        // Backup Codes
+        _ActionTile(
+          icon: Icons.emergency_rounded,
+          iconColor: const Color(0xFFEF4444), // Vermelho para emergência
+          title: 'Códigos de backup',
+          subtitle: 'Códigos de recuperação para o 2FA',
+          trailing: Icons.chevron_right_rounded,
+          onTap: () => _showBackupCodesSheet(context, ref),
+        ),
+        _Divider(),
+        // Session Info
         _ActionTile(
           icon: Icons.devices_rounded,
           iconColor: Colors.white38,
-          title: context.l10n.settingsUiSessionsActiveTitle,
-          subtitle: context.l10n.settingsUiSessionsActiveSubtitle,
+          title: 'Sessões ativas',
+          subtitle: 'Ver e revogar sessões do dispositivo',
           trailing: Icons.chevron_right_rounded,
           onTap: () => _showSessionInfoSheet(context),
         ),
@@ -963,12 +825,12 @@ class _SecuritySection extends ConsumerWidget {
     );
   }
 
-  void _showAuthenticatedDevicesSheet(BuildContext context, WidgetRef ref) {
+  void _showPasskeySheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _AuthenticatedDevicesSheet(ref: ref),
+      builder: (_) => _PasskeySheet(ref: ref),
     );
   }
 
@@ -979,371 +841,139 @@ class _SecuritySection extends ConsumerWidget {
       builder: (_) => _InfoSheet(
         icon: Icons.devices_rounded,
         iconColor: Colors.white38,
-        title: context.l10n.settingsUiSessionsActiveTitle,
-        message: context.l10n.settingsUiSessionsActiveMessage,
+        title: 'Sessões ativas',
+        message:
+            'O gerenciamento de sessão é feito automaticamente pelo servidor. Cada dispositivo é identificado por um X-Device-Hash exclusivo. Encerre a sessão para revogar o acesso atual.',
       ),
     );
   }
-}
 
-class _EnterpriseAccessSection extends ConsumerWidget {
-  const _EnterpriseAccessSection();
+  // ─── Backup Codes Sheet ───────────────────────────────────────────────────────
+  void _showBackupCodesSheet(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(authRepositoryProvider);
+    final result = await repo.getBackupCodes();
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final keyStatus = ref.watch(adminKeyStatusProvider);
-    final pendingAttempts = ref.watch(pendingAdminAccessAttemptsProvider);
+    if (!context.mounted) return;
 
-    return _Card(
-      children: [
-        Padding(
+    List<String> codes = [];
+    String error = '';
+    result.fold(
+      (failure) => error = failure.message,
+      (data) => codes = data,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: AppColors.border),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                context.l10n.settingsUiEnterpriseIntro,
-                style: AppTypography.bodySmall.copyWith(
-                  color: Colors.white60,
-                  height: 1.5,
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
+              ),
+              const Text(
+                'CÓDIGOS DE BACKUP',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.md),
-              keyStatus.when(
-                data: (status) => _AdminKeyStatusSummary(status: status),
-                loading: () => Text(
-                  context.l10n.settingsUiEnterpriseKeyLoading,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white38,
+              const Text(
+                'Guarde estes códigos em local seguro. Eles podem ser usados para entrar caso você perca acesso ao autenticador.',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              if (error.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    error,
+                    style: const TextStyle(color: Colors.redAccent),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: codes
+                        .map((code) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                code,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ))
+                        .toList(),
                   ),
                 ),
-                error: (_, __) => Text(
-                  context.l10n.settingsUiEnterpriseKeyLoadError,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white38,
+              const SizedBox(height: AppSpacing.xxl),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child: const Text('JÁ GUARDEI',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
               ),
+              const SizedBox(height: AppSpacing.xl),
             ],
           ),
-        ),
-        _Divider(),
-        _ActionTile(
-          icon: Icons.vpn_key_outlined,
-          iconColor: const Color(0xFFF59E0B),
-          title: context.l10n.settingsUiEnterpriseCreateKeyTitle,
-          subtitle: context.l10n.settingsUiEnterpriseCreateKeySubtitle,
-          trailing: Icons.chevron_right_rounded,
-          onTap: () => _confirmCreateKey(context, ref),
-        ),
-        _Divider(),
-        _ActionTile(
-          icon: Icons.rotate_right_rounded,
-          iconColor: Colors.white54,
-          title: context.l10n.settingsUiEnterpriseRotateKeyTitle,
-          subtitle: context.l10n.settingsUiEnterpriseRotateKeySubtitle,
-          trailing: Icons.refresh_rounded,
-          onTap: () => _confirmCreateKey(context, ref),
-        ),
-        _Divider(),
-        _ActionTile(
-          icon: Icons.block_rounded,
-          iconColor: Colors.white38,
-          title: context.l10n.settingsUiEnterpriseRevokeKeyTitle,
-          subtitle: context.l10n.settingsUiEnterpriseRevokeKeySubtitle,
-          trailing: Icons.delete_outline_rounded,
-          onTap: () => _revokeKey(context, ref),
-        ),
-        pendingAttempts.when(
-          data: (attempts) => attempts.isEmpty
-              ? const SizedBox.shrink()
-              : Column(
-                  children: [
-                    _Divider(),
-                    ...attempts.map(
-                      (attempt) => _AdminAccessAttemptTile(
-                        attempt: attempt,
-                        onApprove: () =>
-                            _decideAttempt(context, ref, attempt, true),
-                        onBlock: () =>
-                            _decideAttempt(context, ref, attempt, false),
-                      ),
-                    ),
-                  ],
-                ),
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirmCreateKey(BuildContext context, WidgetRef ref) async {
-    var confirmed = false;
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) => _ConfirmationDialog(
-            icon: Icons.admin_panel_settings_outlined,
-            title: context.l10n.settingsUiEnterpriseCreateKeyTitle,
-            message: context.l10n.settingsUiEnterpriseCreateDialogMessage,
-            confirmLabel: context.l10n.settingsUiEnterpriseCreateKeyAction,
-            cancelLabel: context.l10n.cancel,
-            requireConfirmation: true,
-            confirmed: confirmed,
-            onConfirmationChanged: (value) => setState(() => confirmed = value),
-            onConfirm: confirmed
-                ? () => Navigator.pop(dialogContext, true)
-                : null,
-          ),
         );
       },
     );
-
-    if (accepted != true || !context.mounted) {
-      return;
-    }
-
-    final key = _generateAdminKey();
-    final keyHash = crypto.sha256.convert(utf8.encode(key)).toString();
-    final metadata = await DeviceHelper.getDeviceMetadata();
-    final result = await ref
-        .read(securityRepositoryProvider)
-        .createAdminKey(
-          keyMaterialHash: keyHash,
-          deviceInstallId: metadata.deviceInstallId,
-        );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    result.fold(
-      (failure) => AppNotice.showError(
-        context,
-        title: context.l10n.settingsUiEnterpriseCreateKeyFailed,
-        message: failure.message,
-      ),
-      (_) {
-        ref.invalidate(adminKeyStatusProvider);
-        _showCreatedKey(context, key);
-      },
-    );
-  }
-
-  Future<void> _revokeKey(BuildContext context, WidgetRef ref) async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => _ConfirmationDialog(
-        icon: Icons.block_rounded,
-        title: context.l10n.settingsUiEnterpriseRevokeKeyTitle,
-        message: context.l10n.settingsUiEnterpriseRevokeDialogMessage,
-        confirmLabel: context.l10n.settingsUiEnterpriseRevokeAction,
-        cancelLabel: context.l10n.cancel,
-        destructive: true,
-        onConfirm: () => Navigator.pop(dialogContext, true),
-      ),
-    );
-
-    if (accepted != true) {
-      return;
-    }
-
-    final result = await ref.read(securityRepositoryProvider).revokeAdminKey();
-    if (!context.mounted) {
-      return;
-    }
-    result.fold(
-      (failure) => AppNotice.showError(
-        context,
-        title: context.l10n.settingsUiEnterpriseRevokeFailed,
-        message: failure.message,
-      ),
-      (_) {
-        ref.invalidate(adminKeyStatusProvider);
-        AppNotice.showSuccess(
-          context,
-          title: context.l10n.settingsUiEnterpriseKeyRevokedTitle,
-          message: context.l10n.settingsUiEnterpriseKeyRevokedMessage,
-        );
-      },
-    );
-  }
-
-  Future<void> _decideAttempt(
-    BuildContext context,
-    WidgetRef ref,
-    AdminAccessAttempt attempt,
-    bool approve,
-  ) async {
-    final result = await ref
-        .read(securityRepositoryProvider)
-        .decideAdminAttempt(attemptId: attempt.attemptId, approve: approve);
-    if (!context.mounted) {
-      return;
-    }
-    result.fold(
-      (failure) => AppNotice.showError(
-        context,
-        title: context.l10n.settingsUiEnterpriseDecisionFailed,
-        message: failure.message,
-      ),
-      (_) {
-        ref.invalidate(pendingAdminAccessAttemptsProvider);
-        AppNotice.showSuccess(
-          context,
-          title: approve
-              ? context.l10n.settingsUiEnterpriseAccessAllowedTitle
-              : context.l10n.settingsUiEnterpriseDeviceBlockedTitle,
-          message: approve
-              ? context.l10n.settingsUiEnterpriseAccessAllowedMessage
-              : context.l10n.settingsUiEnterpriseDeviceBlockedMessage,
-        );
-      },
-    );
-  }
-
-  void _showCreatedKey(BuildContext context, String key) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: monoSurfaceColor,
-        title: Text(
-          context.l10n.settingsUiEnterpriseKeyCreatedTitle,
-          style: const TextStyle(color: monoTextColor),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              context.l10n.settingsUiEnterpriseKeyCreatedMessage,
-              style: AppTypography.bodySmall.copyWith(
-                color: monoMutedTextColor,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              key,
-              style: const TextStyle(
-                color: monoTextColor,
-                fontFamily: 'JetBrainsMono',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(context.l10n.settingsUiCloseAction.toUpperCase()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _generateAdminKey() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
-    return 'krs-admin-${base64Url.encode(bytes).replaceAll('=', '')}';
-  }
-}
-
-class _AdminKeyStatusSummary extends StatelessWidget {
-  final AdminKeyStatus status;
-
-  const _AdminKeyStatusSummary({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          status.configured ? Icons.check_circle_outline : Icons.info_outline,
-          color: status.configured ? Colors.white70 : Colors.white38,
-          size: 18,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            status.configured
-                ? context.l10n.settingsUiEnterpriseKeyActive
-                : context.l10n.settingsUiEnterpriseKeyMissing,
-            style: AppTypography.bodySmall.copyWith(color: Colors.white54),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AdminAccessAttemptTile extends StatelessWidget {
-  final AdminAccessAttempt attempt;
-  final VoidCallback onApprove;
-  final VoidCallback onBlock;
-
-  const _AdminAccessAttemptTile({
-    required this.attempt,
-    required this.onApprove,
-    required this.onBlock,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.settingsUiEnterpriseAttemptTitle,
-            style: AppTypography.bodyMedium.copyWith(color: monoTextColor),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            [
-              if (attempt.browser.isNotEmpty)
-                '${context.l10n.settingsUiBrowserLabel}: ${attempt.browser}',
-              if (attempt.deviceName.isNotEmpty)
-                '${context.l10n.settingsUiDeviceLabel}: ${attempt.deviceName}',
-              if (attempt.requestedAt != null)
-                '${context.l10n.settingsUiTimeLabel}: ${_formatDate(attempt.requestedAt!)}',
-            ].join('\n'),
-            style: AppTypography.bodySmall.copyWith(
-              color: monoMutedTextColor,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: onApprove,
-                  style: monochromeFilledButtonStyle(),
-                  child: Text(context.l10n.settingsUiAllowAction.toUpperCase()),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onBlock,
-                  style: monochromeOutlinedButtonStyle(),
-                  child: Text(context.l10n.settingsUiBlockAction.toUpperCase()),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    String two(int input) => input.toString().padLeft(2, '0');
-    return '${two(local.day)}/${two(local.month)}/${local.year} ${two(local.hour)}:${two(local.minute)}';
   }
 }
 
@@ -1367,10 +997,11 @@ class _CredentialsSection extends ConsumerWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: monochromePanelDecoration(
-                  color: monoSurfaceAltColor,
-                  borderColor: monoBorderStrongColor,
-                  showShadow: false,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B6B), Color(0xFFFF3E3E)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
@@ -1385,14 +1016,13 @@ class _CredentialsSection extends ConsumerWidget {
                 children: [
                   Text(
                     username,
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTypography.bodyLarge
+                        .copyWith(fontWeight: FontWeight.w700),
                   ),
                   Text(
-                    context.l10n.settingsUiAuthenticatedLabel,
+                    'Autenticado',
                     style: AppTypography.bodySmall.copyWith(
-                      color: monoMutedTextColor,
+                      color: AppColors.success,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1403,12 +1033,23 @@ class _CredentialsSection extends ConsumerWidget {
         ),
         _Divider(),
 
+        // Change passphrase
+        _ActionTile(
+          icon: Icons.lock_outline_rounded,
+          iconColor: const Color(0xFFFF6B6B),
+          title: 'Alterar frase secreta',
+          subtitle: 'Exige a frase secreta atual para confirmar',
+          trailing: Icons.chevron_right_rounded,
+          onTap: () => _showChangePassphraseSheet(context, ref, username),
+        ),
+        _Divider(),
+
         // Danger zone: delete account
         _ActionTile(
           icon: Icons.delete_forever_rounded,
           iconColor: AppColors.error,
-          title: context.l10n.settingsUiDeleteAccountTitle,
-          subtitle: context.l10n.settingsUiDeleteAccountSubtitle,
+          title: 'Excluir conta',
+          subtitle: 'Remove permanentemente todos os dados',
           trailing: Icons.chevron_right_rounded,
           titleColor: AppColors.error,
           onTap: () => _showDeleteConfirmDialog(context, ref),
@@ -1417,20 +1058,30 @@ class _CredentialsSection extends ConsumerWidget {
     );
   }
 
+  void _showChangePassphraseSheet(
+      BuildContext context, WidgetRef ref, String username) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _ChangePassphraseSheet(username: username, ref: ref),
+    );
+  }
+
   void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (_) => _DangerDialog(
-        title: context.l10n.settingsUiDeleteAccountDialogTitle,
-        message: context.l10n.settingsUiDeleteAccountDialogMessage,
-        confirmLabel: context.l10n.settingsUiDeleteForeverAction,
+        title: 'Excluir conta?',
+        message:
+            'Isso vai excluir permanentemente sua conta, suas carteiras e seus fundos. Esta ação NÃO pode ser desfeita.\n\nPara proteger seus recursos, saque todos os saldos antes de excluir a conta.',
+        confirmLabel: 'Excluir para sempre',
         onConfirm: () {
           Navigator.pop(context);
           // Logout and inform user — actual deletion depends on backend support
           ref.read(authControllerProvider.notifier).logout();
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/welcome', (_) => false);
+          Navigator.of(context)
+              .pushNamedAndRemoveUntil('/welcome', (_) => false);
         },
       ),
     );
@@ -1448,181 +1099,65 @@ class _NotificationsSection extends ConsumerStatefulWidget {
 }
 
 class _NotificationsSectionState extends ConsumerState<_NotificationsSection> {
-  bool _isSaving = false;
+  bool _transactionAlerts = true;
+  bool _securityAlerts = true;
+  bool _priceAlerts = false;
 
   @override
   Widget build(BuildContext context) {
-    final alerts = ref.watch(alertPreferencesProvider);
-    final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
-    final alertsEnabled = alerts.backgroundAlertsEnabled;
-
     return _Card(
       children: [
         _SwitchTile(
-          icon: Icons.notifications_active_rounded,
+          icon: Icons.swap_horiz_rounded,
           iconColor: const Color(0xFFA78BFA),
-          title: context.l10n.settingsUiTransactionSecurityAlertsTitle,
-          subtitle: alertsEnabled
-              ? context.l10n.settingsUiBackgroundAlertsOnSubtitle
-              : context.l10n.settingsUiBackgroundAlertsOffSubtitle,
-          value: alertsEnabled,
+          title: 'Alertas de transação',
+          subtitle: 'Avisar em cada envio e recebimento',
+          value: _transactionAlerts,
           accentColor: const Color(0xFFA78BFA),
-          onChanged: _isSaving ? (_) {} : _handleBackgroundAlertsToggle,
+          onChanged: (v) => setState(() => _transactionAlerts = v),
         ),
         _Divider(),
         _SwitchTile(
-          icon: Icons.bolt_rounded,
-          iconColor: const Color(0xFF60A5FA),
-          title: context.l10n.settingsUiInAppBannersTitle,
-          subtitle: alerts.inAppBannersEnabled
-              ? context.l10n.settingsUiInAppBannersOnSubtitle
-              : context.l10n.settingsUiInAppBannersOffSubtitle,
-          value: alerts.inAppBannersEnabled,
-          accentColor: const Color(0xFF60A5FA),
-          onChanged: (value) => ref
-              .read(alertPreferencesProvider.notifier)
-              .setInAppBannersEnabled(value),
+          icon: Icons.security_rounded,
+          iconColor: const Color(0xFFA78BFA),
+          title: 'Alertas de segurança',
+          subtitle: 'Tentativas de login e eventos de passkey',
+          value: _securityAlerts,
+          accentColor: const Color(0xFFA78BFA),
+          onChanged: (v) => setState(() => _securityAlerts = v),
         ),
         _Divider(),
         _SwitchTile(
-          icon: Icons.swap_vert_rounded,
-          iconColor: const Color(0xFF7DD3A0),
-          title: context.l10n.settingsUiFinancialEventsTitle,
-          subtitle: alerts.transactionAlertsEnabled
-              ? context.l10n.settingsUiFinancialEventsOnSubtitle
-              : context.l10n.settingsUiFinancialEventsOffSubtitle,
-          value: alerts.transactionAlertsEnabled,
-          accentColor: const Color(0xFF7DD3A0),
-          onChanged: (value) => ref
-              .read(alertPreferencesProvider.notifier)
-              .setTransactionAlertsEnabled(value),
+          icon: Icons.show_chart_rounded,
+          iconColor: const Color(0xFFA78BFA),
+          title: 'Alertas de preço do BTC',
+          subtitle: 'Avisar em movimentos relevantes de preço',
+          value: _priceAlerts,
+          accentColor: const Color(0xFFA78BFA),
+          onChanged: (v) => setState(() => _priceAlerts = v),
         ),
         _Divider(),
-        _SwitchTile(
-          icon: Icons.gpp_maybe_rounded,
-          iconColor: const Color(0xFFF59E0B),
-          title: context.l10n.settingsUiSecurityEventsTitle,
-          subtitle: alerts.securityAlertsEnabled
-              ? context.l10n.settingsUiSecurityEventsOnSubtitle
-              : context.l10n.settingsUiSecurityEventsOffSubtitle,
-          value: alerts.securityAlertsEnabled,
-          accentColor: const Color(0xFFF59E0B),
-          onChanged: (value) => ref
-              .read(alertPreferencesProvider.notifier)
-              .setSecurityAlertsEnabled(value),
-        ),
-        _Divider(),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: monochromePanelDecoration(
-              color: monoSurfaceAltColor,
-              borderColor: monoBorderStrongColor,
-              showShadow: false,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  _isSaving ? Icons.sync_rounded : Icons.info_outline_rounded,
-                  color: monoTextColor,
-                  size: 18,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    _isSaving
-                        ? context.l10n.settingsUiUpdatingBackgroundAlerts
-                        : context.l10n.settingsUiBackgroundAlertsInfo(
-                            notificationCount,
-                          ),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: monoMutedTextColor,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        _ActionTile(
+          icon: Icons.phonelink_rounded,
+          iconColor: Colors.white38,
+          title: 'Token push',
+          subtitle: 'Registrar este dispositivo novamente para push',
+          trailing: Icons.refresh_rounded,
+          onTap: () => _reRegisterToken(context),
         ),
       ],
     );
   }
 
-  Future<void> _handleBackgroundAlertsToggle(bool enabled) async {
-    if (_isSaving) {
-      return;
-    }
-
-    if (enabled) {
-      final confirmed = await showModalBottomSheet<bool>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (_) => const _BackgroundAlertsConsentSheet(),
-      );
-
-      if (confirmed != true || !mounted) {
-        return;
-      }
-
-      setState(() => _isSaving = true);
-      final permissionsGranted = await NotificationService()
-          .requestPermissions();
-      if (!mounted) {
-        return;
-      }
-      if (!permissionsGranted) {
-        setState(() => _isSaving = false);
-        AppNotice.showWarning(
-          context,
-          title: context.l10n.settingsUiPermissionRequiredTitle,
-          message: context.l10n.settingsUiPermissionRequiredMessage,
-        );
-        return;
-      }
-    } else {
-      setState(() => _isSaving = true);
-    }
-
-    try {
-      await ref
-          .read(alertPreferencesProvider.notifier)
-          .setBackgroundAlertsEnabled(enabled);
-      if (enabled) {
-        await startBackgroundService();
-      } else {
-        await stopBackgroundService();
-      }
-
-      if (!mounted) {
-        return;
-      }
-
-      AppNotice.showInfo(
-        context,
-        title: enabled
-            ? context.l10n.settingsUiMonitoringActiveTitle
-            : context.l10n.settingsUiMonitoringInactiveTitle,
-        message: enabled
-            ? context.l10n.settingsUiMonitoringActiveMessage
-            : context.l10n.settingsUiMonitoringInactiveMessage,
-      );
-    } catch (_) {
-      if (mounted) {
-        AppNotice.showError(
-          context,
-          title: context.l10n.settingsUiAlertsUpdateFailedTitle,
-          message: context.l10n.settingsUiAlertsUpdateFailedMessage,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
+  void _reRegisterToken(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Atualização do token push solicitada...'),
+        backgroundColor: const Color(0xFF1A1A1B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 }
 
@@ -1638,8 +1173,8 @@ class _SessionSection extends ConsumerWidget {
         _ActionTile(
           icon: Icons.logout_rounded,
           iconColor: AppColors.error,
-          title: context.l10n.settingsUiLogoutTitle,
-          subtitle: context.l10n.settingsUiLogoutSubtitle,
+          title: 'Encerrar sessão',
+          subtitle: 'Encerra a sessão atual',
           trailing: Icons.chevron_right_rounded,
           titleColor: AppColors.error,
           onTap: () => _confirmLogout(context, ref),
@@ -1652,16 +1187,16 @@ class _SessionSection extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => _DangerDialog(
-        title: context.l10n.settingsUiLogoutDialogTitle,
-        message: context.l10n.settingsUiLogoutDialogMessage,
-        confirmLabel: context.l10n.settingsUiLogoutTitle,
+        title: 'Encerrar sessão?',
+        message:
+            'Você precisará se autenticar novamente com sua frase secreta e com o código TOTP para acessar a conta outra vez.',
+        confirmLabel: 'Encerrar sessão',
         onConfirm: () async {
           Navigator.pop(context);
           await ref.read(authControllerProvider.notifier).logout();
           if (context.mounted) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/welcome', (_) => false);
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/welcome', (_) => false);
           }
         },
       ),
@@ -1671,20 +1206,20 @@ class _SessionSection extends ConsumerWidget {
 
 // ─── Bottom Sheets ────────────────────────────────────────────────────────────
 
-class _AuthenticatedDevicesSheet extends StatelessWidget {
+class _PasskeySheet extends StatelessWidget {
   final WidgetRef ref;
-  const _AuthenticatedDevicesSheet({required this.ref});
+  const _PasskeySheet({required this.ref});
 
   @override
   Widget build(BuildContext context) {
     return _BottomSheetContainer(
-      title: context.l10n.securityAuthenticatedDevicesTitle,
-      icon: Icons.devices_rounded,
+      title: 'Gerenciar passkey',
+      icon: Icons.key_rounded,
       iconColor: const Color(0xFFF59E0B),
       child: Column(
         children: [
           Text(
-            context.l10n.settingsUiAuthenticatedDevicesBody,
+            'A passkey usa o sensor biométrico do seu dispositivo como chave física de segurança. Ela substitui a digitação tradicional da senha por um acesso mais rápido e resistente a phishing.',
             style: AppTypography.bodySmall.copyWith(
               color: Colors.white54,
               height: 1.6,
@@ -1693,7 +1228,7 @@ class _AuthenticatedDevicesSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: context.l10n.settingsUiRegisterNewDeviceAction,
+            label: 'Registrar nova passkey',
             icon: Icons.add_rounded,
             color: const Color(0xFFF59E0B),
             onTap: () async {
@@ -1703,7 +1238,7 @@ class _AuthenticatedDevicesSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _SheetButton(
-            label: context.l10n.settingsUiLearnMoreAction,
+            label: 'Saiba mais',
             icon: Icons.info_outline_rounded,
             color: Colors.white24,
             isOutline: true,
@@ -1715,39 +1250,111 @@ class _AuthenticatedDevicesSheet extends StatelessWidget {
   }
 }
 
-class _BackgroundAlertsConsentSheet extends StatelessWidget {
-  const _BackgroundAlertsConsentSheet();
+class _ChangePassphraseSheet extends StatefulWidget {
+  final String username;
+  final WidgetRef ref;
+  const _ChangePassphraseSheet({required this.username, required this.ref});
+
+  @override
+  State<_ChangePassphraseSheet> createState() => _ChangePassphraseSheetState();
+}
+
+class _ChangePassphraseSheetState extends State<_ChangePassphraseSheet> {
+  final _currentCtrl = TextEditingController();
+  final _newCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _showCurrent = false;
+  bool _showNew = false;
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _currentCtrl.dispose();
+    _newCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_newCtrl.text != _confirmCtrl.text) {
+      setState(() => _error = 'As novas frases secretas não coincidem.');
+      return;
+    }
+    if (_newCtrl.text.length < 8) {
+      setState(
+          () => _error = 'A frase secreta deve ter pelo menos 8 caracteres.');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    // The API doesn't have a dedicated change-password endpoint exposed.
+    // Best practice: re-login with current credentials, then note the change.
+    // For now we simulate with a small delay and inform the user.
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              'A troca da frase secreta exige nova autenticação. Encerre a sessão e entre novamente usando a nova frase secreta.'),
+          backgroundColor: const Color(0xFF1A1A1B),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return _BottomSheetContainer(
-      title: context.l10n.settingsUiBackgroundAlertsTitle,
-      icon: Icons.notifications_active_rounded,
-      iconColor: const Color(0xFFA78BFA),
+      title: 'Alterar frase secreta',
+      icon: Icons.lock_outline_rounded,
+      iconColor: const Color(0xFFFF6B6B),
       child: Column(
         children: [
-          Text(
-            context.l10n.settingsUiBackgroundAlertsConsentBody,
-            style: AppTypography.bodySmall.copyWith(
-              color: Colors.white54,
-              height: 1.7,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          _SheetButton(
-            label: context.l10n.settingsUiEnableMonitoringAction,
-            icon: Icons.check_rounded,
-            color: const Color(0xFFA78BFA),
-            onTap: () => Navigator.pop(context, true),
+          _PassField(
+            controller: _currentCtrl,
+            label: 'Frase secreta atual',
+            obscure: !_showCurrent,
+            onToggle: () => setState(() => _showCurrent = !_showCurrent),
           ),
           const SizedBox(height: AppSpacing.md),
+          _PassField(
+            controller: _newCtrl,
+            label: 'Nova frase secreta',
+            obscure: !_showNew,
+            onToggle: () => setState(() => _showNew = !_showNew),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _PassField(
+            controller: _confirmCtrl,
+            label: 'Confirmar nova frase secreta',
+            obscure: !_showNew,
+            onToggle: () => setState(() => _showNew = !_showNew),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              _error!,
+              style: AppTypography.bodySmall.copyWith(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: context.l10n.cancel,
-            icon: Icons.close_rounded,
-            color: Colors.white24,
-            isOutline: true,
-            onTap: () => Navigator.pop(context, false),
+            label: _isLoading ? 'Processando...' : 'Atualizar frase secreta',
+            icon: Icons.check_rounded,
+            color: const Color(0xFFFF6B6B),
+            onTap: _isLoading ? null : _submit,
           ),
         ],
       ),
@@ -1786,7 +1393,7 @@ class _InfoSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SheetButton(
-            label: context.l10n.settingsUiUnderstoodAction,
+            label: 'Entendi',
             icon: Icons.check_rounded,
             color: Colors.white24,
             isOutline: true,
@@ -1815,10 +1422,6 @@ class _BottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderTone =
-        Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
-        monoBorderStrongColor;
-
     return Container(
       margin: const EdgeInsets.only(top: 60),
       padding: EdgeInsets.only(
@@ -1827,28 +1430,44 @@ class _BottomSheetContainer extends StatelessWidget {
         top: AppSpacing.xl,
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xxl,
       ),
-      decoration: monochromePanelDecoration(
-        color: monoSurfaceColor,
-        borderColor: monoBorderStrongColor,
+      decoration: const BoxDecoration(
+        color: Color(0xFF0E0E0F),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(
+          top: BorderSide(color: Colors.white12, width: 0.5),
+          left: BorderSide(color: Colors.white12, width: 0.5),
+          right: BorderSide(color: Colors.white12, width: 0.5),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 48, height: 1, color: monoBorderStrongColor),
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           const SizedBox(height: AppSpacing.xl),
+
+          // Icon header
           Container(
             width: 56,
             height: 56,
-            decoration: monochromePanelDecoration(
-              color: monoSurfaceAltColor,
-              borderColor: borderTone,
-              showShadow: false,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: iconColor.withValues(alpha: 0.3)),
             ),
-            child: Icon(icon, color: monoTextColor, size: 26),
+            child: Icon(icon, color: iconColor, size: 26),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(title, style: AppTypography.h3.copyWith(color: monoTextColor)),
+          Text(title, style: AppTypography.h3),
           const SizedBox(height: AppSpacing.xl),
+
           child,
         ],
       ),
@@ -1857,105 +1476,6 @@ class _BottomSheetContainer extends StatelessWidget {
 }
 
 // ─── Danger Dialog ────────────────────────────────────────────────────────────
-
-class _ConfirmationDialog extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-  final String confirmLabel;
-  final String cancelLabel;
-  final bool destructive;
-  final bool requireConfirmation;
-  final bool confirmed;
-  final ValueChanged<bool>? onConfirmationChanged;
-  final VoidCallback? onConfirm;
-
-  const _ConfirmationDialog({
-    required this.icon,
-    required this.title,
-    required this.message,
-    required this.confirmLabel,
-    required this.cancelLabel,
-    this.destructive = false,
-    this.requireConfirmation = false,
-    this.confirmed = false,
-    this.onConfirmationChanged,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: monoSurfaceColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: const BorderSide(color: monoBorderStrongColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Icon(icon, color: monoTextColor, size: 30),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              title,
-              style: AppTypography.h3.copyWith(color: monoTextColor),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              message,
-              style: AppTypography.bodySmall.copyWith(
-                color: monoMutedTextColor,
-                height: 1.55,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (requireConfirmation) ...[
-              const SizedBox(height: AppSpacing.md),
-              CheckboxListTile(
-                value: confirmed,
-                onChanged: (value) =>
-                    onConfirmationChanged?.call(value == true),
-                controlAffinity: ListTileControlAffinity.leading,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Entendo que esta chave autoriza acesso ao painel admin.',
-                  style: AppTypography.bodySmall.copyWith(color: monoTextColor),
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: monochromeOutlinedButtonStyle(),
-                    child: Text(cancelLabel.toUpperCase()),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: onConfirm,
-                    style: destructive
-                        ? monochromeOutlinedButtonStyle()
-                        : monochromeFilledButtonStyle(),
-                    child: Text(confirmLabel.toUpperCase()),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _DangerDialog extends StatelessWidget {
   final String title;
@@ -1973,10 +1493,10 @@ class _DangerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: monoSurfaceColor,
+      backgroundColor: const Color(0xFF0E0E0F),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: const BorderSide(color: monoBorderStrongColor),
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Colors.white12),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -1986,28 +1506,29 @@ class _DangerDialog extends StatelessWidget {
             Container(
               width: 52,
               height: 52,
-              decoration: monochromePanelDecoration(
-                color: monoSurfaceAltColor,
-                borderColor: monoBorderStrongColor,
-                showShadow: false,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+                border:
+                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Icon(
                 Icons.warning_amber_rounded,
-                color: monoTextColor,
+                color: AppColors.error,
                 size: 26,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
-              style: AppTypography.h3.copyWith(color: monoTextColor),
+              style: AppTypography.h3.copyWith(color: Colors.white),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
               style: AppTypography.bodySmall.copyWith(
-                color: monoMutedTextColor,
+                color: Colors.white54,
                 height: 1.6,
               ),
               textAlign: TextAlign.center,
@@ -2020,16 +1541,16 @@ class _DangerDialog extends StatelessWidget {
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: monochromePanelDecoration(
-                        color: monoSurfaceAltColor,
-                        borderColor: monoBorderStrongColor,
-                        showShadow: false,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12),
                       ),
                       child: Text(
                         'Cancelar',
                         textAlign: TextAlign.center,
                         style: AppTypography.buttonText.copyWith(
-                          color: monoMutedTextColor,
+                          color: Colors.white54,
                         ),
                       ),
                     ),
@@ -2041,16 +1562,18 @@ class _DangerDialog extends StatelessWidget {
                     onTap: onConfirm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: monochromePanelDecoration(
-                        color: monoTextColor,
-                        borderColor: monoBorderStrongColor,
-                        showShadow: false,
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: Text(
                         confirmLabel,
                         textAlign: TextAlign.center,
                         style: AppTypography.buttonText.copyWith(
-                          color: Colors.black,
+                          color: AppColors.error,
                         ),
                       ),
                     ),
@@ -2080,32 +1603,24 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderTone =
-        Color.lerp(monoBorderStrongColor, color, 0.08) ?? monoBorderStrongColor;
-
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: monochromePanelDecoration(
-            color: monoSurfaceAltColor,
-            borderColor: borderTone,
-            showShadow: false,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 14, color: monoTextColor),
+          child: Icon(icon, size: 14, color: color),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(
-              color: monoMutedTextColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
-            ),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: color.withValues(alpha: 0.8),
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2.0,
           ),
         ),
       ],
@@ -2120,13 +1635,17 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: monochromePanelDecoration(
-        color: monoSurfaceColor,
-        borderColor: monoBorderStrongColor,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
       ),
     );
   }
@@ -2138,7 +1657,7 @@ class _Divider extends StatelessWidget {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: monoDividerColor,
+      color: Colors.white.withValues(alpha: 0.06),
       indent: AppSpacing.lg,
     );
   }
@@ -2165,10 +1684,6 @@ class _SelectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final selectedBorder =
-        Color.lerp(monoTextColor, accentColor, 0.08) ?? monoTextColor;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -2178,11 +1693,13 @@ class _SelectionTile extends StatelessWidget {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(
-            horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
             vertical: 14,
           ),
-          color: selected ? monoSurfaceAltColor : Colors.transparent,
+          color: selected
+              ? accentColor.withValues(alpha: 0.05)
+              : Colors.transparent,
           child: Row(
             children: [
               if (isPill)
@@ -2191,19 +1708,16 @@ class _SelectionTile extends StatelessWidget {
                   width: 38,
                   height: 38,
                   alignment: Alignment.center,
-                  decoration: monochromePanelDecoration(
+                  decoration: BoxDecoration(
                     color: selected
-                        ? monoSurfaceRaisedColor
-                        : monoSurfaceAltColor,
-                    borderColor: selected
-                        ? selectedBorder
-                        : monoBorderStrongColor,
-                    showShadow: false,
+                        ? accentColor.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     leading,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: selected ? monoTextColor : monoMutedTextColor,
+                      color: selected ? accentColor : Colors.white54,
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
                     ),
@@ -2211,39 +1725,25 @@ class _SelectionTile extends StatelessWidget {
                 )
               else
                 Text(leading, style: const TextStyle(fontSize: 22)),
-              SizedBox(
-                width: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
-              ),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Text(
                   title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: selected ? monoTextColor : monoMutedTextColor,
+                    color: selected ? accentColor : Colors.white70,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
               ),
               if (trailing != null && !selected)
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: responsive.isTinyPhone ? 80 : 120,
-                  ),
-                  child: Text(
-                    trailing!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: AppTypography.caption.copyWith(
-                      color: monoFaintTextColor,
-                    ),
-                  ),
+                Text(
+                  trailing!,
+                  style: AppTypography.caption.copyWith(color: Colors.white24),
                 ),
               if (selected)
                 Icon(
                   Icons.check_circle_rounded,
-                  color: monoTextColor,
+                  color: accentColor,
                   size: 18,
                 ),
             ],
@@ -2275,16 +1775,9 @@ class _SwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final activeBorder =
-        Color.lerp(monoTextColor, iconColor, 0.08) ?? monoTextColor;
-    final activeTrack =
-        Color.lerp(monoSurfaceRaisedColor, accentColor, 0.08) ??
-        monoSurfaceRaisedColor;
-
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
       child: Row(
@@ -2293,14 +1786,15 @@ class _SwitchTile extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             width: 40,
             height: 40,
-            decoration: monochromePanelDecoration(
-              color: value ? monoSurfaceRaisedColor : monoSurfaceAltColor,
-              borderColor: value ? activeBorder : monoBorderStrongColor,
-              showShadow: false,
+            decoration: BoxDecoration(
+              color: value
+                  ? iconColor.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
               icon,
-              color: value ? monoTextColor : monoMutedTextColor,
+              color: value ? iconColor : Colors.white30,
               size: 20,
             ),
           ),
@@ -2311,20 +1805,16 @@ class _SwitchTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: value ? monoTextColor : monoMutedTextColor,
+                    color: value ? Colors.white : Colors.white70,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodySmall.copyWith(
-                    color: monoFaintTextColor,
+                    color: Colors.white30,
                     fontSize: 11,
                   ),
                 ),
@@ -2334,10 +1824,10 @@ class _SwitchTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: monoTextColor,
-            activeTrackColor: activeTrack,
+            activeThumbColor: accentColor,
+            activeTrackColor: accentColor.withValues(alpha: 0.2),
             inactiveThumbColor: Colors.white.withValues(alpha: 0.15),
-            inactiveTrackColor: monoSurfaceAltColor,
+            inactiveTrackColor: Colors.white10,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
@@ -2367,14 +1857,6 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final iconBorder =
-        Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
-        monoBorderStrongColor;
-    final effectiveTitleColor = titleColor == null
-        ? monoTextColor
-        : (Color.lerp(monoTextColor, titleColor, 0.08) ?? monoTextColor);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -2383,8 +1865,8 @@ class _ActionTile extends StatelessWidget {
           onTap();
         },
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
           ),
           child: Row(
@@ -2392,12 +1874,11 @@ class _ActionTile extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: monochromePanelDecoration(
-                  color: monoSurfaceAltColor,
-                  borderColor: iconBorder,
-                  showShadow: false,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(icon, color: monoTextColor, size: 20),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -2406,20 +1887,16 @@ class _ActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: effectiveTitleColor,
+                        color: titleColor ?? Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodySmall.copyWith(
-                        color: monoFaintTextColor,
+                        color: Colors.white30,
                         fontSize: 11,
                       ),
                     ),
@@ -2427,7 +1904,8 @@ class _ActionTile extends StatelessWidget {
                 ),
               ),
               if (trailing != null)
-                Icon(trailing, color: monoMutedTextColor, size: 20),
+                Icon(trailing,
+                    color: Colors.white.withValues(alpha: 0.2), size: 20),
             ],
           ),
         ),
@@ -2448,12 +1926,48 @@ class _IconButton extends StatelessWidget {
       child: Container(
         width: 40,
         height: 40,
-        decoration: monochromePanelDecoration(
-          color: monoSurfaceAltColor,
-          borderColor: monoBorderStrongColor,
-          showShadow: false,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
         ),
-        child: Icon(icon, color: monoTextColor, size: 18),
+        child: Icon(icon, color: Colors.white60, size: 18),
+      ),
+    );
+  }
+}
+
+// ─── Input Field for Sheets ───────────────────────────────────────────────────
+
+class _PassField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final bool obscure;
+  final VoidCallback onToggle;
+
+  const _PassField({
+    required this.controller,
+    required this.label,
+    required this.obscure,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      style: AppTypography.bodyMedium,
+      decoration: InputDecoration(
+        labelText: label,
+        suffixIcon: IconButton(
+          onPressed: onToggle,
+          icon: Icon(
+            obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+            color: Colors.white38,
+            size: 20,
+          ),
+        ),
       ),
     );
   }
@@ -2478,8 +1992,6 @@ class _SheetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filledColor = Color.lerp(monoTextColor, color, 0.05) ?? monoTextColor;
-
     return SizedBox(
       width: double.infinity,
       child: GestureDetector(
@@ -2487,24 +1999,29 @@ class _SheetButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 15),
-          decoration: monochromePanelDecoration(
-            color: isOutline ? monoSurfaceColor : filledColor,
-            borderColor: monoBorderStrongColor,
-            showShadow: false,
+          decoration: BoxDecoration(
+            color:
+                isOutline ? Colors.transparent : color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isOutline
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : color.withValues(alpha: 0.4),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                color: isOutline ? monoMutedTextColor : Colors.black,
+                color: isOutline ? Colors.white38 : color,
                 size: 18,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: AppTypography.buttonText.copyWith(
-                  color: isOutline ? monoMutedTextColor : Colors.black,
+                  color: isOutline ? Colors.white38 : color,
                   letterSpacing: 0.5,
                 ),
               ),

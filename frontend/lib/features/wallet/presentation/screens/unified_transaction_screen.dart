@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/presentation/widgets/cyber_button.dart';
@@ -49,12 +48,28 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          const Positioned.fill(
-            child: ColoredBox(color: authenticatedSurfaceBackgroundColor),
+          // Cyber Background Effect
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.7, -0.6),
+                  radius: 1.2,
+                  colors: [
+                    Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.05),
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ],
+                ),
+              ),
+            ),
           ),
+
           SafeArea(
             child: Column(
               children: [

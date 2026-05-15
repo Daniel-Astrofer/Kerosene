@@ -1,318 +1,218 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/theme/monochrome_theme.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/features/mining/presentation/mining_explorer.dart';
-import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
-import 'package:teste/l10n/l10n_extension.dart';
-
+import 'animated_tx_icon.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 
-class TxDetailOverlay extends ConsumerWidget {
+class TxDetailOverlay extends StatelessWidget {
   final Transaction tx;
   final VoidCallback onClose;
 
-  const TxDetailOverlay({super.key, required this.tx, required this.onClose});
+  const TxDetailOverlay({
+    super.key,
+    required this.tx,
+    required this.onClose,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final explorer = MiningExplorerDescriptor.fromTransaction(tx);
-    final visual = TransactionVisualSpec.fromTransaction(tx);
-    final primaryAmount = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: tx.amountBTC,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-    final feeAmount = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: tx.feeBTC,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-    final cryptoAmount = MoneyDisplay.format(
-      amount: tx.amountBTC,
-      currency: Currency.btc,
-    );
-    final amountPrefix = visual.prefix.isEmpty ? '' : visual.prefix;
-
-    final detailItems = <_DetailItem>[
-      _DetailItem(
-          label: context.l10n.date, value: _formatTimestamp(tx.timestamp)),
-      _DetailItem(
-        label: _counterpartyLabel(tx),
-        value: SafeDisplayText.displayIdentifier(
-          context,
-          _counterpartyValue(context, tx),
-          leading: 10,
-          trailing: 8,
-        ),
-      ),
-      _DetailItem(
-        label: context.l10n.onchainDepositNetworkLabel,
-        value: explorer.badgeLabel,
-      ),
-      _DetailItem(
-        label: context.l10n.detailReference,
-        value: SafeDisplayText.displayIdentifier(
-          context,
-          _primaryReference(tx, explorer),
-          leading: 10,
-          trailing: 8,
-        ),
-      ),
-      if ((tx.invoiceId ?? '').trim().isNotEmpty)
-        _DetailItem(
-          label: context.l10n.detailRequestCode,
-          value: SafeDisplayText.displayIdentifier(context, tx.invoiceId),
-        ),
-      if ((tx.paymentHash ?? '').trim().isNotEmpty)
-        _DetailItem(
-          label: context.l10n.detailConfirmationCode,
-          value: SafeDisplayText.displayIdentifier(context, tx.paymentHash),
-        ),
-      if ((tx.lightningInvoice ?? '').trim().isNotEmpty)
-        _DetailItem(
-          label: context.l10n.detailLightningCode,
-          value: SafeDisplayText.maskInvoice(tx.lightningInvoice),
-          fullWidth: true,
-          maxLines: 1,
-        ),
-      if ((tx.description ?? '').trim().isNotEmpty)
-        _DetailItem(
-          label: context.l10n.description,
-          value: tx.description!.trim(),
-          fullWidth: true,
-          maxLines: 3,
-        ),
-      if (tx.feeSatoshis > 0)
-        _DetailItem(label: context.l10n.fee, value: feeAmount),
-      _DetailItem(
-        label: context.l10n.onchainDepositConfirmationsLabel,
-        value: tx.confirmations.toString(),
-      ),
-    ];
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor(tx.status);
+    final typeLabel = _typeLabel(tx.type);
+    final amountSign =
+        tx.type == TransactionType.send || tx.type == TransactionType.withdrawal
+            ? '-'
+            : '+';
+    final amountColor =
+        tx.type == TransactionType.send || tx.type == TransactionType.withdrawal
+            ? const Color(0xFFFF453A)
+            : const Color(0xFF00E5BC);
 
     return Scaffold(
-      backgroundColor: Colors.black.withValues(alpha: 0.84),
-      body: GestureDetector(
-        onTap: onClose,
-        child: SafeArea(
+      backgroundColor:
+          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+      body: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: InkWell(
+          onTap: onClose,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: GestureDetector(
-                onTap: () {},
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 430),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: monochromePanelDecoration(
-                      color: monoSurfaceColor,
-                      borderColor: monoBorderStrongColor,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: InkWell(
+                onTap: () {}, // Prevent closing when tapping the card
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOutBack,
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: 0.8 + 0.2 * value,
+                      child: Opacity(
+                        opacity: value.clamp(0.0, 1.0),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.85,
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final tileWidth = (constraints.maxWidth - 10) / 2;
-
-                        return Column(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF101B35).withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.1),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: amountColor.withValues(alpha: 0.15),
+                            blurRadius: 40,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    context.l10n.transactionDetails
-                                        .toUpperCase(),
-                                    style: AppTypography.caption.copyWith(
-                                      color: monoMutedTextColor,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.8,
-                                    ),
-                                  ),
-                                ),
-                                _OverlayIconButton(
-                                  icon: LucideIcons.x,
-                                  onTap: onClose,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              children: [
-                                _SemanticBadge(
-                                  icon: visual.icon,
-                                  label: _familyLabel(visual.family),
-                                ),
-                                _SemanticBadge(
-                                  icon: _railIcon(explorer),
-                                  label: explorer.badgeLabel,
-                                ),
-                                _SemanticBadge(
-                                  icon: _statusIcon(tx.status),
-                                  label: tx.status.displayName,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
+                            // ── HEADER ICON ───────────────────────────────────
                             Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: monochromePanelDecoration(
-                                color: monoSurfaceAltColor,
-                                borderColor: monoBorderStrongColor,
-                                showShadow: false,
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: amountColor.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: amountColor.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
                               ),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: monochromePanelDecoration(
-                                      color: monoSurfaceRaisedColor,
-                                      borderColor: monoBorderStrongColor,
-                                      showShadow: false,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Icon(
-                                      visual.icon,
-                                      color: monoTextColor,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    visual
-                                        .localizedLabel(context)
-                                        .toUpperCase(),
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: monoMutedTextColor,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 1.1,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '$amountPrefix$primaryAmount',
-                                    textAlign: TextAlign.center,
-                                    style: AppTypography.h2.copyWith(
-                                      color: monoTextColor,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0,
-                                    ),
-                                  ),
-                                  if (selectedCurrency != Currency.btc) ...[
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      cryptoAmount,
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: monoMutedTextColor,
-                                            fontFamily: 'JetBrainsMono',
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                ],
+                              child: Center(
+                                child: AnimatedTxIcon(
+                                  kind: _iconKindFor(tx),
+                                  color: amountColor,
+                                  size: 40,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              children: detailItems.map((item) {
-                                return SizedBox(
-                                  width: item.fullWidth
-                                      ? constraints.maxWidth
-                                      : tileWidth,
-                                  child: _DetailTile(item: item),
-                                );
-                              }).toList(),
                             ),
                             const SizedBox(height: 16),
-                            if (tx.canCancelPendingReceive) ...[
-                              _OverlayActionButton(
-                                label: context.l10n.onchainDepositCancelAction,
-                                icon: LucideIcons.xCircle,
-                                onTap: () => _cancelReceive(context, ref),
+                            Text(
+                              typeLabel,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 1.2,
                               ),
-                              const SizedBox(height: 10),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$amountSign${tx.amountBTC.toStringAsFixed(8)} BTC',
+                              style: AppTypography.h1.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+
+                            // ── DETAILS GRID ──────────────────────────────────
+                            _buildDetailRow(
+                              context,
+                              kind: TxIconKind.pending,
+                              label: 'Status',
+                              value: tx.status.displayName,
+                              valueColor: statusColor,
+                            ),
+                            const Divider(height: 24, color: Colors.white10),
+                            _buildDetailRow(
+                              context,
+                              kind: TxIconKind.clock,
+                              label: 'Data e Hora',
+                              value:
+                                  '${tx.timestamp.day}/${tx.timestamp.month}/${tx.timestamp.year} ${tx.timestamp.hour.toString().padLeft(2, '0')}:${tx.timestamp.minute.toString().padLeft(2, '0')}',
+                            ),
+                            const Divider(height: 24, color: Colors.white10),
+                            _buildDetailRow(
+                              context,
+                              kind: TxIconKind.address,
+                              label: tx.type == TransactionType.send
+                                  ? 'Destinatário'
+                                  : 'Remetente',
+                              value: _abbrewAddress(
+                                  tx.type == TransactionType.send
+                                      ? tx.toAddress
+                                      : tx.fromAddress),
+                            ),
+                            const Divider(height: 24, color: Colors.white10),
+                            _buildDetailRow(
+                              context,
+                              kind: TxIconKind.network,
+                              label: 'ID da Transação',
+                              value: _abbrewAddress(tx.id),
+                            ),
+
+                            if (tx.feeSatoshis > 0) ...[
+                              const Divider(height: 24, color: Colors.white10),
+                              _buildDetailRow(
+                                context,
+                                kind: TxIconKind.fee,
+                                label: 'Taxa de Rede',
+                                value:
+                                    '${(tx.feeSatoshis / 100000000).toStringAsFixed(8)} BTC',
+                              ),
                             ],
+
+                            if (tx.isInternal) ...[
+                              const Divider(height: 24, color: Colors.white10),
+                              _buildDetailRow(
+                                context,
+                                kind: TxIconKind.card,
+                                label: 'Método',
+                                value: 'Transferência Interna',
+                                valueColor: const Color(0xFF7B61FF),
+                              ),
+                            ],
+
+                            const SizedBox(height: 40),
+
+                            // ── ACTIONS ───────────────────────────────────────
                             Row(
                               children: [
                                 Expanded(
-                                  child: _OverlayActionButton(
-                                    label: context.l10n.apiDisplayDataCopied,
-                                    icon: LucideIcons.copy,
-                                    onTap: () => _copyTransactionSummary(
-                                      context,
-                                      tx: tx,
-                                      explorer: explorer,
-                                      primaryAmount: primaryAmount,
-                                      cryptoAmount: cryptoAmount,
-                                      feeAmount: feeAmount,
-                                      amountSign: amountPrefix,
-                                    ),
+                                  child: _buildButton(
+                                    label: 'Compartilhar',
+                                    icon: Icons.share_rounded,
+                                    onTap: () {},
+                                    isPrimary: false,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 12),
                                 Expanded(
-                                  child: _OverlayActionButton(
-                                    label: explorer.buttonLabel,
-                                    icon: _railIcon(explorer),
-                                    emphasis: true,
-                                    onTap: () {
-                                      final navigator = Navigator.of(
-                                        context,
-                                        rootNavigator: true,
-                                      );
-                                      final route = MaterialPageRoute<void>(
-                                        builder: (_) => MiningScreen(
-                                          initialTransaction: tx,
-                                        ),
-                                      );
-
-                                      navigator.pop();
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                        if (navigator.mounted) {
-                                          navigator.push(route);
-                                        }
-                                      });
-                                    },
+                                  child: _buildButton(
+                                    label: 'Blockchain',
+                                    icon: Icons.open_in_new_rounded,
+                                    onTap: () {},
+                                    isPrimary: true,
+                                    color: amountColor,
                                   ),
                                 ),
                               ],
                             ),
                           ],
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -324,348 +224,162 @@ class TxDetailOverlay extends ConsumerWidget {
     );
   }
 
-  Future<void> _cancelReceive(BuildContext context, WidgetRef ref) async {
-    final transferId = tx.externalTransferId?.trim() ?? '';
-    if (transferId.isEmpty || !tx.canCancelPendingReceive) {
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(context.l10n.onchainDepositCancelTitle),
-            content: Text(context.l10n.onchainDepositCancelMessage),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.l10n.goBack),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.l10n.onchainDepositCancelAction),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await ref
-          .read(transactionRepositoryProvider)
-          .cancelInboundTransfer(transferId);
-      ref.invalidate(transactionHistoryProvider);
-      ref.invalidate(pagedTransactionHistoryProvider);
-      ref.invalidate(externalTransfersProvider);
-      if (context.mounted) {
-        onClose();
-        AppNotice.showSuccess(
-          context,
-          message: context.l10n.apiDisplayReceiveCancelled,
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        AppNotice.showError(
-          context,
-          message: ErrorTranslator.translate(context.l10n, error.toString()),
-        );
-      }
-    }
-  }
-
-  Future<void> _copyTransactionSummary(
+  Widget _buildDetailRow(
     BuildContext context, {
-    required Transaction tx,
-    required MiningExplorerDescriptor explorer,
-    required String primaryAmount,
-    required String cryptoAmount,
-    required String feeAmount,
-    required String amountSign,
-  }) async {
-    final summary = <String>[
-      '${context.l10n.detailType}: ${TransactionVisualSpec.fromTransaction(tx).localizedLabel(context)}',
-      '${context.l10n.status}: ${tx.status.displayName}',
-      '${context.l10n.value}: $amountSign$primaryAmount',
-      '${context.l10n.detailBtcAmount}: $cryptoAmount',
-      '${context.l10n.date}: ${_formatTimestamp(tx.timestamp)}',
-      '${_counterpartyLabel(tx)}: ${_counterpartyValue(context, tx)}',
-      '${context.l10n.onchainDepositNetworkLabel}: ${explorer.badgeLabel}',
-      '${context.l10n.detailReference}: ${_primaryReference(tx, explorer)}',
-      if ((tx.invoiceId ?? '').trim().isNotEmpty)
-        '${context.l10n.detailRequestCode}: ${tx.invoiceId!.trim()}',
-      if ((tx.paymentHash ?? '').trim().isNotEmpty)
-        '${context.l10n.detailConfirmationCode}: ${tx.paymentHash!.trim()}',
-      if ((tx.description ?? '').trim().isNotEmpty)
-        '${context.l10n.description}: ${tx.description!.trim()}',
-      if (tx.feeSatoshis > 0) '${context.l10n.fee}: $feeAmount',
-    ].join('\n');
-
-    await Clipboard.setData(ClipboardData(text: summary));
-
-    if (!context.mounted) {
-      return;
-    }
-
-    AppNotice.showSuccess(
-      context,
-      title: context.l10n.apiDisplayDataCopied,
-      message: context.l10n.apiDisplayTransactionSummaryCopied,
-    );
-  }
-
-  static String _counterpartyLabel(Transaction tx) {
-    return resolvePrimaryTransactionAddressLabel(tx);
-  }
-
-  static String _counterpartyValue(BuildContext context, Transaction tx) {
-    final value = resolvePrimaryTransactionAddress(tx).trim();
-    return value.isEmpty ? SafeDisplayText.addressUnavailable(context) : value;
-  }
-
-  static IconData _railIcon(MiningExplorerDescriptor explorer) {
-    switch (explorer.rail) {
-      case MiningExplorerRail.blockchain:
-        return LucideIcons.network;
-      case MiningExplorerRail.lightning:
-        return LucideIcons.zap;
-      case MiningExplorerRail.internal:
-        return LucideIcons.receipt;
-    }
-  }
-
-  static IconData _statusIcon(TransactionStatus status) {
-    switch (status) {
-      case TransactionStatus.pending:
-        return LucideIcons.clock3;
-      case TransactionStatus.confirming:
-        return LucideIcons.scanLine;
-      case TransactionStatus.confirmed:
-        return LucideIcons.check;
-      case TransactionStatus.failed:
-        return LucideIcons.alertCircle;
-    }
-  }
-
-  static String _familyLabel(TransactionVisualFamily family) {
-    switch (family) {
-      case TransactionVisualFamily.paymentLink:
-        return 'Link';
-      case TransactionVisualFamily.qrCode:
-        return 'QR Code';
-      case TransactionVisualFamily.nfc:
-        return 'NFC';
-      case TransactionVisualFamily.lightning:
-        return 'Lightning';
-      case TransactionVisualFamily.internalTransfer:
-        return 'Cheque';
-      case TransactionVisualFamily.deposit:
-        return 'Depósito';
-      case TransactionVisualFamily.withdrawal:
-        return 'Saque';
-      case TransactionVisualFamily.onChain:
-        return 'On-chain';
-      case TransactionVisualFamily.swap:
-        return 'Swap';
-      case TransactionVisualFamily.fee:
-        return 'Taxa';
-      case TransactionVisualFamily.failed:
-        return 'Falha';
-      case TransactionVisualFamily.cancelled:
-        return 'Cancelado';
-      case TransactionVisualFamily.mining:
-        return 'Mineração';
-      case TransactionVisualFamily.refund:
-        return 'Estorno';
-      case TransactionVisualFamily.unknown:
-        return 'Evento';
-    }
-  }
-
-  static String _primaryReference(
-    Transaction tx,
-    MiningExplorerDescriptor explorer,
-  ) {
-    return explorer.reference.trim().isNotEmpty
-        ? explorer.reference
-        : (tx.blockchainTxid ?? tx.id);
-  }
-
-  static String _formatTimestamp(DateTime timestamp) {
-    return '${timestamp.day.toString().padLeft(2, '0')}/${timestamp.month.toString().padLeft(2, '0')}/${timestamp.year} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-  }
-}
-
-class _DetailItem {
-  final String label;
-  final String value;
-  final bool fullWidth;
-  final int maxLines;
-
-  const _DetailItem({
-    required this.label,
-    required this.value,
-    this.fullWidth = false,
-    this.maxLines = 2,
-  });
-}
-
-class _DetailTile extends StatelessWidget {
-  final _DetailItem item;
-
-  const _DetailTile({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: monochromePanelDecoration(
-        color: monoSurfaceAltColor,
-        borderColor: monoBorderColor,
-        showShadow: false,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: monoMutedTextColor,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.7,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            item.value,
-            maxLines: item.maxLines,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: monoTextColor,
-                  fontFamily: 'JetBrainsMono',
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SemanticBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _SemanticBadge({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: monochromePanelDecoration(
-        color: monoSurfaceAltColor,
-        borderColor: monoBorderStrongColor,
-        showShadow: false,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: monoTextColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: monoTextColor,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OverlayActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool emphasis;
-  final VoidCallback onTap;
-
-  const _OverlayActionButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.emphasis = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          height: 48,
-          decoration: monochromePanelDecoration(
-            color: emphasis ? monoTextColor : monoSurfaceAltColor,
-            borderColor: monoBorderStrongColor,
-            showShadow: false,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: emphasis ? Colors.black : monoTextColor,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: emphasis ? Colors.black : monoTextColor,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OverlayIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _OverlayIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
+    required TxIconKind kind,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    return Row(
+      children: [
+        Container(
           width: 36,
           height: 36,
-          decoration: monochromePanelDecoration(
-            color: monoSurfaceAltColor,
-            borderColor: monoBorderStrongColor,
-            showShadow: false,
+          decoration: BoxDecoration(
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 16, color: monoTextColor),
+          child: Center(
+            child: AnimatedTxIcon(
+              kind: kind,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.7),
+              size: 18,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.4),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                color: valueColor ?? Theme.of(context).colorScheme.onPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isPrimary,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? (color ?? const Color(0xFF00E5BC)).withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isPrimary
+                ? (color ?? const Color(0xFF00E5BC)).withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                color: isPrimary
+                    ? (color ?? const Color(0xFF00E5BC))
+                    : Colors.white70,
+                size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTypography.bodyMedium.copyWith(
+                color: isPrimary
+                    ? (color ?? const Color(0xFF00E5BC))
+                    : Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Color _statusColor(TransactionStatus status) {
+    switch (status) {
+      case TransactionStatus.pending:
+        return const Color(0xFFFF9F0A);
+      case TransactionStatus.confirming:
+        return const Color(0xFFFFCC00);
+      case TransactionStatus.confirmed:
+        return const Color(0xFF00C896);
+      case TransactionStatus.failed:
+        return const Color(0xFFFF453A);
+    }
+  }
+
+  String _typeLabel(TransactionType type) {
+    switch (type) {
+      case TransactionType.send:
+        return 'ENVIO';
+      case TransactionType.receive:
+        return 'RECEBIMENTO';
+      case TransactionType.deposit:
+        return 'DEPÓSITO';
+      case TransactionType.withdrawal:
+        return 'SAQUE';
+      case TransactionType.swap:
+        return 'SWAP';
+      case TransactionType.fee:
+        return 'TAXA';
+    }
+  }
+
+  TxIconKind _iconKindFor(Transaction tx) {
+    switch (tx.type) {
+      case TransactionType.send:
+        return TxIconKind.send;
+      case TransactionType.receive:
+        return TxIconKind.receive;
+      case TransactionType.deposit:
+        return TxIconKind.deposit;
+      case TransactionType.withdrawal:
+        return TxIconKind.withdrawal;
+      case TransactionType.swap:
+        return TxIconKind.swap;
+      case TransactionType.fee:
+        return TxIconKind.fee;
+    }
+  }
+
+  String _abbrewAddress(String addr) {
+    if (addr.length <= 16) return addr;
+    return '${addr.substring(0, 8)}...${addr.substring(addr.length - 8)}';
   }
 }

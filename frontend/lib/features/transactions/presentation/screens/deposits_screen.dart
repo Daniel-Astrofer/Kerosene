@@ -1,2153 +1,317 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:teste/features/notifications/presentation/widgets/session_notification_sidebar.dart';
-import 'package:teste/features/transactions/domain/entities/payment_link.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/transactions/presentation/widgets/financial_activity_details_sheet.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/providers/balance_websocket_provider.dart';
-import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart'
-    hide transactionRepositoryProvider;
-import 'package:teste/features/wallet/presentation/screens/receive_payment_link_screen.dart';
-import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
-import 'package:teste/l10n/l10n_extension.dart';
-
-const Color _background = authenticatedSurfaceBackgroundColor;
-const Color _surface = Color(0xFF0D0F11);
-const Color _surfaceRaised = Color(0xFF111418);
-const Color _surfacePressed = Color(0xFF15191E);
-const Color _border = Color(0xFF262B31);
-const Color _borderSoft = Color(0xFF1D2228);
-const Color _textPrimary = Color(0xFFF2F4F5);
-const Color _textSecondary = Color(0xFFA3ABB3);
-const Color _textMuted = Color(0xFF6E7781);
-const Color _iconMuted = Color(0xFF9099A3);
+import '../../../../core/presentation/widgets/cyber_background.dart';
+import '../../domain/entities/deposit.dart';
+import '../providers/transaction_provider.dart';
 
 class DepositsScreen extends ConsumerStatefulWidget {
-  final bool showPrimaryNavigation;
-
-  const DepositsScreen({super.key, this.showPrimaryNavigation = false});
+  const DepositsScreen({super.key});
 
   @override
   ConsumerState<DepositsScreen> createState() => _DepositsScreenState();
 }
 
 class _DepositsScreenState extends ConsumerState<DepositsScreen> {
-  static final DateFormat _dateTimeFormat = DateFormat('dd/MM/yyyy HH:mm');
-  static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
-  static final DateFormat _timeFormat = DateFormat('HH:mm');
-
-  final ScrollController _scrollController = ScrollController();
-  final GlobalKey _linksSectionKey = GlobalKey();
-  final AppPrimaryNavigationController _navBarController =
-      AppPrimaryNavigationController();
-
-  int _page = 0;
-  int _size = 25;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _navBarController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _refreshData() async {
-    await HapticFeedback.lightImpact();
-    _navBarController.triggerRefreshAnimation();
-    ref.invalidate(depositAddressProvider);
-    ref.invalidate(paymentLinksProvider);
-    ref.invalidate(transactionHistoryProvider);
-    ref.invalidate(pagedTransactionHistoryProvider);
-
-    await Future.wait([
-      ref.read(paymentLinksProvider.future),
-      ref.read(
-        pagedTransactionHistoryProvider((page: _page, size: _size)).future,
-      ),
-    ]);
-  }
-
-  Future<void> _copyValue(String value, String successMessage) async {
-    await Clipboard.setData(ClipboardData(text: value));
-    await HapticFeedback.selectionClick();
-
-    if (!mounted) {
-      return;
-    }
-
-    AppNotice.showSuccess(context, message: successMessage);
-  }
-
-  Future<void> _openPaymentLink(
-    PaymentLink link, {
-    required Wallet? wallet,
-    required Currency selectedCurrency,
-    required double? btcUsd,
-    required double? btcEur,
-    required double? btcBrl,
-  }) async {
-    await HapticFeedback.selectionClick();
-    if (!mounted) {
-      return;
-    }
-
-    final requestedAmountLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: link.amountBtc,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-    final btcAmountLabel = MoneyDisplay.format(
-      amount: link.amountBtc,
-      currency: Currency.btc,
-    );
-    final depositFeeLabel = link.depositFeeBtc > 0
-        ? MoneyDisplay.format(
-            amount: link.depositFeeBtc,
-            currency: Currency.btc,
-          )
-        : null;
-    final netAmountLabel = link.netAmountBtc > 0
-        ? MoneyDisplay.format(amount: link.netAmountBtc, currency: Currency.btc)
-        : null;
-
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ReceivePaymentLinkScreen(
-          initialLink: link,
-          requestedAmountLabel: requestedAmountLabel,
-          btcAmountLabel: btcAmountLabel,
-          walletLabel: wallet?.name,
-          cardTypeLabel: wallet?.cardType.label,
-          depositFeeLabel: depositFeeLabel,
-          netAmountLabel: netAmountLabel,
-        ),
-      ),
-    );
-    ref.invalidate(paymentLinksProvider);
-    ref.invalidate(transactionHistoryProvider);
-    ref.invalidate(pagedTransactionHistoryProvider);
-  }
-
-  Future<void> _scrollToLinks() async {
-    HapticFeedback.selectionClick();
-    final sectionContext = _linksSectionKey.currentContext;
-    if (sectionContext == null) {
-      return;
-    }
-    await Scrollable.ensureVisible(
-      sectionContext,
-      alignment: 0.10,
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  Wallet? _resolveActiveWallet(WalletState state) {
-    if (state is! WalletLoaded || state.wallets.isEmpty) {
-      return null;
-    }
-    return state.selectedWallet ?? state.wallets.first;
-  }
-
-  String? _resolveDepositAddress({
-    required Wallet? wallet,
-    required AsyncValue<String> remoteAddress,
-  }) {
-    final remote = remoteAddress.asData?.value.trim();
-    if (remote != null && remote.isNotEmpty) {
-      return remote;
-    }
-
-    final fallback = wallet?.address.trim();
-    if (fallback != null && fallback.isNotEmpty) {
-      return fallback;
-    }
-
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final screenWidth = responsive.size.width;
-    final isWide = screenWidth >= 1120;
-    final isCompact = screenWidth < 760;
-    final pageHorizontalPadding = responsive.horizontalPadding;
-    final pageTopPadding = isCompact ? 14.0 : 20.0;
-    final pageBottomPadding = widget.showPrimaryNavigation
-        ? AppPrimaryNavigationBar.scaffoldBottomClearance(context)
-        : (isCompact ? 112.0 : 32.0);
+    final depositsAsync = ref.watch(depositsProvider);
 
-    final walletState = ref.watch(walletProvider);
-    final activeWallet = _resolveActiveWallet(walletState);
-    final depositAddressAsync = ref.watch(depositAddressProvider);
-    final depositAddress = _resolveDepositAddress(
-      wallet: activeWallet,
-      remoteAddress: depositAddressAsync,
-    );
-
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final totalBalanceBtc = ref.watch(totalBalanceBtcProvider);
-    final balanceVisible = ref.watch(balanceVisibilityProvider);
-    final primaryBalance = MoneyDisplay.format(
-      amount: MoneyDisplay.convertFromBtcAmount(
-        btcAmount: totalBalanceBtc,
-        currency: selectedCurrency,
-        btcUsd: btcUsd,
-        btcEur: btcEur,
-        btcBrl: btcBrl,
-      ),
-      currency: selectedCurrency,
-    );
-    final secondaryBalance = selectedCurrency == Currency.btc
-        ? MoneyDisplay.format(
-            amount: MoneyDisplay.convertFromBtcAmount(
-              btcAmount: totalBalanceBtc,
-              currency: Currency.brl,
-              btcUsd: btcUsd,
-              btcEur: btcEur,
-              btcBrl: btcBrl,
-            ),
-            currency: Currency.brl,
-          )
-        : MoneyDisplay.format(amount: totalBalanceBtc, currency: Currency.btc);
-
-    final wsAsync = ref.watch(balanceWebSocketServiceProvider);
-    final isRealtimeActive = wsAsync.asData?.value?.isConnected ?? false;
-    final linksAsync = ref.watch(paymentLinksProvider);
-    final links = linksAsync.asData?.value ?? const <PaymentLink>[];
-    final sortedLinks = [...links]
-      ..sort((a, b) {
-        final rankCompare = _paymentLinkPriority(
-          a,
-        ).compareTo(_paymentLinkPriority(b));
-        if (rankCompare != 0) {
-          return rankCompare;
-        }
-        return (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-            .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0));
-      });
-    final openLinks = sortedLinks
-        .where((link) => link.isPending || link.isVerifyingOnboarding)
-        .toList();
-
-    final historyAsync = ref.watch(
-      pagedTransactionHistoryProvider((page: _page, size: _size)),
-    );
-    final historyRows = [
-      ...(historyAsync.asData?.value ?? const <Transaction>[]),
-    ]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    final pendingTransactions = historyRows
-        .where(
-          (tx) =>
-              tx.status == TransactionStatus.pending ||
-              tx.status == TransactionStatus.confirming,
-        )
-        .toList();
-    final sidebarOpen = ref.watch(notificationSidebarProvider);
-    final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
-
-    return Scaffold(
-      backgroundColor: _background,
-      body: Stack(
+    return CyberBackground(
+      child: Column(
         children: [
-          const ColoredBox(color: _background),
-          Row(
-            children: [
-              Expanded(
-                child: SafeArea(
-                  child: RefreshIndicator(
-                    onRefresh: _refreshData,
-                    color: _textPrimary,
-                    backgroundColor: _surfaceRaised,
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      slivers: [
-                        SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            pageHorizontalPadding,
-                            pageTopPadding,
-                            pageHorizontalPadding,
-                            pageBottomPadding,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: math.min(
-                                    isWide ? 1040 : 720,
-                                    responsive.maxReadableWidth,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    _StatementHeader(
-                                      walletName: activeWallet?.name,
-                                      notificationCount: notificationCount,
-                                      showNotificationButton: !isWide,
-                                      onBack: () => widget.showPrimaryNavigation
-                                          ? AppPrimaryNavigationBar.backOrHome(
-                                              context,
-                                            )
-                                          : Navigator.maybePop(context),
-                                      onRefresh: _refreshData,
-                                      onNotifications: () async {
-                                        await HapticFeedback.selectionClick();
-                                        ref
-                                            .read(
-                                              notificationSidebarProvider
-                                                  .notifier,
-                                            )
-                                            .toggle();
-                                      },
-                                    ),
-                                    SizedBox(height: isCompact ? 16 : 20),
-                                    _StatementOverview(
-                                      balance: balanceVisible
-                                          ? primaryBalance
-                                          : '••••',
-                                      secondaryBalance: balanceVisible
-                                          ? secondaryBalance
-                                          : 'Saldo oculto',
-                                      balanceVisible: balanceVisible,
-                                      transactionCount: historyRows.length,
-                                      pendingCount: pendingTransactions.length,
-                                      openLinkCount: openLinks.length,
-                                      realtimeActive: isRealtimeActive,
-                                      onToggleBalance: () async {
-                                        await HapticFeedback.selectionClick();
-                                        ref
-                                            .read(
-                                              balanceVisibilityProvider
-                                                  .notifier,
-                                            )
-                                            .toggle();
-                                      },
-                                      onCopyAddress: depositAddress == null
-                                          ? null
-                                          : () => _copyValue(
-                                              depositAddress,
-                                              'Endereço copiado.',
-                                            ),
-                                      onOpenLinks: openLinks.isEmpty
-                                          ? null
-                                          : _scrollToLinks,
-                                      onRefresh: _refreshData,
-                                    ),
-                                    if (openLinks.isNotEmpty ||
-                                        linksAsync.isLoading) ...[
-                                      SizedBox(height: isCompact ? 20 : 24),
-                                      Container(
-                                        key: _linksSectionKey,
-                                        child: _OpenLinksSection(
-                                          linksAsync: linksAsync,
-                                          links: openLinks,
-                                          selectedCurrency: selectedCurrency,
-                                          btcUsd: btcUsd,
-                                          btcEur: btcEur,
-                                          btcBrl: btcBrl,
-                                          onCopyAddress: (address) =>
-                                              _copyValue(
-                                                address,
-                                                context
-                                                    .l10n
-                                                    .depositLedgerAddressCopied,
-                                              ),
-                                          onOpenLink: (link) =>
-                                              _openPaymentLink(
-                                                link,
-                                                wallet: activeWallet,
-                                                selectedCurrency:
-                                                    selectedCurrency,
-                                                btcUsd: btcUsd,
-                                                btcEur: btcEur,
-                                                btcBrl: btcBrl,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                    SizedBox(height: isCompact ? 20 : 24),
-                                    _SectionTitle(
-                                      icon: LucideIcons.receipt,
-                                      title: context
-                                          .l10n
-                                          .depositLedgerMovementsTitle,
-                                      trailing: context.l10n.depositLedgerPage(
-                                        _page + 1,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    _HistorySection(
-                                      historyAsync: historyAsync,
-                                      rows: historyRows,
-                                      isCompact: isCompact,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _PaginationControls(
-                                      page: _page,
-                                      size: _size,
-                                      isLoading: historyAsync.isLoading,
-                                      canGoNext:
-                                          !historyAsync.isLoading &&
-                                          historyRows.length >= _size,
-                                      onPrevious: _page == 0
-                                          ? null
-                                          : () async {
-                                              await HapticFeedback.selectionClick();
-                                              setState(() => _page -= 1);
-                                            },
-                                      onNext:
-                                          !historyAsync.isLoading &&
-                                              historyRows.length >= _size
-                                          ? () async {
-                                              await HapticFeedback.selectionClick();
-                                              setState(() => _page += 1);
-                                            }
-                                          : null,
-                                      onSizeChanged: (value) async {
-                                        await HapticFeedback.selectionClick();
-                                        setState(() {
-                                          _size = value;
-                                          _page = 0;
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+          _buildHeader(context),
+          Expanded(
+            child: depositsAsync.when(
+              data: (deposits) {
+                if (deposits.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(depositsProvider);
+                  },
+                  backgroundColor: const Color(0xFF1A1A24),
+                  color: const Color(0xFF00FF94),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    itemCount: deposits.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: _buildDepositCard(deposits[index]),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Color(0xFF00FF94)),
+              ),
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading deposits',
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (isWide) const SessionNotificationSidebar(),
-            ],
+            ),
           ),
-          if (!isWide && sidebarOpen) ...[
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () =>
-                    ref.read(notificationSidebarProvider.notifier).close(),
-                child: ColoredBox(color: Colors.black.withValues(alpha: 0.46)),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SessionNotificationSidebar(
-                showCloseButton: true,
-                onClose: () =>
-                    ref.read(notificationSidebarProvider.notifier).close(),
-              ),
-            ),
-          ],
-          if (widget.showPrimaryNavigation)
-            AppPrimaryNavigationBar.overlay(
-              currentDestination: AppPrimaryDestination.history,
-              controller: _navBarController,
-            )
-          else if (!isWide)
-            _MobileActionDock(
-              onRefresh: _refreshData,
-              onNotifications: () async {
-                await HapticFeedback.selectionClick();
-                ref.read(notificationSidebarProvider.notifier).toggle();
-              },
-              notificationCount: notificationCount,
-            ),
         ],
       ),
     );
   }
 
-  static int _paymentLinkPriority(PaymentLink link) {
-    if (link.isPending) {
-      return 0;
-    }
-    if (link.isVerifyingOnboarding) {
-      return 1;
-    }
-    if (link.isPaid || link.isCompleted) {
-      return 2;
-    }
-    if (_isLinkExpired(link)) {
-      return 3;
-    }
-    return 4;
-  }
-
-  static bool _isLinkExpired(PaymentLink link) {
-    return link.status == 'expired' || link.isExpired;
-  }
-
-  static String shorten(String value, {int head = 10, int tail = 6}) {
-    final normalized = value.trim();
-    if (normalized.length <= head + tail + 3) {
-      return normalized;
-    }
-    return '${normalized.substring(0, head)}...${normalized.substring(normalized.length - tail)}';
-  }
-}
-
-class _StatementHeader extends StatelessWidget {
-  final String? walletName;
-  final int notificationCount;
-  final bool showNotificationButton;
-  final VoidCallback onBack;
-  final VoidCallback onRefresh;
-  final VoidCallback onNotifications;
-
-  const _StatementHeader({
-    required this.walletName,
-    required this.notificationCount,
-    required this.showNotificationButton,
-    required this.onBack,
-    required this.onRefresh,
-    required this.onNotifications,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final titleStyle = theme.textTheme.headlineSmall?.copyWith(
-      color: _textPrimary,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0,
-      height: 1.0,
+  Widget _buildHeader(BuildContext context) {
+    return AppBar(
+      title: Text(
+        "DEPÓSITOS",
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 2.0,
+          fontFamily: 'JetBrainsMono',
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new_rounded,
+            color: Theme.of(context).colorScheme.onPrimary, size: 20),
+        onPressed: () => Navigator.pop(context),
+      ),
     );
+  }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _IconButtonShell(
-          tooltip: context.l10n.depositLedgerBackTooltip,
-          icon: LucideIcons.arrowLeft,
-          onPressed: onBack,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(context.l10n.depositLedgerStatementTitle, style: titleStyle),
-              const SizedBox(height: 5),
-              Text(
-                walletName == null || walletName!.trim().isEmpty
-                    ? context.l10n.depositLedgerAccountSubtitle
-                    : walletName!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: _textMuted,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                  height: 1.2,
-                ),
-              ),
-            ],
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.download_outlined,
+            size: 64,
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
           ),
-        ),
-        _IconButtonShell(
-          tooltip: context.l10n.depositLedgerRefreshTooltip,
-          icon: LucideIcons.refreshCw,
-          onPressed: onRefresh,
-        ),
-        if (showNotificationButton) ...[
-          const SizedBox(width: 8),
-          _NotificationButton(
-            count: notificationCount,
-            onPressed: onNotifications,
+          const SizedBox(height: 16),
+          Text(
+            'No deposits yet',
+            style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.7),
+              fontSize: 16,
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
-}
 
-class _StatementOverview extends StatelessWidget {
-  final String balance;
-  final String secondaryBalance;
-  final bool balanceVisible;
-  final int transactionCount;
-  final int pendingCount;
-  final int openLinkCount;
-  final bool realtimeActive;
-  final VoidCallback onToggleBalance;
-  final VoidCallback? onCopyAddress;
-  final VoidCallback? onOpenLinks;
-  final VoidCallback onRefresh;
-
-  const _StatementOverview({
-    required this.balance,
-    required this.secondaryBalance,
-    required this.balanceVisible,
-    required this.transactionCount,
-    required this.pendingCount,
-    required this.openLinkCount,
-    required this.realtimeActive,
-    required this.onToggleBalance,
-    required this.onCopyAddress,
-    required this.onOpenLinks,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isCompact = context.responsive.size.width < 760;
-
+  Widget _buildDepositCard(Deposit deposit) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderSoft),
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.1)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              isCompact ? 14 : 16,
-              isCompact ? 14 : 16,
-              isCompact ? 12 : 14,
-              12,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.l10n.depositLedgerBalance,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: _textMuted,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          balance,
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: _textPrimary,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0,
-                            height: 1.0,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        secondaryBalance,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: _textMuted,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
-                  ),
+          Row(
+            children: [
+              _buildStatusBadge(deposit.status),
+              const Spacer(),
+              Text(
+                '${deposit.amountBtc.toStringAsFixed(8)} BTC',
+                style: const TextStyle(
+                  color: Color(0xFFD0F288),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'JetBrainsMono',
                 ),
-                const SizedBox(width: 10),
-                _IconButtonShell(
-                  tooltip: balanceVisible
-                      ? context.l10n.depositLedgerHideBalance
-                      : context.l10n.depositLedgerShowBalance,
-                  icon: balanceVisible ? LucideIcons.eyeOff : LucideIcons.eye,
-                  onPressed: onToggleBalance,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const Divider(height: 1, color: _borderSoft),
-          Padding(
-            padding: EdgeInsets.all(isCompact ? 10 : 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _OverviewMetric(
-                  icon: LucideIcons.receipt,
-                  label: context.l10n.depositLedgerItems,
-                  value: '$transactionCount',
-                ),
-                _OverviewMetric(
-                  icon: LucideIcons.clock3,
-                  label: context.l10n.depositLedgerPending,
-                  value: '$pendingCount',
-                ),
-                _OverviewMetric(
-                  icon: LucideIcons.link2,
-                  label: context.l10n.depositLedgerOpenCharges,
-                  value: '$openLinkCount',
-                ),
-                _OverviewMetric(
-                  icon: realtimeActive
-                      ? LucideIcons.radio
-                      : LucideIcons.cloudOff,
-                  label: context.l10n.depositLedgerNetwork,
-                  value: realtimeActive
-                      ? context.l10n.depositLedgerActive
-                      : context.l10n.depositLedgerManual,
-                ),
-              ],
-            ),
+          const SizedBox(height: 20),
+          _buildInfoRow(
+            Icons.alternate_email_rounded,
+            'TXID',
+            _shortenTxid(deposit.txid),
+            onTap: () => _copyToClipboard(deposit.txid),
           ),
-          const Divider(height: 1, color: _borderSoft),
-          Padding(
-            padding: EdgeInsets.all(isCompact ? 10 : 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _MonoActionButton(
-                  icon: LucideIcons.copy,
-                  label: context.l10n.depositLedgerCopyAddress,
-                  onPressed: onCopyAddress,
-                ),
-                _MonoActionButton(
-                  icon: LucideIcons.link,
-                  label: context.l10n.depositLedgerOpenCharges,
-                  onPressed: onOpenLinks,
-                ),
-                _MonoActionButton(
-                  icon: LucideIcons.refreshCw,
-                  label: context.l10n.depositLedgerUpdateAction,
-                  onPressed: onRefresh,
-                ),
-              ],
-            ),
+          const Divider(height: 24, color: Colors.white10),
+          _buildInfoRow(
+            Icons.calendar_today_rounded,
+            'DATA',
+            _formatTimestamp(deposit.createdAt ?? DateTime.now()),
+          ),
+          const Divider(height: 24, color: Colors.white10),
+          _buildInfoRow(
+            Icons.verified_user_outlined,
+            'CONFIRMAÇÕES',
+            '${deposit.confirmations}/6',
           ),
         ],
       ),
     );
   }
-}
 
-class _OverviewMetric extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    IconData icon;
+    String label;
 
-  const _OverviewMetric({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    switch (status.toLowerCase()) {
+      case 'pending':
+        color = Colors.orange;
+        icon = Icons.pending;
+        label = 'Pending';
+        break;
+      case 'confirmed':
+        color = const Color(0xFF00FF94);
+        icon = Icons.check_circle;
+        label = 'Confirmed';
+        break;
+      case 'credited':
+        color = Colors.blue;
+        icon = Icons.account_balance_wallet;
+        label = 'Credited';
+        break;
+      default:
+        color = Theme.of(context).colorScheme.onSurfaceVariant;
+        icon = Icons.help_outline;
+        label = status;
+    }
 
     return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: _surfaceRaised,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderSoft),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: _iconMuted),
-          const SizedBox(width: 8),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
           Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: _textMuted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0,
-            ),
-          ),
-          const SizedBox(width: 7),
-          Text(
-            value,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: _textPrimary,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _OpenLinksSection extends StatelessWidget {
-  final AsyncValue<List<PaymentLink>> linksAsync;
-  final List<PaymentLink> links;
-  final Currency selectedCurrency;
-  final double? btcUsd;
-  final double? btcEur;
-  final double? btcBrl;
-  final ValueChanged<String> onCopyAddress;
-  final ValueChanged<PaymentLink> onOpenLink;
-
-  const _OpenLinksSection({
-    required this.linksAsync,
-    required this.links,
-    required this.selectedCurrency,
-    required this.btcUsd,
-    required this.btcEur,
-    required this.btcBrl,
-    required this.onCopyAddress,
-    required this.onOpenLink,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return linksAsync.when(
-      loading: () =>
-          _LoadingPanel(message: context.l10n.depositLedgerLoadingCharges),
-      error: (error, _) => _ErrorPanel(
-        message: ErrorTranslator.translate(context.l10n, error.toString()),
-      ),
-      data: (_) {
-        if (links.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _SectionTitle(
-              icon: LucideIcons.link2,
-              title: context.l10n.depositLedgerOpenChargesTitle,
-              trailing: '${links.length}',
-            ),
-            const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: _surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _borderSoft),
-              ),
-              child: Column(
-                children: [
-                  for (
-                    var index = 0;
-                    index < links.take(3).length;
-                    index++
-                  ) ...[
-                    if (index > 0) const Divider(height: 1, color: _borderSoft),
-                    _PaymentLinkRow(
-                      link: links[index],
-                      amount: MoneyDisplay.formatAmountFromBtc(
-                        btcAmount: links[index].amountBtc,
-                        currency: selectedCurrency,
-                        btcUsd: btcUsd,
-                        btcEur: btcEur,
-                        btcBrl: btcBrl,
-                      ),
-                      btcAmount: MoneyDisplay.format(
-                        amount: links[index].amountBtc,
-                        currency: Currency.btc,
-                      ),
-                      onCopyAddress: () =>
-                          onCopyAddress(links[index].depositAddress),
-                      onOpenLink: () => onOpenLink(links[index]),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _PaymentLinkRow extends StatelessWidget {
-  final PaymentLink link;
-  final String amount;
-  final String btcAmount;
-  final VoidCallback onCopyAddress;
-  final VoidCallback onOpenLink;
-
-  const _PaymentLinkRow({
-    required this.link,
-    required this.amount,
-    required this.btcAmount,
-    required this.onCopyAddress,
-    required this.onOpenLink,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final title = link.isOnboardingVoucher
-        ? context.l10n.depositLedgerVoucherTitle
-        : context.l10n.depositLedgerPaymentLinkTitle;
-    final moment = link.expiresAt != null
-        ? context.l10n.depositLedgerExpiresIn(
-            _relativeTime(context, link.expiresAt!),
-          )
-        : link.createdAt != null
-        ? _relativeTime(context, link.createdAt!)
-        : context.l10n.depositLedgerNow;
-
-    return InkWell(
-      onTap: onOpenLink,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        child: Row(
-          children: [
-            const _MonoIconBox(icon: LucideIcons.link),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: _textPrimary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${_linkStatusLabel(context, link)} · $moment',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: _textMuted,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  amount,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: _textPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  btcAmount,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: _textMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: onCopyAddress,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            LucideIcons.copy,
-                            size: 12,
-                            color: _textMuted,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            context.l10n.depositLedgerCopyAction,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: _textMuted,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          LucideIcons.arrowUpRight,
-                          size: 12,
-                          color: _textMuted,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          context.l10n.depositLedgerManageAction,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: _textMuted,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HistorySection extends StatelessWidget {
-  final AsyncValue<List<Transaction>> historyAsync;
-  final List<Transaction> rows;
-  final bool isCompact;
-
-  const _HistorySection({
-    required this.historyAsync,
-    required this.rows,
-    required this.isCompact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return historyAsync.when(
-      loading: () => _LoadingPanel(message: context.l10n.depositLedgerUpdating),
-      error: (error, _) => _ErrorPanel(
-        message: ErrorTranslator.translate(context.l10n, error.toString()),
-      ),
-      data: (_) {
-        if (rows.isEmpty) {
-          return _EmptyPanel(
-            icon: LucideIcons.receipt,
-            title: context.l10n.depositLedgerEmptyTitle,
-            message: context.l10n.depositLedgerEmptyMessage,
-          );
-        }
-
-        if (isCompact) {
-          return Container(
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _borderSoft),
-            ),
-            child: Column(
-              children: [
-                for (var index = 0; index < rows.length; index++) ...[
-                  if (index > 0) const Divider(height: 1, color: _borderSoft),
-                  _HistoryListRow(
-                    transaction: rows[index],
-                    onTap: () => FinancialActivityDetailsSheet.show(
-                      context,
-                      transaction: rows[index],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        }
-
-        return Container(
-          decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _borderSoft),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: 980,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _HistoryTableHeader(),
-                  const Divider(height: 1, color: _borderSoft),
-                  for (var index = 0; index < rows.length; index++) ...[
-                    if (index > 0) const Divider(height: 1, color: _borderSoft),
-                    _HistoryTableRow(
-                      transaction: rows[index],
-                      onTap: () => FinancialActivityDetailsSheet.show(
-                        context,
-                        transaction: rows[index],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _HistoryListRow extends ConsumerWidget {
-  final Transaction transaction;
-  final VoidCallback onTap;
-
-  const _HistoryListRow({required this.transaction, required this.onTap});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final visual = TransactionVisualSpec.fromTransaction(transaction);
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final amountLabel = _transactionAmountLabel(
-      transaction: transaction,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-    final counterparty = _counterpartyLabel(context, transaction);
-    final responsive = context.responsive;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            TransactionTypeIconBadge(
-              spec: visual,
-              size: 34,
-              iconSize: 16,
-              backgroundColor: _surfacePressed,
-              borderColor: _border,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          visual.localizedLabel(context),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: _textPrimary,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatusText(transaction.status),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    counterparty,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: _textMuted,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: responsive.isTinyPhone ? 112 : 150,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      amountLabel,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: _textPrimary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _DepositsScreenState._timeFormat.format(
-                      transaction.timestamp,
-                    ),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: _textMuted,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  if (transaction.canCancelPendingReceive) ...[
-                    const SizedBox(height: 4),
-                    _CancelReceiveInlineButton(transaction: transaction),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HistoryTableHeader extends StatelessWidget {
-  const _HistoryTableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      child: Row(
-        children: [
-          _TableHeadCell(width: 240, text: 'Tipo'),
-          _TableHeadCell(width: 140, text: 'Status'),
-          _TableHeadCell(width: 170, text: 'Valor'),
-          _TableHeadCell(width: 280, text: 'Contraparte'),
-          _TableHeadCell(width: 140, text: 'Data'),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistoryTableRow extends ConsumerWidget {
-  final Transaction transaction;
-  final VoidCallback onTap;
-
-  const _HistoryTableRow({required this.transaction, required this.onTap});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final visual = TransactionVisualSpec.fromTransaction(transaction);
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final amountLabel = _transactionAmountLabel(
-      transaction: transaction,
-      currency: selectedCurrency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 240,
-              child: Row(
-                children: [
-                  TransactionTypeIconBadge(
-                    spec: visual,
-                    size: 28,
-                    iconSize: 14,
-                    backgroundColor: _surfacePressed,
-                    borderColor: _border,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      visual.localizedLabel(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: _textPrimary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 140, child: _StatusText(transaction.status)),
-            SizedBox(
-              width: 170,
-              child: Text(
-                amountLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: _textPrimary,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 280,
-              child: Text(
-                _counterpartyLabel(context, transaction),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: _textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 140,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _DepositsScreenState._dateFormat.format(
-                      transaction.timestamp,
-                    ),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _textMuted,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  if (transaction.canCancelPendingReceive)
-                    _CancelReceiveInlineButton(transaction: transaction),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CancelReceiveInlineButton extends ConsumerWidget {
-  final Transaction transaction;
-
-  const _CancelReceiveInlineButton({required this.transaction});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return TextButton(
-      onPressed: () => _cancel(context, ref),
-      style: TextButton.styleFrom(
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(0, 28),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        foregroundColor: _textSecondary,
-      ),
-      child: Text(context.l10n.depositLedgerCancelReceive),
-    );
-  }
-
-  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
-    final transferId = transaction.externalTransferId?.trim() ?? '';
-    if (transferId.isEmpty || !transaction.canCancelPendingReceive) {
-      return;
-    }
-    final confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(context.l10n.depositLedgerCancelReceive),
-            content: Text(context.l10n.depositLedgerCancelReceiveMessage),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.l10n.depositLedgerBackAction),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.l10n.depositLedgerCancelReceive),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (!confirmed) {
-      return;
-    }
-    try {
-      await ref
-          .read(transactionRepositoryProvider)
-          .cancelInboundTransfer(transferId);
-      ref.invalidate(transactionHistoryProvider);
-      ref.invalidate(pagedTransactionHistoryProvider);
-      ref.invalidate(externalTransfersProvider);
-      if (context.mounted) {
-        AppNotice.showSuccess(
-          context,
-          message: context.l10n.depositLedgerReceiveCanceled,
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        AppNotice.showError(
-          context,
-          message: ErrorTranslator.translate(context.l10n, error.toString()),
-        );
-      }
-    }
-  }
-}
-
-class _PaginationControls extends StatelessWidget {
-  final int page;
-  final int size;
-  final bool isLoading;
-  final bool canGoNext;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
-  final ValueChanged<int> onSizeChanged;
-
-  const _PaginationControls({
-    required this.page,
-    required this.size,
-    required this.isLoading,
-    required this.canGoNext,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onSizeChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isCompact = MediaQuery.sizeOf(context).width < 760;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderSoft),
-      ),
-      child: Row(
-        children: [
-          Text(
-            context.l10n.depositLedgerPageShort(page + 1),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: _textMuted,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
-            ),
-          ),
-          const SizedBox(width: 10),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: size,
-              dropdownColor: _surfaceRaised,
-              borderRadius: BorderRadius.circular(8),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: _textPrimary,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0,
-              ),
-              iconEnabledColor: _textMuted,
-              items: [10, 25, 50].map((value) {
-                return DropdownMenuItem<int>(
-                  value: value,
-                  child: Text(
-                    isCompact
-                        ? '$value'
-                        : context.l10n.depositLedgerRowsPerPage(value),
-                  ),
-                );
-              }).toList(),
-              onChanged: isLoading
-                  ? null
-                  : (value) {
-                      if (value != null) {
-                        onSizeChanged(value);
-                      }
-                    },
-            ),
-          ),
-          const Spacer(),
-          _IconButtonShell(
-            tooltip: context.l10n.depositLedgerPreviousTooltip,
-            icon: LucideIcons.chevronLeft,
-            onPressed: onPrevious,
-          ),
-          const SizedBox(width: 8),
-          _IconButtonShell(
-            tooltip: context.l10n.depositLedgerNextTooltip,
-            icon: LucideIcons.chevronRight,
-            onPressed: canGoNext ? onNext : null,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? trailing;
-
-  const _SectionTitle({required this.icon, required this.title, this.trailing});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    VoidCallback? onTap,
+  }) {
     return Row(
       children: [
-        Icon(icon, size: 17, color: _iconMuted),
+        Icon(icon,
+            size: 14,
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5)),
+        const SizedBox(width: 8),
+        Text(
+          '$label:',
+          style: TextStyle(
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
+            fontSize: 12,
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: _textPrimary,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
-          ),
-        ),
-        if (trailing != null)
-          Text(
-            trailing!,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: _textMuted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _MonoActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
-
-  const _MonoActionButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final disabled = onPressed == null;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: disabled
-            ? null
-            : () {
-                HapticFeedback.selectionClick();
-                onPressed?.call();
-              },
-        borderRadius: BorderRadius.circular(8),
-        child: Ink(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
-          decoration: BoxDecoration(
-            color: disabled ? _background : _surfaceRaised,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _borderSoft),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: disabled
-                    ? _textMuted.withValues(alpha: 0.42)
-                    : _iconMuted,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: disabled
-                      ? _textMuted.withValues(alpha: 0.42)
-                      : _textSecondary,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconButtonShell extends StatelessWidget {
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback? onPressed;
-
-  const _IconButtonShell({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onPressed == null;
-
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox(
-        width: 38,
-        height: 38,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: disabled
-                ? null
-                : () {
-                    HapticFeedback.selectionClick();
-                    onPressed?.call();
-                  },
-            borderRadius: BorderRadius.circular(8),
-            child: Ink(
-              decoration: BoxDecoration(
-                color: disabled ? _background : _surfaceRaised,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _borderSoft),
-              ),
-              child: Icon(
-                icon,
-                size: 17,
-                color: disabled
-                    ? _textMuted.withValues(alpha: 0.36)
-                    : _textSecondary,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationButton extends StatelessWidget {
-  final int count;
-  final VoidCallback onPressed;
-
-  const _NotificationButton({required this.count, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        _IconButtonShell(
-          tooltip: context.l10n.depositLedgerAlerts,
-          icon: LucideIcons.bell,
-          onPressed: onPressed,
-        ),
-        if (count > 0)
-          Positioned(
-            right: -3,
-            top: -3,
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 16),
-              height: 16,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _textPrimary,
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Text(
-                count > 9 ? '9+' : '$count',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: _background,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                  height: 1,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _MonoIconBox extends StatelessWidget {
-  final IconData icon;
-
-  const _MonoIconBox({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 34.0;
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _surfacePressed,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _border),
-      ),
-      child: Icon(icon, size: 16, color: _iconMuted),
-    );
-  }
-}
-
-class _StatusText extends StatelessWidget {
-  final TransactionStatus status;
-
-  const _StatusText(this.status);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(_statusIcon(status), size: 12, color: _textMuted),
-        const SizedBox(width: 5),
-        Text(
-          _statusLabel(context, status),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: _textMuted,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TableHeadCell extends StatelessWidget {
-  final double width;
-  final String text;
-
-  const _TableHeadCell({required this.width, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: _textMuted,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
-}
-
-class _LoadingPanel extends StatelessWidget {
-  final String message;
-
-  const _LoadingPanel({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderSoft),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: _textSecondary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          child: GestureDetector(
+            onTap: onTap,
             child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _textSecondary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
+              value,
+              style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.9),
+                fontSize: 12,
+                fontFamily: 'monospace',
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorPanel extends StatelessWidget {
-  final String message;
-
-  const _ErrorPanel({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderSoft),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(LucideIcons.alertCircle, size: 17, color: _textMuted),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.depositLedgerErrorTitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _textPrimary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _textMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyPanel extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-
-  const _EmptyPanel({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _borderSoft),
-      ),
-      child: Row(
-        children: [
-          _MonoIconBox(icon: icon),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _textPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  message,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _textMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MobileActionDock extends StatelessWidget {
-  final VoidCallback onRefresh;
-  final VoidCallback onNotifications;
-  final int notificationCount;
-
-  const _MobileActionDock({
-    required this.onRefresh,
-    required this.onNotifications,
-    required this.notificationCount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _borderSoft),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _MonoActionButton(
-                    icon: LucideIcons.refreshCw,
-                    label: context.l10n.depositLedgerUpdateAction,
-                    onPressed: onRefresh,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: _MonoActionButton(
-                          icon: LucideIcons.bell,
-                          label: context.l10n.depositLedgerAlerts,
-                          onPressed: onNotifications,
-                        ),
-                      ),
-                      if (notificationCount > 0)
-                        Positioned(
-                          right: 3,
-                          top: -3,
-                          child: Container(
-                            constraints: const BoxConstraints(minWidth: 16),
-                            height: 16,
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _textPrimary,
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              notificationCount > 9
-                                  ? '9+'
-                                  : '$notificationCount',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: _background,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0,
-                                    height: 1,
-                                  ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
+        if (onTap != null)
+          Icon(
+            Icons.copy,
+            size: 12,
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
+          ),
+      ],
+    );
+  }
+
+  String _shortenTxid(String txid) {
+    if (txid.length <= 16) return txid;
+    return '${txid.substring(0, 8)}...${txid.substring(txid.length - 8)}';
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
+    }
+  }
+
+  void _copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('TXID copied!'),
+        backgroundColor: Color(0xFF00FF94),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 1),
       ),
     );
   }
-}
-
-bool _isCredit(Transaction tx) {
-  return tx.type == TransactionType.receive ||
-      tx.type == TransactionType.deposit;
-}
-
-String _transactionAmountLabel({
-  required Transaction transaction,
-  required Currency currency,
-  required double? btcUsd,
-  required double? btcEur,
-  required double? btcBrl,
-}) {
-  if (transaction.type == TransactionType.swap) {
-    return MoneyDisplay.formatAmountFromBtc(
-      btcAmount: transaction.amountBTC,
-      currency: currency,
-      btcUsd: btcUsd,
-      btcEur: btcEur,
-      btcBrl: btcBrl,
-    );
-  }
-
-  final signedAmount = _isCredit(transaction)
-      ? transaction.amountBTC
-      : -transaction.amountBTC;
-
-  return MoneyDisplay.formatAmountFromBtc(
-    btcAmount: signedAmount,
-    currency: currency,
-    btcUsd: btcUsd,
-    btcEur: btcEur,
-    btcBrl: btcBrl,
-    signed: true,
-  );
-}
-
-String _counterpartyLabel(BuildContext context, Transaction tx) {
-  final value = resolvePrimaryTransactionAddress(tx).trim();
-  if (value.isEmpty) {
-    return context.l10n.depositLedgerNoCounterparty;
-  }
-  return _DepositsScreenState.shorten(value, head: 12, tail: 6);
-}
-
-String _statusLabel(BuildContext context, TransactionStatus status) {
-  switch (status) {
-    case TransactionStatus.confirmed:
-      return context.l10n.depositLedgerStatusCompleted;
-    case TransactionStatus.confirming:
-      return context.l10n.depositLedgerStatusConfirming;
-    case TransactionStatus.pending:
-      return context.l10n.depositLedgerStatusPending;
-    case TransactionStatus.failed:
-      return context.l10n.depositLedgerStatusFailed;
-  }
-}
-
-IconData _statusIcon(TransactionStatus status) {
-  switch (status) {
-    case TransactionStatus.confirmed:
-      return LucideIcons.checkCircle2;
-    case TransactionStatus.confirming:
-      return LucideIcons.loader2;
-    case TransactionStatus.pending:
-      return LucideIcons.clock3;
-    case TransactionStatus.failed:
-      return LucideIcons.alertCircle;
-  }
-}
-
-String _linkStatusLabel(BuildContext context, PaymentLink link) {
-  if (link.isVerifyingOnboarding) {
-    return context.l10n.depositLedgerStatusVerifying;
-  }
-  if (link.isPending) {
-    return context.l10n.depositLedgerStatusPending;
-  }
-  if (link.isPaid || link.isCompleted) {
-    return context.l10n.depositLedgerStatusPaid;
-  }
-  if (link.isExpired) {
-    return context.l10n.depositLedgerStatusExpired;
-  }
-  return link.status;
-}
-
-String _relativeTime(BuildContext context, DateTime date) {
-  final localDate = date.toLocal();
-  final now = DateTime.now();
-  final difference = now.difference(localDate);
-  if (difference.isNegative) {
-    final future = localDate.difference(now);
-    if (future.inMinutes < 1) {
-      return context.l10n.depositLedgerRelativeSoon;
-    }
-    if (future.inHours < 1) {
-      return context.l10n.depositLedgerRelativeInMinutes(future.inMinutes);
-    }
-    if (future.inDays < 1) {
-      return context.l10n.depositLedgerRelativeInHours(future.inHours);
-    }
-    return context.l10n.depositLedgerRelativeInDays(future.inDays);
-  }
-  if (difference.inMinutes < 1) {
-    return context.l10n.depositLedgerRelativeNow;
-  }
-  if (difference.inHours < 1) {
-    return context.l10n.depositLedgerRelativeMinutesAgo(difference.inMinutes);
-  }
-  if (difference.inDays < 1) {
-    return context.l10n.depositLedgerRelativeHoursAgo(difference.inHours);
-  }
-  return _DepositsScreenState._dateTimeFormat.format(localDate);
 }

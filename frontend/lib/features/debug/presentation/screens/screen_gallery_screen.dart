@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
@@ -80,37 +79,26 @@ class ScreenGalleryScreen extends StatelessWidget {
             _buildScreenTile(context, 'Deposits List', const DepositsScreen()),
             _buildScreenTile(context, 'Deposit Amount',
                 DepositAmountScreen(wallet: mockWallet)),
-            _buildScreenTile(
-                context,
-                'Deposit Method',
-                DepositMethodScreen(
-                  wallet: mockWallet,
-                  inputAmount: 1000.0,
-                  inputCurrency: Currency.brl,
-                )),
+            _buildScreenTile(context, 'Deposit Method',
+                DepositMethodScreen(wallet: mockWallet, amountFiat: 1000.0)),
             _buildScreenTile(
                 context,
                 'Deposit Provider (Onramper)',
                 DepositProviderScreen(
-                    wallet: mockWallet,
-                    inputAmount: 1000.0,
-                    inputCurrency: Currency.brl,
-                    method: 'Pix')),
+                    wallet: mockWallet, amountFiat: 1000.0, method: 'Pix')),
             _buildScreenTile(
                 context,
                 'Onchain Invoice',
                 DepositOnchainInvoiceScreen(
                     wallet: mockWallet,
-                    inputAmount: 1000.0,
-                    inputCurrency: Currency.brl,
+                    amountFiat: 1000.0,
                     providerName: 'Kerosene')),
             _buildScreenTile(
                 context,
                 'Lightning Invoice',
                 DepositLightningInvoiceScreen(
                     wallet: mockWallet,
-                    inputAmount: 1000.0,
-                    inputCurrency: Currency.brl,
+                    amountFiat: 1000.0,
                     providerName: 'Kerosene')),
             _buildScreenTile(
                 context,

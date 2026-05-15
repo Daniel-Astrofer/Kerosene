@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
 
 class NfcScanDialog extends StatefulWidget {
   const NfcScanDialog({super.key});
@@ -53,8 +52,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
   }
 
   void _startNfcSession() async {
-    bool isAvailable =
-        await NfcManager.instance.checkAvailability() ==
+    bool isAvailable = await NfcManager.instance.checkAvailability() ==
         NfcAvailability.enabled;
     if (!isAvailable) {
       if (mounted) {
@@ -123,25 +121,19 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final dialogWidth = responsive.clampWidth(360);
-    final visualSize = dialogWidth < 300 ? 124.0 : 150.0;
-    final iconSize = visualSize * 0.54;
-
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.all(responsive.horizontalPadding),
+      insetPadding: const EdgeInsets.all(20),
       child: Container(
-        width: dialogWidth,
-        padding: EdgeInsets.all(responsive.isTinyPhone ? 18 : 24),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: const Color(0xFF1A1F3C),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.onPrimary.withValues(alpha: 0.1),
-          ),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onPrimary
+                  .withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
@@ -155,47 +147,41 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
           children: [
             Text(
               "NFC Scanner",
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: responsive.isTinyPhone ? 18 : 20,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: responsive.isTinyPhone ? 24 : 32),
+            const SizedBox(height: 32),
             Container(
-              height: visualSize,
-              width: visualSize,
+              height: 150,
+              width: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onPrimary.withValues(alpha: 0.05),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05),
               ),
               child: _isScanning
-                  ? Icon(
-                      Icons.nfc,
-                      size: iconSize,
-                      color: const Color(0xFF00D4FF),
-                    )
-                  : Icon(
+                  ? const Icon(Icons.nfc, size: 80, color: Color(0xFF00D4FF))
+                  : const Icon(
                       Icons.check_circle,
-                      size: iconSize,
+                      size: 80,
                       color: Colors.greenAccent,
                     ),
             ),
-            SizedBox(height: responsive.isTinyPhone ? 24 : 32),
+            const SizedBox(height: 32),
             Text(
               _status,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onPrimary.withValues(alpha: 0.7),
-                fontSize: responsive.isTinyPhone ? 14 : 16,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.7),
+                fontSize: 16,
               ),
             ),
             const SizedBox(height: 24),
@@ -204,10 +190,10 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
               child: Text(
                 "Cancel",
                 style: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onPrimary.withValues(alpha: 0.54),
-                ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.54)),
               ),
             ),
           ],

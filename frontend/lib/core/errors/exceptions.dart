@@ -5,14 +5,8 @@ class AppException implements Exception {
   final String message;
   final int? statusCode;
   final String? errorCode;
-  final Object? data;
 
-  const AppException({
-    required this.message,
-    this.statusCode,
-    this.errorCode,
-    this.data,
-  });
+  const AppException({required this.message, this.statusCode, this.errorCode});
 
   @override
   String toString() => jsonEncode({
@@ -20,7 +14,6 @@ class AppException implements Exception {
         'message': message,
         'statusCode': statusCode,
         'errorCode': errorCode,
-        'data': data,
       });
 }
 
@@ -30,7 +23,6 @@ class ServerException extends AppException {
     required super.message,
     super.statusCode,
     super.errorCode,
-    super.data,
   });
 }
 
@@ -45,7 +37,6 @@ class AuthException extends AppException {
     required super.message,
     super.statusCode,
     super.errorCode,
-    super.data,
   });
 }
 
@@ -55,7 +46,6 @@ class ValidationException extends AppException {
     required super.message,
     super.statusCode = 400,
     super.errorCode,
-    super.data,
   });
 }
 

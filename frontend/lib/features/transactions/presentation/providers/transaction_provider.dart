@@ -1,12 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 
-import '../../../../core/errors/exceptions.dart';
-import '../../../../core/errors/failures.dart';
-import '../../../../core/utils/transaction_address_display.dart';
-import '../../../../core/services/passkey_service.dart';
+import '../../../../core/services/sovereign_auth_service.dart';
+import '../../../../core/utils/snackbar_helper.dart';
 import '../../../auth/controller/auth_local_provider.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../../wallet/domain/entities/transaction.dart';
@@ -16,13 +12,10 @@ import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
-import '../../domain/entities/external_transfer.dart';
 import '../../domain/entities/payment_link.dart';
-import '../../domain/entities/wallet_network_address.dart';
 import '../../../wallet/domain/repositories/ledger_repository.dart'; // Add this
 import '../../../wallet/presentation/providers/wallet_provider.dart'
-    show ledgerRepositoryProvider, walletProvider;
-import '../../../wallet/presentation/state/wallet_state.dart';
+    show ledgerRepositoryProvider;
 
 // ==================== Filter Logic ====================
 
@@ -63,103 +56,6 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   );
 });
 
-final walletNetworkProfileProvider =
-    FutureProvider.family<WalletNetworkAddress, String>(
-        (ref, walletName) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getWalletNetworkProfile(walletName: walletName);
-});
-
-List<Transaction> _mergeExternalHistory({
-  required List<Transaction> ledgerTransactions,
-  required List<ExternalTransfer> externalTransfers,
-}) {
-  final merged = <String, Transaction>{};
-
-  void upsert(Transaction transaction) {
-    final key = _transactionHistoryKey(transaction);
-    final existing = merged[key];
-    if (existing == null || _shouldReplaceHistoryEntry(existing, transaction)) {
-      merged[key] = transaction;
-    }
-  }
-
-  for (final transaction in ledgerTransactions) {
-    upsert(transaction);
-  }
-
-  for (final transfer in externalTransfers) {
-    upsert(transfer.toTransaction());
-  }
-
-  final history = merged.values.toList()
-    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-  return history;
-}
-
-String _transactionHistoryKey(Transaction transaction) {
-  final blockchainTxid = transaction.blockchainTxid?.trim() ?? '';
-  if (blockchainTxid.isNotEmpty) {
-    return 'blockchain:$blockchainTxid';
-  }
-  return 'transaction:${transaction.id.trim()}';
-}
-
-bool _shouldReplaceHistoryEntry(Transaction current, Transaction candidate) {
-  final currentScore = _historyCompletenessScore(current);
-  final candidateScore = _historyCompletenessScore(candidate);
-  if (candidateScore != currentScore) {
-    return candidateScore > currentScore;
-  }
-  if (current.isInternal && !candidate.isInternal) {
-    return true;
-  }
-  if (current.feeSatoshis == 0 && candidate.feeSatoshis > 0) {
-    return true;
-  }
-  if (candidate.timestamp.isAfter(current.timestamp)) {
-    return true;
-  }
-  return false;
-}
-
-int _historyCompletenessScore(Transaction transaction) {
-  var score = 0;
-
-  if (!transaction.isInternal) {
-    score += 2;
-  }
-  if ((transaction.blockchainTxid ?? '').trim().isNotEmpty) {
-    score += 6;
-  }
-  if ((transaction.paymentHash ?? '').trim().isNotEmpty) {
-    score += 5;
-  }
-  if ((transaction.invoiceId ?? '').trim().isNotEmpty) {
-    score += 4;
-  }
-  if ((transaction.externalReference ?? '').trim().isNotEmpty) {
-    score += 2;
-  }
-  if (transaction.feeSatoshis > 0) {
-    score += 1;
-  }
-
-  score += transactionAddressInformationScore(transaction);
-
-  return score;
-}
-
-Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
-  try {
-    return await ref
-        .watch(transactionRepositoryProvider)
-        .getExternalTransfers();
-  } catch (_) {
-    return const <ExternalTransfer>[];
-  }
-}
-
 // ==================== Transaction History (API) ====================
 
 /// Busca o histórico de transações do endpoint GET /ledger/history
@@ -168,44 +64,15 @@ final transactionHistoryProvider = FutureProvider<List<Transaction>>((
 ) async {
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(page: 0, size: 50);
-  final externalTransfers = await _loadExternalTransfersSafely(ref);
 
   return result.fold(
     (failure) => throw Exception(failure.message),
     (transactions) {
-      return _mergeExternalHistory(
-        ledgerTransactions: transactions,
-        externalTransfers: externalTransfers,
-      );
+      final sortedTransactions = List<Transaction>.from(transactions)
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return sortedTransactions;
     },
   );
-});
-
-final pagedTransactionHistoryProvider =
-    FutureProvider.family<List<Transaction>, ({int page, int size})>((
-  ref,
-  request,
-) async {
-  final ledgerRepo = ref.watch(ledgerRepositoryProvider);
-  final result = await ledgerRepo.getHistory(
-    page: request.page,
-    size: request.size,
-  );
-  final transactions = result.fold<List<Transaction>>(
-    (failure) => throw Exception(failure.message),
-    (transactions) => transactions,
-  );
-
-  if (request.page != 0) {
-    return transactions;
-  }
-
-  final externalTransfers = await _loadExternalTransfersSafely(ref);
-  final merged = _mergeExternalHistory(
-    ledgerTransactions: transactions,
-    externalTransfers: externalTransfers,
-  );
-  return merged.take(request.size).toList();
 });
 
 /// Histórico filtrado por tipo
@@ -271,27 +138,11 @@ final txStatusProvider = FutureProvider.family<TxStatus, String>((
 
 final depositAddressProvider = FutureProvider<String>((ref) async {
   final repo = ref.watch(transactionRepositoryProvider);
-  final walletState = ref.watch(walletProvider);
-
-  if (walletState is WalletLoaded && walletState.wallets.isNotEmpty) {
-    final walletName = walletState.wallets.first.name.trim();
-    if (walletName.isNotEmpty) {
-      try {
-        final profile =
-            await repo.getWalletNetworkProfile(walletName: walletName);
-        final onchainAddress = profile.onchainAddress.trim();
-        if (onchainAddress.isNotEmpty) {
-          return onchainAddress;
-        }
-      } catch (error) {
-        throw Exception(
-            'Nao foi possivel carregar o endereco on-chain real: $error');
-      }
-    }
-  }
-
-  throw Exception(
-      'Nenhuma carteira com perfil de rede disponivel para deposito.');
+  final result = await repo.getDepositAddress();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (address) => address,
+  );
 });
 
 // ==================== Deposits ====================
@@ -350,26 +201,6 @@ final paymentLinkDetailProvider = FutureProvider.family<PaymentLink, String>((
   );
 });
 
-final externalTransfersProvider = FutureProvider<List<ExternalTransfer>>((
-  ref,
-) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  final transfers = await repo.getExternalTransfers();
-  final sorted = List<ExternalTransfer>.from(transfers)
-    ..sort((a, b) {
-      final left = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final right = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return right.compareTo(left);
-    });
-  return sorted;
-});
-
-final externalTransferDetailProvider =
-    FutureProvider.family<ExternalTransfer, String>((ref, transferId) async {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return repo.getExternalTransfer(transferId);
-});
-
 // ==================== Action Notifiers ====================
 
 /// State for async operations
@@ -406,7 +237,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
     String? fromWalletId,
     String? fromAddress,
     String? context,
-    String? passkeyAssertionJson,
+    String? passkeySignature,
     String? confirmationPassphrase,
     String? totpCode,
     String? idempotencyKey,
@@ -421,93 +252,74 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
         fromWalletId: fromWalletId,
         fromAddress: fromAddress,
         context: context,
-        passkeyAssertionJson: passkeyAssertionJson,
+        passkeySignature: passkeySignature,
         confirmationPassphrase: confirmationPassphrase,
         totpCode: totpCode,
         idempotencyKey: idempotencyKey,
         requestTimestamp: requestTimestamp,
       );
 
+      debugPrint('>>> Notifier: Transaction sent successfully: ${result.txid}');
+
       // Refresh history from API after successful transaction
       ref.invalidate(transactionHistoryProvider);
-      ref.invalidate(depositsProvider);
-      ref.invalidate(depositBalanceProvider);
-      await ref.read(walletProvider.notifier).refresh();
 
       state = AsyncActionState(result: result);
       return result;
-    } catch (e) {
-      final challenge = _extractPasskeyChallenge(e);
-      if (challenge != null) {
-        return _retrySendWithPasskeyChallenge(
-          initialChallenge: challenge,
-          toAddress: toAddress,
-          amount: amount,
-          feeSatoshis: feeSatoshis,
-          fromWalletId: fromWalletId,
-          fromAddress: fromAddress,
-          context: context,
-          confirmationPassphrase: confirmationPassphrase,
-          totpCode: totpCode,
-          idempotencyKey: idempotencyKey,
-          requestTimestamp: requestTimestamp,
-        );
+    } catch (e, stack) {
+      debugPrint('>>> Notifier Error: $e');
+      debugPrint('>>> Stack: $stack');
+
+      final errorStr = e.toString();
+      if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
+        try {
+          // Extract challenge from error message (format: "PASSKEY_CHALLENGE_REQUIRED:<challenge>")
+          final challenge = errorStr
+              .split('PASSKEY_CHALLENGE_REQUIRED:')
+              .last
+              .split('"')
+              .first
+              .trim();
+          debugPrint(
+              '>>> Notifier: Passkey challenge required. Challenge: $challenge');
+
+          SnackbarHelper.showSuccess(
+              'Assinatura biométrica necessária para esta transação.');
+
+          // Sign the challenge using Sovereign Passkey (Ed25519)
+          final signature =
+              await SovereignAuthService.instance.signChallenge(challenge);
+
+          debugPrint('>>> Notifier: Challenge signed. Retrying transaction...');
+
+          // Retry with signature
+          final result = await _repository.sendTransaction(
+            toAddress: toAddress,
+            amount: amount,
+            feeSatoshis: feeSatoshis,
+            fromWalletId: fromWalletId,
+            fromAddress: fromAddress,
+            context: context,
+            passkeySignature: signature,
+            confirmationPassphrase: confirmationPassphrase,
+            totpCode: totpCode,
+            idempotencyKey: idempotencyKey,
+            requestTimestamp: requestTimestamp,
+          );
+
+          ref.invalidate(transactionHistoryProvider);
+          state = AsyncActionState(result: result);
+          return result;
+        } catch (signErr) {
+          debugPrint('>>> Notifier: Sign/Retry failed: $signErr');
+          state = AsyncActionState(error: signErr.toString());
+          return null;
+        }
       }
 
       state = AsyncActionState(error: e.toString());
       return null;
     }
-  }
-
-  Future<TxStatus?> _retrySendWithPasskeyChallenge({
-    required String initialChallenge,
-    required String toAddress,
-    required double amount,
-    required int feeSatoshis,
-    String? fromWalletId,
-    String? fromAddress,
-    String? context,
-    String? confirmationPassphrase,
-    String? totpCode,
-    String? idempotencyKey,
-    int? requestTimestamp,
-  }) async {
-    var challenge = initialChallenge;
-    for (var attempt = 0; attempt < 2; attempt++) {
-      try {
-        final assertionJson = await _buildPasskeyAssertionJson(challenge);
-        final result = await _repository.sendTransaction(
-          toAddress: toAddress,
-          amount: amount,
-          feeSatoshis: feeSatoshis,
-          fromWalletId: fromWalletId,
-          fromAddress: fromAddress,
-          context: context,
-          passkeyAssertionJson: assertionJson,
-          confirmationPassphrase: confirmationPassphrase,
-          totpCode: totpCode,
-          idempotencyKey: idempotencyKey,
-          requestTimestamp: requestTimestamp,
-        );
-
-        ref.invalidate(transactionHistoryProvider);
-        ref.invalidate(depositsProvider);
-        ref.invalidate(depositBalanceProvider);
-        await ref.read(walletProvider.notifier).refresh();
-        state = AsyncActionState(result: result);
-        return result;
-      } catch (signErr) {
-        final renewedChallenge = _extractPasskeyChallenge(signErr);
-        if (renewedChallenge == null ||
-            renewedChallenge == challenge ||
-            attempt == 1) {
-          state = AsyncActionState(error: signErr.toString());
-          return null;
-        }
-        challenge = renewedChallenge;
-      }
-    }
-    return null;
   }
 
   Future<TxStatus?> broadcast({
@@ -608,10 +420,6 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         },
         (data) {
           final link = PaymentLink.fromJson(data);
-          ref.invalidate(transactionHistoryProvider);
-          ref.invalidate(depositsProvider);
-          ref.invalidate(depositBalanceProvider);
-          ref.read(walletProvider.notifier).refresh();
           state = AsyncActionState(result: link);
           return link;
         },
@@ -625,124 +433,29 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
   Future<PaymentLink?> pay({
     required String linkId,
     required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
   }) async {
     state = const AsyncActionState(isLoading: true);
-    final operationIdempotencyKey = const Uuid().v4();
-    final requestTimestamp = DateTime.now().millisecondsSinceEpoch;
     try {
       final result = await _ledgerRepository.payPaymentRequest(
         linkId: linkId,
         payerWalletName: payerWalletName,
-        totpCode: totpCode,
-        confirmationPassphrase: confirmationPassphrase,
-        passkeyAssertionJson: passkeyAssertionJson,
-        idempotencyKey: operationIdempotencyKey,
-        requestTimestamp: requestTimestamp,
       );
 
-      return result.fold<Future<PaymentLink?>>(
-        (failure) => _handlePayFailure(
-          failure.message,
-          linkId: linkId,
-          payerWalletName: payerWalletName,
-          totpCode: totpCode,
-          confirmationPassphrase: confirmationPassphrase,
-          idempotencyKey: operationIdempotencyKey,
-          requestTimestamp: requestTimestamp,
-        ),
-        (data) async => _completePayment(data),
+      return result.fold(
+        (failure) {
+          state = AsyncActionState(error: failure.message);
+          return null;
+        },
+        (data) {
+          final link = PaymentLink.fromJson(data);
+          state = AsyncActionState(result: link);
+          return link;
+        },
       );
     } catch (e) {
-      return _handlePayFailure(
-        e,
-        linkId: linkId,
-        payerWalletName: payerWalletName,
-        totpCode: totpCode,
-        confirmationPassphrase: confirmationPassphrase,
-        idempotencyKey: operationIdempotencyKey,
-        requestTimestamp: requestTimestamp,
-      );
-    }
-  }
-
-  Future<PaymentLink?> _handlePayFailure(
-    Object error, {
-    required String linkId,
-    required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    required String idempotencyKey,
-    required int requestTimestamp,
-  }) async {
-    final errorStr = error.toString();
-    final challenge = _extractPasskeyChallenge(error);
-    if (challenge == null) {
-      state = AsyncActionState(error: errorStr);
+      state = AsyncActionState(error: e.toString());
       return null;
     }
-
-    try {
-      var currentChallenge = challenge;
-      for (var attempt = 0; attempt < 2; attempt++) {
-        try {
-          final assertionJson =
-              await _buildPasskeyAssertionJson(currentChallenge);
-          final result = await _ledgerRepository.payPaymentRequest(
-            linkId: linkId,
-            payerWalletName: payerWalletName,
-            totpCode: totpCode,
-            confirmationPassphrase: confirmationPassphrase,
-            passkeyAssertionJson: assertionJson,
-            idempotencyKey: idempotencyKey,
-            requestTimestamp: requestTimestamp,
-          );
-
-          final failure =
-              result.fold<Failure?>((failure) => failure, (_) => null);
-          if (failure != null) {
-            final renewedChallenge = _extractPasskeyChallenge(failure);
-            if (renewedChallenge != null &&
-                renewedChallenge != currentChallenge &&
-                attempt == 0) {
-              currentChallenge = renewedChallenge;
-              continue;
-            }
-            state = AsyncActionState(error: failure.message);
-            return null;
-          }
-
-          return result.fold<PaymentLink?>(
-            (_) => null,
-            _completePayment,
-          );
-        } catch (signErr) {
-          final renewedChallenge = _extractPasskeyChallenge(signErr);
-          if (renewedChallenge == null ||
-              renewedChallenge == currentChallenge ||
-              attempt == 1) {
-            rethrow;
-          }
-          currentChallenge = renewedChallenge;
-        }
-      }
-      return null;
-    } catch (signErr) {
-      state = AsyncActionState(error: signErr.toString());
-      return null;
-    }
-  }
-
-  PaymentLink _completePayment(Map<String, dynamic> data) {
-    final link = PaymentLink.fromJson(data);
-    ref.invalidate(transactionHistoryProvider);
-    ref.invalidate(depositsProvider);
-    ref.invalidate(depositBalanceProvider);
-    ref.read(walletProvider.notifier).refresh();
-    state = AsyncActionState(result: link);
-    return link;
   }
 
   void reset() => state = const AsyncActionState();
@@ -764,61 +477,69 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
 
   Future<TxStatus?> withdraw({
     required String fromWalletName,
-    String? toAddress,
-    String? paymentRequest,
+    required String toAddress,
     required double amount,
-    String? totpCode,
-    bool isLightning = false,
-    double maxRoutingFeeBtc = 0.000001,
+    required String totpCode,
     String? description,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
+    String? passkeySignature,
+    String? passkeyChallenge,
   }) async {
     state = const AsyncActionState(isLoading: true);
-    final operationIdempotencyKey = idempotencyKey?.trim().isNotEmpty == true
-        ? idempotencyKey!.trim()
-        : const Uuid().v4();
     try {
       final result = await _repository.withdraw(
         fromWalletName: fromWalletName,
         toAddress: toAddress,
-        paymentRequest: paymentRequest,
         amount: amount,
         totpCode: totpCode,
-        isLightning: isLightning,
-        maxRoutingFeeBtc: maxRoutingFeeBtc,
         description: description,
-        confirmationPassphrase: confirmationPassphrase,
-        passkeyAssertionJson: passkeyAssertionJson,
-        idempotencyKey: operationIdempotencyKey,
+        passkeySignature: passkeySignature,
+        passkeyChallenge: passkeyChallenge,
       );
 
       // Refresh history from API after withdrawal
       ref.invalidate(transactionHistoryProvider);
-      ref.invalidate(depositsProvider);
-      ref.invalidate(depositBalanceProvider);
-      ref.invalidate(externalTransfersProvider);
-      await ref.read(walletProvider.notifier).refresh();
 
       state = AsyncActionState(result: result);
       return result;
     } catch (e) {
-      final challenge = _extractPasskeyChallenge(e);
-      if (challenge != null) {
-        return _retryWithdrawWithPasskeyChallenge(
-          initialChallenge: challenge,
-          fromWalletName: fromWalletName,
-          toAddress: toAddress,
-          paymentRequest: paymentRequest,
-          amount: amount,
-          totpCode: totpCode,
-          isLightning: isLightning,
-          maxRoutingFeeBtc: maxRoutingFeeBtc,
-          description: description,
-          confirmationPassphrase: confirmationPassphrase,
-          idempotencyKey: operationIdempotencyKey,
-        );
+      final errorStr = e.toString();
+      if (errorStr.contains('PASSKEY_CHALLENGE_REQUIRED')) {
+        try {
+          final challenge = errorStr
+              .split('PASSKEY_CHALLENGE_REQUIRED:')
+              .last
+              .split('"')
+              .first
+              .trim();
+          debugPrint(
+              '>>> Notifier: Passkey challenge required for withdrawal. Challenge: $challenge');
+
+          SnackbarHelper.showSuccess(
+              'Assinatura biométrica necessária para confirmar o saque.');
+
+          final signature =
+              await SovereignAuthService.instance.signChallenge(challenge);
+
+          debugPrint('>>> Notifier: Withdrawal challenge signed. Retrying...');
+
+          final result = await _repository.withdraw(
+            fromWalletName: fromWalletName,
+            toAddress: toAddress,
+            amount: amount,
+            totpCode: totpCode,
+            description: description,
+            passkeySignature: signature,
+            passkeyChallenge: challenge,
+          );
+
+          ref.invalidate(transactionHistoryProvider);
+          state = AsyncActionState(result: result);
+          return result;
+        } catch (signErr) {
+          debugPrint('>>> Notifier: Withdrawal sign/retry failed: $signErr');
+          state = AsyncActionState(error: signErr.toString());
+          return null;
+        }
       }
 
       state = AsyncActionState(error: e.toString());
@@ -826,149 +547,8 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
     }
   }
 
-  Future<TxStatus?> _retryWithdrawWithPasskeyChallenge({
-    required String initialChallenge,
-    required String fromWalletName,
-    String? toAddress,
-    String? paymentRequest,
-    required double amount,
-    String? totpCode,
-    bool isLightning = false,
-    double maxRoutingFeeBtc = 0.000001,
-    String? description,
-    String? confirmationPassphrase,
-    required String idempotencyKey,
-  }) async {
-    var challenge = initialChallenge;
-    for (var attempt = 0; attempt < 2; attempt++) {
-      try {
-        final assertionJson = await _buildPasskeyAssertionJson(challenge);
-        final result = await _repository.withdraw(
-          fromWalletName: fromWalletName,
-          toAddress: toAddress,
-          paymentRequest: paymentRequest,
-          amount: amount,
-          totpCode: totpCode,
-          isLightning: isLightning,
-          maxRoutingFeeBtc: maxRoutingFeeBtc,
-          description: description,
-          confirmationPassphrase: confirmationPassphrase,
-          passkeyAssertionJson: assertionJson,
-          idempotencyKey: idempotencyKey,
-        );
-
-        ref.invalidate(transactionHistoryProvider);
-        ref.invalidate(depositsProvider);
-        ref.invalidate(depositBalanceProvider);
-        ref.invalidate(externalTransfersProvider);
-        await ref.read(walletProvider.notifier).refresh();
-        state = AsyncActionState(result: result);
-        return result;
-      } catch (signErr) {
-        final renewedChallenge = _extractPasskeyChallenge(signErr);
-        if (renewedChallenge == null ||
-            renewedChallenge == challenge ||
-            attempt == 1) {
-          state = AsyncActionState(error: signErr.toString());
-          return null;
-        }
-        challenge = renewedChallenge;
-      }
-    }
-    return null;
-  }
-
   void reset() => state = const AsyncActionState();
 }
 
 final withdrawProvider =
     NotifierProvider<WithdrawNotifier, AsyncActionState>(WithdrawNotifier.new);
-
-String? _extractPasskeyChallenge(Object error) {
-  const marker = 'PASSKEY_CHALLENGE_REQUIRED:';
-  final rawError = error.toString().trim();
-  final candidates = <String>[rawError];
-
-  if (error is AppException) {
-    candidates.insert(0, error.message);
-    _appendPasskeyChallengeCandidates(candidates, error.data);
-  } else if (error is Failure) {
-    candidates.insert(0, error.message);
-    _appendPasskeyChallengeCandidates(candidates, error.data);
-  }
-
-  try {
-    final decoded = jsonDecode(rawError);
-    if (decoded is Map) {
-      _appendPasskeyChallengeCandidates(candidates, decoded);
-    }
-  } catch (_) {}
-
-  final hexPattern = RegExp(
-    '${RegExp.escape(marker)}([0-9a-fA-F]+)',
-  );
-
-  for (final candidate in candidates) {
-    final trimmedCandidate = candidate.trim();
-    if (RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(trimmedCandidate)) {
-      return trimmedCandidate;
-    }
-
-    final hexMatch = hexPattern.firstMatch(candidate);
-    if (hexMatch != null) {
-      return hexMatch.group(1);
-    }
-
-    final markerIndex = candidate.indexOf(marker);
-    if (markerIndex < 0) {
-      continue;
-    }
-
-    var challenge = candidate.substring(markerIndex + marker.length).trim();
-    challenge = challenge.replaceFirst(RegExp(r"""^['"]+"""), '');
-    challenge = challenge.replaceFirst(RegExp(r"""['",}\]\s]+$"""), '');
-
-    if (challenge.isNotEmpty) {
-      return challenge;
-    }
-  }
-
-  return null;
-}
-
-void _appendPasskeyChallengeCandidates(List<String> candidates, Object? value) {
-  if (value == null) {
-    return;
-  }
-
-  if (value is Map) {
-    for (final key in const ['challenge', 'message', 'error', 'guidance']) {
-      final candidate = value[key]?.toString().trim();
-      if (candidate != null && candidate.isNotEmpty) {
-        candidates.add(candidate);
-      }
-    }
-    _appendPasskeyChallengeCandidates(candidates, value['data']);
-    return;
-  }
-
-  if (value is Iterable) {
-    for (final item in value) {
-      _appendPasskeyChallengeCandidates(candidates, item);
-    }
-    return;
-  }
-
-  final candidate = value.toString().trim();
-  if (candidate.isNotEmpty) {
-    candidates.add(candidate);
-  }
-}
-
-Future<String> _buildPasskeyAssertionJson(String challenge) async {
-  final credential = await PasskeyService.instance.authenticate(
-    challengeHex: challenge,
-    username: 'transaction',
-  );
-  return jsonEncode(credential);
-}

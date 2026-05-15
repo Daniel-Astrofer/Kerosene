@@ -1,25 +1,22 @@
-import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:slip39/slip39.dart';
-import 'package:teste/core/constants/app_copy.dart';
-
-import '../../features/security/domain/entities/account_security_profile.dart';
 import '../security/biometric_service.dart';
 import '../theme/app_spacing.dart';
+
+/// Security tier as stored in the wallet/account.
+enum AccountSecurity { standard, advanced, totp, shamir }
 
 class TransactionAuthResult {
   final bool isAuthenticated;
   final String? confirmationPassphrase;
   final String? totpCode;
-  final String? passkeyAssertionJson;
 
   const TransactionAuthResult._({
     required this.isAuthenticated,
     this.confirmationPassphrase,
     this.totpCode,
-    this.passkeyAssertionJson,
   });
 
   const TransactionAuthResult.cancelled() : this._(isAuthenticated: false);
@@ -27,79 +24,53 @@ class TransactionAuthResult {
   const TransactionAuthResult.success({
     String? confirmationPassphrase,
     String? totpCode,
-    String? passkeyAssertionJson,
   }) : this._(
           isAuthenticated: true,
           confirmationPassphrase: confirmationPassphrase,
           totpCode: totpCode,
-          passkeyAssertionJson: passkeyAssertionJson,
         );
 }
 
+/// Shows the right auth challenge for a transaction, then calls [onAuthenticated].
+/// If auth fails or is cancelled, calls [onCancelled].
+///
+/// Usage:
+/// ```dart
+/// TransactionAuthGate.show(
+///   context,
+///   security: AccountSecurity.shamir,
+///   onAuthenticated: () => _sendBitcoin(),
+/// );
+/// ```
 class TransactionAuthGate {
+  /// Resolves the security level from the raw string saved on the account.
+  static AccountSecurity securityFromString(String? raw) {
+    switch (raw?.toUpperCase()) {
+      case 'SHAMIR':
+        return AccountSecurity.shamir;
+      case 'TOTP':
+        return AccountSecurity.totp;
+      case 'MULTISIG_2FA':
+      case 'ADVANCED':
+        return AccountSecurity.advanced;
+      default:
+        return AccountSecurity.standard;
+    }
+  }
+
+  /// Shows the appropriate auth challenge and waits for the result.
   static Future<TransactionAuthResult> show(
     BuildContext context, {
-    AccountSecurityProfile? profile,
-    @Deprecated('Use profile') AccountSecurityProfile? security,
-    bool forceTotp = false,
-    bool allowDeviceAuthUnavailable = false,
+    required AccountSecurity security,
     VoidCallback? onAuthenticated,
     VoidCallback? onCancelled,
   }) async {
-    final resolvedProfile = profile ?? security;
-    if (resolvedProfile == null) {
-      throw ArgumentError('profile is required.');
-    }
-
-    final effectiveProfile = _effectiveProfile(
-      resolvedProfile,
-      forceTotp: forceTotp,
+    final biometricService = BiometricService();
+    final result = await _resolve(
+      context,
+      security: security,
+      biometricService: biometricService,
     );
-    final needsManualFactors = _needsManualFactors(effectiveProfile);
-
-    if (effectiveProfile.requiresPasskey && !needsManualFactors) {
-      onAuthenticated?.call();
-      return const TransactionAuthResult.success();
-    }
-
-    if (!effectiveProfile.requiresPasskey) {
-      final biometricService = BiometricService();
-      final deviceAuthOutcome = await _showDevicePinFallback(
-        context,
-        biometricService,
-      );
-
-      if (deviceAuthOutcome == _DeviceAuthOutcome.rejected ||
-          (deviceAuthOutcome == _DeviceAuthOutcome.unavailable &&
-              !allowDeviceAuthUnavailable) ||
-          !context.mounted) {
-        onCancelled?.call();
-        return const TransactionAuthResult.cancelled();
-      }
-    }
-
-    final TransactionAuthResult result;
-    if (!needsManualFactors) {
-      result = const TransactionAuthResult.success();
-    } else if (effectiveProfile.requiresShamirShares) {
-      result = await showModalBottomSheet<TransactionAuthResult>(
-            context: context,
-            backgroundColor: Colors.transparent,
-            isScrollControlled: true,
-            builder: (_) =>
-                _ShamirAuthorizationSheet(profile: effectiveProfile),
-          ) ??
-          const TransactionAuthResult.cancelled();
-    } else {
-      result = await showModalBottomSheet<TransactionAuthResult>(
-            context: context,
-            backgroundColor: Colors.transparent,
-            isScrollControlled: true,
-            builder: (_) =>
-                _FactorAuthorizationSheet(profile: effectiveProfile),
-          ) ??
-          const TransactionAuthResult.cancelled();
-    }
 
     if (result.isAuthenticated) {
       onAuthenticated?.call();
@@ -110,385 +81,238 @@ class TransactionAuthGate {
     return result;
   }
 
-  static AccountSecurityProfile securityFromString(String? raw) {
-    final mode = accountSecurityModeFromApi(raw);
-    switch (mode) {
-      case AccountSecurityMode.shamir:
-        return const AccountSecurityProfile(
-          mode: AccountSecurityMode.shamir,
-          requiredFactors: ['SLIP39_SHARES'],
-        );
-      case AccountSecurityMode.multisig2fa:
-        return const AccountSecurityProfile(
-          mode: AccountSecurityMode.multisig2fa,
-          requiredFactors: ['PASSPHRASE', 'TOTP'],
-        );
-      case AccountSecurityMode.passkey:
-        return const AccountSecurityProfile(
-          mode: AccountSecurityMode.passkey,
-          passkeyAvailable: true,
-          passkeyEnabledForTransactions: true,
-          requiredFactors: ['PASSKEY'],
-        );
-      case AccountSecurityMode.standard:
-        return const AccountSecurityProfile(
-          mode: AccountSecurityMode.standard,
-          passkeyAvailable: true,
-          passkeyEnabledForTransactions: true,
-          requiredFactors: ['PASSKEY'],
-        );
-    }
-  }
-
-  static AccountSecurityProfile _effectiveProfile(
-    AccountSecurityProfile profile, {
-    required bool forceTotp,
-  }) {
-    if (!forceTotp || profile.requiresTotp) {
-      return profile;
-    }
-
-    return profile.copyWith(
-      requiredFactors: [...profile.requiredFactors, 'TOTP'],
+  static Future<TransactionAuthResult> _resolve(
+    BuildContext context, {
+    required AccountSecurity security,
+    required BiometricService biometricService,
+  }) async {
+    final didAuthenticate = await _showDevicePinFallback(
+      context,
+      biometricService,
     );
+    if (!didAuthenticate || !context.mounted) {
+      return const TransactionAuthResult.cancelled();
+    }
+
+    switch (security) {
+      case AccountSecurity.standard:
+        return const TransactionAuthResult.success();
+
+      case AccountSecurity.advanced:
+        final passphrase = await _showPassphraseDialog(
+          context,
+          title: 'Confirmação da Passphrase',
+          subtitle: 'Digite sua passphrase para autorizar esta transação',
+        );
+        if (passphrase == null || passphrase.isEmpty) {
+          return const TransactionAuthResult.cancelled();
+        }
+        return TransactionAuthResult.success(
+          confirmationPassphrase: passphrase,
+        );
+
+      case AccountSecurity.totp:
+        final totpCode = await _showTotpDialog(context);
+        if (totpCode == null || totpCode.isEmpty) {
+          return const TransactionAuthResult.cancelled();
+        }
+        return TransactionAuthResult.success(totpCode: totpCode);
+
+      case AccountSecurity.shamir:
+        final passphrase = await _showPassphraseDialog(
+          context,
+          title: 'Confirmação do Cofre',
+          subtitle: 'Digite sua passphrase para liberar esta transação',
+        );
+        if (passphrase == null || passphrase.isEmpty) {
+          return const TransactionAuthResult.cancelled();
+        }
+        return TransactionAuthResult.success(
+          confirmationPassphrase: passphrase,
+        );
+    }
   }
 
-  static bool _needsManualFactors(AccountSecurityProfile profile) {
-    return profile.requiresPassphrase ||
-        profile.requiresTotp ||
-        profile.requiresShamirShares;
-  }
-
-  static Future<_DeviceAuthOutcome> _showDevicePinFallback(
+  static Future<bool> _showDevicePinFallback(
     BuildContext context,
     BiometricService bio,
   ) async {
     try {
-      final localizedReason =
-          AppCopy.authReasonTransactionConfirm.resolve(context);
-      final canUseDeviceAuth = await bio.canAuthenticate();
-      if (!context.mounted) {
-        return _DeviceAuthOutcome.rejected;
-      }
-      if (!canUseDeviceAuth) {
-        return _DeviceAuthOutcome.unavailable;
-      }
-
-      final didAuthenticate = await bio.authenticate(
-        localizedReason: localizedReason,
+      return await bio.authenticate(
+        localizedReason: 'Use seu PIN ou padrão do dispositivo para confirmar',
       );
-      return didAuthenticate
-          ? _DeviceAuthOutcome.authenticated
-          : _DeviceAuthOutcome.rejected;
     } catch (_) {
-      return _DeviceAuthOutcome.unavailable;
+      return false;
     }
   }
-}
 
-enum _DeviceAuthOutcome { authenticated, unavailable, rejected }
-
-class _FactorAuthorizationSheet extends StatefulWidget {
-  final AccountSecurityProfile profile;
-
-  const _FactorAuthorizationSheet({required this.profile});
-
-  @override
-  State<_FactorAuthorizationSheet> createState() =>
-      _FactorAuthorizationSheetState();
-}
-
-class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
-  final _passphraseController = TextEditingController();
-  final _totpController = TextEditingController();
-  bool _passphraseError = false;
-  bool _totpError = false;
-
-  @override
-  void dispose() {
-    _passphraseController.dispose();
-    _totpController.dispose();
-    super.dispose();
-  }
-
-  void _confirm() {
-    final needsPassphrase = widget.profile.requiresPassphrase;
-    final needsTotp = widget.profile.requiresTotp;
-
-    setState(() {
-      _passphraseError =
-          needsPassphrase && _passphraseController.text.trim().isEmpty;
-      _totpError = needsTotp && _totpController.text.trim().length != 6;
-    });
-
-    if (_passphraseError || _totpError) {
-      return;
-    }
-
-    HapticFeedback.mediumImpact();
-    Navigator.pop(
-      context,
-      TransactionAuthResult.success(
-        confirmationPassphrase:
-            needsPassphrase ? _passphraseController.text.trim() : null,
-        totpCode: needsTotp ? _totpController.text.trim() : null,
-      ),
+  static Future<String?> _showTotpDialog(BuildContext context) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _TotpEntrySheet(),
     );
+    return result;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return _AuthorizationSheetBase(
-      icon: widget.profile.mode == AccountSecurityMode.multisig2fa
-          ? LucideIcons.shield
-          : LucideIcons.keyRound,
-      title: widget.profile.mode == AccountSecurityMode.multisig2fa
-          ? AppCopy.transactionAuthVaultTitle.resolve(context)
-          : AppCopy.transactionAuthOperationTitle.resolve(context),
-      subtitle: _subtitle(context, widget.profile),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (widget.profile.requiresPassphrase)
-                _FactorChip(
-                  label:
-                      AppCopy.transactionAuthPassphraseLabel.resolve(context),
-                  icon: LucideIcons.keyRound,
-                  color: theme.colorScheme.primary,
-                ),
-              if (widget.profile.requiresTotp)
-                _FactorChip(
-                  label: 'TOTP',
-                  icon: LucideIcons.shield,
-                  color: theme.colorScheme.secondary,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (widget.profile.requiresPassphrase)
-            _LabeledField(
-              controller: _passphraseController,
-              label: AppCopy.transactionAuthConfirmationPassphraseLabel.resolve(
-                context,
-              ),
-              keyboardType: TextInputType.visiblePassword,
-              obscureText: true,
-              hasError: _passphraseError,
-              errorText:
-                  AppCopy.transactionAuthEnterPassphrase.resolve(context),
-              onChanged: (_) => setState(() => _passphraseError = false),
-            ),
-          if (widget.profile.requiresPassphrase) const SizedBox(height: 12),
-          if (widget.profile.requiresTotp)
-            _LabeledField(
-              controller: _totpController,
-              label: AppCopy.transactionAuthTotpCodeLabel.resolve(context),
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              hasError: _totpError,
-              errorText: AppCopy.transactionAuthEnterAuthenticatorDigits
-                  .resolve(context),
-              onChanged: (_) => setState(() => _totpError = false),
-            ),
-          const SizedBox(height: AppSpacing.xl),
-          _ConfirmButton(
-            onTap: _confirm,
-            text: AppCopy.transactionAuthContinue.resolve(context),
-          ),
-        ],
-      ),
+  static Future<String?> _showPassphraseDialog(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+  }) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PassphraseEntrySheet(title: title, subtitle: subtitle),
     );
-  }
-
-  String _subtitle(BuildContext context, AccountSecurityProfile profile) {
-    return AppCopy.transactionAuthProfileSubtitle(
-      context,
-      isMultisig: profile.mode == AccountSecurityMode.multisig2fa,
-      multisigThreshold: profile.multisigThreshold,
-      isPasskeyOnly: profile.mode == AccountSecurityMode.passkey,
-    );
+    return result;
   }
 }
 
-class _ShamirAuthorizationSheet extends StatefulWidget {
-  final AccountSecurityProfile profile;
+// ─────────────────────────────────────────────────────────────────────────────
+// TOTP Entry sheet
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const _ShamirAuthorizationSheet({required this.profile});
+class _TotpEntrySheet extends StatefulWidget {
+  const _TotpEntrySheet();
 
   @override
-  State<_ShamirAuthorizationSheet> createState() =>
-      _ShamirAuthorizationSheetState();
+  State<_TotpEntrySheet> createState() => _TotpEntrySheetState();
 }
 
-class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
-  late final List<TextEditingController> _shareControllers;
-  final _totpController = TextEditingController();
-  bool _totpError = false;
-  String? _recoveryError;
+class _TotpEntrySheetState extends State<_TotpEntrySheet> {
+  final _controller = TextEditingController();
+  bool _error = false;
 
-  int get _threshold => widget.profile.shamirThreshold ?? 3;
-  int get _totalShares => widget.profile.shamirTotalShares ?? _threshold;
-
-  @override
-  void initState() {
-    super.initState();
-    _shareControllers =
-        List.generate(_threshold, (_) => TextEditingController());
+  void _verify() {
+    final code = _controller.text.trim();
+    if (code.length != 6) return;
+    HapticFeedback.vibrate();
+    Navigator.pop(context, code);
   }
 
   @override
   void dispose() {
-    for (final controller in _shareControllers) {
-      controller.dispose();
-    }
-    _totpController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  void _confirm() {
-    final shares = _shareControllers
-        .map((controller) => controller.text.trim())
-        .where((text) => text.isNotEmpty)
-        .toList();
-
-    if (shares.length != _threshold) {
-      setState(() {
-        _recoveryError = AppCopy.transactionAuthShamirRecoveryError(
-          context,
-          threshold: _threshold,
-        );
-      });
-      return;
-    }
-
-    if (widget.profile.requiresTotp &&
-        _totpController.text.trim().length != 6) {
-      setState(() {
-        _totpError = true;
-        _recoveryError = null;
-      });
-      return;
-    }
-
-    try {
-      final recoveredSecret = Slip39.recoverSecret(shares);
-      final recoveredMnemonic = Mnemonic(
-        Uint8List.fromList(recoveredSecret),
-        Language.portuguese,
-      ).sentence;
-
-      HapticFeedback.mediumImpact();
-      Navigator.pop(
-        context,
-        TransactionAuthResult.success(
-          confirmationPassphrase: recoveredMnemonic,
-          totpCode:
-              widget.profile.requiresTotp ? _totpController.text.trim() : null,
-        ),
-      );
-    } catch (_) {
-      setState(() {
-        _recoveryError = AppCopy.transactionAuthShamirReconstructFailed(
-          context,
-        );
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return _AuthorizationSheetBase(
-      icon: LucideIcons.layoutGrid,
-      title: AppCopy.transactionAuthShamirTitle.resolve(context),
-      subtitle: AppCopy.transactionAuthShamirSubtitle(
-        context,
-        threshold: _threshold,
-        totalShares: _totalShares,
-      ),
+    return _AuthSheetBase(
+      icon: LucideIcons.shield,
+      title: 'Autenticador (TOTP)',
+      subtitle: 'Digite o código de 6 dígitos do seu app autenticador',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FactorChip(
-                label: '$_threshold/$_totalShares SLIP-39',
-                icon: LucideIcons.layoutGrid,
-                color: Colors.orange,
-              ),
-              if (widget.profile.requiresTotp)
-                _FactorChip(
-                  label: 'TOTP',
-                  icon: LucideIcons.shield,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-            ],
+          _CodeTextField(
+            controller: _controller,
+            label: 'Código de 6 dígitos',
+            hasError: _error,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            onChanged: (_) => setState(() => _error = false),
+            onSubmitted: (_) => _verify(),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          ...List.generate(_shareControllers.length, (index) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom:
-                    index == _shareControllers.length - 1 ? 0 : AppSpacing.sm,
-              ),
-              child: _ShareField(
-                controller: _shareControllers[index],
-                label: AppCopy.transactionAuthShareLabel(
-                  context,
-                  index: index + 1,
-                ),
-              ),
-            );
-          }),
-          if (widget.profile.requiresTotp) ...[
-            const SizedBox(height: 12),
-            _LabeledField(
-              controller: _totpController,
-              label: 'TOTP',
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              hasError: _totpError,
-              errorText: AppCopy.transactionAuthEnterAuthenticatorDigits
-                  .resolve(context),
-              onChanged: (_) => setState(() => _totpError = false),
-            ),
-          ],
-          if (_recoveryError != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              _recoveryError!,
-              style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: Colors.redAccent,
-                  ),
-            ),
-          ],
           const SizedBox(height: AppSpacing.xl),
-          _ConfirmButton(
-            onTap: _confirm,
-            text: AppCopy.transactionAuthReconstructAndContinue.resolve(
-              context,
-            ),
-          ),
+          _ConfirmButton(onTap: _verify, text: 'VERIFICAR'),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
   }
 }
 
-class _AuthorizationSheetBase extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// Passphrase confirmation sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PassphraseEntrySheet extends StatefulWidget {
+  final String title;
+  final String subtitle;
+
+  const _PassphraseEntrySheet({
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  State<_PassphraseEntrySheet> createState() => _PassphraseEntrySheetState();
+}
+
+class _PassphraseEntrySheetState extends State<_PassphraseEntrySheet> {
+  final _controller = TextEditingController();
+  bool _error = false;
+  bool _isVerifying = false;
+
+  Future<void> _verify() async {
+    if (_isVerifying) return;
+    final passphrase = _controller.text.trim();
+    if (passphrase.isEmpty) {
+      setState(() => _error = true);
+      return;
+    }
+
+    setState(() => _isVerifying = true);
+
+    if (!mounted) return;
+    HapticFeedback.vibrate();
+    Navigator.pop(context, passphrase);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _AuthSheetBase(
+      icon: LucideIcons.key,
+      title: widget.title,
+      subtitle: widget.subtitle,
+      child: Column(
+        children: [
+          _CodeTextField(
+            controller: _controller,
+            label: 'Passphrase',
+            hasError: _error,
+            keyboardType: TextInputType.text,
+            maxLength: 128,
+            onChanged: (_) => setState(() => _error = false),
+            onSubmitted: (_) => _verify(),
+            obscureText: true,
+            textAlign: TextAlign.start,
+            letterSpacing: 0,
+            errorText: 'Passphrase obrigatória.',
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _ConfirmButton(
+            onTap: _verify,
+            text: 'VERIFICAR',
+            isLoading: _isVerifying,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared Sub-Widgets
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AuthSheetBase extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget child;
 
-  const _AuthorizationSheetBase({
+  const _AuthSheetBase({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -511,53 +335,57 @@ class _AuthorizationSheetBase extends StatelessWidget {
         color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: theme.colorScheme.onPrimary.withValues(alpha: 0.08),
+          color: theme.colorScheme.onPrimary.withValues(alpha: 0.06),
+          width: 1,
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Handle
           Container(
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: theme.colorScheme.onPrimary.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(999),
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Icon badge
           Container(
-            width: 68,
-            height: 68,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withValues(alpha: 0.10),
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
               border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.24),
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
             child: Icon(icon, color: theme.colorScheme.primary, size: 28),
-          ),
+          ).animate().scale(curve: Curves.easeOutBack),
+
           const SizedBox(height: AppSpacing.lg),
+
           Text(
             title,
-            textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium!.copyWith(
               fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             subtitle,
-            textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall!.copyWith(
-              color: theme.colorScheme.onPrimary.withValues(alpha: 0.56),
-              height: 1.45,
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.45),
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xxl),
           child,
         ],
       ),
@@ -565,63 +393,31 @@ class _AuthorizationSheetBase extends StatelessWidget {
   }
 }
 
-class _FactorChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  const _FactorChip({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabeledField extends StatelessWidget {
+class _CodeTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
-  final TextInputType keyboardType;
-  final int? maxLength;
-  final bool obscureText;
   final bool hasError;
-  final String errorText;
+  final TextInputType keyboardType;
+  final int maxLength;
+  final bool obscureText;
+  final TextAlign textAlign;
+  final double letterSpacing;
+  final String? errorText;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
 
-  const _LabeledField({
+  const _CodeTextField({
     required this.controller,
     required this.label,
-    required this.keyboardType,
-    this.maxLength,
-    this.obscureText = false,
     required this.hasError,
-    required this.errorText,
+    required this.keyboardType,
+    required this.maxLength,
+    this.obscureText = false,
+    this.textAlign = TextAlign.center,
+    this.letterSpacing = 6,
+    this.errorText,
     this.onChanged,
+    this.onSubmitted,
   });
 
   @override
@@ -631,20 +427,20 @@ class _LabeledField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       maxLength: maxLength,
-      obscureText: obscureText,
       maxLines: 1,
-      textAlign: keyboardType == TextInputType.number
-          ? TextAlign.center
-          : TextAlign.start,
-      style: theme.textTheme.titleMedium!.copyWith(
-        fontFamily:
-            keyboardType == TextInputType.number ? 'JetBrainsMono' : null,
-        letterSpacing: keyboardType == TextInputType.number ? 6 : 0,
+      textAlign: textAlign,
+      autofocus: true,
+      obscureText: obscureText,
+      style: theme.textTheme.titleLarge!.copyWith(
+        letterSpacing: letterSpacing,
+        fontFamily: 'JetBrainsMono',
       ),
       decoration: InputDecoration(
         labelText: label,
         counterText: '',
-        errorText: hasError ? errorText : null,
+        errorText: hasError
+            ? (errorText ?? 'Código incorreto. Tente novamente.')
+            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.md),
           borderSide: BorderSide(
@@ -665,43 +461,7 @@ class _LabeledField extends StatelessWidget {
         ),
       ),
       onChanged: onChanged,
-    );
-  }
-}
-
-class _ShareField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-
-  const _ShareField({
-    required this.controller,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      minLines: 2,
-      maxLines: 4,
-      style: Theme.of(context).textTheme.bodyMedium!.copyWith(height: 1.45),
-      decoration: InputDecoration(
-        labelText: label,
-        alignLabelWithHint: true,
-        hintText: AppCopy.transactionAuthShareHint.resolve(context),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.md),
-          borderSide: BorderSide(
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.12),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.md),
-          borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary, width: 2),
-        ),
-      ),
+      onSubmitted: onSubmitted,
     );
   }
 }
@@ -709,10 +469,12 @@ class _ShareField extends StatelessWidget {
 class _ConfirmButton extends StatelessWidget {
   final VoidCallback onTap;
   final String text;
+  final bool isLoading;
 
   const _ConfirmButton({
     required this.onTap,
     required this.text,
+    this.isLoading = false,
   });
 
   @override
@@ -721,34 +483,43 @@ class _ConfirmButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: isLoading ? null : onTap,
         child: Container(
           height: 56,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 theme.colorScheme.primary,
-                theme.colorScheme.primary.withValues(alpha: 0.74),
+                theme.colorScheme.primary.withValues(alpha: 0.7),
               ],
             ),
             borderRadius: BorderRadius.circular(AppSpacing.md),
             boxShadow: [
               BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.28),
-                blurRadius: 18,
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
             ],
           ),
           alignment: Alignment.center,
-          child: Text(
-            text,
-            style: theme.textTheme.labelLarge!.copyWith(
-              color: Colors.black,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.8,
-            ),
-          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.black,
+                  ),
+                )
+              : Text(
+                  text,
+                  style: theme.textTheme.labelLarge!.copyWith(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
         ),
       ),
     );

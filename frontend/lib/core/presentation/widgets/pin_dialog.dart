@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/security/app_pin_service.dart';
 
 enum _PinMode { setup, enter }
@@ -23,11 +21,10 @@ class PinDialog extends StatefulWidget {
     final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Theme.of(
-        context,
-      ).scaffoldBackgroundColor.withValues(alpha: 0.95),
+      barrierColor:
+          Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
       pageBuilder: (context, anim1, anim2) => PinDialog(isSetup: isSetup),
-      transitionDuration: const Duration(milliseconds: 160),
+      transitionDuration: const Duration(milliseconds: 300),
       transitionBuilder: (context, anim1, anim2, child) {
         return FadeTransition(opacity: anim1, child: child);
       },
@@ -116,10 +113,6 @@ class _PinDialogState extends State<PinDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final height = responsive.size.height;
-    final tightHeight = height < 700;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CyberBackground(
@@ -127,36 +120,33 @@ class _PinDialogState extends State<PinDialog> {
         child: SafeArea(
           child: Column(
             children: [
-              SizedBox(height: tightHeight ? AppSpacing.lg : 64.0),
+              const SizedBox(height: AppSpacing.xxl),
               _buildVisualIndicator().animate().scale().fade(),
-              SizedBox(height: tightHeight ? AppSpacing.md : AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xl),
               Text(
                 _title,
                 textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(
-                  color: Colors.white70,
-                  letterSpacing: 0,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(context)
+                    .textTheme
+                    .displayLarge!
+                    .copyWith(letterSpacing: 4),
               ).animate().fade().slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSpacing.sm),
               Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsive.horizontalPadding,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                 child: Text(
                   _subtitle,
-                  maxLines: tightHeight ? 2 : 3,
-                  overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall!.copyWith(color: Colors.white70),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.5)),
                 ),
               ).animate(delay: 100.ms).fade(),
-              SizedBox(height: tightHeight ? AppSpacing.lg : AppSpacing.xxl),
+              const Spacer(),
               _buildDots().animate().fade(),
-              SizedBox(height: tightHeight ? AppSpacing.sm : AppSpacing.lg),
+              const SizedBox(height: AppSpacing.md),
               _buildErrorMessage(),
               const Spacer(),
               _buildModernKeypad()
@@ -165,25 +155,22 @@ class _PinDialogState extends State<PinDialog> {
                   .slideY(begin: 0.2, end: 0),
               if (!widget.isSetup)
                 Padding(
-                  padding: EdgeInsets.only(
-                    bottom: tightHeight ? AppSpacing.md : AppSpacing.xl,
-                    top: tightHeight ? AppSpacing.md : AppSpacing.xxl,
-                  ),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(
-                      'CANCELAR',
-                      style: AppTypography.caption.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      'CANCELAR OPERAÇÃO',
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary
+                                .withValues(alpha: 0.3),
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
                     ),
                   ),
-                ).animate(delay: 400.ms).fade()
-              else
-                SizedBox(
-                  height: tightHeight ? AppSpacing.xl : AppSpacing.xxl + 48,
-                ),
+                ).animate(delay: 400.ms).fade(),
             ],
           ),
         ),
@@ -192,7 +179,28 @@ class _PinDialogState extends State<PinDialog> {
   }
 
   Widget _buildVisualIndicator() {
-    return const Icon(LucideIcons.lock, color: Colors.white38, size: 24);
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            width: 2),
+        boxShadow: [
+          BoxShadow(
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              blurRadius: 30,
+              spreadRadius: 5),
+        ],
+      ),
+      child: Center(
+        child: Icon(LucideIcons.shieldCheck,
+            color: Theme.of(context).colorScheme.primary, size: 48),
+      ),
+    );
   }
 
   Widget _buildDots() {
@@ -200,16 +208,41 @@ class _PinDialogState extends State<PinDialog> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(_pinLength, (i) {
         final filled = i < _entered.length;
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6),
-          width: 8,
-          height: 8,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: filled ? Colors.white54 : Colors.transparent,
+            color: filled
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05),
             border: Border.all(
-              color: filled ? Colors.transparent : Colors.white24,
+              color: filled
+                  ? Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.3)
+                  : Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.1),
+              width: 2,
             ),
+            boxShadow: [
+              if (filled)
+                BoxShadow(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    spreadRadius: 1),
+            ],
           ),
         );
       }),
@@ -220,15 +253,14 @@ class _PinDialogState extends State<PinDialog> {
     return SizedBox(
       height: 24,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 300),
         child: _error != null
             ? Text(
-                _error!.toUpperCase(),
+                _error!,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.white70,
-                  letterSpacing: 0,
-                  fontWeight: FontWeight.w700,
-                ),
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1),
                 key: ValueKey(_error),
               )
             : const SizedBox.shrink(),
@@ -244,16 +276,13 @@ class _PinDialogState extends State<PinDialog> {
       ['C', '0', '←'],
     ];
 
-    final responsive = context.responsive;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: responsive.horizontalPadding),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
         children: keys.map((row) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: row
-                .map((key) => Expanded(child: _buildKey(key)))
-                .toList(),
+            children: row.map((key) => _buildKey(key)).toList(),
           );
         }).toList(),
       ),
@@ -262,12 +291,9 @@ class _PinDialogState extends State<PinDialog> {
 
   Widget _buildKey(String key) {
     final isSpecial = key == '←' || key == 'C';
-    final responsive = context.responsive;
 
     return Padding(
-      padding: EdgeInsets.all(
-        responsive.isTinyPhone ? AppSpacing.xs : AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: GestureDetector(
         onTapDown: (_) {
           HapticFeedback.lightImpact();
@@ -283,21 +309,35 @@ class _PinDialogState extends State<PinDialog> {
           }
         },
         child: Container(
-          height: responsive.size.height < 700 ? 48 : 58,
-          decoration: const BoxDecoration(color: Colors.transparent),
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color:
+                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05),
+                width: 1.5),
+          ),
           alignment: Alignment.center,
           child: isSpecial && key == '←'
-              ? const Icon(LucideIcons.delete, color: Colors.white70, size: 18)
+              ? Icon(LucideIcons.delete,
+                  color: Theme.of(context).colorScheme.onPrimary, size: 24)
               : Text(
                   key,
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                    color: isSpecial && key == 'C'
-                        ? Colors.white70
-                        : Colors.white,
-                    fontFamily: 'JetBrainsMono',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 24,
-                  ),
+                        color: isSpecial && key == 'C'
+                            ? Theme.of(context)
+                                .colorScheme
+                                .error
+                                .withValues(alpha: 0.7)
+                            : Theme.of(context).colorScheme.onPrimary,
+                        fontFamily: 'JetBrainsMono',
+                        fontWeight: FontWeight.w300,
+                      ),
                 ),
         ),
       ),

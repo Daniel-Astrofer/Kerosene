@@ -8,8 +8,6 @@ class UserModel extends User {
     required super.username,
     super.testBalanceClaimed,
     super.passkeyEnabledForTransactions,
-    super.role,
-    super.isAdmin,
     super.lastLogin,
     super.photoUrl,
     required super.createdAt,
@@ -23,9 +21,6 @@ class UserModel extends User {
       testBalanceClaimed: json['testBalanceClaimed'] == true,
       passkeyEnabledForTransactions:
           json['passkeyEnabledForTransactions'] == true,
-      role: (json['role'] ?? 'USER').toString(),
-      isAdmin: json['isAdmin'] == true ||
-          (json['role'] ?? '').toString().toUpperCase() == 'ADMIN',
       lastLogin: json['lastLogin'] != null
           ? DateTime.tryParse(json['lastLogin'].toString())
           : (json['last_login'] != null
@@ -47,8 +42,6 @@ class UserModel extends User {
       'username': username,
       'testBalanceClaimed': testBalanceClaimed,
       'passkeyEnabledForTransactions': passkeyEnabledForTransactions,
-      'role': role,
-      'isAdmin': isAdmin,
       if (lastLogin != null) 'lastLogin': lastLogin!.toIso8601String(),
       if (photoUrl != null) 'photo_url': photoUrl,
       'createdAt': createdAt.toIso8601String(),
@@ -62,8 +55,6 @@ class UserModel extends User {
       username: username,
       testBalanceClaimed: testBalanceClaimed,
       passkeyEnabledForTransactions: passkeyEnabledForTransactions,
-      role: role,
-      isAdmin: isAdmin,
       lastLogin: lastLogin,
       photoUrl: photoUrl,
       createdAt: createdAt,
@@ -77,8 +68,6 @@ class UserModel extends User {
       username: user.username,
       testBalanceClaimed: user.testBalanceClaimed,
       passkeyEnabledForTransactions: user.passkeyEnabledForTransactions,
-      role: user.role,
-      isAdmin: user.isAdmin,
       lastLogin: user.lastLogin,
       photoUrl: user.photoUrl,
       createdAt: user.createdAt,
@@ -91,8 +80,6 @@ class UserModel extends User {
     String? username,
     bool? testBalanceClaimed,
     bool? passkeyEnabledForTransactions,
-    String? role,
-    bool? isAdmin,
     DateTime? lastLogin,
     String? photoUrl,
     DateTime? createdAt,
@@ -103,8 +90,6 @@ class UserModel extends User {
       testBalanceClaimed: testBalanceClaimed ?? this.testBalanceClaimed,
       passkeyEnabledForTransactions:
           passkeyEnabledForTransactions ?? this.passkeyEnabledForTransactions,
-      role: role ?? this.role,
-      isAdmin: isAdmin ?? this.isAdmin,
       lastLogin: lastLogin ?? this.lastLogin,
       photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,
