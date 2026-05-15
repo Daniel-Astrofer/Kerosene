@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,7 +43,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1800),
     )..repeat();
 
     Timer(_minDisplayDuration, () {
@@ -356,22 +357,17 @@ class _SingleDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final start = index * 0.15;
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: Interval(
-        start,
-        (start + 0.5).clamp(0.0, 1.0),
-        curve: _BounceCurve(),
-      ),
-    );
-
     return AnimatedBuilder(
-      animation: animation,
+      animation: controller,
       builder: (context, child) {
-        final double dy = -20.0 * animation.value;
-        final double scale = 0.8 + (0.4 * animation.value);
-        final double opacity = 0.25 + (0.75 * animation.value);
+        final phase = (controller.value + index * 0.18) % 1.0;
+        final wave = (math.sin(phase * math.pi * 2) + 1) / 2;
+        final eased = Curves.easeInOutCubic.transform(wave);
+        final double dy = -12.0 * eased;
+        final double scale = 0.86 + (0.18 * eased);
+        final double opacity = 0.34 + (0.56 * eased);
+        final double glowOpacity = 0.08 + (0.22 * eased);
+
         return Transform.translate(
           offset: Offset(0, dy),
           child: Transform.scale(
@@ -382,20 +378,18 @@ class _SingleDot extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: opacity),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: glowOpacity),
+                    blurRadius: 14,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ),
         );
       },
     );
-  }
-}
-
-class _BounceCurve extends Curve {
-  @override
-  double transformInternal(double t) {
-    return (t < 0.5)
-        ? Curves.easeOutCubic.transform(t * 2)
-        : Curves.easeInCubic.transform(1 - (t - 0.5) * 2);
   }
 }
