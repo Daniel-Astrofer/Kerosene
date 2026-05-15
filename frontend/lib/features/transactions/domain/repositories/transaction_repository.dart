@@ -4,10 +4,6 @@ import '../entities/fee_estimate.dart';
 import '../entities/tx_status.dart';
 import '../entities/deposit.dart';
 import '../entities/payment_link.dart';
-import '../entities/external_transfer.dart';
-import '../entities/lightning_invoice.dart';
-import '../entities/onchain_address_allocation.dart';
-import '../entities/wallet_network_address.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
 /// Interface abstrata do TransactionRepository
@@ -24,7 +20,7 @@ abstract class TransactionRepository {
     String? fromWalletId,
     String? fromAddress,
     String? context,
-    String? passkeyAssertionJson,
+    String? passkeySignature,
     String? confirmationPassphrase,
     String? totpCode,
     String? idempotencyKey,
@@ -46,7 +42,6 @@ abstract class TransactionRepository {
 
   // Deposits
   Future<Either<Failure, String>> getDepositAddress();
-  Future<Either<Failure, Map<String, String>>> getOnrampUrls();
   Future<Deposit> confirmDeposit({
     required String txid,
     required String fromAddress,
@@ -56,53 +51,16 @@ abstract class TransactionRepository {
   Future<double> getDepositBalance();
   Future<Deposit> getDeposit(String txid);
 
-  Future<PaymentLink> createPaymentLink({
-    required double amount,
-    String? description,
-    int? expiresInMinutes,
-    String? visibility,
-    String? confirmationMode,
-    bool amountLocked = true,
-    String? referenceLabel,
-    Map<String, String>? metadata,
-  });
-  Future<PaymentLink> getPaymentLink(String linkId);
   Future<List<PaymentLink>> getPaymentLinks();
-  Future<PaymentLink> cancelPaymentLink({
-    required String linkId,
-    String? reason,
-  });
-
-  Future<WalletNetworkAddress> getWalletNetworkProfile({
-    required String walletName,
-  });
-  Future<OnchainAddressAllocation> issueOnchainAddress({
-    required String walletName,
-    required double expectedAmountBtc,
-  });
-  Future<LightningInvoice> createLightningInvoice({
-    required String idempotencyKey,
-    required String walletName,
-    required double amount,
-    String? memo,
-    int expiresInSeconds = 900,
-  });
-  Future<List<ExternalTransfer>> getExternalTransfers();
-  Future<ExternalTransfer> getExternalTransfer(String transferId);
-  Future<ExternalTransfer> cancelInboundTransfer(String transferId);
 
   // Withdrawals
   Future<TxStatus> withdraw({
     required String fromWalletName,
-    String? toAddress,
-    String? paymentRequest,
+    required String toAddress,
     required double amount,
-    String? totpCode,
-    bool isLightning = false,
-    double maxRoutingFeeBtc = 0.000001,
+    required String totpCode,
     String? description,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
+    String? passkeySignature,
+    String? passkeyChallenge,
   });
 }

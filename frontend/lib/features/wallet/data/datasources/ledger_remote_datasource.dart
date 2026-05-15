@@ -22,7 +22,6 @@ abstract class LedgerRemoteDataSource {
     required String receiverWalletName,
     required double amount,
     required String idempotencyKey,
-    required int requestTimestamp,
   });
 
   // 3.1 Payment Requests (Internal)
@@ -40,11 +39,6 @@ abstract class LedgerRemoteDataSource {
   Future<Map<String, dynamic>> payPaymentRequest({
     required String linkId,
     required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
-    int? requestTimestamp,
   });
 
   /// Deletes a ledger account.
@@ -117,7 +111,6 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
     required String receiverWalletName,
     required double amount,
     required String idempotencyKey,
-    required int requestTimestamp,
   }) async {
     try {
       final response = await apiClient.post(
@@ -126,8 +119,6 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
           'sender': senderWalletName,
           'receiver': receiverWalletName,
           'amount': amount,
-          'idempotencyKey': idempotencyKey,
-          'requestTimestamp': requestTimestamp,
         },
         options: Options(headers: {
           'X-Idempotency-Key': idempotencyKey,
@@ -181,25 +172,11 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
   Future<Map<String, dynamic>> payPaymentRequest({
     required String linkId,
     required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
-    int? requestTimestamp,
   }) async {
     try {
       final response = await apiClient.post(
         AppConfig.ledgerPaymentRequestPay.replaceFirst('{linkId}', linkId),
-        data: {
-          'payerWalletName': payerWalletName,
-          if (totpCode != null) 'totpCode': totpCode,
-          if (confirmationPassphrase != null)
-            'confirmationPassphrase': confirmationPassphrase,
-          if (passkeyAssertionJson != null)
-            'passkeyAssertionJson': passkeyAssertionJson,
-          if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
-          if (requestTimestamp != null) 'requestTimestamp': requestTimestamp,
-        },
+        data: {'payerWalletName': payerWalletName},
       );
       return response.data as Map<String, dynamic>;
     } catch (e) {

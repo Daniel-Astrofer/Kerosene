@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
@@ -13,7 +10,6 @@ import 'package:teste/core/presentation/widgets/cyber_button.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import '../providers/wallet_provider.dart';
 import '../state/create_wallet_state.dart';
-import '../state/wallet_state.dart';
 
 /// Premium Create Wallet Screen - Refactored
 class CreateWalletScreen extends ConsumerStatefulWidget {
@@ -25,19 +21,14 @@ class CreateWalletScreen extends ConsumerStatefulWidget {
 
 class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
   final _nameController = TextEditingController();
-  final _xpubController = TextEditingController();
-  final _managementPassphraseController = TextEditingController();
   String _mnemonic = "";
   int _wordCount = 12;
   String _accountSecurity = 'STANDARD';
-  String _walletMode = 'KEROSENE';
   bool _hasGenerated = false;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _xpubController.dispose();
-    _managementPassphraseController.dispose();
     super.dispose();
   }
 
@@ -55,34 +46,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
   Future<void> _handleCreate() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      SnackbarHelper.showError(
-          AppCopy.createWalletNameRequired.resolve(context));
-      return;
-    }
-
-    if (_walletMode == 'SELF_CUSTODY') {
-      final xpub = _xpubController.text.trim();
-      final managementPassphrase = _managementPassphraseController.text.trim();
-      if (xpub.isEmpty) {
-        SnackbarHelper.showError(
-          'Informe a chave pública da carteira fria.',
-        );
-        return;
-      }
-      if (managementPassphrase.length < 8) {
-        SnackbarHelper.showError(
-          'Defina uma passphrase de gestão com pelo menos 8 caracteres.',
-        );
-        return;
-      }
-
-      await ref.read(createWalletProvider.notifier).createWallet(
-            name: name,
-            passphrase: managementPassphrase,
-            accountSecurity: 'SELF_CUSTODY',
-            xpub: xpub,
-            walletMode: _walletMode,
-          );
+      SnackbarHelper.showError("INSIRA UM NOME PARA A CARTEIRA");
       return;
     }
 
@@ -95,51 +59,24 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           name: name,
           passphrase: _mnemonic,
           accountSecurity: _accountSecurity,
-          walletMode: _walletMode,
         );
-  }
-
-  Future<void> _handleCreateWalletState(CreateWalletState next) async {
-    if (next is CreateWalletError) {
-      SnackbarHelper.showError(next.message);
-      return;
-    }
-
-    if (next is! CreateWalletSuccess) {
-      return;
-    }
-
-    HapticFeedback.vibrate();
-    SnackbarHelper.showSuccess(AppCopy.createWalletSuccess.resolve(context));
-
-    await ref.read(walletProvider.notifier).refresh();
-
-    final createdWalletName = _nameController.text.trim().toUpperCase();
-    final walletState = ref.read(walletProvider);
-    if (walletState is WalletLoaded) {
-      for (final wallet in walletState.wallets) {
-        if (wallet.name == createdWalletName) {
-          ref.read(walletProvider.notifier).selectWallet(wallet);
-          break;
-        }
-      }
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
     ref.listen(createWalletProvider, (previous, next) {
-      unawaited(_handleCreateWalletState(next));
+      if (next is CreateWalletSuccess) {
+        HapticFeedback.vibrate();
+        SnackbarHelper.showSuccess("CARTEIRA CRIADA COM SUCESSO");
+        Navigator.pop(context);
+      } else if (next is CreateWalletError) {
+        SnackbarHelper.showError(next.message);
+      }
     });
 
-    return CyberBackground.authenticated(
+    return CyberBackground(
       useScroll: true,
+      backgroundColor: const Color(0xFF050505),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -152,7 +89,7 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 Text(
-                  AppCopy.createWalletScreenTitle.resolve(context),
+                  "NOVA CARTEIRA",
                   style: Theme.of(context)
                       .textTheme
                       .displaySmall!
@@ -162,26 +99,21 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
             _buildHeader(),
-            const SizedBox(height: AppSpacing.lg),
-            _buildWalletModeSelector(),
-            const SizedBox(height: AppSpacing.lg),
-            _buildInternalWalletNotice(),
             const SizedBox(height: AppSpacing.xxl),
-            if (_walletMode == 'SELF_CUSTODY' || !_hasGenerated) ...[
+            if (!_hasGenerated) ...[
               _buildSettingsForm().animate().fade().slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSpacing.xxl),
-              _buildCreateButton(
-                _walletMode == 'SELF_CUSTODY'
-                    ? 'Conectar carteira fria'
-                    : AppCopy.createWalletGenerateStructure.resolve(context),
-              ).animate(delay: 200.ms).fade().slideY(begin: 0.2, end: 0),
+              _buildCreateButton("GERAR ESTRUTURA")
+                  .animate(delay: 200.ms)
+                  .fade()
+                  .slideY(begin: 0.2, end: 0),
             ] else ...[
               _buildMnemonicDisplay()
                   .animate()
                   .fade()
                   .scale(begin: const Offset(0.95, 0.95)),
               const SizedBox(height: AppSpacing.xxl),
-              _buildCreateButton(AppCopy.createWalletFinish.resolve(context))
+              _buildCreateButton("FINALIZAR CRIAÇÃO")
                   .animate(delay: 200.ms)
                   .fade()
                   .slideY(begin: 0.2, end: 0),
@@ -189,10 +121,8 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => setState(() => _hasGenerated = false),
-                  child: Text(
-                    AppCopy.createWalletBackAndEdit.resolve(context),
-                    style: const TextStyle(color: Colors.white54),
-                  ),
+                  child: const Text("VOLTAR E ALTERAR",
+                      style: TextStyle(color: Colors.white54)),
                 ),
               ).animate(delay: 400.ms).fade(),
             ],
@@ -219,19 +149,15 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
         ).animate().scale(delay: 100.ms),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          AppCopy.createWalletHeaderTitle(
-            context,
-            hasGenerated: _hasGenerated,
-          ),
+          _hasGenerated ? "PROTEJA SUA SEED" : "DEFINA OS PARÂMETROS",
           style: Theme.of(context).textTheme.displayMedium,
           textAlign: TextAlign.center,
         ).animate().fade(delay: 200.ms),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          AppCopy.createWalletHeaderBody(
-            context,
-            hasGenerated: _hasGenerated,
-          ),
+          _hasGenerated
+              ? "Anote estas palavras em ordem. Elas são a única chave para seus fundos."
+              : "Escolha o nível de criptografia e o nome da sua nova conta no Vault.",
           style: Theme.of(context)
               .textTheme
               .bodyMedium!
@@ -242,57 +168,17 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     );
   }
 
-  Widget _buildInternalWalletNotice() {
-    final isSelfCustody = _walletMode == 'SELF_CUSTODY';
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            LucideIcons.shieldCheck,
-            color: Theme.of(context).colorScheme.primary,
-            size: 18,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              isSelfCustody
-                  ? 'Esta carteira fria fica sob sua guarda. A Kerosene acompanha os recebimentos sem ter acesso à frase de recuperação nem às chaves de movimentação.'
-                  : 'A seed BIP39 existe apenas na carteira interna. Ela não faz parte do login da conta Kerosene.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white70,
-                    height: 1.45,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSettingsForm() {
-    final isSelfCustody = _walletMode == 'SELF_CUSTODY';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppCopy.createWalletNameLabel.resolve(context),
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
+        Text("NOME DA CARTEIRA", style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: AppSpacing.sm),
         TextField(
           controller: _nameController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: AppCopy.createWalletNameHint.resolve(context),
+            hintText: "Ex: Economias, Trading...",
             prefixIcon: const Icon(LucideIcons.pencil, size: 18),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
@@ -303,178 +189,27 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        if (isSelfCustody) ...[
-          Text(
-            AppCopy.createWalletColdPublicKeyLabel.resolve(context),
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: _xpubController,
-            minLines: 2,
-            maxLines: 4,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: AppCopy.createWalletColdPublicKeyHint.resolve(context),
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(bottom: 36),
-                child: Icon(LucideIcons.scanLine, size: 18),
-              ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            AppCopy.createWalletManagementPassphraseLabel.resolve(context),
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: _managementPassphraseController,
-            obscureText: true,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText:
-                  AppCopy.createWalletManagementPassphraseHint.resolve(context),
-              prefixIcon: const Icon(LucideIcons.lock, size: 18),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        ] else ...[
-          Text(
-            AppCopy.createWalletPassphraseSize.resolve(context),
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              _buildOptionButton("12", _wordCount == 12,
-                  () => setState(() => _wordCount = 12)),
-              const SizedBox(width: AppSpacing.md),
-              _buildOptionButton("18", _wordCount == 18,
-                  () => setState(() => _wordCount = 18)),
-              const SizedBox(width: AppSpacing.md),
-              _buildOptionButton("24", _wordCount == 24,
-                  () => setState(() => _wordCount = 24)),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            AppCopy.createWalletProtocolSecurity.resolve(context),
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildSecuritySelector(),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildWalletModeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppCopy.createWalletModeLabel.resolve(context),
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
+        Text("TAMANHO DA PASSPHRASE",
+            style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
-            Expanded(
-              child: _buildWalletModeCard(
-                title: AppCopy.createWalletKeroseneModeTitle.resolve(context),
-                subtitle:
-                    AppCopy.createWalletKeroseneModeSubtitle.resolve(context),
-                icon: LucideIcons.shield,
-                selected: _walletMode == 'KEROSENE',
-                onTap: () => setState(() {
-                  _walletMode = 'KEROSENE';
-                }),
-              ),
-            ),
+            _buildOptionButton(
+                "12", _wordCount == 12, () => setState(() => _wordCount = 12)),
             const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _buildWalletModeCard(
-                title: AppCopy.createWalletColdModeTitle.resolve(context),
-                subtitle: AppCopy.createWalletColdModeSubtitle.resolve(context),
-                icon: LucideIcons.scanLine,
-                selected: _walletMode == 'SELF_CUSTODY',
-                onTap: () => setState(() {
-                  _walletMode = 'SELF_CUSTODY';
-                  _hasGenerated = false;
-                }),
-              ),
-            ),
+            _buildOptionButton(
+                "18", _wordCount == 18, () => setState(() => _wordCount = 18)),
+            const SizedBox(width: AppSpacing.md),
+            _buildOptionButton(
+                "24", _wordCount == 24, () => setState(() => _wordCount = 24)),
           ],
         ),
+        const SizedBox(height: AppSpacing.xl),
+        Text("SEGURANÇA DO PROTOCOLO",
+            style: Theme.of(context).textTheme.labelSmall),
+        const SizedBox(height: AppSpacing.md),
+        _buildSecuritySelector(),
       ],
-    );
-  }
-
-  Widget _buildWalletModeCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: selected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.white10,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: selected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.white54,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-                height: 1.35,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -509,16 +244,16 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
     return Column(
       children: [
         _buildSecurityCard(
-          AppCopy.createWalletStandardTitle.resolve(context),
-          AppCopy.createWalletStandardBody.resolve(context),
+          "STANDARD",
+          "Criptografia AES-256 padrão. Recomendado para uso diário.",
           LucideIcons.checkCircle,
           _accountSecurity == 'STANDARD',
           () => setState(() => _accountSecurity = 'STANDARD'),
         ),
         const SizedBox(height: AppSpacing.md),
         _buildSecurityCard(
-          AppCopy.createWalletShamirTitle.resolve(context),
-          AppCopy.createWalletShamirBody.resolve(context),
+          "SHAMIR",
+          "Divisão criptográfica de segredo (SSS). Segurança de nível militar.",
           LucideIcons.lock,
           _accountSecurity == 'SHAMIR',
           () => setState(() => _accountSecurity = 'SHAMIR'),
@@ -598,20 +333,20 @@ class _CreateWalletScreenState extends ConsumerState<CreateWalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                LucideIcons.shieldCheck,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              Icon(LucideIcons.copy,
+                  size: 16, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
-              Expanded(
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: _mnemonic));
+                  SnackbarHelper.showSuccess("COPIADO PARA O CLIPBOARD");
+                },
                 child: Text(
-                  AppCopy.createWalletPaperOnly.resolve(context),
-                  textAlign: TextAlign.center,
+                  "COPIAR TUDO",
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
-                    height: 1.35,
+                    letterSpacing: 1.2,
                     fontSize: 12,
                   ),
                 ),

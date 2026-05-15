@@ -29,10 +29,7 @@ RUN ./gradlew dependencies --no-daemon --quiet || true
 
 # ── Layer 3: Source compilation ───────────────────────────────────────────────
 COPY src src/
-COPY docker docker/
-COPY web-admin-build web-admin-build/
 RUN ./gradlew bootJar --no-daemon -x test
-RUN javac docker/Healthcheck.java -d /workspace/healthcheck
 
 # ── Stage 2: Runtime (Distroless — minimal attack surface) ────────────────────
 FROM gcr.io/distroless/java21-debian12:nonroot AS runtime
@@ -41,7 +38,6 @@ WORKDIR /app
 
 # Copy the fat JAR. --chown ensures the nonroot user can read it.
 COPY --chown=65532:65532 --from=builder /workspace/build/libs/*.jar app.jar
-COPY --chown=65532:65532 --from=builder /workspace/healthcheck /app/healthcheck
 
 # UID 65532 matches distroless:nonroot — lowest possible privilege.
 # IPC_LOCK (mlock) is granted via docker-compose cap_add, NOT via setuid.
@@ -50,9 +46,6 @@ USER 65532:65532
 # Port is INTERNAL only — Tor handles all ingress via the hidden service.
 # Never bind this port to the host interface.
 EXPOSE 8080
-
-HEALTHCHECK --interval=10s --timeout=4s --start-period=180s --retries=12 \
-  CMD ["java", "-cp", "/app/healthcheck", "Healthcheck", "http://127.0.0.1:8080/health/ready"]
 
 ENTRYPOINT [ \
   "java", \

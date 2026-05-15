@@ -11,7 +11,6 @@ class DevScreenMenu extends StatelessWidget {
       '/login': 'Login Screen',
       '/signup': 'Signup Flow',
       '/home': 'Home/Dashboard',
-      '/mining': 'Mining/Mempool Dashboard',
       '/create_wallet': 'Create Wallet',
       '/send-money': 'Send Money/Transaction',
       '/deposits': 'Deposits/Receive History',

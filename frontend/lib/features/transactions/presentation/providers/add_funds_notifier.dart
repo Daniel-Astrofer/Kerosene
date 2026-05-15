@@ -27,7 +27,7 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
   }
 
   Future<void> loadDepositAddress() async {
-    state = const AddFundsLoading(step: AddFundsLoadingStep.depositAddress);
+    state = const AddFundsLoading(message: 'Loading deposit address...');
     final result = await getDepositAddressUseCase();
     result.fold(
       (failure) => state = AddFundsError(failure.message),
@@ -42,7 +42,7 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
     required int feeSatoshis,
     required String mnemonic, // Or passphrase to derive keys
   }) async {
-    state = const AddFundsLoading(step: AddFundsLoadingStep.createTransaction);
+    state = const AddFundsLoading(message: 'Creating transaction...');
 
     // 1. Create Unsigned Transaction
     final result = await createUnsignedTransactionUseCase(
@@ -55,7 +55,7 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
     result.fold((failure) => state = AddFundsError(failure.message), (
       unsignedTx,
     ) async {
-      state = const AddFundsLoading(step: AddFundsLoadingStep.signTransaction);
+      state = const AddFundsLoading(message: 'Signing transaction...');
 
       try {
         // 2. Sign Transaction (Client Side)
@@ -64,8 +64,7 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
           mnemonic: mnemonic,
         );
 
-        state = const AddFundsLoading(
-            step: AddFundsLoadingStep.broadcastTransaction);
+        state = const AddFundsLoading(message: 'Broadcasting...');
 
         // 3. Broadcast
         final broadcastResult = await broadcastTransactionUseCase(
@@ -84,7 +83,7 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
           },
         );
       } catch (e) {
-        state = const AddFundsError('SIGNING_FAILED');
+        state = AddFundsError('Signing failed: $e');
       }
     });
   }
@@ -93,7 +92,7 @@ class AddFundsNotifier extends Notifier<AddFundsState> {
     required double amount,
     required String receiverWalletName,
   }) async {
-    state = const AddFundsLoading(step: AddFundsLoadingStep.paymentRequest);
+    state = const AddFundsLoading(message: 'Creating payment request...');
 
     final result = await createPaymentLinkUseCase(
       amount: amount,

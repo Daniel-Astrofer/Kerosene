@@ -27,8 +27,8 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
         ref.watch(transactionsByWalletProvider(widget.wallet.address));
 
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
-      body: CyberBackground.authenticated(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: CyberBackground(
         useScroll: false,
         child: SafeArea(
           child: Column(

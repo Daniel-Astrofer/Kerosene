@@ -10,7 +10,6 @@ import 'package:teste/core/widgets/cyber_progress_bar.dart';
 import 'package:teste/core/widgets/neon_action_button.dart';
 import 'package:teste/core/widgets/kerosene_logo.dart';
 import 'package:teste/core/widgets/kerosene_header.dart';
-import 'package:teste/core/widgets/state_feedback_view.dart';
 
 List<Story> uiStories() {
   return [
@@ -83,51 +82,6 @@ List<Story> uiStories() {
               currentStep: currentStep,
               totalSteps: 10,
             ),
-          ),
-        );
-      },
-    ),
-    Story(
-      name: 'UI/States/State Feedback View',
-      builder: (context) {
-        final state = context.knobs.options<FeedbackState>(
-          label: 'State',
-          initial: FeedbackState.loading,
-          options: const [
-            Option(label: 'Loading', value: FeedbackState.loading),
-            Option(label: 'Empty', value: FeedbackState.empty),
-            Option(label: 'Error', value: FeedbackState.error),
-            Option(label: 'Network Error', value: FeedbackState.networkError),
-          ],
-        );
-        final showAction =
-            context.knobs.boolean(label: 'Show Action', initial: true);
-
-        final title = switch (state) {
-          FeedbackState.loading => 'Sincronizando dados',
-          FeedbackState.empty => 'Nada por aqui',
-          FeedbackState.error => 'Nao foi possivel concluir',
-          FeedbackState.networkError => 'Conexao indisponivel',
-        };
-        final description = switch (state) {
-          FeedbackState.loading =>
-            'Estamos atualizando as informacoes sem bloquear a tela.',
-          FeedbackState.empty =>
-            'Quando houver dados disponiveis, eles aparecerao neste espaco.',
-          FeedbackState.error =>
-            'A resposta nao pode ser processada agora. Tente novamente.',
-          FeedbackState.networkError =>
-            'Verifique a rota Tor ou a conexao de rede antes de repetir.',
-        };
-
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: StateFeedbackView(
-            state: state,
-            title: title,
-            description: description,
-            actionLabel: showAction ? 'Tentar novamente' : null,
-            onAction: showAction ? () {} : null,
           ),
         );
       },

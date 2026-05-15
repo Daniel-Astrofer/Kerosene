@@ -14,7 +14,6 @@ INFRA_DIR="$REPO_ROOT/backend/kerosene-infrastructure"
 COMPOSE_FILE="$INFRA_DIR/docker-compose.local.yml"
 ENV_FILE="$BACKEND_DIR/.env"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-kerosene-infrastructure}"
-DOCKER_WAIT_TIMEOUT_SECONDS="${DOCKER_WAIT_TIMEOUT_SECONDS:-30}"
 
 info() { echo "[backend] $*"; }
 warn() { echo "[backend][warn] $*" >&2; }
@@ -27,86 +26,15 @@ require_file() {
 
 require_docker() {
   command -v docker >/dev/null 2>&1 || fail "Docker CLI not found."
-  docker_is_available && return 0
-
-  ensure_docker_service_started
-  wait_for_docker || fail "Docker daemon was started, but did not become accessible within ${DOCKER_WAIT_TIMEOUT_SECONDS}s."
-}
-
-docker_is_available() {
-  docker info >/dev/null 2>&1
-}
-
-docker_info_error() {
-  docker info 2>&1 >/dev/null || true
-}
-
-ensure_docker_service_started() {
-  if ! command -v systemctl >/dev/null 2>&1; then
-    fail "Docker is not accessible and systemctl was not found. Start Docker manually and retry."
-  fi
-
-  local docker_error
-  docker_error="$(docker_info_error)"
-
-  if grep -Eiq "permission denied|Got permission denied|denied while trying to connect" <<<"$docker_error"; then
-    fail "Docker is running, but this user cannot access it. Run this script with sudo or add the user to the docker group."
-  fi
-
-  info "Docker daemon is not responding. Starting docker service..."
-  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-    systemctl start docker >/dev/null 2>&1 || fail "Failed to start Docker service with systemctl."
-  elif systemctl start docker >/dev/null 2>&1; then
-    :
-  elif command -v sudo >/dev/null 2>&1; then
-    if sudo -n true 2>/dev/null; then
-      sudo -n systemctl start docker >/dev/null || fail "Failed to start Docker service with sudo systemctl."
-    elif [[ -t 0 ]]; then
-      sudo systemctl start docker >/dev/null || fail "Failed to start Docker service with sudo systemctl."
-    else
-      fail "Docker is not running and sudo requires a password in this non-interactive session. Run 'sudo systemctl start docker' and retry."
-    fi
-  else
-    fail "Docker is not running and sudo was not found. Start Docker manually and retry."
-  fi
-}
-
-wait_for_docker() {
-  local deadline now
-  deadline=$(( $(date +%s) + DOCKER_WAIT_TIMEOUT_SECONDS ))
-
-  while true; do
-    docker_is_available && return 0
-
-    now=$(date +%s)
-    if (( now >= deadline )); then
-      return 1
-    fi
-
-    sleep 1
-  done
+  docker info >/dev/null 2>&1 || fail "Docker is not running or is not accessible."
 }
 
 load_backend_env() {
   require_file "$ENV_FILE"
-  local line key value first last
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line%$'\r'}"
-    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-    [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || fail "Invalid .env line: ${line%%=*}"
-
-    key="${line%%=*}"
-    value="${line#*=}"
-    if [[ "${#value}" -ge 2 ]]; then
-      first="${value:0:1}"
-      last="${value: -1}"
-      if { [[ "$first" == "'" ]] && [[ "$last" == "'" ]]; } ||
-         { [[ "$first" == '"' ]] && [[ "$last" == '"' ]]; }; then
-        value="${value:1:${#value}-2}"
-      fi
-    fi
-    export "$key=$value"
-  done < "$ENV_FILE"
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
 }
 
 detect_compose() {

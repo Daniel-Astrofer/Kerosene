@@ -1,26 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
-
-class PriceTickerSnapshot {
-  final double priceUsd;
-  final double? dailyChangePercent;
-
-  const PriceTickerSnapshot({
-    required this.priceUsd,
-    required this.dailyChangePercent,
-  });
-}
+import 'tor_service.dart';
 
 /// Service for real-time BTC price updates via WebSocket
-/// Primary: Binance, Backup: Coinbase.
-/// External market feeds stay on clearnet; only the sovereign backend uses Tor.
+/// Primary: Binance, Backup: Coinbase
 class PriceWebSocketService {
   IOWebSocketChannel? _primaryChannel;
   IOWebSocketChannel? _backupChannel;
   final _priceController = StreamController<double>.broadcast();
-  final _tickerController = StreamController<PriceTickerSnapshot>.broadcast();
   Timer? _reconnectTimer;
   bool _isDisposed = false;
   bool _usingBackup = false;
@@ -29,7 +19,6 @@ class PriceWebSocketService {
   static const int _maxRetries = 5;
 
   Stream<double> get priceStream => _priceController.stream;
-  Stream<PriceTickerSnapshot> get tickerStream => _tickerController.stream;
 
   void connect() {
     if (_isDisposed) return;
@@ -37,14 +26,28 @@ class PriceWebSocketService {
     _connectPrimary();
   }
 
+  /// Creates an HttpClient that accepts certs for the local Tor relay
+  HttpClient _createRelayHttpClient() {
+    return HttpClient()
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        return host == '127.0.0.1' || host == 'localhost';
+      };
+  }
+
   Future<void> _connectPrimary() async {
     if (_isConnecting || _isDisposed) return;
     _isConnecting = true;
 
     try {
-      debugPrint('>>> PriceWebSocket: Connecting to Binance via clearnet...');
+      debugPrint('>>> PriceWebSocket: Connecting to Binance via Tor...');
+      final relayPort = await TorService.instance.startRelay(
+        'stream.binance.com',
+        9443,
+      );
+
       _primaryChannel = IOWebSocketChannel.connect(
-        Uri.parse('wss://stream.binance.com:9443/ws/btcusdt@ticker'),
+        Uri.parse('wss://127.0.0.1:$relayPort/ws/btcusdt@ticker'),
+        customClient: _createRelayHttpClient(),
       );
 
       await _primaryChannel!.ready;
@@ -56,16 +59,7 @@ class PriceWebSocketService {
           try {
             final json = jsonDecode(data);
             final price = double.parse(json['c']); // Current price
-            final dailyChangePercent = double.tryParse('${json['P']}');
-            if (!_isDisposed) {
-              _priceController.add(price);
-              _tickerController.add(
-                PriceTickerSnapshot(
-                  priceUsd: price,
-                  dailyChangePercent: dailyChangePercent,
-                ),
-              );
-            }
+            _priceController.add(price);
             _usingBackup = false;
             debugPrint(
               '>>> PriceWebSocket: Binance price: \$${price.toStringAsFixed(2)}',
@@ -97,13 +91,17 @@ class PriceWebSocketService {
     if (_usingBackup || _isDisposed) return;
 
     try {
-      debugPrint(
-        '>>> PriceWebSocket: Switching to Coinbase backup via clearnet...',
-      );
+      debugPrint('>>> PriceWebSocket: Switching to Coinbase backup via Tor...');
       _usingBackup = true;
 
+      final relayPort = await TorService.instance.startRelay(
+        'ws-feed.exchange.coinbase.com',
+        443,
+      );
+
       _backupChannel = IOWebSocketChannel.connect(
-        Uri.parse('wss://ws-feed.exchange.coinbase.com'),
+        Uri.parse('wss://127.0.0.1:$relayPort'),
+        customClient: _createRelayHttpClient(),
       );
 
       await _backupChannel!.ready;
@@ -123,19 +121,7 @@ class PriceWebSocketService {
             final json = jsonDecode(data);
             if (json['type'] == 'ticker' && json['price'] != null) {
               final price = double.parse(json['price']);
-              final open24h = double.tryParse('${json['open_24h']}');
-              final dailyChangePercent = open24h != null && open24h > 0
-                  ? ((price - open24h) / open24h) * 100
-                  : null;
-              if (!_isDisposed) {
-                _priceController.add(price);
-                _tickerController.add(
-                  PriceTickerSnapshot(
-                    priceUsd: price,
-                    dailyChangePercent: dailyChangePercent,
-                  ),
-                );
-              }
+              _priceController.add(price);
               debugPrint(
                 '>>> PriceWebSocket: Coinbase price: \$${price.toStringAsFixed(2)}',
               );
@@ -194,6 +180,5 @@ class PriceWebSocketService {
     _primaryChannel?.sink.close();
     _backupChannel?.sink.close();
     _priceController.close();
-    _tickerController.close();
   }
 }

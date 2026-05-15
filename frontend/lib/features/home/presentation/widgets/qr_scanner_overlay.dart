@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:teste/l10n/l10n_extension.dart';
 
 class QrScannerOverlay extends StatefulWidget {
   final Function(String) onScan;
@@ -88,7 +87,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      context.l10n.scanQR,
+                      'Scan a QR Code',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 18,
@@ -97,7 +96,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      context.l10n.qrScannerInstruction,
+                      'Align the QR code within the frame to scan',
                       style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -124,7 +123,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      child: Text(context.l10n.cancel),
+                      child: const Text('Cancel'),
                     ),
                   ],
                 ),

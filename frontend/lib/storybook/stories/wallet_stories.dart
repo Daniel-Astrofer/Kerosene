@@ -2,7 +2,6 @@
 // Contains home, wallet, deposit, send/receive, and transaction history screens.
 import 'package:storybook_flutter/storybook_flutter.dart';
 
-import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import 'package:teste/features/home/presentation/screens/home_loading_screen.dart';
@@ -106,19 +105,15 @@ List<Story> walletStories() {
     Story(
       name: 'Wallet/Deposit — Method',
       description: 'Choose deposit method (Pix, Card, Wire).',
-      builder: (context) => DepositMethodScreen(
-        wallet: _mockWallet,
-        inputAmount: 1000.0,
-        inputCurrency: Currency.brl,
-      ),
+      builder: (context) =>
+          DepositMethodScreen(wallet: _mockWallet, amountFiat: 1000.0),
     ),
     Story(
       name: 'Wallet/Deposit — Provider',
       description: 'Select onramp provider for the deposit.',
       builder: (context) => DepositProviderScreen(
         wallet: _mockWallet,
-        inputAmount: 1000.0,
-        inputCurrency: Currency.brl,
+        amountFiat: 1000.0,
         method: 'Pix',
       ),
     ),
@@ -127,8 +122,7 @@ List<Story> walletStories() {
       description: 'On-chain BTC invoice with address and QR.',
       builder: (context) => DepositOnchainInvoiceScreen(
         wallet: _mockWallet,
-        inputAmount: 1000.0,
-        inputCurrency: Currency.brl,
+        amountFiat: 1000.0,
         providerName: 'Kerosene',
       ),
     ),
@@ -137,8 +131,7 @@ List<Story> walletStories() {
       description: 'Lightning Network invoice with BOLT11 QR.',
       builder: (context) => DepositLightningInvoiceScreen(
         wallet: _mockWallet,
-        inputAmount: 1000.0,
-        inputCurrency: Currency.brl,
+        amountFiat: 1000.0,
         providerName: 'Kerosene',
       ),
     ),

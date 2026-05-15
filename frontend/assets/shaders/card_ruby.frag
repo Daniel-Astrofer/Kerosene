@@ -6,20 +6,20 @@ precision highp float;
 uniform vec2 iResolution;
 uniform float iTime;
 uniform vec2 iTilt;
-uniform vec4 iColor;
+uniform vec4 iColor; 
 uniform sampler2D uTexture;
 
 out vec4 fragColor;
 
-#define MAX_ITERATIONS 48
+#define MAX_ITERATIONS 128
 #define MAX_DISTANCE  10.0
 
 #define LIGHT_DIR normalize(vec3(0.5, 0.8, 0.5) + vec3(iTilt.x, iTilt.y, 0.0))
 #define LIGHT_COL vec3(1.0)
 #define LIGHT_AMB 0.35
 
-#define EPSILON 0.005
-#define SHADOW_BIAS 0.02
+#define EPSILON 0.001
+#define SHADOW_BIAS 0.01
 
 // Simple hash-based noise for heightmap instead of iChannel1
 float hash(vec2 p) {
@@ -40,7 +40,7 @@ float dstScene(vec3 p) {
     // Heightfield logic from user
     // iChannel1 texture replaced by iColor-based noise + uTexture alpha
     float h = noise(p.xz * 4.0) * 0.015;
-    h += texture(uTexture, p.xz * 0.5 + 0.5).a * 0.01;
+    h += texture(uTexture, p.xz * 0.5 + 0.5).a * 0.01; 
     float d = p.y - h;
    	return d;
 }
@@ -69,45 +69,35 @@ vec3 calcLighting(vec3 col, vec3 p, vec3 n, vec3 r, float sh, float sp) {
     float d = max(dot(LIGHT_DIR, n), 0.);
     float s = 0.0;
     float sd = 1.0;
-
+    
     // Shadow pass
     if(raymarch(p + LIGHT_DIR * SHADOW_BIAS, LIGHT_DIR, 32) < MAX_DISTANCE)
         sd = 0.0;
-
+        
     if(sh > 0.0)
         s = pow(max(dot(LIGHT_DIR, r), 0.0), sh) * sp;
-
+        
     d *= sd;
     s *= sd;
-
+    
     return (col * (LIGHT_AMB + LIGHT_COL * d)) + (LIGHT_COL * s);
 }
 
 vec3 shade(vec3 ori, vec3 dir) {
     float  t = raymarch(ori, dir, MAX_ITERATIONS);
     vec3 col = iColor.rgb * 0.3; // Deep background ruby
-
+    
     if(t < MAX_DISTANCE) {
         vec3 p = ori + dir * t;
         vec3 n = calcNormal(p, t);
         vec3 r = normalize(reflect(dir, n));
-
-        // Sampling Card Info for pattern (Optimized)
-        vec2 texP = p.xz * 0.5 + 0.5;
-        float alphaC = texture(uTexture, texP).a;
-        float alphaR = texture(uTexture, texP + vec2(0.002, 0.0)).a;
-        float alphaB = texture(uTexture, texP + vec2(0.0, -0.002)).a;
-
-        vec3 baseCol = mix(iColor.rgb, vec3(1.0, 0.95, 0.95), clamp(alphaC * 0.4, 0.0, 1.0));
-
-        float dX = alphaR - alphaC;
-        float dY = alphaB - alphaC;
-        float textHighlight = clamp((dX - dY) * 2.0, 0.0, 1.0);
-        float textShadow = clamp((-dX + dY) * 1.5, 0.0, 1.0);
-
-        col = calcLighting(baseCol, p, n, r, mix(10.0, 60.0, alphaC), mix(0.4, 1.0, alphaC));
-        col += textHighlight * vec3(1.0) * 0.7;
-        col -= textShadow * 0.5;
+        
+        // Sampling Card Info for pattern
+        vec4 tx = texture(uTexture, p.xz * 0.5 + 0.5);
+        vec3 baseCol = iColor.rgb;
+        if(tx.a > 0.05) baseCol = mix(baseCol, vec3(1.0), 0.25);
+        
+        col = calcLighting(baseCol, p, n, r, mix(10.0, 60.0, tx.a), mix(0.4, 1.0, tx.a));
     }
     return col;
 }
@@ -125,9 +115,9 @@ void main() {
     float z = -dir.y * s + dir.z * c;
     dir.y = y;
     dir.z = z;
-
+    
     // Apply tilt to orientation for depth parallax
     ori.xz += iTilt * 0.3;
-
+    
 	fragColor = vec4(shade(ori, normalize(dir)), 1.0);
 }
