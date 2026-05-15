@@ -140,8 +140,8 @@ class AuthEntryHeader extends StatelessWidget {
     final titleSize = responsive.size.width < 340
         ? 28.0
         : responsive.isCompact
-        ? 31.0
-        : 34.0;
+            ? 31.0
+            : 34.0;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +157,7 @@ class AuthEntryHeader extends StatelessWidget {
               Text(
                 eyebrow.toUpperCase(),
                 style: AppTypography.caption.copyWith(
-                  fontFamily: 'HubotSansCondensed',
+                  fontFamily: 'IBM Plex Sans',
                   color: authEntryFaint,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -167,7 +167,7 @@ class AuthEntryHeader extends StatelessWidget {
               Text(
                 title,
                 style: AppTypography.h1.copyWith(
-                  fontFamily: 'HubotSansCondensed',
+                  fontFamily: 'IBM Plex Sans',
                   color: authEntryText,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w700,
@@ -248,15 +248,15 @@ class AuthEntryButton extends StatelessWidget {
     final background = outlined
         ? (disabled ? authEntrySurface : authEntrySurfaceRaised)
         : disabled
-        ? authEntrySurfaceRaised
-        : authEntryButton;
+            ? authEntrySurfaceRaised
+            : authEntryButton;
     final foreground = outlined
         ? (disabled ? authEntryFaint : authEntryText)
         : (disabled ? authEntryMuted : authEntryInk);
     final borderColor = outlined
         ? (disabled
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.white.withValues(alpha: 0.22))
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.22))
         : Colors.transparent;
 
     return SizedBox(
@@ -298,7 +298,7 @@ class AuthEntryButton extends StatelessWidget {
                               softWrap: false,
                               textAlign: TextAlign.center,
                               style: AppTypography.buttonText.copyWith(
-                                fontFamily: 'HubotSansCondensed',
+                                fontFamily: 'IBM Plex Sans',
                                 color: foreground,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0,
@@ -375,7 +375,7 @@ class AuthEntryNote extends StatelessWidget {
                 Text(
                   title.toUpperCase(),
                   style: AppTypography.caption.copyWith(
-                    fontFamily: 'HubotSansCondensed',
+                    fontFamily: 'IBM Plex Sans',
                     color: authEntryMuted,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,

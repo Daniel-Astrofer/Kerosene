@@ -207,8 +207,8 @@ class _PrimaryNavigationBarBodyState extends State<_PrimaryNavigationBarBody>
     final horizontalMargin = isLargeScreen
         ? AppSpacing.xl
         : (isTablet
-              ? AppSpacing.lg
-              : (isTinyPhone ? AppSpacing.sm : AppSpacing.md));
+            ? AppSpacing.lg
+            : (isTinyPhone ? AppSpacing.sm : AppSpacing.md));
     final maxWidth = isLargeScreen ? 520.0 : (isTablet ? 464.0 : 424.0);
     final borderRadius = BorderRadius.circular(AppSpacing.md);
 
@@ -258,19 +258,17 @@ class _PrimaryNavigationBarBodyState extends State<_PrimaryNavigationBarBody>
                               ),
                               child: Row(
                                 children: [
-                                  for (
-                                    var index = 0;
-                                    index < AppPrimaryDestination.values.length;
-                                    index++
-                                  )
+                                  for (var index = 0;
+                                      index <
+                                          AppPrimaryDestination.values.length;
+                                      index++)
                                     Expanded(
                                       child: _PrimaryNavigationItem(
                                         index: index,
                                         refreshVersion: _refreshVersion,
                                         destination:
                                             AppPrimaryDestination.values[index],
-                                        selected:
-                                            AppPrimaryDestination
+                                        selected: AppPrimaryDestination
                                                 .values[index] ==
                                             widget.currentDestination,
                                         onTap: () {
@@ -527,8 +525,7 @@ class _PrimaryNavigationItemState extends State<_PrimaryNavigationItem>
                                   child: Transform.rotate(
                                     angle: introTurn - (press * 0.04),
                                     child: Transform.scale(
-                                      scale:
-                                          (0.88 + (intro * 0.12)) -
+                                      scale: (0.88 + (intro * 0.12)) -
                                           (press * 0.10) +
                                           (widget.selected ? 0.08 : 0.0) +
                                           (tap * 0.14) +

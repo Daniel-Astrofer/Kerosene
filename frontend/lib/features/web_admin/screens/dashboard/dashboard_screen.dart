@@ -36,7 +36,8 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             const AdminSectionHeader(
               title: 'Executive Dashboard',
-              subtitle: 'Infrastructure health, aggregate operations, and cryptographic integrity.',
+              subtitle:
+                  'Infrastructure health, aggregate operations, and cryptographic integrity.',
             ),
             AdminResponsiveGrid(
               children: [
@@ -60,13 +61,15 @@ class DashboardScreen extends ConsumerWidget {
                 AdminMetricCard(
                   label: 'On-chain Ops',
                   value: '${kpis.onchainCount}',
-                  subtitle: '${kpis.onchainVolumeBtc.toStringAsFixed(6)} BTC aggregate',
+                  subtitle:
+                      '${kpis.onchainVolumeBtc.toStringAsFixed(6)} BTC aggregate',
                   icon: Icons.link,
                 ),
                 AdminMetricCard(
                   label: 'Lightning Ops',
                   value: '${kpis.lightningCount}',
-                  subtitle: '${kpis.lightningVolumeBtc.toStringAsFixed(6)} BTC aggregate',
+                  subtitle:
+                      '${kpis.lightningVolumeBtc.toStringAsFixed(6)} BTC aggregate',
                   icon: Icons.flash_on_outlined,
                 ),
               ],
@@ -77,7 +80,8 @@ class DashboardScreen extends ConsumerWidget {
                 AdminMetricCard(
                   label: 'Payment Links',
                   value: '${kpis.linksCreated}',
-                  subtitle: '${kpis.linksPaid} paid | ${kpis.linksPending} pending',
+                  subtitle:
+                      '${kpis.linksPaid} paid | ${kpis.linksPending} pending',
                   icon: Icons.qr_code_2_outlined,
                 ),
                 AdminMetricCard(
@@ -86,7 +90,9 @@ class DashboardScreen extends ConsumerWidget {
                   subtitle:
                       '${kpis.confirmedTransactions} confirmed | ${kpis.failedTransactions} failed',
                   icon: Icons.check_circle_outline,
-                  accentColor: kpis.successRate > 0.95 ? AdminColors.positive : AdminColors.warning,
+                  accentColor: kpis.successRate > 0.95
+                      ? AdminColors.positive
+                      : AdminColors.warning,
                 ),
                 AdminMetricCard(
                   label: 'Network Fees',
@@ -279,7 +285,8 @@ class _AsyncMetric extends StatelessWidget {
         icon: icon,
         accentColor: accent,
       ),
-      loading: () => AdminMetricCard(label: title, value: 'Loading', icon: icon),
+      loading: () =>
+          AdminMetricCard(label: title, value: 'Loading', icon: icon),
       error: (_, __) => AdminMetricCard(
         label: title,
         value: 'Unavailable',

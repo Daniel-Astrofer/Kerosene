@@ -201,8 +201,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           children: [
             IconButton(
               onPressed: () {
-                final hasLockedDestination =
-                    _pendingPaymentLinkId != null ||
+                final hasLockedDestination = _pendingPaymentLinkId != null ||
                     _lockedRecipientAddress.isNotEmpty;
                 _handleBack(hasLockedDestination);
               },
@@ -218,10 +217,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               child: Text(
                 'Enviar',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _internalText,
                   fontSize: 24,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w300,
                   height: 1.2,
                   letterSpacing: 0,
                 ),
@@ -266,10 +265,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             borderRadius: BorderRadius.circular(999),
           ),
           textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.5,
-          ),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+              ),
         ),
         child: isLoading
             ? const SizedBox(
@@ -313,11 +312,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               foregroundColor: isBackspace ? _internalOutline : _internalText,
               shape: const CircleBorder(),
               textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 24,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0,
-              ),
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 24,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0,
+                  ),
             ),
             child: isBackspace
                 ? const Icon(LucideIcons.delete, size: 24)
@@ -452,13 +451,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         Text(
                           'Digite o nome de usuário Kerosene ou o hash da carteira.',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: _internalMutedText,
-                                fontSize: 15,
-                                height: 1.45,
-                                letterSpacing: 0,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: _internalMutedText,
+                                    fontSize: 15,
+                                    height: 1.45,
+                                    letterSpacing: 0,
+                                  ),
                         ),
                         const SizedBox(height: 42),
                         _buildInternalDestinationInput(
@@ -470,11 +469,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                           Text(
                             'Endereço inválido ou com caracteres não permitidos.',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Colors.redAccent,
-                                  height: 1.35,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.redAccent,
+                                      height: 1.35,
+                                    ),
                           ),
                         ],
                         if (recentInternalDestinations.isNotEmpty) ...[
@@ -482,7 +481,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                           Text(
                             'ENVIADOS RECENTEMENTE',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelSmall
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
                                 ?.copyWith(
                                   color: _internalOutline,
                                   fontSize: 12,
@@ -541,8 +542,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final lineColor = isInvalid
         ? Colors.redAccent
         : hasValue && isValidDestination
-        ? _internalValidBlue
-        : _internalOutline;
+            ? _internalValidBlue
+            : _internalOutline;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -560,26 +561,26 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             textInputAction: TextInputAction.done,
             cursorColor: isInvalid ? Colors.redAccent : _internalValidBlue,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isInvalid ? Colors.redAccent : _internalText,
-              fontFamily: 'JetBrainsMono',
-              fontSize: 14,
-              height: 1.5,
-              letterSpacing: 0,
-            ),
+                  color: isInvalid ? Colors.redAccent : _internalText,
+                  fontFamily: 'IBM Plex Mono',
+                  fontSize: 14,
+                  height: 1.5,
+                  letterSpacing: 0,
+                ),
             decoration: InputDecoration(
               labelText: 'Endereço ou nome de usuário',
               labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: lineColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
+                    color: lineColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
               hintText: 'ex: daniel ou 9f4a2c...',
               hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _internalOutline.withValues(alpha: 0.7),
-                fontSize: 14,
-                height: 1.5,
-              ),
+                    color: _internalOutline.withValues(alpha: 0.7),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -663,10 +664,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _internalText,
-                          fontSize: 16,
-                          height: 1.35,
-                        ),
+                              color: _internalText,
+                              fontSize: 16,
+                              height: 1.35,
+                            ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -674,11 +675,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: _internalMutedText,
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 12,
-                          height: 1.35,
-                        ),
+                              color: _internalMutedText,
+                              fontFamily: 'IBM Plex Mono',
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
                       ),
                     ],
                   ),
@@ -690,23 +691,23 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     Text(
                       lastUsed.$1,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: _internalMutedText,
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 11,
-                        height: 1.25,
-                        letterSpacing: 0,
-                      ),
+                            color: _internalMutedText,
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            height: 1.25,
+                            letterSpacing: 0,
+                          ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       lastUsed.$2,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: _internalOutline,
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 11,
-                        height: 1.25,
-                        letterSpacing: 0,
-                      ),
+                            color: _internalOutline,
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            height: 1.25,
+                            letterSpacing: 0,
+                          ),
                     ),
                   ],
                 ),
@@ -744,8 +745,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final balanceLabel = wallet == null
         ? '--'
         : '${_formatBtcValue(wallet.balance, decimalPlaces: 6)} BTC';
-    final locked =
-        _pendingPaymentLinkId != null ||
+    final locked = _pendingPaymentLinkId != null ||
         _lockedRecipientAddress.isNotEmpty ||
         _lockedAmountBtc > 0;
 
@@ -782,10 +782,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _internalText,
-                          fontSize: 16,
-                          height: 1.4,
-                        ),
+                              color: _internalText,
+                              fontSize: 16,
+                              height: 1.4,
+                            ),
                       ),
                     ],
                   ),
@@ -820,16 +820,15 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                     duration: const Duration(milliseconds: 180),
                                     transitionBuilder: (child, animation) {
                                       return ScaleTransition(
-                                        scale:
-                                            Tween<double>(
-                                              begin: 0.82,
-                                              end: 1,
-                                            ).animate(
-                                              CurvedAnimation(
-                                                parent: animation,
-                                                curve: Curves.easeOutBack,
-                                              ),
-                                            ),
+                                        scale: Tween<double>(
+                                          begin: 0.82,
+                                          end: 1,
+                                        ).animate(
+                                          CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeOutBack,
+                                          ),
+                                        ),
                                         child: FadeTransition(
                                           opacity: animation,
                                           child: child,
@@ -841,10 +840,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                       key: ValueKey(_amountPulseKey),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.junge(
+                                      style: GoogleFonts.ibmPlexSerif(
                                         color: _internalText,
                                         fontSize: 54,
-                                        fontWeight: FontWeight.w100,
+                                        fontWeight: FontWeight.w300,
                                         height: 1.05,
                                         letterSpacing: 0,
                                       ),
@@ -854,10 +853,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                 const SizedBox(width: 8),
                                 Text(
                                   'BTC',
-                                  style: GoogleFonts.junge(
+                                  style: GoogleFonts.ibmPlexSerif(
                                     color: _internalText,
                                     fontSize: 28,
-                                    fontWeight: FontWeight.w100,
+                                    fontWeight: FontWeight.w300,
                                     height: 1,
                                     letterSpacing: 0,
                                   ),
@@ -867,10 +866,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             const SizedBox(height: 8),
                             Text(
                               fiatLabel,
-                              style: Theme.of(context).textTheme.bodySmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
                                   ?.copyWith(
                                     color: _internalOutline,
-                                    fontFamily: 'JetBrainsMono',
+                                    fontFamily: 'IBM Plex Mono',
                                     fontSize: 14,
                                     height: 1.4,
                                     letterSpacing: 0.2,
@@ -895,7 +896,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                           children: [
                             Text(
                               'SALDO DISPONÍVEL',
-                              style: Theme.of(context).textTheme.labelSmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
                                   ?.copyWith(
                                     color: _internalOutline,
                                     fontSize: 12,
@@ -906,10 +909,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             const SizedBox(height: 4),
                             Text(
                               balanceLabel,
-                              style: Theme.of(context).textTheme.bodySmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
                                   ?.copyWith(
                                     color: _internalMutedText,
-                                    fontFamily: 'JetBrainsMono',
+                                    fontFamily: 'IBM Plex Mono',
                                     fontSize: 14,
                                     height: 1.4,
                                   ),
@@ -1055,9 +1060,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         return null;
       }
 
-      final result = await ref
-          .read(paymentLinkNotifierProvider.notifier)
-          .pay(
+      final result = await ref.read(paymentLinkNotifierProvider.notifier).pay(
             linkId: linkId,
             payerWalletName: wallet.name,
             totpCode: authResult.totpCode,
@@ -1088,13 +1091,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     }
 
     final idempotencyKey = const Uuid().v4();
-    final result = await ref
-        .read(sendTransactionProvider.notifier)
-        .send(
+    final result = await ref.read(sendTransactionProvider.notifier).send(
           fromWalletId: wallet.id,
-          fromAddress: wallet.address.trim().isEmpty
-              ? null
-              : wallet.address.trim(),
+          fromAddress:
+              wallet.address.trim().isEmpty ? null : wallet.address.trim(),
           toAddress: toAddress,
           amount: amount,
           feeSatoshis: (fee * 100000000).toInt(),
@@ -1177,9 +1177,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   Future<void> _fetchPaymentLinkDetails(String linkId) async {
-    final result = await ref
-        .read(ledgerRepositoryProvider)
-        .getPaymentRequest(linkId);
+    final result =
+        await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
 
     result.fold(
       (failure) {
@@ -1198,8 +1197,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         final amount = rawAmount is num
             ? rawAmount.toDouble()
             : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
-        final status = (payload['status']?.toString() ?? 'PENDING')
-            .toUpperCase();
+        final status =
+            (payload['status']?.toString() ?? 'PENDING').toUpperCase();
         final destinationHash = _readPaymentRequestDestinationHash(payload);
 
         if (status == 'PAID') {
@@ -1320,12 +1319,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _internalText,
-                fontFamily: 'JetBrainsMono',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
+                    color: _internalText,
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
             ),
           ),
         ),
@@ -1527,9 +1526,8 @@ class _InternalTransferReviewScreenState<T>
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () => Navigator.of(context).pop(),
+                  onPressed:
+                      _isSubmitting ? null : () => Navigator.of(context).pop(),
                   icon: const Icon(LucideIcons.arrowLeft, size: 22),
                   style: IconButton.styleFrom(
                     foregroundColor: _SendMoneyScreenState._internalText,
@@ -1555,10 +1553,10 @@ class _InternalTransferReviewScreenState<T>
                         Text(
                           'Revisar transferência',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.ebGaramond(
+                          style: GoogleFonts.ibmPlexSerif(
                             color: _SendMoneyScreenState._internalText,
                             fontSize: 38,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w300,
                             height: 1.1,
                             letterSpacing: 0,
                           ),
@@ -1649,11 +1647,11 @@ class _InternalTransferReviewScreenState<T>
                       Text(
                         'TRANSAÇÃO PROTEGIDA',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: _SendMoneyScreenState._internalMutedText,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                        ),
+                              color: _SendMoneyScreenState._internalMutedText,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
                       ),
                     ],
                   ),
@@ -1692,18 +1690,17 @@ class _InternalReviewRow extends StatelessWidget {
         border: Border(top: BorderSide(color: Color(0x14FFFFFF))),
       ),
       child: Row(
-        crossAxisAlignment: alignTop
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
+        crossAxisAlignment:
+            alignTop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Text(
             label.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: _SendMoneyScreenState._internalMutedText,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.4,
-            ),
+                  color: _SendMoneyScreenState._internalMutedText,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
           ),
           const SizedBox(width: 28),
           Expanded(
@@ -1721,11 +1718,11 @@ class _InternalReviewRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _SendMoneyScreenState._internalText,
-                          fontSize: valueLarge ? 20 : 15,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35,
-                        ),
+                              color: _SendMoneyScreenState._internalText,
+                              fontSize: valueLarge ? 20 : 15,
+                              fontWeight: FontWeight.w600,
+                              height: 1.35,
+                            ),
                       ),
                     ),
                     if (trailingIcon != null) ...[
@@ -1744,10 +1741,10 @@ class _InternalReviewRow extends StatelessWidget {
                     helper!,
                     textAlign: TextAlign.right,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: _SendMoneyScreenState._internalMutedText,
-                      fontSize: 11,
-                      height: 1.25,
-                    ),
+                          color: _SendMoneyScreenState._internalMutedText,
+                          fontSize: 11,
+                          height: 1.25,
+                        ),
                   ),
                 ],
               ],
@@ -1785,22 +1782,22 @@ class _InternalTransferSuccessView<T> extends StatelessWidget {
             children: [
               const Spacer(),
               Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _SendMoneyScreenState._internalSuccessGreen
-                          .withValues(alpha: 0.12),
-                      border: Border.all(
-                        color: _SendMoneyScreenState._internalSuccessGreen,
-                      ),
-                    ),
-                    child: const Icon(
-                      LucideIcons.check,
-                      color: _SendMoneyScreenState._internalSuccessGreen,
-                      size: 42,
-                    ),
-                  )
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _SendMoneyScreenState._internalSuccessGreen
+                      .withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: _SendMoneyScreenState._internalSuccessGreen,
+                  ),
+                ),
+                child: const Icon(
+                  LucideIcons.check,
+                  color: _SendMoneyScreenState._internalSuccessGreen,
+                  size: 42,
+                ),
+              )
                   .animate()
                   .scale(
                     begin: const Offset(0.72, 0.72),
@@ -1813,10 +1810,10 @@ class _InternalTransferSuccessView<T> extends StatelessWidget {
               Text(
                 'Transferência concluída',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _SendMoneyScreenState._internalText,
                   fontSize: 38,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w300,
                   height: 1.08,
                   letterSpacing: 0,
                 ),
@@ -1826,10 +1823,10 @@ class _InternalTransferSuccessView<T> extends StatelessWidget {
                 'Os fundos foram enviados dentro da Kerosene.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: _SendMoneyScreenState._internalMutedText,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
+                      color: _SendMoneyScreenState._internalMutedText,
+                      fontSize: 14,
+                      height: 1.45,
+                    ),
               ),
               const SizedBox(height: 44),
               _InternalReviewRow(label: 'Para', value: recipientLabel),

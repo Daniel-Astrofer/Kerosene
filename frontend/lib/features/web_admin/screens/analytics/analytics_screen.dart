@@ -22,7 +22,8 @@ class AnalyticsScreen extends ConsumerWidget {
         children: [
           const AdminSectionHeader(
             title: 'Analytics & Metrics',
-            subtitle: 'Aggregate operational KPIs. No readable user timeline is rendered here.',
+            subtitle:
+                'Aggregate operational KPIs. No readable user timeline is rendered here.',
           ),
           AdminResponsiveGrid(
             children: [
@@ -30,13 +31,17 @@ class AnalyticsScreen extends ConsumerWidget {
                 label: 'Success Rate',
                 value: '${(kpis.successRate * 100).toStringAsFixed(1)}%',
                 icon: Icons.check_circle_outline,
-                accentColor: kpis.successRate > 0.95 ? AdminColors.positive : AdminColors.warning,
+                accentColor: kpis.successRate > 0.95
+                    ? AdminColors.positive
+                    : AdminColors.warning,
               ),
               AdminMetricCard(
                 label: 'Failure Rate',
                 value: '${(kpis.failureRate * 100).toStringAsFixed(1)}%',
                 icon: Icons.error_outline,
-                accentColor: kpis.failureRate < 0.05 ? AdminColors.positive : AdminColors.negative,
+                accentColor: kpis.failureRate < 0.05
+                    ? AdminColors.positive
+                    : AdminColors.negative,
               ),
               AdminMetricCard(
                 label: 'Link Conversion',
@@ -83,7 +88,9 @@ class AnalyticsScreen extends ConsumerWidget {
                 value:
                     '${kpis.netFlowBtc >= 0 ? '+' : ''}${kpis.netFlowBtc.toStringAsFixed(8)} BTC',
                 icon: Icons.swap_vert,
-                accentColor: kpis.netFlowBtc >= 0 ? AdminColors.positive : AdminColors.negative,
+                accentColor: kpis.netFlowBtc >= 0
+                    ? AdminColors.positive
+                    : AdminColors.negative,
               ),
             ],
           ),

@@ -1409,11 +1409,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                   children: [
                     Text(
                       _externalDestinationTitle(),
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         textStyle: Theme.of(context).textTheme.displaySmall,
                         color: _lightningTextColor,
                         fontSize: 34,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w300,
                         height: 1.1,
                         letterSpacing: 0,
                       ),
@@ -1440,7 +1440,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: _lightningTextColor,
                             fontSize: 16,
-                            fontFamily: 'JetBrainsMono',
+                            fontFamily: 'IBM Plex Mono',
                             letterSpacing: 0,
                           ),
                       decoration: InputDecoration(
@@ -1618,11 +1618,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                         _displayAmount,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.ebGaramond(
+                        style: GoogleFonts.ibmPlexSerif(
                           textStyle: Theme.of(context).textTheme.displaySmall,
                           color: _lightningTextColor,
                           fontSize: 32,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w300,
                           height: 1,
                           letterSpacing: 0,
                         ),
@@ -1728,11 +1728,11 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     Text(
                       _externalReviewTitle(),
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         textStyle: Theme.of(context).textTheme.displaySmall,
                         color: _lightningTextColor,
                         fontSize: 36,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w300,
                         height: 1.1,
                         letterSpacing: 0,
                       ),
@@ -1923,7 +1923,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                       color: _lightningTextColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      fontFamily: monospace ? 'JetBrainsMono' : null,
+                      fontFamily: monospace ? 'IBM Plex Mono' : null,
                       height: 1.25,
                       letterSpacing: 0,
                     ),
@@ -2364,7 +2364,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(
                     color: _lightningTextColor,
-                    fontFamily: 'JetBrainsMono',
+                    fontFamily: 'IBM Plex Mono',
                     letterSpacing: 3,
                   ),
               decoration: InputDecoration(
@@ -2678,7 +2678,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             cursorColor: accent,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   color: receiveFlowTextColor,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBM Plex Mono',
                   fontWeight: FontWeight.w700,
                 ),
             decoration: InputDecoration(
@@ -3318,7 +3318,7 @@ class _FeeRow extends StatelessWidget {
             style: AppTypography.bodySmall.copyWith(
               color: valueColor ?? textColor,
               fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
-              fontFamily: monospace ? 'JetBrainsMono' : null,
+              fontFamily: monospace ? 'IBM Plex Mono' : null,
               height: 1.35,
             ),
           ),

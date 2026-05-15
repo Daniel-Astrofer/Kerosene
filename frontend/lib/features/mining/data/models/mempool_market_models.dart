@@ -201,10 +201,10 @@ class MempoolBlock {
   });
 
   factory MempoolBlock.fromJson(Map<String, dynamic> json) {
-    final extras = (json['extras'] as Map<String, dynamic>?) ??
-        const <String, dynamic>{};
-    final pool = (extras['pool'] as Map<String, dynamic>?) ??
-        const <String, dynamic>{};
+    final extras =
+        (json['extras'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
+    final pool =
+        (extras['pool'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
 
     return MempoolBlock(
       id: (json['id'] ?? '').toString(),

@@ -19,6 +19,8 @@ final authApiClientProvider = Provider<ApiClient>((ref) {
     TokenInterceptor(localDataSource: localDataSource, apiClient: client),
   );
 
+  ref.onDispose(client.dispose);
+
   return client;
 });
 

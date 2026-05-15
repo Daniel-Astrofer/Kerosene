@@ -5,7 +5,8 @@ import 'package:teste/core/services/notification_orchestrator.dart';
 import 'package:teste/features/web_admin/theme/admin_colors.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-final notificationsListProvider = FutureProvider.autoDispose<List<RealtimeNotificationEvent>>((ref) async {
+final notificationsListProvider =
+    FutureProvider.autoDispose<List<RealtimeNotificationEvent>>((ref) async {
   final orchestrator = ref.watch(notificationOrchestratorProvider);
   return orchestrator.getInbox();
 });
@@ -25,7 +26,7 @@ class NotificationsScreen extends ConsumerWidget {
         title: const Text(
           'Notifications Inbox',
           style: TextStyle(
-            fontFamily: 'HubotSans',
+            fontFamily: 'IBM Plex Sans',
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -141,7 +142,8 @@ class _NotificationCard extends ConsumerWidget {
                 if (notification.kind.isNotEmpty) ...[
                   const SizedBox(width: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(4),
@@ -150,7 +152,7 @@ class _NotificationCard extends ConsumerWidget {
                       notification.kind,
                       style: const TextStyle(
                         fontSize: 10,
-                        fontFamily: 'JetBrainsMono',
+                        fontFamily: 'IBM Plex Mono',
                         color: AdminColors.textSecondary,
                       ),
                     ),
@@ -164,7 +166,9 @@ class _NotificationCard extends ConsumerWidget {
           icon: const Icon(Icons.check, color: AdminColors.textSecondary),
           tooltip: 'Mark as read',
           onPressed: () async {
-            await ref.read(notificationOrchestratorProvider).markAsRead(notification.id);
+            await ref
+                .read(notificationOrchestratorProvider)
+                .markAsRead(notification.id);
             ref.invalidate(notificationsListProvider);
           },
         ),

@@ -479,7 +479,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
               key,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: receiveFlowTextColor,
-                    fontFamily: 'JetBrainsMono',
+                    fontFamily: 'IBM Plex Mono',
                     fontWeight: FontWeight.w400,
                   ),
             ),

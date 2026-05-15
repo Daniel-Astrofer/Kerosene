@@ -149,11 +149,11 @@ class MyApp extends ConsumerWidget {
         '/home_loading': (context) =>
             const _PrivateMobileRoute(child: HomeLoadingScreen()),
         '/settings': (context) => const _PrivateMobileRoute(
-          child: SettingsScreen(showPrimaryNavigation: true),
-        ),
+              child: SettingsScreen(showPrimaryNavigation: true),
+            ),
         '/history': (context) => const _PrivateMobileRoute(
-          child: DepositsScreen(showPrimaryNavigation: true),
-        ),
+              child: DepositsScreen(showPrimaryNavigation: true),
+            ),
         '/card': (context) =>
             const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
         '/wallet-cards-legacy': (context) =>
@@ -167,8 +167,8 @@ class MyApp extends ConsumerWidget {
         '/send-money': (context) =>
             const _PrivateMobileRoute(child: SendMoneyScreen()),
         '/deposits': (context) => const _PrivateMobileRoute(
-          child: DepositsScreen(showPrimaryNavigation: true),
-        ),
+              child: DepositsScreen(showPrimaryNavigation: true),
+            ),
       },
       onGenerateRoute: (settings) {
         final linkId = QrPaymentParser.extractPaymentLinkId(

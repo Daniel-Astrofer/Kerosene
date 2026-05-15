@@ -86,7 +86,8 @@ class MiningAllocation extends Equatable {
       payoutAddress: json['payoutAddress']?.toString() ?? '',
       poolUrl: json['poolUrl']?.toString() ?? '',
       workerName: json['workerName']?.toString() ?? '',
-      startsAt: DateTime.tryParse(json['startsAt']?.toString() ?? '')?.toLocal(),
+      startsAt:
+          DateTime.tryParse(json['startsAt']?.toString() ?? '')?.toLocal(),
       endsAt: DateTime.tryParse(json['endsAt']?.toString() ?? '')?.toLocal(),
       settledAt:
           DateTime.tryParse(json['settledAt']?.toString() ?? '')?.toLocal(),

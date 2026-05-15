@@ -18,7 +18,8 @@ class FakeSecureStorageService extends SecureStorageService {
 }
 
 void main() {
-  test('mergeTaxEvents keeps a durable local copy without duplicating ids', () async {
+  test('mergeTaxEvents keeps a durable local copy without duplicating ids',
+      () async {
     final storage = FakeSecureStorageService();
     final store = BitcoinAccountsLocalStore(storage: storage);
     final event = TaxEventView(

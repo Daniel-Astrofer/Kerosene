@@ -488,7 +488,7 @@ class _TotpScreenState extends ConsumerState<TotpScreen> {
                       widget.totpSecret ?? '•••• •••• •••• ••••',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             color: Theme.of(context).colorScheme.onPrimary,
-                            fontFamily: 'monospace',
+                            fontFamily: 'IBM Plex Mono',
                             letterSpacing: 1.3,
                             height: 1.5,
                           ),

@@ -45,37 +45,40 @@ class StateFeedbackView extends StatelessWidget {
     String description = 'Ainda não tens dados disponíveis nesta secção.',
     String? actionLabel = 'Atualizar',
     VoidCallback? onAction,
-  }) => StateFeedbackView(
-    state: FeedbackState.empty,
-    title: title,
-    description: description,
-    actionLabel: actionLabel,
-    onAction: onAction,
-  );
+  }) =>
+      StateFeedbackView(
+        state: FeedbackState.empty,
+        title: title,
+        description: description,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      );
 
   factory StateFeedbackView.error({
     String title = 'Algo correu mal',
     String description = 'Não conseguimos concluir agora. Tenta novamente.',
     String? actionLabel = 'Tentar novamente',
     VoidCallback? onAction,
-  }) => StateFeedbackView(
-    state: FeedbackState.error,
-    title: title,
-    description: description,
-    actionLabel: actionLabel,
-    onAction: onAction,
-  );
+  }) =>
+      StateFeedbackView(
+        state: FeedbackState.error,
+        title: title,
+        description: description,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      );
 
   factory StateFeedbackView.networkError({
     required BuildContext context,
     VoidCallback? onAction,
-  }) => StateFeedbackView(
-    state: FeedbackState.networkError,
-    title: context.l10n.errNoInternet,
-    description: context.l10n.errCommFailure,
-    actionLabel: context.l10n.tryAgain,
-    onAction: onAction,
-  );
+  }) =>
+      StateFeedbackView(
+        state: FeedbackState.networkError,
+        title: context.l10n.errNoInternet,
+        description: context.l10n.errCommFailure,
+        actionLabel: context.l10n.tryAgain,
+        onAction: onAction,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -110,13 +113,13 @@ class StateFeedbackView extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                  color: color,
-                  fontSize: responsive.compactFontSize(
-                    tiny: 18,
-                    compact: 20,
-                    regular: 22,
-                  ),
-                ),
+                      color: color,
+                      fontSize: responsive.compactFontSize(
+                        tiny: 18,
+                        compact: 20,
+                        regular: 22,
+                      ),
+                    ),
                 textAlign: TextAlign.center,
               ).animate().fade(duration: 300.ms).slideY(begin: 0.1, end: 0),
 
@@ -124,12 +127,12 @@ class StateFeedbackView extends StatelessWidget {
 
               // ── Description ──────────────────────────────────────────────────
               Text(
-                    description,
-                    maxLines: responsive.isTinyPhone ? 4 : 5,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium!,
-                    textAlign: TextAlign.center,
-                  )
+                description,
+                maxLines: responsive.isTinyPhone ? 4 : 5,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium!,
+                textAlign: TextAlign.center,
+              )
                   .animate(delay: 100.ms)
                   .fade(duration: 300.ms)
                   .slideY(begin: 0.1, end: 0),
@@ -137,9 +140,9 @@ class StateFeedbackView extends StatelessWidget {
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: AppSpacing.xl),
                 SizedBox(
-                      width: math.min(200.0, availableWidth),
-                      child: CyberButton(text: actionLabel!, onTap: onAction),
-                    )
+                  width: math.min(200.0, availableWidth),
+                  child: CyberButton(text: actionLabel!, onTap: onAction),
+                )
                     .animate(delay: 200.ms)
                     .fade(duration: 300.ms)
                     .slideY(begin: 0.1, end: 0),
@@ -210,8 +213,7 @@ class _NativeIllustrationState extends State<_NativeIllustration>
   }
 
   void _syncTicker() {
-    final shouldAnimate =
-        widget.state == FeedbackState.loading &&
+    final shouldAnimate = widget.state == FeedbackState.loading &&
         !MediaQuery.disableAnimationsOf(context);
     if (shouldAnimate) {
       if (!_ctrl.isAnimating) {
@@ -240,11 +242,11 @@ class _NativeIllustrationState extends State<_NativeIllustration>
       height: widget.size,
       child: CustomPaint(painter: painter),
     ).animate().scale(
-      begin: const Offset(0.6, 0.6),
-      end: const Offset(1.0, 1.0),
-      duration: 500.ms,
-      curve: Curves.elasticOut,
-    );
+          begin: const Offset(0.6, 0.6),
+          end: const Offset(1.0, 1.0),
+          duration: 500.ms,
+          curve: Curves.elasticOut,
+        );
   }
 
   CustomPainter _painterForState(
@@ -275,7 +277,7 @@ class _EmptyStatePainter extends CustomPainter {
   final Color color;
 
   _EmptyStatePainter({required this.animation, required this.color})
-    : super(repaint: animation);
+      : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -366,7 +368,7 @@ class _ErrorStatePainter extends CustomPainter {
   final Color color;
 
   _ErrorStatePainter({required this.animation, required this.color})
-    : super(repaint: animation);
+      : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -447,7 +449,7 @@ class _NetworkErrorPainter extends CustomPainter {
   final Color color;
 
   _NetworkErrorPainter({required this.animation, required this.color})
-    : super(repaint: animation);
+      : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -529,7 +531,7 @@ class _LoadingOrbPainter extends CustomPainter {
   final Color color;
 
   _LoadingOrbPainter({required this.animation, required this.color})
-    : super(repaint: animation);
+      : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {

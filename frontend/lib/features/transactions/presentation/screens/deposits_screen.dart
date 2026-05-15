@@ -239,8 +239,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     final isRealtimeActive = wsAsync.asData?.value?.isConnected ?? false;
     final linksAsync = ref.watch(paymentLinksProvider);
     final links = linksAsync.asData?.value ?? const <PaymentLink>[];
-    final sortedLinks = [...links]
-      ..sort((a, b) {
+    final sortedLinks = [...links]..sort((a, b) {
         final rankCompare = _paymentLinkPriority(
           a,
         ).compareTo(_paymentLinkPriority(b));
@@ -354,9 +353,9 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                       onCopyAddress: depositAddress == null
                                           ? null
                                           : () => _copyValue(
-                                              depositAddress,
-                                              'Endereço copiado.',
-                                            ),
+                                                depositAddress,
+                                                'Endereço copiado.',
+                                              ),
                                       onOpenLinks: openLinks.isEmpty
                                           ? null
                                           : _scrollToLinks,
@@ -376,21 +375,19 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                           btcBrl: btcBrl,
                                           onCopyAddress: (address) =>
                                               _copyValue(
-                                                address,
-                                                context
-                                                    .l10n
-                                                    .depositLedgerAddressCopied,
-                                              ),
+                                            address,
+                                            context.l10n
+                                                .depositLedgerAddressCopied,
+                                          ),
                                           onOpenLink: (link) =>
                                               _openPaymentLink(
-                                                link,
-                                                wallet: activeWallet,
-                                                selectedCurrency:
-                                                    selectedCurrency,
-                                                btcUsd: btcUsd,
-                                                btcEur: btcEur,
-                                                btcBrl: btcBrl,
-                                              ),
+                                            link,
+                                            wallet: activeWallet,
+                                            selectedCurrency: selectedCurrency,
+                                            btcUsd: btcUsd,
+                                            btcEur: btcEur,
+                                            btcBrl: btcBrl,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -398,8 +395,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                     _SectionTitle(
                                       icon: LucideIcons.receipt,
                                       title: context
-                                          .l10n
-                                          .depositLedgerMovementsTitle,
+                                          .l10n.depositLedgerMovementsTitle,
                                       trailing: context.l10n.depositLedgerPage(
                                         _page + 1,
                                       ),
@@ -415,20 +411,20 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                                       page: _page,
                                       size: _size,
                                       isLoading: historyAsync.isLoading,
-                                      canGoNext:
-                                          !historyAsync.isLoading &&
+                                      canGoNext: !historyAsync.isLoading &&
                                           historyRows.length >= _size,
                                       onPrevious: _page == 0
                                           ? null
                                           : () async {
-                                              await HapticFeedback.selectionClick();
+                                              await HapticFeedback
+                                                  .selectionClick();
                                               setState(() => _page -= 1);
                                             },
-                                      onNext:
-                                          !historyAsync.isLoading &&
+                                      onNext: !historyAsync.isLoading &&
                                               historyRows.length >= _size
                                           ? () async {
-                                              await HapticFeedback.selectionClick();
+                                              await HapticFeedback
+                                                  .selectionClick();
                                               setState(() => _page += 1);
                                             }
                                           : null,
@@ -720,9 +716,8 @@ class _StatementOverview extends StatelessWidget {
                   value: '$openLinkCount',
                 ),
                 _OverviewMetric(
-                  icon: realtimeActive
-                      ? LucideIcons.radio
-                      : LucideIcons.cloudOff,
+                  icon:
+                      realtimeActive ? LucideIcons.radio : LucideIcons.cloudOff,
                   label: context.l10n.depositLedgerNetwork,
                   value: realtimeActive
                       ? context.l10n.depositLedgerActive
@@ -864,11 +859,9 @@ class _OpenLinksSection extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  for (
-                    var index = 0;
-                    index < links.take(3).length;
-                    index++
-                  ) ...[
+                  for (var index = 0;
+                      index < links.take(3).length;
+                      index++) ...[
                     if (index > 0) const Divider(height: 1, color: _borderSoft),
                     _PaymentLinkRow(
                       link: links[index],
@@ -924,8 +917,8 @@ class _PaymentLinkRow extends StatelessWidget {
             _relativeTime(context, link.expiresAt!),
           )
         : link.createdAt != null
-        ? _relativeTime(context, link.createdAt!)
-        : context.l10n.depositLedgerNow;
+            ? _relativeTime(context, link.createdAt!)
+            : context.l10n.depositLedgerNow;
 
     return InkWell(
       onTap: onOpenLink,
@@ -1399,8 +1392,7 @@ class _CancelReceiveInlineButton extends ConsumerWidget {
     if (transferId.isEmpty || !transaction.canCancelPendingReceive) {
       return;
     }
-    final confirmed =
-        await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: Text(context.l10n.depositLedgerCancelReceive),
@@ -1614,9 +1606,8 @@ class _MonoActionButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 15,
-                color: disabled
-                    ? _textMuted.withValues(alpha: 0.42)
-                    : _iconMuted,
+                color:
+                    disabled ? _textMuted.withValues(alpha: 0.42) : _iconMuted,
               ),
               const SizedBox(width: 8),
               Text(
@@ -1720,12 +1711,12 @@ class _NotificationButton extends StatelessWidget {
               child: Text(
                 count > 9 ? '9+' : '$count',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: _background,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                  height: 1,
-                ),
+                      color: _background,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                      height: 1,
+                    ),
               ),
             ),
           ),
@@ -1796,10 +1787,10 @@ class _TableHeadCell extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: _textMuted,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-        ),
+              color: _textMuted,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
       ),
     );
   }
@@ -1834,10 +1825,10 @@ class _LoadingPanel extends StatelessWidget {
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _textSecondary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
-              ),
+                    color: _textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
             ),
           ),
         ],
@@ -1872,19 +1863,19 @@ class _ErrorPanel extends StatelessWidget {
                 Text(
                   context.l10n.depositLedgerErrorTitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _textPrimary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
+                        color: _textPrimary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   message,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _textMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
                 ),
               ],
             ),
@@ -1926,19 +1917,19 @@ class _EmptyPanel extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _textPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
+                        color: _textPrimary,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
+                      ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   message,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _textMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
+                        color: _textMuted,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
                 ),
               ],
             ),
@@ -2014,7 +2005,9 @@ class _MobileActionDock extends StatelessWidget {
                               notificationCount > 9
                                   ? '9+'
                                   : '$notificationCount',
-                              style: Theme.of(context).textTheme.labelSmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
                                   ?.copyWith(
                                     color: _background,
                                     fontSize: 9,
@@ -2059,9 +2052,8 @@ String _transactionAmountLabel({
     );
   }
 
-  final signedAmount = _isCredit(transaction)
-      ? transaction.amountBTC
-      : -transaction.amountBTC;
+  final signedAmount =
+      _isCredit(transaction) ? transaction.amountBTC : -transaction.amountBTC;
 
   return MoneyDisplay.formatAmountFromBtc(
     btcAmount: signedAmount,
