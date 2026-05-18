@@ -26,7 +26,6 @@ import 'core/services/tor_service.dart';
 import 'core/config/app_config.dart';
 
 import 'features/auth/controller/auth_controller.dart';
-import 'shared/widgets/offline_overlay.dart';
 import 'core/utils/snackbar_helper.dart';
 
 void main() async {
@@ -141,7 +140,7 @@ class MyApp extends ConsumerWidget {
         return supportedLocales.first; // Retorna EN por padrão se não suportado
       },
       builder: (context, child) =>
-          OfflineOverlay(child: child ?? const SizedBox.shrink()),
+          ServerAvailabilityGate(child: child ?? const SizedBox.shrink()),
       home: Consumer(
         builder: (context, ref, child) {
           final authState = ref.watch(authControllerProvider);
@@ -163,6 +162,7 @@ class MyApp extends ConsumerWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginUsernameScreen(),
         '/signup': (context) => const SignupFlowScreen(),
+        '/server-unavailable': (context) => const ServerUnavailableScreen(),
         '/home': (context) => const HomeScreen(),
         '/home_loading': (context) => const HomeLoadingScreen(),
         '/create_wallet': (context) => const CreateWalletScreen(),

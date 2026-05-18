@@ -25,7 +25,8 @@ class WalletNetworkAddress extends Equatable {
 
   bool get hasOnchainAddress => onchainAddress.trim().isNotEmpty;
   bool get hasLightningAddress => lightningAddress.trim().isNotEmpty;
-  bool get isSelfCustody => walletMode.trim().toUpperCase() == 'SELF_CUSTODY';
+  bool get isSelfCustody =>
+      walletMode.trim().toUpperCase() == 'SELF_CUSTODY';
 
   factory WalletNetworkAddress.fromJson(Map<String, dynamic> json) {
     return WalletNetworkAddress(

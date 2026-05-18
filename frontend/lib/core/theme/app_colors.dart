@@ -65,6 +65,16 @@ class AppColors {
     colors: [Color(0xFF0F0B1E), Color(0xFF000000)], // Subtly purplish black
   );
 
+  static const LinearGradient onboardingBackgroundGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF050505),
+      Color(0xFF0A1624),
+      Color(0xFF111111),
+    ],
+  );
+
   static TextStyle heading({required double size, Color color = white}) {
     return TextStyle(
       fontSize: size,

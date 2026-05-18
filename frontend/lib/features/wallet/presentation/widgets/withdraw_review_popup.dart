@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/presentation/widgets/cyber_button.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
-import 'package:teste/core/security/biometric_service.dart';
 import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 class WithdrawReviewPopup extends ConsumerStatefulWidget {
   final double amount;
@@ -32,7 +33,7 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
   final _addressController = TextEditingController();
   final _totpController = TextEditingController();
   bool _shamirVerified = false;
-  int _currentStep = 0; // 0: Address, 1: Security (Shamir/TOTP/Passkey)
+  int _currentStep = 0; // 0: Address, 1: Security (Shamir/TOTP)
   bool _isLoading = false;
 
   @override
@@ -45,9 +46,12 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
   void _nextStep() {
     if (_currentStep == 0) {
       if (_addressController.text.trim().isEmpty) {
-        SnackbarHelper.showError(widget.isLightning
-            ? "Insira o Invoice Lightning"
-            : "Insira o endereço On-chain");
+        SnackbarHelper.showError(
+          AppCopy.withdrawReviewEmptyError(
+            context,
+            isLightning: widget.isLightning,
+          ),
+        );
         return;
       }
       setState(() => _currentStep = 1);
@@ -55,33 +59,24 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
   }
 
   Future<void> _handleSecurity() async {
-    // 1. Shamir Verification (Simulation/Placeholder for now, assuming user checks something)
+    // Local validation only. The real passkey challenge is triggered later by
+    // the backend response and signed in the provider.
     setState(() => _isLoading = true);
     await Future.delayed(800.ms);
-    setState(() => _shamirVerified = true);
-
-    // 2. Passkey/Biometric (Mandatory)
-    final bioService = BiometricService();
-    final authenticated = await bioService.authenticate(
-      localizedReason: "Confirme sua identidade para realizar o saque",
-    );
-
-    if (!authenticated) {
-      setState(() {
-        _isLoading = false;
-        _shamirVerified = false;
-      });
-      SnackbarHelper.showError("Falha na autenticação biométrica");
+    if (!mounted) {
       return;
     }
+    setState(() => _shamirVerified = true);
 
-    // 3. TOTP Check
+    // TOTP Check
     if (_totpController.text.length != 6) {
       setState(() {
         _isLoading = false;
         _shamirVerified = false;
       });
-      SnackbarHelper.showError("Código TOTP inválido");
+      SnackbarHelper.showError(
+        AppCopy.withdrawReviewInvalidTotp.resolve(context),
+      );
       return;
     }
 
@@ -135,7 +130,10 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          widget.isLightning ? "LIGHTNING WITHDRAWAL" : "ON-CHAIN WITHDRAWAL",
+          AppCopy.withdrawReviewTitle(
+            context,
+            isLightning: widget.isLightning,
+          ),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 color: Theme.of(context).colorScheme.primary,
@@ -173,9 +171,10 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
                       .bodySmall!
                       .copyWith(fontFamily: 'JetBrainsMono', fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: widget.isLightning
-                        ? "Paste Lightning Invoice"
-                        : "Paste Bitcoin Address",
+                    hintText: AppCopy.withdrawReviewAddressPrompt(
+                      context,
+                      isLightning: widget.isLightning,
+                    ),
                     border: InputBorder.none,
                     isDense: true,
                   ),
@@ -191,7 +190,7 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
         ),
         const SizedBox(height: AppSpacing.xl),
         CyberButton(
-          text: "CONTINUE",
+          text: AppCopy.withdrawReviewContinue.resolve(context),
           onTap: _nextStep,
         ),
       ],
@@ -205,7 +204,7 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "SECURITY VERIFICATION",
+          AppCopy.withdrawReviewSecurityTitle.resolve(context),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 color: Theme.of(context).colorScheme.primary,
@@ -216,20 +215,15 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
         const SizedBox(height: AppSpacing.xl),
         _buildSecurityItem(
           icon: LucideIcons.key,
-          label: "SHAMIR SSSS",
-          status: _shamirVerified ? "VERIFIED" : "PENDING",
+          label: AppCopy.withdrawReviewShamirLabel.resolve(context),
+          status: _shamirVerified
+              ? AppCopy.withdrawReviewVerified.resolve(context)
+              : AppCopy.withdrawReviewPending.resolve(context),
           color: _shamirVerified ? AppColors.success : Colors.orange,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        _buildSecurityItem(
-          icon: LucideIcons.fingerprint,
-          label: "PASSKEY DIGITAL",
-          status: "REQUIRED",
-          color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: AppSpacing.xl),
         Text(
-          "ENTER TOTP CODE",
+          AppCopy.withdrawReviewEnterTotp.resolve(context),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 color: Theme.of(context)
                     .colorScheme
@@ -262,16 +256,16 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
                   letterSpacing: 10,
                   fontSize: 24,
                 ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
               counterText: "",
-              hintText: "000000",
+              hintText: context.l10n.totpEnterCodeHint,
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
         CyberButton(
-          text: "CONFIRM WITHDRAWAL",
+          text: AppCopy.withdrawReviewConfirm.resolve(context),
           isLoading: _isLoading,
           onTap: _handleSecurity,
         ),

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -14,6 +13,7 @@ import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:teste/core/navigation/app_page_transitions.dart';
+import 'package:teste/core/motion/app_motion.dart';
 import 'package:teste/core/providers/currency_provider.dart';
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/responsive/kerosene_responsive.dart';
@@ -1454,7 +1454,7 @@ class _HomeSkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final skeleton = Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
@@ -1462,7 +1462,15 @@ class _HomeSkeletonBox extends StatelessWidget {
         borderRadius: borderRadius,
         border: Border.all(color: Colors.white.withValues(alpha: 0.035)),
       ),
-    ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+    );
+
+    if (KeroseneMotion.reduceMotion(context)) {
+      return skeleton;
+    }
+
+    return skeleton
+        .animate(onPlay: (controller) => controller.repeat())
+        .shimmer(
           duration: 1300.ms,
           color: Colors.white.withValues(alpha: 0.08),
         );
@@ -3997,7 +4005,6 @@ class _HomeBottomNavigationOverlay extends StatelessWidget {
   static const List<AppPrimaryDestination> _orderedDestinations = [
     AppPrimaryDestination.home,
     AppPrimaryDestination.card,
-    AppPrimaryDestination.mining,
     AppPrimaryDestination.history,
     AppPrimaryDestination.settings,
   ];
@@ -4200,11 +4207,9 @@ class _TxPopupWidget extends ConsumerStatefulWidget {
 }
 
 class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
-    with TickerProviderStateMixin {
-  late AnimationController _spinController;
-  late AnimationController _slideController;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _spinController;
   late Animation<double> _spinAnimation;
-  late Animation<double> _slideAnimation;
 
   @override
   void initState() {
@@ -4213,27 +4218,46 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
     _spinController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
-    )..repeat();
+    );
     _spinAnimation = Tween<double>(
       begin: 0,
       end: 2 * 3.14159265,
     ).animate(_spinController);
-
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _slideAnimation = CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
   void dispose() {
     _spinController.dispose();
-    _slideController.dispose();
     super.dispose();
+  }
+
+  void _syncSpinner(bool shouldSpin) {
+    final spinnerAlreadyIdle =
+        !_spinController.isAnimating && _spinController.value == 0;
+    if ((shouldSpin && _spinController.isAnimating) ||
+        (!shouldSpin && spinnerAlreadyIdle)) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (shouldSpin) {
+        if (!_spinController.isAnimating) {
+          _spinController.repeat();
+        }
+        return;
+      }
+
+      if (!_spinController.isAnimating) {
+        _spinController.value = 0;
+        return;
+      }
+      _spinController
+        ..stop()
+        ..value = 0;
+    });
   }
 
   @override
@@ -4241,93 +4265,89 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
     final popupState = ref.watch(txPopupProvider);
     final theme = Theme.of(context);
     final safeTop = MediaQuery.of(context).padding.top;
+    final reduceMotion = KeroseneMotion.reduceMotion(context);
+    final shouldSpin =
+        popupState.active && popupState.status == TxPopupStatus.loading;
+    _syncSpinner(shouldSpin && !reduceMotion);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (popupState.active &&
-          !_slideController.isAnimating &&
-          _slideController.isDismissed) {
-        _slideController.forward();
-      } else if (!popupState.active &&
-          !_slideController.isAnimating &&
-          _slideController.isCompleted) {
-        _slideController.reverse();
-      }
-    });
+    final restingTop = widget.restingTop;
+    final visibleTop = safeTop + widget.activeTop;
+    final accent = popupState.status == TxPopupStatus.loading
+        ? theme.colorScheme.primary
+        : popupState.status == TxPopupStatus.success
+            ? AppColors.success
+            : popupState.isSent
+                ? AppColors.warning
+                : AppColors.success;
+    final iconData = popupState.status == TxPopupStatus.loading
+        ? Icons.sync_rounded
+        : popupState.status == TxPopupStatus.success
+            ? Icons.check_rounded
+            : (popupState.isSent
+                ? Icons.arrow_upward_rounded
+                : Icons.arrow_downward_rounded);
 
-    return AnimatedBuilder(
-      animation: Listenable.merge([_spinAnimation, _slideAnimation]),
-      builder: (context, child) {
-        final restingTop = widget.restingTop;
-        final visibleTop = safeTop + widget.activeTop;
-        final topPos =
-            restingTop - (restingTop - visibleTop) * _slideAnimation.value;
-        final accent = popupState.status == TxPopupStatus.loading
-            ? theme.colorScheme.primary
-            : popupState.status == TxPopupStatus.success
-                ? AppColors.success
-                : popupState.isSent
-                    ? AppColors.warning
-                    : AppColors.success;
-        final iconData = popupState.status == TxPopupStatus.loading
-            ? Icons.sync_rounded
-            : popupState.status == TxPopupStatus.success
-                ? Icons.check_rounded
-                : (popupState.isSent
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded);
-
-        return Positioned(
-          top: topPos,
-          left: 16,
-          right: 16,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Opacity(
-                opacity: _slideAnimation.value.clamp(0.0, 1.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+    return AnimatedPositioned(
+      duration: KeroseneMotion.duration(context, KeroseneMotion.medium),
+      curve: KeroseneMotion.emphasized,
+      top: popupState.active ? visibleTop : restingTop,
+      left: 16,
+      right: 16,
+      child: IgnorePointer(
+        ignoring: !popupState.active,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: AnimatedOpacity(
+              opacity: popupState.active ? 1.0 : 0.0,
+              duration: KeroseneMotion.duration(context, KeroseneMotion.short),
+              curve: KeroseneMotion.standard,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppNotificationStyle.surfaceColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.07),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
                       ),
-                      decoration: BoxDecoration(
-                        color: AppNotificationStyle.surfaceColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.07),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.18),
-                            blurRadius: 18,
-                            offset: const Offset(0, 10),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.10),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.08),
-                              ),
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                if (popupState.status == TxPopupStatus.loading)
-                                  ExcludeSemantics(
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (popupState.status == TxPopupStatus.loading)
+                              AnimatedBuilder(
+                                animation: _spinAnimation,
+                                builder: (context, child) {
+                                  return ExcludeSemantics(
                                     child: Transform.rotate(
-                                      angle: _spinAnimation.value,
+                                      angle: reduceMotion
+                                          ? 0
+                                          : _spinAnimation.value,
                                       child: CustomPaint(
                                         size: const Size(24, 24),
                                         painter: _SpinningArcPainter(
@@ -4335,90 +4355,89 @@ class _TxPopupWidgetState extends ConsumerState<_TxPopupWidget>
                                         ),
                                       ),
                                     ),
-                                  ),
-                                Icon(
-                                  iconData,
-                                  size:
-                                      popupState.status == TxPopupStatus.success
-                                          ? 16
-                                          : 14,
-                                  color: accent,
-                                ),
-                              ],
+                                  );
+                                },
+                              ),
+                            Icon(
+                              iconData,
+                              size: popupState.status == TxPopupStatus.success
+                                  ? 16
+                                  : 14,
+                              color: accent,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              popupState.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppNotificationStyle.titleColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w300,
+                                height: 1.1,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              popupState.address,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                fontFamily: 'IBM Plex Mono',
+                                color: AppNotificationStyle.bodyColor,
+                                fontSize: 10,
+                                height: 1.1,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            popupState.amount,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppNotificationStyle.titleColor,
+                              fontWeight: FontWeight.w300,
+                              fontSize: 12,
+                              height: 1.1,
+                              letterSpacing: 0,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  popupState.label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    color: AppNotificationStyle.titleColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w300,
-                                    height: 1.1,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  popupState.address,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.caption.copyWith(
-                                    fontFamily: 'IBM Plex Mono',
-                                    color: AppNotificationStyle.bodyColor,
-                                    fontSize: 10,
-                                    height: 1.1,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 3),
+                          Text(
+                            popupState.time,
+                            style: AppTypography.caption.copyWith(
+                              color: AppNotificationStyle.metaColor,
+                              fontWeight: FontWeight.w300,
+                              fontSize: 10,
+                              height: 1.1,
+                              letterSpacing: 0,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                popupState.amount,
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: AppNotificationStyle.titleColor,
-                                  fontWeight: FontWeight.w300,
-                                  fontSize: 12,
-                                  height: 1.1,
-                                  letterSpacing: 0,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                popupState.time,
-                                style: AppTypography.caption.copyWith(
-                                  color: AppNotificationStyle.metaColor,
-                                  fontWeight: FontWeight.w300,
-                                  fontSize: 10,
-                                  height: 1.1,
-                                  letterSpacing: 0,
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

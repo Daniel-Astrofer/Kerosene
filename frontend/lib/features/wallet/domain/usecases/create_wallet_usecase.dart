@@ -11,6 +11,8 @@ class CreateWalletUseCase {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   }) async {
     if (name.isEmpty) {
       return const Left(
@@ -21,6 +23,11 @@ class CreateWalletUseCase {
           message: 'A seed phrase (passphrase) é obrigatória'));
     }
     return await repository.createWallet(
-        name: name, passphrase: passphrase, accountSecurity: accountSecurity);
+      name: name,
+      passphrase: passphrase,
+      accountSecurity: accountSecurity,
+      xpub: xpub,
+      walletMode: walletMode,
+    );
   }
 }

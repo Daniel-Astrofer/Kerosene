@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:teste/core/motion/app_motion.dart';
 import 'interaction_utils.dart';
 
-/// A wrapper that adds a "bouncing" physics-based reaction to any clickable widget.
-/// Reduces scale on touch and bounces back with elastic curve.
 class BouncingButtonWrapper extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -21,68 +20,48 @@ class BouncingButtonWrapper extends StatefulWidget {
   State<BouncingButtonWrapper> createState() => _BouncingButtonWrapperState();
 }
 
-class _BouncingButtonWrapperState extends State<BouncingButtonWrapper>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-      lowerBound: 0.0,
-      upperBound: 1.0,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _BouncingButtonWrapperState extends State<BouncingButtonWrapper> {
+  bool _pressed = false;
 
   void _handleTapDown(TapDownDetails details) {
-    if (widget.onTap != null) {
-      _controller.forward();
+    if (widget.onTap == null || _pressed) {
+      return;
     }
+    setState(() => _pressed = true);
   }
 
   void _handleTapUp(TapUpDetails details) {
-    if (widget.onTap != null) {
-      _release();
-      if (widget.enableHaptic) {
-        KeroseneFeedback.lightImpact();
-      }
-      widget.onTap?.call();
+    if (widget.onTap == null) {
+      return;
     }
+    _release();
+    if (widget.enableHaptic) {
+      KeroseneFeedback.lightImpact();
+    }
+    widget.onTap?.call();
   }
 
   void _handleTapCancel() {
-    if (widget.onTap != null) {
-      _release();
+    if (widget.onTap == null) {
+      return;
     }
+    _release();
   }
 
   void _release() {
-    _controller.animateTo(
-      0.0,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.elasticOut,
-    );
+    if (!_pressed || !mounted) {
+      return;
+    }
+    setState(() => _pressed = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = ScaleTransition(
-      scale: _scaleAnimation,
+    final reduceMotion = KeroseneMotion.reduceMotion(context);
+    final body = AnimatedScale(
+      scale: _pressed && !reduceMotion ? 0.96 : 1.0,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
+      curve: KeroseneMotion.standard,
       child: widget.child,
     );
 
@@ -93,9 +72,13 @@ class _BouncingButtonWrapperState extends State<BouncingButtonWrapper>
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
       behavior: HitTestBehavior.opaque,
-      child: widget.tooltip != null
-          ? Tooltip(message: widget.tooltip!, child: body)
-          : body,
+      child: Semantics(
+        button: true,
+        enabled: true,
+        child: widget.tooltip != null
+            ? Tooltip(message: widget.tooltip!, child: body)
+            : body,
+      ),
     );
   }
 }

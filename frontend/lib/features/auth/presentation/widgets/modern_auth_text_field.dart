@@ -60,7 +60,7 @@ class ModernAuthTextField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: AppTypography.caption.copyWith(
-            fontFamily: 'IBM Plex Sans',
+            fontFamily: 'HubotSansCondensed',
             color: Colors.white.withValues(alpha: 0.76),
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
@@ -80,8 +80,9 @@ class ModernAuthTextField extends StatelessWidget {
           enabled: enabled,
           cursorColor: Colors.white,
           style: AppTypography.bodyLarge.copyWith(
-            color:
-                enabled ? Colors.white : Colors.white.withValues(alpha: 0.58),
+            color: enabled
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.58),
             fontWeight: FontWeight.w500,
             height: 1.2,
           ),

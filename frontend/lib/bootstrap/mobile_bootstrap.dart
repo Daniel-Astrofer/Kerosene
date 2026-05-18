@@ -15,13 +15,11 @@ import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
 import '../features/wallet/presentation/screens/create_wallet_screen.dart';
-import '../features/wallet/presentation/screens/wallet_card_screen.dart';
 import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../features/wallet/presentation/screens/receive_hub_screen.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart';
 import '../features/security/presentation/providers/security_provider.dart';
 import '../features/security/presentation/widgets/app_entry_pin_gate.dart';
-import '../features/mining/presentation/screens/mining_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../core/services/background_service.dart';
 import '../core/services/notification_service.dart' as local_notifications;
@@ -33,7 +31,6 @@ import '../core/config/app_config.dart';
 import '../core/performance/kerosene_performance_boundary.dart';
 import '../core/utils/qr_payment_parser.dart';
 import '../features/auth/controller/auth_controller.dart';
-import '../shared/widgets/offline_overlay.dart';
 import '../core/utils/snackbar_helper.dart';
 import '../features/wallet/presentation/providers/balance_websocket_provider.dart';
 
@@ -118,7 +115,9 @@ class MyApp extends ConsumerWidget {
       },
       builder: (context, child) {
         Widget current = KerosenePerformanceBoundary(
-          child: OfflineOverlay(child: child!),
+          child: ServerAvailabilityGate(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
         current = KeroseneResponsiveBoundary(
           requestedTextScale: appearance.fontScale.scaleFactor,
@@ -145,6 +144,7 @@ class MyApp extends ConsumerWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginUsernameScreen(),
         '/signup': (context) => const SignupFlowScreen(),
+        '/server-unavailable': (context) => const ServerUnavailableScreen(),
         '/home': (context) => const _PrivateMobileRoute(child: HomeScreen()),
         '/home_loading': (context) =>
             const _PrivateMobileRoute(child: HomeLoadingScreen()),
@@ -156,12 +156,8 @@ class MyApp extends ConsumerWidget {
             ),
         '/card': (context) =>
             const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
-        '/wallet-cards-legacy': (context) =>
-            const _PrivateMobileRoute(child: WalletCardScreen()),
         '/receive': (context) =>
             const _PrivateMobileRoute(child: ReceiveHubScreen()),
-        '/mining': (context) =>
-            const _PrivateMobileRoute(child: MiningScreen()),
         '/create_wallet': (context) =>
             const _PrivateMobileRoute(child: CreateWalletScreen()),
         '/send-money': (context) =>

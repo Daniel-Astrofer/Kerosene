@@ -321,7 +321,7 @@ class _TimelineDivider extends StatelessWidget {
             'REDE',
             style: AppTypography.caption.copyWith(
               color: miningMuted,
-              fontFamily: 'IBM Plex Sans',
+              fontFamily: 'HubotSansCondensed',
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
             ),
@@ -378,7 +378,7 @@ class _LegendChip extends StatelessWidget {
             label,
             style: AppTypography.caption.copyWith(
               color: color,
-              fontFamily: 'IBM Plex Sans',
+              fontFamily: 'HubotSansCondensed',
               fontWeight: FontWeight.w700,
               letterSpacing: 0.9,
             ),
@@ -404,7 +404,7 @@ class _MetricLine extends StatelessWidget {
             label,
             style: AppTypography.caption.copyWith(
               color: miningMuted,
-              fontFamily: 'IBM Plex Sans',
+              fontFamily: 'HubotSansCondensed',
             ),
           ),
         ),

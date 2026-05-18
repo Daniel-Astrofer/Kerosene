@@ -28,6 +28,11 @@ abstract class LedgerRepository {
   Future<Either<Failure, Map<String, dynamic>>> payPaymentRequest({
     required String linkId,
     required String payerWalletName,
+    String? totpCode,
+    String? confirmationPassphrase,
+    String? passkeyAssertionJson,
+    String? idempotencyKey,
+    int? requestTimestamp,
   });
 
   Future<Either<Failure, String>> deleteLedger(String walletName);

@@ -9,10 +9,6 @@ import '../data/repositories/auth_repository_impl.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/usecases/login_usecase.dart';
 import '../domain/usecases/signup_usecase.dart';
-import '../../notifications/data/datasources/notification_remote_datasource.dart';
-import '../../notifications/data/repositories/notification_repository_impl.dart';
-import '../../notifications/domain/repositories/notification_repository.dart';
-import '../../notifications/application/notification_service.dart';
 
 final authApiClientProvider = Provider<ApiClient>((ref) {
   final baseUrl = AppConfig.apiUrl;
@@ -22,8 +18,6 @@ final authApiClientProvider = Provider<ApiClient>((ref) {
   client.addInterceptor(
     TokenInterceptor(localDataSource: localDataSource, apiClient: client),
   );
-
-  ref.onDispose(client.dispose);
 
   return client;
 });
@@ -48,6 +42,36 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   );
 });
 
+final activationStatusProvider =
+    FutureProvider.autoDispose<ActivationStatusResult>((ref) async {
+  final repository = ref.watch(authRepositoryProvider);
+  final result = await repository.getActivationStatus();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (status) => status,
+  );
+});
+
+final securityStatusProvider =
+    FutureProvider.autoDispose<AccountSecurityStatusResult>((ref) async {
+  final repository = ref.watch(authRepositoryProvider);
+  final result = await repository.getSecurityStatus();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (status) => status,
+  );
+});
+
+final backupCodesStatusProvider =
+    FutureProvider.autoDispose<BackupCodesStatusResult>((ref) async {
+  final repository = ref.watch(authRepositoryProvider);
+  final result = await repository.getBackupCodesStatus();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (status) => status,
+  );
+});
+
 final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return LoginUseCase(repository);
@@ -56,20 +80,4 @@ final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
 final signupUseCaseProvider = Provider<SignupUseCase>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return SignupUseCase(repository);
-});
-
-final notificationRemoteDataSourceProvider =
-    Provider<NotificationRemoteDataSource>((ref) {
-  final apiClient = ref.watch(authApiClientProvider);
-  return NotificationRemoteDataSourceImpl(apiClient);
-});
-
-final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
-  final remote = ref.watch(notificationRemoteDataSourceProvider);
-  return NotificationRepositoryImpl(remote);
-});
-
-final notificationServiceProvider = Provider<NotificationService>((ref) {
-  final repository = ref.watch(notificationRepositoryProvider);
-  return NotificationService(repository);
 });

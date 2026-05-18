@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/wallet_security_service.dart';
+import '../../../../core/utils/bitcoin_network.dart';
 import '../../../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../../transactions/data/datasources/transaction_remote_datasource.dart';
 import '../../domain/repositories/wallet_repository.dart';
@@ -32,6 +33,8 @@ class WalletRepositoryImpl implements WalletRepository {
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   }) async {
     try {
       final token = await authLocalDataSource.getToken();
@@ -43,10 +46,13 @@ class WalletRepositoryImpl implements WalletRepository {
         name: name,
         passphrase: passphrase,
         accountSecurity: accountSecurity,
+        xpub: xpub,
+        walletMode: walletMode,
       );
 
-      // Persist mnemonic locally for secure access
-      await walletSecurityService.saveMnemonic(passphrase);
+      if (walletMode.trim().toUpperCase() != 'SELF_CUSTODY') {
+        await walletSecurityService.saveMnemonic(passphrase);
+      }
 
       return Right(result);
     } on ServerException catch (e) {
@@ -210,11 +216,13 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     // Internal transfer via Ledger
     try {
+      final username = await authLocalDataSource.getUsername();
       final result = await ledgerRemoteDataSource.sendInternalTransaction(
-        senderWalletName: fromWalletId,
+        senderWalletName: username ?? fromWalletId,
         receiverWalletName: toAddress,
         amount: amountSatoshis / 100000000.0,
         idempotencyKey: const Uuid().v4(),
+        requestTimestamp: DateTime.now().millisecondsSinceEpoch,
       );
 
       return Right(Transaction.fromJson(result));
@@ -227,7 +235,7 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<Either<Failure, bool>> validateAddress(String address) async {
-    return Right(address.isNotEmpty);
+    return Right(looksLikeBitcoinAddress(address));
   }
 
   @override

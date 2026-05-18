@@ -17,7 +17,6 @@ class ApiClient {
   late final Dio _dio;
   Dio get dio => _dio; // Added for TokenInterceptor retry logic
   final Ref ref; // Add Ref to access providers
-  bool _disposed = false;
 
   final ApiClientRoutePolicy routePolicy;
 
@@ -80,13 +79,7 @@ class ApiClient {
   }
 
   Future<void> _initCookieManager() async {
-    if (_disposed) return;
     await platform.initializeCookieSupport(_dio);
-  }
-
-  void dispose() {
-    _disposed = true;
-    _dio.close(force: true);
   }
 
   /// Adicionar um interceptor customizado

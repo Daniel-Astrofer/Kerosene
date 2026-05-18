@@ -35,7 +35,8 @@ class ApiResponseInterceptor extends Interceptor {
           response.data = data.containsKey('data') ? data['data'] : null;
         } else {
           // Explicit API failure payload (e.g., success: false)
-          final String errMsg = data['message'] ?? 'API Error';
+          final String errMsg =
+              data['message'] ?? 'Não conseguimos concluir agora.';
           final String errCode = data['errorCode'] ?? 'UNKNOWN_ERROR';
 
           throw DioException(
@@ -45,6 +46,7 @@ class ApiResponseInterceptor extends Interceptor {
             error: {
               'message': errMsg,
               'errorCode': errCode,
+              'data': data['data'],
             }, // Pass as Map so ApiClient catches it cleanly
           );
         }

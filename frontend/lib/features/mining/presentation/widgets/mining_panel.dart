@@ -190,7 +190,7 @@ class MiningSectionHeading extends StatelessWidget {
               Text(
                 title.toUpperCase(),
                 style: AppTypography.h3.copyWith(
-                  fontFamily: 'IBM Plex Sans',
+                  fontFamily: 'HubotSansCondensed',
                   fontWeight: FontWeight.w700,
                   fontSize: 22,
                   letterSpacing: 0.9,
@@ -308,7 +308,7 @@ class MiningMetricCard extends StatelessWidget {
                     label.toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: accent,
-                      fontFamily: 'IBM Plex Sans',
+                      fontFamily: 'HubotSansCondensed',
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.1,
                     ),
@@ -402,19 +402,19 @@ class MiningSkeletonBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: borderRadius ?? miningInnerBorderRadius,
-        border: Border.all(color: miningBorder),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.02),
-            Colors.white.withValues(alpha: 0.07),
-            Colors.white.withValues(alpha: 0.02),
-          ],
-        ),
-      ),
-    )
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: borderRadius ?? miningInnerBorderRadius,
+            border: Border.all(color: miningBorder),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withValues(alpha: 0.02),
+                Colors.white.withValues(alpha: 0.07),
+                Colors.white.withValues(alpha: 0.02),
+              ],
+            ),
+          ),
+        )
         .animate(onPlay: (controller) => controller.repeat())
         .fade(begin: 0.45, end: 1, duration: 900.ms)
         .then()

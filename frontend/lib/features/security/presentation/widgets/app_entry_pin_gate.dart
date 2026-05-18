@@ -702,7 +702,7 @@ class _NumericPad extends StatelessWidget {
                                       .textTheme
                                       .titleMedium
                                       ?.copyWith(
-                                        fontFamily: 'IBM Plex Mono',
+                                        fontFamily: 'JetBrainsMono',
                                         color: enabled
                                             ? monoTextColor
                                             : monoFaintTextColor,

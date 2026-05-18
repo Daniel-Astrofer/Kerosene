@@ -5,6 +5,8 @@ class User {
   final String username;
   final bool testBalanceClaimed;
   final bool passkeyEnabledForTransactions;
+  final String role;
+  final bool isAdmin;
   final DateTime? lastLogin;
   final String? photoUrl;
   final DateTime createdAt;
@@ -14,6 +16,8 @@ class User {
     required this.username,
     this.testBalanceClaimed = false,
     this.passkeyEnabledForTransactions = false,
+    this.role = 'USER',
+    this.isAdmin = false,
     this.lastLogin,
     this.photoUrl,
     required this.createdAt,
@@ -31,6 +35,8 @@ class User {
         other.username == username &&
         other.testBalanceClaimed == testBalanceClaimed &&
         other.passkeyEnabledForTransactions == passkeyEnabledForTransactions &&
+        other.role == role &&
+        other.isAdmin == isAdmin &&
         other.lastLogin == lastLogin &&
         other.photoUrl == photoUrl &&
         other.createdAt == createdAt;
@@ -42,6 +48,8 @@ class User {
         username.hashCode ^
         testBalanceClaimed.hashCode ^
         passkeyEnabledForTransactions.hashCode ^
+        role.hashCode ^
+        isAdmin.hashCode ^
         lastLogin.hashCode ^
         photoUrl.hashCode ^
         createdAt.hashCode;
@@ -49,6 +57,6 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, username: $username, testBalanceClaimed: $testBalanceClaimed, passkeyEnabled: $passkeyEnabledForTransactions, lastLogin: $lastLogin)';
+    return 'User(id: $id, username: $username, role: $role, testBalanceClaimed: $testBalanceClaimed, passkeyEnabled: $passkeyEnabledForTransactions, lastLogin: $lastLogin)';
   }
 }

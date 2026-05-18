@@ -154,8 +154,8 @@ class SessionNotificationSidebar extends ConsumerWidget {
                     onPressed: unreadCount == 0
                         ? null
                         : () => ref
-                            .read(sessionNotificationFeedProvider.notifier)
-                            .markAllRead(),
+                              .read(sessionNotificationFeedProvider.notifier)
+                              .markAllRead(),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white.withValues(
                         alpha: unreadCount == 0 ? 0.22 : 0.7,
@@ -178,8 +178,8 @@ class SessionNotificationSidebar extends ConsumerWidget {
                     onPressed: notifications.isEmpty
                         ? null
                         : () => ref
-                            .read(sessionNotificationFeedProvider.notifier)
-                            .clear(),
+                              .read(sessionNotificationFeedProvider.notifier)
+                              .clear(),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white.withValues(
                         alpha: notifications.isEmpty ? 0.22 : 0.7,

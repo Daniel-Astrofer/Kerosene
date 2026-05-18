@@ -74,8 +74,7 @@ class MiningDashboardRepositoryImpl implements MiningDashboardRepository {
         return MiningBlockSnapshot(
           id: block.id,
           height: block.height,
-          timestamp:
-              DateTime.fromMillisecondsSinceEpoch(block.timestamp * 1000),
+          timestamp: DateTime.fromMillisecondsSinceEpoch(block.timestamp * 1000),
           txCount: block.txCount,
           sizeBytes: block.size,
           weight: block.weight,
@@ -89,8 +88,7 @@ class MiningDashboardRepositoryImpl implements MiningDashboardRepository {
       }).toList(growable: false),
       hashrateTimeline: data.hashrate.hashrates.map((point) {
         return MiningHashratePointSnapshot(
-          timestamp:
-              DateTime.fromMillisecondsSinceEpoch(point.timestamp * 1000),
+          timestamp: DateTime.fromMillisecondsSinceEpoch(point.timestamp * 1000),
           hashrate: point.avgHashrate,
         );
       }).toList(growable: false),

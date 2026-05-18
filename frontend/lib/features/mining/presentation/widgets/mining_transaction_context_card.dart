@@ -265,7 +265,7 @@ class _ContextFact extends StatelessWidget {
               label.toUpperCase(),
               style: AppTypography.caption.copyWith(
                 color: miningMuted,
-                fontFamily: 'IBM Plex Sans',
+                fontFamily: 'HubotSansCondensed',
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.9,
               ),

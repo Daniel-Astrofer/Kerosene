@@ -17,6 +17,8 @@ abstract class WalletRepository {
     required String name,
     required String passphrase, // Mnemonic
     String accountSecurity = 'STANDARD',
+    String? xpub,
+    String walletMode = 'KEROSENE',
   });
 
   /// Importar carteira existente via mnemonic

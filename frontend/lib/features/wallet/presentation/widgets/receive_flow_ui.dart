@@ -278,8 +278,8 @@ class _ReceiveFlowHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: receiveFlowTextColor,
                         fontSize: titleSize,
-                        fontFamily: AppTypography.titleFontFamily,
-                        fontWeight: FontWeight.w300,
+                        fontFamily: 'serif',
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 0,
                         height: 1.02,
                       ),

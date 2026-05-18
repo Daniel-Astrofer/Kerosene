@@ -62,10 +62,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   String _amount = '0';
   late Currency _selectedCurrency;
   bool _amountKeyboardExpanded = false;
-  int _amountPulseKey = 0;
-  String? _pressedKey;
-  String? _flyingRecipientText;
-  bool _recipientTextFlying = false;
 
   int _currentStep = 0;
   final _pageController = PageController();
@@ -95,24 +91,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     if (_lockedAmountBtc > 0) return; // Prevent changing locked amount
 
     HapticFeedback.lightImpact();
-    if (RegExp(r'^[0-9]$').hasMatch(key)) {
-      HapticFeedback.selectionClick();
-    }
     setState(() {
-      _pressedKey = key;
-      _amountPulseKey++;
       _amount = MoneyDisplay.applyKeypadInput(
         currentValue: _amount,
         key: key,
         currency: _selectedCurrency,
         maxLength: _selectedCurrency == Currency.btc ? 16 : 12,
       );
-    });
-
-    Future<void>.delayed(const Duration(milliseconds: 130), () {
-      if (mounted && _pressedKey == key) {
-        setState(() => _pressedKey = null);
-      }
     });
   }
 
@@ -161,7 +146,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       body: SafeArea(
         child: PageView(
           controller: _pageController,
-          reverse: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
             if (!hasLockedDestination) _buildDestinationStep(context),
@@ -217,10 +201,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               child: Text(
                 'Enviar',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSerif(
+                style: GoogleFonts.ebGaramond(
                   color: _internalText,
                   fontSize: 24,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: FontWeight.w500,
                   height: 1.2,
                   letterSpacing: 0,
                 ),
@@ -297,31 +281,25 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   Widget _buildKey(String key) {
     final isBackspace = key == '←';
     final display = key == '.' ? '.' : key;
-    final isPressed = _pressedKey == key;
 
     return Expanded(
       child: SizedBox(
         height: 58,
-        child: AnimatedSlide(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          offset: isPressed ? const Offset(0, -0.16) : Offset.zero,
-          child: TextButton(
-            onPressed: () => _onKeyTap(key),
-            style: TextButton.styleFrom(
-              foregroundColor: isBackspace ? _internalOutline : _internalText,
-              shape: const CircleBorder(),
-              textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontFamily: 'IBM Plex Mono',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0,
-                  ),
-            ),
-            child: isBackspace
-                ? const Icon(LucideIcons.delete, size: 24)
-                : Text(display),
+        child: TextButton(
+          onPressed: () => _onKeyTap(key),
+          style: TextButton.styleFrom(
+            foregroundColor: isBackspace ? _internalOutline : _internalText,
+            shape: const CircleBorder(),
+            textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                ),
           ),
+          child: isBackspace
+              ? const Icon(LucideIcons.delete, size: 24)
+              : Text(display),
         ),
       ),
     );
@@ -420,115 +398,91 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final destination = _receiverController.text.trim();
     final isValidDestination = _isValidInternalDestination(destination);
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildInternalTopBar(context),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Adicionar endereço',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.ebGaramond(
-                            color: _internalText,
-                            fontSize: 38,
-                            fontWeight: FontWeight.w500,
-                            height: 1.05,
+        _buildInternalTopBar(context),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Insira o endereço de destino ou nome de usuário.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: _internalMutedText,
+                            fontSize: 18,
+                            height: 1.6,
                             letterSpacing: 0,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Digite o nome de usuário Kerosene ou o hash da carteira.',
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: _internalMutedText,
-                                    fontSize: 15,
-                                    height: 1.45,
-                                    letterSpacing: 0,
-                                  ),
-                        ),
-                        const SizedBox(height: 42),
-                        _buildInternalDestinationInput(
-                          context,
-                          isValidDestination: isValidDestination,
-                        ),
-                        if (destination.isNotEmpty && !isValidDestination) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            'Endereço inválido ou com caracteres não permitidos.',
-                            textAlign: TextAlign.center,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.redAccent,
-                                      height: 1.35,
-                                    ),
-                          ),
-                        ],
-                        if (recentInternalDestinations.isNotEmpty) ...[
-                          const SizedBox(height: 38),
-                          Text(
-                            'ENVIADOS RECENTEMENTE',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: _internalOutline,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          for (final destination
-                              in recentInternalDestinations.take(6))
-                            _buildInternalRecentDestination(destination),
-                        ],
-                      ],
                     ),
-                  ),
+                    const SizedBox(height: 40),
+                    _buildInternalDestinationInput(
+                      context,
+                      isValidDestination: isValidDestination,
+                    ),
+                    if (destination.isNotEmpty && !isValidDestination) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Use somente o usuário Kerosene ou o hash compartilhado pela carteira.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _internalMutedText,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                    if (recentInternalDestinations.isNotEmpty) ...[
+                      const SizedBox(height: 36),
+                      Text(
+                        'RECENTES',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: _internalOutline,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      for (final destination
+                          in recentInternalDestinations.take(6))
+                        _buildInternalRecentDestination(destination),
+                    ],
+                  ],
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-              child: _buildInternalPrimaryButton(
-                label: 'Continuar',
-                icon: LucideIcons.arrowRight,
-                enabled: isValidDestination,
-                onTap: () {
-                  if (!isValidDestination) {
-                    SnackbarHelper.showError(
-                      destination.isEmpty
-                          ? context.l10n.sendMoneyMissingDestination
-                          : 'Destino interno inválido.',
-                    );
-                    return;
-                  }
-                  FocusScope.of(context).unfocus();
-                  _pageController.nextPage(
-                    duration: const Duration(milliseconds: 360),
-                    curve: Curves.easeOutCubic,
-                  );
-                  setState(() => _currentStep = 1);
-                },
-              ),
-            ),
-          ],
+          ),
         ),
-        _buildFlyingRecipientText(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+          child: _buildInternalPrimaryButton(
+            label: 'Continuar',
+            icon: LucideIcons.arrowRight,
+            enabled: isValidDestination,
+            onTap: () {
+              if (!isValidDestination) {
+                SnackbarHelper.showError(
+                  destination.isEmpty
+                      ? context.l10n.sendMoneyMissingDestination
+                      : 'Destino interno inválido.',
+                );
+                return;
+              }
+              FocusScope.of(context).unfocus();
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+              );
+              setState(() => _currentStep = 1);
+            },
+          ),
+        ),
       ],
     );
   }
@@ -538,17 +492,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required bool isValidDestination,
   }) {
     final hasValue = _receiverController.text.trim().isNotEmpty;
-    final isInvalid = hasValue && !isValidDestination;
-    final lineColor = isInvalid
-        ? Colors.redAccent
-        : hasValue && isValidDestination
-            ? _internalValidBlue
-            : _internalOutline;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: lineColor, width: hasValue ? 2 : 1),
+          bottom: BorderSide(
+            color: hasValue && isValidDestination
+                ? _internalValidBlue
+                : _internalOutline,
+            width: hasValue && isValidDestination ? 2 : 1,
+          ),
         ),
       ),
       child: Column(
@@ -559,23 +512,17 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             onChanged: (_) => setState(() {}),
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
-            cursorColor: isInvalid ? Colors.redAccent : _internalValidBlue,
+            cursorColor:
+                isValidDestination ? _internalValidBlue : _internalText,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isInvalid ? Colors.redAccent : _internalText,
-                  fontFamily: 'IBM Plex Mono',
+                  color: _internalText,
+                  fontFamily: 'JetBrainsMono',
                   fontSize: 14,
                   height: 1.5,
                   letterSpacing: 0,
                 ),
             decoration: InputDecoration(
-              labelText: 'Endereço ou nome de usuário',
-              labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: lineColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-              hintText: 'ex: daniel ou 9f4a2c...',
+              hintText: 'usuario ou hash da carteira',
               hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: _internalOutline.withValues(alpha: 0.7),
                     fontSize: 14,
@@ -592,7 +539,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     tooltip: 'Escanear QR',
                     onPressed: _scanInternalDestination,
                     icon: const Icon(LucideIcons.scanLine, size: 20),
-                    color: lineColor,
+                    color: hasValue && isValidDestination
+                        ? _internalValidBlue
+                        : _internalMutedText,
                   ),
                   if (hasValue && isValidDestination)
                     const Padding(
@@ -620,29 +569,24 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final subtitle = label == null || label.isEmpty
         ? _compactInternalValue(destination.address)
         : _compactInternalValue(destination.address);
-    final lastUsed = _formatRecentDestinationTime(destination.lastUsedAt);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: Colors.transparent,
+        color: _internalSurface,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
           onTap: () => _applyRecentInternalDestination(destination),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: _internalBorder.withValues(alpha: 0.72),
-                ),
-              ),
+              color: _internalSurface,
+              border: Border.all(color: Colors.transparent),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _internalSurfaceHigh,
@@ -654,7 +598,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     size: 19,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,40 +620,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: _internalMutedText,
-                              fontFamily: 'IBM Plex Mono',
+                              fontFamily: 'JetBrainsMono',
                               fontSize: 12,
                               height: 1.35,
                             ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      lastUsed.$1,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: _internalMutedText,
-                            fontFamily: 'IBM Plex Mono',
-                            fontSize: 11,
-                            height: 1.25,
-                            letterSpacing: 0,
-                          ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      lastUsed.$2,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: _internalOutline,
-                            fontFamily: 'IBM Plex Mono',
-                            fontSize: 11,
-                            height: 1.25,
-                            letterSpacing: 0,
-                          ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -816,47 +733,26 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Flexible(
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 180),
-                                    transitionBuilder: (child, animation) {
-                                      return ScaleTransition(
-                                        scale: Tween<double>(
-                                          begin: 0.82,
-                                          end: 1,
-                                        ).animate(
-                                          CurvedAnimation(
-                                            parent: animation,
-                                            curve: Curves.easeOutBack,
-                                          ),
-                                        ),
-                                        child: FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: Text(
-                                      amountLabel,
-                                      key: ValueKey(_amountPulseKey),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.ibmPlexSerif(
-                                        color: _internalText,
-                                        fontSize: 54,
-                                        fontWeight: FontWeight.w300,
-                                        height: 1.05,
-                                        letterSpacing: 0,
-                                      ),
+                                  child: Text(
+                                    amountLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.junge(
+                                      color: _internalText,
+                                      fontSize: 54,
+                                      fontWeight: FontWeight.w100,
+                                      height: 1.05,
+                                      letterSpacing: 0,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'BTC',
-                                  style: GoogleFonts.ibmPlexSerif(
+                                  style: GoogleFonts.junge(
                                     color: _internalText,
                                     fontSize: 28,
-                                    fontWeight: FontWeight.w300,
+                                    fontWeight: FontWeight.w100,
                                     height: 1,
                                     letterSpacing: 0,
                                   ),
@@ -871,7 +767,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                   .bodySmall
                                   ?.copyWith(
                                     color: _internalOutline,
-                                    fontFamily: 'IBM Plex Mono',
+                                    fontFamily: 'JetBrainsMono',
                                     fontSize: 14,
                                     height: 1.4,
                                     letterSpacing: 0.2,
@@ -914,7 +810,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                                   .bodySmall
                                   ?.copyWith(
                                     color: _internalMutedText,
-                                    fontFamily: 'IBM Plex Mono',
+                                    fontFamily: 'JetBrainsMono',
                                     fontSize: 14,
                                     height: 1.4,
                                   ),
@@ -946,7 +842,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           decoration: BoxDecoration(
             color: _internalBlack,
             border: Border(
-              top: BorderSide(color: _internalBorder.withValues(alpha: 0.3)),
+              top: BorderSide(
+                color: _internalBorder.withValues(alpha: 0.3),
+              ),
             ),
           ),
           child: _buildInternalPrimaryButton(
@@ -1263,73 +1161,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     }
 
     HapticFeedback.selectionClick();
-    _startRecipientTextFlight(
-      destination.label?.trim().isNotEmpty == true
-          ? destination.label!.trim()
-          : _compactInternalValue(value),
-    );
     setState(() {
       _receiverController.text = value;
       _receiverController.selection = TextSelection.fromPosition(
         TextPosition(offset: value.length),
       );
     });
-  }
-
-  void _startRecipientTextFlight(String text) {
-    setState(() {
-      _flyingRecipientText = text;
-      _recipientTextFlying = false;
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() => _recipientTextFlying = true);
-    });
-
-    Future<void>.delayed(const Duration(milliseconds: 620), () {
-      if (!mounted) return;
-      setState(() {
-        _flyingRecipientText = null;
-        _recipientTextFlying = false;
-      });
-    });
-  }
-
-  Widget _buildFlyingRecipientText() {
-    final text = _flyingRecipientText;
-    if (text == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 520),
-          curve: Curves.easeOutCubic,
-          alignment: _recipientTextFlying
-              ? const Alignment(0, -0.34)
-              : const Alignment(0, 0.38),
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 180),
-            opacity: _recipientTextFlying ? 0 : 1,
-            curve: Curves.easeOut,
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _internalText,
-                    fontFamily: 'IBM Plex Mono',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
-                  ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   String? _resolveRecentInternalDestinationLabel(String toAddress) {
@@ -1386,9 +1223,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   Future<void> _scanInternalDestination() async {
-    final payload = await Navigator.of(
-      context,
-    ).push<String>(MaterialPageRoute(builder: (_) => const QrScannerScreen()));
+    final payload = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
     final value = payload?.trim();
     if (!mounted || value == null || value.isEmpty) {
       return;
@@ -1432,15 +1269,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 6)}';
   }
 
-  (String, String) _formatRecentDestinationTime(DateTime value) {
-    final local = value.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    return ('$day/$month', '$hour:$minute');
-  }
-
   String _formatBtcValue(double value, {int decimalPlaces = 8}) {
     return MoneyDisplay.format(
       amount: value,
@@ -1456,7 +1284,13 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required double? btcEur,
     required double? btcBrl,
   }) {
-    return '≈ ${MoneyDisplay.formatAmountFromBtc(btcAmount: btcAmount, currency: Currency.brl, btcUsd: btcUsd, btcEur: btcEur, btcBrl: btcBrl)}';
+    return '≈ ${MoneyDisplay.formatAmountFromBtc(
+      btcAmount: btcAmount,
+      currency: Currency.brl,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    )}';
   }
 }
 
@@ -1553,10 +1387,10 @@ class _InternalTransferReviewScreenState<T>
                         Text(
                           'Revisar transferência',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.ibmPlexSerif(
+                          style: GoogleFonts.ebGaramond(
                             color: _SendMoneyScreenState._internalText,
                             fontSize: 38,
-                            fontWeight: FontWeight.w300,
+                            fontWeight: FontWeight.w500,
                             height: 1.1,
                             letterSpacing: 0,
                           ),
@@ -1687,7 +1521,9 @@ class _InternalReviewRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0x14FFFFFF))),
+        border: Border(
+          top: BorderSide(color: Color(0x14FFFFFF)),
+        ),
       ),
       child: Row(
         crossAxisAlignment:
@@ -1810,10 +1646,10 @@ class _InternalTransferSuccessView<T> extends StatelessWidget {
               Text(
                 'Transferência concluída',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSerif(
+                style: GoogleFonts.ebGaramond(
                   color: _SendMoneyScreenState._internalText,
                   fontSize: 38,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: FontWeight.w500,
                   height: 1.08,
                   letterSpacing: 0,
                 ),

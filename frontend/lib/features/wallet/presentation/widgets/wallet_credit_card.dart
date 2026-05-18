@@ -1,18 +1,21 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/l10n/l10n_extension.dart';
-import '../../../../shared/widgets/brushed_metal_container.dart';
+
 import '../../domain/entities/wallet.dart';
 import '../providers/balance_settings_provider.dart';
 import '../screens/wallet_config_screen.dart';
 
-class WalletCreditCard extends ConsumerStatefulWidget {
+const _creditCardWidth = 336.0;
+const _creditCardHeight = 190.0;
+const _creditCardRadius = 10.0;
+
+class WalletCreditCard extends ConsumerWidget {
   final Wallet? wallet;
   final int colorIndex;
   final bool isSelected;
@@ -21,6 +24,8 @@ class WalletCreditCard extends ConsumerStatefulWidget {
   final double elevation;
   final bool showDetails;
   final VoidCallback? onLongPress;
+  final double tiltX;
+  final double tiltY;
 
   const WalletCreditCard({
     super.key,
@@ -32,375 +37,770 @@ class WalletCreditCard extends ConsumerStatefulWidget {
     this.elevation = 0.0,
     this.showDetails = true,
     this.isAddCard = false,
+    this.tiltX = 0.0,
+    this.tiltY = 0.0,
   });
 
-  @override
-  ConsumerState<WalletCreditCard> createState() => _WalletCreditCardState();
-}
-
-class _WalletCreditCardState extends ConsumerState<WalletCreditCard> {
-  ui.Image? _textTexture;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.isAddCard) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _generateTexture();
-      });
+  void _openConfig(BuildContext context) {
+    if (onLongPress != null) {
+      onLongPress!();
+      return;
     }
+    if (isAddCard || wallet == null) {
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      keroseneHorizontalRoute<void>(
+        builder: (_) => WalletConfigScreen(wallet: wallet!),
+      ),
+    );
   }
 
   @override
-  void didUpdateWidget(WalletCreditCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isAddCard) return;
-
-    if (oldWidget.wallet?.name != widget.wallet?.name ||
-        oldWidget.wallet?.balance != widget.wallet?.balance ||
-        oldWidget.showDetails != widget.showDetails) {
-      _generateTexture();
-    }
-  }
-
-  Future<void> _generateTexture() async {
-    const cardW = 303.0;
-    const cardH = 175.0;
-
-    final baseDpr = View.of(context).devicePixelRatio;
-    final dpr = baseDpr * 2.0;
-
-    final targetW = (cardW * dpr).toInt();
-    final targetH = (cardH * dpr).toInt();
-
-    final recorder = ui.PictureRecorder();
-    final canvas =
-        Canvas(recorder, Rect.fromLTWH(0, 0, cardW * dpr, cardH * dpr));
-
-    canvas.drawColor(Colors.transparent, BlendMode.clear);
-    canvas.scale(dpr);
-
-    final textPaint = Paint()..color = Theme.of(context).colorScheme.onPrimary;
-
-    if (widget.wallet != null) {
-      // CHIP
-      final chipX = cardW - 68;
-      final chipY = 67.0;
-      final chipRect = RRect.fromLTRBR(
-          chipX, chipY, chipX + 44, chipY + 32, const Radius.circular(6));
-
-      final chipBasePaint = Paint()
-        ..color =
-            Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.95)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.4);
-      canvas.drawRRect(chipRect, chipBasePaint);
-
-      final linePaint = Paint()
-        ..color = Theme.of(context).colorScheme.onSurface
-        ..style = PaintingStyle.stroke
-        ..blendMode = BlendMode.clear
-        ..strokeWidth = 1.0;
-
-      final cw = 44.0;
-      final ch = 32.0;
-      canvas.drawLine(Offset(chipX + cw * 0.35, chipY),
-          Offset(chipX + cw * 0.35, chipY + ch), linePaint);
-      canvas.drawLine(Offset(chipX + cw * 0.65, chipY),
-          Offset(chipX + cw * 0.65, chipY + ch), linePaint);
-      canvas.drawLine(Offset(chipX, chipY + ch * 0.3),
-          Offset(chipX + cw * 0.25, chipY + ch * 0.3), linePaint);
-      canvas.drawLine(Offset(chipX, chipY + ch * 0.7),
-          Offset(chipX + cw * 0.25, chipY + ch * 0.7), linePaint);
-      canvas.drawLine(Offset(chipX + cw * 0.75, chipY + ch * 0.3),
-          Offset(chipX + cw, chipY + ch * 0.3), linePaint);
-      canvas.drawLine(Offset(chipX + cw * 0.75, chipY + ch * 0.7),
-          Offset(chipX + cw, chipY + ch * 0.7), linePaint);
-      canvas.drawCircle(Offset(chipX + cw / 2, chipY + ch / 2), 5, linePaint);
-
-      // TEXT
-      canvas.saveLayer(null, textPaint);
-
-      final nameText = widget.wallet!.name.toUpperCase();
-      final namePainter = TextPainter(
-        text: TextSpan(
-          text: nameText,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.5,
-            height: 1.0,
-            fontFamily: 'JetBrainsMono',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      namePainter.layout();
-      namePainter.paint(canvas, const Offset(24, 24));
-
-      final balanceSettings = ref.read(balanceSettingsProvider);
-      final String balanceStr;
-      if (balanceSettings.isHidden) {
-        balanceStr = "•••••••• BTC";
-      } else {
-        balanceStr =
-            "${widget.wallet!.balance.toStringAsFixed(balanceSettings.decimalPlaces)} BTC";
-      }
-      final balancePainter = TextPainter(
-        text: TextSpan(
-          text: balanceStr,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2.0,
-            height: 1.0,
-            fontFamily: 'JetBrainsMono',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      balancePainter.layout();
-      balancePainter.paint(canvas, const Offset(24, 90));
-
-      final addressStr = _maskAddress(widget.wallet!.address);
-      final addressPainter = TextPainter(
-        text: TextSpan(
-          text: addressStr,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.0,
-            height: 1.0,
-            fontFamily: 'JetBrainsMono',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      addressPainter.layout();
-      addressPainter.paint(canvas, const Offset(24, 136));
-
-      canvas.restore();
-    }
-
-    try {
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(targetW, targetH);
-
-      if (mounted) {
-        setState(() => _textTexture = img);
-      }
-    } catch (e) {
-      debugPrint("🚨 Error creating wallet texture: $e");
-    }
-  }
-
-  String _maskAddress(String address) {
-    if (address.length <= 12) return address;
-    return '${address.substring(0, 6)}...${address.substring(address.length - 6)}';
-  }
-
-  String _localizedCopy({
-    required BuildContext context,
-    required String pt,
-    required String en,
-    required String es,
-  }) {
-    switch (Localizations.localeOf(context).languageCode) {
-      case 'en':
-        return en;
-      case 'es':
-        return es;
-      default:
-        return pt;
-    }
-  }
-
-  String _formatSecurityLabel(String rawValue, BuildContext context) {
-    switch (rawValue.toUpperCase()) {
-      case 'STANDARD':
-        return _localizedCopy(
-          context: context,
-          pt: 'SEED PADRAO',
-          en: 'STANDARD SEED',
-          es: 'SEMILLA ESTANDAR',
-        );
-      case 'SHAMIR':
-        return 'SHAMIR SLIP-39';
-      case 'MULTISIG':
-        return _localizedCopy(
-          context: context,
-          pt: 'COFRE MULTISIG',
-          en: 'MULTISIG VAULT',
-          es: 'BOVEDA MULTISIG',
-        );
-      default:
-        return rawValue.toUpperCase();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const width = 303.0;
-    const cardHeight = 175.0;
-
-    ref.listen(balanceSettingsProvider, (prev, next) {
-      if (prev?.isHidden != next.isHidden ||
-          prev?.decimalPlaces != next.decimalPlaces) {
-        _generateTexture();
-      }
-    });
-
-    final showShadow = widget.isSelected || widget.elevation > 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balanceSettings = ref.watch(balanceSettingsProvider);
+    final palette = _CreditCardPalette.resolve(wallet?.cardType, colorIndex);
+    final showShadow = isSelected || elevation > 0;
 
     return GestureDetector(
-      onTap: widget.onTap,
-      onLongPress: () {
-        if (widget.onLongPress != null) {
-          widget.onLongPress!();
-          return;
-        }
-        if (widget.isAddCard || widget.wallet == null) return;
-        HapticFeedback.mediumImpact();
-
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 600),
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                WalletConfigScreen(wallet: widget.wallet!),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              final slide = Tween<Offset>(
-                begin: const Offset(0, 0.2),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                  parent: animation, curve: Curves.easeOutBack));
-              return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: slide, child: child));
-            },
-          ),
-        );
-      },
+      onTap: onTap,
+      onLongPress: () => _openConfig(context),
       child: Center(
         child: Hero(
-          tag: 'card_hero_${widget.wallet?.address ?? widget.colorIndex}',
+          tag: 'card_hero_${wallet?.address ?? colorIndex}',
           transitionOnUserGestures: true,
-          child: Container(
-            height: cardHeight,
-            width: width,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppSpacing.md),
-              boxShadow: [
-                if (showShadow)
+          child: SizedBox(
+            width: _creditCardWidth,
+            height: _creditCardHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.md),
-                  child: Stack(
-                    children: [
-                      BrushedMetalContainer(
-                        width: width,
-                        height: cardHeight,
-                        materialId: widget.colorIndex.toDouble(),
-                        tiltX: 0,
-                        tiltY: 0,
-                        baseColor: () {
-                          switch (widget.colorIndex) {
-                            case 0:
-                              return const Color(0xFFC3CBD8);
-                            case 1:
-                              return const Color(0xFF66758A);
-                            case 2:
-                              return const Color(0xFF5F7569);
-                            case 3:
-                              return const Color(0xFF786556);
-                            default:
-                              return const Color(0xFF566578);
-                          }
-                        }(),
-                        borderRadius: AppSpacing.md,
-                        textTexture: _textTexture,
-                      ),
-                      if (widget.wallet != null)
-                        Positioned(
-                          bottom: 24,
-                          right: 24,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.12),
-                              ),
-                            ),
-                            child: Text(
-                              _formatSecurityLabel(
-                                widget.wallet!.accountSecurity,
-                                context,
-                              ),
-                              style: AppTypography.caption.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.1,
-                                fontFamily: 'JetBrainsMono',
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (widget.isAddCard)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: Colors.white.withValues(alpha: 0.06),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.14),
-                            ),
-                          ),
-                          child: Icon(
-                            LucideIcons.plus,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            size: 22,
-                          ),
-                        ),
-                        SizedBox(height: AppSpacing.sm),
-                        Text(
-                          context.l10n.addCard,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.white70,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-                      ],
+                    color: Colors.black.withValues(
+                      alpha: showShadow ? 0.34 : 0.18,
                     ),
+                    blurRadius: showShadow ? 24 : 14,
+                    offset: Offset(0, showShadow ? 14 : 8),
                   ),
-              ],
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                child: isAddCard || wallet == null
+                    ? _EmptyCreditCardFace(palette: palette)
+                    : _PhysicalCreditCardFace(
+                        wallet: wallet!,
+                        palette: palette,
+                        balanceSettings: balanceSettings,
+                        showDetails: showDetails,
+                        isSelected: isSelected,
+                        tiltX: tiltX,
+                        tiltY: tiltY,
+                      ),
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+class _PhysicalCreditCardFace extends StatelessWidget {
+  final Wallet wallet;
+  final _CreditCardPalette palette;
+  final BalanceSettings balanceSettings;
+  final bool showDetails;
+  final bool isSelected;
+  final double tiltX;
+  final double tiltY;
+
+  const _PhysicalCreditCardFace({
+    required this.wallet,
+    required this.palette,
+    required this.balanceSettings,
+    required this.showDetails,
+    required this.isSelected,
+    required this.tiltX,
+    required this.tiltY,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: palette.gradient,
+              stops: const [0.0, 0.58, 1.0],
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: _CreditCardSurfacePainter(
+            palette: palette,
+            isSelected: isSelected,
+            tiltX: tiltX,
+            tiltY: tiltY,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _CardBrandBlock(
+                      palette: palette,
+                      tier: wallet.cardType.label.toUpperCase(),
+                    ),
+                  ),
+                  _NetworkMark(color: palette.inkPrimary),
+                ],
+              ),
+              const Spacer(),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _CardChip(palette: palette),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.contactless,
+                    color: palette.inkPrimary.withValues(alpha: 0.72),
+                    size: 24,
+                  ),
+                  const Spacer(),
+                  if (showDetails)
+                    _BalanceBlock(
+                      label: _balanceLabel(wallet, balanceSettings),
+                      palette: palette,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                _maskedCardNumber(wallet),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: palette.inkPrimary,
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.8,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: _CardTextField(
+                      label: 'CARD HOLDER',
+                      value: wallet.effectiveCardHolderName.toUpperCase(),
+                      palette: palette,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _CardTextField(
+                    label: 'VALID THRU',
+                    value: _expiryLabel(wallet),
+                    palette: palette,
+                    alignEnd: true,
+                  ),
+                  if (showDetails && wallet.passphraseHash.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: _SecurityHashButton(
+                        hash: wallet.passphraseHash.trim(),
+                        palette: palette,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                border: Border.all(
+                  color: palette.border,
+                  width: isSelected ? 1.25 : 1.0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _balanceLabel(Wallet wallet, BalanceSettings settings) {
+    if (settings.isHidden) {
+      return 'BTC ********';
+    }
+    return '${wallet.balance.toStringAsFixed(settings.decimalPlaces)} BTC';
+  }
+
+  static String _maskedCardNumber(Wallet wallet) {
+    return wallet.effectiveMaskedCardNumber.replaceAll(' ', '  ');
+  }
+
+  static String _expiryLabel(Wallet wallet) {
+    final expiry = wallet.cardExpiresAt ?? wallet.createdAt;
+    final month = expiry.month.toString().padLeft(2, '0');
+    final year = (expiry.year % 100).toString().padLeft(2, '0');
+    return '$month/$year';
+  }
+}
+
+class _EmptyCreditCardFace extends StatelessWidget {
+  final _CreditCardPalette palette;
+
+  const _EmptyCreditCardFace({required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: palette.gradient,
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: _CreditCardSurfacePainter(
+            palette: palette,
+            isSelected: false,
+            tiltX: 0,
+            tiltY: 0,
+          ),
+        ),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 54,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: Icon(
+                  LucideIcons.plus,
+                  color: palette.inkPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                context.l10n.addCard.toUpperCase(),
+                style: AppTypography.bodySmall.copyWith(
+                  color: palette.inkPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_creditCardRadius),
+                border: Border.all(color: palette.border),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardBrandBlock extends StatelessWidget {
+  final _CreditCardPalette palette;
+  final String tier;
+
+  const _CardBrandBlock({required this.palette, required this.tier});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'KEROSENE',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bodyMedium.copyWith(
+            color: palette.inkPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.6,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '$tier CARD',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.caption.copyWith(
+            color: palette.inkSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            height: 1.0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BalanceBlock extends StatelessWidget {
+  final String label;
+  final _CreditCardPalette palette;
+
+  const _BalanceBlock({required this.label, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 126),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            'BALANCE',
+            style: AppTypography.caption.copyWith(
+              color: palette.inkSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: AppTypography.bodySmall.copyWith(
+                color: palette.inkPrimary,
+                fontFamily: 'JetBrainsMono',
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardTextField extends StatelessWidget {
+  final String label;
+  final String value;
+  final _CreditCardPalette palette;
+  final bool alignEnd;
+
+  const _CardTextField({
+    required this.label,
+    required this.value,
+    required this.palette,
+    this.alignEnd = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: palette.inkSecondary,
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.9,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 5),
+        SizedBox(
+          width: alignEnd ? 58 : double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: AppTypography.bodySmall.copyWith(
+                color: palette.inkPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SecurityHashButton extends StatelessWidget {
+  final String hash;
+  final _CreditCardPalette palette;
+
+  const _SecurityHashButton({required this.hash, required this.palette});
+
+  void _copyHash(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: hash));
+    HapticFeedback.selectionClick();
+    AppNotice.showSuccess(
+      context,
+      title: context.l10n.walletCardHashCopiedTitle,
+      message: context.l10n.walletCardHashCopiedMessage,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkResponse(
+        onTap: () => _copyHash(context),
+        radius: 18,
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(
+              alpha: palette.isLight ? 0.18 : 0.08,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: palette.inkPrimary.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Icon(
+            LucideIcons.copy,
+            size: 13,
+            color: palette.inkPrimary.withValues(alpha: 0.82),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardChip extends StatelessWidget {
+  final _CreditCardPalette palette;
+
+  const _CardChip({required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 45,
+      height: 34,
+      child: CustomPaint(painter: _CardChipPainter(palette: palette)),
+    );
+  }
+}
+
+class _NetworkMark extends StatelessWidget {
+  final Color color;
+
+  const _NetworkMark({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 42,
+      height: 24,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 2,
+            top: 2,
+            child: _NetworkDisc(color: color.withValues(alpha: 0.38)),
+          ),
+          Positioned(
+            right: 2,
+            top: 2,
+            child: _NetworkDisc(color: color.withValues(alpha: 0.58)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NetworkDisc extends StatelessWidget {
+  final Color color;
+
+  const _NetworkDisc({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _CreditCardSurfacePainter extends CustomPainter {
+  final _CreditCardPalette palette;
+  final bool isSelected;
+  final double tiltX;
+  final double tiltY;
+
+  const _CreditCardSurfacePainter({
+    required this.palette,
+    required this.isSelected,
+    required this.tiltX,
+    required this.tiltY,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final highlightDx = size.width * (0.55 + (tiltY * 0.18).clamp(-0.16, 0.16));
+    final highlightDy =
+        size.height * (0.22 + (tiltX * 0.12).clamp(-0.10, 0.10));
+    final highlightPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: isSelected ? 0.18 : 0.10),
+          Colors.white.withValues(alpha: 0.00),
+        ],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(highlightDx, highlightDy),
+          radius: size.width * 0.56,
+        ),
+      );
+    canvas.drawRect(Offset.zero & size, highlightPaint);
+
+    final edgePaint = Paint()
+      ..color = Colors.white.withValues(alpha: palette.isLight ? 0.22 : 0.10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(6, 6, size.width - 12, size.height - 12),
+        const Radius.circular(_creditCardRadius - 4),
+      ),
+      edgePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CreditCardSurfacePainter oldDelegate) {
+    return oldDelegate.palette != palette ||
+        oldDelegate.isSelected != isSelected ||
+        oldDelegate.tiltX != tiltX ||
+        oldDelegate.tiltY != tiltY;
+  }
+}
+
+class _CardChipPainter extends CustomPainter {
+  final _CreditCardPalette palette;
+
+  const _CardChipPainter({required this.palette});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+    final fill = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: palette.chipGradient,
+      ).createShader(rect);
+    final stroke = Paint()
+      ..color = palette.inkPrimary.withValues(
+        alpha: palette.isLight ? 0.18 : 0.24,
+      )
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9;
+    final line = Paint()
+      ..color = Colors.black.withValues(alpha: palette.isLight ? 0.22 : 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.85;
+
+    canvas.drawRRect(rrect, fill);
+    canvas.drawRRect(rrect, stroke);
+
+    final x = rect.left;
+    final y = rect.top;
+    final w = rect.width;
+    final h = rect.height;
+    canvas.drawLine(
+      Offset(x + w * 0.33, y + 3),
+      Offset(x + w * 0.33, y + h - 3),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + w * 0.67, y + 3),
+      Offset(x + w * 0.67, y + h - 3),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + 3, y + h * 0.32),
+      Offset(x + w * 0.26, y + h * 0.32),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + 3, y + h * 0.68),
+      Offset(x + w * 0.26, y + h * 0.68),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + w * 0.74, y + h * 0.32),
+      Offset(x + w - 3, y + h * 0.32),
+      line,
+    );
+    canvas.drawLine(
+      Offset(x + w * 0.74, y + h * 0.68),
+      Offset(x + w - 3, y + h * 0.68),
+      line,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardChipPainter oldDelegate) {
+    return oldDelegate.palette != palette;
+  }
+}
+
+@immutable
+class _CreditCardPalette {
+  final List<Color> gradient;
+  final List<Color> chipGradient;
+  final Color border;
+  final Color line;
+  final Color inkPrimary;
+  final Color inkSecondary;
+  final bool isLight;
+
+  const _CreditCardPalette({
+    required this.gradient,
+    required this.chipGradient,
+    required this.border,
+    required this.line,
+    required this.inkPrimary,
+    required this.inkSecondary,
+    required this.isLight,
+  });
+
+  static _CreditCardPalette resolve(WalletCardType? type, int colorIndex) {
+    final resolvedType = type ??
+        switch (colorIndex % 3) {
+          0 => WalletCardType.bronze,
+          1 => WalletCardType.white,
+          _ => WalletCardType.black,
+        };
+
+    return switch (resolvedType) {
+      WalletCardType.bronze => _blue,
+      WalletCardType.white => _silver,
+      WalletCardType.black => _black,
+    };
+  }
+
+  static const _blue = _CreditCardPalette(
+    gradient: [Color(0xFF191919), Color(0xFF0D0D0D), Color(0xFF161616)],
+    chipGradient: [Color(0xFFE7E7E1), Color(0xFFA8A8A0), Color(0xFF686862)],
+    border: Color(0xFF3A3A3A),
+    line: Color(0xFFA0A09B),
+    inkPrimary: Color(0xFFF1F1ED),
+    inkSecondary: Color(0xFFA0A09B),
+    isLight: false,
+  );
+
+  static const _silver = _CreditCardPalette(
+    gradient: [Color(0xFFF1F1EC), Color(0xFFD2D2CC), Color(0xFF9A9A94)],
+    chipGradient: [Color(0xFFF7F7F1), Color(0xFFC8C8C0), Color(0xFF85857E)],
+    border: Color(0xFFF1F1EC),
+    line: Color(0xFF555550),
+    inkPrimary: Color(0xFF090909),
+    inkSecondary: Color(0xFF555550),
+    isLight: true,
+  );
+
+  static const _black = _CreditCardPalette(
+    gradient: [Color(0xFF030303), Color(0xFF080808), Color(0xFF151515)],
+    chipGradient: [Color(0xFFE2E2DC), Color(0xFF9A9A94), Color(0xFF5D5D58)],
+    border: Color(0xFF2A2A2A),
+    line: Color(0xFF6B6B66),
+    inkPrimary: Color(0xFFF1F1ED),
+    inkSecondary: Color(0xFFA0A09B),
+    isLight: false,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is _CreditCardPalette &&
+            runtimeType == other.runtimeType &&
+            gradient == other.gradient &&
+            chipGradient == other.chipGradient &&
+            border == other.border &&
+            line == other.line &&
+            inkPrimary == other.inkPrimary &&
+            inkSecondary == other.inkSecondary &&
+            isLight == other.isLight;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        gradient,
+        chipGradient,
+        border,
+        line,
+        inkPrimary,
+        inkSecondary,
+        isLight,
+      );
 }

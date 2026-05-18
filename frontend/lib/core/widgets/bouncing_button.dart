@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:teste/core/motion/app_motion.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 
 enum BouncingButtonVariant { solid, outlined }
 
-/// Reusable Physics-based scale animation button complying with Figma guidelines.
 class BouncingButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -41,6 +41,7 @@ class _BouncingButtonState extends State<BouncingButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onPressed == null || widget.isLoading;
+    final reduceMotion = KeroseneMotion.reduceMotion(context);
 
     final isSolid = widget.variant == BouncingButtonVariant.solid;
 
@@ -67,9 +68,9 @@ class _BouncingButtonState extends State<BouncingButton> {
             : Theme.of(context).colorScheme.secondary);
 
     return AnimatedScale(
-      scale: _pressed ? 0.95 : 1.0,
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOutBack,
+      scale: _pressed && !reduceMotion ? 0.96 : 1.0,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
+      curve: KeroseneMotion.standard,
       child: Container(
         width: widget.width,
         height: widget.height,

@@ -473,7 +473,7 @@ class _LoginBrand extends StatelessWidget {
               'KEROSENE',
               style: AppTypography.h2.copyWith(
                 color: Colors.white.withValues(alpha: 0.92),
-                fontFamily: AppTypography.fontFamily,
+                fontFamily: AppTypography.spaceGroteskVariableFamily,
                 fontSize: 30,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 8,
@@ -501,9 +501,9 @@ class _LoginTitleBlock extends StatelessWidget {
           title,
           style: AppTypography.h1.copyWith(
             color: Colors.white,
-            fontFamily: AppTypography.titleFontFamily,
+            fontFamily: 'serif',
             fontSize: 42,
-            fontWeight: FontWeight.w300,
+            fontWeight: FontWeight.w700,
             height: 1.05,
             letterSpacing: 0,
           ),
@@ -693,9 +693,9 @@ class _PasskeyPanel extends StatelessWidget {
                         title,
                         style: AppTypography.h2.copyWith(
                           color: Colors.white,
-                          fontFamily: AppTypography.titleFontFamily,
+                          fontFamily: 'serif',
                           fontSize: 28,
-                          fontWeight: FontWeight.w300,
+                          fontWeight: FontWeight.w700,
                           height: 1.08,
                           letterSpacing: 0,
                         ),

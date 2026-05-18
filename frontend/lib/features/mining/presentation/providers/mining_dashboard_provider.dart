@@ -93,8 +93,7 @@ class MiningSyncMeta extends Equatable {
 
   bool get isLive => phase == MiningSyncPhase.live;
 
-  bool get hasWarning =>
-      phase == MiningSyncPhase.degraded ||
+  bool get hasWarning => phase == MiningSyncPhase.degraded ||
       phase == MiningSyncPhase.reconnecting ||
       phase == MiningSyncPhase.stale ||
       phase == MiningSyncPhase.offline ||
@@ -109,27 +108,24 @@ class MiningSyncMeta extends Equatable {
       ];
 }
 
-final miningDashboardRepositoryProvider =
-    Provider.autoDispose<MiningDashboardRepository>((
+final miningDashboardRepositoryProvider = Provider.autoDispose<MiningDashboardRepository>((
   ref,
 ) {
   return MiningDashboardRepositoryImpl(ref.watch(mempoolServiceProvider));
 });
 
-final miningDashboardControllerProvider = NotifierProvider.autoDispose<
-    MiningDashboardController, MiningDashboardState>(
+final miningDashboardControllerProvider =
+    NotifierProvider.autoDispose<MiningDashboardController, MiningDashboardState>(
   MiningDashboardController.new,
 );
 
-final miningSnapshotProvider =
-    Provider.autoDispose<MiningDashboardSnapshot?>((ref) {
+final miningSnapshotProvider = Provider.autoDispose<MiningDashboardSnapshot?>((ref) {
   return ref.watch(
     miningDashboardControllerProvider.select((state) => state.snapshot),
   );
 });
 
-final miningDashboardViewDataProvider =
-    Provider.autoDispose<MiningDashboardViewData?>((
+final miningDashboardViewDataProvider = Provider.autoDispose<MiningDashboardViewData?>((
   ref,
 ) {
   final snapshot = ref.watch(miningSnapshotProvider);
@@ -242,9 +238,10 @@ class MiningDashboardController extends Notifier<MiningDashboardState> {
     );
 
     try {
-      final previousHeights =
-          state.snapshot?.recentBlocks.map((block) => block.height).toSet() ??
-              const <int>{};
+      final previousHeights = state.snapshot?.recentBlocks
+              .map((block) => block.height)
+              .toSet() ??
+          const <int>{};
       final snapshot = await _repository.fetchSnapshot();
       final newHeights = snapshot.recentBlocks
           .where((block) => !previousHeights.contains(block.height))
@@ -326,8 +323,7 @@ class MiningDashboardController extends Notifier<MiningDashboardState> {
     }
 
     final currentPhase = state.phase;
-    final shouldMarkStale =
-        DateTime.now().difference(lastSuccess) > _staleThreshold;
+    final shouldMarkStale = DateTime.now().difference(lastSuccess) > _staleThreshold;
     if (shouldMarkStale && currentPhase == MiningSyncPhase.live) {
       state = state.copyWith(phase: MiningSyncPhase.stale);
       return;

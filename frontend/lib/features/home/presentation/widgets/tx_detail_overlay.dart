@@ -11,8 +11,6 @@ import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/features/mining/presentation/mining_explorer.dart';
-import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/l10n/l10n_extension.dart';
@@ -31,7 +29,7 @@ class TxDetailOverlay extends ConsumerWidget {
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
-    final explorer = MiningExplorerDescriptor.fromTransaction(tx);
+    final explorer = _TransactionRailDescriptor.fromTransaction(tx);
     final visual = TransactionVisualSpec.fromTransaction(tx);
     final primaryAmount = MoneyDisplay.formatAmountFromBtc(
       btcAmount: tx.amountBTC,
@@ -264,51 +262,18 @@ class TxDetailOverlay extends ConsumerWidget {
                               ),
                               const SizedBox(height: 10),
                             ],
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _OverlayActionButton(
-                                    label: context.l10n.apiDisplayDataCopied,
-                                    icon: LucideIcons.copy,
-                                    onTap: () => _copyTransactionSummary(
-                                      context,
-                                      tx: tx,
-                                      explorer: explorer,
-                                      primaryAmount: primaryAmount,
-                                      cryptoAmount: cryptoAmount,
-                                      feeAmount: feeAmount,
-                                      amountSign: amountPrefix,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _OverlayActionButton(
-                                    label: explorer.buttonLabel,
-                                    icon: _railIcon(explorer),
-                                    emphasis: true,
-                                    onTap: () {
-                                      final navigator = Navigator.of(
-                                        context,
-                                        rootNavigator: true,
-                                      );
-                                      final route = MaterialPageRoute<void>(
-                                        builder: (_) => MiningScreen(
-                                          initialTransaction: tx,
-                                        ),
-                                      );
-
-                                      navigator.pop();
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                        if (navigator.mounted) {
-                                          navigator.push(route);
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ],
+                            _OverlayActionButton(
+                              label: context.l10n.apiDisplayDataCopied,
+                              icon: LucideIcons.copy,
+                              onTap: () => _copyTransactionSummary(
+                                context,
+                                tx: tx,
+                                explorer: explorer,
+                                primaryAmount: primaryAmount,
+                                cryptoAmount: cryptoAmount,
+                                feeAmount: feeAmount,
+                                amountSign: amountPrefix,
+                              ),
                             ),
                           ],
                         );
@@ -379,7 +344,7 @@ class TxDetailOverlay extends ConsumerWidget {
   Future<void> _copyTransactionSummary(
     BuildContext context, {
     required Transaction tx,
-    required MiningExplorerDescriptor explorer,
+    required _TransactionRailDescriptor explorer,
     required String primaryAmount,
     required String cryptoAmount,
     required String feeAmount,
@@ -425,13 +390,13 @@ class TxDetailOverlay extends ConsumerWidget {
     return value.isEmpty ? SafeDisplayText.addressUnavailable(context) : value;
   }
 
-  static IconData _railIcon(MiningExplorerDescriptor explorer) {
+  static IconData _railIcon(_TransactionRailDescriptor explorer) {
     switch (explorer.rail) {
-      case MiningExplorerRail.blockchain:
+      case _TransactionRail.blockchain:
         return LucideIcons.network;
-      case MiningExplorerRail.lightning:
+      case _TransactionRail.lightning:
         return LucideIcons.zap;
-      case MiningExplorerRail.internal:
+      case _TransactionRail.internal:
         return LucideIcons.receipt;
     }
   }
@@ -486,7 +451,7 @@ class TxDetailOverlay extends ConsumerWidget {
 
   static String _primaryReference(
     Transaction tx,
-    MiningExplorerDescriptor explorer,
+    _TransactionRailDescriptor explorer,
   ) {
     return explorer.reference.trim().isNotEmpty
         ? explorer.reference
@@ -495,6 +460,48 @@ class TxDetailOverlay extends ConsumerWidget {
 
   static String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.day.toString().padLeft(2, '0')}/${timestamp.month.toString().padLeft(2, '0')}/${timestamp.year} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+enum _TransactionRail { blockchain, lightning, internal }
+
+class _TransactionRailDescriptor {
+  final _TransactionRail rail;
+  final String badgeLabel;
+  final String reference;
+
+  const _TransactionRailDescriptor({
+    required this.rail,
+    required this.badgeLabel,
+    required this.reference,
+  });
+
+  factory _TransactionRailDescriptor.fromTransaction(Transaction tx) {
+    if (tx.isInternal) {
+      return _TransactionRailDescriptor(
+        rail: _TransactionRail.internal,
+        badgeLabel: 'Interno',
+        reference: tx.id,
+      );
+    }
+
+    final description = (tx.description ?? '').toLowerCase();
+    final looksLightning = description.contains('lightning') ||
+        description.contains('invoice') ||
+        description.contains('lnurl');
+    if (looksLightning) {
+      return _TransactionRailDescriptor(
+        rail: _TransactionRail.lightning,
+        badgeLabel: 'Lightning',
+        reference: tx.id,
+      );
+    }
+
+    return _TransactionRailDescriptor(
+      rail: _TransactionRail.blockchain,
+      badgeLabel: 'On-chain',
+      reference: (tx.blockHash ?? tx.id).trim(),
+    );
   }
 }
 
@@ -592,14 +599,12 @@ class _SemanticBadge extends StatelessWidget {
 class _OverlayActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final bool emphasis;
   final VoidCallback onTap;
 
   const _OverlayActionButton({
     required this.label,
     required this.icon,
     required this.onTap,
-    this.emphasis = false,
   });
 
   @override
@@ -611,7 +616,7 @@ class _OverlayActionButton extends StatelessWidget {
         child: Ink(
           height: 48,
           decoration: monochromePanelDecoration(
-            color: emphasis ? monoTextColor : monoSurfaceAltColor,
+            color: monoSurfaceAltColor,
             borderColor: monoBorderStrongColor,
             showShadow: false,
           ),
@@ -621,7 +626,7 @@ class _OverlayActionButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 15,
-                color: emphasis ? Colors.black : monoTextColor,
+                color: monoTextColor,
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -629,7 +634,7 @@ class _OverlayActionButton extends StatelessWidget {
                   label,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: emphasis ? Colors.black : monoTextColor,
+                        color: monoTextColor,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
                       ),

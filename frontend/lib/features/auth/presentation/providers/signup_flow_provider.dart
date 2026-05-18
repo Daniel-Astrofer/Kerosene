@@ -24,6 +24,7 @@ class SignupFlowState extends Equatable {
   final SeedSecurityOption seedSecurityOption;
   final int slip39TotalShares;
   final int slip39Threshold;
+  final int multisigThreshold;
   final String? passphrase;
   final String? totpSecret;
   final String? qrCodeUri; // ← new: full otpauth:// URI for QR display
@@ -45,6 +46,7 @@ class SignupFlowState extends Equatable {
     this.seedSecurityOption = SeedSecurityOption.standard,
     this.slip39TotalShares = 5,
     this.slip39Threshold = 3,
+    this.multisigThreshold = 2,
     this.passphrase,
     this.totpSecret,
     this.qrCodeUri,
@@ -64,6 +66,7 @@ class SignupFlowState extends Equatable {
     SeedSecurityOption? seedSecurityOption,
     int? slip39TotalShares,
     int? slip39Threshold,
+    int? multisigThreshold,
     String? passphrase,
     String? totpSecret,
     String? qrCodeUri,
@@ -83,6 +86,7 @@ class SignupFlowState extends Equatable {
       seedSecurityOption: seedSecurityOption ?? this.seedSecurityOption,
       slip39TotalShares: slip39TotalShares ?? this.slip39TotalShares,
       slip39Threshold: slip39Threshold ?? this.slip39Threshold,
+      multisigThreshold: multisigThreshold ?? this.multisigThreshold,
       passphrase: passphrase ?? this.passphrase,
       totpSecret: totpSecret ?? this.totpSecret,
       qrCodeUri: qrCodeUri ?? this.qrCodeUri,
@@ -104,6 +108,7 @@ class SignupFlowState extends Equatable {
       'seedSecurityOption': seedSecurityOption.name,
       'slip39TotalShares': slip39TotalShares,
       'slip39Threshold': slip39Threshold,
+      'multisigThreshold': multisigThreshold,
       'passphrase': passphrase,
       'totpSecret': totpSecret,
       'qrCodeUri': qrCodeUri,
@@ -129,6 +134,7 @@ class SignupFlowState extends Equatable {
       ),
       slip39TotalShares: json['slip39TotalShares'] ?? 5,
       slip39Threshold: json['slip39Threshold'] ?? 3,
+      multisigThreshold: json['multisigThreshold'] ?? 2,
       passphrase: json['passphrase'],
       totpSecret: json['totpSecret'],
       qrCodeUri: json['qrCodeUri'],
@@ -150,6 +156,7 @@ class SignupFlowState extends Equatable {
         seedSecurityOption,
         slip39TotalShares,
         slip39Threshold,
+        multisigThreshold,
         passphrase,
         totpSecret,
         qrCodeUri,
@@ -172,20 +179,20 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
   @override
   SignupFlowState build() {
     _prefs = ref.watch(sharedPreferencesProvider);
-    _loadFromPrefs();
-    return const SignupFlowState();
+    return _loadFromPrefs();
   }
 
-  void _loadFromPrefs() {
+  SignupFlowState _loadFromPrefs() {
     try {
       final jsonString = _prefs.getString(_prefsKey);
       if (jsonString != null) {
         final decoded = jsonDecode(jsonString);
-        state = SignupFlowState.fromJson(decoded);
+        return SignupFlowState.fromJson(decoded);
       }
     } catch (e) {
       debugPrint('Error loading signup flow state: $e');
     }
+    return const SignupFlowState();
   }
 
   void _saveToPrefs(SignupFlowState newState) {
@@ -234,6 +241,10 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
     ));
   }
 
+  void setMultisigThreshold(int threshold) {
+    updateState(state.copyWith(multisigThreshold: threshold.clamp(2, 3)));
+  }
+
   void setPassphrase(String passphrase) {
     updateState(state.copyWith(passphrase: passphrase));
   }
@@ -274,13 +285,13 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
     if (state.sessionId == null) return;
 
     setLoading(true);
-    final result = await repo.generateOnboardingLink(state.sessionId!);
+    final result = await repo.getActivationStatus();
 
     result.fold((failure) => setError(failure.message), (dto) {
       setPaymentDetails(
         address: dto.depositAddress,
         amountBtc: dto.amountBtc,
-        linkId: state.sessionId ?? '',
+        linkId: dto.paymentLinkId,
       );
       updateState(state.copyWith(isLoading: false));
     });
@@ -288,9 +299,34 @@ class SignupFlowNotifier extends Notifier<SignupFlowState> {
 
   Future<void> checkPaymentStatus(AuthRepository repo) async {
     if (state.sessionId == null) return;
-    if (state.paymentLinkId != null) {
-      nextStep();
-    }
+    setLoading(true);
+    final result = await repo.getActivationStatus();
+
+    result.fold((failure) => setError(failure.message), (status) {
+      if (status.activated || status.canReceiveInbound) {
+        final nextIndex = (state.currentStep.index + 1)
+            .clamp(0, SignupStep.values.length - 1);
+        updateState(state.copyWith(
+          currentStep: SignupStep.values[nextIndex],
+          paymentAddress: status.depositAddress,
+          paymentAmountBtc: status.amountBtc,
+          paymentLinkId: status.paymentLinkId,
+          isLoading: false,
+          clearError: true,
+        ));
+        return;
+      }
+
+      updateState(state.copyWith(
+        paymentAddress: status.depositAddress,
+        paymentAmountBtc: status.amountBtc,
+        paymentLinkId: status.paymentLinkId,
+        isLoading: false,
+        error: status.warningMessage.isNotEmpty
+            ? status.warningMessage
+            : 'O depósito inicial ainda não foi detectado pelo monitoramento automático.',
+      ));
+    });
   }
 
   void updateConfirmations(int confirmations) {
