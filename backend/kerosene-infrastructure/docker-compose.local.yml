@@ -86,7 +86,7 @@ services:
       - DIRECTOR_2_ARM_SIGNATURE=${DIRECTOR_2_ARM_SIGNATURE}
       - DIRECTOR_3_ARM_SIGNATURE=${DIRECTOR_3_ARM_SIGNATURE:-}
     volumes:
-      - ../../scripts/arm-vault-compose.sh:/arm-vault.sh:ro,z
+      - ../kerosene/vault-scripts/arm-vault-compose.sh:/arm-vault.sh:ro,z
     entrypoint: ["sh", "/arm-vault.sh"]
     networks: [net_vault]
     depends_on:
@@ -117,7 +117,7 @@ services:
       - BITCOIN_ZMQ_RAWBLOCK=${BITCOIN_ZMQ_RAWBLOCK:-tcp://bitcoin-pruned-node:28334}
     volumes:
       - lnd_data:/root/.lnd
-      - ./scripts/lnd-entrypoint.sh:/lnd-entrypoint.sh:ro,z
+      - ../kerosene/lnd-scripts/lnd-entrypoint.sh:/lnd-entrypoint.sh:ro,z
     entrypoint: ["/bin/sh", "/lnd-entrypoint.sh"]
     networks:
       net_bitcoin:
@@ -145,7 +145,7 @@ services:
       - LND_TLS_SERVER_NAME=${LIGHTNING_LND_TLS_SERVER_NAME:-lnd-bitcoind}
     volumes:
       - lnd_data:/lnd
-      - ./scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
+      - ../kerosene/lnd-scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
     entrypoint: ["sh", "/lnd-bootstrap.sh"]
     networks: [net_tor]
     depends_on:
@@ -168,7 +168,7 @@ services:
       - LND_TLS_SERVER_NAME=${LIGHTNING_LND_TLS_SERVER_NAME:-lnd-bitcoind}
     volumes:
       - lnd_data:/lnd
-      - ./scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
+      - ../kerosene/lnd-scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
     entrypoint: ["sh", "/lnd-bootstrap.sh"]
     networks: [net_tor]
     depends_on:
@@ -200,8 +200,8 @@ services:
       - BITCOIN_REINDEX_ONCE=${BITCOIN_REINDEX_ONCE:-false}
     volumes:
       - bitcoin_core_data:/home/bitcoin/.bitcoin
-      - ./bitcoin/bitcoind-entrypoint.sh:/entrypoint.sh:ro,z
-      - ./bitcoin/bitcoind-healthcheck.sh:/healthcheck.sh:ro,z
+      - ../kerosene/bitcoin-scripts/bitcoind-entrypoint.sh:/entrypoint.sh:ro,z
+      - ../kerosene/bitcoin-scripts/bitcoind-healthcheck.sh:/healthcheck.sh:ro,z
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       net_bitcoin:
@@ -281,7 +281,7 @@ services:
     command: ["server"]
     volumes:
       - vault_raft_1_data:/vault/data
-      - ./vault/raft/vault-raft-1.hcl:/vault/config/vault.hcl:ro,z
+      - ../kerosene/vault-raft/vault-raft-1.hcl:/vault/config/vault.hcl:ro,z
     networks: [net_vault]
     healthcheck:
       test: ["CMD-SHELL", "vault status >/dev/null 2>&1 || test $$? -eq 2"]
@@ -301,7 +301,7 @@ services:
     command: ["server"]
     volumes:
       - vault_raft_2_data:/vault/data
-      - ./vault/raft/vault-raft-2.hcl:/vault/config/vault.hcl:ro,z
+      - ../kerosene/vault-raft/vault-raft-2.hcl:/vault/config/vault.hcl:ro,z
     networks: [net_vault]
     healthcheck:
       test: ["CMD-SHELL", "vault status >/dev/null 2>&1 || test $$? -eq 2"]
@@ -321,7 +321,7 @@ services:
     command: ["server"]
     volumes:
       - vault_raft_3_data:/vault/data
-      - ./vault/raft/vault-raft-3.hcl:/vault/config/vault.hcl:ro,z
+      - ../kerosene/vault-raft/vault-raft-3.hcl:/vault/config/vault.hcl:ro,z
     networks: [net_vault]
     healthcheck:
       test: ["CMD-SHELL", "vault status >/dev/null 2>&1 || test $$? -eq 2"]
@@ -341,7 +341,7 @@ services:
       - VAULT_APP_READ_GID=65532
     volumes:
       - vault_raft_bootstrap:/vault/bootstrap
-      - ./vault/raft/bootstrap-raft.sh:/bootstrap-raft.sh:ro,z
+      - ../kerosene/vault-raft/bootstrap-raft.sh:/bootstrap-raft.sh:ro,z
     entrypoint: ["/bin/sh", "/bootstrap-raft.sh"]
     networks: [net_vault]
     depends_on:
@@ -547,7 +547,6 @@ services:
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-is-local
     restart: unless-stopped
-    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -764,7 +763,6 @@ services:
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-ch-local
     restart: unless-stopped
-    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -981,7 +979,6 @@ services:
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-sg-local
     restart: unless-stopped
-    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -1008,7 +1005,7 @@ services:
       - "${WEB_ADMIN_PORT:-3000}:8080"
     volumes:
       - ../../frontend/build/web:/usr/share/nginx/html:ro,z
-      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro,z
+      - ../kerosene/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro,z
       - ../../release:/release:ro,z
     networks: [net_ingress]
     depends_on:
@@ -1026,7 +1023,7 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-19090}:9090"
     volumes:
-      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,z
+      - ../kerosene/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,z
       - prometheus_data:/prometheus
     networks: [net_ingress, net_tor]
     depends_on:

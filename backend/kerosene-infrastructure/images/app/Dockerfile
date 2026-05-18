@@ -56,7 +56,7 @@ USER 65532:65532
 EXPOSE 8080
 
 HEALTHCHECK --interval=10s --timeout=4s --start-period=180s --retries=12 \
-  CMD ["java", "-cp", "/app/healthcheck", "Healthcheck", "http://127.0.0.1:8080/health/ready"]
+  CMD ["java", "-cp", "/app/healthcheck", "Healthcheck", "http://127.0.0.1:8080/actuator/health"]
 
 ENTRYPOINT [ \
   "java", \

@@ -135,7 +135,18 @@ prepare_backend_web_admin() {
     return
   fi
 
-  "$SCRIPT_DIR/build-web-admin-backend.sh" --no-jar
+  if [[ -x "$SCRIPT_DIR/build-web-admin-backend.sh" ]]; then
+    "$SCRIPT_DIR/build-web-admin-backend.sh" --no-jar
+    return
+  fi
+
+  if [[ -f "$BACKEND_WEB_ADMIN_BUILD_DIR/index.html" ]]; then
+    warn "scripts/build-web-admin-backend.sh is missing; using existing embedded web admin build."
+    return
+  fi
+
+  warn "scripts/build-web-admin-backend.sh is missing and no embedded web admin build exists."
+  warn "Continuing backend startup without rebuilding the web admin."
 }
 
 service_is_healthy() {
@@ -473,10 +484,14 @@ if [[ "$DETACH" -eq 1 ]]; then
 fi
 
 if [[ "$DETACH" -eq 1 ]]; then
-  if [[ "$LITE" -eq 1 ]]; then
-    "$SCRIPT_DIR/migrate-local-db.sh" "db-$REGION"
+  if [[ -x "$SCRIPT_DIR/migrate-local-db.sh" ]]; then
+    if [[ "$LITE" -eq 1 ]]; then
+      "$SCRIPT_DIR/migrate-local-db.sh" "db-$REGION"
+    else
+      "$SCRIPT_DIR/migrate-local-db.sh"
+    fi
   else
-    "$SCRIPT_DIR/migrate-local-db.sh"
+    warn "scripts/migrate-local-db.sh is missing; skipping automatic local DB migrations."
   fi
 else
   warn "Foreground mode skips automatic local DB migrations. Run scripts/migrate-local-db.sh in another terminal if you reuse persisted volumes."

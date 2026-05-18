@@ -42,6 +42,8 @@ void main() async {
     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
   );
 
+  await _runStartupTask('Tor network', () => _bootstrapTor(container));
+
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -76,7 +78,6 @@ Future<void> _startAppServices(ProviderContainer container) async {
     ),
     _runStartupTask('Background service', initializeBackgroundService),
     _runStartupTask('Audio service', AudioService.instance.init),
-    _runStartupTask('Tor network', () => _bootstrapTor(container)),
   ]);
 }
 

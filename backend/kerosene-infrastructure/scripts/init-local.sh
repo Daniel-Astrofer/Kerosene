@@ -49,18 +49,18 @@ fi
 # ── 3. Tor Configs (Force LF Line Endings) ──────────────────────────────────
 fix_torrc() {
   local file=$1
-  local service_name=$2
+  local target=$2
   info "Generating $file..."
   # Use printf to ensure no \r and strict format
-  printf "User kerosene\nSocksPort unix:/var/run/tor/socks/tor.sock WorldWritable\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 %s:8080\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" "$service_name" > "$file"
+  printf "User kerosene\nSocksPort unix:/var/run/tor/socks/tor.sock WorldWritable\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 %s:8080\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" "$target" > "$file"
 }
 
-fix_torrc "$BACKEND_DIR/tor/torrc-is" "kerosene-app-is-local"
-fix_torrc "$BACKEND_DIR/tor/torrc-ch" "kerosene-app-ch-local"
-fix_torrc "$BACKEND_DIR/tor/torrc-sg" "kerosene-app-sg-local"
+fix_torrc "$BACKEND_DIR/tor/torrc-is" "10.241.0.10"
+fix_torrc "$BACKEND_DIR/tor/torrc-ch" "10.241.0.11"
+fix_torrc "$BACKEND_DIR/tor/torrc-sg" "10.241.0.12"
 
 info "Generating $BACKEND_DIR/tor/torrc-vault..."
-printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 kerosene-vault-local:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
+printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 10.242.0.10:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
 
 info "Initialization complete."
 echo "  bash scripts/start-local.sh"
