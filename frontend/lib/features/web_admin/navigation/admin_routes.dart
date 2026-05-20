@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Notifier that tracks the current active admin route.
 class AdminRouteNotifier extends Notifier<AdminRoute> {
   @override
   AdminRoute build() => AdminRoute.dashboard;
@@ -11,7 +10,6 @@ class AdminRouteNotifier extends Notifier<AdminRoute> {
   }
 }
 
-/// Provider to expose the active route.
 final adminRouteProvider =
     NotifierProvider<AdminRouteNotifier, AdminRoute>(AdminRouteNotifier.new);
 

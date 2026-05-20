@@ -95,7 +95,7 @@ class _PinGateErrorState extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    context.l10n.appEntryPinUnavailableTitle,
+                    context.tr.appEntryPinUnavailableTitle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: monoTextColor,
                           fontWeight: FontWeight.w700,
@@ -103,7 +103,7 @@ class _PinGateErrorState extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    context.l10n.appEntryPinUnavailableMessage,
+                    context.tr.appEntryPinUnavailableMessage,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: monoMutedTextColor,
                           height: 1.45,
@@ -113,7 +113,7 @@ class _PinGateErrorState extends StatelessWidget {
                   FilledButton(
                     onPressed: onRetry,
                     style: monochromeFilledButtonStyle(),
-                    child: Text(context.l10n.appEntryRefresh),
+                    child: Text(context.tr.appEntryRefresh),
                   ),
                 ],
               ),
@@ -192,7 +192,7 @@ class _AppEntryPinLockScreenState
     if (_pin.length < _status.minPinLength ||
         _pin.length > _status.maxPinLength) {
       setState(() {
-        _errorMessage = context.l10n.appEntryPinLengthError(
+        _errorMessage = context.tr.appEntryPinLengthError(
           _status.minPinLength,
           _status.maxPinLength,
         );
@@ -212,7 +212,7 @@ class _AppEntryPinLockScreenState
         setState(() {
           _pin = '';
           _errorMessage =
-              ErrorTranslator.translate(context.l10n, failure.message);
+              ErrorTranslator.translate(context.tr, failure.message);
         });
         ref.invalidate(appPinStatusProvider);
       },
@@ -249,15 +249,15 @@ class _AppEntryPinLockScreenState
   Widget build(BuildContext context) {
     final remaining = _status.remainingLockDuration;
     final subtitle = _status.locked
-        ? context.l10n.appEntryRetryIn(_formatDuration(remaining))
-        : context.l10n.appEntryUnlockPrompt;
+        ? context.tr.appEntryRetryIn(_formatDuration(remaining))
+        : context.tr.appEntryUnlockPrompt;
     final helper = _status.locked
-        ? context.l10n.appEntryLockedHelper
+        ? context.tr.appEntryLockedHelper
         : _status.resettableWithTotp
-            ? context.l10n.appEntryAttemptsHelper(
+            ? context.tr.appEntryAttemptsHelper(
                 _status.remainingAttempts,
               )
-            : context.l10n.appEntryLocalPinHelper;
+            : context.tr.appEntryLocalPinHelper;
 
     return CyberBackground.authenticated(
       useScroll: false,
@@ -300,7 +300,7 @@ class _AppEntryPinLockScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.l10n.appEntryEyebrow.toUpperCase(),
+                              context.tr.appEntryEyebrow.toUpperCase(),
                               style: AppTypography.caption.copyWith(
                                 color: monoMutedTextColor,
                                 letterSpacing: 1.8,
@@ -405,7 +405,7 @@ class _AppEntryPinLockScreenState
                               color: Colors.black,
                             ),
                           )
-                        : Text(context.l10n.appEntryConfirm),
+                        : Text(context.tr.appEntryConfirm),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
@@ -415,7 +415,7 @@ class _AppEntryPinLockScreenState
                         TextButton(
                           onPressed: _busy ? null : _resetWithTotp,
                           style: monochromeTextButtonStyle(),
-                          child: Text(context.l10n.appEntryReset),
+                          child: Text(context.tr.appEntryReset),
                         ),
                       if (_status.resettableWithTotp)
                         Padding(
@@ -430,7 +430,7 @@ class _AppEntryPinLockScreenState
                       TextButton(
                         onPressed: _busy ? null : _logout,
                         style: monochromeTextButtonStyle(),
-                        child: Text(context.l10n.appEntryExit),
+                        child: Text(context.tr.appEntryExit),
                       ),
                     ],
                   ),
@@ -487,7 +487,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
         }
         setState(() {
           _busy = false;
-          _error = ErrorTranslator.translate(context.l10n, failure.message);
+          _error = ErrorTranslator.translate(context.tr, failure.message);
         });
       },
       (_) {
@@ -522,7 +522,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
               color: monoBorderStrongColor,
             ),
             Text(
-              context.l10n.appEntryResetTitle.toUpperCase(),
+              context.tr.appEntryResetTitle.toUpperCase(),
               style: AppTypography.caption.copyWith(
                 color: monoMutedTextColor,
                 letterSpacing: 1.8,
@@ -531,7 +531,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              context.l10n.appEntryResetMessage,
+              context.tr.appEntryResetMessage,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: monoMutedTextColor,
                     height: 1.45,
@@ -545,7 +545,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
               maxLength: 6,
               style: const TextStyle(color: monoTextColor),
               decoration: monochromeInputDecoration(
-                label: context.l10n.appEntryTotpLabel,
+                label: context.tr.appEntryTotpLabel,
                 counterText: '',
               ),
             ),
@@ -557,7 +557,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
               maxLength: 8,
               style: const TextStyle(color: monoTextColor),
               decoration: monochromeInputDecoration(
-                label: context.l10n.appEntryNewPinLabel,
+                label: context.tr.appEntryNewPinLabel,
                 counterText: '',
               ),
             ),
@@ -586,7 +586,7 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
                         color: Colors.black,
                       ),
                     )
-                  : Text(context.l10n.appEntrySavePin),
+                  : Text(context.tr.appEntrySavePin),
             ),
           ],
         ),

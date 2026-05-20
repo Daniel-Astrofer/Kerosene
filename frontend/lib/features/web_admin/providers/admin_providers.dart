@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/admin_data_service.dart';
 
-// ─── Raw Data Providers (real API calls) ─────────
+import '../data/admin_data_service.dart';
 
 final adminBtcPriceProvider = FutureProvider<Map<String, double>>((ref) {
   return ref.watch(adminDataServiceProvider).fetchBtcPrice();
@@ -83,9 +82,6 @@ final adminWebDevicesProvider =
   return ref.watch(adminDataServiceProvider).fetchAdminDevices();
 });
 
-// ─── Derived KPI Providers ──────────────────────
-
-/// Dashboard KPIs derived from aggregate-safe operational datasets.
 final adminDashboardKpisProvider = Provider<DashboardKpis>((ref) {
   final metrics =
       ref.watch(adminOperationalMetricsProvider).asData?.value ?? const {};

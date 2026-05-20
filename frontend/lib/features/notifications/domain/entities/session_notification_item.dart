@@ -9,6 +9,7 @@ class SessionNotificationItem extends Equatable {
 
   static const kindSystemInfo = 'system_info';
   static const kindSecurityLoginDetected = 'security_login_detected';
+  static const kindSecurityAdminAccessAttempt = 'security_admin_access_attempt';
   static const kindSecurityRecoveryCompleted = 'security_recovery_completed';
   static const kindAccountCreated = 'account_created';
   static const kindTransferReceived = 'transfer_received';

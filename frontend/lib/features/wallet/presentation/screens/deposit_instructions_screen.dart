@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/cyber_button.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 /// Luxury Deposit Instructions Screen — Refactored with Design System
 class DepositInstructionsScreen extends StatelessWidget {
@@ -14,182 +11,84 @@ class DepositInstructionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: true,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-                  _buildSecureBadge()
-                      .animate()
-                      .fade()
-                      .slideX(begin: -0.1, end: 0),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildInstructionsCard()
-                      .animate(delay: 100.ms)
-                      .fade()
-                      .slideY(begin: 0.1, end: 0),
-                  const SizedBox(height: AppSpacing.xxl),
-                  CyberButton(
-                    text: 'ENTENDIDO',
-                    onTap: () => Navigator.pop(context),
-                  ).animate(delay: 300.ms).fade().slideY(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ReceiveFlowScaffold(
+      title: context.tr.depositInstructionsTitle,
+      subtitle: context.tr.depositInstructionsSubtitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft,
-                color: Theme.of(context).colorScheme.onPrimary, size: 24),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
-              padding: const EdgeInsets.all(AppSpacing.sm),
-            ),
+          _buildInstructionsCard(context),
+          const SizedBox(height: AppSpacing.md),
+          ReceiveFlowPrimaryButton(
+            label: context.tr.depositInstructionsUnderstood,
+            onTap: () => Navigator.pop(context),
           ),
-          Text(
-            'DEPOSITAR BTC',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(letterSpacing: 2),
-          ),
-          const SizedBox(width: 48),
         ],
       ),
     ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
-  Widget _buildSecureBadge() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(LucideIcons.shieldCheck,
-                color: AppColors.success, size: 12),
-            const SizedBox(width: 6),
-            Text(
-              'SECURE',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.success,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-                fontSize: 9,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInstructionsCard() {
-    return GlassContainer(
+  Widget _buildInstructionsCard(BuildContext context) {
+    return ReceiveFlowPanel(
       padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Card Header
-          Container(
+          Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              border: Border(
-                  bottom:
-                      BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-            ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(LucideIcons.info,
-                      color: AppColors.primary, size: 18),
+                const Icon(
+                  LucideIcons.info,
+                  color: receiveFlowTextColor,
+                  size: 16,
                 ),
-                const SizedBox(width: AppSpacing.md),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
-                  'Instruções de Depósito',
-                  style: AppTypography.bodyLarge
-                      .copyWith(fontWeight: FontWeight.bold),
+                  context.tr.depositInstructionsTitle,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ],
             ),
           ),
-
-          // Instructions list
           _buildInstructionItem(
+            context,
             icon: LucideIcons.network,
-            iconColor: AppColors.primary,
-            label: 'Rede',
-            title: 'Deposite BTC apenas via',
+            label: context.tr.depositInstructionsNetworkLabel,
+            title: context.tr.depositInstructionsNetworkTitle,
             highlight: 'Lightning Network',
-            highlightColor: AppColors.primary,
             suffix: '.',
           ),
           _buildDivider(),
           _buildInstructionItem(
+            context,
             icon: LucideIcons.arrowDown,
-            iconColor: AppColors.success,
-            label: 'Mínimo',
-            title: 'O depósito mínimo é de',
+            label: context.tr.depositInstructionsMinimumLabel,
+            title: context.tr.depositInstructionsMinimumTitle,
             highlight: '0.000001 BTC',
-            highlightColor: AppColors.success,
             suffix: '.',
-            note: 'Depósitos abaixo deste valor serão perdidos.',
+            note: context.tr.depositInstructionsMinimumNote,
           ),
           _buildDivider(),
           _buildInstructionItem(
+            context,
             icon: LucideIcons.arrowUp,
-            iconColor: AppColors.warning,
-            label: 'Máximo',
-            title: 'O depósito máximo é de',
+            label: context.tr.depositInstructionsMaximumLabel,
+            title: context.tr.depositInstructionsMaximumTitle,
             highlight: '1.00 BTC',
-            highlightColor: AppColors.warning,
-            suffix: ' por transação.',
+            suffix: context.tr.depositInstructionsMaximumSuffix,
           ),
           _buildDivider(),
           _buildInstructionItem(
+            context,
             icon: LucideIcons.timer,
-            iconColor: AppColors.secondary,
-            label: 'Processamento',
-            title: 'Tempo estimado:',
-            highlight: '< 1 Minuto',
-            highlightColor: AppColors.secondary,
-            suffix: ' via Lightning.',
+            label: context.tr.depositInstructionsProcessingLabel,
+            title: context.tr.depositInstructionsProcessingTitle,
+            highlight: context.tr.depositInstructionsProcessingHighlight,
+            suffix: context.tr.depositInstructionsProcessingSuffix,
           ),
         ],
       ),
@@ -197,21 +96,20 @@ class DepositInstructionsScreen extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return Divider(
+    return const Divider(
       height: 1,
-      color: Colors.white.withValues(alpha: 0.05),
+      color: receiveFlowDividerColor,
       indent: AppSpacing.lg,
       endIndent: AppSpacing.lg,
     );
   }
 
-  Widget _buildInstructionItem({
+  Widget _buildInstructionItem(
+    BuildContext context, {
     required IconData icon,
-    required Color iconColor,
     required String label,
     required String title,
     required String highlight,
-    required Color highlightColor,
     String suffix = '',
     String? note,
   }) {
@@ -223,10 +121,11 @@ class DepositInstructionsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              color: receiveFlowPanelRaisedColor,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: receiveFlowBorderStrongColor),
             ),
-            child: Icon(icon, color: iconColor, size: 18),
+            child: Icon(icon, color: receiveFlowTextColor, size: 16),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -235,24 +134,24 @@ class DepositInstructionsScreen extends StatelessWidget {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
-                    fontSize: 9,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: receiveFlowFaintTextColor,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 RichText(
                   text: TextSpan(
-                    style: AppTypography.bodyMedium
-                        .copyWith(color: Colors.white70),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: receiveFlowMutedTextColor,
+                        ),
                     children: [
                       TextSpan(text: '$title '),
                       TextSpan(
                         text: highlight,
                         style: TextStyle(
-                            color: highlightColor, fontWeight: FontWeight.bold),
+                          color: receiveFlowTextColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       TextSpan(text: suffix),
                     ],
@@ -262,10 +161,9 @@ class DepositInstructionsScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     note,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.error.withValues(alpha: 0.5),
-                      fontSize: 10,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: receiveFlowFaintTextColor,
+                        ),
                   ),
                 ],
               ],

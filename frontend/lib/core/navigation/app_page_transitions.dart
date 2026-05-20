@@ -1,65 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:teste/design_system/motion/kerosene_motion.dart';
+import 'package:teste/core/motion/app_motion.dart';
 
 const Duration kKerosenePageTransitionDuration = KeroseneMotion.pageIn;
 const Duration kKerosenePageReverseTransitionDuration = KeroseneMotion.pageOut;
 
-Widget buildKeroseneHorizontalTransition({
-  required Animation<double> animation,
-  required Animation<double> secondaryAnimation,
-  required Widget child,
-  bool disableAnimations = false,
-}) {
-  if (disableAnimations) {
-    return child;
-  }
-
-  final incoming = CurvedAnimation(
-    parent: animation,
-    curve: KeroseneMotion.enterCurve,
-    reverseCurve: KeroseneMotion.exitCurve,
-  );
-
-  return RepaintBoundary(
-    child: FadeTransition(
-      opacity: incoming,
-      child: SlideTransition(
-        transformHitTests: false,
-        position: Tween<Offset>(
-          begin: KeroseneMotion.pageSlideBegin,
-          end: Offset.zero,
-        ).animate(incoming),
-        child: child,
-      ),
-    ),
-  );
-}
+const PageTransitionsTheme kerosenePageTransitionsTheme = PageTransitionsTheme(
+  builders: <TargetPlatform, PageTransitionsBuilder>{
+    TargetPlatform.android: KerosenePageTransitionsBuilder(),
+    TargetPlatform.fuchsia: KerosenePageTransitionsBuilder(),
+    TargetPlatform.iOS: KerosenePageTransitionsBuilder(),
+    TargetPlatform.linux: KerosenePageTransitionsBuilder(),
+    TargetPlatform.macOS: KerosenePageTransitionsBuilder(),
+    TargetPlatform.windows: KerosenePageTransitionsBuilder(),
+  },
+);
 
 Route<T> keroseneHorizontalRoute<T>({
   required WidgetBuilder builder,
   RouteSettings? settings,
-  Duration transitionDuration = kKerosenePageTransitionDuration,
-  Duration reverseTransitionDuration = kKerosenePageReverseTransitionDuration,
+  bool fullscreenDialog = false,
 }) {
   return PageRouteBuilder<T>(
     settings: settings,
-    transitionDuration: transitionDuration,
-    reverseTransitionDuration: reverseTransitionDuration,
+    fullscreenDialog: fullscreenDialog,
+    transitionDuration: kKerosenePageTransitionDuration,
+    reverseTransitionDuration: kKerosenePageReverseTransitionDuration,
     pageBuilder: (context, animation, secondaryAnimation) => builder(context),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       return buildKeroseneHorizontalTransition(
         animation: animation,
         secondaryAnimation: secondaryAnimation,
         child: child,
-        disableAnimations:
-            MediaQuery.maybeOf(context)?.disableAnimations ?? false,
       );
     },
   );
 }
 
-class KeroseneHorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
-  const KeroseneHorizontalPageTransitionsBuilder();
+class KerosenePageTransitionsBuilder extends PageTransitionsBuilder {
+  const KerosenePageTransitionsBuilder();
 
   @override
   Widget buildTransitions<T>(
@@ -69,23 +47,52 @@ class KeroseneHorizontalPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return buildKeroseneHorizontalTransition(
+    return buildKeroseneRouteTransition(
+      context: context,
       animation: animation,
-      secondaryAnimation: secondaryAnimation,
       child: child,
-      disableAnimations:
-          MediaQuery.maybeOf(context)?.disableAnimations ?? false,
     );
   }
 }
 
-const PageTransitionsTheme kerosenePageTransitionsTheme = PageTransitionsTheme(
-  builders: {
-    TargetPlatform.android: KeroseneHorizontalPageTransitionsBuilder(),
-    TargetPlatform.fuchsia: KeroseneHorizontalPageTransitionsBuilder(),
-    TargetPlatform.iOS: KeroseneHorizontalPageTransitionsBuilder(),
-    TargetPlatform.linux: KeroseneHorizontalPageTransitionsBuilder(),
-    TargetPlatform.macOS: KeroseneHorizontalPageTransitionsBuilder(),
-    TargetPlatform.windows: KeroseneHorizontalPageTransitionsBuilder(),
-  },
-);
+Widget buildKeroseneHorizontalTransition({
+  required Animation<double> animation,
+  required Animation<double> secondaryAnimation,
+  required Widget child,
+}) {
+  final curved = CurvedAnimation(
+    parent: animation,
+    curve: KeroseneMotion.entrance,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  return RepaintBoundary(
+    child: FadeTransition(
+      opacity: Tween<double>(begin: 0.96, end: 1).animate(curved),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.045, 0),
+          end: Offset.zero,
+        ).animate(curved),
+        transformHitTests: false,
+        child: child,
+      ),
+    ),
+  );
+}
+
+Widget buildKeroseneRouteTransition({
+  required BuildContext context,
+  required Animation<double> animation,
+  required Widget child,
+}) {
+  if (KeroseneMotion.reduceMotion(context)) {
+    return child;
+  }
+
+  return buildKeroseneHorizontalTransition(
+    animation: animation,
+    secondaryAnimation: const AlwaysStoppedAnimation<double>(0),
+    child: child,
+  );
+}

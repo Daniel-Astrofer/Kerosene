@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
+import 'package:teste/features/auth/presentation/widgets/auth_motion.dart';
 
-const Color authEntryInk = Color(0xFF020202);
+const Color authEntryInk = Color(0xFF000000);
 const Color authEntrySurface = Color(0xFF0B0B0B);
 const Color authEntrySurfaceRaised = Color(0xFF131313);
 const Color authEntryText = Color(0xFFF1F1ED);
@@ -42,76 +44,58 @@ class AuthEntryScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: authEntryInk,
       resizeToAvoidBottomInset: true,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B0B0B), Color(0xFF050505), authEntryInk],
-            stops: [0, 0.42, 1],
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0, -0.9),
-                    radius: 1.08,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.045),
-                      Colors.transparent,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final responsive = context.responsive;
+            final isShort = constraints.maxHeight < 560;
+            final horizontalPadding = responsive.horizontalPadding;
+            final resolvedPadding = padding.resolve(Directionality.of(context));
+            final topPadding = responsive.isCompact
+                ? (isShort ? AppSpacing.sm : AppSpacing.base)
+                : resolvedPadding.top;
+            final bottomPadding = responsive.isCompact
+                ? (isShort ? AppSpacing.md : AppSpacing.lg)
+                : resolvedPadding.bottom;
+            final headerGap = responsive.isCompact
+                ? (isShort ? AppSpacing.md : AppSpacing.lg)
+                : AppSpacing.xxl;
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                topPadding,
+                horizontalPadding,
+                bottomPadding,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: responsive.isCompact ? 520 : 560,
+                    minHeight: constraints.maxHeight > AppSpacing.xxl
+                        ? constraints.maxHeight - AppSpacing.xxl
+                        : 0,
+                  ),
+                  child: AuthMotionStagger(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AuthEntryHeader(
+                        eyebrow: eyebrow,
+                        title: title,
+                        subtitle: subtitle,
+                        onBack: onBack,
+                        trailing: trailing,
+                      ),
+                      SizedBox(height: headerGap),
+                      child,
                     ],
                   ),
                 ),
               ),
-            ),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final responsive = context.responsive;
-                  final horizontalPadding = responsive.horizontalPadding;
-                  final resolvedPadding = padding.resolve(
-                    Directionality.of(context),
-                  );
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      resolvedPadding.top,
-                      horizontalPadding,
-                      resolvedPadding.bottom,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: responsive.isCompact ? 520 : 560,
-                          minHeight: constraints.maxHeight - AppSpacing.xxl,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AuthEntryHeader(
-                              eyebrow: eyebrow,
-                              title: title,
-                              subtitle: subtitle,
-                              onBack: onBack,
-                              trailing: trailing,
-                            ),
-                            const SizedBox(height: AppSpacing.xxl),
-                            child,
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -137,11 +121,12 @@ class AuthEntryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
+    final isShort = responsive.size.height < 560;
     final titleSize = responsive.size.width < 340
-        ? 28.0
+        ? 25.0
         : responsive.isCompact
-        ? 31.0
-        : 34.0;
+            ? (isShort ? 27.0 : 29.0)
+            : 33.0;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,8 +166,10 @@ class AuthEntryHeader extends StatelessWidget {
                 subtitle,
                 style: AppTypography.bodySmall.copyWith(
                   color: authEntryMuted,
-                  height: 1.35,
+                  height: 1.28,
                 ),
+                maxLines: responsive.isCompact ? 3 : null,
+                overflow: responsive.isCompact ? TextOverflow.ellipsis : null,
               ),
             ],
           ),
@@ -244,71 +231,82 @@ class AuthEntryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
+    final isShort = responsive.size.height < 560;
     final disabled = onPressed == null || isLoading;
     final background = outlined
         ? (disabled ? authEntrySurface : authEntrySurfaceRaised)
         : disabled
-        ? authEntrySurfaceRaised
-        : authEntryButton;
+            ? authEntrySurfaceRaised
+            : authEntryButton;
     final foreground = outlined
         ? (disabled ? authEntryFaint : authEntryText)
         : (disabled ? authEntryMuted : authEntryInk);
     final borderColor = outlined
         ? (disabled
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.white.withValues(alpha: 0.22))
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.22))
         : Colors.transparent;
 
-    return SizedBox(
-      height: 54,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: disabled ? null : onPressed,
-          child: Ink(
-            decoration: BoxDecoration(
-              color: background,
-              border: Border.all(color: borderColor),
-            ),
-            child: Center(
-              child: isLoading
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        color: foreground,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        if (icon != null) ...[
-                          Icon(icon, size: 16, color: foreground),
-                          const SizedBox(width: AppSpacing.sm),
-                        ],
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                              textAlign: TextAlign.center,
-                              style: AppTypography.buttonText.copyWith(
-                                fontFamily: 'HubotSansCondensed',
-                                color: foreground,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0,
-                                height: 1.05,
+    return AuthMotionPressScale(
+      enabled: !disabled,
+      child: SizedBox(
+        height: responsive.isCompact ? (isShort ? 46 : 50) : 54,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: disabled
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    onPressed?.call();
+                  },
+            child: Ink(
+              decoration: BoxDecoration(
+                color: background,
+                border: Border.all(color: borderColor),
+              ),
+              child: Center(
+                child: isLoading
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          color: foreground,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          if (icon != null) ...[
+                            Icon(icon, size: 16, color: foreground),
+                            const SizedBox(width: AppSpacing.sm),
+                          ],
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                text,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
+                                textAlign: TextAlign.center,
+                                style: AppTypography.buttonText.copyWith(
+                                  fontFamily: 'HubotSansCondensed',
+                                  color: foreground,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0,
+                                  height: 1.05,
+                                  fontSize: responsive.isCompact ? 14 : null,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+              ),
             ),
           ),
         ),
@@ -329,14 +327,19 @@ class AuthEntryIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: Material(
-        color: authEntrySurface,
-        child: InkWell(
-          onTap: onPressed,
-          child: Icon(icon, size: 18, color: authEntryText),
+    return AuthMotionPressScale(
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Material(
+          color: authEntrySurface,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onPressed();
+            },
+            child: Icon(icon, size: 18, color: authEntryText),
+          ),
         ),
       ),
     );
@@ -357,8 +360,11 @@ class AuthEntryNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final responsive = context.responsive;
     return AuthEntryPanel(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: EdgeInsets.all(
+        responsive.isCompact ? AppSpacing.md : AppSpacing.base,
+      ),
       raised: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -25,13 +25,15 @@ RUN chmod +x gradlew
 
 # ── Layer 2: Dependency resolution (cache until build.gradle.kts changes) ─────
 COPY build.gradle.kts settings.gradle.kts ./
-RUN ./gradlew dependencies --no-daemon --quiet || true
+COPY gradle.properties ./
+ARG GRADLE_MAX_WORKERS=2
+RUN ./gradlew dependencies --no-daemon --max-workers=${GRADLE_MAX_WORKERS} --quiet || true
 
 # ── Layer 3: Source compilation ───────────────────────────────────────────────
 COPY src src/
 COPY docker docker/
 COPY web-admin-build web-admin-build/
-RUN ./gradlew bootJar --no-daemon -x test
+RUN ./gradlew bootJar --no-daemon --max-workers=${GRADLE_MAX_WORKERS} -x test
 RUN javac docker/Healthcheck.java -d /workspace/healthcheck
 
 # ── Stage 2: Runtime (Distroless — minimal attack surface) ────────────────────

@@ -31,10 +31,10 @@ class MempoolBlocksVisualizer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningBlocksTitle,
-            subtitle: context.l10n.miningBlocksSubtitle,
+            title: context.tr.miningBlocksTitle,
+            subtitle: context.tr.miningBlocksSubtitle,
             trailing: MiningStatusBadge(
-              label: context.l10n.miningBlocksQueued(
+              label: context.tr.miningBlocksQueued(
                 visibleProjected.length,
               ),
               tone: MiningStatusTone.info,
@@ -46,15 +46,15 @@ class MempoolBlocksVisualizer extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _LegendChip(
-                label: context.l10n.miningBlocksQueue,
+                label: context.tr.miningBlocksQueue,
                 color: miningAmber,
               ),
               _LegendChip(
-                label: context.l10n.miningBlocksConfirmed,
+                label: context.tr.miningBlocksConfirmed,
                 color: miningTeal,
               ),
               _LegendChip(
-                label: context.l10n.miningBlocksNew,
+                label: context.tr.miningBlocksNew,
                 color: miningBlue,
               ),
             ],
@@ -81,7 +81,7 @@ class MempoolBlocksVisualizer extends StatelessWidget {
                   ),
                   child: _TimelineDivider(
                     confirmedLabel: visibleConfirmed.isEmpty
-                        ? context.l10n.miningBlocksNoBlocks
+                        ? context.tr.miningBlocksNoBlocks
                         : '#${visibleConfirmed.first.height}',
                   ),
                 ),
@@ -153,7 +153,7 @@ class _ProjectedBlockCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   MiningStatusBadge(
-                    label: context.l10n.miningBlocksNext(blockNumber),
+                    label: context.tr.miningBlocksNext(blockNumber),
                     tone: MiningStatusTone.warning,
                   ),
                   const Spacer(),
@@ -172,13 +172,13 @@ class _ProjectedBlockCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _MetricLine(
-                    label: context.l10n.miningBlocksRange,
+                    label: context.tr.miningBlocksRange,
                     value:
                         '${MiningFormatters.feeRate(block.minFeeRate)} - ${MiningFormatters.feeRate(block.maxFeeRate)}',
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   _MetricLine(
-                    label: context.l10n.miningBlocksFees,
+                    label: context.tr.miningBlocksFees,
                     value: MiningFormatters.btcFromSats(block.totalFeesSat),
                   ),
                 ],
@@ -225,7 +225,7 @@ class _ConfirmedBlockCard extends StatelessWidget {
               children: [
                 MiningStatusBadge(
                   label: highlight
-                      ? context.l10n.miningBlocksNewHeight(block.height)
+                      ? context.tr.miningBlocksNewHeight(block.height)
                       : '#${block.height}',
                   tone:
                       highlight ? MiningStatusTone.info : MiningStatusTone.live,
@@ -243,7 +243,7 @@ class _ConfirmedBlockCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              block.poolName ?? context.l10n.miningBlocksBitcoinNetwork,
+              block.poolName ?? context.tr.miningBlocksBitcoinNetwork,
               style: AppTypography.bodyMedium.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -252,34 +252,34 @@ class _ConfirmedBlockCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              context.l10n.miningBlocksTransactions(block.txCount),
+              context.tr.miningBlocksTransactions(block.txCount),
               style: AppTypography.bodySmall.copyWith(color: miningMuted),
             ),
             const Spacer(),
             _MetricLine(
-              label: context.l10n.miningBlocksHash,
+              label: context.tr.miningBlocksHash,
               value: _shortHash(block.id),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: context.l10n.miningBlocksWeight,
+              label: context.tr.miningBlocksWeight,
               value: MiningFormatters.blockFill(block.weightRatio),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: context.l10n.miningBlocksTimestamp,
+              label: context.tr.miningBlocksTimestamp,
               value: MiningFormatters.timeOfDay(block.timestamp),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: context.l10n.miningBlocksSize,
+              label: context.tr.miningBlocksSize,
               value: MiningFormatters.megabytes(block.sizeMb),
             ),
             const SizedBox(height: AppSpacing.xs),
             _MetricLine(
-              label: context.l10n.miningBlocksFee,
+              label: context.tr.miningBlocksFee,
               value: block.medianFeeRate == null
-                  ? context.l10n.miningBlocksUnavailable
+                  ? context.tr.miningBlocksUnavailable
                   : MiningFormatters.feeRate(block.medianFeeRate!),
             ),
           ],

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 
 class WithdrawReceiptScreen extends StatelessWidget {
   final String amountBtc;
@@ -31,93 +29,82 @@ class WithdrawReceiptScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: true,
-        child: Column(
-          children: [
-            const SizedBox(height: AppSpacing.xxl),
-            _buildSuccessIcon(context),
-            const SizedBox(height: AppSpacing.xl),
-            _buildAmountSection(context),
-            const SizedBox(height: AppSpacing.xxl),
-            _buildDetailsCard(context),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: CyberButton(
-                text: context.l10n.done.toUpperCase(),
-                onTap: () =>
-                    Navigator.of(context).popUntil((route) => route.isFirst),
-              ),
-            ).animate(delay: 800.ms).fade().slideY(begin: 0.2, end: 0),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
+    return ReceiveFlowScaffold(
+      title: context.tr.withdrawSuccess,
+      subtitle: context.tr.withdrawReceiptSubtitle,
+      onBack: () => Navigator.of(context).popUntil((route) => route.isFirst),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSuccessIcon(context),
+          const SizedBox(height: AppSpacing.lg),
+          _buildAmountSection(context),
+          const SizedBox(height: AppSpacing.lg),
+          _buildDetailsCard(context),
+          const SizedBox(height: AppSpacing.xl),
+          ReceiveFlowPrimaryButton(
+            label: context.tr.done.toUpperCase(),
+            icon: LucideIcons.check,
+            onTap: () =>
+                Navigator.of(context).popUntil((route) => route.isFirst),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSuccessIcon(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.success.withValues(alpha: 0.1),
-        border: Border.all(
-            color: AppColors.success.withValues(alpha: 0.2), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.1),
-            blurRadius: 40,
-            spreadRadius: 10,
-          ),
-        ],
+    return Center(
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          color: receiveFlowPanelRaisedColor,
+          borderRadius: BorderRadius.circular(0),
+          border: Border.all(color: receiveFlowBorderStrongColor),
+        ),
+        child: const Icon(
+          LucideIcons.check,
+          color: receiveFlowTextColor,
+          size: 32,
+        ),
       ),
-      child: const Icon(
-        LucideIcons.check,
-        color: AppColors.success,
-        size: 48,
-      ),
-    )
-        .animate()
-        .scale(curve: Curves.easeOutBack, duration: 600.ms)
-        .shimmer(delay: 800.ms);
+    );
   }
 
   Widget _buildAmountSection(BuildContext context) {
     return Column(
       children: [
         Text(
-          context.l10n.withdrawSuccess.toUpperCase(),
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: AppColors.success,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 4,
+          context.tr.withdrawSuccess.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: receiveFlowFaintTextColor,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.6,
               ),
-        ).animate(delay: 200.ms).fade(),
+        ),
         const SizedBox(height: AppSpacing.md),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               "₿ ",
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w900,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: receiveFlowMutedTextColor,
+                    fontWeight: FontWeight.w500,
                   ),
             ),
             Text(
               amountBtc,
-              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    color: receiveFlowTextColor,
                     fontSize: 48,
-                    fontWeight: FontWeight.w200,
+                    fontWeight: FontWeight.w500,
                     fontFamily: 'JetBrainsMono',
                   ),
             ),
           ],
-        ).animate(delay: 300.ms).fade().slideY(begin: 0.1, end: 0),
+        ),
       ],
     );
   }
@@ -125,41 +112,47 @@ class WithdrawReceiptScreen extends StatelessWidget {
   Widget _buildDetailsCard(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(AppSpacing.xl),
-        border: Border.all(
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
-            width: 1.5),
-      ),
+    return ReceiveFlowPanel(
       child: Column(
         children: [
-          _buildDetailRow(context, context.l10n.walletName, walletName),
-          const Divider(
-              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
+          _buildDetailRow(context, context.tr.walletName, walletName),
+          const ReceiveFlowDivider(),
           _buildDetailRow(
-              context, isLightning ? "INVOICE" : "CARTEIRA", toAddress,
+              context,
+              AppCopy.withdrawReceiptDestinationLabel(
+                context,
+                isLightning: isLightning,
+              ),
+              toAddress,
               isAddress: true),
-          const Divider(
-              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
-          _buildDetailRow(context, "HORÁRIO", dateFormat.format(timestamp)),
-          const Divider(
-              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
-          _buildDetailRow(context, "TAXA", "₿ $feeBtc"),
-          const Divider(
-              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
-          _buildDetailRow(context, "STATUS", "CONFIRMADO",
-              color: AppColors.success),
-          const Divider(
-              height: AppSpacing.xl, thickness: 0.5, color: Colors.white10),
-          _buildDetailRow(context, "ID DA TRANSAÇÃO", txId, isAddress: true),
+          const ReceiveFlowDivider(),
+          _buildDetailRow(
+            context,
+            AppCopy.withdrawReceiptTime.resolve(context),
+            dateFormat.format(timestamp),
+          ),
+          const ReceiveFlowDivider(),
+          _buildDetailRow(
+            context,
+            AppCopy.withdrawReceiptFee.resolve(context),
+            "₿ $feeBtc",
+          ),
+          const ReceiveFlowDivider(),
+          _buildDetailRow(
+              context,
+              AppCopy.withdrawReceiptStatus.resolve(context),
+              AppCopy.withdrawReceiptConfirmed.resolve(context),
+              color: receiveFlowTextColor),
+          const ReceiveFlowDivider(),
+          _buildDetailRow(
+            context,
+            AppCopy.withdrawReceiptTransactionId.resolve(context),
+            txId,
+            isAddress: true,
+          ),
         ],
       ),
-    ).animate(delay: 500.ms).fade().slideY(begin: 0.1, end: 0);
+    );
   }
 
   Widget _buildDetailRow(BuildContext context, String label, String value,
@@ -169,13 +162,10 @@ class WithdrawReceiptScreen extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.3),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: receiveFlowFaintTextColor,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.6,
               ),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -186,10 +176,10 @@ class WithdrawReceiptScreen extends StatelessWidget {
                 value,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontFamily: 'JetBrainsMono',
-                      color: color ?? Theme.of(context).colorScheme.onPrimary,
+                      color: color ?? receiveFlowTextColor,
                       fontSize: isAddress ? 12 : 14,
                       fontWeight:
-                          color != null ? FontWeight.w900 : FontWeight.w400,
+                          color != null ? FontWeight.w700 : FontWeight.w500,
                     ),
                 maxLines: isAddress ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
@@ -204,7 +194,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
                 },
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                color: Theme.of(context).colorScheme.primary,
+                color: receiveFlowMutedTextColor,
               ),
           ],
         ),

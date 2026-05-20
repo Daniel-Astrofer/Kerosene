@@ -35,6 +35,25 @@ class NotificationService {
     );
   }
 
+  Future<bool> requestPermissions() async {
+    final androidGranted = await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
+    final iosGranted = await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+
+    final macosGranted = await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+
+    return androidGranted ?? iosGranted ?? macosGranted ?? true;
+  }
+
   Future<void> showSubtleNotification({
     required int id,
     required String title,

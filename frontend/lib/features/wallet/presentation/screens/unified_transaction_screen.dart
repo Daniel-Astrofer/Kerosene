@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/cyber_background.dart';
 import 'package:teste/l10n/l10n_extension.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/presentation/widgets/cyber_button.dart';
@@ -48,28 +49,12 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: authenticatedSurfaceBackgroundColor,
       body: Stack(
         children: [
-          // Cyber Background Effect
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.7, -0.6),
-                  radius: 1.2,
-                  colors: [
-                    Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.05),
-                    Theme.of(context).scaffoldBackgroundColor,
-                  ],
-                ),
-              ),
-            ),
+          const Positioned.fill(
+            child: ColoredBox(color: authenticatedSurfaceBackgroundColor),
           ),
-
           SafeArea(
             child: Column(
               children: [
@@ -120,8 +105,8 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
           ),
           Text(
             widget.isSend
-                ? context.l10n.sendBitcoin.toUpperCase()
-                : context.l10n.receiveBitcoin.toUpperCase(),
+                ? context.tr.sendBitcoin.toUpperCase()
+                : context.tr.receiveBitcoin.toUpperCase(),
             style: Theme.of(context)
                 .textTheme
                 .titleMedium!
@@ -138,7 +123,7 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
       children: [
         Expanded(
           child: _buildTypeButton(
-            context.l10n.onChain.toUpperCase(),
+            context.tr.onChain.toUpperCase(),
             !widget.isSend,
             LucideIcons.link,
           ),
@@ -146,7 +131,7 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: _buildTypeButton(
-            context.l10n.lightning.toUpperCase(),
+            context.tr.lightning.toUpperCase(),
             widget.isSend,
             LucideIcons.zap,
           ),
@@ -202,7 +187,7 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
     return Column(
       children: [
         Text(
-          context.l10n.transactionAmount.toUpperCase(),
+          context.tr.transactionAmount.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 color: Theme.of(context)
                     .colorScheme
@@ -255,7 +240,7 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
             .bodySmall!
             .copyWith(fontFamily: 'JetBrainsMono'),
         decoration: InputDecoration(
-          hintText: context.l10n.destinationAddressHint,
+          hintText: context.tr.destinationAddressHint,
           hintStyle: TextStyle(
               color: Theme.of(context)
                   .colorScheme
@@ -281,15 +266,15 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
       crossAxisSpacing: AppSpacing.md,
       childAspectRatio: 1.5,
       children: [
-        _buildActionCard(context.l10n.scanQR.toUpperCase(), LucideIcons.qrCode,
-            _handleScanQr),
-        _buildActionCard(context.l10n.approximateNfc.toUpperCase(),
+        _buildActionCard(
+            context.tr.scanQR.toUpperCase(), LucideIcons.qrCode, _handleScanQr),
+        _buildActionCard(context.tr.approximateNfc.toUpperCase(),
             LucideIcons.wifi, _handleNfc),
         if (!widget.isSend)
           _buildActionCard(
-              context.l10n.createLink.toUpperCase(), LucideIcons.share2, () {}),
+              context.tr.createLink.toUpperCase(), LucideIcons.share2, () {}),
         _buildActionCard(
-            context.l10n.history.toUpperCase(), LucideIcons.history, () {}),
+            context.tr.history.toUpperCase(), LucideIcons.history, () {}),
       ],
     ).animate().fade(delay: 400.ms);
   }
@@ -334,10 +319,10 @@ class _UnifiedTransactionScreenState extends State<UnifiedTransactionScreen> {
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: CyberButton(
         text: _isProcessing
-            ? context.l10n.processing.toUpperCase()
+            ? context.tr.processing.toUpperCase()
             : (widget.isSend
-                ? context.l10n.confirmSend.toUpperCase()
-                : context.l10n.generatePaymentRequest.toUpperCase()),
+                ? context.tr.confirmSend.toUpperCase()
+                : context.tr.generatePaymentRequest.toUpperCase()),
         onTap: _handleProcess,
         isLoading: _isProcessing,
       ),

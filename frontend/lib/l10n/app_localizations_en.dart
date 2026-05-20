@@ -2135,7 +2135,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errLedgerInvalidOperation => 'Invalid operation attempt.';
 
   @override
-  String get errLedgerReceiverNotFound => 'Transaction recipient not found.';
+  String get errLedgerReceiverNotFound => 'Address unavailable';
 
   @override
   String get errLedgerGeneric =>
@@ -6545,4 +6545,106 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landingStatusManifest => 'Manifest';
+
+  @override
+  String get homeFundsDistributionTitle => 'Fund Distribution';
+
+  @override
+  String get homeRecentActivitiesTitle => 'Activities';
+
+  @override
+  String get homeViewStatementShortLabel => 'Statement';
+
+  @override
+  String get homeOnchainFilterLabel => 'On-chain';
+
+  @override
+  String get homePlatformFilterLabel => 'Platform';
+
+  @override
+  String get homeNoticesFilterLabel => 'Notices';
+
+  @override
+  String get homeEducationInternalTitle => 'Kerosene';
+
+  @override
+  String get homeEducationInternalBody =>
+      'Use internal transfers when the destination also uses Kerosene. Sending is fast and has no network fee.';
+
+  @override
+  String get homeEducationInternalTag => 'Internal use';
+
+  @override
+  String get homeEducationWalletHashTitle => 'Wallet hash';
+
+  @override
+  String get homeEducationWalletHashBody =>
+      'To receive internally, share only the hash made available by your own wallet.';
+
+  @override
+  String get homeEducationWalletHashTag => 'Wallet identity';
+
+  @override
+  String get homeEducationLightningTitle => 'Lightning';
+
+  @override
+  String get homeEducationLightningBody =>
+      'Use Lightning to pay invoices or lightning addresses with near-instant confirmation.';
+
+  @override
+  String get homeEducationLightningTag => 'Fast payments';
+
+  @override
+  String get homeEducationOnchainTitle => 'Bitcoin on-chain';
+
+  @override
+  String get homeEducationOnchainBody =>
+      'Use on-chain to store value, move to self-custody, or send to an external Bitcoin wallet.';
+
+  @override
+  String get homeEducationOnchainTag => 'Main network';
+
+  @override
+  String get homeEducationConfirmationsTitle => 'Confirmations';
+
+  @override
+  String get homeEducationConfirmationsBody =>
+      'On-chain transactions enter blocks. Larger values usually require more confirmations.';
+
+  @override
+  String get homeEducationConfirmationsTag => 'Network time';
+
+  @override
+  String get homeEducationFeesTitle => 'Fees';
+
+  @override
+  String get homeEducationFeesBody =>
+      'Fees vary with the network. Before confirming, review the total debited and the amount received.';
+
+  @override
+  String get homeEducationFeesTag => 'Network cost';
+
+  @override
+  String get homeEducationBitcoinTitle => 'Bitcoin';
+
+  @override
+  String get homeEducationBitcoinBody =>
+      'Bitcoin is scarce digital money. You can use different paths depending on urgency and destination.';
+
+  @override
+  String get homeEducationBitcoinTag => 'Foundation';
+
+  @override
+  String get homeEducationLightningGeneralBody =>
+      'Lightning is useful for smaller and faster payments using invoices, LNURL, or lightning addresses.';
+
+  @override
+  String get homeEducationLightningGeneralTag => 'Instant payment';
+
+  @override
+  String get homeEducationKeroseneGeneralBody =>
+      'Kerosene separates internal, Lightning, and on-chain flows to reduce payment mistakes.';
+
+  @override
+  String get homeEducationKeroseneGeneralTag => 'How to choose';
 }

@@ -32,6 +32,9 @@ class _CyberButtonState extends State<CyberButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onTap == null || widget.isLoading;
+    final foregroundColor = isDisabled
+        ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)
+        : Theme.of(context).colorScheme.onPrimary;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -59,7 +62,7 @@ class _CyberButtonState extends State<CyberButton> {
                 : LinearGradient(
                     colors: [
                       Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary
+                      Theme.of(context).colorScheme.secondary,
                     ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
@@ -72,10 +75,9 @@ class _CyberButtonState extends State<CyberButton> {
                 ? null
                 : [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.35),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.35),
                       blurRadius: AppSpacing.md,
                       offset: const Offset(0, AppSpacing.xs),
                     ),
@@ -87,19 +89,25 @@ class _CyberButtonState extends State<CyberButton> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
+                      color: foregroundColor,
                       strokeWidth: 2,
                     ),
                   )
-                : Text(
-                    widget.text,
-                    style: AppTypography.buttonText.copyWith(
-                      color: isDisabled
-                          ? Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.3)
-                          : Theme.of(context).colorScheme.onSurface,
+                : Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        style: AppTypography.buttonText.copyWith(
+                          color: foregroundColor,
+                        ),
+                      ),
                     ),
                   ),
           ),

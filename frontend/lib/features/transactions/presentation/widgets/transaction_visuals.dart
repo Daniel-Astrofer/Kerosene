@@ -78,7 +78,7 @@ class TransactionVisualSpec {
   bool get isOutgoing => direction == TransactionVisualDirection.outgoing;
 
   String localizedLabel(BuildContext context) {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     return switch (labelKey) {
       TransactionVisualLabel.cancelled => l10n.transactionVisualCancelled,
       TransactionVisualLabel.refund => l10n.transactionVisualRefund,

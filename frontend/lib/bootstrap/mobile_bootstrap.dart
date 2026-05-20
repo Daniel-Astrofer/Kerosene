@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,33 +9,33 @@ import 'package:teste/l10n/app_localizations.dart';
 import '../core/providers/appearance_provider.dart';
 import '../core/providers/locale_provider.dart';
 import '../core/providers/session_invalidation_provider.dart';
+import '../core/presentation/widgets/kerosene_logo_loading_view.dart';
 import '../core/responsive/kerosene_responsive.dart';
 import '../features/auth/presentation/screens/welcome_screen.dart';
-import '../features/auth/presentation/screens/login_username_screen.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
+import '../features/mining/presentation/screens/mining_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
 import '../features/wallet/presentation/screens/create_wallet_screen.dart';
-import '../features/wallet/presentation/screens/wallet_card_screen.dart';
 import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../features/wallet/presentation/screens/receive_hub_screen.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart';
 import '../features/security/presentation/providers/security_provider.dart';
 import '../features/security/presentation/widgets/app_entry_pin_gate.dart';
-import '../features/mining/presentation/screens/mining_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/notifications/presentation/widgets/global_notification_host.dart';
 import '../core/services/background_service.dart';
 import '../core/services/notification_service.dart' as local_notifications;
 import '../features/transactions/presentation/screens/deposits_screen.dart';
 import '../core/services/audio_service.dart';
 import '../core/providers/tor_providers.dart';
+import '../core/services/tor_network_bootstrap.dart';
 import '../core/services/tor_service.dart';
-import '../core/config/app_config.dart';
 import '../core/performance/kerosene_performance_boundary.dart';
 import '../core/utils/qr_payment_parser.dart';
 import '../features/auth/controller/auth_controller.dart';
-import '../shared/widgets/offline_overlay.dart';
 import '../core/utils/snackbar_helper.dart';
 import '../features/wallet/presentation/providers/balance_websocket_provider.dart';
 
@@ -48,36 +50,23 @@ Future<void> initializeApp(ProviderContainer container) async {
     return true;
   };
 
+  unawaited(_bootstrapTor(container));
+
   await local_notifications.NotificationService().init();
   await initializeBackgroundService();
   await AudioService.instance.init();
 
-  try {
-    debugPrint('🚀 Starting Tor Network Bootstrap...');
-    final bool torStarted = await TorService.instance.start();
-    AppConfig.isTorEnabled = torStarted;
-
-    if (torStarted) {
-      debugPrint('✅ Tor Network Ready.');
-      final host = Uri.parse(AppConfig.onionBaseUrl).host;
-      final int relayPort = await TorService.instance.startRelay(host, 80);
-      final newApiUrl = 'http://127.0.0.1:$relayPort';
-      AppConfig.apiUrl = newApiUrl;
-      container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
-
-      debugPrint(
-        '🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host',
-      );
-    } else {
-      debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
-    }
-  } catch (e) {
-    debugPrint('❌ CRITICAL ERROR: Tor or Relay failed to start: $e');
-    AppConfig.isTorEnabled = false;
-  }
-
   PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024;
   PaintingBinding.instance.imageCache.maximumSize = 300;
+}
+
+Future<void> _bootstrapTor(ProviderContainer container) async {
+  await bootstrapTorNetwork(
+    torService: TorService.instance,
+    updateApiUrl: (url) {
+      container.read(torApiUrlProvider.notifier).updateUrl(url);
+    },
+  );
 }
 
 Widget buildApp() => const MyApp();
@@ -118,19 +107,25 @@ class MyApp extends ConsumerWidget {
       },
       builder: (context, child) {
         Widget current = KerosenePerformanceBoundary(
-          child: OfflineOverlay(child: child!),
+          child: ServerAvailabilityGate(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
         current = KeroseneResponsiveBoundary(
           requestedTextScale: appearance.fontScale.scaleFactor,
           child: current,
         );
+        current = GlobalNotificationHost(child: current);
         return _AppRealtimeBootstrap(child: current);
       },
       home: Consumer(
         builder: (context, ref, child) {
           final authState = ref.watch(authControllerProvider);
           if (authState is AuthInitial || authState is AuthLoading) {
-            return const Scaffold(backgroundColor: Colors.black);
+            return const KeroseneLogoLoadingView(
+              status: 'INICIALIZANDO',
+              detail: 'Verificando sessão segura',
+            );
           }
           if (authState is AuthAuthenticated) {
             return const AppEntryPinGate(child: HomeLoadingScreen());
@@ -143,32 +138,31 @@ class MyApp extends ConsumerWidget {
       ),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
-        '/login': (context) => const LoginUsernameScreen(),
+        '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupFlowScreen(),
+        '/server-unavailable': (context) => const ServerUnavailableScreen(),
         '/home': (context) => const _PrivateMobileRoute(child: HomeScreen()),
         '/home_loading': (context) =>
             const _PrivateMobileRoute(child: HomeLoadingScreen()),
         '/settings': (context) => const _PrivateMobileRoute(
-          child: SettingsScreen(showPrimaryNavigation: true),
-        ),
+              child: SettingsScreen(showPrimaryNavigation: true),
+            ),
         '/history': (context) => const _PrivateMobileRoute(
-          child: DepositsScreen(showPrimaryNavigation: true),
-        ),
+              child: DepositsScreen(),
+            ),
         '/card': (context) =>
             const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
-        '/wallet-cards-legacy': (context) =>
-            const _PrivateMobileRoute(child: WalletCardScreen()),
-        '/receive': (context) =>
-            const _PrivateMobileRoute(child: ReceiveHubScreen()),
         '/mining': (context) =>
             const _PrivateMobileRoute(child: MiningScreen()),
+        '/receive': (context) =>
+            const _PrivateMobileRoute(child: ReceiveHubScreen()),
         '/create_wallet': (context) =>
             const _PrivateMobileRoute(child: CreateWalletScreen()),
         '/send-money': (context) =>
             const _PrivateMobileRoute(child: SendMoneyScreen()),
         '/deposits': (context) => const _PrivateMobileRoute(
-          child: DepositsScreen(showPrimaryNavigation: true),
-        ),
+              child: DepositsScreen(),
+            ),
       },
       onGenerateRoute: (settings) {
         final linkId = QrPaymentParser.extractPaymentLinkId(

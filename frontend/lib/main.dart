@@ -5,15 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:teste/core/theme/app_theme.dart';
+import 'package:teste/core/providers/shared_preferences_provider.dart';
+import 'package:teste/core/localization/app_localization_manager.dart';
+import 'package:teste/core/presentation/widgets/kerosene_logo_loading_view.dart';
 
 import 'package:teste/l10n/app_localizations.dart';
 import 'core/providers/locale_provider.dart';
 import 'features/auth/presentation/screens/welcome_screen.dart';
-import 'features/auth/presentation/screens/login_username_screen.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/home/presentation/screens/home_loading_screen.dart';
+import 'features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
+import 'features/mining/presentation/screens/mining_screen.dart';
 import 'features/auth/presentation/screens/server_unavailable_screen.dart';
+import 'features/notifications/presentation/widgets/global_notification_host.dart';
+import 'features/settings/presentation/screens/settings_screen.dart';
 import 'features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'features/wallet/presentation/screens/send_money_screen.dart';
 import 'core/services/background_service.dart';
@@ -22,11 +29,10 @@ import 'core/services/notification_service.dart'
 import 'features/transactions/presentation/screens/deposits_screen.dart';
 import 'core/services/audio_service.dart';
 import 'core/providers/tor_providers.dart';
+import 'core/services/tor_network_bootstrap.dart';
 import 'core/services/tor_service.dart';
-import 'core/config/app_config.dart';
 
 import 'features/auth/controller/auth_controller.dart';
-import 'shared/widgets/offline_overlay.dart';
 import 'core/utils/snackbar_helper.dart';
 
 void main() async {
@@ -42,6 +48,8 @@ void main() async {
   final container = ProviderContainer(
     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
   );
+
+  unawaited(_bootstrapTor(container));
 
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 
@@ -77,7 +85,6 @@ Future<void> _startAppServices(ProviderContainer container) async {
     ),
     _runStartupTask('Background service', initializeBackgroundService),
     _runStartupTask('Audio service', AudioService.instance.init),
-    _runStartupTask('Tor network', () => _bootstrapTor(container)),
   ]);
 }
 
@@ -91,25 +98,11 @@ Future<void> _runStartupTask(String name, Future<void> Function() task) async {
 }
 
 Future<void> _bootstrapTor(ProviderContainer container) async {
-  debugPrint('🚀 Starting Tor Network Bootstrap...');
-  final bool torStarted = await TorService.instance.start();
-  AppConfig.isTorEnabled = torStarted;
-
-  if (!torStarted) {
-    debugPrint('⚠️ Tor is UNAVAILABLE. Backend connection may fail.');
-    return;
-  }
-
-  debugPrint('✅ Tor Network Ready.');
-  final host = Uri.parse(AppConfig.onionBaseUrl).host;
-  final int relayPort = await TorService.instance.startRelay(host, 80);
-  final newApiUrl = 'http://127.0.0.1:$relayPort';
-  AppConfig.apiUrl = newApiUrl;
-
-  container.read(torApiUrlProvider.notifier).updateUrl(newApiUrl);
-
-  debugPrint(
-    '🌐 Unified Tor Relay Active: ${AppConfig.apiUrl} -> http://$host',
+  await bootstrapTorNetwork(
+    torService: TorService.instance,
+    updateApiUrl: (url) {
+      container.read(torApiUrlProvider.notifier).updateUrl(url);
+    },
   );
 }
 
@@ -131,24 +124,19 @@ class MyApp extends ConsumerWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       localeResolutionCallback: (locale, supportedLocales) {
-        if (locale != null) {
-          for (var supportedLocale in supportedLocales) {
-            if (supportedLocale.languageCode == locale.languageCode) {
-              return supportedLocale;
-            }
-          }
-        }
-        return supportedLocales.first; // Retorna EN por padrão se não suportado
+        return AppLocalizationManager.resolve(locale);
       },
-      builder: (context, child) =>
-          OfflineOverlay(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => GlobalNotificationHost(
+        child: ServerAvailabilityGate(child: child ?? const SizedBox.shrink()),
+      ),
       home: Consumer(
         builder: (context, ref, child) {
           final authState = ref.watch(authControllerProvider);
           if (authState is AuthInitial || authState is AuthLoading) {
-            // Se ainda não determinou se tem sessão ou não,
-            // fica numa tela preta vazia para não piscar o WelcomeScreen.
-            return const Scaffold(backgroundColor: Colors.black);
+            return const KeroseneLogoLoadingView(
+              status: 'INICIALIZANDO',
+              detail: 'Verificando sessão segura',
+            );
           }
           if (authState is AuthAuthenticated) {
             return const HomeLoadingScreen();
@@ -161,10 +149,16 @@ class MyApp extends ConsumerWidget {
       ),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
-        '/login': (context) => const LoginUsernameScreen(),
+        '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupFlowScreen(),
+        '/server-unavailable': (context) => const ServerUnavailableScreen(),
         '/home': (context) => const HomeScreen(),
         '/home_loading': (context) => const HomeLoadingScreen(),
+        '/settings': (context) =>
+            const SettingsScreen(showPrimaryNavigation: true),
+        '/history': (context) => const DepositsScreen(),
+        '/card': (context) => const BitcoinAccountsScreen(),
+        '/mining': (context) => const MiningScreen(),
         '/create_wallet': (context) => const CreateWalletScreen(),
         '/send-money': (context) => const SendMoneyScreen(),
         '/deposits': (context) => const DepositsScreen(),
@@ -193,8 +187,3 @@ class KeroseneScrollBehavior extends ScrollBehavior {
     return super.buildScrollbar(context, child, details);
   }
 }
-
-// Criar um provider para o SharedPreferences
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError();
-});

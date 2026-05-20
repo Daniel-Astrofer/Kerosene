@@ -4,10 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/backend-common.sh
 source "$SCRIPT_DIR/backend-common.sh"
+# shellcheck source=scripts/flutter-common.sh
+source "$SCRIPT_DIR/flutter-common.sh"
 
 ARM_VAULT=1
 BUILD=1
 DETACH=1
+RUN_MIGRATIONS=1
+FORCE_MIGRATIONS=0
+VERBOSE_MIGRATIONS=0
 START_FRONTEND=0
 FRONTEND_BUILD=1
 COMPOSE_SERVICES=()
@@ -39,6 +44,13 @@ Options:
   --no-frontend  Legacy no-op; web admin is served by the backend.
   --no-frontend-build
                  Serve the existing Flutter build/web output if present.
+  --skip-migrations
+                 Start containers without applying local database migrations.
+  --force-migrations
+                 Re-run all SQL migrations even if the local checksum cache says
+                 they are already applied.
+  --verbose-migrations
+                 Print successful psql output while applying migrations.
   --foreground   Run docker compose in the foreground.
   -h, --help     Show this help.
 EOF
@@ -241,8 +253,9 @@ start_frontend() {
     return
   fi
 
-  if ! command -v flutter >/dev/null 2>&1; then
-    warn "Flutter CLI not found; backend is up, but frontend was not started."
+  local flutter_bin
+  if ! flutter_bin="$(kerosene_resolve_flutter_bin "$FRONTEND_DIR")"; then
+    warn "Flutter CLI not found for the non-root build user; backend is up, but frontend was not started."
     return
   fi
 
@@ -262,19 +275,21 @@ start_frontend() {
   fi
 
   mkdir -p "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
+  kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
   if [[ "$FRONTEND_BUILD" -eq 1 || ! -f "$FRONTEND_BUILD_DIR/index.html" ]]; then
     info "Building Flutter web frontend for $FRONTEND_PUBLIC_URL (API: $FRONTEND_API_URL)."
     (
       cd "$FRONTEND_DIR"
-      FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn)
+      FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn --target lib/web_main.dart)
       if [[ "${FLUTTER_BUILD_NO_PUB:-0}" == "1" ]]; then
         FLUTTER_BUILD_ARGS+=(--no-pub)
       fi
-      flutter build "${FLUTTER_BUILD_ARGS[@]}" \
+      kerosene_run_flutter "$flutter_bin" build "${FLUTTER_BUILD_ARGS[@]}" \
         --dart-define="WEB_API_URL=$FRONTEND_API_URL" \
         --dart-define="PASSKEY_RP_ID=$FRONTEND_PASSKEY_RP_ID" \
         --dart-define="PASSKEY_ORIGIN=$FRONTEND_PASSKEY_ORIGIN"
     ) > "$FRONTEND_BUILD_LOG_FILE" 2>&1 || {
+      kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
       warn "Flutter web build failed. See $FRONTEND_BUILD_LOG_FILE"
       tail -n 80 "$FRONTEND_BUILD_LOG_FILE" >&2 || true
       return
@@ -282,6 +297,7 @@ start_frontend() {
   else
     info "Using existing Flutter web build at $FRONTEND_BUILD_DIR."
   fi
+  kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
 
   info "Serving Flutter web frontend at $FRONTEND_PUBLIC_URL."
   if command -v setsid >/dev/null 2>&1; then
@@ -335,6 +351,9 @@ while [[ $# -gt 0 ]]; do
     --frontend-server) START_FRONTEND=1 ;;
     --no-frontend) START_FRONTEND=0 ;;
     --no-frontend-build) FRONTEND_BUILD=0 ;;
+    --skip-migrations) RUN_MIGRATIONS=0 ;;
+    --force-migrations) FORCE_MIGRATIONS=1 ;;
+    --verbose-migrations) VERBOSE_MIGRATIONS=1 ;;
     --foreground) DETACH=0 ;;
     -h|--help) usage; exit 0 ;;
     *) COMPOSE_SERVICES+=("$1") ;;
@@ -365,8 +384,12 @@ if [[ "$DETACH" -eq 1 ]]; then
   refresh_vault_raft_bootstrap
 fi
 
-if [[ "$DETACH" -eq 1 ]]; then
-  "$SCRIPT_DIR/migrate-local-db.sh"
+if [[ "$DETACH" -eq 1 && "$RUN_MIGRATIONS" -eq 1 ]]; then
+  KEROSENE_FORCE_MIGRATIONS="$FORCE_MIGRATIONS" \
+    KEROSENE_MIGRATION_VERBOSE="$VERBOSE_MIGRATIONS" \
+    "$SCRIPT_DIR/migrate-local-db.sh"
+elif [[ "$DETACH" -eq 1 ]]; then
+  warn "Skipping local DB migrations by request. Run scripts/migrate-local-db.sh before testing schema changes."
 else
   warn "Foreground mode skips automatic local DB migrations. Run scripts/migrate-local-db.sh in another terminal if you reuse persisted volumes."
 fi
@@ -381,5 +404,5 @@ fi
 start_frontend
 
 info "Backend cluster command completed."
-info "Logs: scripts/logs-local.sh"
+info "Logs: scripts/logs-local.sh -- use --raw for unfiltered Docker logs"
 info "Stop: scripts/stop-local.sh"

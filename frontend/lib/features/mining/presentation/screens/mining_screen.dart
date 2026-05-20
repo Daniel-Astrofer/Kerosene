@@ -26,18 +26,8 @@ class MiningScreen extends ConsumerStatefulWidget {
 }
 
 class _MiningScreenState extends ConsumerState<MiningScreen> {
-  final AppPrimaryNavigationController _navigationController =
-      AppPrimaryNavigationController();
-
   Future<void> _refresh() async {
-    _navigationController.triggerRefreshAnimation();
     await ref.read(miningDashboardControllerProvider.notifier).refresh();
-  }
-
-  @override
-  void dispose() {
-    _navigationController.dispose();
-    super.dispose();
   }
 
   @override
@@ -93,7 +83,6 @@ class _MiningScreenState extends ConsumerState<MiningScreen> {
             ),
             AppPrimaryNavigationBar.overlay(
               currentDestination: AppPrimaryDestination.mining,
-              controller: _navigationController,
             ),
           ],
         ),
@@ -241,16 +230,16 @@ class _MiningInitialState extends ConsumerWidget {
         return MiningStateCard(
           icon: Icons.portable_wifi_off_rounded,
           accent: miningRed,
-          title: context.l10n.miningStateOfflineTitle,
-          description: context.l10n.miningStateOfflineMessage,
+          title: context.tr.miningStateOfflineTitle,
+          description: context.tr.miningStateOfflineMessage,
           onRetry: onRetry,
         );
       case MiningSyncPhase.empty:
         return MiningStateCard(
           icon: Icons.inbox_outlined,
           accent: miningAmber,
-          title: context.l10n.miningStateEmptyTitle,
-          description: context.l10n.miningStateEmptyMessage,
+          title: context.tr.miningStateEmptyTitle,
+          description: context.tr.miningStateEmptyMessage,
           onRetry: onRetry,
         );
       case MiningSyncPhase.error:
@@ -263,10 +252,10 @@ class _MiningInitialState extends ConsumerWidget {
         return MiningStateCard(
           icon: Icons.error_outline_rounded,
           accent: miningAmber,
-          title: context.l10n.miningStateErrorTitle,
+          title: context.tr.miningStateErrorTitle,
           description: syncMeta.errorMessage == null
-              ? context.l10n.miningStateRetryLater
-              : ErrorTranslator.translate(context.l10n, syncMeta.errorMessage!),
+              ? context.tr.miningStateRetryLater
+              : ErrorTranslator.translate(context.tr, syncMeta.errorMessage!),
           onRetry: onRetry,
         );
     }

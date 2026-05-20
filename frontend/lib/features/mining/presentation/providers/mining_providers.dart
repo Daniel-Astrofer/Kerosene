@@ -12,7 +12,7 @@ import 'package:teste/features/mining/data/services/mempool_service.dart';
 import 'package:teste/features/mining/domain/entities/mining_allocation.dart';
 import 'package:teste/features/mining/domain/entities/mining_rig_offer.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
-import 'package:teste/main.dart'; // To access sharedPreferencesProvider
+import 'package:teste/core/providers/shared_preferences_provider.dart';
 
 final mempoolServiceProvider = Provider<MempoolService>((ref) {
   return MempoolService(ref.watch(mempoolApiClientProvider));

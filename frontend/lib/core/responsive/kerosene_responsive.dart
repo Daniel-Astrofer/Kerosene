@@ -139,8 +139,8 @@ class KeroseneResponsiveScope extends InheritedWidget {
   });
 
   static KeroseneResponsiveMetrics of(BuildContext context) {
-    final scope = context
-        .dependOnInheritedWidgetOfExactType<KeroseneResponsiveScope>();
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<KeroseneResponsiveScope>();
     if (scope != null) {
       return scope.metrics;
     }

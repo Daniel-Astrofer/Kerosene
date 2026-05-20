@@ -47,7 +47,7 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
                             _buildActionSection(),
                             const SizedBox(height: AppSpacing.xxl),
                             _buildSectionHeader(
-                                context.l10n.recentTransactions.toUpperCase()),
+                                context.tr.recentTransactions.toUpperCase()),
                           ],
                         ),
                       ),
@@ -133,7 +133,7 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
       child: Column(
         children: [
           Text(
-            context.l10n.totalBalanceGeneric.toUpperCase(),
+            context.tr.totalBalanceGeneric.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
                   color: Theme.of(context)
                       .colorScheme
@@ -170,11 +170,11 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
       children: [
         Expanded(
             child: _buildActionButton(
-                context.l10n.send.toUpperCase(), LucideIcons.arrowUpRight)),
+                context.tr.send.toUpperCase(), LucideIcons.arrowUpRight)),
         const SizedBox(width: AppSpacing.md),
         Expanded(
             child: _buildActionButton(
-                context.l10n.receive.toUpperCase(), LucideIcons.arrowDownLeft)),
+                context.tr.receive.toUpperCase(), LucideIcons.arrowDownLeft)),
       ],
     );
   }
@@ -233,7 +233,7 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
               size: 80),
           const SizedBox(height: AppSpacing.md),
           Text(
-            context.l10n.noTransactions.toUpperCase(),
+            context.tr.noTransactions.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 color: Theme.of(context)
                     .colorScheme
@@ -250,7 +250,7 @@ class _WalletDetailsScreenState extends ConsumerState<WalletDetailsScreen> {
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Text(
-          "${context.l10n.errorLoadingData.toUpperCase()}: $error",
+          "${context.tr.errorLoadingData.toUpperCase()}: $error",
           style: Theme.of(context)
               .textTheme
               .bodySmall!

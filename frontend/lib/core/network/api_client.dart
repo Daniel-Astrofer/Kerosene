@@ -3,26 +3,27 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:teste/core/providers/network_status_provider.dart';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:teste/core/errors/exceptions.dart';
-import 'dart:io';
-import 'package:dio/io.dart';
-import 'package:socks5_proxy/socks_client.dart';
-import 'package:teste/core/services/tor_service.dart';
 import 'package:teste/core/network/api_response_interceptor.dart';
+import 'package:teste/core/network/api_client_route_policy.dart';
+import 'package:teste/core/network/api_client_platform.dart' as platform;
+import 'package:teste/core/utils/snackbar_helper.dart';
 
 /// Cliente HTTP configurado com Dio
 class ApiClient {
+  static const int _paranoidMaxPayloadBytes = 2048;
+  static const int _psbtMaxPayloadBytes = 64 * 1024;
   late final Dio _dio;
   Dio get dio => _dio; // Added for TokenInterceptor retry logic
   final Ref ref; // Add Ref to access providers
 
+  final ApiClientRoutePolicy routePolicy;
+
   ApiClient({
     required String baseUrl,
     required this.ref,
+    this.routePolicy = ApiClientRoutePolicy.auto,
     int connectTimeout = 60000,
     int receiveTimeout = 60000,
   }) {
@@ -38,7 +39,7 @@ class ApiClient {
       ),
     );
 
-    _configureTorProxy();
+    _configureProxyRouting();
 
     // Adicionar interceptors
     _dio.interceptors.add(_LogInterceptor());
@@ -78,11 +79,7 @@ class ApiClient {
   }
 
   Future<void> _initCookieManager() async {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final cookieJar = PersistCookieJar(
-      storage: FileStorage("${appDocDir.path}/.cookies/"),
-    );
-    _dio.interceptors.add(CookieManager(cookieJar));
+    await platform.initializeCookieSupport(_dio);
   }
 
   /// Adicionar um interceptor customizado
@@ -101,12 +98,15 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.get(
+      final response = await _dio.get(
         path,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -121,13 +121,17 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.post(
+      final response = await _dio.post(
         path,
         data: data,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -142,13 +146,17 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.put(
+      final response = await _dio.put(
         path,
         data: data,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
@@ -163,16 +171,29 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
-      return await _dio.delete(
+      final response = await _dio.delete(
         path,
         data: data,
         queryParameters: queryParameters,
         options: mergedOptions,
       );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
     } catch (e) {
       throw _handleError(e);
     }
+  }
+
+  Future<void> _prepareRequestRoute() async {
+    await platform.ensureNetworkReady(
+      ref: ref,
+      routePolicy: routePolicy,
+      baseUrl: _dio.options.baseUrl,
+    );
+    _configureProxyRouting();
   }
 
   /// Mesclar options com headers customizados
@@ -185,11 +206,80 @@ class ApiClient {
     return (options ?? Options()).copyWith(headers: currentHeaders);
   }
 
+  void _validatePayloadSize(String path, dynamic data) {
+    if (data == null) {
+      return;
+    }
+
+    List<int>? payloadBytes;
+
+    if (data is String) {
+      payloadBytes = utf8.encode(data);
+    } else if (data is List<int>) {
+      payloadBytes = data;
+    } else if (data is Map || data is List) {
+      payloadBytes = utf8.encode(jsonEncode(data));
+    }
+
+    if (payloadBytes == null ||
+        payloadBytes.length <= _maxPayloadBytesForPath(path)) {
+      return;
+    }
+
+    const message =
+        'O conteúdo é grande demais para enviar com segurança. Reduza as informações e tente novamente.';
+    SnackbarHelper.showWarning(message, title: 'Conteúdo muito grande');
+    throw const ValidationException(
+      message: message,
+      errorCode: 'ERR_PAYLOAD_TOO_LARGE',
+    );
+  }
+
+  int _maxPayloadBytesForPath(String path) {
+    if (path.startsWith('/bitcoin/psbt/') ||
+        (path.contains('/cold-wallets/') && path.endsWith('/psbt'))) {
+      return _psbtMaxPayloadBytes;
+    }
+    return _paranoidMaxPayloadBytes;
+  }
+
+  @visibleForTesting
+  static bool shouldUseSocksProxy({
+    required String baseUrl,
+    required ApiClientRoutePolicy routePolicy,
+    required bool torRunning,
+  }) {
+    final normalizedBaseUrl = baseUrl.toLowerCase();
+    final isLocalRelay = normalizedBaseUrl.contains('127.0.0.1') ||
+        normalizedBaseUrl.contains('localhost');
+
+    if (isLocalRelay || !torRunning) {
+      return false;
+    }
+
+    switch (routePolicy) {
+      case ApiClientRoutePolicy.tor:
+        return true;
+      case ApiClientRoutePolicy.clearnet:
+        return false;
+      case ApiClientRoutePolicy.auto:
+        return normalizedBaseUrl.contains('.onion');
+    }
+  }
+
   // Headers are now managed exclusively by TokenInterceptor
 
   /// Tratamento de erros
   AppException _handleError(dynamic error) {
+    if (error is AppException) {
+      return error;
+    }
+
     if (error is DioException) {
+      if (error.response != null) {
+        ref.read(networkStatusProvider.notifier).markOnline();
+      }
+
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
@@ -203,13 +293,15 @@ class ApiClient {
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
-          var message = 'Erro no servidor';
+          var message = 'Não conseguimos concluir a solicitação agora.';
           String? errorCode;
+          Object? errorData;
 
           final data = error.response?.data;
           if (data is Map) {
             if (data.containsKey('message')) message = data['message'];
             if (data.containsKey('errorCode')) errorCode = data['errorCode'];
+            if (data.containsKey('data')) errorData = data['data'];
           } else if (data is String) {
             try {
               final json = jsonDecode(data);
@@ -217,6 +309,9 @@ class ApiClient {
                 if (json.containsKey('message')) message = json['message'];
                 if (json.containsKey('errorCode')) {
                   errorCode = json['errorCode'];
+                }
+                if (json.containsKey('data')) {
+                  errorData = json['data'];
                 }
               } else {
                 message = data.length > 100 ? data.substring(0, 100) : data;
@@ -235,6 +330,9 @@ class ApiClient {
               if (errMap.containsKey('errorCode')) {
                 errorCode = errMap['errorCode'];
               }
+              if (errMap.containsKey('data')) {
+                errorData = errMap['data'];
+              }
             }
           }
 
@@ -243,6 +341,7 @@ class ApiClient {
               message: message,
               statusCode: statusCode,
               errorCode: errorCode,
+              data: errorData,
             );
           }
 
@@ -251,6 +350,7 @@ class ApiClient {
               message: message,
               statusCode: statusCode,
               errorCode: errorCode,
+              data: errorData,
             );
           }
 
@@ -258,6 +358,7 @@ class ApiClient {
             message: message,
             statusCode: statusCode,
             errorCode: errorCode,
+            data: errorData,
           );
 
         default:
@@ -303,33 +404,13 @@ class _LogInterceptor extends Interceptor {
 }
 
 extension ApiClientProxy on ApiClient {
-  void _configureTorProxy() {
-    if (kIsWeb) return;
-
-    final torService = ref.read(torServiceProvider);
-    final isStaging = _dio.options.baseUrl.contains('127.0.0.1') ||
-        _dio.options.baseUrl.contains('localhost');
-
-    // Only apply proxy if the base URL is an .onion address
-    if (_dio.options.baseUrl.contains('.onion') && !isStaging) {
-      final adapter = _dio.httpClientAdapter as IOHttpClientAdapter;
-      adapter.createHttpClient = () {
-        final client = HttpClient();
-        final settings = [
-          ProxySettings(InternetAddress.loopbackIPv4, torService.socksPort),
-        ];
-        SocksTCPClient.assignToHttpClient(client, settings);
-
-        // Tor often uses self-signed or specific certs in some configs,
-        // but for .onion it's usually over HTTP anyway (Tor provides the security).
-        client.badCertificateCallback = (cert, host, port) => true;
-
-        return client;
-      };
-
-      debugPrint(
-        '🧅 ApiClient: Configured SOCKS5 proxy for .onion on port ${torService.socksPort}',
-      );
-    }
+  void _configureProxyRouting() {
+    platform.configureProxyRouting(
+      dio: _dio,
+      ref: ref,
+      routePolicy: routePolicy,
+      baseUrl: _dio.options.baseUrl,
+      shouldUseSocksProxy: ApiClient.shouldUseSocksProxy,
+    );
   }
 }

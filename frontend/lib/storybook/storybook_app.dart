@@ -10,7 +10,7 @@ import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/l10n/app_localizations.dart';
-import 'package:teste/main.dart' show sharedPreferencesProvider;
+import 'package:teste/core/providers/shared_preferences_provider.dart';
 
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/providers/network_status_provider.dart';

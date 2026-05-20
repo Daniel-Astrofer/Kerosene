@@ -1,19 +1,20 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:teste/core/motion/app_motion.dart';
 
 class TorLoadingDots extends StatefulWidget {
   final double dotSize;
   final double spacing;
   final double travel;
-  final Color color;
-  final Duration duration;
+  final Color? color;
 
   const TorLoadingDots({
     super.key,
-    this.dotSize = 10,
-    this.spacing = 12,
-    this.travel = 16,
-    this.color = Colors.white,
-    this.duration = const Duration(milliseconds: 1400),
+    this.dotSize = 7,
+    this.spacing = 7,
+    this.travel = 8,
+    this.color,
   });
 
   @override
@@ -29,7 +30,7 @@ class _TorLoadingDotsState extends State<TorLoadingDots>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: widget.duration,
+      duration: const Duration(milliseconds: 900),
     )..repeat();
   }
 
@@ -41,84 +42,75 @@ class _TorLoadingDotsState extends State<TorLoadingDots>
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (index) {
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: widget.spacing / 2),
-          child: _TorLoadingDot(
-            controller: _controller,
-            index: index,
-            size: widget.dotSize,
-            travel: widget.travel,
-            color: widget.color,
+    final color = widget.color ?? Theme.of(context).colorScheme.onSurface;
+    final width = widget.dotSize * 3 + widget.spacing * 2;
+
+    if (KeroseneMotion.reduceMotion(context)) {
+      return SizedBox(
+        width: width,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            3,
+            (index) => _Dot(
+              size: widget.dotSize,
+              color: color.withValues(alpha: 0.72),
+              left: index == 0 ? 0 : widget.spacing,
+            ),
           ),
-        );
-      }),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: width,
+      height: widget.dotSize + widget.travel,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(3, (index) {
+              final phase = (_controller.value + index * 0.18) % 1;
+              final offset = math.sin(phase * math.pi * 2) * widget.travel / 2;
+              return Transform.translate(
+                offset: Offset(0, offset),
+                child: _Dot(
+                  size: widget.dotSize,
+                  color: color.withValues(alpha: 0.42 + 0.46 * phase),
+                  left: index == 0 ? 0 : widget.spacing,
+                ),
+              );
+            }),
+          );
+        },
+      ),
     );
   }
 }
 
-class _TorLoadingDot extends StatelessWidget {
-  final AnimationController controller;
-  final int index;
+class _Dot extends StatelessWidget {
   final double size;
-  final double travel;
+  final double left;
   final Color color;
 
-  const _TorLoadingDot({
-    required this.controller,
-    required this.index,
+  const _Dot({
     required this.size,
-    required this.travel,
+    required this.left,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final start = index * 0.15;
-    final end = start + 0.5;
-
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: Interval(
-        start.clamp(0.0, 1.0),
-        end.clamp(0.0, 1.0),
-        curve: _TorBouncyCurve(),
+    return Padding(
+      padding: EdgeInsets.only(left: left),
+      child: SizedBox.square(
+        dimension: size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
       ),
     );
-
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        final dy = -travel * animation.value;
-        final opacity = 0.2 + (0.8 * animation.value);
-        final scale = 0.8 + (0.3 * animation.value);
-
-        return Transform.translate(
-          offset: Offset(0, dy),
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: opacity),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _TorBouncyCurve extends Curve {
-  @override
-  double transformInternal(double t) {
-    return (t < 0.5)
-        ? Curves.easeOutCubic.transform(t * 2)
-        : Curves.easeInCubic.transform(1 - (t - 0.5) * 2);
   }
 }

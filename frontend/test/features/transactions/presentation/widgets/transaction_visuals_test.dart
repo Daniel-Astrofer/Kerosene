@@ -48,27 +48,29 @@ void main() {
       expect(visual.prefix, '+');
     });
 
-    test('classifies qr descriptions before generic payment link heuristics',
-        () {
-      final transaction = Transaction(
-        id: 'pl_123',
-        fromAddress: 'Rede Bitcoin',
-        toAddress: 'bc1qwallet',
-        amountSatoshis: 21000,
-        feeSatoshis: 0,
-        status: TransactionStatus.pending,
-        type: TransactionType.receive,
-        confirmations: 0,
-        timestamp: DateTime(2026, 4, 22),
-        description: 'Recebimento via QR',
-      );
+    test(
+      'classifies qr descriptions before generic payment link heuristics',
+      () {
+        final transaction = Transaction(
+          id: 'pl_123',
+          fromAddress: 'Rede Bitcoin',
+          toAddress: 'bc1qwallet',
+          amountSatoshis: 21000,
+          feeSatoshis: 0,
+          status: TransactionStatus.pending,
+          type: TransactionType.receive,
+          confirmations: 0,
+          timestamp: DateTime(2026, 4, 22),
+          description: 'Recebimento via QR',
+        );
 
-      final visual = TransactionVisualSpec.fromTransaction(transaction);
+        final visual = TransactionVisualSpec.fromTransaction(transaction);
 
-      expect(visual.family, TransactionVisualFamily.qrCode);
-      expect(visual.direction, TransactionVisualDirection.incoming);
-      expect(visual.labelKey, TransactionVisualLabel.qrReceive);
-    });
+        expect(visual.family, TransactionVisualFamily.qrCode);
+        expect(visual.direction, TransactionVisualDirection.incoming);
+        expect(visual.labelKey, TransactionVisualLabel.qrReceive);
+      },
+    );
 
     test('classifies lightning transactions from the explicit flag', () {
       final transaction = Transaction(
@@ -109,6 +111,94 @@ void main() {
       expect(visual.family, TransactionVisualFamily.deposit);
       expect(visual.direction, TransactionVisualDirection.incoming);
       expect(visual.labelKey, TransactionVisualLabel.deposit);
+    });
+  });
+
+  group('Transaction.fromJson', () {
+    test(
+      'resolves internal ledger rows sent by the current user as outgoing',
+      () {
+        final transaction = Transaction.fromJson({
+          'id': 'internal-sent',
+          'transactionType': 'INTERNAL',
+          'amount': 0.0005,
+          'networkFee': 0,
+          'status': 'CONCLUDED',
+          'currentUserId': 7,
+          'senderUserId': 7,
+          'receiverUserId': 8,
+          'createdAt': '2026-05-20T12:00:00',
+        });
+
+        expect(transaction.type, TransactionType.send);
+        expect(transaction.isInternal, isTrue);
+      },
+    );
+
+    test(
+      'resolves internal ledger rows received by the current user as incoming',
+      () {
+        final transaction = Transaction.fromJson({
+          'id': 'internal-received',
+          'transactionType': 'INTERNAL',
+          'amount': 0.0005,
+          'networkFee': 0,
+          'status': 'CONCLUDED',
+          'currentUserId': 8,
+          'senderUserId': 7,
+          'receiverUserId': 8,
+          'createdAt': '2026-05-20T12:00:00',
+        });
+
+        expect(transaction.type, TransactionType.receive);
+        expect(transaction.isInternal, isTrue);
+      },
+    );
+
+    test('resolves raw outbound payment payloads as withdrawals', () {
+      final transaction = Transaction.fromJson({
+        'id': 'outbound-payment',
+        'transactionType': 'PAYMENT_INTERNAL_DEBIT',
+        'transferType': 'OUTBOUND_PAYMENT',
+        'amount': 0.0007,
+        'networkFee': 0,
+        'status': 'PENDING',
+        'createdAt': '2026-05-20T12:00:00',
+      });
+
+      expect(transaction.type, TransactionType.withdrawal);
+    });
+
+    test('resolves positive internal debit rows as outgoing sends', () {
+      final transaction = Transaction.fromJson({
+        'id': 'internal-debit',
+        'transactionType': 'INTERNAL',
+        'direction': 'DEBIT',
+        'amount': 0.0007,
+        'networkFee': 0,
+        'status': 'CONCLUDED',
+        'createdAt': '2026-05-20T12:00:00',
+      });
+
+      expect(transaction.type, TransactionType.send);
+      expect(transaction.signedAmountBTC, isNegative);
+    });
+
+    test('resolves internal rows by current username when ids are absent', () {
+      final transaction = Transaction.fromJson({
+        'id': 'internal-username-sent',
+        'transactionType': 'INTERNAL',
+        'amount': 0.0007,
+        'networkFee': 0,
+        'status': 'CONCLUDED',
+        'currentUsername': 'alice',
+        'senderIdentifier': '@alice',
+        'receiverIdentifier': 'bob',
+        'createdAt': '2026-05-20T12:00:00',
+      });
+
+      expect(transaction.type, TransactionType.send);
+      expect(transaction.signedAmountBTC, isNegative);
     });
   });
 

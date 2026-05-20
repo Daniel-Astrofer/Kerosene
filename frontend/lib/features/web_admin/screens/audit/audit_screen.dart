@@ -24,7 +24,8 @@ class AuditScreen extends ConsumerWidget {
         children: [
           const AdminSectionHeader(
             title: 'Audit & Security',
-            subtitle: 'System integrity, Merkle proofs, and operational monitoring',
+            subtitle:
+                'System integrity, Merkle proofs, and operational monitoring',
           ),
 
           // Audit stats
@@ -40,15 +41,21 @@ class AuditScreen extends ConsumerWidget {
               return Column(
                 children: [
                   Row(
-                    children: stats.entries.take(4).map<Widget>((e) {
-                      return Expanded(
-                        child: AdminMetricCard(
-                          label: _formatKey(e.key),
-                          value: _formatValue(e.value),
-                          icon: Icons.analytics_outlined,
-                        ),
-                      );
-                    }).expand((w) => [w, const SizedBox(width: AdminTheme.spacingLg)]).toList()..removeLast(),
+                    children: stats.entries
+                        .take(4)
+                        .map<Widget>((e) {
+                          return Expanded(
+                            child: AdminMetricCard(
+                              label: _formatKey(e.key),
+                              value: _formatValue(e.value),
+                              icon: Icons.analytics_outlined,
+                            ),
+                          );
+                        })
+                        .expand((w) =>
+                            [w, const SizedBox(width: AdminTheme.spacingLg)])
+                        .toList()
+                      ..removeLast(),
                   ),
                   const SizedBox(height: AdminTheme.spacingXl),
                 ],
@@ -111,7 +118,8 @@ class _MerkleRootCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.verified_outlined, size: 16, color: AdminColors.positive),
+              const Icon(Icons.verified_outlined,
+                  size: 16, color: AdminColors.positive),
               const SizedBox(width: AdminTheme.spacingSm),
               Text('LATEST MERKLE ROOT', style: AdminTypography.label),
             ],
@@ -120,7 +128,8 @@ class _MerkleRootCard extends StatelessWidget {
           latestRootAsync.when(
             data: (root) {
               if (root.isEmpty) {
-                return Text('No root available', style: AdminTypography.bodyMedium);
+                return Text('No root available',
+                    style: AdminTypography.bodyMedium);
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +149,8 @@ class _MerkleRootCard extends StatelessWidget {
                         Expanded(
                           child: SelectableText(
                             e.value.toString(),
-                            style: AdminTypography.mono.copyWith(fontSize: 11, color: AdminColors.textPrimary),
+                            style: AdminTypography.mono.copyWith(
+                                fontSize: 11, color: AdminColors.textPrimary),
                           ),
                         ),
                       ],
@@ -149,7 +159,9 @@ class _MerkleRootCard extends StatelessWidget {
                 }).toList(),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator(color: AdminColors.textTertiary)),
+            loading: () => const Center(
+                child:
+                    CircularProgressIndicator(color: AdminColors.textTertiary)),
             error: (e, _) => Text('Error: $e', style: AdminTypography.caption),
           ),
         ],
@@ -176,7 +188,8 @@ class _SovereigntyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.shield_outlined, size: 16, color: AdminColors.info),
+              const Icon(Icons.shield_outlined,
+                  size: 16, color: AdminColors.info),
               const SizedBox(width: AdminTheme.spacingSm),
               Text('SOVEREIGNTY STATUS', style: AdminTypography.label),
             ],
@@ -184,7 +197,9 @@ class _SovereigntyCard extends StatelessWidget {
           const SizedBox(height: AdminTheme.spacingLg),
           sovAsync.when(
             data: (data) {
-              if (data.isEmpty) return Text('Not available', style: AdminTypography.bodyMedium);
+              if (data.isEmpty) {
+                return Text('Not available', style: AdminTypography.bodyMedium);
+              }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: data.entries.take(10).map<Widget>((e) {
@@ -193,12 +208,21 @@ class _SovereigntyCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: Text(e.key, style: AdminTypography.caption, overflow: TextOverflow.ellipsis)),
+                        Expanded(
+                            child: Text(e.key,
+                                style: AdminTypography.caption,
+                                overflow: TextOverflow.ellipsis)),
                         Text(
-                          e.value is bool ? (e.value ? '✓' : '✗') : e.value.toString(),
+                          e.value is bool
+                              ? (e.value ? '✓' : '✗')
+                              : e.value.toString(),
                           style: AdminTypography.mono.copyWith(
                             fontSize: 11,
-                            color: e.value is bool ? (e.value ? AdminColors.positive : AdminColors.negative) : AdminColors.textPrimary,
+                            color: e.value is bool
+                                ? (e.value
+                                    ? AdminColors.positive
+                                    : AdminColors.negative)
+                                : AdminColors.textPrimary,
                           ),
                         ),
                       ],
@@ -207,7 +231,9 @@ class _SovereigntyCard extends StatelessWidget {
                 }).toList(),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator(color: AdminColors.textTertiary)),
+            loading: () => const Center(
+                child:
+                    CircularProgressIndicator(color: AdminColors.textTertiary)),
             error: (e, _) => Text('Error: $e', style: AdminTypography.caption),
           ),
         ],
@@ -237,10 +263,13 @@ class _AuditHistoryCard extends StatelessWidget {
           historyAsync.when(
             data: (entries) {
               if (entries.isEmpty) {
-                return Text('No audit entries found', style: AdminTypography.bodyMedium);
+                return Text('No audit entries found',
+                    style: AdminTypography.bodyMedium);
               }
               return Column(
-                children: (entries as List<Map<String, dynamic>>).take(20).map<Widget>((entry) {
+                children: (entries as List<Map<String, dynamic>>)
+                    .take(20)
+                    .map<Widget>((entry) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: AdminTheme.spacingSm),
                     padding: const EdgeInsets.all(AdminTheme.spacingMd),
@@ -252,7 +281,8 @@ class _AuditHistoryCard extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.history, size: 14, color: AdminColors.textTertiary),
+                        const Icon(Icons.history,
+                            size: 14, color: AdminColors.textTertiary),
                         const SizedBox(width: AdminTheme.spacingSm),
                         Expanded(
                           child: Column(
@@ -260,7 +290,8 @@ class _AuditHistoryCard extends StatelessWidget {
                             children: entry.entries.take(4).map<Widget>((e) {
                               return Text(
                                 '${e.key}: ${e.value}',
-                                style: AdminTypography.mono.copyWith(fontSize: 11),
+                                style:
+                                    AdminTypography.mono.copyWith(fontSize: 11),
                                 overflow: TextOverflow.ellipsis,
                               );
                             }).toList(),
@@ -272,7 +303,9 @@ class _AuditHistoryCard extends StatelessWidget {
                 }).toList(),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator(color: AdminColors.textTertiary)),
+            loading: () => const Center(
+                child:
+                    CircularProgressIndicator(color: AdminColors.textTertiary)),
             error: (e, _) => Text('Error: $e', style: AdminTypography.caption),
           ),
         ],

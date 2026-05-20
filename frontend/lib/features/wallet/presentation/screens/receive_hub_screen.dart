@@ -81,7 +81,7 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
       AppNotice.showInfo(
         context,
         title: 'NFC',
-        message: context.l10n.receiveHubNfcUnavailable,
+        message: context.tr.receiveHubNfcUnavailable,
       );
       return;
     }
@@ -107,8 +107,8 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
     return Stack(
       children: [
         ReceiveFlowScaffold(
-          title: context.l10n.receiveHubTitle,
-          subtitle: context.l10n.receiveHubSubtitle,
+          title: context.tr.receiveHubTitle,
+          subtitle: context.tr.receiveHubSubtitle,
           bodyPadding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
             AppSpacing.sm,
@@ -118,11 +118,11 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ReceiveFlowSectionLabel(context.l10n.receiveHubActions),
+              ReceiveFlowSectionLabel(context.tr.receiveHubActions),
               const SizedBox(height: 8),
               ReceiveFlowPanel(
                 child: Text(
-                  context.l10n.receiveHubIntro,
+                  context.tr.receiveHubIntro,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: receiveFlowMutedTextColor,
                         height: 1.35,
@@ -135,34 +135,34 @@ class _ReceiveHubScreenState extends ConsumerState<ReceiveHubScreen> {
               else ...[
                 _ReceiveHubAction(
                   icon: LucideIcons.banknote,
-                  label: context.l10n.receiveHubDeposit,
-                  subtitle: context.l10n.receiveHubDepositSubtitle,
+                  label: context.tr.receiveHubDeposit,
+                  subtitle: context.tr.receiveHubDepositSubtitle,
                   onTap: () => _openDeposit(wallet),
                 ),
                 _ReceiveHubAction(
                   icon: LucideIcons.network,
-                  label: context.l10n.receiveHubOnchain,
-                  subtitle: context.l10n.receiveHubOnchainSubtitle,
+                  label: context.tr.receiveHubOnchain,
+                  subtitle: context.tr.receiveHubOnchainSubtitle,
                   onTap: () => _openReceive(wallet, ReceiveFlowMode.onChain),
                 ),
                 _ReceiveHubAction(
                   icon: LucideIcons.zap,
-                  label: context.l10n.receiveHubLightning,
-                  subtitle: context.l10n.receiveHubLightningSubtitle,
+                  label: context.tr.receiveHubLightning,
+                  subtitle: context.tr.receiveHubLightningSubtitle,
                   onTap: () => _openReceive(wallet, ReceiveFlowMode.lightning),
                 ),
                 _ReceiveHubAction(
                   icon: LucideIcons.link2,
-                  label: context.l10n.receiveHubPaymentLink,
-                  subtitle: context.l10n.receiveHubPaymentLinkSubtitle,
+                  label: context.tr.receiveHubPaymentLink,
+                  subtitle: context.tr.receiveHubPaymentLinkSubtitle,
                   onTap: () =>
                       _openReceive(wallet, ReceiveFlowMode.paymentLink),
                 ),
                 if (_isNfcAvailable)
                   _ReceiveHubAction(
                     icon: LucideIcons.smartphoneNfc,
-                    label: context.l10n.receiveHubNfc,
-                    subtitle: context.l10n.receiveHubNfcSubtitle,
+                    label: context.tr.receiveHubNfc,
+                    subtitle: context.tr.receiveHubNfcSubtitle,
                     onTap: () => _openReceive(wallet, ReceiveFlowMode.nfc),
                   ),
               ],
@@ -211,8 +211,8 @@ class _ReceiveHubEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return ReceiveFlowStatePanel(
       icon: LucideIcons.wallet,
-      title: context.l10n.receiveHubNoWalletTitle,
-      message: context.l10n.receiveHubNoWalletMessage,
+      title: context.tr.receiveHubNoWalletTitle,
+      message: context.tr.receiveHubNoWalletMessage,
     );
   }
 }

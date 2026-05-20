@@ -11,7 +11,7 @@ wait_for_api() {
   deadline=$(( $(date +%s) + 180 ))
   while :; do
     status_code=0
-    vault status -address="$node" >/tmp/vault-status.txt 2>&1 || status_code=$?
+    timeout 15s vault status -address="$node" >/tmp/vault-status.txt 2>&1 || status_code=$?
     if [ "$status_code" -eq 0 ] || [ "$status_code" -eq 2 ]; then
       return 0
     fi
@@ -33,7 +33,7 @@ wait_for_raft_leader() {
       "http://vault-raft-1:8200" \
       "http://vault-raft-2:8200" \
       "http://vault-raft-3:8200"; do
-      if vault operator raft list-peers -address="$node" >/tmp/vault-raft-peers.txt 2>/tmp/vault-raft-leader.err; then
+      if timeout 15s vault operator raft list-peers -address="$node" >/tmp/vault-raft-peers.txt 2>/tmp/vault-raft-leader.err; then
         export VAULT_ADDR="$node"
         return 0
       fi
@@ -61,7 +61,7 @@ fi
 unseal_node() {
   node="$1"
   sed -n '1,2p' "$BOOTSTRAP_DIR/unseal-keys" | while IFS= read -r key; do
-    vault operator unseal -address="$node" "$key" >/dev/null
+    timeout 15s vault operator unseal -address="$node" "$key" >/dev/null
   done
 }
 
@@ -70,7 +70,7 @@ export VAULT_TOKEN="$(cat "$BOOTSTRAP_DIR/root-token")"
 
 join_node() {
   node="$1"
-  vault operator raft join -address="$node" "http://vault-raft-1:8200" >/dev/null || true
+  timeout 15s vault operator raft join -address="$node" "http://vault-raft-1:8200" >/dev/null || true
 }
 
 join_node "http://vault-raft-2:8200"
@@ -80,7 +80,7 @@ unseal_node "http://vault-raft-3:8200"
 
 wait_for_raft_leader
 
-vault policy write kerosene-raft-health - <<'POLICY'
+timeout 15s vault policy write kerosene-raft-health - <<'POLICY'
 path "sys/health" {
   capabilities = ["read"]
 }
@@ -94,15 +94,15 @@ path "sys/storage/raft/configuration" {
 }
 POLICY
 
-vault token create \
+timeout 15s vault token create \
   -policy=kerosene-raft-health \
   -orphan \
   -period=24h \
   -renewable=true \
   -field=token > "$BOOTSTRAP_DIR/app-health-token"
 
-vault operator raft list-peers > "$BOOTSTRAP_DIR/raft-peers.txt"
-vault status > "$BOOTSTRAP_DIR/status.txt"
+timeout 15s vault operator raft list-peers > "$BOOTSTRAP_DIR/raft-peers.txt"
+timeout 15s vault status > "$BOOTSTRAP_DIR/status.txt"
 
 chmod 750 "$BOOTSTRAP_DIR"
 for file in "$BOOTSTRAP_DIR/app-health-token" "$BOOTSTRAP_DIR/raft-peers.txt" "$BOOTSTRAP_DIR/status.txt"; do

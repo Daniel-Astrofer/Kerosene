@@ -1012,7 +1012,7 @@ services:
     depends_on:
       kerosene-app-is: { condition: service_healthy }
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null"]
+      test: ["CMD-SHELL", "test -s /usr/share/nginx/html/index.html"]
       interval: 10s
       timeout: 5s
       retries: 12

@@ -319,7 +319,7 @@ class _EmptyCreditCardFace extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                context.l10n.addCard.toUpperCase(),
+                context.tr.addCard.toUpperCase(),
                 style: AppTypography.bodySmall.copyWith(
                   color: palette.inkPrimary,
                   fontWeight: FontWeight.w800,
@@ -495,8 +495,8 @@ class _SecurityHashButton extends StatelessWidget {
     HapticFeedback.selectionClick();
     AppNotice.showSuccess(
       context,
-      title: context.l10n.walletCardHashCopiedTitle,
-      message: context.l10n.walletCardHashCopiedMessage,
+      title: context.tr.walletCardHashCopiedTitle,
+      message: context.tr.walletCardHashCopiedMessage,
     );
   }
 

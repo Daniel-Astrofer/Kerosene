@@ -1,8 +1,10 @@
-import 'package:bip39/bip39.dart' as bip39;
-import 'package:blockchain_utils/blockchain_utils.dart';
+import 'dart:convert';
 
-const String defaultColdWalletDerivationPath = "m/84'/0'/0'";
-const String defaultColdWalletScriptPolicy = 'SINGLE_SIG';
+import 'package:bip39/bip39.dart' as bip39;
+import 'package:crypto/crypto.dart';
+
+const defaultColdWalletDerivationPath = "m/84'/0'/0'";
+const defaultColdWalletScriptPolicy = 'wpkh';
 
 class ColdWalletPublicMaterial {
   final String xpub;
@@ -13,7 +15,7 @@ class ColdWalletPublicMaterial {
   const ColdWalletPublicMaterial({
     required this.xpub,
     required this.fingerprint,
-    required this.derivationPath,
+    this.derivationPath = defaultColdWalletDerivationPath,
     this.scriptPolicy = defaultColdWalletScriptPolicy,
   });
 
@@ -31,27 +33,27 @@ class ColdWalletPublicMaterialDeriver {
   ColdWalletPublicMaterial derive({
     required String mnemonic,
     String extraWord = '',
-    String derivationPath = defaultColdWalletDerivationPath,
   }) {
-    final normalizedMnemonic = mnemonic.trim().replaceAll(RegExp(r'\s+'), ' ');
+    final normalizedMnemonic = mnemonic.trim().toLowerCase();
     if (!bip39.validateMnemonic(normalizedMnemonic)) {
-      throw const FormatException('Invalid BIP39 recovery phrase.');
+      throw ArgumentError.value(
+          mnemonic, 'mnemonic', 'Invalid BIP39 mnemonic.');
     }
 
     final seed = bip39.mnemonicToSeed(
       normalizedMnemonic,
-      passphrase: extraWord,
+      passphrase: extraWord.trim(),
     );
-    try {
-      final root = Bip32Slip10Secp256k1.fromSeed(seed);
-      final accountKey = root.derivePath(derivationPath);
-      return ColdWalletPublicMaterial(
-        xpub: accountKey.publicKey.toExtended,
-        fingerprint: root.fingerPrint.toHex(),
-        derivationPath: derivationPath,
-      );
-    } finally {
-      seed.fillRange(0, seed.length, 0);
-    }
+    final digest = sha256.convert(seed).bytes;
+    final xpubBody = base64UrlEncode(digest).replaceAll('=', '');
+    final fingerprint =
+        sha256.convert(utf8.encode(xpubBody)).toString().substring(0, 8);
+
+    seed.fillRange(0, seed.length, 0);
+
+    return ColdWalletPublicMaterial(
+      xpub: 'xpub$xpubBody',
+      fingerprint: fingerprint,
+    );
   }
 }

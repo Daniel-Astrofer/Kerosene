@@ -161,7 +161,7 @@ class KerosenePublicStatusPage extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: _ink,
         foregroundColor: Colors.white,
-        title: Text(context.l10n.landingStatusPageTitle),
+        title: Text(context.tr.landingStatusPageTitle),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -220,11 +220,11 @@ class _TopNav extends StatelessWidget {
               builder: (context, constraints) {
                 final compact = constraints.maxWidth < 940;
                 final navItems = [
-                  (context.l10n.landingNavProduct, onProduct),
-                  (context.l10n.landingNavSecurity, onSecurity),
-                  (context.l10n.landingNavBusiness, onBusiness),
-                  (context.l10n.landingNavInfrastructure, onInfrastructure),
-                  (context.l10n.landingNavFaq, onFaq),
+                  (context.tr.landingNavProduct, onProduct),
+                  (context.tr.landingNavSecurity, onSecurity),
+                  (context.tr.landingNavBusiness, onBusiness),
+                  (context.tr.landingNavInfrastructure, onInfrastructure),
+                  (context.tr.landingNavFaq, onFaq),
                 ];
 
                 return Wrap(
@@ -233,7 +233,7 @@ class _TopNav extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   alignment: WrapAlignment.spaceBetween,
                   children: [
-                    _BrandMark(label: context.l10n.appTitle),
+                    _BrandMark(label: context.tr.appTitle),
                     if (!compact)
                       Wrap(
                         spacing: 38,
@@ -267,12 +267,12 @@ class _TopNav extends StatelessWidget {
                       runSpacing: 10,
                       children: [
                         _LandingButton(
-                          label: context.l10n.landingLoginAction,
+                          label: context.tr.landingLoginAction,
                           onPressed: () =>
                               Navigator.of(context).pushNamed('/admin'),
                         ),
                         _LandingButton(
-                          label: context.l10n.landingCreateAccountAction,
+                          label: context.tr.landingCreateAccountAction,
                           filled: true,
                           onPressed: () =>
                               Navigator.of(context).pushNamed('/download'),
@@ -348,13 +348,13 @@ class _HeroSection extends StatelessWidget {
                 runSpacing: 16,
                 children: [
                   _LandingButton(
-                    label: context.l10n.landingCreateAccountAction,
+                    label: context.tr.landingCreateAccountAction,
                     filled: true,
                     large: true,
                     onPressed: onCreateAccount,
                   ),
                   _LandingButton(
-                    label: context.l10n.landingBusinessPanelAction,
+                    label: context.tr.landingBusinessPanelAction,
                     large: true,
                     onPressed: onBusinessPanel,
                   ),
@@ -539,7 +539,7 @@ class _SecuritySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.landingSecurityTitle,
+          context.tr.landingSecurityTitle,
           style: _sectionTitleStyle(context, 38),
         ),
         const SizedBox(height: 22),
@@ -646,8 +646,8 @@ class _Footer extends StatelessWidget {
                 runSpacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _BrandMark(label: context.l10n.appTitle, compact: true),
-                  Text(context.l10n.landingFooterRights,
+                  _BrandMark(label: context.tr.appTitle, compact: true),
+                  Text(context.tr.landingFooterRights,
                       style: _smallStyle(_faint)),
                 ],
               ),
@@ -656,20 +656,20 @@ class _Footer extends StatelessWidget {
                 runSpacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(context.l10n.privacyPolicy, style: _smallStyle(_muted)),
-                  Text(context.l10n.landingNavSecurity,
+                  Text(context.tr.privacyPolicy, style: _smallStyle(_muted)),
+                  Text(context.tr.landingNavSecurity,
                       style: _smallStyle(_muted)),
-                  Text(context.l10n.landingNavBusiness,
+                  Text(context.tr.landingNavBusiness,
                       style: _smallStyle(_muted)),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(context.l10n.landingFooterStatus,
+                      Text(context.tr.landingFooterStatus,
                           style: _smallStyle(_muted)),
                       const SizedBox(width: 14),
                       _StatusDot(
                           online:
-                              statusLabel == context.l10n.landingStatusOnline),
+                              statusLabel == context.tr.landingStatusOnline),
                     ],
                   ),
                 ],
@@ -701,10 +701,10 @@ class _StatusDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.landingStatusPageTitle,
+        Text(context.tr.landingStatusPageTitle,
             style: _sectionTitleStyle(context, 42)),
         const SizedBox(height: 14),
-        Text(context.l10n.landingStatusPageSubtitle, style: _bodyStyle(17)),
+        Text(context.tr.landingStatusPageSubtitle, style: _bodyStyle(17)),
         const SizedBox(height: 28),
         if (loading)
           const _SkeletonBlock(height: 220)
@@ -714,37 +714,37 @@ class _StatusDetails extends StatelessWidget {
             items: [
               _LandingCardData(
                 icon: LucideIcons.activity,
-                title: context.l10n.landingFooterStatus,
+                title: context.tr.landingFooterStatus,
                 body: _statusLabel(context, readiness),
               ),
               _LandingCardData(
                 icon: LucideIcons.badgeCheck,
-                title: context.l10n.landingStatusRelease,
+                title: context.tr.landingStatusRelease,
                 body:
-                    '${release?['version'] ?? context.l10n.landingStatusUnknown} - ${authorized ? context.l10n.landingStatusAuthorized : release?['reason'] ?? context.l10n.pending}',
+                    '${release?['version'] ?? context.tr.landingStatusUnknown} - ${authorized ? context.tr.landingStatusAuthorized : release?['reason'] ?? context.tr.pending}',
               ),
               _LandingCardData(
                 icon: LucideIcons.server,
-                title: context.l10n.landingStatusService,
-                body: '${readiness?['service'] ?? context.l10n.appTitle}',
+                title: context.tr.landingStatusService,
+                body: '${readiness?['service'] ?? context.tr.appTitle}',
               ),
               _LandingCardData(
                 icon: LucideIcons.globe2,
-                title: context.l10n.landingStatusRegion,
+                title: context.tr.landingStatusRegion,
                 body:
-                    '${readiness?['region'] ?? context.l10n.landingStatusUnknown}',
+                    '${readiness?['region'] ?? context.tr.landingStatusUnknown}',
               ),
               _LandingCardData(
                 icon: LucideIcons.fingerprint,
-                title: context.l10n.landingStatusBuild,
+                title: context.tr.landingStatusBuild,
                 body: _short(
-                    release?['gitCommit'], context.l10n.landingStatusUnknown),
+                    release?['gitCommit'], context.tr.landingStatusUnknown),
               ),
               _LandingCardData(
                 icon: LucideIcons.fileCheck2,
-                title: context.l10n.landingStatusManifest,
+                title: context.tr.landingStatusManifest,
                 body: _short(release?['manifestDigest'],
-                    context.l10n.landingStatusUnknown),
+                    context.tr.landingStatusUnknown),
               ),
             ],
           ),
@@ -759,8 +759,7 @@ class _StatusDetails extends StatelessWidget {
                   : <String, dynamic>{};
               return _CheckPill(
                 label: entry.key.toString(),
-                status:
-                    '${value['status'] ?? context.l10n.landingStatusUnknown}',
+                status: '${value['status'] ?? context.tr.landingStatusUnknown}',
               );
             }).toList(),
           ),
@@ -922,7 +921,7 @@ class _HeroVaultStage extends StatelessWidget {
                           Text('STATUS DA REDE', style: _monoStyle(_gold)),
                           const SizedBox(height: 6),
                           Text(
-                            statusLabel == context.l10n.landingStatusOnline
+                            statusLabel == context.tr.landingStatusOnline
                                 ? '100% On-chain & Tor'
                                 : 'On-chain & Tor',
                             style: _cardTitleStyle(20),
@@ -1038,7 +1037,7 @@ class _PhoneMockup extends StatelessWidget {
                 right: 26,
                 bottom: 28,
                 child: _StatusDot(
-                    online: statusLabel == context.l10n.landingStatusOnline),
+                    online: statusLabel == context.tr.landingStatusOnline),
               ),
             ],
           ),
@@ -1914,18 +1913,18 @@ List<_LandingCardData> _heroFeatureItems(BuildContext context) {
   return [
     _LandingCardData(
       icon: LucideIcons.link2,
-      title: context.l10n.landingHeroFeatureOnchainTitle,
-      body: context.l10n.landingHeroFeatureOnchainBody,
+      title: context.tr.landingHeroFeatureOnchainTitle,
+      body: context.tr.landingHeroFeatureOnchainBody,
     ),
     _LandingCardData(
       icon: LucideIcons.repeat2,
-      title: context.l10n.landingHeroFeatureInternalTitle,
-      body: context.l10n.landingHeroFeatureInternalBody,
+      title: context.tr.landingHeroFeatureInternalTitle,
+      body: context.tr.landingHeroFeatureInternalBody,
     ),
     _LandingCardData(
       icon: LucideIcons.shieldCheck,
-      title: context.l10n.landingHeroFeatureSecurityTitle,
-      body: context.l10n.landingHeroFeatureSecurityBody,
+      title: context.tr.landingHeroFeatureSecurityTitle,
+      body: context.tr.landingHeroFeatureSecurityBody,
     ),
   ];
 }
@@ -1984,23 +1983,23 @@ List<_LandingCardData> _securityCards(BuildContext context) {
   return [
     _LandingCardData(
       icon: LucideIcons.keyRound,
-      title: context.l10n.landingSecurityPasskeysTitle,
-      body: context.l10n.landingSecurityPasskeysBody,
+      title: context.tr.landingSecurityPasskeysTitle,
+      body: context.tr.landingSecurityPasskeysBody,
     ),
     _LandingCardData(
       icon: LucideIcons.shieldCheck,
-      title: context.l10n.landingSecurityVaultMpcTitle,
-      body: context.l10n.landingSecurityVaultMpcBody,
+      title: context.tr.landingSecurityVaultMpcTitle,
+      body: context.tr.landingSecurityVaultMpcBody,
     ),
     _LandingCardData(
       icon: LucideIcons.eyeOff,
-      title: context.l10n.landingSecurityPrivacyTitle,
-      body: context.l10n.landingSecurityPrivacyBody,
+      title: context.tr.landingSecurityPrivacyTitle,
+      body: context.tr.landingSecurityPrivacyBody,
     ),
     _LandingCardData(
       icon: LucideIcons.scrollText,
-      title: context.l10n.landingSecurityAuditTitle,
-      body: context.l10n.landingSecurityAuditBody,
+      title: context.tr.landingSecurityAuditTitle,
+      body: context.tr.landingSecurityAuditBody,
     ),
   ];
 }
@@ -2008,9 +2007,9 @@ List<_LandingCardData> _securityCards(BuildContext context) {
 TextStyle _displayStyle(BuildContext context, double size) {
   final compact = MediaQuery.sizeOf(context).width < 760;
   return TextStyle(
-    fontFamily: AppTypography.spaceGroteskVariableFamily,
+    fontFamily: AppTypography.titleFontFamily,
     fontSize: compact ? math.min(size, 52) : size,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w300,
     height: 1.02,
     letterSpacing: 0,
     color: Colors.white,
@@ -2020,9 +2019,9 @@ TextStyle _displayStyle(BuildContext context, double size) {
 TextStyle _sectionTitleStyle(BuildContext context, double size) {
   final compact = MediaQuery.sizeOf(context).width < 760;
   return TextStyle(
-    fontFamily: AppTypography.spaceGroteskVariableFamily,
+    fontFamily: AppTypography.titleFontFamily,
     fontSize: compact ? math.min(size, 34) : size,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w300,
     height: 1.12,
     letterSpacing: 0,
     color: Colors.white,
@@ -2041,7 +2040,7 @@ TextStyle _eyebrowStyle() {
 
 TextStyle _monoStyle(Color color) {
   return TextStyle(
-    fontFamily: AppTypography.fontFamily,
+    fontFamily: AppTypography.monoFontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w800,
     height: 1.35,
@@ -2084,10 +2083,10 @@ TextStyle _smallStyle(Color color) {
 
 String _statusLabel(BuildContext context, Map<String, dynamic>? status) {
   final value = status?['status']?.toString().toUpperCase();
-  if (value == 'UP') return context.l10n.landingStatusOnline;
-  if (value == 'DEGRADED') return context.l10n.landingStatusDegraded;
-  if (value == 'DOWN') return context.l10n.landingStatusUnavailable;
-  return context.l10n.landingStatusChecking;
+  if (value == 'UP') return context.tr.landingStatusOnline;
+  if (value == 'DEGRADED') return context.tr.landingStatusDegraded;
+  if (value == 'DOWN') return context.tr.landingStatusUnavailable;
+  return context.tr.landingStatusChecking;
 }
 
 String _short(Object? value, String fallback) {

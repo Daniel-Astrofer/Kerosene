@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTypography {
   static const String fontFamily = 'HubotSans';
   static const String spaceGroteskVariableFamily = 'SpaceGroteskVariable';
+  static const String titleFontFamily = spaceGroteskVariableFamily;
+  static const String monoFontFamily = 'IBM Plex Mono';
   static const String numericFontFamily = spaceGroteskVariableFamily;
 
   static final TextStyle h1 = TextStyle(

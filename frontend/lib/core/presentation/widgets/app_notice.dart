@@ -1,7 +1,59 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 
 enum AppNoticeType { success, error, info, warning }
+
+class AppScreenFeedbackMessage {
+  final int sequence;
+  final AppNoticeType type;
+  final String title;
+  final String message;
+
+  const AppScreenFeedbackMessage({
+    required this.sequence,
+    required this.type,
+    required this.title,
+    required this.message,
+  });
+}
+
+class AppScreenFeedbackBus {
+  static final ValueNotifier<AppScreenFeedbackMessage?> current =
+      ValueNotifier<AppScreenFeedbackMessage?>(null);
+
+  static int _nextSequence = 0;
+  static Timer? _timer;
+
+  static void show({
+    required AppNoticeType type,
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    _timer?.cancel();
+    final next = AppScreenFeedbackMessage(
+      sequence: ++_nextSequence,
+      type: type,
+      title: title,
+      message: message,
+    );
+    current.value = next;
+
+    if (duration > Duration.zero) {
+      _timer = Timer(duration, () => clear(sequence: next.sequence));
+    }
+  }
+
+  static void clear({int? sequence}) {
+    if (sequence != null && current.value?.sequence != sequence) {
+      return;
+    }
+    _timer?.cancel();
+    _timer = null;
+    current.value = null;
+  }
+}
 
 class AppNotice {
   static void showSuccess(
@@ -93,57 +145,12 @@ class AppNotice {
     Duration duration = const Duration(seconds: 3),
   }) {
     final context = messenger.context;
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      _buildSnackBar(
-        context,
-        type: type,
-        message: message,
-        title: title,
-        duration: duration,
-        onClose: messenger.hideCurrentSnackBar,
-      ),
-    );
-  }
-
-  static SnackBar _buildSnackBar(
-    BuildContext context, {
-    required AppNoticeType type,
-    required String message,
-    String? title,
-    required Duration duration,
-    VoidCallback? onClose,
-  }) {
-    final bottomInset = MediaQuery.maybeOf(context)?.viewPadding.bottom ?? 0;
-
-    return SnackBar(
+    AppScreenFeedbackBus.show(
+      type: type,
+      title: title ?? _defaultTitle(context, type),
+      message: message,
       duration: duration,
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      behavior: SnackBarBehavior.floating,
-      dismissDirection: DismissDirection.horizontal,
-      margin: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 12),
-      padding: EdgeInsets.zero,
-      content: AppNotificationSurface(
-        tone: _toneFor(type),
-        title: title ?? _defaultTitle(context, type),
-        message: message,
-        maxMessageLines:
-            type == AppNoticeType.error || type == AppNoticeType.warning
-                ? 5
-                : 4,
-        onClose: onClose,
-      ),
     );
-  }
-
-  static AppNotificationTone _toneFor(AppNoticeType type) {
-    return switch (type) {
-      AppNoticeType.success => AppNotificationTone.success,
-      AppNoticeType.error => AppNotificationTone.error,
-      AppNoticeType.info => AppNotificationTone.info,
-      AppNoticeType.warning => AppNotificationTone.warning,
-    };
   }
 
   static String _defaultTitle(BuildContext context, AppNoticeType type) {

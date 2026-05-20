@@ -130,8 +130,8 @@ class _PaymentConfirmationScreenState<T>
       if (!mounted) return;
       AppNotice.showError(
         context,
-        title: context.l10n.paymentConfirmationErrorTitle,
-        message: ErrorTranslator.translate(context.l10n, error.toString()),
+        title: context.tr.paymentConfirmationErrorTitle,
+        message: ErrorTranslator.translate(context.tr, error.toString()),
       );
     } finally {
       if (mounted) {
@@ -144,7 +144,7 @@ class _PaymentConfirmationScreenState<T>
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
       title: widget.title,
-      subtitle: context.l10n.paymentConfirmationReviewSubtitle,
+      subtitle: context.tr.paymentConfirmationReviewSubtitle,
       onBack: _isSubmitting ? () {} : () => Navigator.of(context).pop(),
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
@@ -400,9 +400,9 @@ class _ReceiptCard extends StatelessWidget {
           detail.label.toLowerCase().contains('hora'),
     );
     final defaultNetworkLabel =
-        context.l10n.paymentConfirmationNetwork.toLowerCase();
+        context.tr.paymentConfirmationNetwork.toLowerCase();
     final withdrawNetworkLabel =
-        context.l10n.withdrawUiDetailNetwork.toLowerCase();
+        context.tr.withdrawUiDetailNetwork.toLowerCase();
     final hasNetworkDetail = details.any((detail) {
       final label = detail.label.toLowerCase();
       return label == defaultNetworkLabel || label == withdrawNetworkLabel;
@@ -437,7 +437,7 @@ class _ReceiptCard extends StatelessWidget {
           if (!hasTimeDetail)
             _ReceiptDetailRow(
               detail: PaymentConfirmationDetail(
-                label: context.l10n.paymentConfirmationDateTime,
+                label: context.tr.paymentConfirmationDateTime,
                 value: dateStr,
                 icon: LucideIcons.calendarClock,
               ),
@@ -445,7 +445,7 @@ class _ReceiptCard extends StatelessWidget {
           if (!hasNetworkDetail)
             _ReceiptDetailRow(
               detail: PaymentConfirmationDetail(
-                label: context.l10n.paymentConfirmationNetwork,
+                label: context.tr.paymentConfirmationNetwork,
                 value: networkLabel,
                 icon: LucideIcons.network,
               ),
@@ -473,7 +473,7 @@ class _ReceiptDetailRow extends StatelessWidget {
     AppNotice.showSuccess(
       context,
       message: detail.copyMessage ??
-          context.l10n.paymentConfirmationCopied(detail.label),
+          context.tr.paymentConfirmationCopied(detail.label),
       duration: const Duration(seconds: 2),
     );
   }
@@ -513,7 +513,7 @@ class _ReceiptDetailRow extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () => _copy(context),
                   icon: const Icon(Icons.copy_rounded, size: 15),
-                  label: Text(context.l10n.paymentConfirmationCopyAction),
+                  label: Text(context.tr.paymentConfirmationCopyAction),
                   style: TextButton.styleFrom(
                     foregroundColor: receiveFlowTextColor,
                     padding: const EdgeInsets.symmetric(horizontal: 8),

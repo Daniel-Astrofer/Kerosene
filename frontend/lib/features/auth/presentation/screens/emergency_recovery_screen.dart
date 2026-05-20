@@ -161,7 +161,7 @@ class _EmergencyRecoveryScreenState
     String? errorCode,
   }) {
     final translated =
-        ErrorTranslator.translate(context.l10n, errorCode ?? message);
+        ErrorTranslator.translate(context.tr, errorCode ?? message);
 
     switch (errorCode) {
       case 'RECOVERY_BAD_REQUEST':

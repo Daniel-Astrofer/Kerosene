@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
+import 'package:teste/features/auth/presentation/screens/login_screen.dart';
 import 'package:teste/l10n/app_localizations.dart';
 import 'package:teste/storybook/storybook_mocks.dart';
 
@@ -26,7 +26,7 @@ void main() {
           locale: const Locale('pt'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const LoginPassphraseScreen(username: 'alice'),
+          home: const LoginScreen(username: 'alice', focusPassphrase: true),
         ),
       ),
     );
@@ -34,13 +34,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Senha da conta'), findsOneWidget);
-    expect(
-      find.textContaining(
-        'Suas chaves de carteira nunca são solicitadas neste login',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Passphrase'), findsOneWidget);
+    expect(find.text('Entrar com passphrase'), findsOneWidget);
     expect(find.textContaining('18 palavras'), findsNothing);
     expect(find.textContaining('SLIP-39'), findsNothing);
   });

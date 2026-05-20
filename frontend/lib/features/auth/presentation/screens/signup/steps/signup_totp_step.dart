@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/theme/app_colors.dart';
+import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/l10n/l10n_extension.dart';
-import 'package:teste/core/widgets/bouncing_button.dart';
 import 'package:teste/features/auth/presentation/widgets/totp_input_container.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/core/presentation/widgets/custom_error_dialog.dart';
 import 'package:teste/core/utils/error_translator.dart';
+import 'package:teste/features/auth/presentation/screens/signup/widgets/signup_step_ui.dart';
 
 class SignupTotpStep extends ConsumerStatefulWidget {
   final String username;
@@ -36,16 +35,20 @@ class SignupTotpStep extends ConsumerStatefulWidget {
 
 class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
   String _currentCode = '';
+  late bool _backupConfirmed;
 
-  void _copySecret() {
-    Clipboard.setData(ClipboardData(text: widget.totpSecret));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.totpSecretCopied),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _backupConfirmed = widget.backupCodes.isEmpty;
+  }
+
+  @override
+  void didUpdateWidget(covariant SignupTotpStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.backupCodes != widget.backupCodes) {
+      _backupConfirmed = widget.backupCodes.isEmpty;
+    }
   }
 
   void _handleVerify(String code) {
@@ -61,6 +64,7 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState is AuthLoading;
+    final canSubmit = _currentCode.length == 6 && _backupConfirmed;
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (next is AuthTotpVerified) {
@@ -68,7 +72,7 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
       } else if (next is AuthError) {
         showCustomErrorDialog(
           context,
-          ErrorTranslator.translate(context.l10n, next.message),
+          ErrorTranslator.translate(context.tr, next.toString()),
           onRetry: () {
             ref.read(authControllerProvider.notifier).clearError();
             if (_currentCode.length == 6) {
@@ -79,66 +83,114 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
       }
     });
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    context.l10n.totpSetupTitle,
-                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                          fontSize: 28,
-                          height: 1.1,
-                          letterSpacing: -0.5,
-                        ),
-                    textAlign: TextAlign.center,
+    return SignupStepLayout(
+      eyebrow: AppCopy.signupTotpEyebrow.resolve(context),
+      title: AppCopy.signupTotpTitle.resolve(context),
+      subtitle: AppCopy.signupTotpSubtitle.resolve(context),
+      icon: LucideIcons.shieldCheck,
+      tone: SignupSurfaceTone.primary,
+      highlightLabel: AppCopy.signupTotpHighlightLabel.resolve(context),
+      highlightValue: canSubmit
+          ? AppCopy.signupTotpHighlightReady.resolve(context)
+          : AppCopy.signupTotpHighlightPending.resolve(context),
+      highlightHint: AppCopy.signupTotpHighlightHint.resolve(context),
+      chips: [
+        AppCopy.signupTotpChipQr.resolve(context),
+        AppCopy.signupTotpChipBackup.resolve(context),
+        AppCopy.signupTotpChipCode.resolve(context),
+      ],
+      footer: SignupPrimaryFooter(
+        text: context.tr.totpVerifyButton,
+        isLoading: isLoading,
+        onPressed: canSubmit ? () => _handleVerify(_currentCode) : null,
+        icon: LucideIcons.badgeCheck,
+      ),
+      children: [
+        _buildSection(
+          context: context,
+          step: '1',
+          title: AppCopy.signupTotpStepScan.resolve(context),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onPrimary,
+                borderRadius: BorderRadius.circular(AppSpacing.md),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.15),
+                    blurRadius: 30,
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    context.l10n.totpSetupSubtitle,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.5,
-                        ),
-                    textAlign: TextAlign.center,
+                ],
+              ),
+              child: QrImageView(
+                data: widget.qrCodeUri,
+                version: QrVersions.auto,
+                size: 180.0,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _buildSection(
+          context: context,
+          step: '2',
+          title: AppCopy.signupTotpStepStore.resolve(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppCopy.signupTotpSecretLabel.resolve(context),
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.1),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        borderRadius: BorderRadius.circular(AppSpacing.md),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.15),
-                            blurRadius: 30,
-                          ),
-                        ],
-                      ),
-                      child: QrImageView(
-                        data: widget.qrCodeUri,
-                        version: QrVersions.auto,
-                        size: 180.0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.totpSecret,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontFamily: 'monospace',
+                              letterSpacing: 1.5,
+                            ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TOTP SECRET',
+                  ],
+                ),
+              ),
+              if (widget.backupCodes.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xl),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppCopy.signupTotpBackupCodesLabel.resolve(context),
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -147,138 +199,176 @@ class _SignupTotpStepState extends ConsumerState<SignupTotpStep> {
                               fontWeight: FontWeight.bold,
                             ),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.md,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(AppSpacing.md),
-                          border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimary
-                                .withValues(alpha: 0.1),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(AppSpacing.md),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary
+                          .withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.backupCodes
+                        .map(
+                          (code) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              code,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.totpSecret,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary,
-                                      fontFamily: 'monospace',
-                                      letterSpacing: 1.5,
-                                    ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: _copySecret,
-                              child: Icon(
-                                LucideIcons.copy,
-                                color: AppColors.success,
-                                size: 20,
-                              ),
-                            ),
-                          ],
+                        )
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(AppSpacing.md),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Checkbox(
+                        value: _backupConfirmed,
+                        onChanged: (value) {
+                          setState(() => _backupConfirmed = value ?? false);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            AppCopy.signupTotpBackupConfirm.resolve(context),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall!
+                                .copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  height: 1.45,
+                                ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (widget.backupCodes.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xxl),
-                    Text(
-                      'BACKUP CODES (SAVE THESE NOW)',
-                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                            letterSpacing: 2.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(AppSpacing.md),
-                        border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: widget.backupCodes
-                            .map(
-                              (code) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  code,
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text(
-                    context.l10n.totpEnter6Digits.toUpperCase(),
-                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          letterSpacing: 2.0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TotpInputContainer(
-                    onCompleted: (code) {
-                      setState(() => _currentCode = code);
-                      _handleVerify(code);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
-              ),
-            ),
+                ),
+              ],
+            ],
           ),
+        ),
+        if (widget.backupCodes.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
-          BouncingButton(
-            text: context.l10n.totpVerifyButton,
-            isLoading: isLoading,
-            onPressed: _currentCode.length == 6
-                ? () => _handleVerify(_currentCode)
-                : null,
+        ],
+        _buildSection(
+          context: context,
+          step: '3',
+          title: AppCopy.signupTotpStepEnter.resolve(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.tr.totpEnter6Digits.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TotpInputContainer(
+                onChanged: (code) {
+                  setState(() => _currentCode = code);
+                },
+                onCompleted: (code) {
+                  setState(() => _currentCode = code);
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xxl),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection({
+    required BuildContext context,
+    required String step,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(AppSpacing.lg),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    step,
+                    style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          child,
         ],
       ),
     );

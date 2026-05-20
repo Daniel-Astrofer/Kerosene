@@ -84,7 +84,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
       } else if (next is AuthError) {
         showCustomErrorDialog(
           context,
-          ErrorTranslator.translate(context.l10n, next.toString()),
+          ErrorTranslator.translate(context.tr, next.toString()),
           onRetry: () {
             ref.read(authControllerProvider.notifier).clearError();
             if (_codeController.text.length == 6) {
@@ -161,7 +161,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             SizedBox(width: AppSpacing.sm + 2),
                             Expanded(
                               child: Text(
-                                context.l10n.unknownDeviceBanner,
+                                context.tr.unknownDeviceBanner,
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall!
@@ -217,7 +217,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
 
                       // ── Title ──
                       Text(
-                        context.l10n.unknownDeviceTitle,
+                        context.tr.unknownDeviceTitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge!,
                       ),
@@ -225,7 +225,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                       SizedBox(height: AppSpacing.sm + AppSpacing.xs),
 
                       Text(
-                        context.l10n.unknownDeviceDesc,
+                        context.tr.unknownDeviceDesc,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                               color: Theme.of(context)
@@ -308,7 +308,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                               },
                               decoration: InputDecoration(
                                 counterText: "",
-                                hintText: context.l10n.unknownDeviceInputHint,
+                                hintText: context.tr.unknownDeviceInputHint,
                                 hintStyle: Theme.of(context)
                                     .textTheme
                                     .titleLarge!
@@ -365,7 +365,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             SizedBox(height: AppSpacing.sm + AppSpacing.xs),
 
                             Text(
-                              context.l10n.unknownDeviceHelper,
+                              context.tr.unknownDeviceHelper,
                               textAlign: TextAlign.center,
                               style: Theme.of(context)
                                   .textTheme
@@ -417,7 +417,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                                           ),
                                           SizedBox(width: AppSpacing.sm),
                                           Text(
-                                            context.l10n.unknownDeviceAction,
+                                            context.tr.unknownDeviceAction,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium!
@@ -470,7 +470,7 @@ class _UnknownDeviceScreenState extends ConsumerState<UnknownDeviceScreen>
                             SizedBox(width: AppSpacing.sm + 2),
                             Expanded(
                               child: Text(
-                                context.l10n.unknownDeviceSecurityNote,
+                                context.tr.unknownDeviceSecurityNote,
                                 style: Theme.of(context)
                                     .textTheme
                                     .labelSmall!

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../theme/admin_colors.dart';
-import '../theme/admin_typography.dart';
 import '../theme/admin_theme.dart';
+import '../theme/admin_typography.dart';
 
 class AdminResponsiveGrid extends StatelessWidget {
   final List<Widget> children;
@@ -43,7 +44,6 @@ class AdminResponsiveGrid extends StatelessWidget {
   }
 }
 
-/// Enterprise KPI metric card for dashboard.
 class AdminMetricCard extends StatelessWidget {
   final String label;
   final String value;
@@ -120,7 +120,7 @@ class AdminMetricCard extends StatelessWidget {
               runSpacing: AdminTheme.spacingXs,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                if (trend != null) ...[
+                if (trend != null)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -144,7 +144,6 @@ class AdminMetricCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ],
                 if (subtitle != null)
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 260),
@@ -164,7 +163,6 @@ class AdminMetricCard extends StatelessWidget {
   }
 }
 
-/// Status badge widget for transaction states.
 class AdminStatusBadge extends StatelessWidget {
   final String label;
   final AdminBadgeVariant variant;
@@ -233,7 +231,6 @@ enum AdminBadgeVariant {
   );
 }
 
-/// Section header with optional action button
 class AdminSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -292,8 +289,7 @@ class AdminSectionHeader extends StatelessWidget {
   }
 }
 
-/// Enterprise loading skeleton for data cards
-class AdminSkeleton extends StatefulWidget {
+class AdminSkeleton extends StatelessWidget {
   final double width;
   final double height;
   final BorderRadius? borderRadius;
@@ -306,54 +302,18 @@ class AdminSkeleton extends StatefulWidget {
   });
 
   @override
-  State<AdminSkeleton> createState() => _AdminSkeletonState();
-}
-
-class _AdminSkeletonState extends State<AdminSkeleton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-    _animation = Tween<double>(
-      begin: 0.3,
-      end: 0.6,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            color: AdminColors.surfaceElevated.withValues(
-              alpha: _animation.value,
-            ),
-            borderRadius: widget.borderRadius ?? AdminTheme.borderRadiusSm,
-          ),
-        );
-      },
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AdminColors.surfaceElevated,
+        borderRadius: borderRadius ?? AdminTheme.borderRadiusSm,
+      ),
     );
   }
 }
 
-/// Error state widget
 class AdminErrorState extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -394,7 +354,6 @@ class AdminErrorState extends StatelessWidget {
   }
 }
 
-/// Empty state widget
 class AdminEmptyState extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -433,7 +392,6 @@ class AdminEmptyState extends StatelessWidget {
   }
 }
 
-/// Filter chip for table/dashboard filters
 class AdminFilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;

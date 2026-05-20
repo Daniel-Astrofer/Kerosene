@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/glass_container.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import '../../domain/entities/transaction.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -78,12 +79,13 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
   @override
   Widget build(BuildContext context) {
     final t = widget.transaction;
-    final isSent = t.type == TransactionType.send ||
-        t.type == TransactionType.withdrawal ||
-        t.amountBTC < 0;
-
-    final Color statusColor =
-        isSent ? Theme.of(context).colorScheme.error : AppColors.success;
+    final visual = TransactionVisualSpec.fromTransaction(t);
+    final statusColor = visual.amountColor;
+    final amountPrefix = t.isDebit
+        ? '-'
+        : t.isCredit
+            ? '+'
+            : visual.prefix;
 
     return GestureDetector(
       onTap: () {
@@ -106,24 +108,13 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
               child: Row(
                 children: [
                   // Icon Block
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppSpacing.sm),
-                      border:
-                          Border.all(color: statusColor.withValues(alpha: 0.2)),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        isSent
-                            ? LucideIcons.arrowUpRight
-                            : LucideIcons.arrowDownLeft,
-                        color: statusColor,
-                        size: 20,
-                      ),
-                    ),
+                  TransactionTypeIconBadge(
+                    spec: visual,
+                    size: 44,
+                    iconSize: 20,
+                    borderRadius: AppSpacing.sm,
+                    backgroundColor: const Color(0xFF111720),
+                    borderColor: statusColor.withValues(alpha: 0.24),
                   ),
                   const SizedBox(width: AppSpacing.md),
 
@@ -133,8 +124,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          t.description ??
-                              "TRANSAÇÃO #${t.id.substring(0, 6).toUpperCase()}",
+                          t.description ?? visual.localizedLabel(context),
                           style:
                               Theme.of(context).textTheme.bodyMedium!.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -164,7 +154,11 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _buildBtcAmount(t.amountBTC.abs(), isSent, statusColor),
+                      _buildBtcAmount(
+                        t.amountBTC.abs(),
+                        amountPrefix,
+                        statusColor,
+                      ),
                       const SizedBox(height: 4),
                       _buildStatusBadge(t.status, statusColor),
                     ],
@@ -209,20 +203,21 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
     );
   }
 
-  Widget _buildBtcAmount(double amount, bool isSent, Color color) {
+  Widget _buildBtcAmount(double amount, String prefix, Color color) {
     final parts = amount.toStringAsFixed(8).split('.');
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        Text(
-          isSent ? '-' : '+',
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'JetBrainsMono'),
-        ),
+        if (prefix.isNotEmpty)
+          Text(
+            prefix,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'JetBrainsMono'),
+          ),
         Text(
           parts[0],
           style: Theme.of(context).textTheme.bodyLarge!.copyWith(

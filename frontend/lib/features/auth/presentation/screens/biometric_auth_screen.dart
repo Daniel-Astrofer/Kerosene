@@ -54,7 +54,7 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
 
   Future<void> _triggerBiometrics() async {
     final success = await _biometricService.authenticate(
-      localizedReason: context.l10n.secureAccess,
+      localizedReason: context.tr.secureAccess,
     );
     if (mounted) {
       if (success) {
@@ -107,13 +107,13 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
 
               // Welcome Texts
               Text(
-                context.l10n.welcomeBack,
+                context.tr.welcomeBack,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge!,
               ),
               SizedBox(height: AppSpacing.sm + AppSpacing.xs),
               Text(
-                context.l10n.secureAccess,
+                context.tr.secureAccess,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -186,7 +186,7 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
 
               // Status Text
               Text(
-                context.l10n.biometricAuthDesc,
+                context.tr.biometricAuthDesc,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       fontWeight: FontWeight.w500,
@@ -194,7 +194,7 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
               ),
               SizedBox(height: AppSpacing.sm),
               Text(
-                context.l10n.verifyingDevice,
+                context.tr.verifyingDevice,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       color: Theme.of(context).colorScheme.primary,
@@ -235,7 +235,7 @@ class _BiometricAuthScreenState extends State<BiometricAuthScreen>
                       ),
                       SizedBox(width: AppSpacing.sm),
                       Text(
-                        context.l10n.changePassword,
+                        context.tr.changePassword,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                               fontWeight: FontWeight.w500,
                             ),

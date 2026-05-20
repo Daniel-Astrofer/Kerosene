@@ -166,7 +166,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
   }
 
   Future<void> _submit(List<MiningRigOffer> rigs, Wallet wallet) async {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     await HapticFeedback.lightImpact();
     if (!mounted) {
       return;
@@ -310,7 +310,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
   }
 
   Future<void> _cancelAllocation(String allocationId) async {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     await HapticFeedback.selectionClick();
     final result = await ref
         .read(miningMarketplaceActionProvider.notifier)
@@ -441,8 +441,8 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _SectionLabel(
-                            title: context.l10n.miningContractRigsTitle,
-                            subtitle: context.l10n.miningContractRigsSubtitle,
+                            title: context.tr.miningContractRigsTitle,
+                            subtitle: context.tr.miningContractRigsSubtitle,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           Wrap(
@@ -511,8 +511,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
                                     ),
                                   )
                                 : const Icon(Icons.bolt_rounded),
-                            label:
-                                Text(context.l10n.miningContractCreateAction),
+                            label: Text(context.tr.miningContractCreateAction),
                           ),
                         ],
                       );
@@ -520,8 +519,8 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   _SectionLabel(
-                    title: context.l10n.miningContractAllocationsTitle,
-                    subtitle: context.l10n.miningContractAllocationsSubtitle,
+                    title: context.tr.miningContractAllocationsTitle,
+                    subtitle: context.tr.miningContractAllocationsSubtitle,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   allocationsAsync.when(
@@ -583,7 +582,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.l10n.miningContractNetworkContextTitle,
+              context.tr.miningContractNetworkContextTitle,
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -593,7 +592,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
               children: [
                 Expanded(
                   child: _MiniMetric(
-                    label: context.l10n.miningContractNetworkHashrate,
+                    label: context.tr.miningContractNetworkHashrate,
                     value: MiningFormatters.hashrate(
                       widget.dashboardData.hashrate.currentHashrate,
                     ),
@@ -602,7 +601,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: _MiniMetric(
-                    label: context.l10n.miningContractDailyReward,
+                    label: context.tr.miningContractDailyReward,
                     value: MiningFormatters.btc(
                         widget.dashboardData.dailyRewardBtc),
                   ),
@@ -612,8 +611,8 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
             const SizedBox(height: AppSpacing.md),
             Text(
               wallet == null
-                  ? context.l10n.miningContractSelectWalletHint
-                  : context.l10n.miningContractActiveWallet(
+                  ? context.tr.miningContractSelectWalletHint
+                  : context.tr.miningContractActiveWallet(
                       wallet.name,
                       MiningFormatters.btc(wallet.balance),
                     ),
@@ -650,7 +649,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              context.l10n.miningContractRigAvailable(
+              context.tr.miningContractRigAvailable(
                 rig.algorithm,
                 rig.provider,
                 rig.availableHashrate.toStringAsFixed(0),
@@ -665,7 +664,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
               children: [
                 Expanded(
                   child: _MiniMetric(
-                    label: context.l10n.miningContractPricePerUnit(
+                    label: context.tr.miningContractPricePerUnit(
                       rig.hashUnit,
                     ),
                     value: MiningFormatters.btc(rig.pricePerUnitDayBtc),
@@ -674,7 +673,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: _MiniMetric(
-                    label: context.l10n.miningContractYieldPerUnit(
+                    label: context.tr.miningContractYieldPerUnit(
                       rig.hashUnit,
                     ),
                     value: MiningFormatters.btc(
@@ -696,7 +695,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
         Expanded(
           child: ChoiceChip(
             selected: _useBudgetMode,
-            label: Text(context.l10n.miningContractBudgetMode),
+            label: Text(context.tr.miningContractBudgetMode),
             onSelected: (_) => setState(() => _useBudgetMode = true),
           ),
         ),
@@ -704,7 +703,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
         Expanded(
           child: ChoiceChip(
             selected: !_useBudgetMode,
-            label: Text(context.l10n.miningContractHashrateMode),
+            label: Text(context.tr.miningContractHashrateMode),
             onSelected: (_) => setState(() => _useBudgetMode = false),
           ),
         ),
@@ -718,7 +717,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => setState(() {}),
       decoration: _inputDecoration(
-        label: context.l10n.miningContractBudgetLabel,
+        label: context.tr.miningContractBudgetLabel,
         hint: '0.01000000',
         suffix: 'BTC',
       ),
@@ -732,7 +731,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => setState(() {}),
       decoration: _inputDecoration(
-        label: context.l10n.miningContractHashrateLabel,
+        label: context.tr.miningContractHashrateLabel,
         hint: rig == null ? '0' : '1000',
         suffix: rig?.hashUnit ?? 'TH',
       ),
@@ -780,7 +779,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
         TextField(
           controller: _payoutAddressController,
           decoration: _inputDecoration(
-            label: context.l10n.miningContractPayoutAddressLabel,
+            label: context.tr.miningContractPayoutAddressLabel,
             hint: 'bc1q...',
           ),
         ),
@@ -788,7 +787,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
         TextField(
           controller: _poolUrlController,
           decoration: _inputDecoration(
-            label: context.l10n.miningContractPoolUrlLabel,
+            label: context.tr.miningContractPoolUrlLabel,
             hint: 'stratum+tcp://pool.example:3333',
           ),
         ),
@@ -796,7 +795,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
         TextField(
           controller: _workerNameController,
           decoration: _inputDecoration(
-            label: context.l10n.miningContractWorkerNameLabel,
+            label: context.tr.miningContractWorkerNameLabel,
             hint: 'worker.01',
           ),
         ),
@@ -821,26 +820,26 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.l10n.miningContractEstimateTitle,
+              context.tr.miningContractEstimateTitle,
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
             _MiniMetric(
-              label: context.l10n.miningContractAllocatedHashrate,
+              label: context.tr.miningContractAllocatedHashrate,
               value: rig == null
                   ? '--'
                   : '${allocatedHashrate.toStringAsFixed(2)} ${rig.hashUnit}',
             ),
             const SizedBox(height: AppSpacing.sm),
             _MiniMetric(
-              label: context.l10n.miningContractEstimatedCost,
+              label: context.tr.miningContractEstimatedCost,
               value: MiningFormatters.btc(rentalCostBtc),
             ),
             const SizedBox(height: AppSpacing.sm),
             _MiniMetric(
-              label: context.l10n.miningContractProjectedYield,
+              label: context.tr.miningContractProjectedYield,
               value: MiningFormatters.btc(projectedYieldBtc),
             ),
           ],
@@ -854,7 +853,7 @@ class _MiningContractScreenState extends ConsumerState<MiningContractScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.l10n.miningContractTotpAuthorization,
+          context.tr.miningContractTotpAuthorization,
           style: AppTypography.bodyMedium.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -1029,14 +1028,14 @@ class _AllocationCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _MiniMetric(
-                    label: context.l10n.miningContractCost,
+                    label: context.tr.miningContractCost,
                     value: MiningFormatters.btc(allocation.rentalCostBtc),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: _MiniMetric(
-                    label: context.l10n.miningContractNetYield,
+                    label: context.tr.miningContractNetYield,
                     value:
                         MiningFormatters.btc(allocation.projectedNetYieldBtc),
                   ),
@@ -1048,7 +1047,7 @@ class _AllocationCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onCancel,
                 icon: const Icon(Icons.stop_circle_outlined),
-                label: Text(context.l10n.miningContractCancelAllocation),
+                label: Text(context.tr.miningContractCancelAllocation),
               ),
             ],
           ],
@@ -1089,7 +1088,7 @@ class _ErrorCard extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(context.l10n.miningContractRetry),
+              label: Text(context.tr.miningContractRetry),
             ),
           ],
         ),

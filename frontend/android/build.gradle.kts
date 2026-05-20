@@ -27,6 +27,21 @@ subprojects {
             }
         }
     }
+
+    if (project.name == "tor") {
+        afterEvaluate {
+            tasks
+                .matching { it.name.startsWith("merge") && it.name.endsWith("JniLibFolders") }
+                .configureEach {
+                    val variant = name
+                        .removePrefix("merge")
+                        .removeSuffix("JniLibFolders")
+                    tasks.findByName("cargokitCargoBuildTor$variant")?.let { cargoBuildTask ->
+                        dependsOn(cargoBuildTask)
+                    }
+                }
+        }
+    }
 }
 
 subprojects {

@@ -30,6 +30,17 @@ NotificationVisuals resolveNotificationVisuals(
           es: 'Seguridad',
         ),
       );
+    case SessionNotificationItem.kindSecurityAdminAccessAttempt:
+      return NotificationVisuals(
+        tone: AppNotificationTone.warning,
+        icon: Icons.admin_panel_settings_outlined,
+        categoryLabel: _copy(
+          context,
+          pt: 'Segurança',
+          en: 'Security',
+          es: 'Seguridad',
+        ),
+      );
     case SessionNotificationItem.kindSecurityRecoveryCompleted:
       return NotificationVisuals(
         tone: AppNotificationTone.warning,

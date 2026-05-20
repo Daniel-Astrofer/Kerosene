@@ -122,9 +122,9 @@ class MiningOverviewHero extends StatelessWidget {
                   Expanded(
                     flex: isCompact ? 0 : 4,
                     child: _PrimaryHeroStat(
-                      label: context.l10n.miningMetricsCurrentHeight,
+                      label: context.tr.miningMetricsCurrentHeight,
                       value: snapshot.currentHeight.toDouble(),
-                      helper: context.l10n.miningMetricsRetargetInBlocks(
+                      helper: context.tr.miningMetricsRetargetInBlocks(
                         snapshot.network.remainingBlocks,
                       ),
                     ),
@@ -156,7 +156,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: context.l10n.miningMetricsMrr,
+                                label: context.tr.miningMetricsMrr,
                                 value:
                                     '${MiningFormatters.btc(viewData.miningRevenueRunRateBtcPerDay)}/dia',
                                 helper:
@@ -168,7 +168,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: context.l10n.miningMetricsHashrate,
+                                label: context.tr.miningMetricsHashrate,
                                 value: MiningFormatters.hashrate(
                                   snapshot.network.currentHashrate,
                                 ),
@@ -181,7 +181,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: context.l10n.miningMetricsDifficulty,
+                                label: context.tr.miningMetricsDifficulty,
                                 value: MiningFormatters.largeNumber(
                                   snapshot.network.currentDifficulty,
                                 ),
@@ -194,7 +194,7 @@ class MiningOverviewHero extends StatelessWidget {
                             SizedBox(
                               width: cardWidth,
                               child: MiningMetricCard(
-                                label: context.l10n.miningMetricsPace,
+                                label: context.tr.miningMetricsPace,
                                 value:
                                     '${blockTimeMinutes.toStringAsFixed(1)} min/bloco',
                                 helper:
@@ -218,22 +218,22 @@ class MiningOverviewHero extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _InfoPill(
-                label: context.l10n.miningMetricsLastUpdated,
+                label: context.tr.miningMetricsLastUpdated,
                 value: syncMeta.lastUpdatedAt == null
-                    ? context.l10n.miningMetricsNow
+                    ? context.tr.miningMetricsNow
                     : MiningFormatters.timeOfDay(syncMeta.lastUpdatedAt!),
               ),
               _InfoPill(
-                label: context.l10n.miningMetricsMempool,
+                label: context.tr.miningMetricsMempool,
                 value:
                     '${snapshot.mempool.loadInBlocks.toStringAsFixed(1)} blocos virtuais',
               ),
               _InfoPill(
-                label: context.l10n.miningMetricsPriorityFee,
+                label: context.tr.miningMetricsPriorityFee,
                 value: '${snapshot.feeMarket.priorityFee} sat/vB',
               ),
               _InfoPill(
-                label: context.l10n.miningMetricsEstimatedTps,
+                label: context.tr.miningMetricsEstimatedTps,
                 value:
                     '${snapshot.throughputTransactionsPerSecond.toStringAsFixed(1)} tx/s',
               ),
@@ -316,8 +316,8 @@ class MiningMempoolPressureCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningMetricsMempoolPressureTitle,
-            subtitle: context.l10n.miningMetricsMempoolPressureSubtitle,
+            title: context.tr.miningMetricsMempoolPressureTitle,
+            subtitle: context.tr.miningMetricsMempoolPressureSubtitle,
             trailing: MiningStatusBadge(
               label: viewData.congestionLabel.toUpperCase(),
               tone: _toneForCongestion(viewData.congestionLevel),
@@ -376,24 +376,24 @@ class MiningMempoolPressureCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _InfoPill(
-                label: context.l10n.miningMetricsPending,
+                label: context.tr.miningMetricsPending,
                 value: MiningFormatters.compactInt(
                   snapshot.mempool.pendingTransactions,
                 ),
               ),
               _InfoPill(
-                label: context.l10n.miningMetricsVbytes,
+                label: context.tr.miningMetricsVbytes,
                 value:
                     '${MiningFormatters.compactInt(snapshot.mempool.virtualSize)} vB',
               ),
               _InfoPill(
-                label: context.l10n.miningMetricsVolumeMb,
+                label: context.tr.miningMetricsVolumeMb,
                 value: MiningFormatters.megabytes(
                   snapshot.mempool.virtualSizeMb,
                 ),
               ),
               _InfoPill(
-                label: context.l10n.miningMetricsAggregatedFees,
+                label: context.tr.miningMetricsAggregatedFees,
                 value: MiningFormatters.btc(snapshot.mempool.totalFeesBtc),
               ),
             ],
@@ -427,8 +427,8 @@ class MiningNetworkHealthCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningMetricsNetworkHealthTitle,
-            subtitle: context.l10n.miningMetricsNetworkHealthSubtitle,
+            title: context.tr.miningMetricsNetworkHealthTitle,
+            subtitle: context.tr.miningMetricsNetworkHealthSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           ClipRRect(
@@ -475,7 +475,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsThroughput,
+                      label: context.tr.miningMetricsThroughput,
                       value:
                           '${snapshot.throughputTransactionsPerSecond.toStringAsFixed(1)} tx/s',
                       helper: 'média observada nos blocos visíveis',
@@ -485,7 +485,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsOccupancy,
+                      label: context.tr.miningMetricsOccupancy,
                       value: MiningFormatters.blockFill(
                         snapshot.recentAverageWeightRatio,
                       ),
@@ -496,7 +496,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsFeesInReward,
+                      label: context.tr.miningMetricsFeesInReward,
                       value:
                           '${snapshot.rewardWindow.feeSharePercent.toStringAsFixed(1)}%',
                       helper:
@@ -507,7 +507,7 @@ class MiningNetworkHealthCard extends StatelessWidget {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsNextAdjustment,
+                      label: context.tr.miningMetricsNextAdjustment,
                       value: snapshot.network.estimatedRetargetAt == null
                           ? 'estimando'
                           : MiningFormatters.shortDateTime(
@@ -614,14 +614,14 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningMetricsLocalMonitorTitle,
+            title: context.tr.miningMetricsLocalMonitorTitle,
             subtitle: isActive
-                ? context.l10n.miningMetricsLocalMonitorActiveSubtitle
-                : context.l10n.miningMetricsLocalMonitorInactiveSubtitle,
+                ? context.tr.miningMetricsLocalMonitorActiveSubtitle
+                : context.tr.miningMetricsLocalMonitorInactiveSubtitle,
             trailing: MiningStatusBadge(
               label: isActive
-                  ? context.l10n.miningMetricsMiningStatus
-                  : context.l10n.miningMetricsOfflineStatus,
+                  ? context.tr.miningMetricsMiningStatus
+                  : context.tr.miningMetricsOfflineStatus,
               tone: isActive ? MiningStatusTone.live : MiningStatusTone.neutral,
               pulse: isActive,
             ),
@@ -640,7 +640,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsLocalHashrate,
+                      label: context.tr.miningMetricsLocalHashrate,
                       value: isActive
                           ? MiningFormatters.hashrateFromTh(
                               operation.contractedHashrateTh,
@@ -656,7 +656,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsAcceptedShares,
+                      label: context.tr.miningMetricsAcceptedShares,
                       value: MiningFormatters.compactInt(acceptedShares),
                       helper:
                           '${MiningFormatters.percent(progress * 100)} do ciclo',
@@ -667,7 +667,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsRejectedShares,
+                      label: context.tr.miningMetricsRejectedShares,
                       value: MiningFormatters.compactInt(rejectedShares),
                       helper: isActive
                           ? 'taxa estimada ${(acceptedShares == 0 ? 0 : (rejectedShares / math.max(1, acceptedShares)) * 100).toStringAsFixed(2)}%'
@@ -681,7 +681,7 @@ class _MiningLocalMonitorCardState extends State<MiningLocalMonitorCard> {
                   SizedBox(
                     width: cardWidth,
                     child: MiningMetricCard(
-                      label: context.l10n.miningMetricsTemperature,
+                      label: context.tr.miningMetricsTemperature,
                       value: isActive
                           ? '${temperatureC.toStringAsFixed(1)} °C'
                           : 'n/d',
@@ -727,13 +727,13 @@ class MiningHashrateTrendCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningMetricsHashrateTrendTitle,
-            subtitle: context.l10n.miningMetricsHashrateTrendSubtitle,
+            title: context.tr.miningMetricsHashrateTrendTitle,
+            subtitle: context.tr.miningMetricsHashrateTrendSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           if (points.isEmpty)
             Text(
-              context.l10n.miningMetricsTrendEmpty,
+              context.tr.miningMetricsTrendEmpty,
               style: AppTypography.bodySmall.copyWith(color: miningMuted),
             )
           else
@@ -859,8 +859,8 @@ class MiningRecentBlocksCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningMetricsRecentBlocksTitle,
-            subtitle: context.l10n.miningMetricsRecentBlocksSubtitle,
+            title: context.tr.miningMetricsRecentBlocksTitle,
+            subtitle: context.tr.miningMetricsRecentBlocksSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           ...visible.map((block) {
@@ -900,10 +900,10 @@ class MiningPoolDistributionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningMetricsDominantPoolsTitle,
-            subtitle: context.l10n.miningMetricsDominantPoolsSubtitle,
+            title: context.tr.miningMetricsDominantPoolsTitle,
+            subtitle: context.tr.miningMetricsDominantPoolsSubtitle,
             trailing: MiningStatusBadge(
-              label: context.l10n.miningMetricsLeadingPool(
+              label: context.tr.miningMetricsLeadingPool(
                 viewData.leadingPoolSharePercent.toStringAsFixed(0),
               ),
               tone: MiningStatusTone.warning,
@@ -1032,7 +1032,7 @@ class MiningStateCard extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(context.l10n.miningContractRetry),
+              label: Text(context.tr.miningContractRetry),
             ),
           ],
         ],

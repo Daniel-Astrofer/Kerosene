@@ -25,29 +25,29 @@ class SupportScreen extends StatelessWidget {
                 children: [
                   _buildSupportOption(
                     context,
-                    context.l10n.faq,
-                    context.l10n.faqDesc,
+                    context.tr.faq,
+                    context.tr.faqDesc,
                     Icons.quiz_rounded,
                     () {},
                   ),
                   _buildSupportOption(
                     context,
-                    context.l10n.contactSupport,
-                    context.l10n.contactSupportDesc,
+                    context.tr.contactSupport,
+                    context.tr.contactSupportDesc,
                     Icons.support_agent_rounded,
                     () {},
                   ),
                   _buildSupportOption(
                     context,
-                    context.l10n.termsOfService,
-                    context.l10n.termsOfServiceDesc,
+                    context.tr.termsOfService,
+                    context.tr.termsOfServiceDesc,
                     Icons.description_rounded,
                     () {},
                   ),
                   _buildSupportOption(
                     context,
-                    context.l10n.privacyPolicy,
-                    context.l10n.privacyPolicyDesc,
+                    context.tr.privacyPolicy,
+                    context.tr.privacyPolicyDesc,
                     Icons.privacy_tip_rounded,
                     () {},
                   ),
@@ -69,7 +69,7 @@ class SupportScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "${context.l10n.developedBy} DANIEL-ASTROFER",
+                          "${context.tr.developedBy} DANIEL-ASTROFER",
                           style:
                               Theme.of(context).textTheme.labelSmall!.copyWith(
                                     color: Theme.of(context)
@@ -200,7 +200,7 @@ class SupportScreen extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.md),
         Text(
-          context.l10n.helpSupport.toUpperCase(),
+          context.tr.helpSupport.toUpperCase(),
           style: Theme.of(context)
               .textTheme
               .titleMedium!

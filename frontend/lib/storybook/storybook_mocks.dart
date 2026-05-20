@@ -20,7 +20,10 @@ class MockAuthController extends AuthController {
       {required String username, required String password}) async {}
 
   @override
-  Future<void> loginWithPasskey(String username) async {}
+  Future<void> loginWithPasskey(
+    String username, {
+    int remainingChallengeRenewals = 2,
+  }) async {}
 
   @override
   Future<void> verifyTotp(
@@ -43,20 +46,31 @@ class MockAuthController extends AuthController {
 /// Mock Price WebSocket Service for Storybook.
 class MockPriceWebSocketService implements PriceWebSocketService {
   final _priceController = StreamController<double>.broadcast();
+  final _tickerController = StreamController<PriceTickerSnapshot>.broadcast();
 
   @override
   Stream<double> get priceStream => _priceController.stream;
+
+  @override
+  Stream<PriceTickerSnapshot> get tickerStream => _tickerController.stream;
 
   @override
   void connect() {
     debugPrint('>>> MockPriceWebSocket: Connection simulated');
     // Periodically push some mock data to keep it "alive"
     _priceController.add(67234.50);
+    _tickerController.add(
+      const PriceTickerSnapshot(
+        priceUsd: 67234.50,
+        dailyChangePercent: 1.2,
+      ),
+    );
   }
 
   @override
   void dispose() {
     _priceController.close();
+    _tickerController.close();
   }
 }
 

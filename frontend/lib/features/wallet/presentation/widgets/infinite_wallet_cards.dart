@@ -142,7 +142,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     }
 
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double cardHeight = screenHeight * 0.22;
+    final double cardHeight = (screenHeight * 0.225).clamp(190.0, 210.0);
     final double peekOffset = cardHeight * 0.088;
     final double totalTravel = cardHeight * 2.05;
 
@@ -344,10 +344,9 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
           end: Alignment.bottomCenter,
           colors: [
             Theme.of(context).colorScheme.onPrimary,
-            Theme.of(context)
-                .colorScheme
-                .onPrimary
-                .withValues(alpha: 1.0 - depthOpacity),
+            Theme.of(
+              context,
+            ).colorScheme.onPrimary.withValues(alpha: 1.0 - depthOpacity),
           ],
           stops: const [0.3, 1.0],
         ).createShader(bounds);

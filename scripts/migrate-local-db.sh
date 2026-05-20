@@ -8,30 +8,55 @@ source "$SCRIPT_DIR/backend-common.sh"
 MIGRATION_FILE="$BACKEND_DIR/src/main/resources/db/migration.sql"
 VERSIONED_MIGRATIONS_DIR="$BACKEND_DIR/src/main/resources/db/migration"
 DB_WAIT_TIMEOUT_SECONDS=90
-DB_SERVICES=("$@")
+DB_SERVICES=()
+FORCE_MIGRATIONS="${KEROSENE_FORCE_MIGRATIONS:-0}"
+VERBOSE_MIGRATIONS="${KEROSENE_MIGRATION_VERBOSE:-0}"
+MIGRATION_STATE_TABLE="kerosene_local_schema_migrations"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/migrate-local-db.sh [db-service...]
+Usage: scripts/migrate-local-db.sh [options] [db-service...]
 
 Applies backend/kerosene/src/main/resources/db/migration.sql and incremental
 versioned migrations to running local PostgreSQL services. If no services are
 provided, it targets db-is, db-ch, db-sg.
+
+Options:
+  --force       Re-run every migration and update the local checksum cache.
+  --verbose     Print successful psql output.
+  -h, --help    Show this help.
 EOF
 }
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --force)
+      FORCE_MIGRATIONS=1
+      ;;
+    --verbose)
+      VERBOSE_MIGRATIONS=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      DB_SERVICES+=("$1")
+      ;;
+  esac
+  shift
+done
 
 if [[ ${#DB_SERVICES[@]} -eq 0 ]]; then
   DB_SERVICES=(db-is db-ch db-sg)
 fi
 
-if [[ "${DB_SERVICES[0]}" == "-h" || "${DB_SERVICES[0]}" == "--help" ]]; then
-  usage
-  exit 0
-fi
-
 require_file "$MIGRATION_FILE"
 require_file "$VERSIONED_MIGRATIONS_DIR/V3__wallet_destination_hash_index.sql"
 require_docker
+
+case "$FORCE_MIGRATIONS" in 0|1) ;; *) fail "KEROSENE_FORCE_MIGRATIONS must be 0 or 1." ;; esac
+case "$VERBOSE_MIGRATIONS" in 0|1) ;; *) fail "KEROSENE_MIGRATION_VERBOSE must be 0 or 1." ;; esac
 
 versioned_migration_files() {
   find "$VERSIONED_MIGRATIONS_DIR" -maxdepth 1 -type f -name 'V*.sql' \
@@ -189,21 +214,124 @@ repair_db_credentials_if_needed() {
 apply_sql_file() {
   local service="$1"
   local file="$2"
-  info "Applying schema migration $(basename "$file") to $service..."
-  compose exec -T "$service" sh -lc \
-    'PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "${POSTGRES_DB:-kerosene}" -f -' \
-    < "$file"
+  local output status
+  if output="$(compose exec -T "$service" sh -lc \
+    'PGOPTIONS="-c client_min_messages=warning" PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -X -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "${POSTGRES_DB:-kerosene}" -f -' \
+    < "$file" 2>&1)"; then
+    if [[ "$VERBOSE_MIGRATIONS" -eq 1 && -n "$output" ]]; then
+      printf '%s\n' "$output"
+    fi
+    return 0
+  fi
+
+  status=$?
+  printf '%s\n' "$output" >&2
+  return "$status"
+}
+
+run_sql() {
+  local service="$1"
+  local sql="$2"
+  local output status
+  if output="$(compose exec -T -e KEROSENE_SQL="$sql" "$service" sh -lc \
+    'PGOPTIONS="-c client_min_messages=warning" PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -X -q -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "${POSTGRES_DB:-kerosene}" -c "$KEROSENE_SQL"' \
+    2>&1)"; then
+    if [[ "$VERBOSE_MIGRATIONS" -eq 1 && -n "$output" ]]; then
+      printf '%s\n' "$output"
+    fi
+    return 0
+  fi
+
+  status=$?
+  printf '%s\n' "$output" >&2
+  return "$status"
+}
+
+query_scalar() {
+  local service="$1"
+  local sql="$2"
+  compose exec -T -e KEROSENE_SQL="$sql" "$service" sh -lc \
+    'PGOPTIONS="-c client_min_messages=warning" PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -X -q -tA -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "${POSTGRES_DB:-kerosene}" -c "$KEROSENE_SQL"' \
+    2>/dev/null | tr -d '\r' | tail -n 1
+}
+
+sql_escape_literal() {
+  printf "%s" "$1" | sed "s/'/''/g"
+}
+
+checksum_file() {
+  local file="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  else
+    fail "sha256sum or shasum is required for migration checksum caching."
+  fi
+}
+
+ensure_migration_state_table() {
+  local service="$1"
+  run_sql "$service" "
+    CREATE TABLE IF NOT EXISTS ${MIGRATION_STATE_TABLE} (
+      name text PRIMARY KEY,
+      checksum text NOT NULL,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    );
+  " >/dev/null
+}
+
+migration_is_current() {
+  local service="$1"
+  local name="$2"
+  local checksum="$3"
+  local safe_name existing
+  safe_name="$(sql_escape_literal "$name")"
+  existing="$(query_scalar "$service" "SELECT checksum FROM ${MIGRATION_STATE_TABLE} WHERE name = '$safe_name';")"
+  [[ "$existing" == "$checksum" ]]
+}
+
+mark_migration_current() {
+  local service="$1"
+  local name="$2"
+  local checksum="$3"
+  local safe_name safe_checksum
+  safe_name="$(sql_escape_literal "$name")"
+  safe_checksum="$(sql_escape_literal "$checksum")"
+  run_sql "$service" "
+    INSERT INTO ${MIGRATION_STATE_TABLE} (name, checksum, applied_at)
+    VALUES ('$safe_name', '$safe_checksum', now())
+    ON CONFLICT (name)
+    DO UPDATE SET checksum = EXCLUDED.checksum, applied_at = now();
+  " >/dev/null
 }
 
 apply_migrations() {
   local service="$1"
-  local migration
+  local migration name checksum applied=0 skipped=0
+  local migrations=("$MIGRATION_FILE")
 
-  apply_sql_file "$service" "$MIGRATION_FILE"
   while IFS= read -r migration; do
     [[ -n "$migration" ]] || continue
-    apply_sql_file "$service" "$migration"
+    migrations+=("$migration")
   done < <(versioned_migration_files)
+
+  ensure_migration_state_table "$service"
+  for migration in "${migrations[@]}"; do
+    name="$(basename "$migration")"
+    checksum="$(checksum_file "$migration")"
+    if [[ "$FORCE_MIGRATIONS" -ne 1 ]] && migration_is_current "$service" "$name" "$checksum"; then
+      skipped=$((skipped + 1))
+      continue
+    fi
+
+    info "Applying schema migration $name to $service..."
+    apply_sql_file "$service" "$migration"
+    mark_migration_current "$service" "$name" "$checksum"
+    applied=$((applied + 1))
+  done
+
+  info "Schema for $service is up to date (${applied} applied, ${skipped} unchanged)."
 }
 
 for service in "${DB_SERVICES[@]}"; do

@@ -47,10 +47,7 @@ class _CyberTextFieldState extends State<CyberTextField>
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      vsync: this,
-      duration: 400.ms,
-    );
+    _shakeController = AnimationController(vsync: this, duration: 400.ms);
     _shakeAnim = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
     );
@@ -83,10 +80,7 @@ class _CyberTextFieldState extends State<CyberTextField>
                 (0.5 - (_shakeAnim.value * 3 % 1).abs()).abs() *
                 (_shakeAnim.value < 0.5 ? 1 : -1)
             : 0.0;
-        return Transform.translate(
-          offset: Offset(dx, 0),
-          child: child,
-        );
+        return Transform.translate(offset: Offset(dx, 0), child: child);
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,27 +96,25 @@ class _CyberTextFieldState extends State<CyberTextField>
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
                     color: hasError
                         ? Theme.of(context).colorScheme.error
-                        : Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.6),
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w400,
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onPrimary.withValues(alpha: 0.72),
+                    letterSpacing: 0,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ),
           GlassContainer(
             blur: 20,
-            opacity: 0.05,
+            opacity: 0.08,
             color: Theme.of(context).colorScheme.onPrimary,
             borderRadius: BorderRadius.circular(AppSpacing.md),
             border: Border.all(
               color: hasError
                   ? Theme.of(context).colorScheme.error.withValues(alpha: 0.7)
-                  : Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.15),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.15),
               width: 1,
             ),
             child: TextFormField(
@@ -136,14 +128,13 @@ class _CyberTextFieldState extends State<CyberTextField>
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                     color: Theme.of(context).colorScheme.onPrimary,
                   ),
-              cursorColor: Theme.of(context).colorScheme.primary,
+              cursorColor: Theme.of(context).colorScheme.onPrimary,
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onPrimary
-                          .withValues(alpha: 0.2),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimary.withValues(alpha: 0.48),
                     ),
                 prefixIcon: widget.prefixIcon,
                 suffixIcon: widget.suffixIcon,
@@ -163,17 +154,19 @@ class _CyberTextFieldState extends State<CyberTextField>
                   borderRadius: BorderRadius.circular(AppSpacing.md),
                   borderSide: BorderSide(
                     color: hasError
-                        ? Theme.of(context)
-                            .colorScheme
-                            .error
-                            .withValues(alpha: 0.8)
-                        : Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.5),
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.error.withValues(alpha: 0.8)
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onPrimary.withValues(alpha: 0.20),
                     width: 1,
                   ),
                 ),
+                errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
           ),

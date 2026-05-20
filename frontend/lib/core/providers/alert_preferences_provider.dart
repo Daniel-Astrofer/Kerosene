@@ -23,8 +23,7 @@ class AlertPreferencesState {
     return AlertPreferencesState(
       backgroundAlertsEnabled:
           backgroundAlertsEnabled ?? this.backgroundAlertsEnabled,
-      inAppBannersEnabled:
-          inAppBannersEnabled ?? this.inAppBannersEnabled,
+      inAppBannersEnabled: inAppBannersEnabled ?? this.inAppBannersEnabled,
       transactionAlertsEnabled:
           transactionAlertsEnabled ?? this.transactionAlertsEnabled,
       securityAlertsEnabled:

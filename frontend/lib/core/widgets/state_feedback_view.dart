@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:teste/core/responsive/kerosene_responsive.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../presentation/widgets/cyber_button.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE FEEDBACK VIEW
@@ -54,7 +56,7 @@ class StateFeedbackView extends StatelessWidget {
 
   factory StateFeedbackView.error({
     String title = 'Algo correu mal',
-    String description = 'O servidor devolveu um erro. Tenta novamente.',
+    String description = 'Não conseguimos concluir agora. Tenta novamente.',
     String? actionLabel = 'Tentar novamente',
     VoidCallback? onAction,
   }) =>
@@ -67,68 +69,86 @@ class StateFeedbackView extends StatelessWidget {
       );
 
   factory StateFeedbackView.networkError({
+    required BuildContext context,
     VoidCallback? onAction,
   }) =>
       StateFeedbackView(
         state: FeedbackState.networkError,
-        title: 'Sem ligação',
-        description:
-            'Não foi possível contactar o servidor. Verifica a tua ligação.',
-        actionLabel: 'Tentar novamente',
+        title: context.tr.errNoInternet,
+        description: context.tr.errCommFailure,
+        actionLabel: context.tr.tryAgain,
         onAction: onAction,
       );
 
   @override
   Widget build(BuildContext context) {
     final color = _colorForState(context, state);
+    final responsive = context.responsive;
+    final availableWidth = responsive.clampWidth(420);
+    final illustrationSize = math.min(
+      responsive.isTinyPhone ? 124.0 : 160.0,
+      availableWidth * 0.48,
+    );
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Native Illustration via CustomPaint ──────────────────────────
-            _NativeIllustration(state: state, color: color),
+        padding: EdgeInsets.symmetric(horizontal: responsive.horizontalPadding),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: availableWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Native Illustration via CustomPaint ──────────────────────────
+              _NativeIllustration(
+                state: state,
+                color: color,
+                size: illustrationSize,
+              ),
 
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Title ────────────────────────────────────────────────────────
-            Text(
-              title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge!
-                  .copyWith(color: color),
-              textAlign: TextAlign.center,
-            ).animate().fade(duration: 300.ms).slideY(begin: 0.1, end: 0),
-
-            const SizedBox(height: AppSpacing.sm),
-
-            // ── Description ──────────────────────────────────────────────────
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodyMedium!,
-              textAlign: TextAlign.center,
-            )
-                .animate(delay: 100.ms)
-                .fade(duration: 300.ms)
-                .slideY(begin: 0.1, end: 0),
-
-            if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.xl),
-              SizedBox(
-                width: 200,
-                child: CyberButton(
-                  text: actionLabel!,
-                  onTap: onAction,
-                ),
+
+              // ── Title ────────────────────────────────────────────────────────
+              Text(
+                title,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                      color: color,
+                      fontSize: responsive.compactFontSize(
+                        tiny: 18,
+                        compact: 20,
+                        regular: 22,
+                      ),
+                    ),
+                textAlign: TextAlign.center,
+              ).animate().fade(duration: 300.ms).slideY(begin: 0.1, end: 0),
+
+              const SizedBox(height: AppSpacing.sm),
+
+              // ── Description ──────────────────────────────────────────────────
+              Text(
+                description,
+                maxLines: responsive.isTinyPhone ? 4 : 5,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium!,
+                textAlign: TextAlign.center,
               )
-                  .animate(delay: 200.ms)
+                  .animate(delay: 100.ms)
                   .fade(duration: 300.ms)
                   .slideY(begin: 0.1, end: 0),
+
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  width: math.min(200.0, availableWidth),
+                  child: CyberButton(text: actionLabel!, onTap: onAction),
+                )
+                    .animate(delay: 200.ms)
+                    .fade(duration: 300.ms)
+                    .slideY(begin: 0.1, end: 0),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -156,8 +176,13 @@ class StateFeedbackView extends StatelessWidget {
 class _NativeIllustration extends StatefulWidget {
   final FeedbackState state;
   final Color color;
+  final double size;
 
-  const _NativeIllustration({required this.state, required this.color});
+  const _NativeIllustration({
+    required this.state,
+    required this.color,
+    required this.size,
+  });
 
   @override
   State<_NativeIllustration> createState() => _NativeIllustrationState();
@@ -171,7 +196,35 @@ class _NativeIllustrationState extends State<_NativeIllustration>
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this, duration: 2400.ms);
-    _ctrl.repeat();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant _NativeIllustration oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != widget.state) {
+      _syncTicker();
+    }
+  }
+
+  void _syncTicker() {
+    final shouldAnimate = widget.state == FeedbackState.loading &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (shouldAnimate) {
+      if (!_ctrl.isAnimating) {
+        _ctrl.repeat();
+      }
+      return;
+    }
+
+    _ctrl
+      ..stop()
+      ..value = 0;
   }
 
   @override
@@ -185,8 +238,8 @@ class _NativeIllustrationState extends State<_NativeIllustration>
     final painter = _painterForState(widget.state, _ctrl, widget.color);
 
     return SizedBox(
-      width: 160,
-      height: 160,
+      width: widget.size,
+      height: widget.size,
       child: CustomPaint(painter: painter),
     ).animate().scale(
           begin: const Offset(0.6, 0.6),
@@ -371,9 +424,15 @@ class _ErrorStatePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     const r = 10.0;
     canvas.drawLine(
-        Offset(cx - r, cy - 30 - r), Offset(cx + r, cy - 30 + r), xPaint);
+      Offset(cx - r, cy - 30 - r),
+      Offset(cx + r, cy - 30 + r),
+      xPaint,
+    );
     canvas.drawLine(
-        Offset(cx + r, cy - 30 - r), Offset(cx - r, cy - 30 + r), xPaint);
+      Offset(cx + r, cy - 30 - r),
+      Offset(cx - r, cy - 30 + r),
+      xPaint,
+    );
   }
 
   @override
@@ -426,7 +485,10 @@ class _NetworkErrorPainter extends CustomPainter {
     for (int i = 0; i < 3; i++) {
       canvas.drawArc(
         Rect.fromCenter(
-            center: Offset(cx, cy), width: radii[i] * 2, height: radii[i] * 2),
+          center: Offset(cx, cy),
+          width: radii[i] * 2,
+          height: radii[i] * 2,
+        ),
         startAngle,
         sweepAngle,
         false,

@@ -33,19 +33,19 @@ class PersonalDataScreen extends ConsumerWidget {
                 children: [
                   _buildInfoItem(
                     context,
-                    context.l10n.name,
+                    context.tr.name,
                     name,
                     Icons.person_outline_rounded,
                   ),
                   _buildInfoItem(
                     context,
-                    context.l10n.phone,
+                    context.tr.phone,
                     "+1 (555) 123-4567",
                     Icons.phone_outlined,
                   ),
                   _buildInfoItem(
                     context,
-                    context.l10n.personalAddress,
+                    context.tr.personalAddress,
                     "123 Bitcoin Blvd, Satoshi City",
                     Icons.location_on_outlined,
                   ),
@@ -86,7 +86,7 @@ class PersonalDataScreen extends ConsumerWidget {
         ),
         const SizedBox(width: AppSpacing.md),
         Text(
-          context.l10n.personalData.toUpperCase(),
+          context.tr.personalData.toUpperCase(),
           style: Theme.of(context)
               .textTheme
               .titleMedium!

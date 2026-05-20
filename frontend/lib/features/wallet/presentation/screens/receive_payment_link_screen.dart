@@ -134,7 +134,7 @@ class _ReceivePaymentLinkScreenState
     } catch (error) {
       if (!silent && mounted) {
         SnackbarHelper.showError(
-          ErrorTranslator.translate(context.l10n, error.toString()),
+          ErrorTranslator.translate(context.tr, error.toString()),
         );
       }
     } finally {
@@ -151,7 +151,7 @@ class _ReceivePaymentLinkScreenState
   }
 
   Future<void> _cancelLink() async {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     final reason = await _showCancelReasonSheet();
     if (reason == null) {
       return;
@@ -177,7 +177,7 @@ class _ReceivePaymentLinkScreenState
     } catch (error) {
       if (mounted) {
         SnackbarHelper.showError(
-          ErrorTranslator.translate(context.l10n, error.toString()),
+          ErrorTranslator.translate(context.tr, error.toString()),
         );
       }
     } finally {
@@ -213,7 +213,7 @@ class _ReceivePaymentLinkScreenState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  context.l10n.receivePaymentLinkCancelTitle,
+                  context.tr.receivePaymentLinkCancelTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: receiveFlowTextColor,
                         fontWeight: FontWeight.w700,
@@ -221,7 +221,7 @@ class _ReceivePaymentLinkScreenState
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.l10n.receivePaymentLinkCancelMessage,
+                  context.tr.receivePaymentLinkCancelMessage,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: receiveFlowMutedTextColor,
                         height: 1.4,
@@ -232,14 +232,14 @@ class _ReceivePaymentLinkScreenState
                   controller: controller,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: context.l10n.receivePaymentLinkCancelReason,
+                    labelText: context.tr.receivePaymentLinkCancelReason,
                   ),
                 ),
                 const SizedBox(height: 16),
                 ReceiveFlowPrimaryButton(
                   onTap: () => Navigator.of(context).pop(controller.text),
                   icon: LucideIcons.xCircle,
-                  label: context.l10n.receivePaymentLinkConfirmCancel,
+                  label: context.tr.receivePaymentLinkConfirmCancel,
                 ),
               ],
             ),
@@ -262,7 +262,7 @@ class _ReceivePaymentLinkScreenState
 
   String _formatDateTime(BuildContext context, DateTime? dateTime) {
     if (dateTime == null) {
-      return context.l10n.receivePaymentLinkNotInformed;
+      return context.tr.receivePaymentLinkNotInformed;
     }
     final local = dateTime.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
@@ -270,41 +270,41 @@ class _ReceivePaymentLinkScreenState
 
   String _statusHeadline(BuildContext context) {
     if (_link.isVerifyingOnboarding) {
-      return context.l10n.receivePaymentLinkStatusChecking;
+      return context.tr.receivePaymentLinkStatusChecking;
     }
     if (_link.isPaid || _link.isCompleted) {
-      return context.l10n.receivePaymentLinkStatusReceived;
+      return context.tr.receivePaymentLinkStatusReceived;
     }
     if (_link.isCancelled) {
-      return context.l10n.receivePaymentLinkStatusCancelled;
+      return context.tr.receivePaymentLinkStatusCancelled;
     }
     if (_link.isExpired) {
-      return context.l10n.receivePaymentLinkStatusExpired;
+      return context.tr.receivePaymentLinkStatusExpired;
     }
-    return context.l10n.receivePaymentLinkStatusWaiting;
+    return context.tr.receivePaymentLinkStatusWaiting;
   }
 
   String _statusMessage(BuildContext context) {
     if (_link.isVerifyingOnboarding) {
-      return context.l10n.receivePaymentLinkCheckingMessage;
+      return context.tr.receivePaymentLinkCheckingMessage;
     }
     if (_link.isPaid || _link.isCompleted) {
-      return context.l10n.receivePaymentLinkReceivedMessage;
+      return context.tr.receivePaymentLinkReceivedMessage;
     }
     if (_link.isCancelled) {
       return _link.cancelReason?.trim().isNotEmpty == true
-          ? context.l10n.receivePaymentLinkCancelledReason(
+          ? context.tr.receivePaymentLinkCancelledReason(
               _link.cancelReason!,
             )
-          : context.l10n.receivePaymentLinkCancelledMessage;
+          : context.tr.receivePaymentLinkCancelledMessage;
     }
     if (_link.isExpired) {
-      return context.l10n.receivePaymentLinkExpiredMessage;
+      return context.tr.receivePaymentLinkExpiredMessage;
     }
     if (_isLockedPaymentRequest) {
-      return context.l10n.receivePaymentLinkLockedMessage;
+      return context.tr.receivePaymentLinkLockedMessage;
     }
-    return context.l10n.receivePaymentLinkWaitingMessage;
+    return context.tr.receivePaymentLinkWaitingMessage;
   }
 
   @override
@@ -312,8 +312,8 @@ class _ReceivePaymentLinkScreenState
     final statusMeta = FinancialStatusBadge.paymentLink(_link.status);
 
     return ReceiveFlowScaffold(
-      title: context.l10n.receivePaymentLinkTitle,
-      subtitle: context.l10n.receivePaymentLinkSubtitle,
+      title: context.tr.receivePaymentLinkTitle,
+      subtitle: context.tr.receivePaymentLinkSubtitle,
       actions: [
         if (_isRefreshing)
           const SizedBox(
@@ -359,8 +359,8 @@ class _ReceivePaymentLinkScreenState
               _MetricChip(
                 icon: Icons.timer_outlined,
                 label: _link.isExpired
-                    ? context.l10n.receivePaymentLinkExpired
-                    : context.l10n.receivePaymentLinkExpiresIn(
+                    ? context.tr.receivePaymentLinkExpired
+                    : context.tr.receivePaymentLinkExpiresIn(
                         _formatDuration(_remainingTime),
                       ),
               ),
@@ -401,11 +401,11 @@ class _ReceivePaymentLinkScreenState
               [
                 if (widget.cardTypeLabel != null) widget.cardTypeLabel,
                 if (widget.depositFeeLabel != null)
-                  context.l10n.receivePaymentLinkDepositFee(
+                  context.tr.receivePaymentLinkDepositFee(
                     widget.depositFeeLabel!,
                   ),
                 if (widget.netAmountLabel != null)
-                  context.l10n.receivePaymentLinkNetAmount(
+                  context.tr.receivePaymentLinkNetAmount(
                     widget.netAmountLabel!,
                   ),
               ].join(' • '),
@@ -441,17 +441,17 @@ class _ReceivePaymentLinkScreenState
             runSpacing: 10,
             children: [
               _DetailTag(
-                title: context.l10n.receivePaymentLinkExpires,
+                title: context.tr.receivePaymentLinkExpires,
                 value: _formatDateTime(context, _link.expiresAt),
               ),
               if (_link.txid != null && _link.txid!.isNotEmpty)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkTransactionCode,
+                  title: context.tr.receivePaymentLinkTransactionCode,
                   value: _link.txid!,
                 ),
               if (_link.isCancelled)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkState,
+                  title: context.tr.receivePaymentLinkState,
                   value: ApiDisplayText.status(context, _link.status),
                 ),
             ],
@@ -495,7 +495,7 @@ class _ReceivePaymentLinkScreenState
           ),
           const SizedBox(height: 16),
           Text(
-            context.l10n.receiveScanToPay,
+            context.tr.receiveScanToPay,
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -510,12 +510,12 @@ class _ReceivePaymentLinkScreenState
   Widget _buildLinkDetails(BuildContext context) {
     if (_isLockedPaymentRequest) {
       return _CopyFieldCard(
-        title: context.l10n.receivePaymentLinkPaymentLinkTitle,
+        title: context.tr.receivePaymentLinkPaymentLinkTitle,
         value: _paymentUri,
-        helper: context.l10n.receivePaymentLinkLockedHelper,
+        helper: context.tr.receivePaymentLinkLockedHelper,
         onCopy: () => _copyValue(
           _paymentUri,
-          context.l10n.receivePaymentLinkCopied,
+          context.tr.receivePaymentLinkCopied,
         ),
       );
     }
@@ -523,22 +523,22 @@ class _ReceivePaymentLinkScreenState
     return Column(
       children: [
         _CopyFieldCard(
-          title: context.l10n.receivePaymentLinkPaymentLinkTitle,
+          title: context.tr.receivePaymentLinkPaymentLinkTitle,
           value: _paymentUri,
-          helper: context.l10n.receivePaymentLinkShareHelper,
+          helper: context.tr.receivePaymentLinkShareHelper,
           onCopy: () => _copyValue(
             _paymentUri,
-            context.l10n.receivePaymentLinkCopied,
+            context.tr.receivePaymentLinkCopied,
           ),
         ),
         const SizedBox(height: 12),
         _CopyFieldCard(
-          title: context.l10n.depositAddress,
+          title: context.tr.depositAddress,
           value: _link.depositAddress,
-          helper: context.l10n.receivePaymentLinkDepositAddressHelper,
+          helper: context.tr.receivePaymentLinkDepositAddressHelper,
           onCopy: () => _copyValue(
             _link.depositAddress,
-            context.l10n.receivePaymentLinkDepositAddressCopied,
+            context.tr.receivePaymentLinkDepositAddressCopied,
           ),
         ),
       ],
@@ -552,18 +552,18 @@ class _ReceivePaymentLinkScreenState
           _ActionButton(
             onTap: () => _refreshLink(),
             icon: LucideIcons.refreshCw,
-            label: context.l10n.receivePaymentLinkRefresh,
+            label: context.tr.receivePaymentLinkRefresh,
           ),
           _ActionButton(
             onTap: () => Navigator.pushNamed(context, '/history'),
             icon: LucideIcons.history,
-            label: context.l10n.history,
+            label: context.tr.history,
           ),
           if (_canCancelLink)
             _ActionButton(
               onTap: _cancelLink,
               icon: LucideIcons.xCircle,
-              label: context.l10n.cancel,
+              label: context.tr.cancel,
             ),
         ];
 
@@ -597,7 +597,7 @@ class _ReceivePaymentLinkScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.receivePaymentLinkConfigurationTitle,
+            context.tr.receivePaymentLinkConfigurationTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: receiveFlowTextColor,
                   fontWeight: FontWeight.w600,
@@ -609,43 +609,43 @@ class _ReceivePaymentLinkScreenState
             runSpacing: 10,
             children: [
               _DetailTag(
-                title: context.l10n.receivePaymentLinkVisibility,
+                title: context.tr.receivePaymentLinkVisibility,
                 value: _humanizeFlag(_link.visibility),
               ),
               _DetailTag(
-                title: context.l10n.receivePaymentLinkCompletion,
+                title: context.tr.receivePaymentLinkCompletion,
                 value: _humanizeFlag(_link.confirmationMode),
               ),
               _DetailTag(
-                title: context.l10n.receivePaymentLinkAmount,
+                title: context.tr.receivePaymentLinkAmount,
                 value: _link.amountLocked
-                    ? context.l10n.receivePaymentLinkAmountSet
-                    : context.l10n.receivePaymentLinkAmountFlexible,
+                    ? context.tr.receivePaymentLinkAmountSet
+                    : context.tr.receivePaymentLinkAmountFlexible,
               ),
               if (_link.referenceLabel != null &&
                   _link.referenceLabel!.trim().isNotEmpty)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkReference,
+                  title: context.tr.receivePaymentLinkReference,
                   value: _link.referenceLabel!,
                 ),
               if (_link.createdAt != null)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkCreatedAt,
+                  title: context.tr.receivePaymentLinkCreatedAt,
                   value: _formatDateTime(context, _link.createdAt),
                 ),
               if (_link.paidAt != null)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkPaidAt,
+                  title: context.tr.receivePaymentLinkPaidAt,
                   value: _formatDateTime(context, _link.paidAt),
                 ),
               if (_link.completedAt != null)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkConfirmedAt,
+                  title: context.tr.receivePaymentLinkConfirmedAt,
                   value: _formatDateTime(context, _link.completedAt),
                 ),
               if (_link.cancelledAt != null)
                 _DetailTag(
-                  title: context.l10n.receivePaymentLinkCancelledAt,
+                  title: context.tr.receivePaymentLinkCancelledAt,
                   value: _formatDateTime(context, _link.cancelledAt),
                 ),
             ],
@@ -693,7 +693,7 @@ class _CopyFieldCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: onCopy,
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: Text(context.l10n.receivePaymentLinkCopy),
+                label: Text(context.tr.receivePaymentLinkCopy),
                 style: TextButton.styleFrom(
                   foregroundColor: receiveFlowTextColor,
                 ),

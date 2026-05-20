@@ -21,20 +21,20 @@ class MiningTransactionContextCard extends ConsumerWidget {
 
     if (descriptor.rail == MiningExplorerRail.internal) {
       return _ContextShell(
-        title: context.l10n.miningTxInternalTitle,
-        subtitle: context.l10n.miningTxInternalSubtitle,
+        title: context.tr.miningTxInternalTitle,
+        subtitle: context.tr.miningTxInternalSubtitle,
         accent: miningTeal,
         children: [
           _ContextFact(
-            label: context.l10n.miningTxReference,
+            label: context.tr.miningTxReference,
             value: descriptor.reference,
           ),
           _ContextFact(
-            label: context.l10n.status,
+            label: context.tr.status,
             value: transaction.status.name.toUpperCase(),
           ),
           _ContextFact(
-            label: context.l10n.miningTxConfirmations,
+            label: context.tr.miningTxConfirmations,
             value: '${transaction.confirmations}',
           ),
         ],
@@ -44,20 +44,20 @@ class MiningTransactionContextCard extends ConsumerWidget {
     if (descriptor.rail == MiningExplorerRail.lightning ||
         !descriptor.canLookupOnchain) {
       return _ContextShell(
-        title: context.l10n.miningTxLightningTitle,
-        subtitle: context.l10n.miningTxLightningSubtitle,
+        title: context.tr.miningTxLightningTitle,
+        subtitle: context.tr.miningTxLightningSubtitle,
         accent: miningAmber,
         children: [
           _ContextFact(
-            label: context.l10n.miningTxChannel,
+            label: context.tr.miningTxChannel,
             value: descriptor.reference,
           ),
           _ContextFact(
-            label: context.l10n.status,
+            label: context.tr.status,
             value: transaction.status.name.toUpperCase(),
           ),
           _ContextFact(
-            label: context.l10n.miningTxRecord,
+            label: context.tr.miningTxRecord,
             value: MiningFormatters.shortDateTime(transaction.timestamp),
           ),
         ],
@@ -73,8 +73,8 @@ class MiningTransactionContextCard extends ConsumerWidget {
         if (summary == null) {
           return _fallbackCard(
             context: context,
-            title: context.l10n.miningTxNoPublicSummaryTitle,
-            description: context.l10n.miningTxNoPublicSummaryMessage,
+            title: context.tr.miningTxNoPublicSummaryTitle,
+            description: context.tr.miningTxNoPublicSummaryMessage,
           );
         }
         return _OnchainContextCard(summary: summary);
@@ -82,7 +82,7 @@ class MiningTransactionContextCard extends ConsumerWidget {
       loading: () => const _ContextLoadingCard(),
       error: (error, _) => _fallbackCard(
         context: context,
-        title: context.l10n.miningTxLookupUnavailableTitle,
+        title: context.tr.miningTxLookupUnavailableTitle,
         description: error.toString(),
       ),
     );
@@ -99,15 +99,15 @@ class MiningTransactionContextCard extends ConsumerWidget {
       accent: miningBlue,
       children: [
         _ContextFact(
-          label: context.l10n.miningTxLocalStatus,
+          label: context.tr.miningTxLocalStatus,
           value: transaction.status.name.toUpperCase(),
         ),
         _ContextFact(
-          label: context.l10n.miningTxConfirmations,
+          label: context.tr.miningTxConfirmations,
           value: '${transaction.confirmations}',
         ),
         _ContextFact(
-          label: context.l10n.miningTxRecord,
+          label: context.tr.miningTxRecord,
           value: MiningFormatters.shortDateTime(transaction.timestamp),
         ),
       ],
@@ -126,35 +126,35 @@ class _OnchainContextCard extends StatelessWidget {
         summary.confirmed ? MiningStatusTone.live : MiningStatusTone.warning;
 
     return _ContextShell(
-      title: context.l10n.miningTxOnchainTitle,
-      subtitle: context.l10n.miningTxOnchainSubtitle,
+      title: context.tr.miningTxOnchainTitle,
+      subtitle: context.tr.miningTxOnchainSubtitle,
       accent: miningBlue,
       trailing: MiningStatusBadge(
         label: summary.confirmed
-            ? context.l10n.miningTxConfirmed
-            : context.l10n.miningTxPending,
+            ? context.tr.miningTxConfirmed
+            : context.tr.miningTxPending,
         tone: statusTone,
         pulse: !summary.confirmed,
       ),
       children: [
         _ContextFact(
-          label: context.l10n.miningTxTxid,
+          label: context.tr.miningTxTxid,
           value: shortHash(summary.txid, leading: 12, trailing: 10),
         ),
         _ContextFact(
-          label: context.l10n.miningTxFeeRate,
+          label: context.tr.miningTxFeeRate,
           value: MiningFormatters.feeRate(summary.effectiveFeeRate),
         ),
         _ContextFact(
-          label: context.l10n.miningTxBlock,
+          label: context.tr.miningTxBlock,
           value: summary.blockHeight == null
-              ? context.l10n.miningTxAwaiting
+              ? context.tr.miningTxAwaiting
               : '#${summary.blockHeight}',
         ),
         _ContextFact(
-          label: context.l10n.miningTxPosition,
+          label: context.tr.miningTxPosition,
           value: summary.positionInBlock == null || summary.blockTxCount == null
-              ? context.l10n.miningTxNotAvailable
+              ? context.tr.miningTxNotAvailable
               : '${summary.positionInBlock}/${summary.blockTxCount}',
         ),
       ],
@@ -173,8 +173,8 @@ class _ContextLoadingCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningTxLoadingTitle,
-            subtitle: context.l10n.miningTxLoadingSubtitle,
+            title: context.tr.miningTxLoadingTitle,
+            subtitle: context.tr.miningTxLoadingSubtitle,
           ),
           const SizedBox(height: AppSpacing.lg),
           const MiningSkeletonBlock(height: 18),

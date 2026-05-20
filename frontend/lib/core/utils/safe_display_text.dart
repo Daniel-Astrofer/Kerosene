@@ -5,11 +5,11 @@ class SafeDisplayText {
   SafeDisplayText._();
 
   static String unavailable(BuildContext context) {
-    return context.l10n.apiDisplayInformationUnavailable;
+    return context.tr.apiDisplayInformationUnavailable;
   }
 
   static String addressUnavailable(BuildContext context) {
-    return context.l10n.apiDisplayAddressUnavailable;
+    return context.tr.apiDisplayAddressUnavailable;
   }
 
   static String maskAddress(

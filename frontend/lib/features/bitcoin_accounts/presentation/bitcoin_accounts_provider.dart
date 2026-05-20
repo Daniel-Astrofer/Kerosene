@@ -1,24 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/features/bitcoin_accounts/data/bitcoin_accounts_local_store.dart';
-import 'package:teste/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
+
+import '../data/bitcoin_accounts_service.dart';
 
 final bitcoinAccountsServiceProvider = Provider<BitcoinAccountsService>((ref) {
-  return BitcoinAccountsService(ref.watch(apiClientProvider));
+  return LocalBitcoinAccountsService();
 });
-
-final bitcoinAccountsLocalStoreProvider =
-    Provider<BitcoinAccountsLocalStore>((ref) {
-  return BitcoinAccountsLocalStore();
-});
-
-final bitcoinAccountsProvider =
-    AsyncNotifierProvider<BitcoinAccountsNotifier, List<BitcoinAccount>>(
-  BitcoinAccountsNotifier.new,
-);
 
 class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
-  late final BitcoinAccountsService _service;
+  late BitcoinAccountsService _service;
 
   @override
   Future<List<BitcoinAccount>> build() async {
@@ -27,31 +16,33 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
+    state = const AsyncLoading<List<BitcoinAccount>>();
     state = await AsyncValue.guard(_service.listAccounts);
   }
 
-  Future<void> createInternalCard(String label) async {
-    state = const AsyncLoading();
+  Future<void> createInternalCard({
+    required String label,
+    required int dailyLimitSats,
+  }) async {
     state = await AsyncValue.guard(() async {
-      await _service.createInternalCard(label: label);
+      await _service.createInternalCard(
+        label: label,
+        dailyLimitSats: dailyLimitSats,
+      );
       return _service.listAccounts();
     });
   }
 
   Future<void> importColdWallet({
     required String label,
-    String? descriptor,
-    String? xpub,
+    required String xpub,
     required String fingerprint,
     required String derivationPath,
     required String scriptPolicy,
   }) async {
-    state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await _service.importColdWallet(
         label: label,
-        descriptor: descriptor,
         xpub: xpub,
         fingerprint: fingerprint,
         derivationPath: derivationPath,
@@ -61,3 +52,15 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
     });
   }
 }
+
+final bitcoinAccountsProvider =
+    AsyncNotifierProvider<BitcoinAccountsNotifier, List<BitcoinAccount>>(
+  BitcoinAccountsNotifier.new,
+);
+
+final bitcoinAccountReceiveRequestsProvider =
+    FutureProvider.family<List<ReceivingRequestView>, String>(
+        (ref, accountId) async {
+  final service = ref.watch(bitcoinAccountsServiceProvider);
+  return service.listReceiveRequestsForAccount(accountId);
+});

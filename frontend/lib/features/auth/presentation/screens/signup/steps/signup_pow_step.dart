@@ -181,7 +181,7 @@ class _SignupPowStepState extends ConsumerState<SignupPowStep> {
 
     return SignupStepLayout(
       eyebrow: AppCopy.signupPowEyebrow.resolve(context),
-      title: context.l10n.usernameLoadingPow,
+      title: context.tr.usernameLoadingPow,
       subtitle: AppCopy.signupPowSubtitle.resolve(context),
       icon: LucideIcons.cpu,
       tone: SignupSurfaceTone.primary,

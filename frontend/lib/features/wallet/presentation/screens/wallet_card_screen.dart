@@ -86,13 +86,13 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
 
     final content = switch (walletState) {
       WalletLoading() || WalletInitial() => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF8FA0B2)),
-      ),
+          child: CircularProgressIndicator(color: Color(0xFF8FA0B2)),
+        ),
       WalletError(:final message) => _SolidMessage(
-        icon: LucideIcons.alertCircle,
-        title: context.l10n.walletCardUnavailableTitle,
-        message: message,
-      ),
+          icon: LucideIcons.alertCircle,
+          title: context.tr.walletCardUnavailableTitle,
+          message: message,
+        ),
       WalletLoaded() => _buildLoadedContent(walletState),
     };
 
@@ -127,15 +127,14 @@ class _WalletCardScreenState extends ConsumerState<WalletCardScreen> {
   }
 
   Widget _buildLoadedContent(WalletLoaded loaded) {
-    final wallet =
-        loaded.selectedWallet ??
+    final wallet = loaded.selectedWallet ??
         (loaded.wallets.isNotEmpty ? loaded.wallets.first : null);
 
     if (wallet == null) {
       return _SolidMessage(
         icon: LucideIcons.creditCard,
-        title: context.l10n.walletCardNoActiveTitle,
-        message: context.l10n.walletCardNoActiveMessage,
+        title: context.tr.walletCardNoActiveTitle,
+        message: context.tr.walletCardNoActiveMessage,
       );
     }
 
@@ -190,7 +189,7 @@ class _WalletCardCarouselExperienceState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          context.l10n.walletCardAccountCardsTitle,
+          context.tr.walletCardAccountCardsTitle,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: _walletCardText,
             fontSize: responsive.compactFontSize(
@@ -203,7 +202,7 @@ class _WalletCardCarouselExperienceState
         ),
         const SizedBox(height: 6),
         Text(
-          context.l10n.walletCardAccountCardsSubtitle(widget.wallet.name),
+          context.tr.walletCardAccountCardsSubtitle(widget.wallet.name),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: _walletCardMutedText,
             height: 1.4,
@@ -215,24 +214,24 @@ class _WalletCardCarouselExperienceState
           runSpacing: AppSpacing.sm,
           children: [
             _InfoChip(
-              label: context.l10n.walletCardCurrentLabel,
+              label: context.tr.walletCardCurrentLabel,
               value: activeCard.title(context),
             ),
             _InfoChip(
-              label: context.l10n.walletCardUpgradeLabel,
-              value: context.l10n.walletCardAutomatic,
+              label: context.tr.walletCardUpgradeLabel,
+              value: context.tr.walletCardAutomatic,
             ),
             _InfoChip(
-              label: context.l10n.walletCardValidityLabel,
+              label: context.tr.walletCardValidityLabel,
               value: _expiryLabel(context, widget.wallet.cardExpiresAt),
             ),
             _InfoChip(
-              label: context.l10n.walletCardRotationLabel,
+              label: context.tr.walletCardRotationLabel,
               value: _rotationLabel(context, widget.wallet),
             ),
             if (widget.wallet.hasPreviousCard)
               _InfoChip(
-                label: context.l10n.walletCardPreviousLabel,
+                label: context.tr.walletCardPreviousLabel,
                 value: '****${widget.wallet.previousCardNumberSuffix}',
               ),
           ],
@@ -328,17 +327,17 @@ class _WalletCardCarouselExperienceState
 
   String _rotationLabel(BuildContext context, Wallet wallet) {
     if (wallet.isCardRotating) {
-      return context.l10n.walletCardRotating;
+      return context.tr.walletCardRotating;
     }
     if (wallet.isCardExpiring) {
-      return context.l10n.walletCardExpiring;
+      return context.tr.walletCardExpiring;
     }
-    return context.l10n.walletCardActive;
+    return context.tr.walletCardActive;
   }
 
   String _expiryLabel(BuildContext context, DateTime? dateTime) {
     if (dateTime == null) {
-      return context.l10n.walletCardNotInformed;
+      return context.tr.walletCardNotInformed;
     }
     return '${dateTime.month.toString().padLeft(2, '0')}/${(dateTime.year % 100).toString().padLeft(2, '0')}';
   }
@@ -511,11 +510,10 @@ class _ShowcaseCard extends StatelessWidget {
                             Expanded(
                               child: _ShowcaseCardField(
                                 label: 'CARD HOLDER',
-                                value:
-                                    (isCurrent
-                                            ? wallet.effectiveCardHolderName
-                                            : wallet.name)
-                                        .toUpperCase(),
+                                value: (isCurrent
+                                        ? wallet.effectiveCardHolderName
+                                        : wallet.name)
+                                    .toUpperCase(),
                                 textColor: spec.textColor,
                                 mutedTextColor: spec.mutedTextColor,
                               ),
@@ -582,7 +580,7 @@ class _RotationTimelinePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.walletCardRotationTitle,
+            context.tr.walletCardRotationTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               color: _walletCardText,
               fontWeight: FontWeight.w800,
@@ -590,7 +588,7 @@ class _RotationTimelinePanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            context.l10n.walletCardRotationSubtitle,
+            context.tr.walletCardRotationSubtitle,
             style: theme.textTheme.bodySmall?.copyWith(
               color: _walletCardMutedText,
               height: 1.4,
@@ -598,21 +596,21 @@ class _RotationTimelinePanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _TimelineRow(
-            label: context.l10n.walletCardCurrentLabel,
-            value: context.l10n.walletCardCurrentExpires(
+            label: context.tr.walletCardCurrentLabel,
+            value: context.tr.walletCardCurrentExpires(
               wallet.effectiveMaskedCardNumber,
               _formatDate(context, wallet.cardExpiresAt),
             ),
           ),
           if (wallet.cardLastRotatedAt != null)
             _TimelineRow(
-              label: context.l10n.walletCardLastRotationLabel,
+              label: context.tr.walletCardLastRotationLabel,
               value: _formatDateTime(context, wallet.cardLastRotatedAt),
             ),
           if (wallet.hasPreviousCard)
             _TimelineRow(
-              label: context.l10n.walletCardPreviousLabel,
-              value: context.l10n.walletCardPreviousExpired(
+              label: context.tr.walletCardPreviousLabel,
+              value: context.tr.walletCardPreviousExpired(
                 '****${wallet.previousCardNumberSuffix}',
                 _formatDate(context, wallet.previousCardExpiresAt),
               ),
@@ -624,14 +622,14 @@ class _RotationTimelinePanel extends StatelessWidget {
 
   String _formatDate(BuildContext context, DateTime? value) {
     if (value == null) {
-      return context.l10n.walletCardNotInformed;
+      return context.tr.walletCardNotInformed;
     }
     return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
   }
 
   String _formatDateTime(BuildContext context, DateTime? value) {
     if (value == null) {
-      return context.l10n.walletCardNotInformed;
+      return context.tr.walletCardNotInformed;
     }
     return '${_formatDate(context, value)} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
   }
@@ -659,10 +657,10 @@ class _TimelineRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _walletCardFaintText,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0,
-              ),
+                    color: _walletCardFaintText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
             ),
           ),
           Expanded(
@@ -671,10 +669,10 @@ class _TimelineRow extends StatelessWidget {
               maxLines: responsive.isTinyPhone ? 2 : 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _walletCardText,
-                fontFamily: 'JetBrainsMono',
-                height: 1.35,
-              ),
+                    color: _walletCardText,
+                    fontFamily: 'JetBrainsMono',
+                    height: 1.35,
+                  ),
             ),
           ),
         ],
@@ -701,18 +699,17 @@ class _ShowcaseCardField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: mutedTextColor,
-            fontSize: 8,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
-          ),
+                color: mutedTextColor,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
         ),
         const SizedBox(height: 4),
         SizedBox(
@@ -724,10 +721,10 @@ class _ShowcaseCardField extends StatelessWidget {
               value,
               maxLines: 1,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
             ),
           ),
         ),
@@ -853,7 +850,7 @@ class _CardDescriptionPanel extends StatelessWidget {
                     border: Border.all(color: _walletCardPanelBorderStrong),
                   ),
                   child: Text(
-                    context.l10n.walletCardYourCard,
+                    context.tr.walletCardYourCard,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: _walletCardText,
                       fontWeight: FontWeight.w800,
@@ -873,20 +870,20 @@ class _CardDescriptionPanel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           _FeeInfoRow(
-            label: context.l10n.walletCardDepositLabel,
+            label: context.tr.walletCardDepositLabel,
             value: WalletCardType.formatRate(spec.depositRate ?? 0),
           ),
           _FeeInfoRow(
-            label: context.l10n.walletCardWithdrawLabel,
+            label: context.tr.walletCardWithdrawLabel,
             value: WalletCardType.formatRate(spec.withdrawalRate ?? 0),
           ),
           _FeeInfoRow(
-            label: context.l10n.walletCardMiningLabel,
+            label: context.tr.walletCardMiningLabel,
             value: WalletCardType.formatRate(spec.miningRate ?? 0),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            context.l10n.walletCardHowToGet,
+            context.tr.walletCardHowToGet,
             style: theme.textTheme.labelLarge?.copyWith(
               color: _walletCardText,
               fontWeight: FontWeight.w700,
@@ -924,7 +921,7 @@ class _UpgradeRulesPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.walletCardRulesTitle,
+            context.tr.walletCardRulesTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               color: _walletCardText,
               fontWeight: FontWeight.w800,
@@ -932,7 +929,7 @@ class _UpgradeRulesPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.walletCardRulesSubtitle,
+            context.tr.walletCardRulesSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: _walletCardMutedText,
               height: 1.45,
@@ -941,18 +938,18 @@ class _UpgradeRulesPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           _EligibilityRow(
             color: Color(0xFF343434),
-            title: context.l10n.walletCardGraphiteTitle,
-            description: context.l10n.walletCardGraphiteEligibility,
+            title: context.tr.walletCardGraphiteTitle,
+            description: context.tr.walletCardGraphiteEligibility,
           ),
           _EligibilityRow(
             color: Color(0xFFE4E4DF),
-            title: context.l10n.walletCardSilverTitle,
-            description: context.l10n.walletCardSilverEligibility,
+            title: context.tr.walletCardSilverTitle,
+            description: context.tr.walletCardSilverEligibility,
           ),
           _EligibilityRow(
             color: Color(0xFF050505),
-            title: context.l10n.walletCardBlackTitle,
-            description: context.l10n.walletCardBlackEligibility,
+            title: context.tr.walletCardBlackTitle,
+            description: context.tr.walletCardBlackEligibility,
           ),
         ],
       ),
@@ -982,17 +979,17 @@ class _FeeInfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _walletCardMutedText,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: _walletCardMutedText,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
           Text(
             value,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: _walletCardText,
-              fontWeight: FontWeight.w800,
-            ),
+                  color: _walletCardText,
+                  fontWeight: FontWeight.w800,
+                ),
           ),
         ],
       ),
@@ -1036,17 +1033,17 @@ class _EligibilityRow extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: _walletCardText,
-                    fontWeight: FontWeight.w700,
-                  ),
+                        color: _walletCardText,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _walletCardMutedText,
-                    height: 1.45,
-                  ),
+                        color: _walletCardMutedText,
+                        height: 1.45,
+                      ),
                 ),
               ],
             ),
@@ -1078,18 +1075,18 @@ class _InfoChip extends StatelessWidget {
             TextSpan(
               text: '$label: ',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _walletCardFaintText,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
+                    color: _walletCardFaintText,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
             ),
             TextSpan(
               text: value,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _walletCardText,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
-              ),
+                    color: _walletCardText,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
             ),
           ],
         ),
@@ -1209,49 +1206,49 @@ class _CardShowcaseSpec {
   }) : isHidden = false;
 
   const _CardShowcaseSpec.hidden()
-    : id = 'hidden',
-      depositRate = null,
-      withdrawalRate = null,
-      miningRate = null,
-      walletCardType = null,
-      fillColor = const Color(0x0AFFFFFF),
-      borderColor = const Color(0x26FFFFFF),
-      textColor = const Color(0xFFF4F6F8),
-      mutedTextColor = const Color(0xB3F4F6F8),
-      isHidden = true;
+      : id = 'hidden',
+        depositRate = null,
+        withdrawalRate = null,
+        miningRate = null,
+        walletCardType = null,
+        fillColor = const Color(0x0AFFFFFF),
+        borderColor = const Color(0x26FFFFFF),
+        textColor = const Color(0xFFF4F6F8),
+        mutedTextColor = const Color(0xB3F4F6F8),
+        isHidden = true;
 
   String title(BuildContext context) {
     return switch (id) {
-      'graphite' => context.l10n.walletCardGraphiteTitle,
-      'silver' => context.l10n.walletCardSilverTitle,
-      'black' => context.l10n.walletCardBlackTitle,
-      _ => context.l10n.walletCardHiddenTitle,
+      'graphite' => context.tr.walletCardGraphiteTitle,
+      'silver' => context.tr.walletCardSilverTitle,
+      'black' => context.tr.walletCardBlackTitle,
+      _ => context.tr.walletCardHiddenTitle,
     };
   }
 
   String tierLabel(BuildContext context) {
     return switch (id) {
-      'graphite' => context.l10n.walletCardGraphiteTier,
-      'silver' => context.l10n.walletCardSilverTier,
-      'black' => context.l10n.walletCardBlackTier,
+      'graphite' => context.tr.walletCardGraphiteTier,
+      'silver' => context.tr.walletCardSilverTier,
+      'black' => context.tr.walletCardBlackTier,
       _ => '',
     };
   }
 
   String description(BuildContext context) {
     return switch (id) {
-      'graphite' => context.l10n.walletCardGraphiteDescription,
-      'silver' => context.l10n.walletCardSilverDescription,
-      'black' => context.l10n.walletCardBlackDescription,
+      'graphite' => context.tr.walletCardGraphiteDescription,
+      'silver' => context.tr.walletCardSilverDescription,
+      'black' => context.tr.walletCardBlackDescription,
       _ => '',
     };
   }
 
   String qualification(BuildContext context) {
     return switch (id) {
-      'graphite' => context.l10n.walletCardGraphiteQualification,
-      'silver' => context.l10n.walletCardSilverQualification,
-      'black' => context.l10n.walletCardBlackQualification,
+      'graphite' => context.tr.walletCardGraphiteQualification,
+      'silver' => context.tr.walletCardSilverQualification,
+      'black' => context.tr.walletCardBlackQualification,
       _ => '',
     };
   }

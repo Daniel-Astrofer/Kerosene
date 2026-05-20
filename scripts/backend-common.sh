@@ -12,8 +12,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKEND_DIR="$REPO_ROOT/backend/kerosene"
 INFRA_DIR="$REPO_ROOT/backend/kerosene-infrastructure"
 COMPOSE_FILE="$INFRA_DIR/docker-compose.local.yml"
+COMPOSE_LIMITS_FILE="$INFRA_DIR/docker-compose.local.limits.yml"
 ENV_FILE="$BACKEND_DIR/.env"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-kerosene-infrastructure}"
+COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-2}"
 DOCKER_WAIT_TIMEOUT_SECONDS="${DOCKER_WAIT_TIMEOUT_SECONDS:-30}"
 
 info() { echo "[backend] $*"; }
@@ -123,11 +125,19 @@ detect_compose() {
 
 compose() {
   require_file "$COMPOSE_FILE"
+  if [[ "${KEROSENE_COMPOSE_RESOURCE_LIMITS:-1}" != "0" ]]; then
+    require_file "$COMPOSE_LIMITS_FILE"
+  fi
   require_file "$ENV_FILE"
   detect_compose
+  local compose_files=(-f "$COMPOSE_FILE")
+  if [[ "${KEROSENE_COMPOSE_RESOURCE_LIMITS:-1}" != "0" ]]; then
+    compose_files+=(-f "$COMPOSE_LIMITS_FILE")
+  fi
+  COMPOSE_PARALLEL_LIMIT="$COMPOSE_PARALLEL_LIMIT" \
   COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" "${COMPOSE_CMD[@]}" \
     --project-name "$COMPOSE_PROJECT_NAME" \
     --env-file "$ENV_FILE" \
-    -f "$COMPOSE_FILE" \
+    "${compose_files[@]}" \
     "$@"
 }

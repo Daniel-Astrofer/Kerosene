@@ -5,7 +5,7 @@ class ApiDisplayText {
   const ApiDisplayText._();
 
   static String status(BuildContext context, Object? raw) {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     final value = _normalize(raw);
     return switch (value) {
       'ACTIVE' ||
@@ -51,7 +51,7 @@ class ApiDisplayText {
   }
 
   static String action(BuildContext context, Object? raw) {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     final value = _normalize(raw);
     return switch (value) {
       'AUTO_COMPLETE' || 'AUTO_RESOLUTION' => l10n.apiDisplayAutomatic,
@@ -63,7 +63,7 @@ class ApiDisplayText {
   }
 
   static String walletCustody(BuildContext context, Object? raw) {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     final value = _normalize(raw);
     return switch (value) {
       'WATCH_ONLY' || 'SELF_CUSTODY' => l10n.apiDisplayWatchedColdWallet,
@@ -76,7 +76,7 @@ class ApiDisplayText {
   }
 
   static String securityFactor(BuildContext context, Object? raw) {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     final value = _normalize(raw);
     return switch (value) {
       'PASSKEY' => l10n.apiDisplayDeviceKey,
@@ -88,7 +88,7 @@ class ApiDisplayText {
   }
 
   static String message(BuildContext context, Object? raw) {
-    final l10n = context.l10n;
+    final l10n = context.tr;
     final text = raw?.toString().trim() ?? '';
     if (text.isEmpty || text == 'null') {
       return l10n.apiDisplayGenericActionError;

@@ -39,46 +39,46 @@ class _NotificationSettingsScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                      context.l10n.notificationChannels.toUpperCase()),
+                      context.tr.notificationChannels.toUpperCase()),
                   _buildSwitchItem(
                     context,
-                    context.l10n.pushNotifications,
-                    context.l10n.pushNotificationsDesc,
+                    context.tr.pushNotifications,
+                    context.tr.pushNotificationsDesc,
                     _pushEnabled,
                     (val) => setState(() => _pushEnabled = val),
                     Icons.notifications_active_rounded,
                   ),
                   _buildSwitchItem(
                     context,
-                    context.l10n.emailNotifications,
-                    context.l10n.emailNotificationsDesc,
+                    context.tr.emailNotifications,
+                    context.tr.emailNotificationsDesc,
                     _emailEnabled,
                     (val) => setState(() => _emailEnabled = val),
                     Icons.email_rounded,
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   _buildSectionHeader(
-                      context.l10n.notificationAlerts.toUpperCase()),
+                      context.tr.notificationAlerts.toUpperCase()),
                   _buildSwitchItem(
                     context,
-                    context.l10n.transactionUpdates,
-                    context.l10n.transactionUpdatesDesc,
+                    context.tr.transactionUpdates,
+                    context.tr.transactionUpdatesDesc,
                     _transactionAlerts,
                     (val) => setState(() => _transactionAlerts = val),
                     Icons.swap_horiz_rounded,
                   ),
                   _buildSwitchItem(
                     context,
-                    context.l10n.securityAlertsTitle,
-                    context.l10n.securityAlertsDesc,
+                    context.tr.securityAlertsTitle,
+                    context.tr.securityAlertsDesc,
                     _securityAlerts,
                     (val) => setState(() => _securityAlerts = val),
                     Icons.security_rounded,
                   ),
                   _buildSwitchItem(
                     context,
-                    context.l10n.marketingNews,
-                    context.l10n.marketingNewsDesc,
+                    context.tr.marketingNews,
+                    context.tr.marketingNewsDesc,
                     _marketingUpdates,
                     (val) => setState(() => _marketingUpdates = val),
                     Icons.campaign_rounded,
@@ -137,7 +137,7 @@ class _NotificationSettingsScreenState
         ),
         const SizedBox(width: AppSpacing.md),
         Text(
-          context.l10n.notifications.toUpperCase(),
+          context.tr.notifications.toUpperCase(),
           style: Theme.of(context)
               .textTheme
               .titleMedium!

@@ -3,12 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/cyber_button.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:teste/l10n/l10n_extension.dart';
 
 /// Luxury QR Deposit Screen — Refactored with Design System
 class LuxuryQrDepositScreen extends StatelessWidget {
@@ -39,202 +37,148 @@ class LuxuryQrDepositScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: true,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
-                  if (amountBtc != null && amountBtc! > 0)
-                    _buildAmountHeader().animate().fade().scale(),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildQrCard()
-                      .animate(delay: 100.ms)
-                      .fade()
-                      .scale(curve: Curves.easeOutBack),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildSubtitles().animate(delay: 200.ms).fade(),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildAddressSection(context)
-                      .animate(delay: 300.ms)
-                      .fade()
-                      .slideY(begin: 0.1, end: 0),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildActionRow(context)
-                      .animate(delay: 400.ms)
-                      .fade()
-                      .slideY(begin: 0.1, end: 0),
-                  const SizedBox(height: AppSpacing.xxl),
-                  if (amountBtc == null || amountBtc! <= 0)
-                    CyberButton(
-                      text: 'DEFINIR VALOR',
-                      onTap: () => Navigator.pop(context),
-                    ).animate(delay: 500.ms).fade().slideY(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-              ),
+    return ReceiveFlowScaffold(
+      title: context.tr.depositQrReceiveTitle,
+      subtitle: context.tr.depositQrReceiveSubtitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (amountBtc != null && amountBtc! > 0) ...[
+            _buildAmountHeader(context),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          _buildQrCard(),
+          const SizedBox(height: AppSpacing.md),
+          _buildSubtitles(context),
+          const SizedBox(height: AppSpacing.md),
+          _buildAddressSection(context),
+          const SizedBox(height: AppSpacing.md),
+          _buildActionRow(context),
+          if (amountBtc == null || amountBtc! <= 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            ReceiveFlowPrimaryButton(
+              label: context.tr.depositQrSetAmount,
+              onTap: () => Navigator.pop(context),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(LucideIcons.chevronLeft,
-                color: Theme.of(context).colorScheme.onPrimary, size: 24),
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.05),
-              padding: const EdgeInsets.all(AppSpacing.sm),
-            ),
-          ),
-          Text(
-            'RECEBER BTC',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium!
-                .copyWith(letterSpacing: 2),
-          ),
-          const SizedBox(width: 48),
         ],
       ),
     ).animate().fade().slideY(begin: -0.2, end: 0);
   }
 
-  Widget _buildAmountHeader() {
-    return Column(
-      children: [
-        Text(
-          amountBtc!.toStringAsFixed(8),
-          style: AppTypography.h1
-              .copyWith(fontSize: 48, fontFamily: 'JetBrainsMono'),
-        ),
-        Text(
-          'BTC',
-          style: AppTypography.caption.copyWith(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2),
-        ),
-      ],
+  Widget _buildAmountHeader(BuildContext context) {
+    return ReceiveFlowPanel(
+      child: Column(
+        children: [
+          Text(
+            amountBtc!.toStringAsFixed(8),
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontSize: 40,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w400,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            'BTC',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: receiveFlowMutedTextColor,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildQrCard() {
-    return Center(
-      child: GlassContainer(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        borderRadius: BorderRadius.circular(AppSpacing.xxl),
+    return ReceiveFlowPanel(
+      child: Center(
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(AppSpacing.lg),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: QrImageView(
             data: _qrData,
             version: QrVersions.auto,
             size: 200,
-            eyeStyle:
-                QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
-            dataModuleStyle: QrDataModuleStyle(
-                dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+            eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square, color: Colors.black),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Colors.black,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSubtitles() {
-    return Column(
-      children: [
-        Text(
-          'Escaneie para receber Bitcoin',
-          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Envie apenas Bitcoin (BTC) para este endereço.\nO envio de outros ativos resultará em perda permanente.',
-          style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withValues(alpha: 0.4), height: 1.4),
-          textAlign: TextAlign.center,
-        ),
-      ],
+  Widget _buildSubtitles(BuildContext context) {
+    return ReceiveFlowPanel(
+      child: Column(
+        children: [
+          Text(
+            context.tr.depositQrScanTitle,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: receiveFlowTextColor,
+                  fontWeight: FontWeight.w500,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            context.tr.depositQrBitcoinOnlyWarning,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: receiveFlowMutedTextColor,
+                  height: 1.35,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildAddressSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'SEU ENDEREÇO BTC',
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.3),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                fontSize: 10,
-              ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        GlassContainer(
-          padding: const EdgeInsets.only(
-              left: AppSpacing.md,
-              right: AppSpacing.xs,
-              top: AppSpacing.xs,
-              bottom: AppSpacing.xs),
-          borderRadius: BorderRadius.circular(AppSpacing.md),
-          child: Row(
+    return ReceiveFlowPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ReceiveFlowSectionLabel(context.tr.depositQrAddressLabel),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
             children: [
               Expanded(
                 child: Text(
                   _shortAddress,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      fontFamily: 'JetBrainsMono', letterSpacing: 0.5),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: receiveFlowTextColor,
+                        fontFamily: 'JetBrainsMono',
+                      ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              IconButton(
-                onPressed: () {
+              ReceiveFlowSecondaryButton(
+                label: context.tr.depositQrCopy,
+                icon: LucideIcons.copy,
+                fullWidth: false,
+                onTap: () {
                   HapticFeedback.mediumImpact();
                   Clipboard.setData(ClipboardData(text: address));
-                  SnackbarHelper.showSuccess('Endereço copiado!');
+                  SnackbarHelper.showSuccess(context.tr.depositQrCopied);
                 },
-                icon: Icon(LucideIcons.copy,
-                    color: Theme.of(context).colorScheme.onPrimary, size: 18),
-                style: IconButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.all(10),
-                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -244,7 +188,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
         Expanded(
           child: _buildSecondaryActionButton(
             icon: LucideIcons.share2,
-            label: 'Compartilhar',
+            label: context.tr.depositQrShare,
             onTap: () {},
           ),
         ),
@@ -252,7 +196,7 @@ class LuxuryQrDepositScreen extends StatelessWidget {
         Expanded(
           child: _buildSecondaryActionButton(
             icon: LucideIcons.download,
-            label: 'Salvar QR',
+            label: context.tr.depositQrSave,
             onTap: () {},
           ),
         ),
@@ -264,25 +208,10 @@ class LuxuryQrDepositScreen extends StatelessWidget {
       {required IconData icon,
       required String label,
       required VoidCallback onTap}) {
-    return InkWell(
+    return ReceiveFlowSecondaryButton(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.md),
-      child: GlassContainer(
-        height: 56,
-        padding: EdgeInsets.zero,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              style:
-                  AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
+      icon: icon,
+      label: label,
     );
   }
 }

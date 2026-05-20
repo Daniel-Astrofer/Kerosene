@@ -86,7 +86,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
     final statusMeta = paymentLink != null
         ? FinancialStatusBadge.paymentLink(paymentLink!.status)
         : FinancialStatusBadge.transaction(transaction!.status);
-    final amountBtc = paymentLink?.amountBtc ?? transaction!.amountBTC;
+    final amountBtc = paymentLink?.amountBtc ?? transaction!.signedAmountBTC;
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
@@ -97,10 +97,18 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      signed: transaction != null,
     );
     final secondaryAmount = selectedCurrency == Currency.btc
         ? null
-        : MoneyDisplay.format(amount: amountBtc, currency: Currency.btc);
+        : MoneyDisplay.formatAmountFromBtc(
+            btcAmount: amountBtc,
+            currency: Currency.btc,
+            btcUsd: btcUsd,
+            btcEur: btcEur,
+            btcBrl: btcBrl,
+            signed: transaction != null,
+          );
     final createdAt =
         paymentLink?.createdAt ?? paymentLink?.paidAt ?? transaction?.timestamp;
     final hasAdvancedDetails = (_secondaryAddress != null &&
@@ -427,7 +435,7 @@ class _CancelReceiveButton extends ConsumerWidget {
       child: OutlinedButton.icon(
         onPressed: () => _cancel(context, ref),
         icon: const Icon(Icons.block_rounded),
-        label: Text(context.l10n.onchainDepositCancelAction),
+        label: Text(context.tr.onchainDepositCancelAction),
       ),
     );
   }
@@ -441,16 +449,16 @@ class _CancelReceiveButton extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(context.l10n.onchainDepositCancelTitle),
-            content: Text(context.l10n.onchainDepositCancelMessage),
+            title: Text(context.tr.onchainDepositCancelTitle),
+            content: Text(context.tr.onchainDepositCancelMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.l10n.goBack),
+                child: Text(context.tr.goBack),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.l10n.onchainDepositCancelAction),
+                child: Text(context.tr.onchainDepositCancelAction),
               ),
             ],
           ),
@@ -472,14 +480,14 @@ class _CancelReceiveButton extends ConsumerWidget {
         Navigator.of(context).maybePop();
         AppNotice.showSuccess(
           context,
-          message: context.l10n.apiDisplayReceiveCancelled,
+          message: context.tr.apiDisplayReceiveCancelled,
         );
       }
     } catch (error) {
       if (context.mounted) {
         AppNotice.showError(
           context,
-          message: ErrorTranslator.translate(context.l10n, error.toString()),
+          message: ErrorTranslator.translate(context.tr, error.toString()),
         );
       }
     }
@@ -645,7 +653,7 @@ class _CopyablePanel extends StatelessWidget {
               }
               AppNotice.showSuccess(
                 context,
-                message: context.l10n.apiDisplayCopied,
+                message: context.tr.apiDisplayCopied,
               );
             },
             icon: const Icon(Icons.copy_rounded),

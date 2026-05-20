@@ -4,8 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
-import 'package:teste/features/auth/presentation/screens/login_username_screen.dart';
+import 'package:teste/features/auth/presentation/screens/login_screen.dart';
 import 'package:teste/features/auth/presentation/screens/passkey_verification_screen.dart';
 import 'package:teste/features/auth/presentation/screens/signup/steps/signup_pow_step.dart';
 import 'package:teste/features/auth/presentation/screens/signup/widgets/signup_step_ui.dart';
@@ -143,35 +142,40 @@ void main() {
       }
     });
 
-    testWidgets('login username screen remains centered on narrow screens', (
+    testWidgets('login screen remains centered on narrow screens', (
       tester,
     ) async {
       for (final size in [compactPortrait, compactLandscape]) {
         await pumpResponsiveScreen(
           tester,
           size: size,
-          child: const LoginUsernameScreen(),
+          child: const LoginScreen(),
         );
+        expect(find.text('lucas_01'), findsNothing);
+        expect(find.text('KEROSENE'), findsNothing);
         expectNoLayoutExceptions(
           tester,
-          label: 'LoginUsernameScreen @ $size',
+          label: 'LoginScreen @ $size',
         );
       }
     });
 
     testWidgets(
-        'login passphrase screen avoids overflow in portrait and landscape', (
+        'login passphrase fallback avoids overflow in portrait and landscape', (
       tester,
     ) async {
       for (final size in [compactPortrait, compactLandscape]) {
         await pumpResponsiveScreen(
           tester,
           size: size,
-          child: const LoginPassphraseScreen(username: 'astroferas'),
+          child: const LoginScreen(
+            username: 'astroferas',
+            focusPassphrase: true,
+          ),
         );
         expectNoLayoutExceptions(
           tester,
-          label: 'LoginPassphraseScreen @ $size',
+          label: 'LoginScreen fallback @ $size',
         );
       }
     });
@@ -185,6 +189,7 @@ void main() {
           size: size,
           child: const PasskeyVerificationScreen(username: 'astroferas'),
         );
+        expect(find.text('@astroferas'), findsNothing);
         expectNoLayoutExceptions(
           tester,
           label: 'PasskeyVerificationScreen @ $size',

@@ -26,8 +26,8 @@ class LiveFeeGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           MiningSectionHeading(
-            title: context.l10n.miningFeesTitle,
-            subtitle: context.l10n.miningFeesSubtitle,
+            title: context.tr.miningFeesTitle,
+            subtitle: context.tr.miningFeesSubtitle,
             trailing: MiningTrendChip(
               label: '${viewData.projectedFastLaneWindowMinutes} min',
               positive: viewData.congestionLevel == MiningCongestionLevel.calm,
@@ -44,14 +44,14 @@ class LiveFeeGrid extends StatelessWidget {
               ),
               _SignalChip(
                 label: viewData.hasWideFeeSpread
-                    ? context.l10n.miningFeesWideSpread
-                    : context.l10n.miningFeesControlledSpread,
+                    ? context.tr.miningFeesWideSpread
+                    : context.tr.miningFeesControlledSpread,
                 tone: viewData.hasWideFeeSpread
                     ? MiningStatusTone.warning
                     : MiningStatusTone.live,
               ),
               _SignalChip(
-                label: context.l10n.miningFeesWindow(
+                label: context.tr.miningFeesWindow(
                   MiningFormatters.feeRate(viewData.nextBlockMinimumFee),
                 ),
                 tone: MiningStatusTone.info,
@@ -73,28 +73,28 @@ class LiveFeeGrid extends StatelessWidget {
                 children: [
                   _FeeTile(
                     width: cardWidth,
-                    label: context.l10n.miningFeesPriority,
+                    label: context.tr.miningFeesPriority,
                     value: feeMarket.priorityFee,
                     helper: 'Entrada em 1 bloco',
                     accent: miningRed,
                   ),
                   _FeeTile(
                     width: cardWidth,
-                    label: context.l10n.miningFeesExpress,
+                    label: context.tr.miningFeesExpress,
                     value: feeMarket.expressFee,
                     helper: 'Janela 30 min',
                     accent: miningAmber,
                   ),
                   _FeeTile(
                     width: cardWidth,
-                    label: context.l10n.miningFeesStandard,
+                    label: context.tr.miningFeesStandard,
                     value: feeMarket.standardFee,
                     helper: 'Ritmo normal',
                     accent: miningBlue,
                   ),
                   _FeeTile(
                     width: cardWidth,
-                    label: context.l10n.miningFeesEconomy,
+                    label: context.tr.miningFeesEconomy,
                     value: feeMarket.economyFee,
                     helper: 'Sem urgencia',
                     accent: miningTeal,
@@ -259,20 +259,20 @@ class _FeeBand extends StatelessWidget {
           children: [
             Expanded(
               child: _BandLabel(
-                label: context.l10n.miningFeesMinimum,
+                label: context.tr.miningFeesMinimum,
                 value: MiningFormatters.feeRate(minFee),
               ),
             ),
             Expanded(
               child: _BandLabel(
-                label: context.l10n.miningFeesMedian,
+                label: context.tr.miningFeesMedian,
                 value: MiningFormatters.feeRate(medianFee),
                 alignEnd: true,
               ),
             ),
             Expanded(
               child: _BandLabel(
-                label: context.l10n.miningFeesMaximum,
+                label: context.tr.miningFeesMaximum,
                 value: MiningFormatters.feeRate(maxFee),
                 alignEnd: true,
               ),

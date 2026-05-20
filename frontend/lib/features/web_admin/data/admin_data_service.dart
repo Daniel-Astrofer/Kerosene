@@ -1,42 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/config/app_config.dart';
+import '../../../core/errors/exceptions.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_client_provider.dart';
-import '../../../core/errors/exceptions.dart';
 
-/// Enterprise data service that aggregates real API data for the web admin panel.
-/// Every KPI is derived from live endpoint data.
 class AdminDataService {
   final ApiClient _api;
 
   AdminDataService(this._api);
 
-  // ─── Audit ─────────────────────────────────────
   Future<Map<String, dynamic>> fetchAuditStats() async {
-    try {
-      final response = await _api.get(AppConfig.auditStats);
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {};
-    } catch (e) {
-      _logAdminError('fetchAuditStats', e);
-      return {};
-    }
+    return _fetchMap(AppConfig.auditStats, 'fetchAuditStats');
   }
 
   Future<Map<String, dynamic>> fetchAuditLatestRoot() async {
-    try {
-      final response = await _api.get(AppConfig.auditMerkleLatestRoot);
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {};
-    } catch (e) {
-      _logAdminError('fetchAuditLatestRoot', e);
-      return {};
-    }
+    return _fetchMap(AppConfig.auditMerkleLatestRoot, 'fetchAuditLatestRoot');
   }
 
   Future<List<Map<String, dynamic>>> fetchAuditHistory() async {
@@ -55,7 +35,6 @@ class AdminDataService {
     }
   }
 
-  // ─── BTC Price ─────────────────────────────────
   Future<Map<String, double>> fetchBtcPrice() async {
     try {
       final response = await _api.get('/api/economy/btc-price');
@@ -74,38 +53,19 @@ class AdminDataService {
     }
   }
 
-  // ─── Sovereignty Status ────────────────────────
   Future<Map<String, dynamic>> fetchSovereigntyStatus() async {
-    try {
-      final response = await _api.get(AppConfig.sovereigntyStatus);
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {};
-    } catch (e) {
-      _logAdminError('fetchSovereigntyStatus', e);
-      return {};
-    }
+    return _fetchMap(AppConfig.sovereigntyStatus, 'fetchSovereigntyStatus');
   }
 
-  // ─── User Profile ─────────────────────────────
   Future<Map<String, dynamic>> fetchCurrentUser() async {
-    try {
-      final response = await _api.get(AppConfig.authMe);
-      if (response.data is Map) {
-        return Map<String, dynamic>.from(response.data);
-      }
-      return {};
-    } catch (e) {
-      _logAdminError('fetchCurrentUser', e);
-      return {};
-    }
+    return _fetchMap(AppConfig.authMe, 'fetchCurrentUser');
   }
 
-  // ─── Operations / Monitoring ───────────────────
   Future<Map<String, dynamic>> fetchOperationsOverview() async {
     return _fetchMap(
-        AppConfig.adminOperationsOverview, 'fetchOperationsOverview');
+      AppConfig.adminOperationsOverview,
+      'fetchOperationsOverview',
+    );
   }
 
   Future<Map<String, dynamic>> fetchOperationalHealth() async {
@@ -114,12 +74,16 @@ class AdminDataService {
 
   Future<Map<String, dynamic>> fetchBlockchainMonitor() async {
     return _fetchMap(
-        AppConfig.adminOperationsBlockchain, 'fetchBlockchainMonitor');
+      AppConfig.adminOperationsBlockchain,
+      'fetchBlockchainMonitor',
+    );
   }
 
   Future<Map<String, dynamic>> fetchLightningMonitor() async {
     return _fetchMap(
-        AppConfig.adminOperationsLightning, 'fetchLightningMonitor');
+      AppConfig.adminOperationsLightning,
+      'fetchLightningMonitor',
+    );
   }
 
   Future<Map<String, dynamic>> fetchVaultRaftHealth() async {
@@ -196,34 +160,26 @@ class AdminDataService {
   }
 
   Future<void> blockAdminDevice(String deviceId) async {
-    try {
-      await _api.post(AppConfig.authAdminDeviceBlock(deviceId));
-    } catch (e) {
-      _logAdminError('blockAdminDevice', e);
-    }
+    await _postDeviceAction(AppConfig.authAdminDeviceBlock(deviceId));
   }
 
   Future<void> revokeAdminDevice(String deviceId) async {
-    try {
-      await _api.post(AppConfig.authAdminDeviceRevoke(deviceId));
-    } catch (e) {
-      _logAdminError('revokeAdminDevice', e);
-    }
+    await _postDeviceAction(AppConfig.authAdminDeviceRevoke(deviceId));
   }
 
   Future<void> blockAuthenticatedMobileDevice(String deviceInstallId) async {
-    try {
-      await _api.post(AppConfig.authPasskeyDeviceBlock(deviceInstallId));
-    } catch (e) {
-      _logAdminError('blockAuthenticatedMobileDevice', e);
-    }
+    await _postDeviceAction(AppConfig.authPasskeyDeviceBlock(deviceInstallId));
   }
 
   Future<void> revokeAuthenticatedMobileDevice(String deviceInstallId) async {
+    await _postDeviceAction(AppConfig.authPasskeyDeviceRevoke(deviceInstallId));
+  }
+
+  Future<void> _postDeviceAction(String path) async {
     try {
-      await _api.post(AppConfig.authPasskeyDeviceRevoke(deviceInstallId));
+      await _api.post(path);
     } catch (e) {
-      _logAdminError('revokeAuthenticatedMobileDevice', e);
+      _logAdminError('deviceAction', e);
     }
   }
 
@@ -253,7 +209,6 @@ class AdminDataService {
   }
 }
 
-/// Provider
 final adminDataServiceProvider = Provider<AdminDataService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return AdminDataService(apiClient);

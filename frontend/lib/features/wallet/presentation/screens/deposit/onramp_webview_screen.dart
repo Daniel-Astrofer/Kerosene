@@ -116,7 +116,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
     HapticFeedback.selectionClick();
     Clipboard.setData(ClipboardData(text: widget.depositAddress));
     SnackbarHelper.showSuccess(
-      context.l10n.depositFlowDepositAddressCopied,
+      context.tr.depositFlowDepositAddressCopied,
       title: widget.providerName,
     );
   }
@@ -125,7 +125,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
       title: widget.providerName,
-      subtitle: context.l10n.depositFlowCheckoutSubtitle,
+      subtitle: context.tr.depositFlowCheckoutSubtitle,
       scrollable: false,
       bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       actions: [
@@ -168,7 +168,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        context.l10n.depositFlowEstimatedPurchase(
+                        context.tr.depositFlowEstimatedPurchase(
                           widget.btcAmountLabel,
                         ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -218,7 +218,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                                 ),
                                 const SizedBox(height: AppSpacing.md),
                                 Text(
-                                  context.l10n.depositFlowProviderLoadError,
+                                  context.tr.depositFlowProviderLoadError,
                                   textAlign: TextAlign.center,
                                   style: Theme.of(context)
                                       .textTheme
@@ -231,7 +231,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                                 const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   ErrorTranslator.translate(
-                                    context.l10n,
+                                    context.tr,
                                     _errorMessage!,
                                   ),
                                   textAlign: TextAlign.center,
@@ -245,7 +245,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                                 const SizedBox(height: AppSpacing.lg),
                                 ReceiveFlowSecondaryButton(
                                   onTap: _reload,
-                                  label: context.l10n.depositFlowRetry,
+                                  label: context.tr.depositFlowRetry,
                                   icon: LucideIcons.refreshCw,
                                 ),
                               ],
@@ -267,12 +267,12 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ReceiveFlowSectionLabel(
-                        context.l10n.depositFlowCheckoutAddressTitle,
+                        context.tr.depositFlowCheckoutAddressTitle,
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         widget.depositAddress.isEmpty
-                            ? context.l10n.depositFlowAddressUnavailable
+                            ? context.tr.depositFlowAddressUnavailable
                             : widget.depositAddress,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -289,7 +289,7 @@ class _OnrampWebViewScreenState extends State<OnrampWebViewScreen> {
                 ReceiveFlowSecondaryButton(
                   onTap: widget.depositAddress.isEmpty ? null : _copyAddress,
                   icon: LucideIcons.copy,
-                  label: context.l10n.depositFlowCopy,
+                  label: context.tr.depositFlowCopy,
                   fullWidth: false,
                 ),
               ],

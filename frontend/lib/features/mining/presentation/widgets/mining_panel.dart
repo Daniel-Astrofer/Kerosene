@@ -402,19 +402,19 @@ class MiningSkeletonBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-          height: height,
-          decoration: BoxDecoration(
-            borderRadius: borderRadius ?? miningInnerBorderRadius,
-            border: Border.all(color: miningBorder),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.02),
-                Colors.white.withValues(alpha: 0.07),
-                Colors.white.withValues(alpha: 0.02),
-              ],
-            ),
-          ),
-        )
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius ?? miningInnerBorderRadius,
+        border: Border.all(color: miningBorder),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.02),
+            Colors.white.withValues(alpha: 0.07),
+            Colors.white.withValues(alpha: 0.02),
+          ],
+        ),
+      ),
+    )
         .animate(onPlay: (controller) => controller.repeat())
         .fade(begin: 0.45, end: 1, duration: 900.ms)
         .then()

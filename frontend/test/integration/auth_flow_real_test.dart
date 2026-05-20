@@ -13,7 +13,7 @@ import 'package:teste/core/config/app_config.dart';
 import 'package:teste/core/network/api_client_provider.dart';
 import 'package:teste/core/providers/tor_providers.dart';
 import 'package:teste/core/services/tor_service.dart';
-import 'package:teste/main.dart' show sharedPreferencesProvider;
+import 'package:teste/core/providers/shared_preferences_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'totp_utils.dart';
 
@@ -73,7 +73,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
-          // IMPORTANT: Re-declaring the exact provider from main.dart to override it
+          // IMPORTANT: Re-declaring the exact provider to override it
           sharedPreferencesProvider.overrideWithValue(sharedPrefs),
         ],
       );

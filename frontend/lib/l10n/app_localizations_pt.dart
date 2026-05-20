@@ -2145,8 +2145,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get errLedgerInvalidOperation => 'Tentativa de operação inválida.';
 
   @override
-  String get errLedgerReceiverNotFound =>
-      'O destinatário da transação não foi encontrado.';
+  String get errLedgerReceiverNotFound => 'Endereço não disponível';
 
   @override
   String get errLedgerGeneric =>
@@ -6585,4 +6584,106 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get landingStatusManifest => 'Manifesto';
+
+  @override
+  String get homeFundsDistributionTitle => 'Distribuição de Fundos';
+
+  @override
+  String get homeRecentActivitiesTitle => 'Atividades';
+
+  @override
+  String get homeViewStatementShortLabel => 'Extrato';
+
+  @override
+  String get homeOnchainFilterLabel => 'On-chain';
+
+  @override
+  String get homePlatformFilterLabel => 'Plataforma';
+
+  @override
+  String get homeNoticesFilterLabel => 'Avisos';
+
+  @override
+  String get homeEducationInternalTitle => 'Kerosene';
+
+  @override
+  String get homeEducationInternalBody =>
+      'Use transferências internas quando o destino também usa Kerosene. O envio é rápido e sem taxa de rede.';
+
+  @override
+  String get homeEducationInternalTag => 'Uso interno';
+
+  @override
+  String get homeEducationWalletHashTitle => 'Hash da carteira';
+
+  @override
+  String get homeEducationWalletHashBody =>
+      'Para receber internamente, compartilhe somente o hash que a sua própria carteira disponibiliza.';
+
+  @override
+  String get homeEducationWalletHashTag => 'Identidade da carteira';
+
+  @override
+  String get homeEducationLightningTitle => 'Lightning';
+
+  @override
+  String get homeEducationLightningBody =>
+      'Use Lightning para pagar faturas ou endereços relâmpago com confirmação quase imediata.';
+
+  @override
+  String get homeEducationLightningTag => 'Pagamentos rápidos';
+
+  @override
+  String get homeEducationOnchainTitle => 'Bitcoin on-chain';
+
+  @override
+  String get homeEducationOnchainBody =>
+      'Use on-chain para guardar valor, mover para autocustódia ou enviar para uma carteira Bitcoin externa.';
+
+  @override
+  String get homeEducationOnchainTag => 'Rede principal';
+
+  @override
+  String get homeEducationConfirmationsTitle => 'Confirmações';
+
+  @override
+  String get homeEducationConfirmationsBody =>
+      'Transações on-chain entram em blocos. Valores maiores costumam exigir mais confirmações.';
+
+  @override
+  String get homeEducationConfirmationsTag => 'Tempo de rede';
+
+  @override
+  String get homeEducationFeesTitle => 'Taxas';
+
+  @override
+  String get homeEducationFeesBody =>
+      'A taxa varia conforme a rede. Antes de confirmar, revise o total debitado e o valor que chega.';
+
+  @override
+  String get homeEducationFeesTag => 'Custo da rede';
+
+  @override
+  String get homeEducationBitcoinTitle => 'Bitcoin';
+
+  @override
+  String get homeEducationBitcoinBody =>
+      'Bitcoin é dinheiro digital escasso. Você pode usar caminhos diferentes conforme urgência e destino.';
+
+  @override
+  String get homeEducationBitcoinTag => 'Fundamento';
+
+  @override
+  String get homeEducationLightningGeneralBody =>
+      'Lightning é indicado para pagamentos menores e rápidos, usando invoice, LNURL ou endereço relâmpago.';
+
+  @override
+  String get homeEducationLightningGeneralTag => 'Pagamento instantâneo';
+
+  @override
+  String get homeEducationKeroseneGeneralBody =>
+      'A Kerosene organiza envio interno, Lightning e on-chain em fluxos separados para reduzir erro.';
+
+  @override
+  String get homeEducationKeroseneGeneralTag => 'Como escolher';
 }

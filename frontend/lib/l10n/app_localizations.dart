@@ -4033,7 +4033,7 @@ abstract class AppLocalizations {
   /// No description provided for @errLedgerReceiverNotFound.
   ///
   /// In en, this message translates to:
-  /// **'Transaction recipient not found.'**
+  /// **'Address unavailable'**
   String get errLedgerReceiverNotFound;
 
   /// No description provided for @errLedgerGeneric.
@@ -11862,6 +11862,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manifest'**
   String get landingStatusManifest;
+
+  /// No description provided for @homeFundsDistributionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fund Distribution'**
+  String get homeFundsDistributionTitle;
+
+  /// No description provided for @homeRecentActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get homeRecentActivitiesTitle;
+
+  /// No description provided for @homeViewStatementShortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement'**
+  String get homeViewStatementShortLabel;
+
+  /// No description provided for @homeOnchainFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain'**
+  String get homeOnchainFilterLabel;
+
+  /// No description provided for @homePlatformFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get homePlatformFilterLabel;
+
+  /// No description provided for @homeNoticesFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notices'**
+  String get homeNoticesFilterLabel;
+
+  /// No description provided for @homeEducationInternalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene'**
+  String get homeEducationInternalTitle;
+
+  /// No description provided for @homeEducationInternalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use internal transfers when the destination also uses Kerosene. Sending is fast and has no network fee.'**
+  String get homeEducationInternalBody;
+
+  /// No description provided for @homeEducationInternalTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal use'**
+  String get homeEducationInternalTag;
+
+  /// No description provided for @homeEducationWalletHashTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet hash'**
+  String get homeEducationWalletHashTitle;
+
+  /// No description provided for @homeEducationWalletHashBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To receive internally, share only the hash made available by your own wallet.'**
+  String get homeEducationWalletHashBody;
+
+  /// No description provided for @homeEducationWalletHashTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet identity'**
+  String get homeEducationWalletHashTag;
+
+  /// No description provided for @homeEducationLightningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning'**
+  String get homeEducationLightningTitle;
+
+  /// No description provided for @homeEducationLightningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Lightning to pay invoices or lightning addresses with near-instant confirmation.'**
+  String get homeEducationLightningBody;
+
+  /// No description provided for @homeEducationLightningTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast payments'**
+  String get homeEducationLightningTag;
+
+  /// No description provided for @homeEducationOnchainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin on-chain'**
+  String get homeEducationOnchainTitle;
+
+  /// No description provided for @homeEducationOnchainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use on-chain to store value, move to self-custody, or send to an external Bitcoin wallet.'**
+  String get homeEducationOnchainBody;
+
+  /// No description provided for @homeEducationOnchainTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Main network'**
+  String get homeEducationOnchainTag;
+
+  /// No description provided for @homeEducationConfirmationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmations'**
+  String get homeEducationConfirmationsTitle;
+
+  /// No description provided for @homeEducationConfirmationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain transactions enter blocks. Larger values usually require more confirmations.'**
+  String get homeEducationConfirmationsBody;
+
+  /// No description provided for @homeEducationConfirmationsTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Network time'**
+  String get homeEducationConfirmationsTag;
+
+  /// No description provided for @homeEducationFeesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees'**
+  String get homeEducationFeesTitle;
+
+  /// No description provided for @homeEducationFeesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees vary with the network. Before confirming, review the total debited and the amount received.'**
+  String get homeEducationFeesBody;
+
+  /// No description provided for @homeEducationFeesTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Network cost'**
+  String get homeEducationFeesTag;
+
+  /// No description provided for @homeEducationBitcoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin'**
+  String get homeEducationBitcoinTitle;
+
+  /// No description provided for @homeEducationBitcoinBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitcoin is scarce digital money. You can use different paths depending on urgency and destination.'**
+  String get homeEducationBitcoinBody;
+
+  /// No description provided for @homeEducationBitcoinTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Foundation'**
+  String get homeEducationBitcoinTag;
+
+  /// No description provided for @homeEducationLightningGeneralBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning is useful for smaller and faster payments using invoices, LNURL, or lightning addresses.'**
+  String get homeEducationLightningGeneralBody;
+
+  /// No description provided for @homeEducationLightningGeneralTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant payment'**
+  String get homeEducationLightningGeneralTag;
+
+  /// No description provided for @homeEducationKeroseneGeneralBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene separates internal, Lightning, and on-chain flows to reduce payment mistakes.'**
+  String get homeEducationKeroseneGeneralBody;
+
+  /// No description provided for @homeEducationKeroseneGeneralTag.
+  ///
+  /// In en, this message translates to:
+  /// **'How to choose'**
+  String get homeEducationKeroseneGeneralTag;
 }
 
 class _AppLocalizationsDelegate

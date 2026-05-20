@@ -186,8 +186,8 @@ class SignupHeroCard extends StatelessWidget {
     final titleSize = responsive.size.width < 340
         ? 23.0
         : isCompact
-        ? 26.0
-        : 29.0;
+            ? 26.0
+            : 29.0;
 
     return SignupGlassSurface(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -237,18 +237,18 @@ class SignupHeroCard extends StatelessWidget {
                     Text(
                       eyebrow.toUpperCase(),
                       style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                        color: accent,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w700,
-                      ),
+                            color: accent,
+                            letterSpacing: 1.0,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       title,
                       style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                        fontSize: titleSize,
-                        height: 1.02,
-                      ),
+                            fontSize: titleSize,
+                            height: 1.02,
+                          ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -261,9 +261,9 @@ class SignupHeroCard extends StatelessWidget {
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
           ),
           if (highlightValue != null) ...[
             const SizedBox(height: AppSpacing.lg),
@@ -282,32 +282,33 @@ class SignupHeroCard extends StatelessWidget {
                       Text(
                         highlightLabel!.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
-                          letterSpacing: 1.0,
-                          fontWeight: FontWeight.w700,
-                        ),
+                              color: Theme.of(context).colorScheme.secondary,
+                              letterSpacing: 1.0,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     if (highlightLabel != null)
                       const SizedBox(height: AppSpacing.xs),
                     Text(
                       highlightValue!,
-                      style:
-                          (isCompact
-                                  ? Theme.of(context).textTheme.headlineSmall
-                                  : Theme.of(context).textTheme.displaySmall)!
-                              .copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontWeight: FontWeight.w800,
-                              ),
+                      style: (isCompact
+                              ? Theme.of(context).textTheme.headlineSmall
+                              : Theme.of(context).textTheme.displaySmall)!
+                          .copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     if (highlightHint != null) ...[
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         highlightHint!,
                         style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.45,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              height: 1.45,
+                            ),
                       ),
                     ],
                   ],
@@ -404,16 +405,16 @@ class SignupInlineNotice extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   message,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    height: 1.45,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.45,
+                      ),
                 ),
               ],
             ),
@@ -462,16 +463,16 @@ class SignupBulletLine extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.45,
-                ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
               ),
             ],
           ),
@@ -496,9 +497,8 @@ class SignupTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _toneColor(context, tone);
-    final maxTagWidth = math
-        .min(MediaQuery.sizeOf(context).width * 0.72, 260)
-        .toDouble();
+    final maxTagWidth =
+        math.min(MediaQuery.sizeOf(context).width * 0.72, 260).toDouble();
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxTagWidth),
@@ -531,9 +531,9 @@ class SignupTag extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  letterSpacing: 0.4,
-                ),
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      letterSpacing: 0.4,
+                    ),
               ),
             ),
           ],
@@ -577,9 +577,9 @@ class SignupPrimaryFooter extends StatelessWidget {
           Text(
             caption!,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
             textAlign: TextAlign.center,
           ),
         ],

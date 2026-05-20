@@ -10,7 +10,7 @@ import 'package:teste/core/config/app_config.dart';
 import 'package:teste/core/network/api_client_provider.dart';
 import 'package:teste/core/providers/tor_providers.dart';
 import 'package:teste/core/services/tor_service.dart';
-import 'package:teste/main.dart' show sharedPreferencesProvider;
+import 'package:teste/core/providers/shared_preferences_provider.dart';
 
 const _runRealOnionTests = bool.fromEnvironment('RUN_REAL_ONION_TESTS');
 

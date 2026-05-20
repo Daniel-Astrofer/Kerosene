@@ -134,7 +134,7 @@ class _SovereigntyStatusScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.sovereigntyStatusTitle,
+                  context.tr.sovereigntyStatusTitle,
                   style: AppTypography.buttonText.copyWith(
                     fontSize: 12,
                     letterSpacing: 1.6,
@@ -315,22 +315,22 @@ class _SovereigntyStatusScreenState
             runSpacing: 10,
             children: [
               _SummaryPill(
-                label: context.l10n.hardwareAttestation,
+                label: context.tr.hardwareAttestation,
                 value: status.hardwareAttestation['status'] ?? 'UNKNOWN',
                 ok: status.hardwareAttestation['status'] == 'VERIFIED',
               ),
               _SummaryPill(
-                label: context.l10n.networkConsensus,
+                label: context.tr.networkConsensus,
                 value: status.networkConsensus['status'] ?? 'OFFLINE',
                 ok: status.networkConsensus['status'] == 'ACTIVE',
               ),
               _SummaryPill(
-                label: context.l10n.ledgerIntegrity,
+                label: context.tr.ledgerIntegrity,
                 value: status.ledgerIntegrity['status'] ?? 'INVALID',
                 ok: status.ledgerIntegrity['status'] == 'VALID',
               ),
               _SummaryPill(
-                label: context.l10n.memoryProtection,
+                label: context.tr.memoryProtection,
                 value: status.memoryProtection['status'] ?? 'UNLOCKED',
                 ok: status.memoryProtection['status'] == 'LOCKED',
               ),
@@ -441,7 +441,7 @@ class _SovereigntyStatusScreenState
 
     return _SecurityCard(
       icon: Icons.memory_rounded,
-      title: context.l10n.hardwareAttestation,
+      title: context.tr.hardwareAttestation,
       subtitle: chipSubtitle,
       statusOk: verified,
       statusLabel: tpm['status'] ?? 'UNKNOWN',
@@ -1017,22 +1017,22 @@ class _SovereigntyStatusScreenState
             runSpacing: 10,
             children: [
               _SummaryPill(
-                label: context.l10n.securityTreasuryBuffer,
+                label: context.tr.securityTreasuryBuffer,
                 value: _formatSignedBtc(buffer),
                 ok: buffer >= 0,
               ),
               _SummaryPill(
-                label: context.l10n.securityTreasuryConfirmations,
+                label: context.tr.securityTreasuryConfirmations,
                 value: '$activeNodes/$totalNodes',
                 ok: quorumHealthy,
               ),
               _SummaryPill(
-                label: context.l10n.securityTreasuryLightning,
+                label: context.tr.securityTreasuryLightning,
                 value: _formatShortBtc(lightningBalance),
                 ok: lightningBalance > 0,
               ),
               _SummaryPill(
-                label: context.l10n.securityTreasuryProfit,
+                label: context.tr.securityTreasuryProfit,
                 value: _formatShortBtc(profitPending),
                 ok: profitPending >= 0,
               ),
@@ -1190,7 +1190,7 @@ class _SovereigntyStatusScreenState
 
     return _SecurityCard(
       icon: Icons.hub_rounded,
-      title: context.l10n.networkConsensus,
+      title: context.tr.networkConsensus,
       subtitle:
           '$activeNodes/$totalNodes ${_copy(pt: 'confirmações ativas', en: 'active confirmations', es: 'confirmaciones activas')}',
       statusOk: active,
@@ -1302,7 +1302,7 @@ class _SovereigntyStatusScreenState
 
     return _SecurityCard(
       icon: Icons.account_tree_rounded,
-      title: context.l10n.ledgerIntegrity,
+      title: context.tr.ledgerIntegrity,
       subtitle: subtitle,
       statusOk: status == 'VALID',
       statusLabel: status,
@@ -1342,7 +1342,7 @@ class _SovereigntyStatusScreenState
 
     return _SecurityCard(
       icon: Icons.lock_rounded,
-      title: context.l10n.memoryProtection,
+      title: context.tr.memoryProtection,
       subtitle: subtitle,
       statusOk: status == 'LOCKED',
       statusLabel: status,
@@ -1411,7 +1411,7 @@ class _SovereigntyStatusScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.serverUptime,
+                  context.tr.serverUptime,
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.white70,
                   ),
