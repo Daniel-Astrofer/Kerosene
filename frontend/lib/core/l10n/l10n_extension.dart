@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:teste/l10n/app_localizations.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
 
 extension AppLocalizationsX on BuildContext {
   /// Retorna as strings baseadas no locale atual do context.

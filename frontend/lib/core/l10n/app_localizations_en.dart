@@ -18,9 +18,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get market => 'Market';
 
   @override
-  String get profile => 'Profile';
-
-  @override
   String get totalBalance => 'Total Balance (BTC)';
 
   @override
@@ -129,19 +126,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fiatVolume => 'Fiat Volume';
 
   @override
-  String get profileTitle => 'Profile';
-
-  @override
-  String get personalData => 'Personal Data';
-
-  @override
   String get security => 'Security';
 
   @override
   String get notifications => 'Notifications';
-
-  @override
-  String get helpSupport => 'Help & Support';
 
   @override
   String get language => 'Language';
@@ -575,12 +563,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generatePaymentRequest => 'GENERATE PAYMENT REQUEST';
 
   @override
-  String get phone => 'PHONE';
-
-  @override
-  String get personalAddress => 'ADDRESS';
-
-  @override
   String get notificationChannels => 'CHANNELS';
 
   @override
@@ -651,31 +633,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable 2FA to protect your assets from unauthorized access.';
 
   @override
-  String get faq => 'FAQ';
-
-  @override
-  String get faqDesc => 'Frequently Asked Questions';
-
-  @override
-  String get contactSupport => 'Contact Support';
-
-  @override
-  String get contactSupportDesc => 'Get help from our team';
-
-  @override
-  String get termsOfService => 'Terms of Service';
-
-  @override
-  String get termsOfServiceDesc => 'Read our terms and conditions';
-
-  @override
   String get privacyPolicy => 'Privacy Policy';
-
-  @override
-  String get privacyPolicyDesc => 'How we handle your data';
-
-  @override
-  String get developedBy => 'DEVELOPED BY';
 
   @override
   String get typeSend => 'Send';
@@ -2423,22 +2381,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errPayloadTooLarge => 'This content is too large to send safely.';
 
   @override
-  String get errRecoveryBadRequest =>
-      'Review the recovery codes, the new recovery phrase, and the authenticator code.';
-
-  @override
-  String get errRecoveryRejected =>
-      'We could not confirm recovery. Review the information and try again.';
-
-  @override
-  String get errRecoverySessionExpired =>
-      'The recovery time expired. Please restart the process.';
-
-  @override
-  String get errRecoveryRateLimited =>
-      'Please wait a few minutes before trying recovery again.';
-
-  @override
   String get errPasskeyDeviceNotLinked =>
       'This device is not linked to your account for passkey confirmation. Link this device and try again.';
 
@@ -2899,9 +2841,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignInAction => 'Sign in';
 
   @override
-  String get authEmergencyRecoveryAction => 'Emergency recovery';
-
-  @override
   String get authFlowInterruptedTitle => 'We could not continue';
 
   @override
@@ -3190,120 +3129,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Account protection is still being prepared. Try again in a few seconds.';
 
   @override
-  String get profileFallbackUser => 'User';
-
-  @override
-  String get profileNoWallet => 'No wallet';
-
-  @override
-  String get profileNoWallets => 'No wallets';
-
-  @override
-  String get profileOneActiveWallet => '1 active wallet';
-
-  @override
-  String profileActiveWallets(int count) {
-    return '$count active wallets';
-  }
-
-  @override
-  String get profileBiometricsChecking => 'Checking';
-
-  @override
-  String get profileBiometricsEnabled => 'Biometrics enabled';
-
-  @override
-  String get profileBiometricsDisabled => 'Biometrics disabled';
-
-  @override
-  String get profileBiometricsUnavailable => 'Biometrics unavailable';
-
-  @override
-  String get profileAlertsMonitoringActive => 'Alerts and monitoring active';
-
-  @override
-  String get profileMonitoringNoBanners => 'Monitoring active without banners';
-
-  @override
-  String get profileRealtimeAlertsDisabled => 'Real-time alerts disabled';
-
-  @override
-  String get profileAccessHeader => 'Profile and access';
-
-  @override
-  String get profileAccessSubtitle =>
-      'Identity, account security, and session control.';
-
-  @override
-  String get profileAuthenticated => 'Account authenticated';
-
-  @override
-  String get profileAwaitingAuthentication => 'Awaiting authentication';
-
-  @override
-  String get profileIntro =>
-      'This area brings together your access, account protection, and support channels.';
-
-  @override
-  String get profilePostureTitle => 'Current posture';
-
-  @override
-  String get profilePostureSubtitle =>
-      'Important account signals in simple language.';
-
-  @override
-  String get profilePrioritiesTitle => 'Priorities';
-
-  @override
-  String get profilePrioritiesSubtitle =>
-      'Access, security, and trust preferences.';
-
-  @override
-  String get profileSecuritySubtitle =>
-      'Review biometrics, recovery, device key, and access practices.';
-
-  @override
-  String get profileSovereigntyReportTitle => 'Sovereignty report';
-
-  @override
-  String get profileSovereigntyReportSubtitle =>
-      'Track hardware, consensus, and operational integrity.';
-
-  @override
-  String get profileSettingsSubtitle =>
-      'Adjust privacy, language, appearance, and session.';
-
-  @override
-  String get profileAccountSupportTitle => 'Account and support';
-
-  @override
-  String get profileAccountSupportSubtitle =>
-      'Personal data, notifications, and help.';
-
-  @override
-  String get profilePersonalDataSubtitle =>
-      'Review name, data, and account information.';
-
-  @override
-  String get profileNotificationsSubtitle =>
-      'Control transaction and security alerts.';
-
-  @override
-  String get profileSupportSubtitle =>
-      'Open support channels for questions or incidents.';
-
-  @override
-  String get profileLogoutSubtitle =>
-      'Ends this session and requires new authentication.';
-
-  @override
-  String get profileSecurityShamir => 'Advanced backup';
-
-  @override
-  String get profileSecurityMultisig => 'Vault with multiple approvals';
-
-  @override
-  String get profileSecurityStandard => 'Standard protection';
+  String get homeFallbackUser => 'User';
 
   @override
   String get walletEditNameAction => 'Edit name';

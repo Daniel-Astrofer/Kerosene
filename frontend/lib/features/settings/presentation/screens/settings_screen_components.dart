@@ -1,48 +1,186 @@
 part of 'settings_screen.dart';
 
-class _SectionLabel extends StatelessWidget {
+class _SettingsNavigationItem {
   final IconData icon;
-  final String label;
-  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
 
-  const _SectionLabel({
+  const _SettingsNavigationItem({
     required this.icon,
-    required this.label,
-    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
   });
+}
+
+class _SettingsNavigationList extends StatelessWidget {
+  final List<_SettingsNavigationItem> items;
+
+  const _SettingsNavigationList({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    final borderTone =
-        Color.lerp(monoBorderStrongColor, color, 0.08) ?? monoBorderStrongColor;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          for (final item in items)
+            _SettingsNavigationTile(
+              item: item,
+              key: ValueKey(item.title),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: monochromePanelDecoration(
-            color: monoSurfaceAltColor,
-            borderColor: borderTone,
-            showShadow: false,
+class _SettingsNavigationTile extends StatelessWidget {
+  final _SettingsNavigationItem item;
+
+  const _SettingsNavigationTile({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          item.onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _SettingsDesignColors.surfaceContainerHighest,
+                  border: Border.all(
+                    color: _SettingsDesignColors.borderMuted.withValues(
+                      alpha: 0.3,
+                    ),
+                  ),
+                ),
+                child: Icon(
+                  item.icon,
+                  color: _SettingsDesignColors.outlineVariant,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: _SettingsDesignColors.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.5,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: _SettingsDesignColors.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        height: 1.2,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: _SettingsDesignColors.outlineVariant,
+                size: 24,
+              ),
+            ],
           ),
-          child: Icon(icon, size: 14, color: monoTextColor),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(
-              color: monoMutedTextColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+class _AccountDetailsSheet extends ConsumerWidget {
+  const _AccountDetailsSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final user = authState is AuthAuthenticated ? authState.user : null;
+    final handle = _formatAccountHandle(user?.username ?? 'lucas_01');
+    final memberLabel =
+        user?.isAdmin == true ? 'Admin Member' : 'Private Member';
+
+    return _BottomSheetContainer(
+      title: 'Conta',
+      icon: Icons.manage_accounts_rounded,
+      iconColor: Colors.white54,
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _SettingsDesignColors.surfaceContainerHighest,
+              border: Border.all(color: _SettingsDesignColors.borderMuted),
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              color: _SettingsDesignColors.primary,
+              size: 28,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            handle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.h3.copyWith(color: monoTextColor),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            memberLabel,
+            style: AppTypography.bodySmall.copyWith(color: monoMutedTextColor),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _SheetButton(
+            label: context.tr.settingsUiLogoutTitle,
+            icon: Icons.logout_rounded,
+            color: Colors.white24,
+            isOutline: true,
+            onTap: () => _logoutFromSheet(context, ref),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _logoutFromSheet(BuildContext context, WidgetRef ref) async {
+    Navigator.pop(context);
+    await ref.read(authControllerProvider.notifier).logout();
+    if (context.mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
+    }
   }
 }
 
@@ -73,114 +211,6 @@ class _Divider extends StatelessWidget {
       thickness: 0.5,
       color: monoDividerColor,
       indent: AppSpacing.lg,
-    );
-  }
-}
-
-class _SelectionTile extends StatelessWidget {
-  final String leading;
-  final String title;
-  final String? trailing;
-  final bool selected;
-  final Color accentColor;
-  final VoidCallback onTap;
-  final bool isPill;
-
-  const _SelectionTile({
-    required this.leading,
-    required this.title,
-    this.trailing,
-    required this.selected,
-    required this.accentColor,
-    required this.onTap,
-    this.isPill = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final selectedBorder =
-        Color.lerp(monoTextColor, accentColor, 0.08) ?? monoTextColor;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(
-            horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
-            vertical: 14,
-          ),
-          color: selected ? monoSurfaceAltColor : Colors.transparent,
-          child: Row(
-            children: [
-              if (isPill)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: monochromePanelDecoration(
-                    color:
-                        selected ? monoSurfaceRaisedColor : monoSurfaceAltColor,
-                    borderColor:
-                        selected ? selectedBorder : monoBorderStrongColor,
-                    showShadow: false,
-                  ),
-                  child: Text(
-                    leading,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: selected ? monoTextColor : monoMutedTextColor,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                )
-              else
-                Text(leading, style: const TextStyle(fontSize: 22)),
-              SizedBox(
-                width: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
-              ),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: selected ? monoTextColor : monoMutedTextColor,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-                  ),
-                ),
-              ),
-              if (trailing != null && !selected)
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: responsive.isTinyPhone ? 80 : 120,
-                  ),
-                  child: Text(
-                    trailing!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: AppTypography.caption.copyWith(
-                      color: monoFaintTextColor,
-                    ),
-                  ),
-                ),
-              if (selected)
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: monoTextColor,
-                  size: 18,
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -271,118 +301,6 @@ class _SwitchTile extends StatelessWidget {
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final IconData? trailing;
-  final VoidCallback onTap;
-  final Color? titleColor;
-
-  const _ActionTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-    required this.onTap,
-    this.titleColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final responsive = context.responsive;
-    final iconBorder = Color.lerp(monoBorderStrongColor, iconColor, 0.08) ??
-        monoBorderStrongColor;
-    final effectiveTitleColor = titleColor == null
-        ? monoTextColor
-        : (Color.lerp(monoTextColor, titleColor, 0.08) ?? monoTextColor);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: responsive.isTinyPhone ? AppSpacing.md : AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: monochromePanelDecoration(
-                  color: monoSurfaceAltColor,
-                  borderColor: iconBorder,
-                  showShadow: false,
-                ),
-                child: Icon(icon, color: monoTextColor, size: 20),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: effectiveTitleColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: monoFaintTextColor,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (trailing != null)
-                Icon(trailing, color: monoMutedTextColor, size: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: monochromePanelDecoration(
-          color: monoSurfaceAltColor,
-          borderColor: monoBorderStrongColor,
-          showShadow: false,
-        ),
-        child: Icon(icon, color: monoTextColor, size: 18),
       ),
     );
   }

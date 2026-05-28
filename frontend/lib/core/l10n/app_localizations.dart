@@ -118,12 +118,6 @@ abstract class AppLocalizations {
   /// **'Market'**
   String get market;
 
-  /// No description provided for @profile.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get profile;
-
   /// No description provided for @totalBalance.
   ///
   /// In en, this message translates to:
@@ -340,18 +334,6 @@ abstract class AppLocalizations {
   /// **'Fiat Volume'**
   String get fiatVolume;
 
-  /// No description provided for @profileTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get profileTitle;
-
-  /// No description provided for @personalData.
-  ///
-  /// In en, this message translates to:
-  /// **'Personal Data'**
-  String get personalData;
-
   /// No description provided for @security.
   ///
   /// In en, this message translates to:
@@ -363,12 +345,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notifications'**
   String get notifications;
-
-  /// No description provided for @helpSupport.
-  ///
-  /// In en, this message translates to:
-  /// **'Help & Support'**
-  String get helpSupport;
 
   /// No description provided for @language.
   ///
@@ -1204,18 +1180,6 @@ abstract class AppLocalizations {
   /// **'GENERATE PAYMENT REQUEST'**
   String get generatePaymentRequest;
 
-  /// No description provided for @phone.
-  ///
-  /// In en, this message translates to:
-  /// **'PHONE'**
-  String get phone;
-
-  /// No description provided for @personalAddress.
-  ///
-  /// In en, this message translates to:
-  /// **'ADDRESS'**
-  String get personalAddress;
-
   /// No description provided for @notificationChannels.
   ///
   /// In en, this message translates to:
@@ -1354,59 +1318,11 @@ abstract class AppLocalizations {
   /// **'Enable 2FA to protect your assets from unauthorized access.'**
   String get enableTwoFactorInfo;
 
-  /// No description provided for @faq.
-  ///
-  /// In en, this message translates to:
-  /// **'FAQ'**
-  String get faq;
-
-  /// No description provided for @faqDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Frequently Asked Questions'**
-  String get faqDesc;
-
-  /// No description provided for @contactSupport.
-  ///
-  /// In en, this message translates to:
-  /// **'Contact Support'**
-  String get contactSupport;
-
-  /// No description provided for @contactSupportDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Get help from our team'**
-  String get contactSupportDesc;
-
-  /// No description provided for @termsOfService.
-  ///
-  /// In en, this message translates to:
-  /// **'Terms of Service'**
-  String get termsOfService;
-
-  /// No description provided for @termsOfServiceDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Read our terms and conditions'**
-  String get termsOfServiceDesc;
-
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
   /// **'Privacy Policy'**
   String get privacyPolicy;
-
-  /// No description provided for @privacyPolicyDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'How we handle your data'**
-  String get privacyPolicyDesc;
-
-  /// No description provided for @developedBy.
-  ///
-  /// In en, this message translates to:
-  /// **'DEVELOPED BY'**
-  String get developedBy;
 
   /// No description provided for @typeSend.
   ///
@@ -4570,30 +4486,6 @@ abstract class AppLocalizations {
   /// **'This content is too large to send safely.'**
   String get errPayloadTooLarge;
 
-  /// No description provided for @errRecoveryBadRequest.
-  ///
-  /// In en, this message translates to:
-  /// **'Review the recovery codes, the new recovery phrase, and the authenticator code.'**
-  String get errRecoveryBadRequest;
-
-  /// No description provided for @errRecoveryRejected.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not confirm recovery. Review the information and try again.'**
-  String get errRecoveryRejected;
-
-  /// No description provided for @errRecoverySessionExpired.
-  ///
-  /// In en, this message translates to:
-  /// **'The recovery time expired. Please restart the process.'**
-  String get errRecoverySessionExpired;
-
-  /// No description provided for @errRecoveryRateLimited.
-  ///
-  /// In en, this message translates to:
-  /// **'Please wait a few minutes before trying recovery again.'**
-  String get errRecoveryRateLimited;
-
   /// No description provided for @errPasskeyDeviceNotLinked.
   ///
   /// In en, this message translates to:
@@ -5410,12 +5302,6 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get authSignInAction;
 
-  /// No description provided for @authEmergencyRecoveryAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Emergency recovery'**
-  String get authEmergencyRecoveryAction;
-
   /// No description provided for @authFlowInterruptedTitle.
   ///
   /// In en, this message translates to:
@@ -5932,209 +5818,11 @@ abstract class AppLocalizations {
   /// **'Account protection is still being prepared. Try again in a few seconds.'**
   String get authSecurityPreparingMessage;
 
-  /// No description provided for @profileFallbackUser.
+  /// No description provided for @homeFallbackUser.
   ///
   /// In en, this message translates to:
   /// **'User'**
-  String get profileFallbackUser;
-
-  /// No description provided for @profileNoWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'No wallet'**
-  String get profileNoWallet;
-
-  /// No description provided for @profileNoWallets.
-  ///
-  /// In en, this message translates to:
-  /// **'No wallets'**
-  String get profileNoWallets;
-
-  /// No description provided for @profileOneActiveWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'1 active wallet'**
-  String get profileOneActiveWallet;
-
-  /// No description provided for @profileActiveWallets.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} active wallets'**
-  String profileActiveWallets(int count);
-
-  /// No description provided for @profileBiometricsChecking.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking'**
-  String get profileBiometricsChecking;
-
-  /// No description provided for @profileBiometricsEnabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometrics enabled'**
-  String get profileBiometricsEnabled;
-
-  /// No description provided for @profileBiometricsDisabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometrics disabled'**
-  String get profileBiometricsDisabled;
-
-  /// No description provided for @profileBiometricsUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometrics unavailable'**
-  String get profileBiometricsUnavailable;
-
-  /// No description provided for @profileAlertsMonitoringActive.
-  ///
-  /// In en, this message translates to:
-  /// **'Alerts and monitoring active'**
-  String get profileAlertsMonitoringActive;
-
-  /// No description provided for @profileMonitoringNoBanners.
-  ///
-  /// In en, this message translates to:
-  /// **'Monitoring active without banners'**
-  String get profileMonitoringNoBanners;
-
-  /// No description provided for @profileRealtimeAlertsDisabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Real-time alerts disabled'**
-  String get profileRealtimeAlertsDisabled;
-
-  /// No description provided for @profileAccessHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile and access'**
-  String get profileAccessHeader;
-
-  /// No description provided for @profileAccessSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Identity, account security, and session control.'**
-  String get profileAccessSubtitle;
-
-  /// No description provided for @profileAuthenticated.
-  ///
-  /// In en, this message translates to:
-  /// **'Account authenticated'**
-  String get profileAuthenticated;
-
-  /// No description provided for @profileAwaitingAuthentication.
-  ///
-  /// In en, this message translates to:
-  /// **'Awaiting authentication'**
-  String get profileAwaitingAuthentication;
-
-  /// No description provided for @profileIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'This area brings together your access, account protection, and support channels.'**
-  String get profileIntro;
-
-  /// No description provided for @profilePostureTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Current posture'**
-  String get profilePostureTitle;
-
-  /// No description provided for @profilePostureSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Important account signals in simple language.'**
-  String get profilePostureSubtitle;
-
-  /// No description provided for @profilePrioritiesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Priorities'**
-  String get profilePrioritiesTitle;
-
-  /// No description provided for @profilePrioritiesSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Access, security, and trust preferences.'**
-  String get profilePrioritiesSubtitle;
-
-  /// No description provided for @profileSecuritySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Review biometrics, recovery, device key, and access practices.'**
-  String get profileSecuritySubtitle;
-
-  /// No description provided for @profileSovereigntyReportTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sovereignty report'**
-  String get profileSovereigntyReportTitle;
-
-  /// No description provided for @profileSovereigntyReportSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Track hardware, consensus, and operational integrity.'**
-  String get profileSovereigntyReportSubtitle;
-
-  /// No description provided for @profileSettingsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Adjust privacy, language, appearance, and session.'**
-  String get profileSettingsSubtitle;
-
-  /// No description provided for @profileAccountSupportTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Account and support'**
-  String get profileAccountSupportTitle;
-
-  /// No description provided for @profileAccountSupportSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Personal data, notifications, and help.'**
-  String get profileAccountSupportSubtitle;
-
-  /// No description provided for @profilePersonalDataSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Review name, data, and account information.'**
-  String get profilePersonalDataSubtitle;
-
-  /// No description provided for @profileNotificationsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Control transaction and security alerts.'**
-  String get profileNotificationsSubtitle;
-
-  /// No description provided for @profileSupportSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Open support channels for questions or incidents.'**
-  String get profileSupportSubtitle;
-
-  /// No description provided for @profileLogoutSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Ends this session and requires new authentication.'**
-  String get profileLogoutSubtitle;
-
-  /// No description provided for @profileSecurityShamir.
-  ///
-  /// In en, this message translates to:
-  /// **'Advanced backup'**
-  String get profileSecurityShamir;
-
-  /// No description provided for @profileSecurityMultisig.
-  ///
-  /// In en, this message translates to:
-  /// **'Vault with multiple approvals'**
-  String get profileSecurityMultisig;
-
-  /// No description provided for @profileSecurityStandard.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard protection'**
-  String get profileSecurityStandard;
+  String get homeFallbackUser;
 
   /// No description provided for @walletEditNameAction.
   ///
