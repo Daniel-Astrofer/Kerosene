@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class SafeDisplayText {
   SafeDisplayText._();

@@ -20,7 +20,7 @@ import 'package:teste/features/bitcoin_accounts/data/cold_wallet_public_material
 import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class BitcoinAccountsScreen extends ConsumerStatefulWidget {
   const BitcoinAccountsScreen({super.key});
@@ -123,7 +123,7 @@ class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
   void _openColdWalletFlow() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const _ColdWalletCreationScreen(),
+        builder: (_) => const ColdWalletCreationScreen(),
       ),
     );
   }
@@ -1116,25 +1116,23 @@ class _ManagementItem extends StatelessWidget {
   }
 }
 
-class _ColdWalletCreationScreen extends ConsumerStatefulWidget {
-  const _ColdWalletCreationScreen();
+class ColdWalletCreationScreen extends ConsumerStatefulWidget {
+  const ColdWalletCreationScreen({super.key});
 
   @override
-  ConsumerState<_ColdWalletCreationScreen> createState() =>
+  ConsumerState<ColdWalletCreationScreen> createState() =>
       _ColdWalletCreationScreenState();
 }
 
 class _ColdWalletCreationScreenState
-    extends ConsumerState<_ColdWalletCreationScreen> {
-  final TextEditingController _labelController = TextEditingController(
-    text: 'Cold Wallet',
-  );
+    extends ConsumerState<ColdWalletCreationScreen> {
   final TextEditingController _extraWordController = TextEditingController();
   final List<TextEditingController> _verificationControllers = [];
   final _deriver = const ColdWalletPublicMaterialDeriver();
 
   _ColdWalletLevel _level = _ColdWalletLevel.recommended;
-  _ColdWalletStep _step = _ColdWalletStep.prepare;
+  _ColdWalletStep _step = _ColdWalletStep.purpose;
+  _WalletPurpose? _purpose;
   ColdWalletPublicMaterial? _publicMaterial;
   List<int> _verificationIndexes = const [];
   String _mnemonic = '';
@@ -1146,24 +1144,69 @@ class _ColdWalletCreationScreenState
   bool _busy = false;
 
   bool get _canGenerate =>
-      _labelController.text.trim().isNotEmpty &&
+      _purpose != null &&
       _paperReady &&
       _privatePlace &&
       _offlineReady &&
       _noPhotos;
+
+  String get _walletLabel => _purpose?.label ?? 'Cold Wallet';
 
   List<String> get _words =>
       _mnemonic.trim().isEmpty ? const [] : _mnemonic.split(' ');
 
   @override
   void dispose() {
-    _labelController.dispose();
     _extraWordController.dispose();
     for (final controller in _verificationControllers) {
       controller.dispose();
     }
     _mnemonic = '';
     super.dispose();
+  }
+
+  void _goBack() {
+    if (_busy) return;
+    switch (_step) {
+      case _ColdWalletStep.purpose:
+        Navigator.maybePop(context);
+        return;
+      case _ColdWalletStep.prepare:
+        setState(() => _step = _ColdWalletStep.purpose);
+        return;
+      case _ColdWalletStep.backup:
+        _discardGeneratedMaterial();
+        setState(() => _step = _ColdWalletStep.prepare);
+        return;
+      case _ColdWalletStep.verify:
+        setState(() => _step = _ColdWalletStep.backup);
+        return;
+    }
+  }
+
+  void _continueFromPurpose() {
+    if (_busy) return;
+    if (_purpose == null) {
+      AppNotice.showWarning(
+        context,
+        title: 'Selecione a finalidade',
+        message: 'Escolha para que essa carteira on-chain será usada.',
+      );
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() => _step = _ColdWalletStep.prepare);
+  }
+
+  void _discardGeneratedMaterial() {
+    _mnemonic = '';
+    _publicMaterial = null;
+    _showWords = false;
+    _verificationIndexes = const [];
+    for (final controller in _verificationControllers) {
+      controller.dispose();
+    }
+    _verificationControllers.clear();
   }
 
   void _generateColdWallet() {
@@ -1237,7 +1280,7 @@ class _ColdWalletCreationScreenState
     try {
       final notifier = ref.read(bitcoinAccountsProvider.notifier);
       await notifier.importColdWallet(
-        label: _labelController.text.trim(),
+        label: _walletLabel,
         xpub: material.xpub,
         fingerprint: material.fingerprint,
         derivationPath: material.derivationPath,
@@ -1272,6 +1315,10 @@ class _ColdWalletCreationScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_step == _ColdWalletStep.purpose) {
+      return _buildPurposeScaffold();
+    }
+
     final responsive = context.responsive;
 
     return Scaffold(
@@ -1290,7 +1337,7 @@ class _ColdWalletCreationScreenState
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: _busy ? null : () => Navigator.maybePop(context),
+                    onPressed: _busy ? null : _goBack,
                     icon: const Icon(
                       LucideIcons.chevronLeft,
                       color: monoTextColor,
@@ -1330,6 +1377,7 @@ class _ColdWalletCreationScreenState
                       maxWidth: responsive.mobileContentMaxWidth,
                     ),
                     child: switch (_step) {
+                      _ColdWalletStep.purpose => const SizedBox.shrink(),
                       _ColdWalletStep.prepare => _buildPrepare(),
                       _ColdWalletStep.backup => _buildBackup(),
                       _ColdWalletStep.verify => _buildVerify(),
@@ -1344,22 +1392,82 @@ class _ColdWalletCreationScreenState
     );
   }
 
+  Widget _buildPurposeScaffold() {
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: _goBack,
+                  icon: const Icon(
+                    LucideIcons.arrowLeft,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _CreationTitle(
+                      'Para Que Finalidade\nDeseja Derivar essa\nCarteira?',
+                    ),
+                    const SizedBox(height: 40),
+                    DecoratedBox(
+                      decoration: const BoxDecoration(
+                        border: Border.symmetric(
+                          horizontal: BorderSide(color: Color(0xFF222222)),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          for (final purpose in _walletPurposeOptions)
+                            _PurposeTile(
+                              purpose: purpose,
+                              selected: _purpose == purpose,
+                              onTap: () => setState(() => _purpose = purpose),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                MediaQuery.viewInsetsOf(context).bottom > 0 ? 20 : 40,
+              ),
+              child: _CreationPrimaryButton(
+                label: 'Gerar Carteira',
+                onPressed: _purpose == null ? null : _continueFromPurpose,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPrepare() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MutedPanel(text: context.tr.coldWalletCreateSubtitle),
-        const SizedBox(height: AppSpacing.lg),
-        TextField(
-          controller: _labelController,
-          onChanged: (_) => setState(() {}),
-          style: const TextStyle(color: monoTextColor),
-          decoration: monochromeInputDecoration(
-            label: context.tr.coldWalletNameLabel,
-            hintText: context.tr.coldWalletNameHint,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
         _SectionTitle(context.tr.coldWalletSecurityLevelTitle),
         for (final level in _ColdWalletLevel.values)
           _ColdWalletLevelTile(
@@ -1540,48 +1648,54 @@ class _ColdWalletLevelTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected ? monoSurfaceRaisedColor : monoSurfaceColor,
-            border: Border.all(
-              color: selected ? monoTextColor : monoBorderColor,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: monoSurfaceRaisedColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: selected ? monoTextColor : Colors.transparent,
+              ),
             ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                selected ? LucideIcons.checkCircle : LucideIcons.circle,
-                color: selected ? monoTextColor : monoMutedTextColor,
-                size: 18,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      level.title(context),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: monoTextColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      level.body(context),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: monoMutedTextColor,
-                            height: 1.35,
-                          ),
-                    ),
-                  ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  selected ? LucideIcons.checkCircle : LucideIcons.circle,
+                  color: selected ? monoTextColor : monoMutedTextColor,
+                  size: 18,
                 ),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        level.title(context),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: monoTextColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        level.body(context),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: monoMutedTextColor,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1602,19 +1716,36 @@ class _ChecklistTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      value: value,
-      onChanged: (next) => onChanged(next ?? false),
-      activeColor: monoTextColor,
-      checkColor: Colors.black,
-      controlAffinity: ListTileControlAffinity.leading,
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: monoMutedTextColor,
-              height: 1.35,
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: monoDividerColor),
+          ),
+        ),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: (next) => onChanged(next ?? false),
+              activeColor: monoTextColor,
+              checkColor: Colors.black,
+              side: const BorderSide(color: monoBorderStrongColor),
             ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: monoMutedTextColor,
+                      height: 1.35,
+                    ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1675,17 +1806,8 @@ class _InternalAccountCreationFlowState
   final TextEditingController _dailyLimitController = TextEditingController();
 
   _InternalAccountStep _step = _InternalAccountStep.custody;
-  _InternalAccountPurpose? _purpose;
+  _WalletPurpose? _purpose;
   bool _busy = false;
-
-  static const _purposes = [
-    _InternalAccountPurpose('Investimento', LucideIcons.trendingUp),
-    _InternalAccountPurpose('Casa', LucideIcons.home),
-    _InternalAccountPurpose('Reserva', LucideIcons.building2),
-    _InternalAccountPurpose('Veículo', LucideIcons.car),
-    _InternalAccountPurpose('Gastos mensais', LucideIcons.receipt),
-    _InternalAccountPurpose('Dia a Dia', LucideIcons.calendarDays),
-  ];
 
   @override
   void dispose() {
@@ -1860,11 +1982,10 @@ class _InternalAccountCreationFlowState
             subtitle:
                 'Controle total do usuário, backup necessário, maior responsabilidade.',
             onTap: () {
-              AppNotice.showWarning(
-                context,
-                title: 'Em breve',
-                message:
-                    'Este fluxo agora está disponível somente para a carteira interna Kerosene.',
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ColdWalletCreationScreen(),
+                ),
               );
             },
           ),
@@ -1887,7 +2008,7 @@ class _InternalAccountCreationFlowState
             'Para Que Finalidade Deseja Derivar essa Carteira?',
           ),
           const SizedBox(height: 40),
-          for (final purpose in _purposes)
+          for (final purpose in _walletPurposeOptions)
             _PurposeTile(
               purpose: purpose,
               selected: _purpose == purpose,
@@ -2129,7 +2250,7 @@ class _CustodyOptionCard extends StatelessWidget {
 }
 
 class _PurposeTile extends StatelessWidget {
-  final _InternalAccountPurpose purpose;
+  final _WalletPurpose purpose;
   final bool selected;
   final VoidCallback onTap;
 
@@ -2291,12 +2412,21 @@ class _CreationTextField extends StatelessWidget {
   }
 }
 
-class _InternalAccountPurpose {
+class _WalletPurpose {
   final String label;
   final IconData icon;
 
-  const _InternalAccountPurpose(this.label, this.icon);
+  const _WalletPurpose(this.label, this.icon);
 }
+
+const _walletPurposeOptions = [
+  _WalletPurpose('Investimento', LucideIcons.trendingUp),
+  _WalletPurpose('Casa', LucideIcons.home),
+  _WalletPurpose('Reserva', LucideIcons.building2),
+  _WalletPurpose('Veículo', LucideIcons.car),
+  _WalletPurpose('Gastos mensais', LucideIcons.receipt),
+  _WalletPurpose('Dia a Dia', LucideIcons.calendarDays),
+];
 
 enum _InternalAccountStep { custody, purpose, security }
 
@@ -2782,7 +2912,7 @@ class _AccountsSkeleton extends StatelessWidget {
   }
 }
 
-enum _ColdWalletStep { prepare, backup, verify }
+enum _ColdWalletStep { purpose, prepare, backup, verify }
 
 enum _ColdWalletLevel {
   essential,

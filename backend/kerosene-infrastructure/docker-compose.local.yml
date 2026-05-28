@@ -26,7 +26,7 @@ services:
       context: ../vault
       dockerfile: ../kerosene-infrastructure/images/vault/Dockerfile
     container_name: kerosene-vault-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -95,7 +95,7 @@ services:
   lnd-neutrino:
     image: ${LIGHTNING_LND_IMAGE:-lightninglabs/lnd:v0.20.1-beta}
     container_name: lnd-neutrino-local
-    restart: unless-stopped
+    restart: "no"
     env_file: ../kerosene/.env
     environment:
       - BITCOIN_NETWORK=${BITCOIN_NETWORK:-mainnet}
@@ -154,7 +154,7 @@ services:
   lnd-unlocker:
     image: curlimages/curl:8.10.1
     container_name: lnd-unlocker-local
-    restart: unless-stopped
+    restart: "no"
     user: "0:0"
     env_file: ../kerosene/.env
     environment:
@@ -182,13 +182,13 @@ services:
     image: ${BITCOIN_CORE_IMAGE:-bitcoin/bitcoin:27.1}
     container_name: bitcoin-pruned-node-local
     hostname: bitcoin-pruned-node
-    restart: unless-stopped
+    restart: "no"
     env_file: ../kerosene/.env
     environment:
       - BITCOIN_CHAIN=${BITCOIN_CHAIN:-mainnet}
       - BITCOIN_PRUNE_MB=${BITCOIN_PRUNE_MB:-5500}
       - BITCOIN_MAX_MEMPOOL_MB=${BITCOIN_MAX_MEMPOOL_MB:-300}
-      - BITCOIN_DBCACHE_MB=${BITCOIN_DBCACHE_MB:-450}
+      - BITCOIN_DBCACHE_MB=${BITCOIN_DBCACHE_MB:-1024}
       - BITCOIN_P2P_PORT=${BITCOIN_P2P_PORT:-8333}
       - BITCOIN_RPC_USER=${BITCOIN_RPC_USER:-kerosene}
       - BITCOIN_RPC_PASSWORD=${BITCOIN_RPC_PASSWORD}
@@ -211,13 +211,14 @@ services:
       test: ["CMD-SHELL", "sh /healthcheck.sh"]
       interval: 10s
       timeout: 5s
+      start_period: ${BITCOIN_HEALTH_START_PERIOD:-2h}
       retries: 30
 
   bitcoin-indexer:
     image: ${BITCOIN_INDEXER_IMAGE:-getumbrel/electrs:v0.10.2}
     container_name: bitcoin-indexer-local
     profiles: ["archive-indexer"]
-    restart: unless-stopped
+    restart: "no"
     env_file: ../kerosene/.env
     command:
       - --network
@@ -272,7 +273,7 @@ services:
   vault-raft-1:
     image: ${VAULT_IMAGE:-hashicorp/vault:1.17.6}
     container_name: vault-raft-1-local
-    restart: unless-stopped
+    restart: "no"
     cap_add: [IPC_LOCK]
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
@@ -292,7 +293,7 @@ services:
   vault-raft-2:
     image: ${VAULT_IMAGE:-hashicorp/vault:1.17.6}
     container_name: vault-raft-2-local
-    restart: unless-stopped
+    restart: "no"
     cap_add: [IPC_LOCK]
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
@@ -312,7 +313,7 @@ services:
   vault-raft-3:
     image: ${VAULT_IMAGE:-hashicorp/vault:1.17.6}
     container_name: vault-raft-3-local
-    restart: unless-stopped
+    restart: "no"
     cap_add: [IPC_LOCK]
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
@@ -390,7 +391,7 @@ services:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
     container_name: mpc-sidecar-is-local
-    restart: unless-stopped
+    restart: "no"
     environment:
       - MPC_ALLOW_INSECURE_GRPC=true
       - MPC_REQUIRE_MASTER_KEY=true
@@ -446,7 +447,7 @@ services:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
     container_name: kerosene-app-is-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -544,7 +545,7 @@ services:
       context: ../kerosene/tor/vanguards
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-is-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
@@ -607,7 +608,7 @@ services:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
     container_name: mpc-sidecar-ch-local
-    restart: unless-stopped
+    restart: "no"
     environment:
       - MPC_ALLOW_INSECURE_GRPC=true
       - MPC_REQUIRE_MASTER_KEY=true
@@ -663,7 +664,7 @@ services:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
     container_name: kerosene-app-ch-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -761,7 +762,7 @@ services:
       context: ../kerosene/tor/vanguards
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-ch-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
@@ -824,7 +825,7 @@ services:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
     container_name: mpc-sidecar-sg-local
-    restart: unless-stopped
+    restart: "no"
     environment:
       - MPC_ALLOW_INSECURE_GRPC=true
       - MPC_REQUIRE_MASTER_KEY=true
@@ -880,7 +881,7 @@ services:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
     container_name: kerosene-app-sg-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -978,7 +979,7 @@ services:
       context: ../kerosene/tor/vanguards
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-sg-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
@@ -1001,7 +1002,7 @@ services:
   web-admin:
     image: nginx:1.27-alpine
     container_name: kerosene-web-admin-local
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "${WEB_ADMIN_PORT:-3000}:8080"
     volumes:
@@ -1020,7 +1021,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: kerosene-prometheus-local
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "${PROMETHEUS_PORT:-19090}:9090"
     volumes:

@@ -13,7 +13,7 @@ import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/security/domain/entities/app_pin_status.dart';
 import 'package:teste/features/security/presentation/providers/security_provider.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class AppEntryPinGate extends ConsumerWidget {
   final Widget child;

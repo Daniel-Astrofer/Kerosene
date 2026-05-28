@@ -145,10 +145,19 @@ class AppNotice {
     Duration duration = const Duration(seconds: 3),
   }) {
     final context = messenger.context;
+    final defaultTitle = _defaultTitle(context, type);
     AppScreenFeedbackBus.show(
       type: type,
-      title: title ?? _defaultTitle(context, type),
-      message: message,
+      title: _cleanNoticeText(
+        title ?? defaultTitle,
+        fallback: defaultTitle,
+        maxLength: 72,
+      ),
+      message: _cleanNoticeText(
+        message,
+        fallback: _fallbackMessage(context, type),
+        maxLength: 180,
+      ),
       duration: duration,
     );
   }
@@ -182,5 +191,88 @@ class AppNotice {
                 ? 'Atención'
                 : 'Attention';
     }
+  }
+
+  static String _fallbackMessage(BuildContext context, AppNoticeType type) {
+    final languageCode = Localizations.localeOf(context).languageCode;
+
+    if (type == AppNoticeType.success) {
+      return languageCode == 'pt'
+          ? 'Operação concluída.'
+          : languageCode == 'es'
+              ? 'Operación completada.'
+              : 'Operation completed.';
+    }
+
+    if (type == AppNoticeType.info) {
+      return languageCode == 'pt'
+          ? 'Atualização recebida.'
+          : languageCode == 'es'
+              ? 'Actualización recibida.'
+              : 'Update received.';
+    }
+
+    return languageCode == 'pt'
+        ? 'Não conseguimos concluir agora. Tente novamente em instantes.'
+        : languageCode == 'es'
+            ? 'No pudimos completar la acción ahora. Inténtalo de nuevo en unos instantes.'
+            : 'We could not complete this right now. Try again shortly.';
+  }
+
+  static String _cleanNoticeText(
+    String value, {
+    required String fallback,
+    required int maxLength,
+  }) {
+    var text = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    text = text
+        .replaceFirst(
+          RegExp(
+            r'^(ServerException|ValidationException|AuthException|NetworkException|AppException|Exception|Erro):\s*',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
+
+    if (text.isEmpty || _looksTechnical(text)) {
+      return fallback;
+    }
+
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    final end = (maxLength - 3).clamp(0, text.length).toInt();
+    return '${text.substring(0, end).trimRight()}...';
+  }
+
+  static bool _looksTechnical(String value) {
+    final lower = value.toLowerCase();
+    final technicalPattern = RegExp(
+      r'(statuscode|status code|status_code|status=|http\s*\d{3}|errorcode|error code|error_code|dioexception|serverexception|validationexception|authexception|appexception|stack trace|traceback|requestoptions|response\.data|/api/|<!doctype html|<html|socketexception|handshakeexception|xmlhttprequest)',
+      caseSensitive: false,
+    );
+
+    if (technicalPattern.hasMatch(value)) {
+      return true;
+    }
+
+    if (RegExp(r'\bERR_[A-Z0-9_]+\b').hasMatch(value)) {
+      return true;
+    }
+
+    if (RegExp(r'\b[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+\b').hasMatch(value)) {
+      return true;
+    }
+
+    if (RegExp(r'\b[45]\d{2}\b').hasMatch(value) &&
+        (lower.contains('http') ||
+            lower.contains('status') ||
+            lower.contains('code'))) {
+      return true;
+    }
+
+    return value.length > 220 && RegExp(r'[{}\[\]"]|=>|#\d+').hasMatch(value);
   }
 }

@@ -14,7 +14,7 @@ import 'package:teste/features/mining/presentation/models/mining_dashboard_view_
 import 'package:teste/features/mining/presentation/providers/mining_dashboard_provider.dart';
 import 'package:teste/features/mining/presentation/providers/mining_providers.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class MiningOverviewHero extends StatelessWidget {
   final MiningDashboardSnapshot snapshot;

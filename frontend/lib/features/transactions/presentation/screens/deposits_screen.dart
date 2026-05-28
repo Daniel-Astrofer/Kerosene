@@ -6,11 +6,19 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/navigation/app_page_transitions.dart';
 import 'package:teste/core/utils/error_translator.dart';
+import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/statement_transaction_card.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/features/wallet/domain/entities/wallet.dart';
+import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart'
+    show walletProvider;
+import 'package:teste/features/wallet/presentation/screens/receive_amount_screen.dart';
+import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
+import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 Future<void> openTransactionStatement(
   BuildContext context, {
@@ -52,7 +60,7 @@ Route<void> _transactionStatementRoute({
     transitionDuration: const Duration(milliseconds: 460),
     reverseTransitionDuration: const Duration(milliseconds: 280),
     pageBuilder: (context, animation, secondaryAnimation) {
-      return DepositsScreen(
+      return TransactionStatementScreen(
         initialTransactionId: initialTransactionId,
       );
     },
@@ -118,14 +126,23 @@ class _CircularRevealClipper extends CustomClipper<Path> {
   }
 }
 
-enum _StatementFilter { all, incoming, outgoing }
+const _receiveBackground = Color(0xFF0D0D0D);
+const _receiveSurfaceHigh = Color(0xFF2A2A2A);
+const _receiveTextColor = Color(0xFFFFFFFF);
+const _receiveMutedTextColor = Color(0xFFA3A3A3);
+const _receiveBodyTextColor = Color(0xFFC4C7C8);
+const _receiveSubtleTextColor = Color(0xFF737373);
+
+enum _ReceivePanel { wallet, methods }
+
+enum _ReceiveRail { kerosene, onChain }
 
 class DepositsScreen extends ConsumerStatefulWidget {
-  final String? initialTransactionId;
+  final Wallet? initialWallet;
 
   const DepositsScreen({
     super.key,
-    this.initialTransactionId,
+    this.initialWallet,
   });
 
   @override
@@ -133,6 +150,937 @@ class DepositsScreen extends ConsumerStatefulWidget {
 }
 
 class _DepositsScreenState extends ConsumerState<DepositsScreen> {
+  _ReceivePanel _panel = _ReceivePanel.wallet;
+  _ReceiveRail? _selectedRail;
+  Wallet? _selectedWallet;
+
+  bool _isOnChainWallet(Wallet wallet) {
+    final mode = wallet.walletMode.trim().toUpperCase();
+    return wallet.isSelfCustody ||
+        mode.contains('COLD') ||
+        mode.contains('ONCHAIN') ||
+        mode.contains('ON_CHAIN');
+  }
+
+  bool _walletMatchesRail(Wallet wallet, _ReceiveRail rail) {
+    return switch (rail) {
+      _ReceiveRail.kerosene => !_isOnChainWallet(wallet),
+      _ReceiveRail.onChain => _isOnChainWallet(wallet),
+    };
+  }
+
+  Wallet? _resolveWallet(WalletState walletState, _ReceiveRail rail) {
+    if (widget.initialWallet != null &&
+        _walletMatchesRail(widget.initialWallet!, rail)) {
+      return widget.initialWallet;
+    }
+
+    if (walletState is WalletLoaded && walletState.wallets.isNotEmpty) {
+      final selectedWallet = walletState.selectedWallet;
+      if (selectedWallet != null && _walletMatchesRail(selectedWallet, rail)) {
+        return selectedWallet;
+      }
+      for (final wallet in walletState.wallets) {
+        if (_walletMatchesRail(wallet, rail)) {
+          return wallet;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  Route<T> _flowRoute<T>(WidgetBuilder builder) {
+    return keroseneHorizontalRoute<T>(builder: builder);
+  }
+
+  void _handleBack() {
+    if (_panel == _ReceivePanel.methods) {
+      HapticFeedback.selectionClick();
+      setState(() {
+        _panel = _ReceivePanel.wallet;
+        _selectedRail = null;
+        _selectedWallet = null;
+      });
+      return;
+    }
+    Navigator.maybePop(context);
+  }
+
+  void _selectRail(_ReceiveRail rail) {
+    final wallet = _resolveWallet(ref.read(walletProvider), rail);
+    if (wallet == null) {
+      _showWalletRequiredNotice(rail);
+      return;
+    }
+
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedRail = rail;
+      _selectedWallet = wallet;
+      _panel = _ReceivePanel.methods;
+    });
+  }
+
+  void _openReceive(ReceiveAmountMethod method) {
+    final rail = _selectedRail;
+    final wallet = _selectedWallet ??
+        (rail == null ? null : _resolveWallet(ref.read(walletProvider), rail));
+    if (wallet == null) {
+      _showWalletRequiredNotice(rail);
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push<void>(
+      _flowRoute(
+        (_) => ReceiveAmountScreen(
+          wallet: wallet,
+          method: method,
+          onChainWallet: rail == _ReceiveRail.onChain,
+        ),
+      ),
+    );
+  }
+
+  void _openGatewayProviders() {
+    final rail = _selectedRail;
+    final wallet = _selectedWallet ??
+        (rail == null ? null : _resolveWallet(ref.read(walletProvider), rail));
+    if (wallet == null) {
+      _showWalletRequiredNotice(rail);
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push<void>(
+      _flowRoute((_) => ReceiveGatewayProvidersScreen(wallet: wallet)),
+    );
+  }
+
+  void _showWalletRequiredNotice([_ReceiveRail? rail]) {
+    HapticFeedback.selectionClick();
+    final message = switch (rail) {
+      _ReceiveRail.kerosene =>
+        'Nenhuma carteira interna Kerosene disponível para recebimento.',
+      _ReceiveRail.onChain =>
+        'Nenhuma carteira fria on-chain disponível para recebimento.',
+      null => context.tr.receiveHubNoWalletMessage,
+    };
+    SnackbarHelper.showInfo(message);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(walletProvider);
+
+    return Scaffold(
+      backgroundColor: _receiveBackground,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              children: [
+                _ReceiveTopBar(onBack: _handleBack),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: _panel == _ReceivePanel.wallet
+                        ? _buildWalletSelection()
+                        : _buildMethodSelection(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWalletSelection() {
+    return LayoutBuilder(
+      key: const ValueKey('receive-wallet'),
+      builder: (context, constraints) {
+        final minHeight = math.max(0.0, constraints.maxHeight - 48);
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Onde deseja\nreceber?',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.ebGaramond(
+                      color: _receiveTextColor,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w600,
+                      height: 1.08,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Escolha se os fundos entram na carteira interna Kerosene ou na sua carteira fria on-chain.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: _receiveMutedTextColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 42),
+                  _ReceiveActionList(
+                    children: [
+                      _ReceiveActionTile(
+                        icon: LucideIcons.arrowLeftRight,
+                        title: 'Carteira Principal',
+                        subtitle:
+                            'Receba diretamente na sua carteira na Kerosene',
+                        onTap: () => _selectRail(_ReceiveRail.kerosene),
+                      ),
+                      _ReceiveActionTile(
+                        icon: LucideIcons.bitcoin,
+                        title: 'Carteira de Casa',
+                        subtitle:
+                            'Receba direto no endereço Bitcoin da sua carteira de casa',
+                        onTap: () => _selectRail(_ReceiveRail.onChain),
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMethodSelection() {
+    final rail = _selectedRail ?? _ReceiveRail.kerosene;
+    final isOnChain = rail == _ReceiveRail.onChain;
+    final title = isOnChain ? 'Receber on-chain' : 'Receber na Kerosene';
+    final subtitle = isOnChain
+        ? 'Escolha QR Code, link de pagamento ou NFC para sua carteira fria.'
+        : 'Escolha QR Code, link de pagamento ou NFC para sua carteira interna.';
+
+    return SingleChildScrollView(
+      key: ValueKey('receive-method-${rail.name}'),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 48),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.ebGaramond(
+              color: _receiveTextColor,
+              fontSize: 48,
+              fontWeight: FontWeight.w400,
+              height: 1.1,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              color: _receiveBodyTextColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              height: 1.5,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 38),
+          _ReceiveActionList(
+            children: [
+              if (!isOnChain)
+                _ReceiveActionTile(
+                  icon: LucideIcons.creditCard,
+                  title: 'Gateway de pagamento',
+                  subtitle: 'Escolher um provedor para comprar Bitcoin',
+                  onTap: _openGatewayProviders,
+                  verticalPadding: 24,
+                ),
+              _ReceiveActionTile(
+                icon: LucideIcons.qrCode,
+                title: 'QR Code',
+                subtitle: 'Gerar um código para exibir ao pagador',
+                onTap: () => _openReceive(ReceiveAmountMethod.qrCode),
+                verticalPadding: 24,
+              ),
+              _ReceiveActionTile(
+                icon: LucideIcons.link2,
+                title: 'Link de pagamento',
+                subtitle: 'Criar uma cobrança compartilhável',
+                onTap: () => _openReceive(ReceiveAmountMethod.paymentLink),
+                verticalPadding: 24,
+              ),
+              _ReceiveActionTile(
+                icon: LucideIcons.nfc,
+                title: 'NFC',
+                subtitle: 'Preparar recebimento por aproximação',
+                onTap: () => _openReceive(ReceiveAmountMethod.nfc),
+                showDivider: false,
+                verticalPadding: 24,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReceiveTopBar extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _ReceiveTopBar({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 88,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _ReceiveRoundButton(
+                icon: LucideIcons.chevronLeft,
+                onPressed: onBack,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              ),
+            ),
+            Text(
+              'Receber',
+              style: GoogleFonts.inter(
+                color: _receiveTextColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+                letterSpacing: 0,
+              ),
+            ),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(width: 40, height: 40),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiveRoundButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltip;
+
+  const _ReceiveRoundButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: _receiveSurfaceHigh,
+            ),
+            child: Icon(icon, color: _receiveTextColor, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiveActionList extends StatelessWidget {
+  final List<_ReceiveActionTile> children;
+
+  const _ReceiveActionList({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: children);
+  }
+}
+
+class _ReceiveActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool showDivider;
+  final double verticalPadding;
+
+  const _ReceiveActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.showDivider = true,
+    this.verticalPadding = 20,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.white.withValues(alpha: 0.05),
+        highlightColor: Colors.white.withValues(alpha: 0.03),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: verticalPadding),
+          decoration: BoxDecoration(
+            border: showDivider
+                ? Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                  )
+                : null,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _receiveSurfaceHigh,
+                ),
+                child: Icon(icon, color: _receiveTextColor, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: _receiveTextColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        height: 1.24,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: _receiveMutedTextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                LucideIcons.chevronRight,
+                color: _receiveMutedTextColor.withValues(alpha: 0.76),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ReceiveGatewayProvidersScreen extends ConsumerWidget {
+  final Wallet wallet;
+
+  const ReceiveGatewayProvidersScreen({
+    super.key,
+    required this.wallet,
+  });
+
+  static const _providers = <_GatewayProviderSection>[
+    _GatewayProviderSection(
+      title: 'Recomendados para Brasil',
+      providers: [
+        _GatewayProvider(
+          name: 'MoonPay',
+          methods: 'Pix, Cartão, Apple Pay • Instantâneo',
+          fees: 'Taxas: 1% a 4,5%',
+          icon: LucideIcons.creditCard,
+          aliases: ['moonpay'],
+        ),
+        _GatewayProvider(
+          name: 'Banxa',
+          methods: 'Cartão, Apple Pay, Google Pay • Instantâneo',
+          fees: 'Taxa: 1,99% + Network fee',
+          icon: LucideIcons.circleDollarSign,
+          aliases: ['banxa'],
+        ),
+        _GatewayProvider(
+          name: 'Mercuryo',
+          methods: 'Pix, Cartão, Apple Pay • Minutos',
+          fees: 'Taxa: 3,95% a 4%',
+          icon: LucideIcons.smartphone,
+          aliases: ['mercuryo'],
+        ),
+        _GatewayProvider(
+          name: 'Ramp Network',
+          methods: 'Cartão, Apple Pay, Transferência • Minutos',
+          fees: 'Taxas dinâmicas no checkout',
+          icon: LucideIcons.trendingUp,
+          aliases: ['ramp', 'ramp_network', 'rampnetwork'],
+        ),
+      ],
+    ),
+    _GatewayProviderSection(
+      title: 'Institucionais',
+      providers: [
+        _GatewayProvider(
+          name: 'Stripe Crypto Onramp',
+          methods: 'Cartão, Apple Pay, ACH • 1 a 5 min',
+          fees: 'Taxas dinâmicas',
+          icon: LucideIcons.building2,
+          badge: 'INSTITUCIONAL',
+          aliases: ['stripe', 'stripe_crypto_onramp', 'stripe_onramp'],
+        ),
+        _GatewayProvider(
+          name: 'Coinbase Onramp',
+          methods: 'Cartão de Débito/Crédito • Minutos',
+          fees: 'Taxas dinâmicas',
+          icon: LucideIcons.database,
+          badge: 'INSTITUCIONAL',
+          aliases: ['coinbase', 'coinbase_onramp'],
+        ),
+      ],
+    ),
+    _GatewayProviderSection(
+      title: 'Agregadores',
+      providers: [
+        _GatewayProvider(
+          name: 'Onramper',
+          methods: 'Mais de 130 métodos e 30 provedores',
+          fees: 'Melhor rota disponível • Fallback ideal',
+          icon: LucideIcons.boxes,
+          aliases: ['onramper'],
+        ),
+      ],
+    ),
+    _GatewayProviderSection(
+      title: 'Outros',
+      providers: [
+        _GatewayProvider(
+          name: 'Transak',
+          methods: 'Cartão, Carteiras Digitais • Minutos',
+          fees: 'Limites e taxas variáveis por cobertura',
+          icon: LucideIcons.arrowLeftRight,
+          aliases: ['transak'],
+        ),
+        _GatewayProvider(
+          name: 'Wert',
+          methods: 'Cartão, Apple Pay, Google Pay • < 60 seg',
+          fees: 'Mínimo de US\$30 para BTC',
+          icon: LucideIcons.zap,
+          aliases: ['wert'],
+        ),
+        _GatewayProvider(
+          name: 'GateFi / Unlimit',
+          methods: 'E-wallets, QR Code, Cash • Variável',
+          fees: 'Ampla cobertura global',
+          icon: LucideIcons.globe2,
+          aliases: ['gatefi', 'unlimit', 'gatefi_unlimit'],
+        ),
+      ],
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final urlsAsync = ref.watch(_receiveGatewayProviderUrlsProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(LucideIcons.arrowLeft, size: 24),
+                        color: _receiveTextColor,
+                        tooltip:
+                            MaterialLocalizations.of(context).backButtonTooltip,
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size.square(40),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Provedores',
+                        style: GoogleFonts.ebGaramond(
+                          color: _receiveTextColor,
+                          fontSize: 40,
+                          fontWeight: FontWeight.w700,
+                          height: 1.05,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: urlsAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                        color: _receiveMutedTextColor,
+                      ),
+                    ),
+                    error: (_, __) => _GatewayProviderList(
+                      sections: _providers,
+                      urls: const {},
+                      onSelect: (provider) =>
+                          _showProviderUnavailable(context, provider),
+                    ),
+                    data: (urls) => _GatewayProviderList(
+                      sections: _providers,
+                      urls: urls,
+                      onSelect: (provider) =>
+                          _selectProvider(context, provider, urls),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _selectProvider(
+    BuildContext context,
+    _GatewayProvider provider,
+    Map<String, String> urls,
+  ) {
+    final url = provider.resolveUrl(urls);
+    if (url == null || url.isEmpty) {
+      _showProviderUnavailable(context, provider);
+      return;
+    }
+
+    Clipboard.setData(ClipboardData(text: url));
+    SnackbarHelper.showSuccess(
+      'Link da ${provider.name} copiado para ${wallet.name}.',
+    );
+  }
+
+  void _showProviderUnavailable(
+    BuildContext context,
+    _GatewayProvider provider,
+  ) {
+    SnackbarHelper.showInfo(
+      '${provider.name} ainda não está disponível para esta carteira.',
+    );
+  }
+}
+
+final _receiveGatewayProviderUrlsProvider =
+    FutureProvider<Map<String, String>>((ref) async {
+  final result = await ref.read(transactionRepositoryProvider).getOnrampUrls();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (urls) => urls,
+  );
+});
+
+class _GatewayProviderList extends StatelessWidget {
+  final List<_GatewayProviderSection> sections;
+  final Map<String, String> urls;
+  final ValueChanged<_GatewayProvider> onSelect;
+
+  const _GatewayProviderList({
+    required this.sections,
+    required this.urls,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
+      itemCount: sections.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 30),
+      itemBuilder: (context, sectionIndex) {
+        final section = sections[sectionIndex];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              section.title.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: _receiveMutedTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                    letterSpacing: 1.4,
+                  ),
+            ),
+            const SizedBox(height: 18),
+            for (var index = 0; index < section.providers.length; index++) ...[
+              if (index > 0) const SizedBox(height: 24),
+              _GatewayProviderTile(
+                provider: section.providers[index],
+                available: section.providers[index].resolveUrl(urls) != null,
+                onTap: () => onSelect(section.providers[index]),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GatewayProviderTile extends StatelessWidget {
+  final _GatewayProvider provider;
+  final bool available;
+  final VoidCallback onTap;
+
+  const _GatewayProviderTile({
+    required this.provider,
+    required this.available,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF1E1E1E),
+              ),
+              child: Icon(
+                provider.icon,
+                color: _receiveMutedTextColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          provider.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: _receiveTextColor,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.25,
+                                    letterSpacing: 0,
+                                  ),
+                        ),
+                      ),
+                      if (provider.badge != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _receiveMutedTextColor.withValues(
+                                alpha: 0.56,
+                              ),
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Text(
+                            provider.badge!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: _receiveMutedTextColor,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1,
+                                  letterSpacing: 0.8,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    provider.methods,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: _receiveMutedTextColor,
+                          fontSize: 12,
+                          height: 1.25,
+                          letterSpacing: 0,
+                        ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    available ? provider.fees : '${provider.fees} • Em breve',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: _receiveSubtleTextColor,
+                          fontSize: 12,
+                          height: 1.25,
+                          letterSpacing: 0,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Icon(
+              LucideIcons.chevronRight,
+              color: Color(0xFF525252),
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GatewayProviderSection {
+  final String title;
+  final List<_GatewayProvider> providers;
+
+  const _GatewayProviderSection({
+    required this.title,
+    required this.providers,
+  });
+}
+
+class _GatewayProvider {
+  final String name;
+  final String methods;
+  final String fees;
+  final IconData icon;
+  final String? badge;
+  final List<String> aliases;
+
+  const _GatewayProvider({
+    required this.name,
+    required this.methods,
+    required this.fees,
+    required this.icon,
+    required this.aliases,
+    this.badge,
+  });
+
+  String? resolveUrl(Map<String, String> urls) {
+    for (final entry in urls.entries) {
+      final normalizedKey = _normalize(entry.key);
+      for (final alias in aliases) {
+        if (normalizedKey == _normalize(alias)) {
+          final value = entry.value.trim();
+          return value.isEmpty ? null : value;
+        }
+      }
+    }
+    return null;
+  }
+
+  String _normalize(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+  }
+}
+
+enum _StatementFilter { all, incoming, outgoing }
+
+class TransactionStatementScreen extends ConsumerStatefulWidget {
+  final String? initialTransactionId;
+
+  const TransactionStatementScreen({
+    super.key,
+    this.initialTransactionId,
+  });
+
+  @override
+  ConsumerState<TransactionStatementScreen> createState() =>
+      _TransactionStatementScreenState();
+}
+
+class _TransactionStatementScreenState
+    extends ConsumerState<TransactionStatementScreen> {
   final ScrollController _scrollController = ScrollController();
   _StatementFilter _filter = _StatementFilter.all;
   String _query = '';

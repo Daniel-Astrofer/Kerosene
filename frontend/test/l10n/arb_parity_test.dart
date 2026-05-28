@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('critical mobile ARB keys keep the same placeholders', () {
     final root = Directory.current;
-    final en = _loadArb('${root.path}/lib/l10n/app_en.arb');
-    final pt = _loadArb('${root.path}/lib/l10n/app_pt.arb');
-    final es = _loadArb('${root.path}/lib/l10n/app_es.arb');
+    final en = _loadArb('${root.path}/lib/core/l10n/app_en.arb');
+    final pt = _loadArb('${root.path}/lib/core/l10n/app_pt.arb');
+    final es = _loadArb('${root.path}/lib/core/l10n/app_es.arb');
 
     final criticalKeys = <String>{
       ..._messageKeys(en).where(
@@ -56,10 +56,6 @@ const _criticalErrorKeys = <String>{
   'errInvalidNetworkAddress',
   'errCustodyProviderUnavailable',
   'errPayloadTooLarge',
-  'errRecoveryBadRequest',
-  'errRecoveryRejected',
-  'errRecoverySessionExpired',
-  'errRecoveryRateLimited',
   'errPasskeyDeviceNotLinked',
   'errPasskeyRequired',
   'errPasskeyWrongDevice',

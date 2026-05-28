@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 import 'package:teste/core/presentation/widgets/app_screen_feedback_host.dart';
@@ -219,26 +218,28 @@ class _NotificationBannerCard extends ConsumerWidget {
     final compact = size.width < 360 || size.height < 620;
     final shortViewport = size.height < 420;
     final maxBannerHeight = math.min(
-      compact ? 184.0 : 228.0,
-      math.max(112.0, size.height * (shortViewport ? 0.46 : 0.34)),
+      compact ? 144.0 : 168.0,
+      math.max(96.0, size.height * (shortViewport ? 0.38 : 0.26)),
     );
-    final titleStyle = GoogleFonts.ebGaramond(
+    final titleStyle = AppTypography.bodyMedium.copyWith(
       color: Colors.white,
-      fontSize: compact ? 21 : 26,
-      fontWeight: FontWeight.w400,
-      height: compact ? 1.14 : 32 / 26,
-      letterSpacing: 0.2,
+      fontSize: compact ? 14 : 15,
+      fontWeight: FontWeight.w800,
+      height: 1.18,
+      letterSpacing: 0,
+      decoration: TextDecoration.none,
     );
     final bodyStyle = AppTypography.bodySmall.copyWith(
       color: const Color(0xFFC4C4C4),
-      fontSize: compact ? 13 : 15,
-      height: compact ? 1.32 : 22 / 15,
+      fontSize: compact ? 12 : 13,
+      height: 1.34,
       fontWeight: FontWeight.w400,
       letterSpacing: 0,
+      decoration: TextDecoration.none,
     );
     final contentPadding = compact
-        ? const EdgeInsets.fromLTRB(18, 16, 48, 16)
-        : const EdgeInsets.fromLTRB(24, 22, 54, 22);
+        ? const EdgeInsets.fromLTRB(16, 14, 44, 14)
+        : const EdgeInsets.fromLTRB(18, 16, 48, 16);
 
     return ConstrainedBox(
       key: originKey,
@@ -289,14 +290,14 @@ class _NotificationBannerCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.only(top: 1),
                             child: Icon(
                               visuals.icon,
                               color: accent,
-                              size: compact ? 21 : 24,
+                              size: compact ? 18 : 20,
                             ),
                           ),
-                          SizedBox(width: compact ? 12 : 16),
+                          SizedBox(width: compact ? 10 : 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,20 +307,20 @@ class _NotificationBannerCard extends ConsumerWidget {
                                   notification.title.trim().isEmpty
                                       ? _fallbackTitle(context)
                                       : notification.title.trim(),
-                                  maxLines: compact ? 2 : 2,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: titleStyle,
                                 ),
                                 if (notification.body.trim().isNotEmpty) ...[
-                                  SizedBox(height: compact ? 6 : 8),
+                                  const SizedBox(height: 5),
                                   Text(
                                     notification.body.trim(),
-                                    maxLines: compact ? 2 : 3,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: bodyStyle,
                                   ),
                                 ],
-                                SizedBox(height: compact ? 9 : 12),
+                                SizedBox(height: compact ? 7 : 9),
                                 Text(
                                   footer,
                                   maxLines: 1,
@@ -330,6 +331,7 @@ class _NotificationBannerCard extends ConsumerWidget {
                                     fontWeight: FontWeight.w700,
                                     height: 1,
                                     letterSpacing: 0,
+                                    decoration: TextDecoration.none,
                                   ),
                                 ),
                               ],

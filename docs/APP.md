@@ -68,7 +68,6 @@ Web (`bootstrap/web_bootstrap.dart`):
 | `/settings` | `SettingsScreen` |
 | `/history` e `/deposits` | `DepositsScreen` |
 | `/card` | `BitcoinAccountsScreen` |
-| `/wallet-cards-legacy` | `WalletCardScreen` |
 | `/receive` | `ReceiveHubScreen` |
 | `/mining` | `MiningScreen` |
 | `/create_wallet` | `CreateWalletScreen` |

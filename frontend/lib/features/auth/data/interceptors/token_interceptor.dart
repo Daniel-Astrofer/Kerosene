@@ -6,7 +6,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/providers/session_invalidation_provider.dart';
 import '../../../../core/utils/device_helper.dart';
 import '../../../../core/utils/snackbar_helper.dart';
-import '../../../../l10n/l10n_extension.dart';
+import '../../../../core/l10n/l10n_extension.dart';
 import '../datasources/auth_local_datasource.dart';
 
 class TokenInterceptor extends QueuedInterceptor {

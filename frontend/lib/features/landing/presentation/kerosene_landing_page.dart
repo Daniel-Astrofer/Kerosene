@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/features/landing/data/public_site_service.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 const _ink = Color(0xFF000000);
 const _surface = Color(0xFF131313);

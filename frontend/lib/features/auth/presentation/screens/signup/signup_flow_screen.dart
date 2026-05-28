@@ -5,13 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/widgets/auth_motion.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 const Color _signupInk = Color(0xFF000000);
 const Color _signupSurface = Color(0xFF0A0A0A);
@@ -160,12 +161,13 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     }
     _successRedirectScheduled = true;
     _redirectTimer?.cancel();
-    _redirectTimer = Timer(const Duration(milliseconds: 3600), () {
+    _redirectTimer = Timer(const Duration(milliseconds: 5200), () {
       if (!mounted) {
         return;
       }
+      AppScreenFeedbackBus.clear();
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/home_loading',
+        '/home',
         (route) => false,
       );
     });
@@ -1598,6 +1600,7 @@ class _SignupInlineFeedback extends StatelessWidget {
                     color: _signupText,
                     fontSize: 14,
                     height: 1.16,
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1608,6 +1611,7 @@ class _SignupInlineFeedback extends StatelessWidget {
                   style: _SignupTypography.bodySmall().copyWith(
                     color: _signupMuted,
                     height: 1.34,
+                    decoration: TextDecoration.none,
                   ),
                 ),
               ],

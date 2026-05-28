@@ -63,10 +63,6 @@ class AppConfig {
       '/auth/passkey/devices/$deviceInstallId/block';
   static String authPasskeyDeviceRevoke(String deviceInstallId) =>
       '/auth/passkey/devices/$deviceInstallId/revoke';
-  static const String authRecoveryEmergencyStart =
-      '/auth/recovery/emergency/start';
-  static const String authRecoveryEmergencyFinish =
-      '/auth/recovery/emergency/finish';
   static const String passkeyOrigin = String.fromEnvironment(
     'PASSKEY_ORIGIN',
     defaultValue: 'android:apk-key-hash:kerosene',

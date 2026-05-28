@@ -7,7 +7,7 @@ import 'package:teste/core/presentation/widgets/cyber_background.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../l10n/l10n_extension.dart';
+import '../../../../core/l10n/l10n_extension.dart';
 import '../../domain/entities/security_status.dart';
 import '../../domain/entities/treasury_overview.dart';
 import '../providers/security_provider.dart';

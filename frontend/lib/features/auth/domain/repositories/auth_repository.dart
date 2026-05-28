@@ -11,9 +11,7 @@ import '../../data/datasources/auth_remote_datasource.dart'
         AdminLoginResult,
         LoginResult,
         TotpSetupResult,
-        OnboardingPaymentLinkDto,
-        EmergencyRecoveryStartResult,
-        EmergencyRecoveryFinishResult;
+        OnboardingPaymentLinkDto;
 
 /// Interface do repositório de autenticação
 abstract class AuthRepository {
@@ -104,21 +102,6 @@ abstract class AuthRepository {
   /// Finaliza registro de passkey para usuário logado
   Future<Either<Failure, void>> passkeyRegisterFinish(
       Map<String, dynamic> credential);
-
-  /// Inicia emergency recovery com nova passphrase e recovery codes.
-  Future<Either<Failure, EmergencyRecoveryStartResult>> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  });
-
-  /// Finaliza emergency recovery com novo TOTP e nova passkey.
-  Future<Either<Failure, EmergencyRecoveryFinishResult>>
-      finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  });
 
   Future<Either<Failure, ActivationStatusResult>> getActivationStatus();
 

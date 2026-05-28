@@ -8,7 +8,7 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class WithdrawReviewPopup extends ConsumerStatefulWidget {
   final double amount;

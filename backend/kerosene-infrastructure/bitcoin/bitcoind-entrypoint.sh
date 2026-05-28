@@ -9,7 +9,7 @@ rpc_port="${BITCOIN_RPC_PORT:-8332}"
 p2p_port="${BITCOIN_P2P_PORT:-8333}"
 wallet_passphrase="${BITCOIN_WALLET_PASSPHRASE:-}"
 max_mempool_mb="${BITCOIN_MAX_MEMPOOL_MB:-300}"
-dbcache_mb="${BITCOIN_DBCACHE_MB:-450}"
+dbcache_mb="${BITCOIN_DBCACHE_MB:-1024}"
 reindex_chainstate_once="${BITCOIN_REINDEX_CHAINSTATE_ONCE:-false}"
 reindex_once="${BITCOIN_REINDEX_ONCE:-false}"
 

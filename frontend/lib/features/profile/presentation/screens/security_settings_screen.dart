@@ -14,7 +14,7 @@ import 'package:teste/features/security/domain/entities/app_pin_status.dart';
 import 'package:teste/features/security/domain/entities/account_security_profile.dart';
 import 'package:teste/features/security/domain/entities/passkey_inventory.dart';
 import 'package:teste/features/security/presentation/providers/security_provider.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class SecuritySettingsScreen extends ConsumerStatefulWidget {
   const SecuritySettingsScreen({super.key});

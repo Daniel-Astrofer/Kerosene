@@ -382,55 +382,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  @override
-  Future<Either<Failure, EmergencyRecoveryStartResult>> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  }) async {
-    try {
-      final result = await remoteDataSource.startEmergencyRecovery(
-        username: username,
-        newPassphrase: newPassphrase,
-        recoveryCodes: recoveryCodes,
-      );
-      return Right(result);
-    } on AppException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-      ));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, EmergencyRecoveryFinishResult>>
-      finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  }) async {
-    try {
-      final result = await remoteDataSource.finishEmergencyRecovery(
-        recoverySessionId: recoverySessionId,
-        totpCode: totpCode,
-        credential: credential,
-      );
-      return Right(result);
-    } on AppException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-      ));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
   // ─── Account activation deposit flow ─────────────────────────────────────────
   @override
   Future<Either<Failure, ActivationStatusResult>> getActivationStatus() async {

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/login_screen.dart';
 import 'package:teste/features/auth/presentation/screens/passkey_verification_screen.dart';
-import 'package:teste/features/auth/presentation/screens/signup/steps/signup_pow_step.dart';
-import 'package:teste/features/auth/presentation/screens/signup/widgets/signup_step_ui.dart';
-import 'package:teste/features/auth/presentation/screens/totp_screen.dart';
-import 'package:teste/l10n/app_localizations.dart';
+import 'package:teste/features/auth/presentation/screens/signup/signup_flow_screen.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
 import 'package:teste/storybook/storybook_mocks.dart';
 
 void main() {
@@ -76,68 +73,18 @@ void main() {
   }
 
   group('Auth responsive layouts', () {
-    testWidgets('signup shared step layout stays stable in compact sizes', (
+    testWidgets('real signup flow stays stable in compact sizes', (
       tester,
     ) async {
       for (final size in [compactPortrait, compactLandscape]) {
         await pumpResponsiveScreen(
           tester,
           size: size,
-          child: Scaffold(
-            body: SignupStepLayout(
-              eyebrow: 'Create account',
-              title: 'Prepare your secure access',
-              subtitle: 'Review the final security details before continuing.',
-              icon: LucideIcons.shield,
-              tone: SignupSurfaceTone.primary,
-              highlightLabel: 'Selected mode',
-              highlightValue: 'Standard backup',
-              highlightHint: 'Balanced for daily use across device sizes.',
-              chips: const [
-                'Guided backup',
-                'Prepare secure access',
-                '2FA required',
-              ],
-              footer: SignupPrimaryFooter(
-                text: 'Continue and prepare the account',
-                onPressed: () {},
-                icon: LucideIcons.arrowRight,
-              ),
-              children: [
-                SignupPanel(
-                  child: Text(
-                    'Final check before the secure credential setup starts.',
-                    style: AppTheme.darkTheme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: const SignupFlowScreen(),
         );
         expectNoLayoutExceptions(
           tester,
-          label: 'SignupStepLayout @ $size',
-        );
-      }
-    });
-
-    testWidgets('signup pow step stays stable in compact sizes', (
-      tester,
-    ) async {
-      for (final size in [compactPortrait, compactLandscape]) {
-        await pumpResponsiveScreen(
-          tester,
-          size: size,
-          child: const SignupPowStep(
-            username: 'astroferas',
-            mnemonic: 'alpha beta gamma delta',
-            accountSecurity: 'STANDARD',
-            runId: 0,
-          ),
-        );
-        expectNoLayoutExceptions(
-          tester,
-          label: 'SignupPowStep @ $size',
+          label: 'SignupFlowScreen @ $size',
         );
       }
     });
@@ -160,8 +107,8 @@ void main() {
       }
     });
 
-    testWidgets(
-        'login passphrase fallback avoids overflow in portrait and landscape', (
+    testWidgets('login password step avoids overflow in portrait and landscape',
+        (
       tester,
     ) async {
       for (final size in [compactPortrait, compactLandscape]) {
@@ -170,7 +117,7 @@ void main() {
           size: size,
           child: const LoginScreen(
             username: 'astroferas',
-            focusPassphrase: true,
+            focusPassword: true,
           ),
         );
         expectNoLayoutExceptions(
@@ -193,28 +140,6 @@ void main() {
         expectNoLayoutExceptions(
           tester,
           label: 'PasskeyVerificationScreen @ $size',
-        );
-      }
-    });
-
-    testWidgets('totp screen remains stable in compact portrait and landscape',
-        (
-      tester,
-    ) async {
-      for (final size in [compactPortrait, compactLandscape]) {
-        await pumpResponsiveScreen(
-          tester,
-          size: size,
-          child: const TotpScreen(
-            username: 'astroferas',
-            passphrase: 'alpha beta gamma',
-            isSetup: false,
-            preAuthToken: 'token',
-          ),
-        );
-        expectNoLayoutExceptions(
-          tester,
-          label: 'TotpScreen @ $size',
         );
       }
     });

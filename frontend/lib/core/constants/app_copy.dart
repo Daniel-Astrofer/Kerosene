@@ -1017,27 +1017,6 @@ class AppCopy {
     es: 'Localización',
   );
 
-  static const profileWallets = LocalizedCopy(
-    en: 'Wallets',
-    pt: 'Carteiras',
-    es: 'Billeteras',
-  );
-  static const profileProtection = LocalizedCopy(
-    en: 'Protection',
-    pt: 'Proteção',
-    es: 'Protección',
-  );
-  static const profileBiometrics = LocalizedCopy(
-    en: 'Biometrics',
-    pt: 'Biometria',
-    es: 'Biometría',
-  );
-  static const profilePrivacy = LocalizedCopy(
-    en: 'Privacy',
-    pt: 'Privacidade',
-    es: 'Privacidad',
-  );
-
   static const loginPassphraseIntro = LocalizedCopy(
     en: 'Enter your secret phrase exactly as it was stored.',
     pt: 'Digite sua frase secreta exatamente como foi armazenada.',

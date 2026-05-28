@@ -30,7 +30,7 @@ import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 part 'withdraw_screen_components.dart';
 
@@ -121,6 +121,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   static const Color _lightningOutlineColor = Color(0xFF414753);
   static const Color _lightningTextColor = Color(0xFFFFFFFF);
   static const Color _lightningMutedTextColor = Color(0xFFA0A0A0);
+  static const Color _lightningTertiaryTextColor = Color(0xFF6B7280);
   static const Color _lightningVariantTextColor = Color(0xFFC1C6D5);
 
   static const double _defaultLightningRoutingFeeBtc = 0.00000100;
@@ -1342,6 +1343,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             _buildLightningAmountStep(
               context,
               wallet: wallet,
+              destination: destination,
               feeQuote: feeQuote,
               btcUsd: btcUsd,
               btcEur: btcEur,
@@ -1370,22 +1372,39 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   Widget _buildLightningTopBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Row(
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          IconButton(
-            onPressed: _handleBack,
-            icon: const Icon(LucideIcons.arrowLeft, size: 22),
-            tooltip: context.tr.authBackAction,
-            style: IconButton.styleFrom(
-              foregroundColor: _lightningTextColor,
-              backgroundColor: _lightningSurfaceColor,
-              side: const BorderSide(color: _lightningOutlineColor),
-              minimumSize: const Size.square(40),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: _handleBack,
+              icon: const Icon(LucideIcons.arrowLeft, size: 22),
+              tooltip: context.tr.authBackAction,
+              style: IconButton.styleFrom(
+                foregroundColor: _lightningTextColor,
+                backgroundColor: _lightningSurfaceColor,
+                side: const BorderSide(color: _lightningOutlineColor),
+                minimumSize: const Size.square(40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
           ),
-          const Spacer(),
-          const SizedBox(width: 40, height: 40),
+          Text(
+            'Enviar',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.playfairDisplay(
+              color: _lightningTextColor,
+              fontSize: 24,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              letterSpacing: 0,
+            ),
+          ),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(width: 40, height: 40),
+          ),
         ],
       ),
     );
@@ -1522,6 +1541,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   Widget _buildLightningAmountStep(
     BuildContext context, {
     required Wallet wallet,
+    required _WithdrawDestinationAnalysis destination,
     required _WithdrawFeeQuote feeQuote,
     required double? btcUsd,
     required double? btcEur,
@@ -1541,135 +1561,111 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
+    final networkFeeLabel = feeQuote.isLoading
+        ? 'Calculando'
+        : '${_formatBtcPlain(feeQuote.networkFeeBtc)} BTC';
+    final networkFeeFiatLabel = feeQuote.isLoading
+        ? ''
+        : _lightningFiatReference(
+            btcAmount: feeQuote.networkFeeBtc,
+            btcUsd: btcUsd,
+            btcEur: btcEur,
+            btcBrl: btcBrl,
+            includeApproxPrefix: false,
+          );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildLightningTopBar(context),
-          const SizedBox(height: 24),
-          Text(
-            'Qual o valor?',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: _lightningTextColor,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
-                  letterSpacing: 0,
-                ),
-          ),
-          const SizedBox(height: 32),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _lightningSurfaceColor,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: _lightningBorderColor),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _externalNetworkIcon(),
-                    color: _lightningTextColor,
-                    size: 17,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '${_externalNetworkLabel()} • Disponível: ${_formatBtcPlain(wallet.balance, decimalPlaces: 4)} BTC',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: _lightningMutedTextColor,
-                            fontSize: 14,
-                            height: 1.35,
-                            letterSpacing: 0,
-                          ),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (selfCustodyBlocked || treasuryLightningBlocked) ...[
-            const SizedBox(height: 16),
-            Text(
-              selfCustodyBlocked
-                  ? context.tr.withdrawUiColdWalletSendBlocked
-                  : context.tr.withdrawUiLiquidityBlockedMessage,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _lightningMutedTextColor,
-                    height: 1.4,
-                  ),
-            ),
-          ],
-          const Spacer(),
-          Column(
-            children: [
-              Transform.scale(
-                scale: 1.36,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        _displayAmount,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.ebGaramond(
-                          textStyle: Theme.of(context).textTheme.displaySmall,
-                          color: _lightningTextColor,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w600,
-                          height: 1,
-                          letterSpacing: 0,
-                        ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _ExternalSendPartyRow(
+                            prefix: 'Enviando de:',
+                            title: wallet.name,
+                            subtitle: _shortExternalDestinationValue(
+                              wallet.address.trim().isNotEmpty
+                                  ? wallet.address
+                                  : wallet.id,
+                            ),
+                            icon: LucideIcons.user,
+                          ),
+                          const SizedBox(height: 22),
+                          _ExternalSendPartyRow(
+                            prefix: 'para:',
+                            title: _externalRecipientLabel(destination),
+                            subtitle: _shortExternalDestinationValue(
+                              destination.normalizedValue,
+                            ),
+                            icon: LucideIcons.user,
+                          ),
+                          if (selfCustodyBlocked ||
+                              treasuryLightningBlocked) ...[
+                            const SizedBox(height: 18),
+                            Text(
+                              selfCustodyBlocked
+                                  ? context.tr.withdrawUiColdWalletSendBlocked
+                                  : context
+                                      .tr.withdrawUiLiquidityBlockedMessage,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: _lightningMutedTextColor,
+                                    height: 1.4,
+                                  ),
+                            ),
+                          ],
+                          const SizedBox(height: 38),
+                          const Spacer(),
+                          _ExternalSendAmountField(
+                            amountLabel: _displayAmount,
+                            fiatLabel: fiatLabel,
+                          ),
+                          const SizedBox(height: 28),
+                          _ExternalSendFinancialDetails(
+                            balanceLabel:
+                                '${_formatBtcPlain(wallet.balance, decimalPlaces: 6)} BTC',
+                            networkFeeLabel: networkFeeLabel,
+                            networkFeeFiatLabel: networkFeeFiatLabel,
+                            estimatedTimeLabel: _externalEstimatedTimeLabel(),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildLightningKeypad(context),
+                          const SizedBox(height: 18),
+                          _buildLightningPrimaryButton(
+                            context,
+                            label: 'Continuar',
+                            icon: LucideIcons.arrowRight,
+                            showIcon: false,
+                            enabled: canContinue,
+                            onTap: () => _continueExternalAmount(
+                              wallet: wallet,
+                              feeQuote: feeQuote,
+                              selfCustodyBlocked: selfCustodyBlocked,
+                              treasuryLightningBlocked:
+                                  treasuryLightningBlocked,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'BTC',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: _lightningMutedTextColor,
-                            fontSize: 14,
-                            height: 1,
-                            letterSpacing: 0,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                fiatLabel,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: _lightningMutedTextColor,
-                      fontSize: 14,
-                      height: 1.35,
-                      letterSpacing: 0,
-                    ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          _buildLightningKeypad(context),
-          const SizedBox(height: 20),
-          _buildLightningPrimaryButton(
-            context,
-            label: 'Continuar',
-            icon: LucideIcons.arrowRight,
-            enabled: canContinue,
-            onTap: () => _continueExternalAmount(
-              wallet: wallet,
-              feeQuote: feeQuote,
-              selfCustodyBlocked: selfCustodyBlocked,
-              treasuryLightningBlocked: treasuryLightningBlocked,
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -2045,36 +2041,45 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     required bool enabled,
     required VoidCallback onTap,
     bool isLoading = false,
+    bool showIcon = true,
   }) {
+    final buttonStyle = FilledButton.styleFrom(
+      backgroundColor: _lightningTextColor,
+      foregroundColor: _lightningBackgroundColor,
+      disabledBackgroundColor: Colors.white.withValues(alpha: 0.22),
+      disabledForegroundColor: Colors.white.withValues(alpha: 0.42),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.8,
+          ),
+    );
+    final onPressed = enabled && !isLoading ? onTap : null;
+    final spinner = const SizedBox(
+      width: 18,
+      height: 18,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: _lightningBackgroundColor,
+      ),
+    );
+
     return SizedBox(
       width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: enabled && !isLoading ? onTap : null,
-        style: FilledButton.styleFrom(
-          backgroundColor: _lightningTextColor,
-          foregroundColor: _lightningBackgroundColor,
-          disabledBackgroundColor: Colors.white.withValues(alpha: 0.22),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.42),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0,
-              ),
-        ),
-        icon: isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: _lightningBackgroundColor,
-                ),
-              )
-            : Icon(icon, size: 18),
-        label: Text(label),
-      ),
+      child: isLoading || !showIcon
+          ? FilledButton(
+              onPressed: onPressed,
+              style: buttonStyle,
+              child: isLoading ? spinner : Text(label.toUpperCase()),
+            )
+          : FilledButton.icon(
+              onPressed: onPressed,
+              style: buttonStyle,
+              icon: Icon(icon, size: 18),
+              label: Text(label.toUpperCase()),
+            ),
     );
   }
 
@@ -2111,18 +2116,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     final label = key == '.' ? ',' : key;
 
     return SizedBox(
-      height: 64,
+      height: 56,
       child: TextButton(
         onPressed: () => _onKeyTap(key),
         style: TextButton.styleFrom(
           foregroundColor:
               isBackspace ? _lightningMutedTextColor : _lightningTextColor,
-          shape: const CircleBorder(),
-          textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
-              ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.playfairDisplay(
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+          ),
         ),
         child: isBackspace
             ? const Icon(LucideIcons.delete, size: 22)
@@ -2450,6 +2457,23 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     return widget.entryMode == WithdrawEntryMode.lightning
         ? 'Lightning'
         : 'On-chain';
+  }
+
+  String _externalRecipientLabel(_WithdrawDestinationAnalysis destination) {
+    final value = destination.normalizedValue.trim();
+    if (value.isEmpty) {
+      return 'Destino';
+    }
+    if (destination.isLightning && value.contains('@')) {
+      return value.split('@').first;
+    }
+    return _externalNetworkLabel();
+  }
+
+  String _externalEstimatedTimeLabel() {
+    return widget.entryMode == WithdrawEntryMode.lightning
+        ? 'Segundos'
+        : '~10 min';
   }
 
   IconData _externalNetworkIcon() {
@@ -3273,6 +3297,264 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                 color: receiveFlowTextColor,
               ),
             ),
+    );
+  }
+}
+
+class _ExternalSendPartyRow extends StatelessWidget {
+  final String prefix;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _ExternalSendPartyRow({
+    required this.prefix,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _WithdrawScreenState._lightningSurfaceColor,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          ),
+          child: Icon(
+            icon,
+            color: _WithdrawScreenState._lightningMutedTextColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$prefix ',
+                      style: const TextStyle(
+                        color: _WithdrawScreenState._lightningMutedTextColor,
+                      ),
+                    ),
+                    TextSpan(text: title),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _WithdrawScreenState._lightningTextColor,
+                      fontSize: 15,
+                      height: 1.3,
+                      letterSpacing: 0,
+                    ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle.isEmpty ? '--' : subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: _WithdrawScreenState._lightningTertiaryTextColor,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 13,
+                      height: 1.25,
+                      letterSpacing: 0,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExternalSendAmountField extends StatelessWidget {
+  final String amountLabel;
+  final String fiatLabel;
+
+  const _ExternalSendAmountField({
+    required this.amountLabel,
+    required this.fiatLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Flexible(
+                    child: Text(
+                      amountLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.playfairDisplay(
+                        color: _WithdrawScreenState._lightningTextColor,
+                        fontSize: 48,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'BTC',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: _WithdrawScreenState._lightningMutedTextColor,
+                          fontSize: 18,
+                          height: 1,
+                          letterSpacing: 0,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Text(
+                  fiatLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: _WithdrawScreenState._lightningMutedTextColor,
+                        fontSize: 17,
+                        height: 1.2,
+                        letterSpacing: 0,
+                      ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(height: 1, color: Colors.white.withValues(alpha: 0.20)),
+      ],
+    );
+  }
+}
+
+class _ExternalSendFinancialDetails extends StatelessWidget {
+  final String balanceLabel;
+  final String networkFeeLabel;
+  final String networkFeeFiatLabel;
+  final String estimatedTimeLabel;
+
+  const _ExternalSendFinancialDetails({
+    required this.balanceLabel,
+    required this.networkFeeLabel,
+    required this.networkFeeFiatLabel,
+    required this.estimatedTimeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _ExternalSendDetailRow(label: 'Saldo atual', value: balanceLabel),
+        const SizedBox(height: 16),
+        _ExternalSendDetailRow(
+          label: 'Taxa de rede',
+          value: networkFeeLabel,
+          secondaryValue:
+              networkFeeFiatLabel.isEmpty ? null : '(~ $networkFeeFiatLabel)',
+        ),
+        const SizedBox(height: 16),
+        _ExternalSendDetailRow(
+          label: 'Tempo estimado',
+          value: estimatedTimeLabel,
+        ),
+      ],
+    );
+  }
+}
+
+class _ExternalSendDetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? secondaryValue;
+
+  const _ExternalSendDetailRow({
+    required this.label,
+    required this.value,
+    this.secondaryValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: secondaryValue == null
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _WithdrawScreenState._lightningMutedTextColor,
+                  fontSize: 15,
+                  height: 1.3,
+                  letterSpacing: 0,
+                ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _WithdrawScreenState._lightningTextColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                      letterSpacing: 0,
+                    ),
+              ),
+              if (secondaryValue != null) ...[
+                const SizedBox(height: 3),
+                Text(
+                  secondaryValue!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _WithdrawScreenState._lightningTertiaryTextColor,
+                        fontSize: 13,
+                        height: 1.25,
+                        letterSpacing: 0,
+                      ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

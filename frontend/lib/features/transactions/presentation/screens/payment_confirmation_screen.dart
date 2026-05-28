@@ -7,7 +7,7 @@ import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/presentation/widgets/totp_input_container.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 typedef PaymentConfirmationAction<T> = Future<T?> Function(
     BuildContext context, String? totpCode);

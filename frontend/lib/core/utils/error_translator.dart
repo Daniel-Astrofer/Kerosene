@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:teste/l10n/app_localizations.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
 
 class ErrorTranslator {
   static String translate(AppLocalizations l10n, String codeOrMessage) {
@@ -15,7 +15,9 @@ class ErrorTranslator {
         final data = decoded['data'];
         if (data is Map<String, dynamic>) {
           final guidance = data['guidance']?.toString().trim();
-          if (guidance != null && guidance.isNotEmpty) {
+          if (guidance != null &&
+              guidance.isNotEmpty &&
+              !_looksTechnical(guidance)) {
             return guidance;
           }
         }
@@ -143,10 +145,8 @@ class ErrorTranslator {
     String messageToReturn = extractedMessage ?? codeOrMessage;
     final lower = messageToReturn.toLowerCase();
 
-    if (lower.contains('dioexception') ||
-        lower.contains('/api/') ||
-        lower.contains('invalid payload') ||
-        lower.contains('stack trace')) {
+    if (_looksTechnical(messageToReturn) ||
+        (extractedMessage == null && _looksTechnical(codeOrMessage))) {
       return l10n.errUnexpected;
     }
 
@@ -208,18 +208,57 @@ class ErrorTranslator {
     if (extractedMessage != null &&
         extractedMessage.isNotEmpty &&
         extractedMessage != 'null') {
-      if (extractedMessage.contains(' ') || extractedMessage.length < 40) {
+      if (!_looksTechnical(extractedMessage) &&
+          (extractedMessage.contains(' ') || extractedMessage.length < 40)) {
         return extractedMessage;
       }
     }
 
-    if (codeOrMessage.length > 80 && !codeOrMessage.contains(' ')) {
-      return l10n.errUnexpected;
-    }
-    return codeOrMessage
+    final cleaned = codeOrMessage
         .replaceFirst('ServerException:', '')
+        .replaceFirst('ValidationException:', '')
+        .replaceFirst('AuthException:', '')
+        .replaceFirst('AppException:', '')
         .replaceFirst('Exception:', '')
         .replaceFirst('Erro:', '')
         .trim();
+
+    if (codeOrMessage.length > 80 && !codeOrMessage.contains(' ')) {
+      return l10n.errUnexpected;
+    }
+    if (cleaned.isEmpty || _looksTechnical(cleaned)) {
+      return l10n.errUnexpected;
+    }
+
+    return cleaned;
+  }
+
+  static bool _looksTechnical(String value) {
+    final lower = value.toLowerCase();
+    final technicalPattern = RegExp(
+      r'(statuscode|status code|status_code|status=|http\s*\d{3}|errorcode|error code|error_code|dioexception|serverexception|validationexception|authexception|appexception|stack trace|traceback|requestoptions|response\.data|/api/|invalid payload|<!doctype html|<html|socketexception|handshakeexception|xmlhttprequest)',
+      caseSensitive: false,
+    );
+
+    if (technicalPattern.hasMatch(value)) {
+      return true;
+    }
+
+    if (RegExp(r'\bERR_[A-Z0-9_]+\b').hasMatch(value)) {
+      return true;
+    }
+
+    if (RegExp(r'\b[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+\b').hasMatch(value)) {
+      return true;
+    }
+
+    if (RegExp(r'\b[45]\d{2}\b').hasMatch(value) &&
+        (lower.contains('http') ||
+            lower.contains('status') ||
+            lower.contains('code'))) {
+      return true;
+    }
+
+    return value.length > 220 && RegExp(r'[{}\[\]"]|=>|#\d+').hasMatch(value);
   }
 }

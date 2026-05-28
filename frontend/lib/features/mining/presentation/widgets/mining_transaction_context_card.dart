@@ -8,7 +8,7 @@ import 'package:teste/features/mining/presentation/mining_formatters.dart';
 import 'package:teste/features/mining/presentation/providers/mining_providers.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class MiningTransactionContextCard extends ConsumerWidget {
   final Transaction transaction;

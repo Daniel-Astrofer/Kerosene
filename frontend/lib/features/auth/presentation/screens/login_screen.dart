@@ -8,13 +8,13 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:teste/features/auth/controller/auth_providers.dart';
 import 'package:teste/features/auth/presentation/widgets/auth_motion.dart';
+import 'package:teste/features/auth/presentation/widgets/totp_input_container.dart';
 import 'package:teste/features/home/presentation/screens/home_screen.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
-import 'emergency_recovery_screen.dart';
 import 'passkey_verification_screen.dart';
-import 'totp_screen.dart';
 
 const Color _loginInk = Color(0xFF000000);
 const Color _loginSurface = Color(0xFF0A0A0A);
@@ -25,16 +25,16 @@ const Color _loginMuted = Color(0xFFA1A1AA);
 const Color _loginDim = Color(0xFF71717A);
 const Color _loginText = Color(0xFFFFFFFF);
 
-enum _LoginErrorTarget { username, passphrase, general }
+enum _LoginErrorTarget { username, password, totp, general }
 
 class LoginScreen extends ConsumerStatefulWidget {
   final String? username;
-  final bool focusPassphrase;
+  final bool focusPassword;
 
   const LoginScreen({
     super.key,
     this.username,
-    this.focusPassphrase = false,
+    this.focusPassword = false,
   });
 
   @override
@@ -43,14 +43,20 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usernameController = TextEditingController();
-  final _passphraseController = TextEditingController();
-  final _passphraseFocusNode = FocusNode();
+  final _passwordController = TextEditingController();
+  final _totpController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+  final _totpFocusNode = FocusNode();
 
-  bool _obscurePassphrase = true;
+  bool _obscurePassword = true;
+  String? _pendingTotpUsername;
+  String? _pendingTotpPassword;
+  String? _pendingTotpPreAuthToken;
   String? _inlineErrorTitle;
   String? _inlineErrorMessage;
   _LoginErrorTarget? _inlineErrorTarget;
   int _errorPulseKey = 0;
+  bool _isSubmittingCredentials = false;
 
   @override
   void initState() {
@@ -59,10 +65,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (username != null && username.isNotEmpty) {
       _usernameController.text = _normalizedUsername(username);
     }
-    if (widget.focusPassphrase) {
+    if (widget.focusPassword) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _passphraseFocusNode.requestFocus();
+          _passwordFocusNode.requestFocus();
         }
       });
     }
@@ -71,8 +77,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
-    _passphraseController.dispose();
-    _passphraseFocusNode.dispose();
+    _passwordController.dispose();
+    _totpController.dispose();
+    _passwordFocusNode.dispose();
+    _totpFocusNode.dispose();
     super.dispose();
   }
 
@@ -146,66 +154,157 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
-  void _handlePasskeyContinue() {
+  Future<void> _continueToDeviceKey() async {
     final username = _validatedUsername();
     if (username == null) {
       return;
     }
 
+    if (_passwordController.text.trim().isEmpty) {
+      _showInlineError(
+        title: context.tr.authAccountPasswordLabel,
+        message: _copy(
+          context: context,
+          pt: 'Digite sua senha.',
+          en: 'Enter your password.',
+          es: 'Ingresa tu contraseña.',
+        ),
+        target: _LoginErrorTarget.password,
+      );
+      return;
+    }
+
+    setState(() => _isSubmittingCredentials = true);
+    try {
+      final loginResult = await ref.read(authRemoteDataSourceProvider).login(
+            username: username,
+            passphrase: _passwordController.text,
+          );
+      if (!mounted) {
+        return;
+      }
+
+      _openDeviceKeyVerification(
+        username,
+        fallbackPassphrase: _passwordController.text,
+        fallbackPreAuthToken: loginResult.requiresTotp ? loginResult.jwt : null,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showInlineError(
+        title: context.tr.authFlowInterruptedTitle,
+        message: ErrorTranslator.translate(context.tr, error.toString()),
+        target: _LoginErrorTarget.password,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingCredentials = false);
+      }
+    }
+  }
+
+  void _openDeviceKeyVerification(
+    String username, {
+    String? fallbackPassphrase,
+    String? fallbackPreAuthToken,
+  }) {
+    TextInput.finishAutofillContext();
     ref.read(authControllerProvider.notifier).clearError();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PasskeyVerificationScreen(username: username),
+        builder: (context) => PasskeyVerificationScreen(
+          username: username,
+          fallbackPassphrase: fallbackPassphrase,
+          fallbackPreAuthToken: fallbackPreAuthToken,
+        ),
       ),
     );
   }
 
-  void _submitPassphrase() {
-    final username = _validatedUsername();
-    if (username == null) {
+  bool get _hasPendingTotp =>
+      _pendingTotpUsername != null && _pendingTotpPassword != null;
+
+  void _openInlineTotpChallenge(AuthRequiresLoginTotp challenge) {
+    setState(() {
+      _pendingTotpUsername = challenge.username;
+      _pendingTotpPassword = challenge.passphrase;
+      _pendingTotpPreAuthToken = challenge.preAuthToken;
+      _inlineErrorTitle = null;
+      _inlineErrorMessage = null;
+      _inlineErrorTarget = null;
+      _totpController.clear();
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _totpFocusNode.requestFocus();
+      }
+    });
+  }
+
+  Future<void> _submitInlineTotp([String? value]) async {
+    final code = (value ?? _totpController.text).replaceAll(RegExp(r'\D'), '');
+    final username = _pendingTotpUsername;
+    final password = _pendingTotpPassword;
+    final preAuthToken = _pendingTotpPreAuthToken;
+    if (username == null || password == null || preAuthToken == null) {
       return;
     }
 
-    if (_passphraseController.text.trim().isEmpty) {
+    if (code.length != 6) {
       _showInlineError(
-        title: context.tr.authSignupPassphraseLabel,
+        title: context.tr.totpCodeLabel,
         message: _copy(
           context: context,
-          pt: 'Digite sua passphrase.',
-          en: 'Enter your passphrase.',
-          es: 'Ingresa tu passphrase.',
+          pt: 'Informe o código de 6 dígitos.',
+          en: 'Enter the 6-digit code.',
+          es: 'Ingresa el código de 6 dígitos.',
         ),
-        target: _LoginErrorTarget.passphrase,
+        target: _LoginErrorTarget.totp,
       );
       return;
     }
 
-    ref.read(authControllerProvider.notifier)
-      ..clearError()
-      ..login(
-        username: username,
-        password: _passphraseController.text,
+    setState(() => _isSubmittingCredentials = true);
+    try {
+      await ref.read(authRemoteDataSourceProvider).verifyLoginTotp(
+            username: username,
+            totpCode: code,
+            preAuthToken: preAuthToken,
+          );
+      if (!mounted) {
+        return;
+      }
+      _openDeviceKeyVerification(username);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showInlineError(
+        title: context.tr.authFlowInterruptedTitle,
+        message: ErrorTranslator.translate(context.tr, error.toString()),
+        target: _LoginErrorTarget.totp,
       );
-  }
-
-  void _openRecovery() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EmergencyRecoveryScreen(
-          initialUsername: _usernameController.text.trim(),
-        ),
-      ),
-    );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingCredentials = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final isLoading = authState is AuthLoading;
+    final isLoading = authState is AuthLoading || _isSubmittingCredentials;
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (ModalRoute.of(context)?.isCurrent == false) {
+        return;
+      }
+
       if (next is AuthAuthenticated) {
         HomeScreen.skipNextAuth = true;
         Navigator.of(context)
@@ -214,17 +313,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
 
       if (next is AuthRequiresLoginTotp) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TotpScreen(
-              username: _usernameController.text.trim(),
-              passphrase: _passphraseController.text,
-              isSetup: false,
-              preAuthToken: next.preAuthToken,
-            ),
-          ),
-        );
+        _openInlineTotpChallenge(next);
         return;
       }
 
@@ -232,7 +321,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _showInlineError(
           title: context.tr.authFlowInterruptedTitle,
           message: ErrorTranslator.translate(context.tr, next.toString()),
-          target: _LoginErrorTarget.passphrase,
+          target: _hasPendingTotp
+              ? _LoginErrorTarget.totp
+              : _LoginErrorTarget.password,
         );
       }
     });
@@ -304,11 +395,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               subtitle: _copy(
                                 context: context,
-                                pt: 'Acesse sua conta com passkey ou passphrase.',
-                                en: 'Access your account with passkey or passphrase.',
-                                es: 'Accede a tu cuenta con passkey o passphrase.',
+                                pt: 'Informe usuário e senha. A chave do dispositivo será confirmada em seguida.',
+                                en: 'Enter your username and password. Device key confirmation follows.',
+                                es: 'Ingresa usuario y contraseña. Luego se confirma la llave del dispositivo.',
                               ),
                             ),
+                            if (_hasPendingTotp) ...[
+                              const SizedBox(height: 26),
+                              AuthMotionShake(
+                                triggerKey: _errorPulseKey,
+                                enabled: _inlineErrorTarget ==
+                                    _LoginErrorTarget.totp,
+                                child: _LoginTotpPanel(
+                                  controller: _totpController,
+                                  focusNode: _totpFocusNode,
+                                  isLoading: isLoading,
+                                  hasError: _inlineErrorTarget ==
+                                      _LoginErrorTarget.totp,
+                                  errorPulseKey: _errorPulseKey,
+                                  onCompleted: _submitInlineTotp,
+                                  onSubmit: () => _submitInlineTotp(),
+                                  title: _copy(
+                                    context: context,
+                                    pt: 'Confirme o código',
+                                    en: 'Confirm the code',
+                                    es: 'Confirma el código',
+                                  ),
+                                  subtitle: _copy(
+                                    context: context,
+                                    pt: 'Digite o código do seu autenticador para concluir o acesso.',
+                                    en: 'Enter your authenticator code to finish signing in.',
+                                    es: 'Ingresa el código de tu autenticador para terminar el acceso.',
+                                  ),
+                                  buttonLabel: _copy(
+                                    context: context,
+                                    pt: 'Confirmar acesso',
+                                    en: 'Confirm access',
+                                    es: 'Confirmar acceso',
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 34),
                             AuthMotionShake(
                               triggerKey: _errorPulseKey,
@@ -323,7 +450,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   es: 'Nombre de usuario',
                                 ),
                                 enabled: !isLoading,
-                                autofocus: !widget.focusPassphrase,
+                                autofocus: !widget.focusPassword,
                                 keyboardType: TextInputType.text,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.username],
@@ -345,55 +472,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   setState(() {});
                                 },
                                 onSubmitted: (_) {
-                                  _passphraseFocusNode.requestFocus();
+                                  _passwordFocusNode.requestFocus();
                                 },
                               ),
                             ),
                             const SizedBox(height: 24),
-                            _PasskeyPanel(
-                              isLoading: isLoading,
-                              onPressed:
-                                  isLoading ? null : _handlePasskeyContinue,
-                              title: _copy(
-                                context: context,
-                                pt: 'Entrar com passkey',
-                                en: 'Sign in with passkey',
-                                es: 'Entrar con passkey',
-                              ),
-                              subtitle: _copy(
-                                context: context,
-                                pt: 'Use a credencial segura deste aparelho.',
-                                en: 'Use this device secure credential.',
-                                es: 'Usa la credencial segura de este dispositivo.',
-                              ),
-                              buttonLabel: _copy(
-                                context: context,
-                                pt: 'Continuar com passkey',
-                                en: 'Continue with passkey',
-                                es: 'Continuar con passkey',
-                              ),
-                            ),
-                            const SizedBox(height: 26),
-                            _LoginDivider(
-                              label: _copy(
-                                context: context,
-                                pt: 'ou',
-                                en: 'or',
-                                es: 'o',
-                              ),
-                            ),
-                            const SizedBox(height: 26),
                             AuthMotionShake(
                               triggerKey: _errorPulseKey,
                               enabled: _inlineErrorTarget ==
-                                  _LoginErrorTarget.passphrase,
+                                  _LoginErrorTarget.password,
                               child: _LoginTextField(
-                                controller: _passphraseController,
-                                focusNode: _passphraseFocusNode,
-                                label: context.tr.authSignupPassphraseLabel,
+                                controller: _passwordController,
+                                focusNode: _passwordFocusNode,
+                                label: context.tr.authAccountPasswordLabel,
                                 hintText: '••••••••••••••••',
                                 enabled: !isLoading,
-                                obscureText: _obscurePassphrase,
+                                obscureText: _obscurePassword,
                                 textInputAction: TextInputAction.done,
                                 autofillHints: const [AutofillHints.password],
                                 prefixIcon: const Icon(
@@ -406,12 +500,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       ? null
                                       : () {
                                           setState(() {
-                                            _obscurePassphrase =
-                                                !_obscurePassphrase;
+                                            _obscurePassword =
+                                                !_obscurePassword;
                                           });
                                         },
                                   icon: Icon(
-                                    _obscurePassphrase
+                                    _obscurePassword
                                         ? LucideIcons.eye
                                         : LucideIcons.eyeOff,
                                     size: 18,
@@ -421,7 +515,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 onChanged: (_) => _clearInlineError(),
                                 onSubmitted: (_) {
                                   if (!isLoading) {
-                                    _submitPassphrase();
+                                    _continueToDeviceKey();
                                   }
                                 },
                               ),
@@ -430,23 +524,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             _LoginPrimaryButton(
                               text: _copy(
                                 context: context,
-                                pt: 'Entrar com passphrase',
-                                en: 'Sign in with passphrase',
-                                es: 'Entrar con passphrase',
+                                pt: 'Continuar',
+                                en: 'Continue',
+                                es: 'Continuar',
                               ),
                               isLoading: isLoading,
-                              onPressed: isLoading ? null : _submitPassphrase,
+                              onPressed:
+                                  isLoading ? null : _continueToDeviceKey,
                               borderRadius: 16,
-                            ),
-                            const SizedBox(height: 18),
-                            _LoginInfoCard(
-                              onTap: isLoading ? null : _openRecovery,
-                              text: _copy(
-                                context: context,
-                                pt: 'Recuperar acesso',
-                                en: 'Recover access',
-                                es: 'Recuperar acceso',
-                              ),
                             ),
                             const SizedBox(height: 26),
                             _LoginSignupLink(
@@ -681,16 +766,26 @@ class _LoginTextField extends StatelessWidget {
   }
 }
 
-class _PasskeyPanel extends StatelessWidget {
+class _LoginTotpPanel extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
   final bool isLoading;
-  final VoidCallback? onPressed;
+  final bool hasError;
+  final int errorPulseKey;
+  final ValueChanged<String> onCompleted;
+  final VoidCallback onSubmit;
   final String title;
   final String subtitle;
   final String buttonLabel;
 
-  const _PasskeyPanel({
+  const _LoginTotpPanel({
+    required this.controller,
+    required this.focusNode,
     required this.isLoading,
-    required this.onPressed,
+    required this.hasError,
+    required this.errorPulseKey,
+    required this.onCompleted,
+    required this.onSubmit,
     required this.title,
     required this.subtitle,
     required this.buttonLabel,
@@ -718,7 +813,7 @@ class _PasskeyPanel extends StatelessWidget {
                   ),
                 ),
                 child: const Icon(
-                  LucideIcons.scanFace,
+                  LucideIcons.keyRound,
                   color: _loginText,
                   size: 20,
                 ),
@@ -733,7 +828,7 @@ class _PasskeyPanel extends StatelessWidget {
                     Text(
                       subtitle,
                       style: _LoginTypography.bodySmall(),
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -742,10 +837,20 @@ class _PasskeyPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
+          TotpInputContainer(
+            controller: controller,
+            focusNode: focusNode,
+            enabled: !isLoading,
+            hasError: hasError,
+            errorPulseKey: errorPulseKey,
+            onCompleted: onCompleted,
+          ),
+          const SizedBox(height: 18),
           _LoginPrimaryButton(
             text: buttonLabel,
             isLoading: isLoading,
-            onPressed: onPressed,
+            onPressed: isLoading ? null : onSubmit,
+            borderRadius: 16,
           ),
         ],
       ),
@@ -809,89 +914,6 @@ class _LoginPrimaryButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LoginDivider extends StatelessWidget {
-  final String label;
-
-  const _LoginDivider({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child:
-              Container(height: 1, color: _loginText.withValues(alpha: 0.16)),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text(
-            label,
-            style: _LoginTypography.bodySmall().copyWith(
-              color: _loginMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(
-          child:
-              Container(height: 1, color: _loginText.withValues(alpha: 0.16)),
-        ),
-      ],
-    );
-  }
-}
-
-class _LoginInfoCard extends StatelessWidget {
-  final String text;
-  final VoidCallback? onTap;
-
-  const _LoginInfoCard({required this.text, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return _LoginPanel(
-      padding: EdgeInsets.zero,
-      borderRadius: 12,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _loginText.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    LucideIcons.lifeBuoy,
-                    color: _loginMuted,
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(text, style: _LoginTypography.bodySmall()),
-                ),
-                const Icon(
-                  LucideIcons.arrowRight,
-                  color: _loginDim,
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

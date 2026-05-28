@@ -51,82 +51,87 @@ class _ScreenFeedbackPanel extends StatelessWidget {
     final size = MediaQuery.sizeOf(context);
     final maxPanelHeight = math.min(164.0, math.max(88.0, size.height * 0.28));
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxPanelHeight),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF050505),
-          border: Border(
-            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+    return Material(
+      type: MaterialType.transparency,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxPanelHeight),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF050505),
+            border: Border(
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+            ),
           ),
-        ),
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 10, 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(icon, color: accent, size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        message.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          height: 1.16,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message.message,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: Colors.white.withValues(alpha: 0.68),
-                          fontSize: 12,
-                          height: 1.34,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ],
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 10, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(icon, color: accent, size: 18),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Semantics(
-                  button: true,
-                  label: 'Fechar',
-                  child: IconButton(
-                    onPressed: () => AppScreenFeedbackBus.clear(
-                      sequence: message.sequence,
-                    ),
-                    icon: const Icon(LucideIcons.x),
-                    color: Colors.white.withValues(alpha: 0.58),
-                    iconSize: 16,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 34,
-                      height: 34,
-                    ),
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: const RoundedRectangleBorder(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          message.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            height: 1.16,
+                            letterSpacing: 0,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          message.message,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: Colors.white.withValues(alpha: 0.68),
+                            fontSize: 12,
+                            height: 1.34,
+                            letterSpacing: 0,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Semantics(
+                    button: true,
+                    label: 'Fechar',
+                    child: IconButton(
+                      onPressed: () => AppScreenFeedbackBus.clear(
+                        sequence: message.sequence,
+                      ),
+                      icon: const Icon(LucideIcons.x),
+                      color: Colors.white.withValues(alpha: 0.58),
+                      iconSize: 16,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 34,
+                        height: 34,
+                      ),
+                      style: IconButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

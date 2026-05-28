@@ -5,8 +5,15 @@ bitcoin_dir="${BITCOIN_DATA_DIR:-/home/bitcoin/.bitcoin}"
 conf="$bitcoin_dir/bitcoin.conf"
 expected_chain="${BITCOIN_CHAIN:-mainnet}"
 
-chain_info="$(bitcoin-cli -conf="$conf" getblockchaininfo 2>/dev/null)" || exit 1
-network_info="$(bitcoin-cli -conf="$conf" getnetworkinfo 2>/dev/null)" || exit 1
+chain_info="$(bitcoin-cli -conf="$conf" getblockchaininfo 2>&1)" || {
+  echo "Bitcoin node RPC is not ready: $chain_info" >&2
+  exit 1
+}
+
+network_info="$(bitcoin-cli -conf="$conf" getnetworkinfo 2>&1)" || {
+  echo "Bitcoin node network info is not ready: $network_info" >&2
+  exit 1
+}
 
 printf '%s\n' "$chain_info" | grep -q '"pruned": true' || {
   echo "Bitcoin node is reachable but prune mode is not active." >&2

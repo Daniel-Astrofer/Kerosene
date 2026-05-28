@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:teste/core/presentation/widgets/kerosene_logo_loading_view.dart';
 import 'package:teste/core/providers/shared_preferences_provider.dart';
+import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
 import 'package:teste/features/home/presentation/screens/home_screen.dart';
@@ -117,10 +117,10 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
 
-    final created = await Navigator.of(context).push<bool>(
-      PageRouteBuilder<bool>(
+    await Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const CreateWalletScreen(),
+            const BitcoinAccountsScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -129,10 +129,8 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
     );
 
     if (!mounted) return;
-    if (created == true) {
-      await ref.read(walletProvider.notifier).refresh();
-      ref.invalidate(transactionHistoryProvider);
-    }
+    await ref.read(walletProvider.notifier).refresh();
+    ref.invalidate(transactionHistoryProvider);
 
     _isNavigating = false;
     _navigateToHome();

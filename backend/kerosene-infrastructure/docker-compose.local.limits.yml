@@ -74,13 +74,13 @@ x-vault-raft-limits: &vault-raft-limits
         memory: "${KEROSENE_LOCAL_VAULT_RAFT_MEMORY:-512M}"
 
 x-bitcoin-limits: &bitcoin-limits
-  cpus: "${KEROSENE_LOCAL_BITCOIN_CPUS:-0.75}"
-  mem_limit: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-1024M}"
+  cpus: "${KEROSENE_LOCAL_BITCOIN_CPUS:-2.00}"
+  mem_limit: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-2048M}"
   deploy:
     resources:
       limits:
-        cpus: "${KEROSENE_LOCAL_BITCOIN_CPUS:-0.75}"
-        memory: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-1024M}"
+        cpus: "${KEROSENE_LOCAL_BITCOIN_CPUS:-2.00}"
+        memory: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-2048M}"
 
 x-lnd-limits: &lnd-limits
   cpus: "${KEROSENE_LOCAL_LND_CPUS:-0.50}"

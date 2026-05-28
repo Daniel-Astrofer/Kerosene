@@ -20,7 +20,7 @@ import 'package:teste/features/security/presentation/providers/security_provider
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class MiningContractScreen extends ConsumerStatefulWidget {
   final MempoolMiningDashboardData dashboardData;

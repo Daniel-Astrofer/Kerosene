@@ -17,7 +17,7 @@ import 'package:teste/features/transactions/domain/entities/lightning_invoice.da
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import 'package:uuid/uuid.dart';
 
 class DepositLightningInvoiceScreen extends ConsumerStatefulWidget {

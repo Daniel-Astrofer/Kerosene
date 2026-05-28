@@ -6,7 +6,7 @@ import 'package:teste/features/mining/domain/entities/mining_dashboard_snapshot.
 import 'package:teste/features/mining/presentation/mining_formatters.dart';
 import 'package:teste/features/mining/presentation/models/mining_dashboard_view_data.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class LiveFeeGrid extends StatelessWidget {
   final MiningFeeMarketSnapshot feeMarket;

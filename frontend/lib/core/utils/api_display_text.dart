@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class ApiDisplayText {
   const ApiDisplayText._();
@@ -128,6 +128,14 @@ class ApiDisplayText {
         lower.contains('endpoint') ||
         lower.contains('payload') ||
         lower.contains('dto') ||
+        lower.contains('statuscode') ||
+        lower.contains('status code') ||
+        lower.contains('status_code') ||
+        lower.contains('errorcode') ||
+        lower.contains('http 4') ||
+        lower.contains('http 5') ||
+        lower.contains('error_code') ||
+        RegExp(r'\b[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+\b').hasMatch(value) ||
         lower.contains('stack') ||
         lower.contains('exception') ||
         lower.contains('null pointer') ||

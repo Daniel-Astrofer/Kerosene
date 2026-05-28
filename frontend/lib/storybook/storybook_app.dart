@@ -8,19 +8,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/theme/app_theme.dart';
-import 'package:teste/l10n/app_localizations.dart';
 import 'package:teste/core/providers/shared_preferences_provider.dart';
+import 'package:teste/core/theme/app_theme.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
 
 import 'package:teste/core/providers/price_provider.dart';
 import 'package:teste/core/providers/network_status_provider.dart';
 import 'storybook_mocks.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart';
 
+import 'stories/app_screen_stories.dart';
 import 'stories/auth_stories.dart';
 import 'stories/wallet_stories.dart';
-import 'stories/profile_stories.dart';
-import 'stories/feature_stories.dart';
 import 'stories/ui_stories.dart';
 import 'stories/shared_stories.dart';
 
@@ -90,6 +91,16 @@ class KeroseneStorybook extends StatelessWidget {
             priceWebSocketServiceProvider
                 .overrideWithValue(MockPriceWebSocketService()),
             networkStatusProvider.overrideWith(() => NetworkStatusNotifier()),
+            walletProvider.overrideWith(() => MockWalletNotifier()),
+            transactionHistoryProvider.overrideWith(
+              (ref) async => mockTransactions,
+            ),
+            pagedTransactionHistoryProvider.overrideWith(
+              (ref, request) async =>
+                  mockTransactions.take(request.size).toList(),
+            ),
+            depositsProvider.overrideWith((ref) async => const []),
+            paymentLinksProvider.overrideWith((ref) async => const []),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -124,10 +135,9 @@ class KeroseneStorybook extends StatelessWidget {
         );
       },
       stories: [
+        ...appScreenStories(),
         ...authStories(),
         ...walletStories(),
-        ...profileStories(),
-        ...featureStories(),
         ...uiStories(),
         ...sharedStories(),
       ],

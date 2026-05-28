@@ -6,7 +6,7 @@ import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/features/mining/domain/entities/mining_dashboard_snapshot.dart';
 import 'package:teste/features/mining/presentation/mining_formatters.dart';
 import 'package:teste/features/mining/presentation/widgets/mining_panel.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class MempoolBlocksVisualizer extends StatelessWidget {
   final List<MiningProjectedBlockSnapshot> projectedBlocks;

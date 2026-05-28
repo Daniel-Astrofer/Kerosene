@@ -275,6 +275,8 @@ ensure_local_env() {
     changed=1
   fi
   ensure_env_value BITCOIN_PRUNE_MB "5500" && changed=1 || true
+  ensure_env_value BITCOIN_MAX_MEMPOOL_MB "300" && changed=1 || true
+  ensure_env_value BITCOIN_DBCACHE_MB "1024" && changed=1 || true
   ensure_env_value BITCOIN_P2P_PORT "8333" && changed=1 || true
   ensure_env_value BITCOIN_RPC_ENABLED "true" && changed=1 || true
   ensure_env_value BITCOIN_RPC_REQUIRED "true" && changed=1 || true

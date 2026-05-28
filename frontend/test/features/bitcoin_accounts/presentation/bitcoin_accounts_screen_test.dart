@@ -5,7 +5,7 @@ import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
 import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
 import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
-import 'package:teste/l10n/app_localizations.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
 
 void main() {
   testWidgets(
