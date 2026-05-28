@@ -185,7 +185,7 @@ class _PhysicalCreditCardFace extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMedium.copyWith(
                   color: palette.inkPrimary,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.8,
@@ -407,7 +407,7 @@ class _BalanceBlock extends StatelessWidget {
               maxLines: 1,
               style: AppTypography.bodySmall.copyWith(
                 color: palette.inkPrimary,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBMPlexSansHebrew',
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,

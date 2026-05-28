@@ -60,7 +60,7 @@ class ModernAuthTextField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: AppTypography.caption.copyWith(
-            fontFamily: 'HubotSansCondensed',
+            fontFamily: 'IBMPlexSansHebrew',
             color: Colors.white.withValues(alpha: 0.76),
             fontWeight: FontWeight.w700,
             letterSpacing: 0,

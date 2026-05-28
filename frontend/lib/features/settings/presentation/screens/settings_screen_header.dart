@@ -100,7 +100,7 @@ class _SettingsOverviewCard extends ConsumerWidget {
                   handle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.ebGaramond(
+                  style: GoogleFonts.ibmPlexSerif(
                     color: _SettingsDesignColors.primary,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,

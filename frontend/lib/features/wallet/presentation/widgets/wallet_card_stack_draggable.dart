@@ -26,42 +26,17 @@ class DraggableWalletCardStack extends StatefulWidget {
       _DraggableWalletCardStackState();
 }
 
-class _DraggableWalletCardStackState extends State<DraggableWalletCardStack>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  final ValueNotifier<double> _dragNotifier = ValueNotifier<double>(0.0);
-  final ValueNotifier<double> _velocityNotifier = ValueNotifier<double>(0.0);
-
+class _DraggableWalletCardStackState extends State<DraggableWalletCardStack> {
   int _topIndex = 0;
   final bool _isDraggableMode = true; // Google Pay style with DraggableCard3D
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
-
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          _topIndex = (_topIndex + 1) % widget.wallets.length;
-          _dragNotifier.value = 0;
-          _velocityNotifier.value = 0;
-        });
-        _controller.reset();
-        widget.onIndexChanged(_topIndex);
-      }
-    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _dragNotifier.dispose();
-    _velocityNotifier.dispose();
     super.dispose();
   }
 

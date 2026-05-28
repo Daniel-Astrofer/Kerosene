@@ -7,6 +7,7 @@ import '../../../../core/services/wallet_security_service.dart';
 import '../../../../core/utils/bitcoin_network.dart';
 import '../../../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../../transactions/data/datasources/transaction_remote_datasource.dart';
+import '../../../transactions/domain/entities/fee_estimate.dart' as tx_fee;
 import '../../domain/repositories/wallet_repository.dart';
 import '../datasources/wallet_remote_datasource.dart';
 import '../datasources/ledger_remote_datasource.dart';
@@ -252,7 +253,7 @@ class WalletRepositoryImpl implements WalletRepository {
           fastSatoshisPerByte: estimate.fastSatPerByte.toInt(),
           mediumSatoshisPerByte: estimate.standardSatPerByte.toInt(),
           slowSatoshisPerByte: estimate.slowSatPerByte.toInt(),
-          estimatedTxSize: 250, // Approximation for P2TR/legacy fallback
+          estimatedTxSize: _estimatedTxSizeFromBackend(estimate),
         ),
       );
     } catch (e) {
@@ -262,10 +263,47 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<Either<Failure, double>> getBTCtoUSDRate() async {
-    // In a real scenario, this might call a price API or return
-    // the value from a cached provider. For repository layer consistency:
-    return const Right(
-        65000.0); // Baseline production value if Socket is not ready
+    return Left(
+      ServerFailure(
+        message:
+            'Cotação BTC/USD não deve ser simulada no repositório de carteiras.',
+      ),
+    );
+  }
+
+  int _estimatedTxSizeFromBackend(tx_fee.FeeEstimate estimate) {
+    final candidates = <int>[
+      _txSizeFromFee(
+        feeBtc: estimate.estimatedStandardBtc,
+        satsPerByte: estimate.standardSatPerByte,
+      ),
+      _txSizeFromFee(
+        feeBtc: estimate.estimatedFastBtc,
+        satsPerByte: estimate.fastSatPerByte,
+      ),
+      _txSizeFromFee(
+        feeBtc: estimate.estimatedSlowBtc,
+        satsPerByte: estimate.slowSatPerByte,
+      ),
+    ].where((value) => value > 0).toList();
+
+    if (candidates.isEmpty) {
+      throw const ServerException(
+        message:
+            'O backend não retornou dados suficientes para estimar o tamanho da transação.',
+        errorCode: 'ERR_FEE_ESTIMATE_SIZE_UNAVAILABLE',
+      );
+    }
+
+    return candidates.first;
+  }
+
+  int _txSizeFromFee({
+    required double feeBtc,
+    required double satsPerByte,
+  }) {
+    if (feeBtc <= 0 || satsPerByte <= 0) return 0;
+    return ((feeBtc * 100000000) / satsPerByte).round();
   }
 
   @override

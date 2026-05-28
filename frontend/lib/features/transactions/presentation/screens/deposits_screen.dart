@@ -321,7 +321,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                   Text(
                     'Onde deseja\nreceber?',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.ebGaramond(
+                    style: GoogleFonts.ibmPlexSerif(
                       color: _receiveTextColor,
                       fontSize: 40,
                       fontWeight: FontWeight.w600,
@@ -389,7 +389,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
         children: [
           Text(
             title,
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: _receiveTextColor,
               fontSize: 48,
               fontWeight: FontWeight.w400,
@@ -768,7 +768,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       Text(
                         'Provedores',
-                        style: GoogleFonts.ebGaramond(
+                        style: GoogleFonts.ibmPlexSerif(
                           color: _receiveTextColor,
                           fontSize: 40,
                           fontWeight: FontWeight.w700,
@@ -1169,7 +1169,7 @@ class _TransactionStatementScreenState
                           padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
                           child: Text(
                             'Transações',
-                            style: GoogleFonts.ebGaramond(
+                            style: GoogleFonts.ibmPlexSerif(
                               color: Colors.white,
                               fontSize: 34,
                               fontWeight: FontWeight.w400,
@@ -1396,7 +1396,6 @@ enum _StatementMenuDestination {
   home('/home', LucideIcons.home),
   card('/card', LucideIcons.walletCards),
   history('/history', LucideIcons.receipt),
-  mining('/mining', LucideIcons.zap),
   settings('/settings', LucideIcons.settings);
 
   final String route;
@@ -1409,7 +1408,6 @@ enum _StatementMenuDestination {
       _StatementMenuDestination.home => context.tr.primaryNavHome,
       _StatementMenuDestination.card => context.tr.primaryNavCard,
       _StatementMenuDestination.history => context.tr.primaryNavHistory,
-      _StatementMenuDestination.mining => context.tr.primaryNavMining,
       _StatementMenuDestination.settings => context.tr.primaryNavSettings,
     };
   }

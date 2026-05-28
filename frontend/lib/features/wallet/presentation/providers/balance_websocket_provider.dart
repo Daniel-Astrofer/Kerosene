@@ -305,8 +305,5 @@ bool _isTransactionNotification(SessionNotificationItem notification) {
     SessionNotificationItem.kindDepositDetected,
     SessionNotificationItem.kindDepositConfirmed,
     SessionNotificationItem.kindPaymentSent,
-    SessionNotificationItem.kindMiningStarted,
-    SessionNotificationItem.kindMiningCompleted,
-    SessionNotificationItem.kindMiningCancelled,
   }.contains(notification.kind);
 }

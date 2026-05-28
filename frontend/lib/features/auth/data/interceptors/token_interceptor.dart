@@ -63,8 +63,7 @@ class TokenInterceptor extends QueuedInterceptor {
           path.contains('/auth/passkey/register/onboarding') ||
           path.contains('/auth/hardware/challenge') ||
           path.contains('/auth/hardware/verify') ||
-          path.contains('/auth/hardware/register/onboarding') ||
-          path.contains('/voucher/');
+          path.contains('/auth/hardware/register/onboarding');
 
       // 1. Injetar Token se não for rota de Auth/Onboarding e se não estiver presente
       if (!isOnboardingOrAuth && options.headers['Authorization'] == null) {

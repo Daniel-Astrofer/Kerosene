@@ -69,7 +69,11 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       if (data is List) {
         return data;
       }
-      return [];
+      throw ServerException(
+        message: 'Resposta inesperada ao buscar carteiras.',
+        errorCode: 'ERR_WALLET_LIST_INVALID_RESPONSE',
+        data: data,
+      );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao buscar carteiras: $e');

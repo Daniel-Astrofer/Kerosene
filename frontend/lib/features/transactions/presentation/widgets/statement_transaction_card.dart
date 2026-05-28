@@ -451,7 +451,7 @@ class _TransactionDetailsTable extends StatelessWidget {
                         style: TextStyle(
                           color: style.secondaryText,
                           fontFamily: rows[index].$2.length > 20
-                              ? 'monospace'
+                              ? 'IBMPlexSansHebrew'
                               : 'Inter',
                           fontSize: rows[index].$2.length > 20 ? 12 : 14,
                           fontWeight: FontWeight.w500,

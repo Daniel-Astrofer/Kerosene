@@ -7,9 +7,9 @@ import 'admin_colors.dart';
 class AdminTypography {
   AdminTypography._();
 
-  static const String fontFamily = 'IBM Plex Sans';
-  static const String titleFontFamily = 'IBM Plex Serif';
-  static const String monoFontFamily = 'IBM Plex Mono';
+  static const String fontFamily = 'IBMPlexSansHebrew';
+  static const String titleFontFamily = 'IBMPlexSerif';
+  static const String monoFontFamily = 'IBMPlexSansHebrew';
 
   static TextStyle _sans({
     required double fontSize,
@@ -18,7 +18,7 @@ class AdminTypography {
     double? height,
     double? letterSpacing,
   }) {
-    return GoogleFonts.ibmPlexSans(
+    return GoogleFonts.ibmPlexSansHebrew(
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,
@@ -49,7 +49,7 @@ class AdminTypography {
     double? height,
     double? letterSpacing,
   }) {
-    return GoogleFonts.ibmPlexMono(
+    return GoogleFonts.ibmPlexSansHebrew(
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,

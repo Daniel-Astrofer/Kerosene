@@ -140,19 +140,6 @@ NotificationVisuals resolveNotificationVisuals(
           es: 'Pago',
         ),
       );
-    case SessionNotificationItem.kindMiningStarted:
-    case SessionNotificationItem.kindMiningCompleted:
-    case SessionNotificationItem.kindMiningCancelled:
-      return NotificationVisuals(
-        tone: _toneForSeverity(item.severity),
-        icon: Icons.memory_outlined,
-        categoryLabel: _copy(
-          context,
-          pt: 'Mining',
-          en: 'Mining',
-          es: 'Mining',
-        ),
-      );
     default:
       final tone = _toneForSeverity(item.severity);
       return NotificationVisuals(

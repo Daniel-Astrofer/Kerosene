@@ -15,7 +15,7 @@ final class Transaction extends Equatable {
   /// Valor em satoshis
   final int amountSatoshis;
 
-  /// Taxa de mineração em satoshis
+  /// Taxa de rede em satoshis
   final int feeSatoshis;
 
   /// Status da transação

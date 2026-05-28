@@ -384,7 +384,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         const Text(
           'TWO-FACTOR AUTHENTICATION',
           style: TextStyle(
-            fontFamily: 'IBM Plex Sans',
+            fontFamily: 'IBMPlexSansHebrew',
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: AdminColors.textPrimary,
@@ -410,7 +410,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           controller: _totpController,
           focusNode: _totpFocus,
           style: const TextStyle(
-            fontFamily: 'IBM Plex Sans',
+            fontFamily: 'IBMPlexSansHebrew',
             fontSize: 28,
             fontWeight: FontWeight.w600,
             color: AdminColors.textPrimary,
@@ -427,7 +427,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             counterText: '',
             hintText: '000000',
             hintStyle: TextStyle(
-              fontFamily: 'IBM Plex Sans',
+              fontFamily: 'IBMPlexSansHebrew',
               fontSize: 28,
               fontWeight: FontWeight.w600,
               color: AdminColors.textDisabled,
@@ -489,7 +489,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             child: Text(
               'K',
               style: TextStyle(
-                fontFamily: 'IBM Plex Sans',
+                fontFamily: 'IBMPlexSansHebrew',
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
@@ -501,7 +501,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         const Text(
           'KEROSENE',
           style: TextStyle(
-            fontFamily: 'IBM Plex Sans',
+            fontFamily: 'IBMPlexSansHebrew',
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: AdminColors.textPrimary,

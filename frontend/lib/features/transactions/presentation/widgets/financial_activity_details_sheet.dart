@@ -11,8 +11,6 @@ import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/safe_display_text.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/features/mining/presentation/mining_explorer.dart';
-import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
@@ -247,10 +245,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                   ],
                 ),
               ],
-              if (transaction != null) ...[
-                const SizedBox(height: 12),
-                _NetworkExplorerButton(transaction: transaction!),
-              ],
               if (transaction?.canCancelPendingReceive == true) ...[
                 const SizedBox(height: 12),
                 _CancelReceiveButton(transaction: transaction!),
@@ -264,14 +258,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
 
   String _headline(BuildContext context) {
     if (paymentLink != null) {
-      if (paymentLink!.isOnboardingVoucher) {
-        return _financialCopy(
-          context,
-          pt: 'Voucher de boas-vindas',
-          en: 'Welcome voucher',
-          es: 'Voucher de bienvenida',
-        );
-      }
       return _financialCopy(
         context,
         pt: 'Pagamento por link',
@@ -286,14 +272,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
 
   String _contextLabel(BuildContext context) {
     if (paymentLink != null) {
-      if (paymentLink!.isOnboardingVoucher) {
-        return _financialCopy(
-          context,
-          pt: 'Voucher de boas-vindas',
-          en: 'Welcome voucher',
-          es: 'Voucher de bienvenida',
-        );
-      }
       return _financialCopy(
         context,
         pt: 'Pagamento por link',
@@ -514,56 +492,6 @@ class _ContextChip extends StatelessWidget {
               color: monoTextColor,
               fontWeight: FontWeight.w700,
             ),
-      ),
-    );
-  }
-}
-
-class _NetworkExplorerButton extends StatelessWidget {
-  final Transaction transaction;
-
-  const _NetworkExplorerButton({required this.transaction});
-
-  @override
-  Widget build(BuildContext context) {
-    final explorer = MiningExplorerDescriptor.fromTransaction(transaction);
-
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () {
-          final navigator = Navigator.of(context);
-          final route = MaterialPageRoute<void>(
-            builder: (_) => MiningScreen(initialTransaction: transaction),
-          );
-
-          navigator.pop();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (navigator.mounted) {
-              navigator.push(route);
-            }
-          });
-        },
-        style: FilledButton.styleFrom(
-          backgroundColor: monoTextColor,
-          foregroundColor: Colors.black,
-          minimumSize: const Size.fromHeight(52),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          side: const BorderSide(color: monoBorderStrongColor),
-        ),
-        icon: Icon(
-          explorer.rail == MiningExplorerRail.lightning
-              ? Icons.bolt_rounded
-              : Icons.open_in_new_rounded,
-          color: Colors.black,
-        ),
-        label: Text(
-          'Abrir ${explorer.buttonLabel}',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.black,
-                fontWeight: FontWeight.w800,
-              ),
-        ),
       ),
     );
   }

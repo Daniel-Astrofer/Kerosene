@@ -66,7 +66,8 @@ class BitcoinAccount {
       balanceAutoHoldSats: _intFromJson(json['balanceAutoHoldSats']),
       observedBalanceSats: _intFromJson(json['observedBalanceSats']),
       dailyLimitSats: _intFromJson(json['dailyLimitSats']),
-      xpubFingerprint: json['xpubFingerprint'] as String?,
+      xpubFingerprint:
+          (json['xpubFingerprint'] ?? json['fingerprint']) as String?,
       derivationPath: json['derivationPath'] as String?,
       scriptPolicy: json['scriptPolicy'] as String?,
     );
@@ -136,17 +137,23 @@ class ReceivingRequestView {
     );
   }
 
-  factory ReceivingRequestView.fromJson(Map<String, dynamic> json) {
+  factory ReceivingRequestView.fromJson(
+    Map<String, dynamic> json, {
+    String? fallbackAccountId,
+  }) {
+    final createdAt = (json['createdAt'] ?? json['expiresAt'])?.toString();
     return ReceivingRequestView(
       id: json['id'] as String? ?? '',
-      accountId: json['accountId'] as String? ?? '',
+      accountId:
+          (json['accountId'] ?? json['cardId'] ?? fallbackAccountId ?? '')
+              .toString(),
       address: json['address'] as String? ?? '',
       bip21: json['bip21'] as String? ?? '',
       status: json['status'] as String? ?? 'ACTIVE',
-      amountSats: json['amountSats'] as int?,
-      expiry: json['expiry'] as String? ?? '1H',
+      amountSats: _nullableIntFromJson(json['amountSats']),
+      expiry: (json['expiry'] ?? json['expiresAt'] ?? '').toString(),
       oneTime: json['oneTime'] as bool? ?? true,
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt: DateTime.tryParse(createdAt ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
@@ -162,6 +169,13 @@ class ReceivingRequestView {
         'oneTime': oneTime,
         'createdAt': createdAt.toIso8601String(),
       };
+
+  static int? _nullableIntFromJson(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse('$value');
+  }
 }
 
 class TaxEventView {

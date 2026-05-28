@@ -20,19 +20,7 @@ class AdminDataService {
   }
 
   Future<List<Map<String, dynamic>>> fetchAuditHistory() async {
-    try {
-      final response = await _api.get(AppConfig.auditMerkleHistory);
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      _logAdminError('fetchAuditHistory', e);
-      return [];
-    }
+    return _fetchList(AppConfig.auditMerkleHistory, 'fetchAuditHistory');
   }
 
   Future<Map<String, double>> fetchBtcPrice() async {
@@ -46,10 +34,9 @@ class AdminDataService {
           'usdBrl': (data['usdBrl'] as num?)?.toDouble() ?? 0,
         };
       }
-      return {'btcUsd': 0, 'btcBrl': 0, 'usdBrl': 0};
+      throw _invalidResponse('fetchBtcPrice', response.data);
     } catch (e) {
-      _logAdminError('fetchBtcPrice', e);
-      return {'btcUsd': 0, 'btcBrl': 0, 'usdBrl': 0};
+      _throwAdminFailure('fetchBtcPrice', e);
     }
   }
 
@@ -105,22 +92,11 @@ class AdminDataService {
   }
 
   Future<List<Map<String, dynamic>>> fetchOperationalLogs() async {
-    try {
-      final response = await _api.get(
-        AppConfig.adminOperationsLogs,
-        queryParameters: {'limit': 50},
-      );
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      _logAdminError('fetchOperationalLogs', e);
-      return [];
-    }
+    return _fetchList(
+      AppConfig.adminOperationsLogs,
+      'fetchOperationalLogs',
+      queryParameters: {'limit': 50},
+    );
   }
 
   Future<List<Map<String, dynamic>>> fetchAuthenticatedMobileDevices() async {
@@ -136,27 +112,14 @@ class AdminDataService {
               .toList();
         }
       }
-      return [];
+      throw _invalidResponse('fetchAuthenticatedMobileDevices', response.data);
     } catch (e) {
-      _logAdminError('fetchAuthenticatedMobileDevices', e);
-      return [];
+      _throwAdminFailure('fetchAuthenticatedMobileDevices', e);
     }
   }
 
   Future<List<Map<String, dynamic>>> fetchAdminDevices() async {
-    try {
-      final response = await _api.get(AppConfig.authAdminDevices);
-      if (response.data is List) {
-        return (response.data as List)
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      _logAdminError('fetchAdminDevices', e);
-      return [];
-    }
+    return _fetchList(AppConfig.authAdminDevices, 'fetchAdminDevices');
   }
 
   Future<void> blockAdminDevice(String deviceId) async {
@@ -179,7 +142,7 @@ class AdminDataService {
     try {
       await _api.post(path);
     } catch (e) {
-      _logAdminError('deviceAction', e);
+      _throwAdminFailure('deviceAction', e);
     }
   }
 
@@ -189,11 +152,47 @@ class AdminDataService {
       if (response.data is Map) {
         return Map<String, dynamic>.from(response.data);
       }
-      return {};
+      throw _invalidResponse(operation, response.data);
     } catch (e) {
-      _logAdminError(operation, e);
-      return {};
+      _throwAdminFailure(operation, e);
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchList(
+    String path,
+    String operation, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final response = await _api.get(path, queryParameters: queryParameters);
+      if (response.data is List) {
+        return (response.data as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      throw _invalidResponse(operation, response.data);
+    } catch (e) {
+      _throwAdminFailure(operation, e);
+    }
+  }
+
+  ServerException _invalidResponse(String operation, Object? data) {
+    return ServerException(
+      message: 'Resposta inesperada do backend administrativo.',
+      errorCode: 'ERR_ADMIN_${operation.toUpperCase()}_INVALID_RESPONSE',
+      data: data,
+    );
+  }
+
+  Never _throwAdminFailure(String operation, Object error) {
+    _logAdminError(operation, error);
+    if (error is AppException) throw error;
+    throw ServerException(
+      message: 'Falha ao executar operação administrativa.',
+      errorCode: 'ERR_ADMIN_${operation.toUpperCase()}',
+      data: error.toString(),
+    );
   }
 
   void _logAdminError(String operation, Object error) {

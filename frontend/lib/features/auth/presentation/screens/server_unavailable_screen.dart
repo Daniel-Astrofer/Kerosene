@@ -73,7 +73,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
                     'Conexão indisponível',
-                    style: GoogleFonts.ebGaramond(
+                    style: GoogleFonts.ibmPlexSerif(
                       color: const Color(0xFFFFFFFF),
                       fontSize: 32,
                       fontWeight: FontWeight.w500,

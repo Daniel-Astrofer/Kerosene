@@ -207,7 +207,7 @@ class KeroErrorDialog extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
-                fontFamily: 'monospace',
+                fontFamily: 'IBMPlexSansHebrew',
               ),
             ),
 

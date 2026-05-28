@@ -146,7 +146,7 @@ class _PinDialogState extends State<PinDialog> {
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
-                  fontFamily: 'HubotSansExpanded',
+                  fontFamily: 'IBMPlexSansHebrew',
                 ),
               ),
               const SizedBox(height: 12),

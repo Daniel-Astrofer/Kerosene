@@ -2339,9 +2339,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailPaymentLink => 'Payment link';
 
   @override
-  String get detailOnboardingVoucher => 'Onboarding voucher';
-
-  @override
   String get detailExternalWithdrawal => 'External withdrawal';
 
   @override
@@ -3834,7 +3831,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsUiFinancialEventsOnSubtitle =>
-      'Receives, sends, deposits, links, and mining appear in the feed.';
+      'Receives, sends, deposits, and links appear in the feed.';
 
   @override
   String get settingsUiFinancialEventsOffSubtitle =>
@@ -3932,9 +3929,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transactionVisualFailed => 'Not completed';
-
-  @override
-  String get transactionVisualMining => 'Mining';
 
   @override
   String get transactionVisualSwap => 'Conversion';
@@ -4315,9 +4309,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get depositLedgerOpenChargesTitle => 'Open requests';
-
-  @override
-  String get depositLedgerVoucherTitle => 'Welcome voucher';
 
   @override
   String get depositLedgerPaymentLinkTitle => 'Payment link';
@@ -5399,9 +5390,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get walletCardWithdrawLabel => 'Withdraw';
 
   @override
-  String get walletCardMiningLabel => 'Mining';
-
-  @override
   String get walletCardHowToGet => 'How to get it';
 
   @override
@@ -5438,7 +5426,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get walletCardSilverDescription =>
-      'Intermediate upgrade with lower fees for deposits, withdrawals and mining.';
+      'Intermediate upgrade with lower fees for deposits and withdrawals.';
 
   @override
   String get walletCardBlackDescription =>
@@ -5549,9 +5537,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get primaryNavHistory => 'History';
 
   @override
-  String get primaryNavMining => 'Mining';
-
-  @override
   String get primaryNavSettings => 'Settings';
 
   @override
@@ -5565,523 +5550,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get securityTreasuryProfit => 'Profit';
-
-  @override
-  String get miningContractSelectRigTitle => 'Select equipment';
-
-  @override
-  String get miningContractSelectRigMessage =>
-      'We could not find equipment available for rent right now.';
-
-  @override
-  String get miningContractInvalidDurationTitle => 'Invalid term';
-
-  @override
-  String miningContractInvalidDurationMessage(int minHours, int maxHours) {
-    return 'Choose a term between ${minHours}h and ${maxHours}h for this equipment.';
-  }
-
-  @override
-  String get miningContractInvalidBudgetTitle => 'Invalid amount';
-
-  @override
-  String get miningContractInvalidBudgetMessage =>
-      'Enter a BTC amount greater than zero.';
-
-  @override
-  String get miningContractInvalidHashrateTitle => 'Invalid power';
-
-  @override
-  String miningContractInvalidHashrateMessage(String unit) {
-    return 'Enter the desired power in $unit.';
-  }
-
-  @override
-  String get miningContractNoAllocationTitle => 'No estimated allocation';
-
-  @override
-  String get miningContractNoAllocationMessage =>
-      'The selected combination does not generate contractable power.';
-
-  @override
-  String get miningContractTotpRequiredTitle => 'Code required';
-
-  @override
-  String get miningContractTotpRequiredMessage =>
-      'Enter the wallet authenticator code to continue.';
-
-  @override
-  String get miningContractRequiredFieldsTitle => 'Required fields';
-
-  @override
-  String get miningContractRequiredFieldsMessage =>
-      'Fill the receiving address, pool and miner identifier.';
-
-  @override
-  String get miningContractAuthIncompleteTitle => 'Authorization incomplete';
-
-  @override
-  String get miningContractAuthIncompleteMessage =>
-      'The operation was cancelled before final authorization.';
-
-  @override
-  String get miningContractCreateFailedTitle =>
-      'We could not create the allocation';
-
-  @override
-  String get miningContractUnknownError =>
-      'We could not complete this right now.';
-
-  @override
-  String get miningContractCreatedTitle => 'Allocation created';
-
-  @override
-  String miningContractCreatedMessage(
-      String rigName, String hashrate, int durationHours) {
-    return '$rigName rented with $hashrate for ${durationHours}h.';
-  }
-
-  @override
-  String get miningContractCancelFailedTitle => 'We could not cancel';
-
-  @override
-  String get miningContractCancelledTitle => 'Allocation ended';
-
-  @override
-  String get miningContractCancelledMessage =>
-      'Proportional amounts were updated in your history.';
-
-  @override
-  String get miningContractRigsTitle => 'Available equipment';
-
-  @override
-  String get miningContractRigsSubtitle =>
-      'Choose equipment and review the estimated price before authorizing.';
-
-  @override
-  String get miningContractCreateAction => 'Create allocation';
-
-  @override
-  String get miningContractAllocationsTitle => 'Active and recent allocations';
-
-  @override
-  String get miningContractAllocationsSubtitle =>
-      'Track your contracts and cancel when the policy allows it.';
-
-  @override
-  String get miningContractNetworkContextTitle => 'Network and settlement';
-
-  @override
-  String get miningContractNetworkHashrate => 'Network power';
-
-  @override
-  String get miningContractDailyReward => 'Daily reward';
-
-  @override
-  String get miningContractSelectWalletHint =>
-      'Select a wallet to debit the rental and fill the receiving address.';
-
-  @override
-  String miningContractActiveWallet(String walletName, String balance) {
-    return 'Active wallet: $walletName • balance $balance';
-  }
-
-  @override
-  String miningContractRigAvailable(
-      String algorithm, String provider, String hashrate, String unit) {
-    return '$algorithm • $provider • $hashrate $unit available';
-  }
-
-  @override
-  String miningContractPricePerUnit(String unit) {
-    return 'Price per $unit/day';
-  }
-
-  @override
-  String miningContractYieldPerUnit(String unit) {
-    return 'Yield per $unit/day';
-  }
-
-  @override
-  String get miningContractBudgetMode => 'BTC amount';
-
-  @override
-  String get miningContractHashrateMode => 'Power';
-
-  @override
-  String get miningContractBudgetLabel => 'BTC amount';
-
-  @override
-  String get miningContractHashrateLabel => 'Desired power';
-
-  @override
-  String get miningContractPayoutAddressLabel => 'Receiving address';
-
-  @override
-  String get miningContractPoolUrlLabel => 'Mining pool';
-
-  @override
-  String get miningContractWorkerNameLabel => 'Miner identifier';
-
-  @override
-  String get miningContractEstimateTitle => 'Allocation preview';
-
-  @override
-  String get miningContractAllocatedHashrate => 'Allocated power';
-
-  @override
-  String get miningContractEstimatedCost => 'Estimated cost';
-
-  @override
-  String get miningContractProjectedYield => 'Projected gross yield';
-
-  @override
-  String get miningContractTotpAuthorization => 'Code authorization';
-
-  @override
-  String get miningContractCost => 'Cost';
-
-  @override
-  String get miningContractNetYield => 'Net yield';
-
-  @override
-  String get miningContractCancelAllocation => 'Cancel allocation';
-
-  @override
-  String get miningContractRetry => 'Try again';
-
-  @override
-  String get miningStateOfflineTitle => 'No connectivity';
-
-  @override
-  String get miningStateOfflineMessage =>
-      'We could not query the Bitcoin network right now.';
-
-  @override
-  String get miningStateEmptyTitle => 'No data available';
-
-  @override
-  String get miningStateEmptyMessage =>
-      'We could not find enough information to build the mining panel right now.';
-
-  @override
-  String get miningStateErrorTitle => 'Panel could not start';
-
-  @override
-  String get miningStateRetryLater => 'Try syncing again shortly.';
-
-  @override
-  String get miningTxInternalTitle => 'Internal flow';
-
-  @override
-  String get miningTxInternalSubtitle =>
-      'Internal reconciliation. No public settlement.';
-
-  @override
-  String get miningTxReference => 'Reference';
-
-  @override
-  String get miningTxConfirmations => 'Confirmations';
-
-  @override
-  String get miningTxLightningTitle => 'Lightning flow';
-
-  @override
-  String get miningTxLightningSubtitle =>
-      'Settlement outside the base layer. Local context only.';
-
-  @override
-  String get miningTxChannel => 'Channel';
-
-  @override
-  String get miningTxRecord => 'Record';
-
-  @override
-  String get miningTxNoPublicSummaryTitle =>
-      'Transaction without public summary';
-
-  @override
-  String get miningTxNoPublicSummaryMessage =>
-      'The network did not return a detailed summary.';
-
-  @override
-  String get miningTxLookupUnavailableTitle => 'On-chain query unavailable';
-
-  @override
-  String get miningTxLocalStatus => 'Local status';
-
-  @override
-  String get miningTxOnchainTitle => 'On-chain context';
-
-  @override
-  String get miningTxOnchainSubtitle =>
-      'Inclusion, position and effective transaction cost.';
-
-  @override
-  String get miningTxConfirmed => 'Confirmed';
-
-  @override
-  String get miningTxPending => 'Pending';
-
-  @override
-  String get miningTxTxid => 'TXID';
-
-  @override
-  String get miningTxFeeRate => 'Fee per vByte';
-
-  @override
-  String get miningTxBlock => 'Block';
-
-  @override
-  String get miningTxAwaiting => 'waiting';
-
-  @override
-  String get miningTxPosition => 'Position';
-
-  @override
-  String get miningTxNotAvailable => 'n/a';
-
-  @override
-  String get miningTxLoadingTitle => 'Transaction context';
-
-  @override
-  String get miningTxLoadingSubtitle => 'Checking public transaction data.';
-
-  @override
-  String get miningMetricsCurrentHeight => 'Current height';
-
-  @override
-  String miningMetricsRetargetInBlocks(int blocks) {
-    return 'retarget in $blocks blocks';
-  }
-
-  @override
-  String get miningMetricsMrr => 'MRR';
-
-  @override
-  String get miningMetricsHashrate => 'Hashrate';
-
-  @override
-  String get miningMetricsDifficulty => 'Difficulty';
-
-  @override
-  String get miningMetricsPace => 'Pace';
-
-  @override
-  String get miningMetricsLastUpdated => 'Last update';
-
-  @override
-  String get miningMetricsNow => 'now';
-
-  @override
-  String get miningMetricsMempool => 'Mempool';
-
-  @override
-  String get miningMetricsPriorityFee => 'Priority fee';
-
-  @override
-  String get miningMetricsEstimatedTps => 'Estimated TPS';
-
-  @override
-  String get miningMetricsMempoolPressureTitle => 'Mempool pressure';
-
-  @override
-  String get miningMetricsMempoolPressureSubtitle =>
-      'Fee range, pending volume and inclusion pressure.';
-
-  @override
-  String get miningMetricsPending => 'Pending';
-
-  @override
-  String get miningMetricsVbytes => 'vBytes';
-
-  @override
-  String get miningMetricsVolumeMb => 'MB volume';
-
-  @override
-  String get miningMetricsAggregatedFees => 'Aggregated fees';
-
-  @override
-  String get miningMetricsNetworkHealthTitle => 'Network health';
-
-  @override
-  String get miningMetricsNetworkHealthSubtitle =>
-      'Difficulty, retarget and recent throughput.';
-
-  @override
-  String get miningMetricsThroughput => 'Throughput';
-
-  @override
-  String get miningMetricsOccupancy => 'Occupancy';
-
-  @override
-  String get miningMetricsFeesInReward => 'Fees in reward';
-
-  @override
-  String get miningMetricsNextAdjustment => 'Next adjustment';
-
-  @override
-  String get miningMetricsLocalMonitorTitle => 'Local monitor';
-
-  @override
-  String get miningMetricsLocalMonitorActiveSubtitle =>
-      'Estimated local telemetry for the active operation.';
-
-  @override
-  String get miningMetricsLocalMonitorInactiveSubtitle =>
-      'No local miner active.';
-
-  @override
-  String get miningMetricsMiningStatus => 'Mining';
-
-  @override
-  String get miningMetricsOfflineStatus => 'Offline';
-
-  @override
-  String get miningMetricsLocalHashrate => 'Local hashrate';
-
-  @override
-  String get miningMetricsAcceptedShares => 'Accepted shares';
-
-  @override
-  String get miningMetricsRejectedShares => 'Rejected shares';
-
-  @override
-  String get miningMetricsTemperature => 'Temperature';
-
-  @override
-  String get miningMetricsHashrateTrendTitle => 'Hashrate trend';
-
-  @override
-  String get miningMetricsHashrateTrendSubtitle =>
-      'Recent curve of network computing power.';
-
-  @override
-  String get miningMetricsTrendEmpty =>
-      'Not enough time series data to draw the curve.';
-
-  @override
-  String get miningMetricsRecentBlocksTitle => 'Recent blocks';
-
-  @override
-  String get miningMetricsRecentBlocksSubtitle =>
-      'Cadence, volume and occupancy in a short read.';
-
-  @override
-  String get miningMetricsDominantPoolsTitle => 'Dominant pools';
-
-  @override
-  String get miningMetricsDominantPoolsSubtitle =>
-      'Recent share, average match and empty blocks.';
-
-  @override
-  String miningMetricsLeadingPool(String percent) {
-    return '$percent% leader';
-  }
-
-  @override
-  String get miningFeesTitle => 'Fee market';
-
-  @override
-  String get miningFeesSubtitle => 'Active bands, spread and inclusion window.';
-
-  @override
-  String get miningFeesWideSpread => 'wide spread';
-
-  @override
-  String get miningFeesControlledSpread => 'controlled spread';
-
-  @override
-  String miningFeesWindow(String fee) {
-    return 'window $fee+';
-  }
-
-  @override
-  String get miningFeesPriority => 'Priority';
-
-  @override
-  String get miningFeesExpress => 'Express';
-
-  @override
-  String get miningFeesStandard => 'Standard';
-
-  @override
-  String get miningFeesEconomy => 'Economy';
-
-  @override
-  String get miningFeesMinimum => 'Minimum';
-
-  @override
-  String get miningFeesMedian => 'Median';
-
-  @override
-  String get miningFeesMaximum => 'Maximum';
-
-  @override
-  String get miningBlocksTitle => 'Blocks forming';
-
-  @override
-  String get miningBlocksSubtitle =>
-      'Projected queue beside recent confirmations.';
-
-  @override
-  String miningBlocksQueued(int count) {
-    return '$count queued';
-  }
-
-  @override
-  String get miningBlocksQueue => 'Queue';
-
-  @override
-  String get miningBlocksConfirmed => 'Confirmed';
-
-  @override
-  String get miningBlocksNew => 'New';
-
-  @override
-  String get miningBlocksNoBlocks => 'no blocks';
-
-  @override
-  String miningBlocksNext(int number) {
-    return 'Next $number';
-  }
-
-  @override
-  String get miningBlocksRange => 'Range';
-
-  @override
-  String get miningBlocksFees => 'Fees';
-
-  @override
-  String miningBlocksNewHeight(int height) {
-    return 'New #$height';
-  }
-
-  @override
-  String get miningBlocksBitcoinNetwork => 'Bitcoin network';
-
-  @override
-  String miningBlocksTransactions(int count) {
-    return '$count transactions';
-  }
-
-  @override
-  String get miningBlocksHash => 'Hash';
-
-  @override
-  String get miningBlocksWeight => 'Weight';
-
-  @override
-  String get miningBlocksTimestamp => 'Timestamp';
-
-  @override
-  String get miningBlocksSize => 'Size';
-
-  @override
-  String get miningBlocksFee => 'Fee';
-
-  @override
-  String get miningBlocksUnavailable => 'unavailable';
 
   @override
   String get landingNavProduct => 'Product';
@@ -6473,4 +5941,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeEducationKeroseneGeneralTag => 'How to choose';
+
+  @override
+  String get designSystemTemplateTitle => 'Design system';
+
+  @override
+  String get designSystemTemplateIdentitySection =>
+      '01. Visual identity and title';
+
+  @override
+  String get designSystemTemplateHeroTitle => 'Kerosene Sovereign Core';
+
+  @override
+  String get designSystemTemplatePanelsSection =>
+      '02. Panels and monochrome box';
+
+  @override
+  String get designSystemTemplateInputSection => '03. Formatted data input';
+
+  @override
+  String get designSystemTemplateButtonsSection => '04. Standard buttons';
+
+  @override
+  String get designSystemTemplateStatusSection => '05. Status labels';
 }

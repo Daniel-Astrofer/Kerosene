@@ -93,7 +93,7 @@ class _WelcomeHeader extends StatelessWidget {
               const TextSpan(text: 'Custódia institucional.\n'),
               TextSpan(
                 text: 'Simplicidade absoluta.',
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: const Color(0xFF9CA3AF),
                   fontSize: 40,
                   fontWeight: FontWeight.w500,
@@ -104,7 +104,7 @@ class _WelcomeHeader extends StatelessWidget {
             ],
           ),
           textAlign: TextAlign.center,
-          style: GoogleFonts.ebGaramond(
+          style: GoogleFonts.ibmPlexSerif(
             color: Colors.white,
             fontSize: 40,
             fontWeight: FontWeight.w500,

@@ -103,7 +103,7 @@ class _InternalTransferReviewScreenState<T>
                         Text(
                           widget.title,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.ebGaramond(
+                          style: GoogleFonts.ibmPlexSerif(
                             color: _SendMoneyScreenState._internalText,
                             fontSize: 38,
                             fontWeight: FontWeight.w500,
@@ -366,7 +366,7 @@ class _InternalTransferSuccessView<T> extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _SendMoneyScreenState._internalText,
                   fontSize: 38,
                   fontWeight: FontWeight.w500,

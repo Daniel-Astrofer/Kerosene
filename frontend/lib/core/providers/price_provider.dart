@@ -57,23 +57,27 @@ final latestBtcPriceProvider = Provider<double?>((ref) {
 class BackendBtcRates {
   final double btcUsd;
   final double btcBrl;
+  final double btcEur;
   final double usdBrl;
 
   const BackendBtcRates({
     required this.btcUsd,
     required this.btcBrl,
+    required this.btcEur,
     required this.usdBrl,
   });
 
   factory BackendBtcRates.fromJson(Map<String, dynamic> json) {
     final btcUsd = (json['btcUsd'] as num?)?.toDouble() ?? 0;
     final btcBrl = (json['btcBrl'] as num?)?.toDouble() ?? 0;
+    final btcEur = (json['btcEur'] as num?)?.toDouble() ?? 0;
     final usdBrl = (json['usdBrl'] as num?)?.toDouble() ??
         (btcUsd > 0 ? btcBrl / btcUsd : 0);
 
     return BackendBtcRates(
       btcUsd: btcUsd,
       btcBrl: btcBrl,
+      btcEur: btcEur,
       usdBrl: usdBrl,
     );
   }
@@ -97,17 +101,31 @@ final usdBrlRateProvider = Provider<double?>((ref) {
 
 /// Provider for BTC/EUR exchange rate
 final btcEurPriceProvider = Provider<double?>((ref) {
-  final btcUsdPrice = ref.watch(latestBtcPriceProvider);
-  if (btcUsdPrice == null) return null;
-  const eurUsdRate = 0.92;
-  return btcUsdPrice * eurUsdRate;
+  final backendRates = ref.watch(backendBtcRatesProvider).asData?.value;
+  final btcEur = backendRates?.btcEur;
+  if (btcEur != null && btcEur > 0) {
+    return btcEur;
+  }
+  return null;
 });
 
 /// Provider for BTC/BRL exchange rate
 final btcBrlPriceProvider = Provider<double?>((ref) {
+  final backendRates = ref.watch(backendBtcRatesProvider).asData?.value;
+  final backendBrl = backendRates?.btcBrl;
+  if (backendBrl != null && backendBrl > 0) {
+    return backendBrl;
+  }
+
   final btcUsdPrice = ref.watch(latestBtcPriceProvider);
-  if (btcUsdPrice == null) return null;
-  final brlUsdRate = ref.watch(usdBrlRateProvider) ?? 5.0;
+  final brlUsdRate = backendRates?.usdBrl;
+  if (btcUsdPrice == null ||
+      btcUsdPrice <= 0 ||
+      brlUsdRate == null ||
+      brlUsdRate <= 0) {
+    return null;
+  }
+
   return btcUsdPrice * brlUsdRate;
 });
 

@@ -85,7 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 32),
                         Text(
                           'Configurações',
-                          style: GoogleFonts.ebGaramond(
+                          style: GoogleFonts.ibmPlexSerif(
                             color: _SettingsDesignColors.primary,
                             fontSize: responsive.compactFontSize(
                               tiny: 42,

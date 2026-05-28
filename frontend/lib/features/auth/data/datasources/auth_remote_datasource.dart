@@ -133,7 +133,7 @@ class OnboardingPaymentLinkDto {
     required this.linkId,
     required this.amountBtc,
     required this.depositAddress,
-    this.type = 'ONBOARDING_VOUCHER',
+    this.type = 'ONBOARDING_PAYMENT_LINK',
     this.status = 'pending',
   });
 
@@ -151,7 +151,7 @@ class OnboardingPaymentLinkDto {
       amountBtc: btc,
       depositAddress:
           (json['address'] ?? json['depositAddress'] ?? '').toString(),
-      type: (json['type'] ?? 'ONBOARDING_VOUCHER').toString(),
+      type: (json['type'] ?? 'ONBOARDING_PAYMENT_LINK').toString(),
       status: (json['status'] ?? 'pending').toString(),
     );
   }

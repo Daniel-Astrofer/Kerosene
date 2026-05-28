@@ -11,7 +11,6 @@ enum TransactionVisualFamily {
   nfc,
   deposit,
   withdrawal,
-  mining,
   refund,
   swap,
   fee,
@@ -30,7 +29,6 @@ enum TransactionVisualLabel {
   cancelled,
   refund,
   failed,
-  mining,
   swap,
   fee,
   lightningDeposit,
@@ -83,7 +81,6 @@ class TransactionVisualSpec {
       TransactionVisualLabel.cancelled => l10n.transactionVisualCancelled,
       TransactionVisualLabel.refund => l10n.transactionVisualRefund,
       TransactionVisualLabel.failed => l10n.transactionVisualFailed,
-      TransactionVisualLabel.mining => l10n.transactionVisualMining,
       TransactionVisualLabel.swap => l10n.transactionVisualSwap,
       TransactionVisualLabel.fee => l10n.transactionVisualFee,
       TransactionVisualLabel.lightningDeposit =>
@@ -149,18 +146,6 @@ class TransactionVisualSpec {
         icon: Icons.error_outline_rounded,
         iconColor: Color(0xFFD59A9A),
         amountColor: _debitColor,
-      );
-    }
-
-    if (_looksLikeMining(transaction)) {
-      return const TransactionVisualSpec(
-        family: TransactionVisualFamily.mining,
-        direction: TransactionVisualDirection.incoming,
-        labelKey: TransactionVisualLabel.mining,
-        prefix: '+',
-        icon: Icons.auto_awesome_rounded,
-        iconColor: Color(0xFFE3B85A),
-        amountColor: _creditColor,
       );
     }
 
@@ -392,15 +377,6 @@ class TransactionVisualSpec {
           value.contains('bolt11') ||
           value.contains('@');
     });
-  }
-
-  static bool _looksLikeMining(Transaction transaction) {
-    final description = (transaction.description ?? '').toLowerCase();
-    return description.contains('mining') ||
-        description.contains('mineracao') ||
-        description.contains('mineração') ||
-        description.contains('hashrate') ||
-        description.contains('block reward');
   }
 
   static bool _looksRefund(Transaction transaction) {

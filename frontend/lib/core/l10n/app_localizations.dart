@@ -4408,12 +4408,6 @@ abstract class AppLocalizations {
   /// **'Payment link'**
   String get detailPaymentLink;
 
-  /// No description provided for @detailOnboardingVoucher.
-  ///
-  /// In en, this message translates to:
-  /// **'Onboarding voucher'**
-  String get detailOnboardingVoucher;
-
   /// No description provided for @detailExternalWithdrawal.
   ///
   /// In en, this message translates to:
@@ -7045,7 +7039,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsUiFinancialEventsOnSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Receives, sends, deposits, links, and mining appear in the feed.'**
+  /// **'Receives, sends, deposits, and links appear in the feed.'**
   String get settingsUiFinancialEventsOnSubtitle;
 
   /// No description provided for @settingsUiFinancialEventsOffSubtitle.
@@ -7215,12 +7209,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not completed'**
   String get transactionVisualFailed;
-
-  /// No description provided for @transactionVisualMining.
-  ///
-  /// In en, this message translates to:
-  /// **'Mining'**
-  String get transactionVisualMining;
 
   /// No description provided for @transactionVisualSwap.
   ///
@@ -7893,12 +7881,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open requests'**
   String get depositLedgerOpenChargesTitle;
-
-  /// No description provided for @depositLedgerVoucherTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome voucher'**
-  String get depositLedgerVoucherTitle;
 
   /// No description provided for @depositLedgerPaymentLinkTitle.
   ///
@@ -9815,12 +9797,6 @@ abstract class AppLocalizations {
   /// **'Withdraw'**
   String get walletCardWithdrawLabel;
 
-  /// No description provided for @walletCardMiningLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Mining'**
-  String get walletCardMiningLabel;
-
   /// No description provided for @walletCardHowToGet.
   ///
   /// In en, this message translates to:
@@ -9890,7 +9866,7 @@ abstract class AppLocalizations {
   /// No description provided for @walletCardSilverDescription.
   ///
   /// In en, this message translates to:
-  /// **'Intermediate upgrade with lower fees for deposits, withdrawals and mining.'**
+  /// **'Intermediate upgrade with lower fees for deposits and withdrawals.'**
   String get walletCardSilverDescription;
 
   /// No description provided for @walletCardBlackDescription.
@@ -10079,12 +10055,6 @@ abstract class AppLocalizations {
   /// **'History'**
   String get primaryNavHistory;
 
-  /// No description provided for @primaryNavMining.
-  ///
-  /// In en, this message translates to:
-  /// **'Mining'**
-  String get primaryNavMining;
-
   /// No description provided for @primaryNavSettings.
   ///
   /// In en, this message translates to:
@@ -10114,926 +10084,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profit'**
   String get securityTreasuryProfit;
-
-  /// No description provided for @miningContractSelectRigTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select equipment'**
-  String get miningContractSelectRigTitle;
-
-  /// No description provided for @miningContractSelectRigMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not find equipment available for rent right now.'**
-  String get miningContractSelectRigMessage;
-
-  /// No description provided for @miningContractInvalidDurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid term'**
-  String get miningContractInvalidDurationTitle;
-
-  /// No description provided for @miningContractInvalidDurationMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a term between {minHours}h and {maxHours}h for this equipment.'**
-  String miningContractInvalidDurationMessage(int minHours, int maxHours);
-
-  /// No description provided for @miningContractInvalidBudgetTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid amount'**
-  String get miningContractInvalidBudgetTitle;
-
-  /// No description provided for @miningContractInvalidBudgetMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a BTC amount greater than zero.'**
-  String get miningContractInvalidBudgetMessage;
-
-  /// No description provided for @miningContractInvalidHashrateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid power'**
-  String get miningContractInvalidHashrateTitle;
-
-  /// No description provided for @miningContractInvalidHashrateMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the desired power in {unit}.'**
-  String miningContractInvalidHashrateMessage(String unit);
-
-  /// No description provided for @miningContractNoAllocationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No estimated allocation'**
-  String get miningContractNoAllocationTitle;
-
-  /// No description provided for @miningContractNoAllocationMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The selected combination does not generate contractable power.'**
-  String get miningContractNoAllocationMessage;
-
-  /// No description provided for @miningContractTotpRequiredTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Code required'**
-  String get miningContractTotpRequiredTitle;
-
-  /// No description provided for @miningContractTotpRequiredMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the wallet authenticator code to continue.'**
-  String get miningContractTotpRequiredMessage;
-
-  /// No description provided for @miningContractRequiredFieldsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Required fields'**
-  String get miningContractRequiredFieldsTitle;
-
-  /// No description provided for @miningContractRequiredFieldsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Fill the receiving address, pool and miner identifier.'**
-  String get miningContractRequiredFieldsMessage;
-
-  /// No description provided for @miningContractAuthIncompleteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Authorization incomplete'**
-  String get miningContractAuthIncompleteTitle;
-
-  /// No description provided for @miningContractAuthIncompleteMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The operation was cancelled before final authorization.'**
-  String get miningContractAuthIncompleteMessage;
-
-  /// No description provided for @miningContractCreateFailedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not create the allocation'**
-  String get miningContractCreateFailedTitle;
-
-  /// No description provided for @miningContractUnknownError.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not complete this right now.'**
-  String get miningContractUnknownError;
-
-  /// No description provided for @miningContractCreatedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Allocation created'**
-  String get miningContractCreatedTitle;
-
-  /// No description provided for @miningContractCreatedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'{rigName} rented with {hashrate} for {durationHours}h.'**
-  String miningContractCreatedMessage(
-      String rigName, String hashrate, int durationHours);
-
-  /// No description provided for @miningContractCancelFailedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not cancel'**
-  String get miningContractCancelFailedTitle;
-
-  /// No description provided for @miningContractCancelledTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Allocation ended'**
-  String get miningContractCancelledTitle;
-
-  /// No description provided for @miningContractCancelledMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Proportional amounts were updated in your history.'**
-  String get miningContractCancelledMessage;
-
-  /// No description provided for @miningContractRigsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Available equipment'**
-  String get miningContractRigsTitle;
-
-  /// No description provided for @miningContractRigsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose equipment and review the estimated price before authorizing.'**
-  String get miningContractRigsSubtitle;
-
-  /// No description provided for @miningContractCreateAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Create allocation'**
-  String get miningContractCreateAction;
-
-  /// No description provided for @miningContractAllocationsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Active and recent allocations'**
-  String get miningContractAllocationsTitle;
-
-  /// No description provided for @miningContractAllocationsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Track your contracts and cancel when the policy allows it.'**
-  String get miningContractAllocationsSubtitle;
-
-  /// No description provided for @miningContractNetworkContextTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Network and settlement'**
-  String get miningContractNetworkContextTitle;
-
-  /// No description provided for @miningContractNetworkHashrate.
-  ///
-  /// In en, this message translates to:
-  /// **'Network power'**
-  String get miningContractNetworkHashrate;
-
-  /// No description provided for @miningContractDailyReward.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily reward'**
-  String get miningContractDailyReward;
-
-  /// No description provided for @miningContractSelectWalletHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a wallet to debit the rental and fill the receiving address.'**
-  String get miningContractSelectWalletHint;
-
-  /// No description provided for @miningContractActiveWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Active wallet: {walletName} • balance {balance}'**
-  String miningContractActiveWallet(String walletName, String balance);
-
-  /// No description provided for @miningContractRigAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'{algorithm} • {provider} • {hashrate} {unit} available'**
-  String miningContractRigAvailable(
-      String algorithm, String provider, String hashrate, String unit);
-
-  /// No description provided for @miningContractPricePerUnit.
-  ///
-  /// In en, this message translates to:
-  /// **'Price per {unit}/day'**
-  String miningContractPricePerUnit(String unit);
-
-  /// No description provided for @miningContractYieldPerUnit.
-  ///
-  /// In en, this message translates to:
-  /// **'Yield per {unit}/day'**
-  String miningContractYieldPerUnit(String unit);
-
-  /// No description provided for @miningContractBudgetMode.
-  ///
-  /// In en, this message translates to:
-  /// **'BTC amount'**
-  String get miningContractBudgetMode;
-
-  /// No description provided for @miningContractHashrateMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Power'**
-  String get miningContractHashrateMode;
-
-  /// No description provided for @miningContractBudgetLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'BTC amount'**
-  String get miningContractBudgetLabel;
-
-  /// No description provided for @miningContractHashrateLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Desired power'**
-  String get miningContractHashrateLabel;
-
-  /// No description provided for @miningContractPayoutAddressLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Receiving address'**
-  String get miningContractPayoutAddressLabel;
-
-  /// No description provided for @miningContractPoolUrlLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Mining pool'**
-  String get miningContractPoolUrlLabel;
-
-  /// No description provided for @miningContractWorkerNameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Miner identifier'**
-  String get miningContractWorkerNameLabel;
-
-  /// No description provided for @miningContractEstimateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Allocation preview'**
-  String get miningContractEstimateTitle;
-
-  /// No description provided for @miningContractAllocatedHashrate.
-  ///
-  /// In en, this message translates to:
-  /// **'Allocated power'**
-  String get miningContractAllocatedHashrate;
-
-  /// No description provided for @miningContractEstimatedCost.
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated cost'**
-  String get miningContractEstimatedCost;
-
-  /// No description provided for @miningContractProjectedYield.
-  ///
-  /// In en, this message translates to:
-  /// **'Projected gross yield'**
-  String get miningContractProjectedYield;
-
-  /// No description provided for @miningContractTotpAuthorization.
-  ///
-  /// In en, this message translates to:
-  /// **'Code authorization'**
-  String get miningContractTotpAuthorization;
-
-  /// No description provided for @miningContractCost.
-  ///
-  /// In en, this message translates to:
-  /// **'Cost'**
-  String get miningContractCost;
-
-  /// No description provided for @miningContractNetYield.
-  ///
-  /// In en, this message translates to:
-  /// **'Net yield'**
-  String get miningContractNetYield;
-
-  /// No description provided for @miningContractCancelAllocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel allocation'**
-  String get miningContractCancelAllocation;
-
-  /// No description provided for @miningContractRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get miningContractRetry;
-
-  /// No description provided for @miningStateOfflineTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No connectivity'**
-  String get miningStateOfflineTitle;
-
-  /// No description provided for @miningStateOfflineMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not query the Bitcoin network right now.'**
-  String get miningStateOfflineMessage;
-
-  /// No description provided for @miningStateEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No data available'**
-  String get miningStateEmptyTitle;
-
-  /// No description provided for @miningStateEmptyMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'We could not find enough information to build the mining panel right now.'**
-  String get miningStateEmptyMessage;
-
-  /// No description provided for @miningStateErrorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Panel could not start'**
-  String get miningStateErrorTitle;
-
-  /// No description provided for @miningStateRetryLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Try syncing again shortly.'**
-  String get miningStateRetryLater;
-
-  /// No description provided for @miningTxInternalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Internal flow'**
-  String get miningTxInternalTitle;
-
-  /// No description provided for @miningTxInternalSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Internal reconciliation. No public settlement.'**
-  String get miningTxInternalSubtitle;
-
-  /// No description provided for @miningTxReference.
-  ///
-  /// In en, this message translates to:
-  /// **'Reference'**
-  String get miningTxReference;
-
-  /// No description provided for @miningTxConfirmations.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmations'**
-  String get miningTxConfirmations;
-
-  /// No description provided for @miningTxLightningTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Lightning flow'**
-  String get miningTxLightningTitle;
-
-  /// No description provided for @miningTxLightningSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Settlement outside the base layer. Local context only.'**
-  String get miningTxLightningSubtitle;
-
-  /// No description provided for @miningTxChannel.
-  ///
-  /// In en, this message translates to:
-  /// **'Channel'**
-  String get miningTxChannel;
-
-  /// No description provided for @miningTxRecord.
-  ///
-  /// In en, this message translates to:
-  /// **'Record'**
-  String get miningTxRecord;
-
-  /// No description provided for @miningTxNoPublicSummaryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Transaction without public summary'**
-  String get miningTxNoPublicSummaryTitle;
-
-  /// No description provided for @miningTxNoPublicSummaryMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The network did not return a detailed summary.'**
-  String get miningTxNoPublicSummaryMessage;
-
-  /// No description provided for @miningTxLookupUnavailableTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On-chain query unavailable'**
-  String get miningTxLookupUnavailableTitle;
-
-  /// No description provided for @miningTxLocalStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Local status'**
-  String get miningTxLocalStatus;
-
-  /// No description provided for @miningTxOnchainTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On-chain context'**
-  String get miningTxOnchainTitle;
-
-  /// No description provided for @miningTxOnchainSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Inclusion, position and effective transaction cost.'**
-  String get miningTxOnchainSubtitle;
-
-  /// No description provided for @miningTxConfirmed.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed'**
-  String get miningTxConfirmed;
-
-  /// No description provided for @miningTxPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Pending'**
-  String get miningTxPending;
-
-  /// No description provided for @miningTxTxid.
-  ///
-  /// In en, this message translates to:
-  /// **'TXID'**
-  String get miningTxTxid;
-
-  /// No description provided for @miningTxFeeRate.
-  ///
-  /// In en, this message translates to:
-  /// **'Fee per vByte'**
-  String get miningTxFeeRate;
-
-  /// No description provided for @miningTxBlock.
-  ///
-  /// In en, this message translates to:
-  /// **'Block'**
-  String get miningTxBlock;
-
-  /// No description provided for @miningTxAwaiting.
-  ///
-  /// In en, this message translates to:
-  /// **'waiting'**
-  String get miningTxAwaiting;
-
-  /// No description provided for @miningTxPosition.
-  ///
-  /// In en, this message translates to:
-  /// **'Position'**
-  String get miningTxPosition;
-
-  /// No description provided for @miningTxNotAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'n/a'**
-  String get miningTxNotAvailable;
-
-  /// No description provided for @miningTxLoadingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Transaction context'**
-  String get miningTxLoadingTitle;
-
-  /// No description provided for @miningTxLoadingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking public transaction data.'**
-  String get miningTxLoadingSubtitle;
-
-  /// No description provided for @miningMetricsCurrentHeight.
-  ///
-  /// In en, this message translates to:
-  /// **'Current height'**
-  String get miningMetricsCurrentHeight;
-
-  /// No description provided for @miningMetricsRetargetInBlocks.
-  ///
-  /// In en, this message translates to:
-  /// **'retarget in {blocks} blocks'**
-  String miningMetricsRetargetInBlocks(int blocks);
-
-  /// No description provided for @miningMetricsMrr.
-  ///
-  /// In en, this message translates to:
-  /// **'MRR'**
-  String get miningMetricsMrr;
-
-  /// No description provided for @miningMetricsHashrate.
-  ///
-  /// In en, this message translates to:
-  /// **'Hashrate'**
-  String get miningMetricsHashrate;
-
-  /// No description provided for @miningMetricsDifficulty.
-  ///
-  /// In en, this message translates to:
-  /// **'Difficulty'**
-  String get miningMetricsDifficulty;
-
-  /// No description provided for @miningMetricsPace.
-  ///
-  /// In en, this message translates to:
-  /// **'Pace'**
-  String get miningMetricsPace;
-
-  /// No description provided for @miningMetricsLastUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Last update'**
-  String get miningMetricsLastUpdated;
-
-  /// No description provided for @miningMetricsNow.
-  ///
-  /// In en, this message translates to:
-  /// **'now'**
-  String get miningMetricsNow;
-
-  /// No description provided for @miningMetricsMempool.
-  ///
-  /// In en, this message translates to:
-  /// **'Mempool'**
-  String get miningMetricsMempool;
-
-  /// No description provided for @miningMetricsPriorityFee.
-  ///
-  /// In en, this message translates to:
-  /// **'Priority fee'**
-  String get miningMetricsPriorityFee;
-
-  /// No description provided for @miningMetricsEstimatedTps.
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated TPS'**
-  String get miningMetricsEstimatedTps;
-
-  /// No description provided for @miningMetricsMempoolPressureTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Mempool pressure'**
-  String get miningMetricsMempoolPressureTitle;
-
-  /// No description provided for @miningMetricsMempoolPressureSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fee range, pending volume and inclusion pressure.'**
-  String get miningMetricsMempoolPressureSubtitle;
-
-  /// No description provided for @miningMetricsPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Pending'**
-  String get miningMetricsPending;
-
-  /// No description provided for @miningMetricsVbytes.
-  ///
-  /// In en, this message translates to:
-  /// **'vBytes'**
-  String get miningMetricsVbytes;
-
-  /// No description provided for @miningMetricsVolumeMb.
-  ///
-  /// In en, this message translates to:
-  /// **'MB volume'**
-  String get miningMetricsVolumeMb;
-
-  /// No description provided for @miningMetricsAggregatedFees.
-  ///
-  /// In en, this message translates to:
-  /// **'Aggregated fees'**
-  String get miningMetricsAggregatedFees;
-
-  /// No description provided for @miningMetricsNetworkHealthTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Network health'**
-  String get miningMetricsNetworkHealthTitle;
-
-  /// No description provided for @miningMetricsNetworkHealthSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Difficulty, retarget and recent throughput.'**
-  String get miningMetricsNetworkHealthSubtitle;
-
-  /// No description provided for @miningMetricsThroughput.
-  ///
-  /// In en, this message translates to:
-  /// **'Throughput'**
-  String get miningMetricsThroughput;
-
-  /// No description provided for @miningMetricsOccupancy.
-  ///
-  /// In en, this message translates to:
-  /// **'Occupancy'**
-  String get miningMetricsOccupancy;
-
-  /// No description provided for @miningMetricsFeesInReward.
-  ///
-  /// In en, this message translates to:
-  /// **'Fees in reward'**
-  String get miningMetricsFeesInReward;
-
-  /// No description provided for @miningMetricsNextAdjustment.
-  ///
-  /// In en, this message translates to:
-  /// **'Next adjustment'**
-  String get miningMetricsNextAdjustment;
-
-  /// No description provided for @miningMetricsLocalMonitorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Local monitor'**
-  String get miningMetricsLocalMonitorTitle;
-
-  /// No description provided for @miningMetricsLocalMonitorActiveSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated local telemetry for the active operation.'**
-  String get miningMetricsLocalMonitorActiveSubtitle;
-
-  /// No description provided for @miningMetricsLocalMonitorInactiveSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No local miner active.'**
-  String get miningMetricsLocalMonitorInactiveSubtitle;
-
-  /// No description provided for @miningMetricsMiningStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Mining'**
-  String get miningMetricsMiningStatus;
-
-  /// No description provided for @miningMetricsOfflineStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Offline'**
-  String get miningMetricsOfflineStatus;
-
-  /// No description provided for @miningMetricsLocalHashrate.
-  ///
-  /// In en, this message translates to:
-  /// **'Local hashrate'**
-  String get miningMetricsLocalHashrate;
-
-  /// No description provided for @miningMetricsAcceptedShares.
-  ///
-  /// In en, this message translates to:
-  /// **'Accepted shares'**
-  String get miningMetricsAcceptedShares;
-
-  /// No description provided for @miningMetricsRejectedShares.
-  ///
-  /// In en, this message translates to:
-  /// **'Rejected shares'**
-  String get miningMetricsRejectedShares;
-
-  /// No description provided for @miningMetricsTemperature.
-  ///
-  /// In en, this message translates to:
-  /// **'Temperature'**
-  String get miningMetricsTemperature;
-
-  /// No description provided for @miningMetricsHashrateTrendTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Hashrate trend'**
-  String get miningMetricsHashrateTrendTitle;
-
-  /// No description provided for @miningMetricsHashrateTrendSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent curve of network computing power.'**
-  String get miningMetricsHashrateTrendSubtitle;
-
-  /// No description provided for @miningMetricsTrendEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Not enough time series data to draw the curve.'**
-  String get miningMetricsTrendEmpty;
-
-  /// No description provided for @miningMetricsRecentBlocksTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent blocks'**
-  String get miningMetricsRecentBlocksTitle;
-
-  /// No description provided for @miningMetricsRecentBlocksSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Cadence, volume and occupancy in a short read.'**
-  String get miningMetricsRecentBlocksSubtitle;
-
-  /// No description provided for @miningMetricsDominantPoolsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Dominant pools'**
-  String get miningMetricsDominantPoolsTitle;
-
-  /// No description provided for @miningMetricsDominantPoolsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent share, average match and empty blocks.'**
-  String get miningMetricsDominantPoolsSubtitle;
-
-  /// No description provided for @miningMetricsLeadingPool.
-  ///
-  /// In en, this message translates to:
-  /// **'{percent}% leader'**
-  String miningMetricsLeadingPool(String percent);
-
-  /// No description provided for @miningFeesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fee market'**
-  String get miningFeesTitle;
-
-  /// No description provided for @miningFeesSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Active bands, spread and inclusion window.'**
-  String get miningFeesSubtitle;
-
-  /// No description provided for @miningFeesWideSpread.
-  ///
-  /// In en, this message translates to:
-  /// **'wide spread'**
-  String get miningFeesWideSpread;
-
-  /// No description provided for @miningFeesControlledSpread.
-  ///
-  /// In en, this message translates to:
-  /// **'controlled spread'**
-  String get miningFeesControlledSpread;
-
-  /// No description provided for @miningFeesWindow.
-  ///
-  /// In en, this message translates to:
-  /// **'window {fee}+'**
-  String miningFeesWindow(String fee);
-
-  /// No description provided for @miningFeesPriority.
-  ///
-  /// In en, this message translates to:
-  /// **'Priority'**
-  String get miningFeesPriority;
-
-  /// No description provided for @miningFeesExpress.
-  ///
-  /// In en, this message translates to:
-  /// **'Express'**
-  String get miningFeesExpress;
-
-  /// No description provided for @miningFeesStandard.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard'**
-  String get miningFeesStandard;
-
-  /// No description provided for @miningFeesEconomy.
-  ///
-  /// In en, this message translates to:
-  /// **'Economy'**
-  String get miningFeesEconomy;
-
-  /// No description provided for @miningFeesMinimum.
-  ///
-  /// In en, this message translates to:
-  /// **'Minimum'**
-  String get miningFeesMinimum;
-
-  /// No description provided for @miningFeesMedian.
-  ///
-  /// In en, this message translates to:
-  /// **'Median'**
-  String get miningFeesMedian;
-
-  /// No description provided for @miningFeesMaximum.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximum'**
-  String get miningFeesMaximum;
-
-  /// No description provided for @miningBlocksTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocks forming'**
-  String get miningBlocksTitle;
-
-  /// No description provided for @miningBlocksSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Projected queue beside recent confirmations.'**
-  String get miningBlocksSubtitle;
-
-  /// No description provided for @miningBlocksQueued.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} queued'**
-  String miningBlocksQueued(int count);
-
-  /// No description provided for @miningBlocksQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'Queue'**
-  String get miningBlocksQueue;
-
-  /// No description provided for @miningBlocksConfirmed.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed'**
-  String get miningBlocksConfirmed;
-
-  /// No description provided for @miningBlocksNew.
-  ///
-  /// In en, this message translates to:
-  /// **'New'**
-  String get miningBlocksNew;
-
-  /// No description provided for @miningBlocksNoBlocks.
-  ///
-  /// In en, this message translates to:
-  /// **'no blocks'**
-  String get miningBlocksNoBlocks;
-
-  /// No description provided for @miningBlocksNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Next {number}'**
-  String miningBlocksNext(int number);
-
-  /// No description provided for @miningBlocksRange.
-  ///
-  /// In en, this message translates to:
-  /// **'Range'**
-  String get miningBlocksRange;
-
-  /// No description provided for @miningBlocksFees.
-  ///
-  /// In en, this message translates to:
-  /// **'Fees'**
-  String get miningBlocksFees;
-
-  /// No description provided for @miningBlocksNewHeight.
-  ///
-  /// In en, this message translates to:
-  /// **'New #{height}'**
-  String miningBlocksNewHeight(int height);
-
-  /// No description provided for @miningBlocksBitcoinNetwork.
-  ///
-  /// In en, this message translates to:
-  /// **'Bitcoin network'**
-  String get miningBlocksBitcoinNetwork;
-
-  /// No description provided for @miningBlocksTransactions.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} transactions'**
-  String miningBlocksTransactions(int count);
-
-  /// No description provided for @miningBlocksHash.
-  ///
-  /// In en, this message translates to:
-  /// **'Hash'**
-  String get miningBlocksHash;
-
-  /// No description provided for @miningBlocksWeight.
-  ///
-  /// In en, this message translates to:
-  /// **'Weight'**
-  String get miningBlocksWeight;
-
-  /// No description provided for @miningBlocksTimestamp.
-  ///
-  /// In en, this message translates to:
-  /// **'Timestamp'**
-  String get miningBlocksTimestamp;
-
-  /// No description provided for @miningBlocksSize.
-  ///
-  /// In en, this message translates to:
-  /// **'Size'**
-  String get miningBlocksSize;
-
-  /// No description provided for @miningBlocksFee.
-  ///
-  /// In en, this message translates to:
-  /// **'Fee'**
-  String get miningBlocksFee;
-
-  /// No description provided for @miningBlocksUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'unavailable'**
-  String get miningBlocksUnavailable;
 
   /// No description provided for @landingNavProduct.
   ///
@@ -11736,6 +10786,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How to choose'**
   String get homeEducationKeroseneGeneralTag;
+
+  /// No description provided for @designSystemTemplateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Design system'**
+  String get designSystemTemplateTitle;
+
+  /// No description provided for @designSystemTemplateIdentitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'01. Visual identity and title'**
+  String get designSystemTemplateIdentitySection;
+
+  /// No description provided for @designSystemTemplateHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene Sovereign Core'**
+  String get designSystemTemplateHeroTitle;
+
+  /// No description provided for @designSystemTemplatePanelsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'02. Panels and monochrome box'**
+  String get designSystemTemplatePanelsSection;
+
+  /// No description provided for @designSystemTemplateInputSection.
+  ///
+  /// In en, this message translates to:
+  /// **'03. Formatted data input'**
+  String get designSystemTemplateInputSection;
+
+  /// No description provided for @designSystemTemplateButtonsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'04. Standard buttons'**
+  String get designSystemTemplateButtonsSection;
+
+  /// No description provided for @designSystemTemplateStatusSection.
+  ///
+  /// In en, this message translates to:
+  /// **'05. Status labels'**
+  String get designSystemTemplateStatusSection;
 }
 
 class _AppLocalizationsDelegate

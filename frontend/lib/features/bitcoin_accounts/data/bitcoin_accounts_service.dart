@@ -1,7 +1,7 @@
-import 'dart:math';
-
+import '../../../../core/config/app_config.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../../../../core/network/api_client.dart';
 import 'bitcoin_account_models.dart';
-import 'bitcoin_accounts_local_store.dart';
 
 export 'bitcoin_account_models.dart';
 
@@ -35,15 +35,18 @@ abstract class BitcoinAccountsService {
   Future<ReceivingRequestView> getReceiveStatus(String requestId);
 }
 
-class LocalBitcoinAccountsService implements BitcoinAccountsService {
-  LocalBitcoinAccountsService({BitcoinAccountsLocalStore? store})
-      : _store = store ?? BitcoinAccountsLocalStore();
+class RemoteBitcoinAccountsService implements BitcoinAccountsService {
+  const RemoteBitcoinAccountsService(this._api);
 
-  final BitcoinAccountsLocalStore _store;
+  final ApiClient _api;
 
   @override
-  Future<List<BitcoinAccount>> listAccounts() {
-    return _store.loadAccounts();
+  Future<List<BitcoinAccount>> listAccounts() async {
+    final response = await _api.get(AppConfig.bitcoinAccounts);
+    return _requireList(
+      response.data,
+      operation: 'listAccounts',
+    ).map(BitcoinAccount.fromJson).toList();
   }
 
   @override
@@ -51,19 +54,16 @@ class LocalBitcoinAccountsService implements BitcoinAccountsService {
     required String label,
     required int dailyLimitSats,
   }) async {
-    final now = DateTime.now().microsecondsSinceEpoch;
-    final account = BitcoinAccount(
-      id: 'internal-$now',
-      type: 'INTERNAL_CARD',
-      custody: 'KEROSENE_CUSTODIAL',
-      status: 'ACTIVE',
-      label: label.trim().isEmpty ? 'Kerosene BTC Card' : label.trim(),
-      riskTier: 'BRONZE',
-      cardId: 'card-$now',
-      dailyLimitSats: dailyLimitSats,
+    final response = await _api.post(
+      AppConfig.bitcoinAccountsInternalCard,
+      data: {
+        'label': label,
+        'riskTier': _riskTierForDailyLimit(dailyLimitSats),
+      },
     );
-    await _store.upsertAccount(account);
-    return account;
+    return BitcoinAccount.fromJson(
+      _requireMap(response.data, operation: 'createInternalCard'),
+    );
   }
 
   @override
@@ -74,21 +74,19 @@ class LocalBitcoinAccountsService implements BitcoinAccountsService {
     required String derivationPath,
     required String scriptPolicy,
   }) async {
-    final now = DateTime.now().microsecondsSinceEpoch;
-    final account = BitcoinAccount(
-      id: 'watch-$now',
-      type: 'WATCH_ONLY_COLD_WALLET',
-      custody: 'WATCH_ONLY',
-      status: 'ACTIVE',
-      label: label.trim().isEmpty ? 'Cold Wallet' : label.trim(),
-      riskTier: 'WATCH_ONLY',
-      coldWalletId: 'cold-$now',
-      xpubFingerprint: fingerprint,
-      derivationPath: derivationPath,
-      scriptPolicy: scriptPolicy,
+    final response = await _api.post(
+      AppConfig.bitcoinAccountsColdWallet,
+      data: {
+        'label': label,
+        'xpub': xpub,
+        'fingerprint': fingerprint,
+        'derivationPath': derivationPath,
+        'scriptPolicy': scriptPolicy,
+      },
     );
-    await _store.upsertAccount(account);
-    return account;
+    return BitcoinAccount.fromJson(
+      _requireMap(response.data, operation: 'importColdWallet'),
+    );
   }
 
   @override
@@ -98,42 +96,73 @@ class LocalBitcoinAccountsService implements BitcoinAccountsService {
     required String expiry,
     required bool oneTime,
   }) async {
-    final now = DateTime.now();
-    final entropy = Random(now.microsecondsSinceEpoch).nextInt(1 << 32);
-    final id = 'receive-${now.microsecondsSinceEpoch}';
-    final address = 'bc1qkerosene${entropy.toRadixString(16).padLeft(8, '0')}';
-    final amountBtc = amountSats == null ? null : amountSats / 100000000;
-    final bip21 = amountBtc == null
-        ? 'bitcoin:$address'
-        : 'bitcoin:$address?amount=${amountBtc.toStringAsFixed(8)}';
-    final request = ReceivingRequestView(
-      id: id,
-      accountId: accountId,
-      address: address,
-      bip21: bip21,
-      status: 'ACTIVE',
-      amountSats: amountSats,
-      expiry: expiry,
-      oneTime: oneTime,
-      createdAt: now,
+    final response = await _api.post(
+      AppConfig.bitcoinAccountReceiveRequests(accountId),
+      data: {
+        if (amountSats != null) 'amountSats': amountSats,
+        'expiry': expiry,
+        'oneTime': oneTime,
+      },
     );
-    await _store.upsertReceiveRequest(request);
-    return request;
+    return ReceivingRequestView.fromJson(
+      _requireMap(response.data, operation: 'createReceiveRequest'),
+      fallbackAccountId: accountId,
+    );
   }
 
   @override
   Future<ReceivingRequestView> getReceiveStatus(String requestId) async {
-    final request = await _store.findReceiveRequest(requestId);
-    if (request == null) {
-      throw StateError('Receive request not found');
-    }
-    return request;
+    final response = await _api.get(
+      AppConfig.bitcoinReceiveRequestStatus(requestId),
+    );
+    return ReceivingRequestView.fromJson(
+      _requireMap(response.data, operation: 'getReceiveStatus'),
+    );
   }
 
   @override
   Future<List<ReceivingRequestView>> listReceiveRequestsForAccount(
     String accountId,
-  ) {
-    return _store.loadReceiveRequestsForAccount(accountId);
+  ) async {
+    throw const ServerException(
+      message:
+          'O backend ainda não expõe a listagem real de solicitações de recebimento por conta.',
+      errorCode: 'ERR_BITCOIN_RECEIVE_REQUEST_HISTORY_UNAVAILABLE',
+    );
+  }
+
+  static String _riskTierForDailyLimit(int dailyLimitSats) {
+    if (dailyLimitSats >= 50000000) return 'GOLD';
+    if (dailyLimitSats >= 10000000) return 'SILVER';
+    return 'BRONZE';
+  }
+
+  static Map<String, dynamic> _requireMap(
+    Object? data, {
+    required String operation,
+  }) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    throw ServerException(
+      message: 'Resposta inesperada do backend Bitcoin.',
+      errorCode: 'ERR_BITCOIN_${operation.toUpperCase()}_INVALID_RESPONSE',
+      data: data,
+    );
+  }
+
+  static List<Map<String, dynamic>> _requireList(
+    Object? data, {
+    required String operation,
+  }) {
+    if (data is List) {
+      return data
+          .map((item) => _requireMap(item, operation: operation))
+          .toList();
+    }
+    throw ServerException(
+      message: 'Resposta inesperada do backend Bitcoin.',
+      errorCode: 'ERR_BITCOIN_${operation.toUpperCase()}_INVALID_RESPONSE',
+      data: data,
+    );
   }
 }

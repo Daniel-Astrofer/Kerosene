@@ -142,7 +142,7 @@ class AuthEntryHeader extends StatelessWidget {
               Text(
                 eyebrow.toUpperCase(),
                 style: AppTypography.caption.copyWith(
-                  fontFamily: 'HubotSansCondensed',
+                  fontFamily: 'IBMPlexSansHebrew',
                   color: authEntryFaint,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -152,7 +152,7 @@ class AuthEntryHeader extends StatelessWidget {
               Text(
                 title,
                 style: AppTypography.h1.copyWith(
-                  fontFamily: 'HubotSansCondensed',
+                  fontFamily: 'IBMPlexSansHebrew',
                   color: authEntryText,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w700,
@@ -294,7 +294,7 @@ class AuthEntryButton extends StatelessWidget {
                                 softWrap: false,
                                 textAlign: TextAlign.center,
                                 style: AppTypography.buttonText.copyWith(
-                                  fontFamily: 'HubotSansCondensed',
+                                  fontFamily: 'IBMPlexSansHebrew',
                                   color: foreground,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0,
@@ -381,7 +381,7 @@ class AuthEntryNote extends StatelessWidget {
                 Text(
                   title.toUpperCase(),
                   style: AppTypography.caption.copyWith(
-                    fontFamily: 'HubotSansCondensed',
+                    fontFamily: 'IBMPlexSansHebrew',
                     color: authEntryMuted,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,

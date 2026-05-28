@@ -182,7 +182,7 @@ class _TransactionSuccessDialogState
                             color: _color,
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
+                            fontFamily: 'IBMPlexSansHebrew',
                           ),
                         ),
                         const SizedBox(height: 4),

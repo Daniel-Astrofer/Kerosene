@@ -218,7 +218,7 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
                             color: baseColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            fontFamily: 'monospace',
+                            fontFamily: 'IBMPlexSansHebrew',
                           ),
                         ),
                       ),

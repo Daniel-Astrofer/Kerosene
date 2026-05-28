@@ -296,7 +296,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               child: Text(
                 'Enviar',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _internalText,
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
@@ -387,7 +387,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: GoogleFonts.playfairDisplay(
+            textStyle: GoogleFonts.ibmPlexSerif(
               fontSize: 24,
               fontWeight: FontWeight.w500,
               letterSpacing: 0,
@@ -726,7 +726,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           Text(
             'Não foi possível carregar suas carteiras.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: _internalText,
               fontSize: 28,
               fontWeight: FontWeight.w500,
@@ -785,7 +785,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             children: [
               Text(
                 'Enviar',
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _internalText,
                   fontSize: 42,
                   fontWeight: FontWeight.w400,
@@ -935,7 +935,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                       '${_formatBtcValue(wallet.balance, decimalPlaces: 6)} BTC',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: _internalText,
-                            fontFamily: 'JetBrainsMono',
+                            fontFamily: 'IBMPlexSansHebrew',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1025,7 +1025,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                       const SizedBox(height: 56),
                       Text(
                         'CONTATOS RECENTES',
-                        style: GoogleFonts.ebGaramond(
+                        style: GoogleFonts.ibmPlexSerif(
                           color: _internalMutedText,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -2130,7 +2130,7 @@ class _InternalSendPartyRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _SendMoneyScreenState._internalOutline,
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: 'IBMPlexSansHebrew',
                       fontSize: 13,
                       height: 1.25,
                       letterSpacing: 0,
@@ -2176,7 +2176,7 @@ class _InternalSendAmountField extends StatelessWidget {
                       amountLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.playfairDisplay(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _SendMoneyScreenState._internalText,
                         fontSize: 48,
                         fontWeight: FontWeight.w500,

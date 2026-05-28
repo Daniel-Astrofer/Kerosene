@@ -58,7 +58,7 @@ class ExpenseCategoriesList extends StatelessWidget {
                 '${category.amountBTC.toStringAsFixed(8)} BTC',
                 style: AppTypography.bodySmall.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: 10,
                 ),
               ),

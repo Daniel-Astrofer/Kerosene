@@ -144,7 +144,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           Text(
             'Aproxime o dispositivo',
             textAlign: TextAlign.center,
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: _text,
               fontSize: 48,
               fontWeight: FontWeight.w400,
@@ -179,7 +179,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           Text(
             'Dispositivo detectado!',
             textAlign: TextAlign.center,
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: _text,
               fontSize: 32,
               fontWeight: FontWeight.w500,
@@ -223,7 +223,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                     Text(
                       'Pagamento\nIdentificado!',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _text,
                         fontSize: 48,
                         fontWeight: FontWeight.w400,
@@ -235,7 +235,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                     Text(
                       _amountLabel,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _text,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,

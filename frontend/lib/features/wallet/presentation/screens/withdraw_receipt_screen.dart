@@ -100,7 +100,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
                     color: receiveFlowTextColor,
                     fontSize: 48,
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'JetBrainsMono',
+                    fontFamily: 'IBMPlexSansHebrew',
                   ),
             ),
           ],
@@ -175,7 +175,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
               child: Text(
                 value,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: 'IBMPlexSansHebrew',
                       color: color ?? receiveFlowTextColor,
                       fontSize: isAddress ? 12 : 14,
                       fontWeight:

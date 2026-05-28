@@ -73,9 +73,6 @@ class PaymentLink extends Equatable {
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
   bool get isInternalPaymentRequest =>
       locked || (destinationHash != null && destinationHash!.isNotEmpty);
-  bool get isOnboardingVoucher =>
-      description.toUpperCase() == 'ONBOARDING_VOUCHER' ||
-      amountBtc.toStringAsFixed(8) == '0.00022000';
 
   factory PaymentLink.fromJson(Map<String, dynamic> json) {
     final data = json['data'] is Map

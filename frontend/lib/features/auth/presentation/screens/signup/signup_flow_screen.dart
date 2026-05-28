@@ -1116,7 +1116,7 @@ class _SignupTypography {
   const _SignupTypography._();
 
   static TextStyle title() {
-    return GoogleFonts.ebGaramond(
+    return GoogleFonts.ibmPlexSerif(
       color: _signupText,
       fontSize: 32,
       fontWeight: FontWeight.w500,
@@ -1203,7 +1203,7 @@ class _SignupTypography {
   }
 
   static TextStyle successTitle() {
-    return GoogleFonts.ebGaramond(
+    return GoogleFonts.ibmPlexSerif(
       color: _signupText,
       fontSize: 31,
       fontWeight: FontWeight.w500,
@@ -1225,7 +1225,7 @@ class _SignupTypography {
 
   static TextStyle percent() {
     return const TextStyle(
-      fontFamily: AppTypography.spaceGroteskVariableFamily,
+      fontFamily: AppTypography.numericFontFamily,
       color: _signupText,
       fontSize: 18,
       fontWeight: FontWeight.w500,
@@ -2024,7 +2024,7 @@ class _TotpCodeField extends StatelessWidget {
       onSubmitted: onSubmitted,
       cursorColor: _signupText,
       style: AppTypography.bodyMedium.copyWith(
-        fontFamily: AppTypography.spaceGroteskVariableFamily,
+        fontFamily: AppTypography.numericFontFamily,
         color: _signupText,
         fontWeight: FontWeight.w700,
         letterSpacing: 0,

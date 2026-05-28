@@ -1393,7 +1393,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           Text(
             'Enviar',
             textAlign: TextAlign.center,
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.ibmPlexSerif(
               color: _lightningTextColor,
               fontSize: 24,
               fontWeight: FontWeight.w500,
@@ -1432,7 +1432,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                   children: [
                     Text(
                       _externalDestinationTitle(),
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         textStyle: Theme.of(context).textTheme.displaySmall,
                         color: _lightningTextColor,
                         fontSize: 34,
@@ -1463,7 +1463,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: _lightningTextColor,
                             fontSize: 16,
-                            fontFamily: 'JetBrainsMono',
+                            fontFamily: 'IBMPlexSansHebrew',
                             letterSpacing: 0,
                           ),
                       decoration: InputDecoration(
@@ -1728,7 +1728,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                     Text(
                       _externalReviewTitle(),
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         textStyle: Theme.of(context).textTheme.displaySmall,
                         color: _lightningTextColor,
                         fontSize: 36,
@@ -1923,7 +1923,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                       color: _lightningTextColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      fontFamily: monospace ? 'JetBrainsMono' : null,
+                      fontFamily: monospace ? 'IBMPlexSansHebrew' : null,
                       height: 1.25,
                       letterSpacing: 0,
                     ),
@@ -2125,7 +2125,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.playfairDisplay(
+          textStyle: GoogleFonts.ibmPlexSerif(
             fontSize: 24,
             fontWeight: FontWeight.w500,
             letterSpacing: 0,
@@ -2375,7 +2375,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(
                     color: _lightningTextColor,
-                    fontFamily: 'JetBrainsMono',
+                    fontFamily: 'IBMPlexSansHebrew',
                     letterSpacing: 3,
                   ),
               decoration: InputDecoration(
@@ -2706,7 +2706,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             cursorColor: accent,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   color: receiveFlowTextColor,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontWeight: FontWeight.w700,
                 ),
             decoration: InputDecoration(
@@ -3365,7 +3365,7 @@ class _ExternalSendPartyRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _WithdrawScreenState._lightningTertiaryTextColor,
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: 'IBMPlexSansHebrew',
                       fontSize: 13,
                       height: 1.25,
                       letterSpacing: 0,
@@ -3405,7 +3405,7 @@ class _ExternalSendAmountField extends StatelessWidget {
                       amountLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.playfairDisplay(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _WithdrawScreenState._lightningTextColor,
                         fontSize: 48,
                         fontWeight: FontWeight.w500,

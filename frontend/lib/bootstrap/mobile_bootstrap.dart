@@ -18,7 +18,6 @@ import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
-import '../features/mining/presentation/screens/mining_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
 import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart';
@@ -170,8 +169,6 @@ class MyApp extends ConsumerWidget {
             ),
         '/card': (context) =>
             const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
-        '/mining': (context) =>
-            const _PrivateMobileRoute(child: MiningScreen()),
         '/receive': (context) => const _PrivateMobileRoute(
               child: DepositsScreen(),
             ),

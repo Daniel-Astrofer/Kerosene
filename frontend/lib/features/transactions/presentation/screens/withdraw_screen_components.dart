@@ -44,7 +44,7 @@ class _FeeRow extends StatelessWidget {
             style: AppTypography.bodySmall.copyWith(
               color: valueColor ?? textColor,
               fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
-              fontFamily: monospace ? 'JetBrainsMono' : null,
+              fontFamily: monospace ? 'IBMPlexSansHebrew' : null,
               height: 1.35,
             ),
           ),

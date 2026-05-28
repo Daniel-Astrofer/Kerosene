@@ -1907,9 +1907,9 @@ class AppCopy {
     es: 'Polling público en curso',
   );
   static const signupFinalPaymentPollingBody = LocalizedCopy(
-    en: 'This voucher is being monitored via /voucher/onboarding-link/{linkId} without authentication.',
-    pt: 'Este voucher esta sendo monitorado por /voucher/onboarding-link/{linkId} sem exigir autenticacao.',
-    es: 'Este voucher se monitorea via /voucher/onboarding-link/{linkId} sin autenticación.',
+    en: 'This payment link is being monitored without authentication.',
+    pt: 'Este link de pagamento esta sendo monitorado sem exigir autenticacao.',
+    es: 'Este enlace de pago se monitorea sin autenticación.',
   );
 
   static const transactionAuthPassphraseTitle = LocalizedCopy(
@@ -2415,9 +2415,9 @@ class AppCopy {
     }
     return _resolve(
       context,
-      en: 'This voucher status keeps being polled without authentication while payment is pending.',
-      pt: 'O status deste voucher continua sendo consultado sem autenticacao enquanto o pagamento estiver pendente.',
-      es: 'El estado de este voucher se sigue consultando sin autenticación mientras el pago siga pendiente.',
+      en: 'This payment link status keeps being polled without authentication while payment is pending.',
+      pt: 'O status deste link de pagamento continua sendo consultado sem autenticacao enquanto o pagamento estiver pendente.',
+      es: 'El estado de este enlace de pago se sigue consultando sin autenticación mientras el pago siga pendiente.',
     );
   }
 

@@ -126,8 +126,10 @@ class AppTheme {
         selectionColor: AppColors.white.withValues(alpha: 0.22),
         selectionHandleColor: AppColors.white,
       ),
+      // Base TextTheme: Inter for body/labels. Headings are mapped through
+      // AppTypography to IBM Plex Serif and IBM Plex Sans Hebrew.
       textTheme:
-          GoogleFonts.ibmPlexSansTextTheme(ThemeData.dark().textTheme).copyWith(
+          GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
         displayLarge: AppTypography.h1,
         displayMedium: AppTypography.h1,
         displaySmall: AppTypography.h2,

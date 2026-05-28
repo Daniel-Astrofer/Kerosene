@@ -169,7 +169,7 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall!
-                      .copyWith(fontFamily: 'JetBrainsMono', fontSize: 14),
+                      .copyWith(fontFamily: 'IBMPlexSansHebrew', fontSize: 14),
                   decoration: InputDecoration(
                     hintText: AppCopy.withdrawReviewAddressPrompt(
                       context,
@@ -252,7 +252,7 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
             maxLength: 6,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   letterSpacing: 10,
                   fontSize: 24,
                 ),

@@ -1,29 +1,23 @@
 {
   "@@locale": "es",
-  
   "appTitle": "Kerosene",
-  
   "home": "Inicio",
   "market": "Mercado",
-  
   "totalBalance": "Saldo Total (BTC)",
   "myWallets": "Mis Billeteras",
   "actions": "Acciones",
   "send": "Enviar",
   "receive": "Recibir",
   "addFunds": "Agregar Fondos",
-  
   "recentTransactions": "Transacciones Recientes",
   "viewAll": "Ver Todas",
-  "noTransactions": "No hay transacciones aún",
-  
+  "noTransactions": "No se encontraron transacciones",
   "bitcoinTrading": "Comercio Bitcoin",
   "marketStats": "Estadísticas del Mercado",
   "high24h": "Máximo 24h",
   "low24h": "Mínimo 24h",
   "totalVolume24h": "Volumen Total (24h)",
   "fiatVolume": "Volumen Fiat",
-  
   "security": "Seguridad",
   "securityTotp": "SEGURIDAD (TOTP)",
   "notifications": "Notificaciones",
@@ -31,7 +25,6 @@
   "logout": "Cerrar Sesión",
   "wallets": "Billeteras",
   "totalVolume": "Volumen Total",
-  
   "depositAddress": "Dirección de Depósito",
   "platformDepositAddress": "Dirección de Depósito de la Plataforma",
   "amount": "Cantidad",
@@ -42,7 +35,6 @@
   "fundsWillBeCredited": "Los fondos se acreditarán después de la confirmación de la red",
   "close": "Cerrar",
   "addressCopied": "¡Dirección copiada!",
-  
   "destinationAddress": "Dirección de Destino",
   "estimatedFee": "Tarifa Estimada",
   "total": "Total",
@@ -51,7 +43,6 @@
   "pasteAddress": "Pegar Dirección",
   "securityAlertsTitle": "Alertas de seguridad",
   "securityAlertsDesc": "Intentos de inicio de sesión y cambios de contraseña",
-  
   "transactionDetails": "Detalles de la Transacción",
   "status": "Estado",
   "value": "Valor",
@@ -61,7 +52,6 @@
   "confirmed": "Confirmada",
   "pending": "Pendiente",
   "failed": "Fallida",
-  
   "welcome": "Bienvenido",
   "getStarted": "Comenzar",
   "login": "Iniciar Sesión",
@@ -70,7 +60,6 @@
   "password": "Contraseña",
   "confirmPassword": "Confirmar Contraseña",
   "name": "Nombre",
-  
   "error": "Error",
   "success": "Éxito",
   "loading": "Cargando",
@@ -79,17 +68,14 @@
   "goBack": "Volver",
   "done": "Hecho",
   "save": "Guardar",
-  
   "invalidAmount": "Cantidad inválida",
   "insufficientFunds": "Fondos insuficientes",
   "pleaseEnterAmount": "Por favor, ingrese una cantidad",
   "pleaseCompleteFields": "Por favor, complete todos los campos",
-  
   "depositInitiated": "¡Depósito Iniciado!",
   "depositSuccess": "Su transacción de depósito ha sido transmitida. Se acreditará una vez confirmada.",
-  
   "errorLoadingData": "Error al cargar datos",
-  "tryAgain": "Intentar de Nuevo",
+  "tryAgain": "Intentar de nuevo",
   "noChartData": "Sin datos del gráfico",
   "walletSettings": "Configuración de la Billetera",
   "spendingLimit": "Límite de Gasto",
@@ -119,15 +105,13 @@
   "selectLanguage": "Seleccionar Idioma",
   "selectCurrency": "Seleccionar Moneda",
   "selectWalletToSend": "Seleccione una billetera para enviar.",
-  "errorLoadingWallets": "Error al cargar billeteras",
+  "errorLoadingWallets": "Error al cargar carteras",
   "add": "Añadir",
   "deposit": "Depositar",
   "nfc": "NFC",
   "qrCode": "Código QR",
   "sentTo": "Enviado a",
   "receivedFrom": "Recibido de",
-  "recentTransactions": "Transacciones Recientes",
-  "viewAll": "Ver Todas",
   "showLess": "Ver Menos",
   "waitingConnection": "Esperando conexión...",
   "offlineRetryHint": "Desliza hacia abajo o toca reintentar.",
@@ -165,10 +149,8 @@
   "errorWriting": "Error al grabar: {error}",
   "typeWithdrawal": "Retiro",
   "typeDeposit": "Depósito",
-
   "rememberMe": "Recordarme",
   "torOnionActive": "Protocolo Onion Activo (Kerosene Core)",
-
   "signupFeeTitle": "Tarifa de Activación",
   "signupFeeSubtitle": "Se requiere una tarifa única de 0,003 BTC para activar tu cuenta y prevenir el spam.",
   "signupFeeWhyTitle": "¿Por qué una tarifa?",
@@ -176,20 +158,18 @@
   "signupFeeNotRefundable": "No reembolsable",
   "signupFeeNotRefundableBody": "Una vez transmitida, la tarifa no puede recuperarse. Asegúrate de estar listo antes de continuar.",
   "signupFeeContinue": "Entendido, Continuar",
-
   "seedSecurityTitle": "Seguridad de la Semilla",
   "seedSecuritySubtitle": "Elige cómo proteger tu frase de recuperación de la billetera.",
   "seedStandardTitle": "Estándar",
   "seedStandardDesc": "Una frase de recuperación de 12, 18 o 24 palabras. Ideal para uso general y simplicidad.",
   "seedSlip39Title": "Shamir SLIP-39 (Multi-parte)",
-  "seedSlip39Desc": "Divide tu semilla en múltiples partes. Requiere un mínimo para recuperar (ej: 3-de-5). Ideal para almacenamiento físico distribuido.",
+  "seedSlip39Desc": "Divide tu semilla en múltiples partes. Requiere un mínimo para recuperar (ej: 3-de-5). Ideal para almacenamiento físico distribuído.",
   "seedMultisigTitle": "Bóveda Multisig 2FA",
   "seedMultisigDesc": "Una billetera Multisig 2-de-3. Kerosene co-firma transacciones vía TOTP. Protege contra el robo del dispositivo.",
   "seedSlip39ConfigTitle": "Configuración SLIP-39",
   "seedSlip39TotalShares": "Total de Partes (Piezas)",
   "seedSlip39Threshold": "Umbral Requerido",
   "seedSlip39Summary": "Requiere {threshold} de {total} partes para restaurar la billetera.",
-
   "passphraseTitle": "Tu Frase Secreta",
   "passphraseSubtitle": "Anota estas 18 palabras en un papel físico. Nunca las guardes digitalmente.",
   "passphraseWrittenDown": "Ya Lo Anoté",
@@ -201,7 +181,6 @@
   "passphraseVerifyContinue": "Verificar y Continuar",
   "passphraseGoBack": "Volver para ver la frase",
   "passphraseEnterWords": "Ingresa tus 18 palabras",
-
   "slip39SharesTitle": "Tus Partes SLIP-39",
   "slip39SharesSubtitle": "Tu semilla está dividida en {total} piezas. Necesitas {threshold} de ellas para recuperar tu billetera.",
   "slip39ShareLabel": "Parte {index} de {total}",
@@ -212,7 +191,6 @@
   "slip39AllConfirmedContinue": "Todas las Partes Confirmadas — Continuar",
   "slip39ConfirmAllPending": "Confirma las {total} partes para continuar",
   "slip39Warning": "NO almacenes todas las partes en el mismo lugar. Si un atacante encuentra suficientes piezas, puede recuperar tu billetera.",
-
   "twoFaPrimaryTitle": "Tu Semilla Principal",
   "twoFaPrimaryBadge": "Clave 1 de 3 — Solo en tu dispositivo",
   "twoFaPrimarySubtitle": "Esta frase de 18 palabras es tu clave privada principal. Sola, NO es suficiente para firmar transacciones — siempre se requiere una autorización TOTP de Kerosene.",
@@ -229,19 +207,16 @@
   "twoFaVerifyError": "Incorrecto. Por favor, revisa tu Semilla Principal.",
   "twoFaVerifyActivate": "Verificar y Activar Bóveda 2FA",
   "twoFaBackToBackup": "Volver a Semilla de Recuperación",
-
   "totpSetupTitle": "Configurar Autenticador",
   "totpSetupSubtitle": "Escanea el código QR con tu app autenticadora, luego ingresa el código de 6 dígitos para verificar.",
   "totpCodeLabel": "Ingresa el código de 6 dígitos",
   "totpVerifyButton": "Verificar y Continuar",
   "totpErrorInvalid": "Código inválido. Por favor, inténtalo de nuevo.",
-
   "passkeyTitle": "Registrar Passkey",
   "passkeySubtitle": "Registra una passkey biométrica para habilitar el inicio de sesión rápido sin contraseña en este dispositivo.",
   "passkeyRegisterButton": "Registrar Passkey (Biometría)",
   "passkeySuccessMessage": "¡Passkey registrada con éxito!",
   "passkeySkip": "Omitir por ahora",
-
   "usernameTitle": "Elige tu Apodo",
   "usernameSubtitle": "Elige un nombre de usuario único. Esta es tu identidad pública en Kerosene.",
   "usernameFieldLabel": "Usuario",
@@ -250,7 +225,6 @@
   "usernameAvailable": "¡Usuario disponible!",
   "usernameTaken": "El usuario ya está en uso.",
   "usernameContinue": "Reservar Usuario y Continuar",
-
   "paymentTitle": "Pago de Activación",
   "paymentSubtitle": "Envía exactamente la cantidad que se muestra a continuación para activar tu cuenta.",
   "paymentTimeLeft": "Tiempo restante",
@@ -261,12 +235,10 @@
   "paymentAddressLabel": "Dirección de Depósito",
   "paymentCopyAddress": "Copiar Dirección",
   "paymentAddressCopied": "¡Dirección copiada!",
-
   "confirmationsTitle": "Esperando Confirmaciones",
   "confirmationsSubtitle": "Tu pago fue detectado. Esperando 3 confirmaciones de la red Bitcoin para finalizar tu cuenta.",
   "confirmationsProgress": "{current} / {total} confirmaciones",
   "confirmationsDone": "¡Cuenta Activada!",
-
   "presentationSlide1Title": "Infraestructura Segura desde el Primer Acceso",
   "presentationSlide1Body": "Kerosene opera con arquitectura tecnológica avanzada en un entorno protegido a través de la red onion. Esta estructura refuerza la privacidad, la resiliencia y la protección contra interferencias externas.\n\nLa seguridad no es una característica adicional.\nEs la base del sistema.",
   "presentationSlide2Title": "Creación de Cuenta con Mecanismo de Protección Estructural",
@@ -278,7 +250,6 @@
   "presentationSkip": "Omitir",
   "presentationNext": "Siguiente",
   "presentationStart": "Acceder a Kerosene",
-
   "signupScreenTitle": "Crear Billetera",
   "signupScreenSubtitle": "Configura tu usuario y clave de seguridad.",
   "signupUsernameHelper": "Solo a-z, 0-9 y _",
@@ -291,27 +262,12 @@
   "signupMnemonicCopy": "Copiar",
   "signupMnemonicGenerateNew": "Generar Nueva",
   "signupMnemonicError": "Error al generar la frase, intenta de nuevo",
-
   "feeExplanationTitle": "Tarifa de Red Segura",
   "feeExplanationSubtitle": "Para evitar el spam y garantizar la solidez de la red Kerosene, la creación de cuenta requiere una pequeña tarifa anti-spam de 0.003 BTC.",
   "feeExplanationWhereGoesTitle": "¿A dónde va?",
   "feeExplanationWhereGoesSubtitle": "El monto total de 0.003 BTC va directamente a tu billetera una vez que se crea la cuenta.",
   "feeExplanationContinue": "Entiendo, Continuar",
-
-  "seedSecurityTitle": "Seguridad de la Semilla",
-  "seedSecuritySubtitle": "Elige cómo proteger tu frase de recuperación de la billetera.",
-  "seedStandardTitle": "Estándar",
-  "seedStandardDesc": "Una frase de recuperación de 12, 18 o 24 palabras. Ideal para uso general y simplicidad.",
-  "seedSlip39Title": "Shamir SLIP-39 (Multi-parte)",
-  "seedSlip39Desc": "Divide tu semilla en múltiples partes. Requiere un mínimo para recuperar (ej: 3-de-5). Ideal para almacenamiento físico distribuído.",
-  "seedMultisigTitle": "Bóveda Multisig 2FA",
-  "seedMultisigDesc": "Una billetera Multisig 2-de-3. Kerosene co-firma transacciones vía TOTP. Protege contra el robo del dispositivo.",
-  "seedSlip39ConfigTitle": "Configuración SLIP-39",
-  "seedSlip39TotalShares": "Total de Partes (Piezas)",
-  "seedSlip39Threshold": "Umbral Requerido",
-  "seedSlip39Summary": "Requiere {threshold} de {total} partes para restaurar la billetera.",
   "seedSecurityContinue": "Continuar",
-
   "totpTitle": "Autenticación de Dos Factores",
   "totpSubtitle": "Escanea este código QR con tu aplicación de autenticación (ej: Google Authenticator, Authy).",
   "totpSecretCopied": "Secreto copiado al portapapeles",
@@ -322,7 +278,6 @@
   "totpVerifying": "Verificando código...",
   "totpAuthenticating": "Autenticando...",
   "totpEstablishingSession": "Estableciendo Sesión...",
-
   "passkeySessionNotFound": "Sesión no encontrada. Por favor, reinicia el proceso.",
   "passkeyNoBiometrics": "Configura biometría o un bloqueo de pantalla en este dispositivo para usar la llave del dispositivo.",
   "passkeyErrorStarting": "Error al iniciar el registro: {message}",
@@ -333,7 +288,6 @@
   "passkeyLoadingInitBiom": "Inicializando Biometría...",
   "passkeyLoadingSecuring": "Asegurando Dispositivo...",
   "passkeyLoadingRegistering": "Registrando Passkey...",
-
   "usernameHintChars": "a-z, 0-9 y _",
   "usernameHelperLength": "Debe tener entre 3 y 15 caracteres",
   "usernameErrorMin": "Mínimo 3 caracteres",
@@ -343,9 +297,7 @@
   "usernameLoadingKeys": "Asegurando Llaves...",
   "usernameLoadingInvoice": "Generando Factura...",
   "usernameLoadingNetwork": "Conectando a la Red...",
-
   "paymentExpiredLabel": "EXPIRADO",
-
   "confNetworkError": "Error de Red",
   "confNetworkVerified": "¡Red Verificada!",
   "confConfirming": "Confirmando en Blockchain",
@@ -354,17 +306,12 @@
   "confWaitingMsg": "Esperando 3 confirmaciones de la red Bitcoin. Esto puede tomar alrededor de 30 minutos, pero puedes salir de la aplicación de forma segura; te notificaremos cuando esté listo.",
   "confRestartSignup": "Reiniciar Registro",
   "confNotificationNotice": "Recibirás una notificación push cuando llegue la 3ª confirmación.",
-
   "homePlatformLiquidity": "LIQUIDEZ DE LA PLATAFORMA",
   "homeDeposits": "DEPÓSITOS",
   "homeWithdrawals": "RETIROS",
-
   "authRequired": "Autenticación requerida",
   "unlock": "Desbloquear",
   "pendingDeposits": "Depósitos Pendientes",
-  "errorLoadingWallets": "Error al cargar carteras",
-  "noTransactions": "No se encontraron transacciones",
-  "tryAgain": "Intentar de nuevo",
   "saqueAction": "Retirar",
   "detailsTransaction": "Detalles de la Transacción",
   "detailsClose": "Cerrar",
@@ -382,22 +329,20 @@
   "errorAddressRequired": "La dirección es obligatoria",
   "errorAmountRequired": "La cantidad es obligatoria",
   "errorAmountInvalid": "Cantidad inválida",
-
   "txSent": "Transferencia Enviada",
   "txReceived": "Transferencia Recibida",
-
   "loginTotpTitle": "Verificación de Dispositivo",
   "loginTotpDesc": "Este dispositivo es nuevo. Por favor ingresa el código de 6 dígitos de tu aplicación de autenticación para autorizarlo.",
   "loginTotpAction": "VERIFICAR E INICIAR SESIÓN",
-
   "createWalletNameRequired": "Nombre obligatorio",
   "createWalletNameChars": "Solo se permiten letras y números",
-
   "sendDescriptionLabel": "Descripción (opcional, ej: Pago de pizza)",
   "sendInsufficientBalance": "Saldo insuficiente. Faltan {amount} BTC para completar este envío.",
   "@sendInsufficientBalance": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "sendSelectWallet": "Seleccionar Cartera",
@@ -411,7 +356,6 @@
   "sendEnterAddressError": "Por favor, ingresa un nombre de usuario o dirección de destino válido",
   "sendEnterAmountError": "Por favor, ingresa una cantidad válida",
   "sendPaymentSuccess": "¡Pago realizado con éxito!",
-
   "receiveReceivingWallet": "Cartera de Recepción",
   "receiveExpirationLabel": "Expiración del Enlace de Pago",
   "receiveNoExpiration": "Sin Expiración",
@@ -424,7 +368,6 @@
   "receiveScanToPay": "Escanea para Pagar",
   "receiveReadyToBeam": "Listo para Transmitir",
   "receiveWriteNfc": "Grabar en Tag NFC",
-
   "unknownDeviceTitle": "Autorizar Nuevo Dispositivo",
   "unknownDeviceDesc": "Este dispositivo no ha sido vinculado a tu cuenta.\nIngresa el código de 6 dígitos de tu aplicación de autenticación para autorizarlo.",
   "unknownDeviceBanner": "Nuevo dispositivo detectado",
@@ -434,7 +377,6 @@
   "unknownDeviceHelper": "Abre tu aplicación de autenticación e ingresa el código actual.",
   "unknownDeviceAction": "AUTORIZAR INICIAR SESIÓN",
   "unknownDeviceSecurityNote": "Si no intentaste iniciar sesión, tus credenciales pueden estar comprometidas. Cambia tu passphrase de inmediato.",
-
   "createWalletTitle": "Nueva Cartera",
   "createWalletSuccess": "¡Cartera creada exitosamente!",
   "createWalletErrorGenFirst": "Por favor genera una contraseña primero.",
@@ -448,7 +390,6 @@
   "createWalletCopySuccess": "¡Copiado!",
   "createWalletNewAction": "Nueva",
   "createWalletWarning": "Guarda bien estas palabras. Sin ellas, tus fondos se perderán.",
-
   "bitcoinAccountsTitle": "Cuentas Bitcoin",
   "bitcoinAccountsSubtitle": "Mantén tu tarjeta Kerosene y tus billeteras frías en una vista simple. Las claves privadas quedan fuera de la app salvo durante la creación de una nueva billetera fría.",
   "bitcoinAccountsErrorTitle": "Cuentas Bitcoin no disponibles",
@@ -483,7 +424,6 @@
   "bitcoinAccountsCreateCardAction": "Crear tarjeta",
   "bitcoinAccountsCreateCardErrorTitle": "Tarjeta no creada",
   "bitcoinAccountsCreateCardErrorMessage": "No pudimos crear esta tarjeta ahora. Revisa el nombre e inténtalo de nuevo.",
-
   "coldWalletCreateTitle": "Crear billetera fría",
   "coldWalletCreateSubtitle": "Genera las palabras de recuperación en este dispositivo, anótalas con calma y Kerosene guardará solo lo necesario para mostrar saldos.",
   "coldWalletNameLabel": "Nombre de la billetera",
@@ -514,7 +454,9 @@
   "coldWalletVerifyWordLabel": "Palabra {index}",
   "@coldWalletVerifyWordLabel": {
     "placeholders": {
-      "index": { "type": "int" }
+      "index": {
+        "type": "int"
+      }
     }
   },
   "coldWalletVerifyFailedTitle": "Respaldo no confirmado",
@@ -525,7 +467,6 @@
   "coldWalletImportedMessage": "Solo se importó la clave pública de observación.",
   "coldWalletImportErrorTitle": "Billetera fría no agregada",
   "coldWalletImportErrorMessage": "Reconéctate a internet e inténtalo de nuevo. Tus palabras de recuperación no fueron enviadas.",
-
   "bitcoinReceiveTitle": "Recibir BTC",
   "bitcoinReceiveAmountOptional": "Monto opcional en sats",
   "bitcoinReceiveOneTime": "Dirección de un solo uso",
@@ -559,7 +500,6 @@
   "bitcoinReceiveMessageAction": "Confirma este pago para terminar la recepción con seguridad.",
   "bitcoinReceiveMessageProtected": "Esta recepción quedó protegida tras un problema de sincronización. Actualiza más tarde.",
   "bitcoinReceiveMessageWaiting": "Esperando la red Bitcoin.",
-
   "onchainDepositTitle": "Depósito on-chain",
   "onchainDepositSubtitle": "Escanea el código QR o copia la dirección Bitcoin exactamente como se muestra.",
   "onchainDepositPreparingSubtitle": "Preparando tu dirección de recepción.",
@@ -581,22 +521,32 @@
   "onchainDepositDescriptionWaiting": "Esta dirección está reservada para este depósito en la red {network}.",
   "@onchainDepositDescriptionWaiting": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "onchainDepositDescriptionConfirmed": "La red Bitcoin confirmó este depósito.",
   "onchainDepositDescriptionConfirming": "Pago detectado. Esperando {current}/{total} confirmaciones.",
   "@onchainDepositDescriptionConfirming": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "onchainDepositDetectedNotice": "Pago detectado. Siguiendo {current}/{total} confirmaciones.",
   "@onchainDepositDetectedNotice": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "onchainDepositConfirmedNotice": "Depósito confirmado.",
@@ -612,7 +562,9 @@
   "onchainDepositNetworkTag": "Dirección {network}",
   "@onchainDepositNetworkTag": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "onchainDepositTrackingTitle": "Seguimiento del pago",
@@ -632,7 +584,9 @@
   "onchainDepositMinimumConfirmationsValue": "{count} bloques",
   "@onchainDepositMinimumConfirmationsValue": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "onchainDepositCustodyLabel": "Tipo de billetera",
@@ -640,7 +594,6 @@
   "onchainDepositCustodyKerosene": "Tarjeta Kerosene",
   "onchainDepositSecuritySelf": "Kerosene solo observa esta dirección. Para gastar, sigues usando tus palabras de recuperación o tu dispositivo sin conexión.",
   "onchainDepositSecurityKerosene": "Esta dirección fue creada para tu tarjeta Kerosene y será observada hasta que el depósito confirme.",
-
   "errUnexpected": "Ha ocurrido un error inesperado.",
   "errAuthUserAlreadyExists": "Este nombre de usuario ya está em uso.",
   "errAuthUsernameMissing": "El nombre de usuario es obligatorio.",
@@ -688,7 +641,6 @@
   "verifyingDevice": "VERIFICANDO DISPOSITIVO",
   "connectingToServer": "CONECTANDO AL SERVIDOR",
   "sendingData": "ENVIANDO DATOS",
-
   "apiDisplayActive": "Activo",
   "apiDisplayWaiting": "En espera",
   "apiDisplayBeingChecked": "En revisión",
@@ -735,7 +687,6 @@
   "detailType": "Tipo",
   "detailBtcAmount": "BTC",
   "detailPaymentLink": "Pago por enlace",
-  "detailOnboardingVoucher": "Voucher de onboarding",
   "detailExternalWithdrawal": "Retiro externo",
   "detailInternalMovement": "Movimiento interno",
   "detailBitcoinNetwork": "Red Bitcoin",
@@ -745,7 +696,6 @@
   "errorPopupBalanceTitle": "Saldo necesario",
   "errorPopupNetworkTitle": "Conexión no disponible",
   "errorPopupAccessTitle": "Falló la verificación de acceso",
-
   "errInvalidNetworkAddress": "Esta dirección Bitcoin no coincide con la red de esta billetera. Revísala e inténtalo de nuevo.",
   "errCustodyProviderUnavailable": "Esta opción de movimiento no está disponible en este momento. Prueba otra opción o vuelve más tarde.",
   "errPayloadTooLarge": "Este contenido es demasiado grande para enviarlo con seguridad.",
@@ -773,19 +723,25 @@
   "homeMinutesAgo": "hace {count} min",
   "@homeMinutesAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "homeHoursAgo": "hace {count} h",
   "@homeHoursAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "homeYesterdayAt": "Ayer a las {time}",
   "@homeYesterdayAt": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "homeWalletRequiredTitle": "Billetera necesaria",
@@ -806,7 +762,7 @@
   "homeScanQrLabel": "Escanear QR",
   "homeScanQrSubtitle": "Leer cobro o dirección",
   "homePaymentLinkLabel": "Enlace de pago",
-  "homePaymentLinkSubtitle": "Abrir un cobro Kerosene",
+  "homePaymentLinkSubtitle": "Pega un enlace interno, URI on-chain, pedido Lightning o ID de cobro.",
   "homeNfcPayLabel": "Pagar por NFC",
   "homeNfcPaySubtitle": "Acerca el dispositivo para iniciar",
   "homeSendTitle": "Enviar",
@@ -834,7 +790,6 @@
   "homeKeroseneUser": "Usuario Kerosene",
   "homePaymentId": "ID del pago",
   "homePaymentLinkTitle": "Enlace de pago",
-  "homePaymentLinkSubtitle": "Pega un enlace interno, URI on-chain, pedido Lightning o ID de cobro.",
   "homePayloadLabel": "Datos del pago",
   "homePayloadHint": "Enlace Kerosene, bitcoin:..., lightning:... o ID",
   "homePasteAction": "Pegar",
@@ -874,17 +829,23 @@
   "homeGreetingEvening": "Buenas noches, {name}",
   "@homeGreetingMorning": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "@homeGreetingAfternoon": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "@homeGreetingEvening": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "homeBalanceTotalLabel": "SALDO TOTAL",
@@ -900,7 +861,9 @@
   "homeTodayAt": "Hoy, {time}",
   "@homeTodayAt": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "homeCounterpartyTo": "para",
@@ -1013,7 +976,9 @@
   "securityCopiedMessage": "{label} copiado al portapapeles.",
   "@securityCopiedMessage": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "securityTotpFailureTitle": "No pudimos actualizar el autenticador",
@@ -1038,7 +1003,9 @@
   "securityCompatibleDeviceMany": "Existen {count} dispositivos compatibles con este acceso.",
   "@securityCompatibleDeviceMany": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityLegacyDeviceSubtitle": "Algunos dispositivos antiguos tienen compatibilidad limitada. Vincula este dispositivo otra vez si el acceso falla.",
@@ -1063,7 +1030,9 @@
   "securityBackupCodesRemaining": "{count} códigos restantes. Guárdalos en un lugar seguro.",
   "@securityBackupCodesRemaining": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityBackupCodesLockedSubtitle": "Activa el autenticador para liberar códigos de recuperación.",
@@ -1094,7 +1063,9 @@
   "securityInventoryCompatibleCount": "{count} dispositivos pueden confirmar este acceso ahora.",
   "@securityInventoryCompatibleCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityInventoryCompatibleFallback": "Existe al menos un dispositivo compatible con este acceso.",
@@ -1104,7 +1075,9 @@
   "securityPinActiveAttemptsSubtitle": "PIN de entrada activo. Quedan {count} intentos antes del bloqueo.",
   "@securityPinActiveAttemptsSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityPinDisabledSubtitle": "Protege la entrada al app en este dispositivo con un PIN independiente de tu contraseña principal.",
@@ -1123,8 +1096,12 @@
   "securityNewPinLabel": "Nuevo PIN ({min}-{max} dígitos)",
   "@securityNewPinLabel": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "securityConfirmNewPinLabel": "Confirmar nuevo PIN",
@@ -1175,7 +1152,9 @@
   "settingsUiDecimalPrecisionSubtitle": "Mostrando {count} decimales",
   "@settingsUiDecimalPrecisionSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "settingsUiHideBalanceTitle": "Ocultar saldo",
@@ -1247,7 +1226,7 @@
   "settingsUiInAppBannersOnSubtitle": "Muestra alertas contextuales en la sesión actual.",
   "settingsUiInAppBannersOffSubtitle": "Mantiene el feed, pero no interrumpe la navegación con banners.",
   "settingsUiFinancialEventsTitle": "Eventos financieros",
-  "settingsUiFinancialEventsOnSubtitle": "Recepciones, envíos, depósitos, enlaces y minería entran en el feed.",
+  "settingsUiFinancialEventsOnSubtitle": "Recepciones, envíos, depósitos y enlaces entran en el feed.",
   "settingsUiFinancialEventsOffSubtitle": "Oculta alertas de operación financiera en el feed de la sesión.",
   "settingsUiSecurityEventsTitle": "Eventos de seguridad",
   "settingsUiSecurityEventsOnSubtitle": "Accesos, recuperación y eventos sensibles siguen destacados.",
@@ -1256,7 +1235,9 @@
   "settingsUiBackgroundAlertsInfo": "Cuando está activo, Kerosene mantiene un servicio en segundo plano para monitorear envíos, recepciones y eventos críticos de seguridad. En Android, una notificación persistente del sistema quedará visible mientras el monitoreo esté activo. {count} alertas aún no fueron leídas en esta sesión.",
   "@settingsUiBackgroundAlertsInfo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "settingsUiPermissionRequiredTitle": "Permiso necesario",
@@ -1281,7 +1262,6 @@
   "transactionVisualCancelled": "Cancelado",
   "transactionVisualRefund": "Reembolso",
   "transactionVisualFailed": "No completado",
-  "transactionVisualMining": "Minería",
   "transactionVisualSwap": "Conversión",
   "transactionVisualFee": "Comisión",
   "transactionVisualLightningDeposit": "Depósito Lightning",
@@ -1309,14 +1289,20 @@
   "withdrawUiConfiguredNetworkMismatch": "La dirección informada no pertenece a la red {network} configurada para esta billetera.",
   "@withdrawUiConfiguredNetworkMismatch": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiNetworkMismatch": "Esta dirección pertenece a {detected}, pero la billetera opera en {expected}.",
   "@withdrawUiNetworkMismatch": {
     "placeholders": {
-      "detected": { "type": "String" },
-      "expected": { "type": "String" }
+      "detected": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiWaitFeeEstimate": "Espera la estimación de la comisión de red antes de revisar el total del envío.",
@@ -1336,7 +1322,9 @@
   "withdrawUiPlatformFeeWithRate": "Comisión Kerosene ({rate})",
   "@withdrawUiPlatformFeeWithRate": {
     "placeholders": {
-      "rate": { "type": "String" }
+      "rate": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiRoutingFeeCap": "Límite de enrutamiento",
@@ -1372,7 +1360,9 @@
   "withdrawUiEquivalentTo": "Equivale a {amount}",
   "@withdrawUiEquivalentTo": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiColdWalletTitle": "Billetera fría",
@@ -1386,7 +1376,9 @@
   "withdrawUiDestinationValidOnchainNetwork": "Dirección on-chain válida para {network}.",
   "@withdrawUiDestinationValidOnchainNetwork": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiScreenTitleOnchain": "Enviar on-chain",
@@ -1406,7 +1398,9 @@
   "depositLedgerPage": "Página {page}",
   "@depositLedgerPage": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerBackTooltip": "Volver",
@@ -1425,12 +1419,13 @@
   "depositLedgerCopyAddress": "Copiar dirección",
   "depositLedgerLoadingCharges": "Cargando cobros",
   "depositLedgerOpenChargesTitle": "Cobros abiertos",
-  "depositLedgerVoucherTitle": "Voucher de bienvenida",
   "depositLedgerPaymentLinkTitle": "Link de pago",
   "depositLedgerExpiresIn": "Expira {time}",
   "@depositLedgerExpiresIn": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "depositLedgerNow": "Ahora",
@@ -1451,13 +1446,17 @@
   "depositLedgerPageShort": "Pág. {page}",
   "@depositLedgerPageShort": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRowsPerPage": "{count} por página",
   "@depositLedgerRowsPerPage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerNoCounterparty": "Sin contraparte",
@@ -1472,32 +1471,42 @@
   "depositLedgerRelativeInMinutes": "en {count} min",
   "@depositLedgerRelativeInMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeInHours": "en {count} h",
   "@depositLedgerRelativeInHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeInDays": "en {count} d",
   "@depositLedgerRelativeInDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeNow": "ahora",
   "depositLedgerRelativeMinutesAgo": "hace {count} min",
   "@depositLedgerRelativeMinutesAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeHoursAgo": "hace {count} h",
   "@depositLedgerRelativeHoursAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "paymentConfirmationErrorTitle": "No pudimos confirmar",
@@ -1508,7 +1517,9 @@
   "paymentConfirmationCopied": "{label} copiado.",
   "@paymentConfirmationCopied": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "depositFlowDepositTitle": "Depositar",
@@ -1519,13 +1530,17 @@
   "depositFlowEquivalentTo": "Equivale a {amount}",
   "@depositFlowEquivalentTo": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "depositFlowYouReceive": "Recibes {amount}",
   "@depositFlowYouReceive": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "depositFlowMethodTitle": "Método de depósito",
@@ -1562,7 +1577,9 @@
   "depositFlowEstimatedPurchase": "Compra estimada en {amount}",
   "@depositFlowEstimatedPurchase": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "depositFlowProviderLoadError": "No pudimos cargar el proveedor",
@@ -1644,13 +1661,17 @@
   "receiveScreenEquivalentTo": "Equivale a {amount}",
   "@receiveScreenEquivalentTo": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenDestination": "Destino {walletName}",
   "@receiveScreenDestination": {
     "placeholders": {
-      "walletName": { "type": "String" }
+      "walletName": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenPrivacyHint": "Quien pague verá solo los datos necesarios para confirmar la recepción.",
@@ -1659,13 +1680,17 @@
   "receiveScreenPaymentLinkError": "No fue posible generar el link de pago: {error}",
   "@receiveScreenPaymentLinkError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenDefaultDescription": "Recepción {walletName}",
   "@receiveScreenDefaultDescription": {
     "placeholders": {
-      "walletName": { "type": "String" }
+      "walletName": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenConfigureLinkEyebrow": "Configurar link",
@@ -1703,7 +1728,9 @@
   "receivePaymentLinkCancelledReason": "Este link fue cancelado: {reason}.",
   "@receivePaymentLinkCancelledReason": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkCancelledMessage": "Este link fue cancelado y ya no acepta pagos.",
@@ -1716,19 +1743,25 @@
   "receivePaymentLinkExpiresIn": "Expira en {duration}",
   "@receivePaymentLinkExpiresIn": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkDepositFee": "depósito {amount}",
   "@receivePaymentLinkDepositFee": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkNetAmount": "neto {amount}",
   "@receivePaymentLinkNetAmount": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkExpires": "Expira",
@@ -1812,10 +1845,18 @@
   "walletConfigHeroSummary": "Nivel {level} • {cardType}. Retiros externos usan {withdrawRate} y depósitos externos usan {depositRate}.",
   "@walletConfigHeroSummary": {
     "placeholders": {
-      "level": { "type": "int" },
-      "cardType": { "type": "String" },
-      "withdrawRate": { "type": "String" },
-      "depositRate": { "type": "String" }
+      "level": {
+        "type": "int"
+      },
+      "cardType": {
+        "type": "String"
+      },
+      "withdrawRate": {
+        "type": "String"
+      },
+      "depositRate": {
+        "type": "String"
+      }
     }
   },
   "walletConfigNetworkLabel": "Red",
@@ -1837,7 +1878,9 @@
   "walletCardAccountCardsSubtitle": "Desliza para ver las tarjetas, tasas y requisitos de la cuenta {walletName}.",
   "@walletCardAccountCardsSubtitle": {
     "placeholders": {
-      "walletName": { "type": "String" }
+      "walletName": {
+        "type": "String"
+      }
     }
   },
   "walletCardCurrentLabel": "Actual",
@@ -1855,22 +1898,29 @@
   "walletCardCurrentExpires": "{cardNumber} • vence {date}",
   "@walletCardCurrentExpires": {
     "placeholders": {
-      "cardNumber": { "type": "String" },
-      "date": { "type": "String" }
+      "cardNumber": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "walletCardLastRotationLabel": "Última rotación",
   "walletCardPreviousExpired": "{cardNumber} • expiró {date}",
   "@walletCardPreviousExpired": {
     "placeholders": {
-      "cardNumber": { "type": "String" },
-      "date": { "type": "String" }
+      "cardNumber": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "walletCardYourCard": "Tu tarjeta",
   "walletCardDepositLabel": "Depósito",
   "walletCardWithdrawLabel": "Retiro",
-  "walletCardMiningLabel": "Minería",
   "walletCardHowToGet": "Cómo conseguir",
   "walletCardRulesTitle": "Cómo cambian las tarjetas",
   "walletCardRulesSubtitle": "Cuando tu cuenta cumple los requisitos, la tarjeta cambia automáticamente.",
@@ -1882,7 +1932,7 @@
   "walletCardSilverTier": "Intermedio",
   "walletCardBlackTier": "Mayor nivel",
   "walletCardGraphiteDescription": "Tarjeta inicial para usuarios nuevos. Es el nivel predeterminado de la cuenta.",
-  "walletCardSilverDescription": "Upgrade intermedio con tasas menores para depósitos, retiros y minería.",
+  "walletCardSilverDescription": "Mejora intermedia con tarifas menores para depósitos y retiros.",
   "walletCardBlackDescription": "Menor costo de la plataforma para cuentas con más tiempo y mayor volumen.",
   "walletCardGraphiteQualification": "Disponible automáticamente para cuentas nuevas.",
   "walletCardSilverQualification": "Movimiento superior a 1500 por mes y al menos 6 meses de cuenta.",
@@ -1903,14 +1953,20 @@
   "appEntryPinLengthError": "Usa entre {min} y {max} dígitos.",
   "@appEntryPinLengthError": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "appEntryRetryIn": "Nuevo intento en {duration}.",
   "@appEntryRetryIn": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "appEntryUnlockPrompt": "Ingresa el PIN de este dispositivo para abrir tu billetera.",
@@ -1918,7 +1974,9 @@
   "appEntryAttemptsHelper": "Intentos restantes antes del bloqueo: {count}.",
   "@appEntryAttemptsHelper": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "appEntryLocalPinHelper": "Este PIN protege solo este dispositivo.",
@@ -1930,242 +1988,11 @@
   "primaryNavHome": "Inicio",
   "primaryNavCard": "Tarjeta",
   "primaryNavHistory": "Historial",
-  "primaryNavMining": "Minar",
   "primaryNavSettings": "Ajustes",
   "securityTreasuryBuffer": "Buffer",
   "securityTreasuryConfirmations": "Confirmaciones",
   "securityTreasuryLightning": "Lightning",
   "securityTreasuryProfit": "Ganancia",
-  "miningContractSelectRigTitle": "Selecciona un equipo",
-  "miningContractSelectRigMessage": "No encontramos equipos disponibles para alquiler ahora.",
-  "miningContractInvalidDurationTitle": "Plazo inválido",
-  "miningContractInvalidDurationMessage": "Elige un plazo entre {minHours}h y {maxHours}h para este equipo.",
-  "@miningContractInvalidDurationMessage": {
-    "placeholders": {
-      "minHours": { "type": "int" },
-      "maxHours": { "type": "int" }
-    }
-  },
-  "miningContractInvalidBudgetTitle": "Valor inválido",
-  "miningContractInvalidBudgetMessage": "Informa un valor en BTC mayor que cero.",
-  "miningContractInvalidHashrateTitle": "Potencia inválida",
-  "miningContractInvalidHashrateMessage": "Informa la potencia deseada en {unit}.",
-  "@miningContractInvalidHashrateMessage": {
-    "placeholders": {
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractNoAllocationTitle": "Sin asignación estimada",
-  "miningContractNoAllocationMessage": "La combinación elegida no genera potencia contratable.",
-  "miningContractTotpRequiredTitle": "Código obligatorio",
-  "miningContractTotpRequiredMessage": "Ingresa el código del autenticador de la billetera para continuar.",
-  "miningContractRequiredFieldsTitle": "Campos obligatorios",
-  "miningContractRequiredFieldsMessage": "Completa la dirección de recepción, la pool y el identificador del minero.",
-  "miningContractAuthIncompleteTitle": "Autorización incompleta",
-  "miningContractAuthIncompleteMessage": "La operación fue cancelada antes de la autorización final.",
-  "miningContractCreateFailedTitle": "No fue posible crear la asignación",
-  "miningContractUnknownError": "No fue posible completar esto ahora.",
-  "miningContractCreatedTitle": "Asignación creada",
-  "miningContractCreatedMessage": "{rigName} alquilado con {hashrate} por {durationHours}h.",
-  "@miningContractCreatedMessage": {
-    "placeholders": {
-      "rigName": { "type": "String" },
-      "hashrate": { "type": "String" },
-      "durationHours": { "type": "int" }
-    }
-  },
-  "miningContractCancelFailedTitle": "No fue posible cancelar",
-  "miningContractCancelledTitle": "Asignación cerrada",
-  "miningContractCancelledMessage": "Los valores proporcionales fueron actualizados en tu historial.",
-  "miningContractRigsTitle": "Equipos disponibles",
-  "miningContractRigsSubtitle": "Elige un equipo y revisa el precio estimado antes de autorizar.",
-  "miningContractCreateAction": "Crear asignación",
-  "miningContractAllocationsTitle": "Asignaciones activas y recientes",
-  "miningContractAllocationsSubtitle": "Acompaña tus contratos y cancela cuando la política lo permita.",
-  "miningContractNetworkContextTitle": "Red y liquidación",
-  "miningContractNetworkHashrate": "Potencia de la red",
-  "miningContractDailyReward": "Recompensa diaria",
-  "miningContractSelectWalletHint": "Selecciona una billetera para debitar el alquiler y completar la dirección de recepción.",
-  "miningContractActiveWallet": "Billetera activa: {walletName} • saldo {balance}",
-  "@miningContractActiveWallet": {
-    "placeholders": {
-      "walletName": { "type": "String" },
-      "balance": { "type": "String" }
-    }
-  },
-  "miningContractRigAvailable": "{algorithm} • {provider} • {hashrate} {unit} disponibles",
-  "@miningContractRigAvailable": {
-    "placeholders": {
-      "algorithm": { "type": "String" },
-      "provider": { "type": "String" },
-      "hashrate": { "type": "String" },
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractPricePerUnit": "Precio por {unit}/día",
-  "@miningContractPricePerUnit": {
-    "placeholders": {
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractYieldPerUnit": "Rendimiento por {unit}/día",
-  "@miningContractYieldPerUnit": {
-    "placeholders": {
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractBudgetMode": "Valor en BTC",
-  "miningContractHashrateMode": "Potencia",
-  "miningContractBudgetLabel": "Valor en BTC",
-  "miningContractHashrateLabel": "Potencia deseada",
-  "miningContractPayoutAddressLabel": "Dirección para recibir",
-  "miningContractPoolUrlLabel": "Pool de minería",
-  "miningContractWorkerNameLabel": "Identificador del minero",
-  "miningContractEstimateTitle": "Vista previa de la asignación",
-  "miningContractAllocatedHashrate": "Potencia asignada",
-  "miningContractEstimatedCost": "Costo estimado",
-  "miningContractProjectedYield": "Rendimiento bruto proyectado",
-  "miningContractTotpAuthorization": "Autorización por código",
-  "miningContractCost": "Costo",
-  "miningContractNetYield": "Rendimiento líquido",
-  "miningContractCancelAllocation": "Cancelar asignación",
-  "miningContractRetry": "Intentar de nuevo",
-  "miningStateOfflineTitle": "Sin conectividad",
-  "miningStateOfflineMessage": "No fue posible consultar la red Bitcoin ahora.",
-  "miningStateEmptyTitle": "Sin datos disponibles",
-  "miningStateEmptyMessage": "No encontramos información suficiente para montar el panel de minería ahora.",
-  "miningStateErrorTitle": "No se pudo iniciar el panel",
-  "miningStateRetryLater": "Intenta sincronizar nuevamente en unos instantes.",
-  "miningTxInternalTitle": "Flujo interno",
-  "miningTxInternalSubtitle": "Conciliación interna. Sin liquidación pública.",
-  "miningTxReference": "Referencia",
-  "miningTxConfirmations": "Confirmaciones",
-  "miningTxLightningTitle": "Flujo Lightning",
-  "miningTxLightningSubtitle": "Liquidación fuera de la capa base. Solo contexto local.",
-  "miningTxChannel": "Canal",
-  "miningTxRecord": "Registro",
-  "miningTxNoPublicSummaryTitle": "Transacción sin resumen público",
-  "miningTxNoPublicSummaryMessage": "La red no devolvió un resumen detallado.",
-  "miningTxLookupUnavailableTitle": "Consulta on-chain indisponible",
-  "miningTxLocalStatus": "Estado local",
-  "miningTxOnchainTitle": "Contexto on-chain",
-  "miningTxOnchainSubtitle": "Inclusión, posición y costo efectivo de la transacción.",
-  "miningTxConfirmed": "Confirmada",
-  "miningTxPending": "Pendiente",
-  "miningTxTxid": "TXID",
-  "miningTxFeeRate": "Tasa por vByte",
-  "miningTxBlock": "Bloque",
-  "miningTxAwaiting": "esperando",
-  "miningTxPosition": "Posición",
-  "miningTxNotAvailable": "n/d",
-  "miningTxLoadingTitle": "Contexto transaccional",
-  "miningTxLoadingSubtitle": "Consultando datos públicos de la transacción.",
-  "miningMetricsCurrentHeight": "Altura actual",
-  "miningMetricsRetargetInBlocks": "retarget en {blocks} bloques",
-  "@miningMetricsRetargetInBlocks": {
-    "placeholders": {
-      "blocks": { "type": "int" }
-    }
-  },
-  "miningMetricsMrr": "MRR",
-  "miningMetricsHashrate": "Hashrate",
-  "miningMetricsDifficulty": "Dificultad",
-  "miningMetricsPace": "Ritmo",
-  "miningMetricsLastUpdated": "Última actualización",
-  "miningMetricsNow": "ahora",
-  "miningMetricsMempool": "Mempool",
-  "miningMetricsPriorityFee": "Tasa prioritaria",
-  "miningMetricsEstimatedTps": "TPS estimado",
-  "miningMetricsMempoolPressureTitle": "Presión de la mempool",
-  "miningMetricsMempoolPressureSubtitle": "Rango de tasa, volumen pendiente y disputa por inclusión.",
-  "miningMetricsPending": "Pendientes",
-  "miningMetricsVbytes": "vBytes",
-  "miningMetricsVolumeMb": "Volumen MB",
-  "miningMetricsAggregatedFees": "Tasas agregadas",
-  "miningMetricsNetworkHealthTitle": "Salud de la red",
-  "miningMetricsNetworkHealthSubtitle": "Dificultad, retarget y throughput reciente.",
-  "miningMetricsThroughput": "Throughput",
-  "miningMetricsOccupancy": "Ocupación",
-  "miningMetricsFeesInReward": "Tasas en reward",
-  "miningMetricsNextAdjustment": "Próximo ajuste",
-  "miningMetricsLocalMonitorTitle": "Monitor local",
-  "miningMetricsLocalMonitorActiveSubtitle": "Telemetría local estimada de la operación activa.",
-  "miningMetricsLocalMonitorInactiveSubtitle": "Ningún minero local activo.",
-  "miningMetricsMiningStatus": "Minando",
-  "miningMetricsOfflineStatus": "Offline",
-  "miningMetricsLocalHashrate": "Hashrate local",
-  "miningMetricsAcceptedShares": "Shares aceptados",
-  "miningMetricsRejectedShares": "Shares rechazados",
-  "miningMetricsTemperature": "Temperatura",
-  "miningMetricsHashrateTrendTitle": "Tendencia de hashrate",
-  "miningMetricsHashrateTrendSubtitle": "Curva reciente de la potencia computacional de la red.",
-  "miningMetricsTrendEmpty": "No hay serie temporal suficiente para trazar la curva.",
-  "miningMetricsRecentBlocksTitle": "Bloques recientes",
-  "miningMetricsRecentBlocksSubtitle": "Cadencia, volumen y ocupación en lectura corta.",
-  "miningMetricsDominantPoolsTitle": "Pools dominantes",
-  "miningMetricsDominantPoolsSubtitle": "Participación reciente, match promedio y bloques vacíos.",
-  "miningMetricsLeadingPool": "{percent}% líder",
-  "@miningMetricsLeadingPool": {
-    "placeholders": {
-      "percent": { "type": "String" }
-    }
-  },
-  "miningFeesTitle": "Mercado de tasas",
-  "miningFeesSubtitle": "Bandas activas, spread y ventana de inclusión.",
-  "miningFeesWideSpread": "spread amplio",
-  "miningFeesControlledSpread": "spread controlado",
-  "miningFeesWindow": "ventana {fee}+",
-  "@miningFeesWindow": {
-    "placeholders": {
-      "fee": { "type": "String" }
-    }
-  },
-  "miningFeesPriority": "Prioritaria",
-  "miningFeesExpress": "Expresa",
-  "miningFeesStandard": "Estándar",
-  "miningFeesEconomy": "Económica",
-  "miningFeesMinimum": "Mínimo",
-  "miningFeesMedian": "Mediana",
-  "miningFeesMaximum": "Máximo",
-  "miningBlocksTitle": "Bloques en formación",
-  "miningBlocksSubtitle": "Fila proyectada junto a las confirmaciones recientes.",
-  "miningBlocksQueued": "{count} en fila",
-  "@miningBlocksQueued": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "miningBlocksQueue": "Fila",
-  "miningBlocksConfirmed": "Confirmado",
-  "miningBlocksNew": "Nuevo",
-  "miningBlocksNoBlocks": "sin bloques",
-  "miningBlocksNext": "Próximo {number}",
-  "@miningBlocksNext": {
-    "placeholders": {
-      "number": { "type": "int" }
-    }
-  },
-  "miningBlocksRange": "Rango",
-  "miningBlocksFees": "Tasas",
-  "miningBlocksNewHeight": "Nuevo #{height}",
-  "@miningBlocksNewHeight": {
-    "placeholders": {
-      "height": { "type": "int" }
-    }
-  },
-  "miningBlocksBitcoinNetwork": "Red Bitcoin",
-  "miningBlocksTransactions": "{count} transacciones",
-  "@miningBlocksTransactions": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "miningBlocksHash": "Hash",
-  "miningBlocksWeight": "Peso",
-  "miningBlocksTimestamp": "Timestamp",
-  "miningBlocksSize": "Tamaño",
-  "miningBlocksFee": "Tasa",
-  "miningBlocksUnavailable": "indisponible",
   "addCard": "AGREGAR TARJETA",
   "manual": "MANUAL",
   "fixedAmountByRequest": "VALOR FIJADO POR SOLICITUD",
@@ -2183,7 +2010,9 @@
   "helloUser": "Hola, {name}!",
   "@helloUser": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "continueButton": "CONTINUAR",
@@ -2342,8 +2171,7 @@
   "landingStatusService": "Servicio",
   "landingStatusRegion": "Región",
   "landingStatusBuild": "Build",
-  "landingStatusManifest": "Manifesto"
-,
+  "landingStatusManifest": "Manifesto",
   "homeFundsDistributionTitle": "Distribución de fondos",
   "homeRecentActivitiesTitle": "Actividades",
   "homeViewStatementShortLabel": "Extracto",
@@ -2374,5 +2202,12 @@
   "homeEducationLightningGeneralBody": "Lightning sirve para pagos menores y rápidos usando invoice, LNURL o dirección lightning.",
   "homeEducationLightningGeneralTag": "Pago instantáneo",
   "homeEducationKeroseneGeneralBody": "Kerosene separa envíos internos, Lightning y on-chain para reducir errores.",
-  "homeEducationKeroseneGeneralTag": "Cómo elegir"
+  "homeEducationKeroseneGeneralTag": "Cómo elegir",
+  "designSystemTemplateTitle": "Design system",
+  "designSystemTemplateIdentitySection": "01. Identidad visual y título",
+  "designSystemTemplateHeroTitle": "Kerosene Sovereign Core",
+  "designSystemTemplatePanelsSection": "02. Paneles y caja monocromática",
+  "designSystemTemplateInputSection": "03. Entrada de datos formateada",
+  "designSystemTemplateButtonsSection": "04. Botones estandarizados",
+  "designSystemTemplateStatusSection": "05. Etiquetas de estado"
 }

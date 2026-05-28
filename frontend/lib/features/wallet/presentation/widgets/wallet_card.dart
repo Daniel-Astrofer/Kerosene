@@ -340,7 +340,7 @@ class _WalletCardState extends State<WalletCard>
                                                 .colorScheme
                                                 .onPrimary
                                                 .withValues(alpha: 0.5),
-                                            fontFamily: 'JetBrainsMono',
+                                            fontFamily: 'IBMPlexSansHebrew',
                                           ),
                                       overflow: TextOverflow.ellipsis,
                                     ),

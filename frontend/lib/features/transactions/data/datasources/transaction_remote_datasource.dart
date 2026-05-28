@@ -354,18 +354,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       final data = _parseJsonResponse(response.data);
       if (data.isEmpty) {
-        final fallbackTxid = idempotencyKey ??
-            requestTimestamp?.toString() ??
-            DateTime.now().microsecondsSinceEpoch.toString();
-        return TxStatus(
-          txid: fallbackTxid,
-          status: 'confirmed',
-          feeSatoshis: feeSatoshis,
-          amountReceived: amount,
-          sender: normalizedSender,
-          receiver: toAddress,
-          context: context,
-          message: 'Transaction successfully processed.',
+        throw const ServerException(
+          message:
+              'O ledger confirmou a chamada, mas não retornou o status da transação.',
+          errorCode: 'ERR_LEDGER_EMPTY_TRANSACTION_RESPONSE',
         );
       }
       return TxStatus.fromJson(data);
@@ -638,15 +630,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
             .map((e) => PaymentLink.fromJson(e))
             .toList();
       }
-      return [];
+      throw ServerException(
+        message: 'Resposta inesperada ao carregar links de pagamento.',
+        errorCode: 'ERR_PAYMENT_LINKS_INVALID_RESPONSE',
+        data: data,
+      );
     } catch (e) {
-      if (e is DioException && e.response?.statusCode == 403) {
-        return [];
-      }
-      if (e is AppException && e.statusCode == 403) {
-        return [];
-      }
-
       if (e is AppException) rethrow;
       throw ServerException(
         message: 'Não conseguimos carregar seus links de pagamento agora.',

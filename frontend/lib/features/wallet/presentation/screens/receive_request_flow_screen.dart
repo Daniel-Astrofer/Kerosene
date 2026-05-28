@@ -474,7 +474,7 @@ class _ReceiveRequestFlowScreenState
                       ? 'Receber Bitcoin'
                       : 'Receber na Kerosene',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.ebGaramond(
+                  style: GoogleFonts.ibmPlexSerif(
                     color: _receiveText,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
@@ -555,7 +555,7 @@ class _ReceiveRequestFlowScreenState
                       ? 'Receber Bitcoin'
                       : 'Receber na Kerosene',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.ebGaramond(
+                  style: GoogleFonts.ibmPlexSerif(
                     color: _receiveText,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
@@ -634,7 +634,7 @@ class _ReceiveRequestFlowScreenState
                     Text(
                       'Pagamento\nIdentificado!',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _receiveText,
                         fontSize: 48,
                         fontWeight: FontWeight.w400,
@@ -646,7 +646,7 @@ class _ReceiveRequestFlowScreenState
                     Text(
                       _amountLabel,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _receiveText,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
@@ -794,7 +794,7 @@ class _ReceiveRequestFlowScreenState
             children: [
               TextSpan(
                 text: widget.amountBtc.toStringAsFixed(6),
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _receiveText,
                   fontSize: 40,
                   fontWeight: FontWeight.w400,
@@ -804,7 +804,7 @@ class _ReceiveRequestFlowScreenState
               ),
               TextSpan(
                 text: ' BTC',
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _receiveMuted,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -858,7 +858,7 @@ class _ReceiveRequestFlowScreenState
             children: [
               Text(
                 widget.amountBtc.toStringAsFixed(8),
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _receiveText,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -903,7 +903,7 @@ class _ReceiveRequestFlowScreenState
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
+              style: GoogleFonts.ibmPlexSansHebrew(
                 color: _receiveText,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
@@ -1141,7 +1141,7 @@ class _ReceiveShellHeader extends StatelessWidget {
           const Spacer(),
           Text(
             'KEROSENE',
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: _receiveText,
               fontSize: 24,
               fontWeight: FontWeight.w400,
@@ -1408,7 +1408,7 @@ class _DetailRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: (monospace
-                      ? GoogleFonts.jetBrainsMono()
+                      ? GoogleFonts.ibmPlexSansHebrew()
                       : GoogleFonts.inter())
                   .copyWith(
                 color: _receiveText,

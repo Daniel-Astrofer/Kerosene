@@ -161,7 +161,7 @@ class _Header extends StatelessWidget {
             'Carteira interna',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: Colors.white,
               fontSize: managing ? 32 : 36,
               fontWeight: FontWeight.w500,
@@ -415,7 +415,7 @@ class _InternalWalletCard extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.ebGaramond(
+                        style: GoogleFonts.ibmPlexSerif(
                           color: Colors.white.withValues(alpha: 0.92),
                           fontSize: 21,
                           fontWeight: FontWeight.w400,
@@ -425,7 +425,7 @@ class _InternalWalletCard extends StatelessWidget {
                     ),
                     Text(
                       _cardExpiryLabel(account),
-                      style: GoogleFonts.ebGaramond(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: Colors.white.withValues(alpha: 0.70),
                         fontSize: 18,
                         letterSpacing: 0,
@@ -438,7 +438,7 @@ class _InternalWalletCard extends StatelessWidget {
                   'Kerosene',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.ebGaramond(
+                  style: GoogleFonts.ibmPlexSerif(
                     color: Colors.white,
                     fontSize: 30,
                     fontWeight: FontWeight.w400,
@@ -651,7 +651,7 @@ class _TransactionsPanel extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.ebGaramond(
+          style: GoogleFonts.ibmPlexSerif(
             color: Colors.white,
             fontSize: 28,
             fontWeight: FontWeight.w600,
@@ -800,7 +800,7 @@ class _ColdWalletSection extends StatelessWidget {
             Expanded(
               child: Text(
                 context.tr.bitcoinAccountsColdWalletSection,
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.w600,
@@ -2104,7 +2104,7 @@ class _CreationTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.ebGaramond(
+      style: GoogleFonts.ibmPlexSerif(
         color: Colors.white,
         fontSize: 40,
         fontWeight: FontWeight.w500,
@@ -2364,7 +2364,7 @@ class _CreationTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.ebGaramond(
+          style: GoogleFonts.ibmPlexSerif(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.w500,

@@ -993,7 +993,7 @@ class _LoginTypography {
   const _LoginTypography._();
 
   static TextStyle title() {
-    return GoogleFonts.ebGaramond(
+    return GoogleFonts.ibmPlexSerif(
       color: _loginText,
       fontSize: 32,
       fontWeight: FontWeight.w500,

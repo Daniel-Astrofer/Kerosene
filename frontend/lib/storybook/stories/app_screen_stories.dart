@@ -6,15 +6,11 @@ import 'package:storybook_flutter/storybook_flutter.dart';
 
 import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import 'package:teste/features/landing/presentation/kerosene_landing_page.dart';
-import 'package:teste/features/mining/data/models/mempool_market_models.dart';
-import 'package:teste/features/mining/presentation/screens/mining_contract_screen.dart';
-import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/notifications/presentation/screens/notification_center_screen.dart';
 import 'package:teste/features/profile/presentation/screens/notification_settings_screen.dart';
 import 'package:teste/features/profile/presentation/screens/security_settings_screen.dart';
 import 'package:teste/features/settings/presentation/screens/settings_screen.dart';
 import 'package:teste/features/transactions/presentation/screens/deposits_screen.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
 import 'package:teste/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
@@ -34,114 +30,6 @@ import '../storybook_mocks.dart';
 
 final Wallet _wallet = mockWallets.first;
 final Wallet _coldWallet = mockWallets.length > 1 ? mockWallets[1] : _wallet;
-
-final Transaction _miningTransaction = Transaction(
-  id: 'storybook-mining-tx',
-  fromAddress: _wallet.address,
-  toAddress: 'bc1qminingstorybook0000000000000000000000',
-  amountSatoshis: 240000,
-  feeSatoshis: 1600,
-  status: TransactionStatus.pending,
-  type: TransactionType.withdrawal,
-  confirmations: 0,
-  timestamp: DateTime.now().subtract(const Duration(minutes: 24)),
-  blockchainTxid: 'storybook-mining-txid',
-  description: 'Envio aguardando confirmação',
-);
-
-final MempoolMiningDashboardData _miningDashboardData =
-    MempoolMiningDashboardData(
-  mempool: const MempoolSnapshot(
-    count: 132000,
-    vsize: 164000000,
-    totalFee: 820000000,
-    histogram: [
-      FeeHistogramBin(feeRate: 45, vsize: 38000000),
-      FeeHistogramBin(feeRate: 22, vsize: 52000000),
-      FeeHistogramBin(feeRate: 8, vsize: 74000000),
-    ],
-  ),
-  fees: const MempoolFees(
-    fastestFee: 54,
-    halfHourFee: 42,
-    hourFee: 28,
-    economyFee: 11,
-    minimumFee: 5,
-  ),
-  feeBlocks: const [
-    MempoolFeeBlock(
-      blockSize: 1450000,
-      blockVSize: 998000,
-      txCount: 3120,
-      totalFees: 18500000,
-      medianFee: 39,
-      feeRange: [12, 24, 38, 52, 70],
-    ),
-  ],
-  difficulty: DifficultyAdjustmentInfo(
-    progressPercent: 72,
-    difficultyChange: 1.8,
-    estimatedRetargetDate:
-        DateTime.now().add(const Duration(days: 4)).millisecondsSinceEpoch ~/
-            1000,
-    remainingBlocks: 562,
-    remainingTime: 337200,
-    previousRetarget: 0.9,
-    previousTime: 1209600,
-    nextRetargetHeight: 856800,
-    timeAvg: 595,
-    adjustedTimeAvg: 601,
-    expectedBlocks: 1454,
-  ),
-  blocks: [
-    MempoolBlock(
-      id: '00000000000000000000storybookblock',
-      height: 856238,
-      timestamp: DateTime.now()
-              .subtract(const Duration(minutes: 7))
-              .millisecondsSinceEpoch ~/
-          1000,
-      txCount: 3680,
-      size: 1450000,
-      weight: 3990000,
-      difficulty: 86.3,
-      medianFee: 36,
-      totalFees: 18400000,
-      reward: 312500000,
-      poolName: 'Kerosene Pool',
-      poolSlug: 'kerosene',
-    ),
-  ],
-  hashrate: const MiningHashrateSnapshot(
-    currentHashrate: 685000000000000000000,
-    currentDifficulty: 86.3,
-    hashrates: [
-      MiningHashratePoint(
-          timestamp: 1710000000, avgHashrate: 642000000000000000000),
-      MiningHashratePoint(
-          timestamp: 1710086400, avgHashrate: 685000000000000000000),
-    ],
-  ),
-  pools: const [
-    MiningPool(
-      name: 'Foundry USA',
-      link: 'https://mempool.space/mining/pool/foundryusa',
-      blockCount: 47,
-      rank: 1,
-      emptyBlocks: 0,
-      slug: 'foundryusa',
-      avgMatchRate: 99.4,
-      avgFeeDelta: '+1.2%',
-    ),
-  ],
-  rewardStats: const MiningRewardStats(
-    startBlock: 856100,
-    endBlock: 856238,
-    totalRewardSat: 43125000000,
-    totalFeeSat: 1280000000,
-    totalTx: 418000,
-  ),
-);
 
 List<Story> appScreenStories() {
   return [
@@ -230,14 +118,6 @@ List<Story> appScreenStories() {
     Story(
       name: 'Current/Transactions/Statement',
       builder: (_) => const TransactionStatementScreen(),
-    ),
-    Story(
-      name: 'Current/Mobile/Mining Dashboard',
-      builder: (_) => MiningScreen(initialTransaction: _miningTransaction),
-    ),
-    Story(
-      name: 'Current/Mobile/Mining Contract',
-      builder: (_) => MiningContractScreen(dashboardData: _miningDashboardData),
     ),
     Story(
       name: 'Current/Account/Notification Settings',

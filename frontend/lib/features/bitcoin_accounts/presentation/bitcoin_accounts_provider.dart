@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_client_provider.dart';
 import '../data/bitcoin_accounts_service.dart';
 
 final bitcoinAccountsServiceProvider = Provider<BitcoinAccountsService>((ref) {
-  return LocalBitcoinAccountsService();
+  return RemoteBitcoinAccountsService(ref.watch(apiClientProvider));
 });
 
 class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {

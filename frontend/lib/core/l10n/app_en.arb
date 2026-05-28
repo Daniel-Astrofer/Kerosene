@@ -1,14 +1,11 @@
 {
   "@@locale": "en",
-  
   "appTitle": "Kerosene",
   "@appTitle": {
     "description": "Application title"
   },
-
   "home": "Home",
   "market": "Market",
-  
   "totalBalance": "Total Balance (BTC)",
   "totalBalanceGeneric": "Total Balance",
   "myWallets": "My Wallets",
@@ -18,43 +15,39 @@
   "addFunds": "Add Funds",
   "addCard": "ADD CARD",
   "manual": "MANUAL",
-  "qrCode": "QR CODE",
+  "qrCode": "QR Code",
   "nfc": "NFC",
-  "howMuchToReceive": "How much to receive?",
+  "howMuchToReceive": "How much do you want to receive?",
   "fixedAmountByRequest": "FIXED AMOUNT BY REQUEST",
   "recipientData": "RECIPIENT DATA",
   "recipientHint": "Username or BTC address",
   "descriptionHint": "Description (optional)",
   "next": "NEXT",
   "reviewSend": "REVIEW SEND",
-  "recipient": "RECIPIENT",
+  "recipient": "Recipient",
   "description": "DESCRIPTION",
-  "networkFee": "NETWORK FEE",
+  "networkFee": "Network Fee",
   "free": "FREE",
   "confirm": "CONFIRM",
   "securityTotp": "SECURITY (TOTP)",
   "destinationAddressHint": "Destination BTC Address",
   "totpHint": "6 digits from your authenticator",
   "confirmWithdraw": "CONFIRM WITHDRAW",
-  
   "recentTransactions": "Recent Transactions",
   "viewAll": "View All",
-  "noTransactions": "No transactions yet",
-  
+  "noTransactions": "No transactions found",
   "bitcoinTrading": "Bitcoin Trading",
   "marketStats": "Market Stats",
   "high24h": "24h High",
   "low24h": "24h Low",
   "totalVolume24h": "Total Volume (24h)",
   "fiatVolume": "Fiat Volume",
-  
   "security": "Security",
   "notifications": "Notifications",
   "language": "Language",
   "logout": "Logout",
   "wallets": "Wallets",
   "totalVolume": "Total Volume",
-  
   "depositAddress": "Deposit Address",
   "platformDepositAddress": "Platform Deposit Address",
   "amount": "Amount",
@@ -65,14 +58,12 @@
   "fundsWillBeCredited": "Funds will be credited after network confirmation",
   "close": "Close",
   "addressCopied": "Address copied!",
-  
-  "destinationAddress": "Destination Address",
+  "destinationAddress": "DESTINATION ADDRESS",
   "estimatedFee": "Estimated Fee",
   "total": "Total",
   "confirmSend": "Confirm & Send",
   "scanQR": "Scan QR",
   "pasteAddress": "Paste Address",
-  
   "transactionDetails": "Transaction Details",
   "status": "Status",
   "value": "Value",
@@ -82,7 +73,6 @@
   "confirmed": "Confirmed",
   "pending": "Pending",
   "failed": "Failed",
-  
   "helloUser": "Hello, {name}!",
   "@helloUser": {
     "placeholders": {
@@ -99,7 +89,6 @@
   "password": "Password",
   "confirmPassword": "Confirm Password",
   "name": "Name",
-  
   "error": "Error",
   "success": "Success",
   "loading": "Loading",
@@ -108,28 +97,23 @@
   "goBack": "Go Back",
   "done": "Done",
   "save": "Save",
-  "continueButton": "Continue",
-  
+  "continueButton": "CONTINUE",
   "invalidAmount": "Invalid amount",
   "insufficientFunds": "Insufficient funds",
   "pleaseEnterAmount": "Please enter an amount",
   "pleaseCompleteFields": "Please complete all fields",
-  
   "depositInitiated": "Deposit Initiated!",
   "depositSuccess": "Your deposit transaction was sent. It will be credited once confirmed.",
-  
   "errorLoadingData": "Error loading data",
   "tryAgain": "Try Again",
   "noChartData": "No chart data",
   "walletSettings": "Wallet Settings",
   "spendingLimit": "Spending Limit",
-  "notifications": "Notifications",
   "exportPrivateKey": "Export Private Key",
   "removeWallet": "Remove Wallet",
   "currencyQuotation": "1 BRL = {value} USD",
   "approximateValue": "≈ {value} {currency}",
   "paymentLinks": "Payment Links",
-  "networkFee": "Network Fee",
   "youWillReceive": "You will receive",
   "confirmationTime": "Confirmation time",
   "walletName": "Wallet Name",
@@ -152,12 +136,8 @@
   "errorLoadingWallets": "Error loading wallets",
   "add": "Add",
   "deposit": "Deposit",
-  "nfc": "NFC",
-  "qrCode": "QR Code",
   "sentTo": "Sent to",
   "receivedFrom": "Received from",
-  "recentTransactions": "Recent Transactions",
-  "viewAll": "View All",
   "showLess": "Show Less",
   "copy": "COPY",
   "share": "SHARE",
@@ -180,15 +160,12 @@
   "approximateNfc": "APPROXIMATE NFC",
   "createLink": "CREATE LINK",
   "history": "HISTORY",
-  "welcomeBack": "Welcome Back",
-  "continueButton": "CONTINUE",
   "forgotPassword": "Forgot your password?",
   "secureAccess": "Secure Access",
   "newHere": "New here?",
   "signUpNow": "Sign Up",
   "amountToSend": "AMOUNT TO SEND",
   "processingDuration": "PROCESSING: ~15 MINS",
-  "destinationAddress": "DESTINATION ADDRESS",
   "withdrawConfirmButton": "CONFIRM AND SEND",
   "secureWithdrawal": "SECURE WITHDRAWAL",
   "totalToReceive": "TOTAL TO RECEIVE",
@@ -243,7 +220,6 @@
   "typeFee": "Fee",
   "hashCopied": "Hash copied!",
   "transactionSentSuccess": "Transaction sent successfully!",
-  "recipient": "Recipient",
   "selectRecipient": "Select Recipient",
   "searchAddress": "Search or paste address",
   "noRecentContacts": "No recent contacts",
@@ -252,7 +228,6 @@
   "yourBitcoinAddress": "Your Bitcoin Address",
   "addressNotAvailable": "Address not available",
   "copyAddress": "Copy Address",
-  "howMuchToReceive": "How much do you want to receive?",
   "receiveMethod": "Receive Method",
   "generateQrCodeDescription": "Generate a code to be scanned",
   "nfcBeam": "NFC Beam",
@@ -270,10 +245,8 @@
   "errorWriting": "Error writing: {error}",
   "typeWithdrawal": "Withdrawal",
   "typeDeposit": "Deposit",
-
   "rememberMe": "Remember Me",
   "torOnionActive": "Onion Protocol Active (Kerosene Core)",
-
   "signupFeeTitle": "Activation Fee",
   "signupFeeSubtitle": "A one-time fee of 0.003 BTC is required to activate your account and prevent spam.",
   "signupFeeWhyTitle": "Why a fee?",
@@ -281,172 +254,6 @@
   "signupFeeNotRefundable": "Non-refundable",
   "signupFeeNotRefundableBody": "Once sent, the fee cannot be recovered. Ensure you are ready before proceeding.",
   "signupFeeContinue": "Understood, Continue",
-
-  "seedSecurityTitle": "Seed Security",
-  "seedSecuritySubtitle": "Choose how to protect your wallet recovery phrase.",
-  "seedStandardTitle": "Standard",
-  "seedStandardDesc": "A single 12, 18, or 24-word recovery phrase. Ideal for general use and simplicity.",
-  "seedSlip39Title": "Shamir SLIP-39 (Multi-part)",
-  "seedSlip39Desc": "Split your seed into multiple parts. Require a minimum to recover (e.g., 3-of-5). Ideal for distributed physical storage.",
-  "seedMultisigTitle": "2FA Multisig Vault",
-  "seedMultisigDesc": "A 2-of-3 Multisig wallet. Kerosene co-signs transactions via TOTP. Protects against device theft.",
-  "seedSlip39ConfigTitle": "SLIP-39 Configuration",
-  "seedSlip39TotalShares": "Total Shares (Pieces)",
-  "seedSlip39Threshold": "Required Threshold",
-  "seedSlip39Summary": "Requires {threshold} of {total} parts to restore the wallet.",
-  "@seedSlip39Summary": {
-    "placeholders": {
-      "threshold": { "type": "Object" },
-      "total": { "type": "Object" }
-    }
-  },
-
-  "passphraseTitle": "Your Secret Phrase",
-  "passphraseSubtitle": "Write down these 18 words on physical paper. Never save them digitally.",
-  "passphraseWrittenDown": "I Have Written It Down",
-  "passphraseWarning": "If you lose these words, you will permanently lose access to your account and funds.",
-  "passphraseVerifyTitle": "Verify Phrase",
-  "passphraseVerifySubtitle": "Type your secret phrase to confirm you have a correct backup.",
-  "passphraseVerifyHint": "word1 word2 word3...",
-  "passphraseVerifyError": "Incorrect phrase. Please try again.",
-  "passphraseVerifyContinue": "Verify & Continue",
-  "passphraseGoBack": "Go back to see phrase",
-  "passphraseEnterWords": "Enter your 18 words",
-
-  "slip39SharesTitle": "Your SLIP-39 Shares",
-  "slip39SharesSubtitle": "Your seed is divided into {total} pieces. You need {threshold} of them to recover your wallet.",
-  "@slip39SharesSubtitle": {
-    "placeholders": {
-      "total": { "type": "Object" },
-      "threshold": { "type": "Object" }
-    }
-  },
-  "slip39ShareLabel": "Share {index} of {total}",
-  "@slip39ShareLabel": {
-    "placeholders": {
-      "index": { "type": "Object" },
-      "total": { "type": "Object" }
-    }
-  },
-  "slip39ShareCopied": "Share {index} copied",
-  "@slip39ShareCopied": {
-    "placeholders": {
-      "index": { "type": "Object" }
-    }
-  },
-  "slip39VerifyShareTitle": "Verify Share",
-  "slip39VerifyShareSubtitle": "Type the words for Share {index} exactly as you wrote them down.",
-  "@slip39VerifyShareSubtitle": {
-    "placeholders": {
-      "index": { "type": "Object" }
-    }
-  },
-  "slip39ConfirmShare": "Confirm Share {index}",
-  "@slip39ConfirmShare": {
-    "placeholders": {
-      "index": { "type": "Object" }
-    }
-  },
-  "slip39AllConfirmedContinue": "All Shares Confirmed — Continue",
-  "slip39ConfirmAllPending": "Confirm all {total} shares to continue",
-  "@slip39ConfirmAllPending": {
-    "placeholders": {
-      "total": { "type": "Object" }
-    }
-  },
-  "slip39Warning": "DO NOT store all shares in the same place. If an attacker finds enough pieces, they can recover your wallet.",
-
-  "twoFaPrimaryTitle": "Your Primary Seed",
-  "twoFaPrimaryBadge": "Key 1 of 3 — Lives only on your device",
-  "twoFaPrimarySubtitle": "This 18-word phrase is your main private key. Alone, it is NOT enough to sign transactions — a Kerosene TOTP authorization is always required.",
-  "twoFaPrimaryWritten": "I Have Written It Down",
-  "twoFaBackupTitle": "Your Recovery Seed",
-  "twoFaBackupBadge": "Key 3 of 3 — Emergency / Recovery",
-  "twoFaBackupSubtitle": "Keep this 12-word backup separate from your primary phrase. Together, they help you recover access in an emergency.",
-  "twoFaCoSignerNote": "Key 2 of 3 is encrypted at Kerosene and used only to co-sign transactions when you provide a valid TOTP code.",
-  "twoFaBothStored": "I Saved Both Seeds",
-  "twoFaBackToPrimary": "Back to Primary Seed",
-  "twoFaVerifyTitle": "Verify Primary Seed",
-  "twoFaVerifySubtitle": "Confirm your Primary Key (18 words) to prove it is securely backed up.",
-  "twoFaVerifyHint": "word1 word2 word3...",
-  "twoFaVerifyError": "Incorrect. Please check your Primary Seed.",
-  "twoFaVerifyActivate": "Verify & Activate 2FA Vault",
-  "twoFaBackToBackup": "Back to Recovery Seed",
-
-  "totpSetupTitle": "Setup Authenticator",
-  "totpSetupSubtitle": "Scan the QR code with your authenticator app, then enter the 6-digit code to verify.",
-  "totpCodeLabel": "Enter 6-digit code",
-  "totpVerifyButton": "Verify & Continue",
-  "totpErrorInvalid": "Invalid code. Please try again.",
-
-  "passkeyTitle": "Device key",
-  "passkeySubtitle": "Secure your account with a biometric hardware key. No password required.",
-  "passkeyRegisterButton": "Activate device key",
-  "passkeySuccessMessage": "Device key activated!",
-  "passkeySkip": "Skip for now",
-
-  "usernameTitle": "Choose Your Handle",
-  "usernameSubtitle": "Pick a unique username. This is your public identity on Kerosene.",
-  "usernameFieldLabel": "Username",
-  "usernameFieldHint": "@your_handle",
-  "usernameCheckButton": "Check Availability",
-  "usernameAvailable": "Username available!",
-  "usernameTaken": "Username already in use.",
-  "usernameContinue": "Reserve Handle & Continue",
-
-  "paymentTitle": "Activation Payment",
-  "paymentSubtitle": "Send exactly the amount shown below to activate your account.",
-  "paymentTimeLeft": "Time left",
-  "paymentExpired": "Payment window expired",
-  "paymentExpiredMessage": "You did not complete the payment within the 15-minute window. Your temporary data will be cleared and you must start over.",
-  "paymentWaiting": "Waiting for payment...",
-  "paymentAmountLabel": "Amount",
-  "paymentAddressLabel": "Deposit Address",
-  "paymentCopyAddress": "Copy Address",
-  "paymentAddressCopied": "Address copied!",
-
-  "confirmationsTitle": "Waiting for Confirmations",
-  "confirmationsSubtitle": "Your payment was detected. Waiting for 3 bitcoin network confirmations to finalize your account.",
-  "confirmationsProgress": "{current} / {total} confirmations",
-  "@confirmationsProgress": {
-    "placeholders": {
-      "current": { "type": "Object" },
-      "total": { "type": "Object" }
-    }
-  },
-  "confirmationsDone": "Account Activated!",
-
-  "presentationSlide1Title": "Secure Infrastructure from the First Access",
-  "presentationSlide1Body": "Kerosene operates with advanced technological architecture in a protected environment via the onion network. This structure reinforces privacy, resilience, and protection against external interference.\n\nSecurity is not an add-on.\nIt is the foundation of the system.",
-  "presentationSlide2Title": "Account Creation with Structural Protection Mechanism",
-  "presentationSlide2Body": "To preserve infrastructure integrity, account creation requires sending 0.003 BTC.\nThis amount remains entirely in your account.\nDuring registration, only the network transaction fee necessary for operation confirmation is deducted.\nThis technical requirement exists to:\n\n• Prevent automated account creation\n• Reduce distributed attack vectors\n• Maintain operational stability\n• Protect all platform users\n\nIt is not a monthly fee.\nIt is not a recurring charge.\nIt is a structural protection mechanism.",
-  "presentationSlide3Title": "Clear and Objective Fee Structure",
-  "presentationSlide3Body": "Our policy is simple:\n\n• External deposits and withdrawals use the wallet card fee\n• Bronze: 0.9%\n• White: 0.8%\n• Black: 0.7%\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.",
-  "presentationSlide4Title": "Commitment to Predictability",
-  "presentationSlide4Body": "Kerosene was designed to operate with:\n\n• Technical stability\n• Operational transparency\n• Structural security\n• Cost predictability\n\nOur priority is to maintain a solid, protected, and long-term sustainable infrastructure.",
-  "presentationSkip": "Skip",
-  "presentationNext": "Next",
-  "presentationStart": "Access Kerosene",
-
-  "signupScreenTitle": "Create Wallet",
-  "signupScreenSubtitle": "Setup your username and secure key.",
-  "signupUsernameHelper": "Only a-z, 0-9 and _",
-  "signupUsernameHint": "lower case letters, numbers and _",
-  "signupUsernameMinChars": "Min 3 chars",
-  "signupUsernameInvalid": "Invalid characters",
-  "signupMnemonicLabel": "YOUR SECRET PHRASE (BIP39)",
-  "signupMnemonicWarning": "Save this phrase securely. It is the ONLY way to recover your account.",
-  "signupMnemonicCopySuccess": "Phrase copied securely!",
-  "signupMnemonicCopy": "Copy",
-  "signupMnemonicGenerateNew": "Generate New",
-  "signupMnemonicError": "Error generating phrase, try again",
-
-  "feeExplanationTitle": "Secure Network Fee",
-  "feeExplanationSubtitle": "To prevent spam and ensure the robustness of the Kerosene network, account creation requires a small anti-spam fee of 0.003 BTC.",
-  "feeExplanationWhereGoesTitle": "Where does it go?",
-  "feeExplanationWhereGoesSubtitle": "The full 0.003 BTC goes directly into your wallet balance once the account is created.",
-  "feeExplanationContinue": "I Understand, Continue",
-
   "seedSecurityTitle": "Seed Security",
   "seedSecuritySubtitle": "Choose how you want to protect your wallet recovery phrase. Kerosene offers advanced security options for high-net-worth setups.",
   "seedStandardTitle": "Standard",
@@ -461,12 +268,14 @@
   "seedSlip39Summary": "Requires {threshold} out of {total} shares to restore the wallet.",
   "@seedSlip39Summary": {
     "placeholders": {
-      "threshold": { "type": "Object" },
-      "total": { "type": "Object" }
+      "threshold": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
     }
   },
-  "seedSecurityContinue": "Continue",
-
   "passphraseTitle": "Your Secret Phrase",
   "passphraseSubtitle": "Write down these 18 words on a physical piece of paper. Never save this digitally.",
   "passphraseWrittenDown": "I Have Written It Down",
@@ -478,60 +287,64 @@
   "passphraseVerifyContinue": "Verify & Continue",
   "passphraseGoBack": "Go back to view phrase again",
   "passphraseEnterWords": "Enter your 18 words",
-
   "slip39SharesTitle": "Your SLIP-39 Shares",
   "slip39SharesSubtitle": "Your seed is split into {total} pieces. You need {threshold} of them to recover your wallet. Write each share on a separate piece of paper and store them in different locations.",
   "@slip39SharesSubtitle": {
     "placeholders": {
-      "threshold": { "type": "Object" },
-      "total": { "type": "Object" }
+      "threshold": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
     }
   },
   "slip39ShareLabel": "Share {index} of {total}",
   "@slip39ShareLabel": {
     "placeholders": {
-      "index": { "type": "Object" },
-      "total": { "type": "Object" }
+      "index": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
     }
   },
   "slip39ShareCopied": "Share {index} copied",
   "@slip39ShareCopied": {
     "placeholders": {
-      "index": { "type": "Object" }
+      "index": {
+        "type": "Object"
+      }
     }
   },
   "slip39VerifyShareTitle": "Verify Share {index}",
-  "@slip39VerifyShareTitle": {
-    "placeholders": {
-      "index": { "type": "Object" }
-    }
-  },
   "slip39VerifyShareSubtitle": "Type the words for Share {index} exactly as you wrote them down.",
   "@slip39VerifyShareSubtitle": {
     "placeholders": {
-      "index": { "type": "Object" }
+      "index": {
+        "type": "Object"
+      }
     }
   },
   "slip39ConfirmShare": "Confirm Share {index}",
   "@slip39ConfirmShare": {
     "placeholders": {
-      "index": { "type": "Object" }
+      "index": {
+        "type": "Object"
+      }
     }
   },
   "slip39AllConfirmedContinue": "All Shares Confirmed — Continue",
   "slip39ConfirmAllPending": "Confirm all {total} shares to continue",
   "@slip39ConfirmAllPending": {
     "placeholders": {
-      "total": { "type": "Object" }
+      "total": {
+        "type": "Object"
+      }
     }
   },
   "slip39Warning": "Do NOT store all shares in the same place. If an attacker finds {threshold} pieces they can recover your wallet.",
-  "@slip39Warning": {
-    "placeholders": {
-      "threshold": { "type": "Object" }
-    }
-  },
-
   "twoFaPrimaryTitle": "Your Primary Seed",
   "twoFaPrimaryBadge": "Key 1 of 3 — Stays on your device only",
   "twoFaPrimarySubtitle": "This 18-word phrase is your primary private key. It alone is NOT enough to sign transactions — a secondary TOTP authorization is always required from Kerosene. Write these words on paper and store them securely.",
@@ -548,7 +361,91 @@
   "twoFaVerifyError": "Incorrect. Please re-check your Primary Seed.",
   "twoFaVerifyActivate": "Verify & Activate 2FA Vault",
   "twoFaBackToBackup": "Back to Recovery Seed",
-
+  "totpSetupTitle": "Setup Authenticator",
+  "totpSetupSubtitle": "Scan the QR code with your authenticator app, then enter the 6-digit code to verify.",
+  "totpCodeLabel": "Enter 6-digit code",
+  "totpVerifyButton": "Verify & Continue",
+  "totpErrorInvalid": "Invalid code. Please try again.",
+  "passkeyTitle": "Device key",
+  "passkeySubtitle": "Secure your account with a biometric hardware key. No password required.",
+  "passkeyRegisterButton": "Activate device key",
+  "passkeySuccessMessage": "Device key activated!",
+  "passkeySkip": "Skip for now",
+  "usernameTitle": "Choose Your Handle",
+  "usernameSubtitle": "Pick a unique username. This is your public identity on Kerosene.",
+  "usernameFieldLabel": "Username",
+  "usernameFieldHint": "@your_handle",
+  "usernameCheckButton": "Check Availability",
+  "usernameAvailable": "Username available!",
+  "usernameTaken": "Username already in use.",
+  "usernameContinue": "Reserve Handle & Continue",
+  "paymentTitle": "Activation Payment",
+  "paymentSubtitle": "Send exactly the amount shown below to activate your account.",
+  "paymentTimeLeft": "Time left",
+  "paymentExpired": "Payment window expired",
+  "paymentExpiredMessage": "You did not complete the payment within the 15-minute window. Your temporary data will be cleared and you must start over.",
+  "paymentWaiting": "Waiting for payment...",
+  "paymentAmountLabel": "Amount",
+  "paymentAddressLabel": "Deposit Address",
+  "paymentCopyAddress": "Copy Address",
+  "paymentAddressCopied": "Address copied!",
+  "confirmationsTitle": "Waiting for Confirmations",
+  "confirmationsSubtitle": "Your payment was detected. Waiting for 3 bitcoin network confirmations to finalize your account.",
+  "confirmationsProgress": "{current} / {total} confirmations",
+  "@confirmationsProgress": {
+    "placeholders": {
+      "current": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "confirmationsDone": "Account Activated!",
+  "presentationSlide1Title": "Secure Infrastructure from the First Access",
+  "presentationSlide1Body": "Kerosene operates with advanced technological architecture in a protected environment via the onion network. This structure reinforces privacy, resilience, and protection against external interference.\n\nSecurity is not an add-on.\nIt is the foundation of the system.",
+  "presentationSlide2Title": "Account Creation with Structural Protection Mechanism",
+  "presentationSlide2Body": "To preserve infrastructure integrity, account creation requires sending 0.003 BTC.\nThis amount remains entirely in your account.\nDuring registration, only the network transaction fee necessary for operation confirmation is deducted.\nThis technical requirement exists to:\n\n• Prevent automated account creation\n• Reduce distributed attack vectors\n• Maintain operational stability\n• Protect all platform users\n\nIt is not a monthly fee.\nIt is not a recurring charge.\nIt is a structural protection mechanism.",
+  "presentationSlide3Title": "Clear and Objective Fee Structure",
+  "presentationSlide3Body": "Our policy is simple:\n\n• External deposits and withdrawals use the wallet card fee\n• Bronze: 0.9%\n• White: 0.8%\n• Black: 0.7%\n• 0% for internal transfers\n\nTransfers between Kerosene users are instant and free.\n\nNo hidden fees.",
+  "presentationSlide4Title": "Commitment to Predictability",
+  "presentationSlide4Body": "Kerosene was designed to operate with:\n\n• Technical stability\n• Operational transparency\n• Structural security\n• Cost predictability\n\nOur priority is to maintain a solid, protected, and long-term sustainable infrastructure.",
+  "presentationSkip": "Skip",
+  "presentationNext": "Next",
+  "presentationStart": "Access Kerosene",
+  "signupScreenTitle": "Create Wallet",
+  "signupScreenSubtitle": "Setup your username and secure key.",
+  "signupUsernameHelper": "Only a-z, 0-9 and _",
+  "signupUsernameHint": "lower case letters, numbers and _",
+  "signupUsernameMinChars": "Min 3 chars",
+  "signupUsernameInvalid": "Invalid characters",
+  "signupMnemonicLabel": "YOUR SECRET PHRASE (BIP39)",
+  "signupMnemonicWarning": "Save this phrase securely. It is the ONLY way to recover your account.",
+  "signupMnemonicCopySuccess": "Phrase copied securely!",
+  "signupMnemonicCopy": "Copy",
+  "signupMnemonicGenerateNew": "Generate New",
+  "signupMnemonicError": "Error generating phrase, try again",
+  "feeExplanationTitle": "Secure Network Fee",
+  "feeExplanationSubtitle": "To prevent spam and ensure the robustness of the Kerosene network, account creation requires a small anti-spam fee of 0.003 BTC.",
+  "feeExplanationWhereGoesTitle": "Where does it go?",
+  "feeExplanationWhereGoesSubtitle": "The full 0.003 BTC goes directly into your wallet balance once the account is created.",
+  "feeExplanationContinue": "I Understand, Continue",
+  "seedSecurityContinue": "Continue",
+  "@slip39VerifyShareTitle": {
+    "placeholders": {
+      "index": {
+        "type": "Object"
+      }
+    }
+  },
+  "@slip39Warning": {
+    "placeholders": {
+      "threshold": {
+        "type": "Object"
+      }
+    }
+  },
   "totpTitle": "Two-Factor Authentication",
   "totpSubtitle": "Scan this QR code with your authenticator app (e.g. Google Authenticator, Authy).",
   "totpSecretCopied": "Secret copied to clipboard",
@@ -559,33 +456,37 @@
   "totpVerifying": "Verifying code...",
   "totpAuthenticating": "Authenticating...",
   "totpEstablishingSession": "Establishing Session...",
-
   "passkeySessionNotFound": "Session not found. Please restart the process.",
   "passkeyNoBiometrics": "Set up biometrics or a screen lock on this device to use the device key.",
   "passkeyErrorStarting": "Error starting registration: {message}",
   "@passkeyErrorStarting": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "passkeyBiometricReason": "Unlock the device key to secure your Kerosene wallet",
   "passkeyErrorFinishing": "Error finishing registration: {message}",
   "@passkeyErrorFinishing": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "passkeyAuthFailed": "Authentication cancelled or failed.",
   "passkeyUnexpectedError": "Unexpected error: {error}",
   "@passkeyUnexpectedError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "passkeyLoadingInitBiom": "Initializing Biometrics...",
   "passkeyLoadingSecuring": "Securing Device...",
   "passkeyLoadingRegistering": "Activating device key...",
-
   "usernameHintChars": "a-z, 0-9 and _",
   "usernameHelperLength": "Must be between 3 and 15 characters",
   "usernameErrorMin": "Min 3 chars",
@@ -595,9 +496,7 @@
   "usernameLoadingKeys": "Securing Keys...",
   "usernameLoadingInvoice": "Generating Invoice...",
   "usernameLoadingNetwork": "Connecting to Network...",
-
   "paymentExpiredLabel": "EXPIRED",
-
   "confNetworkError": "Network Error",
   "confNetworkVerified": "Network Verified!",
   "confConfirming": "Confirming on Blockchain",
@@ -606,17 +505,12 @@
   "confWaitingMsg": "Waiting for 3 Bitcoin network confirmations. This can take roughly 30 minutes, but you can safely leave the app; we will notify you when it is ready.",
   "confRestartSignup": "Restart Signup",
   "confNotificationNotice": "You will receive a push notification once the 3rd confirmation lands.",
-
   "homePlatformLiquidity": "PLATFORM LIQUIDITY",
   "homeDeposits": "DEPOSITS",
   "homeWithdrawals": "WITHDRAWALS",
-
   "authRequired": "Authentication required",
   "unlock": "Unlock",
   "pendingDeposits": "Pending Deposits",
-  "errorLoadingWallets": "Error loading wallets",
-  "noTransactions": "No transactions found",
-  "tryAgain": "Try Again",
   "saqueAction": "Withdraw",
   "detailsTransaction": "Transaction Details",
   "detailsClose": "Close",
@@ -634,22 +528,20 @@
   "errorAddressRequired": "Address is required",
   "errorAmountRequired": "Amount is required",
   "errorAmountInvalid": "Invalid amount",
-
   "txSent": "Transfer Sent",
   "txReceived": "Transfer Received",
-
   "loginTotpTitle": "Device Verification",
   "loginTotpDesc": "This device is new. Please enter the 6-digit code from your authenticator app to authorize it.",
   "loginTotpAction": "VERIFY & LOGIN",
-
   "createWalletNameRequired": "Name is required",
   "createWalletNameChars": "Only letters and numbers are allowed",
-
   "sendDescriptionLabel": "Description (optional, e.g. Pizza payment)",
   "sendInsufficientBalance": "Insufficient balance. Missing {amount} BTC to complete this send.",
   "@sendInsufficientBalance": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "sendSelectWallet": "Select Wallet",
@@ -663,7 +555,6 @@
   "sendEnterAddressError": "Please enter a valid recipient username or address",
   "sendEnterAmountError": "Please enter a valid amount",
   "sendPaymentSuccess": "Payment successful!",
-
   "receiveReceivingWallet": "Receiving Wallet",
   "receiveExpirationLabel": "Payment Link Expiration",
   "receiveNoExpiration": "No Expiration",
@@ -676,7 +567,6 @@
   "receiveScanToPay": "Scan to Pay",
   "receiveReadyToBeam": "Ready to Beam",
   "receiveWriteNfc": "Write to NFC Tag",
-
   "unknownDeviceTitle": "Authorize New Device",
   "unknownDeviceDesc": "This device has not been linked to your account.\nEnter the 6-digit code from your authenticator app to authorize it.",
   "unknownDeviceBanner": "New device detected",
@@ -686,7 +576,6 @@
   "unknownDeviceHelper": "Open your authenticator app and enter the current code.",
   "unknownDeviceAction": "AUTHORIZE & SIGN IN",
   "unknownDeviceSecurityNote": "If you did not attempt to log in, your credentials may be compromised. Change your passphrase immediately.",
-
   "createWalletTitle": "New Wallet",
   "createWalletSuccess": "Wallet created successfully!",
   "createWalletErrorGenFirst": "Please generate a passphrase first.",
@@ -696,7 +585,9 @@
   "createWalletWords": "{count} Words",
   "@createWalletWords": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "createWalletActionGen": "Generate Security Key",
@@ -705,7 +596,6 @@
   "createWalletCopySuccess": "Copied!",
   "createWalletNewAction": "New",
   "createWalletWarning": "Keep these words safe. Without them, your funds will be lost.",
-
   "bitcoinAccountsTitle": "Bitcoin Accounts",
   "bitcoinAccountsSubtitle": "Keep your Kerosene card and cold wallets in one simple view. Private keys stay off the app unless you are creating a new cold wallet.",
   "bitcoinAccountsErrorTitle": "Bitcoin accounts unavailable",
@@ -740,7 +630,6 @@
   "bitcoinAccountsCreateCardAction": "Create card",
   "bitcoinAccountsCreateCardErrorTitle": "Card not created",
   "bitcoinAccountsCreateCardErrorMessage": "We could not create this card right now. Check the name and try again.",
-
   "coldWalletCreateTitle": "Create cold wallet",
   "coldWalletCreateSubtitle": "Generate the recovery words on this device, write them down, and Kerosene will keep only the information needed to show balances.",
   "coldWalletNameLabel": "Wallet name",
@@ -771,7 +660,9 @@
   "coldWalletVerifyWordLabel": "Word {index}",
   "@coldWalletVerifyWordLabel": {
     "placeholders": {
-      "index": { "type": "int" }
+      "index": {
+        "type": "int"
+      }
     }
   },
   "coldWalletVerifyFailedTitle": "Backup not confirmed",
@@ -782,7 +673,6 @@
   "coldWalletImportedMessage": "Only the public watch-only key was imported.",
   "coldWalletImportErrorTitle": "Cold wallet not added",
   "coldWalletImportErrorMessage": "Reconnect to the internet and try again. Your recovery words were not sent.",
-
   "bitcoinReceiveTitle": "Receive BTC",
   "bitcoinReceiveAmountOptional": "Optional amount in sats",
   "bitcoinReceiveOneTime": "One-time address",
@@ -816,7 +706,6 @@
   "bitcoinReceiveMessageAction": "Confirm this payment to finish receiving it safely.",
   "bitcoinReceiveMessageProtected": "This receiving request was protected after a sync problem. Refresh later.",
   "bitcoinReceiveMessageWaiting": "Waiting for the Bitcoin network.",
-
   "onchainDepositTitle": "On-chain deposit",
   "onchainDepositSubtitle": "Scan the QR code or copy the Bitcoin address exactly as shown.",
   "onchainDepositPreparingSubtitle": "Preparing your receiving address.",
@@ -838,22 +727,32 @@
   "onchainDepositDescriptionWaiting": "This address is reserved for this deposit on {network}.",
   "@onchainDepositDescriptionWaiting": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "onchainDepositDescriptionConfirmed": "The Bitcoin network confirmed this deposit.",
   "onchainDepositDescriptionConfirming": "Payment detected. Waiting for {current}/{total} confirmations.",
   "@onchainDepositDescriptionConfirming": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "onchainDepositDetectedNotice": "Payment detected. Tracking {current}/{total} confirmations.",
   "@onchainDepositDetectedNotice": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "onchainDepositConfirmedNotice": "Deposit confirmed.",
@@ -869,7 +768,9 @@
   "onchainDepositNetworkTag": "{network} address",
   "@onchainDepositNetworkTag": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "onchainDepositTrackingTitle": "Payment tracking",
@@ -889,7 +790,9 @@
   "onchainDepositMinimumConfirmationsValue": "{count} blocks",
   "@onchainDepositMinimumConfirmationsValue": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "onchainDepositCustodyLabel": "Wallet type",
@@ -897,7 +800,6 @@
   "onchainDepositCustodyKerosene": "Kerosene card",
   "onchainDepositSecuritySelf": "Kerosene only watches this address. Spending stays under your recovery words or your offline device.",
   "onchainDepositSecurityKerosene": "This address is created for your Kerosene card and watched until the deposit is confirmed.",
-
   "errUnexpected": "An unexpected error occurred.",
   "errAuthUserAlreadyExists": "This username is already in use.",
   "errAuthUsernameMissing": "Username is required.",
@@ -945,7 +847,6 @@
   "verifyingDevice": "VERIFYING DEVICE",
   "connectingToServer": "CONNECTING TO SERVER",
   "sendingData": "SENDING DATA",
-
   "apiDisplayActive": "Active",
   "apiDisplayWaiting": "Waiting",
   "apiDisplayBeingChecked": "Being checked",
@@ -992,7 +893,6 @@
   "detailType": "Type",
   "detailBtcAmount": "BTC",
   "detailPaymentLink": "Payment link",
-  "detailOnboardingVoucher": "Onboarding voucher",
   "detailExternalWithdrawal": "External withdrawal",
   "detailInternalMovement": "Internal movement",
   "detailBitcoinNetwork": "Bitcoin network",
@@ -1002,7 +902,6 @@
   "errorPopupBalanceTitle": "Balance required",
   "errorPopupNetworkTitle": "Connection issue",
   "errorPopupAccessTitle": "Access check failed",
-
   "errInvalidNetworkAddress": "This Bitcoin address does not match this wallet network. Check it and try again.",
   "errCustodyProviderUnavailable": "This transfer option is not available right now. Try another option or come back later.",
   "errPayloadTooLarge": "This content is too large to send safely.",
@@ -1030,19 +929,25 @@
   "homeMinutesAgo": "{count} min ago",
   "@homeMinutesAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "homeHoursAgo": "{count} h ago",
   "@homeHoursAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "homeYesterdayAt": "Yesterday at {time}",
   "@homeYesterdayAt": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "homeWalletRequiredTitle": "Wallet required",
@@ -1063,7 +968,7 @@
   "homeScanQrLabel": "Scan QR",
   "homeScanQrSubtitle": "Read a request or address",
   "homePaymentLinkLabel": "Payment link",
-  "homePaymentLinkSubtitle": "Open a Kerosene request",
+  "homePaymentLinkSubtitle": "Paste an internal link, on-chain URI, Lightning request, or request ID.",
   "homeNfcPayLabel": "Pay by NFC",
   "homeNfcPaySubtitle": "Hold nearby to start",
   "homeSendTitle": "Send",
@@ -1091,7 +996,6 @@
   "homeKeroseneUser": "Kerosene user",
   "homePaymentId": "Payment ID",
   "homePaymentLinkTitle": "Payment link",
-  "homePaymentLinkSubtitle": "Paste an internal link, on-chain URI, Lightning request, or request ID.",
   "homePayloadLabel": "Payment details",
   "homePayloadHint": "Kerosene link, bitcoin:..., lightning:..., or ID",
   "homePasteAction": "Paste",
@@ -1131,17 +1035,23 @@
   "homeGreetingEvening": "Good evening, {name}",
   "@homeGreetingMorning": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "@homeGreetingAfternoon": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "@homeGreetingEvening": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "homeBalanceTotalLabel": "TOTAL BALANCE",
@@ -1157,7 +1067,9 @@
   "homeTodayAt": "Today, {time}",
   "@homeTodayAt": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "homeCounterpartyTo": "to",
@@ -1270,7 +1182,9 @@
   "securityCopiedMessage": "{label} copied to the clipboard.",
   "@securityCopiedMessage": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "securityTotpFailureTitle": "We could not update the authenticator",
@@ -1295,7 +1209,9 @@
   "securityCompatibleDeviceMany": "There are {count} devices compatible with this sign-in.",
   "@securityCompatibleDeviceMany": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityLegacyDeviceSubtitle": "Some older devices have limited compatibility. Link this device again if access fails.",
@@ -1320,7 +1236,9 @@
   "securityBackupCodesRemaining": "{count} codes remaining. Keep them in a safe place.",
   "@securityBackupCodesRemaining": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityBackupCodesLockedSubtitle": "Enable the authenticator to unlock recovery codes.",
@@ -1351,7 +1269,9 @@
   "securityInventoryCompatibleCount": "{count} devices can confirm this sign-in now.",
   "@securityInventoryCompatibleCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityInventoryCompatibleFallback": "There is at least one device compatible with this sign-in.",
@@ -1361,7 +1281,9 @@
   "securityPinActiveAttemptsSubtitle": "Entry PIN is active. {count} attempts remain before lockout.",
   "@securityPinActiveAttemptsSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "securityPinDisabledSubtitle": "Protect app entry on this device with a PIN independent from your main password.",
@@ -1380,8 +1302,12 @@
   "securityNewPinLabel": "New PIN ({min}-{max} digits)",
   "@securityNewPinLabel": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "securityConfirmNewPinLabel": "Confirm new PIN",
@@ -1432,7 +1358,9 @@
   "settingsUiDecimalPrecisionSubtitle": "Showing {count} decimal places",
   "@settingsUiDecimalPrecisionSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "settingsUiHideBalanceTitle": "Hide balance",
@@ -1504,7 +1432,7 @@
   "settingsUiInAppBannersOnSubtitle": "Shows contextual alerts in the current session.",
   "settingsUiInAppBannersOffSubtitle": "Keeps the feed, but does not interrupt navigation with banners.",
   "settingsUiFinancialEventsTitle": "Financial events",
-  "settingsUiFinancialEventsOnSubtitle": "Receives, sends, deposits, links, and mining appear in the feed.",
+  "settingsUiFinancialEventsOnSubtitle": "Receives, sends, deposits, and links appear in the feed.",
   "settingsUiFinancialEventsOffSubtitle": "Hides financial operation alerts from the session feed.",
   "settingsUiSecurityEventsTitle": "Security events",
   "settingsUiSecurityEventsOnSubtitle": "Sign-ins, recovery, and sensitive events remain highlighted.",
@@ -1513,7 +1441,9 @@
   "settingsUiBackgroundAlertsInfo": "When active, Kerosene keeps a background service to monitor sends, receives, and critical security events. On Android, a persistent system notification remains visible while monitoring is on. {count} alerts have not been read in this session.",
   "@settingsUiBackgroundAlertsInfo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "settingsUiPermissionRequiredTitle": "Permission required",
@@ -1538,7 +1468,6 @@
   "transactionVisualCancelled": "Canceled",
   "transactionVisualRefund": "Refund",
   "transactionVisualFailed": "Not completed",
-  "transactionVisualMining": "Mining",
   "transactionVisualSwap": "Conversion",
   "transactionVisualFee": "Fee",
   "transactionVisualLightningDeposit": "Lightning deposit",
@@ -1566,14 +1495,20 @@
   "withdrawUiConfiguredNetworkMismatch": "The address does not belong to the {network} network configured for this wallet.",
   "@withdrawUiConfiguredNetworkMismatch": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiNetworkMismatch": "This address belongs to {detected}, but the wallet is operating on {expected}.",
   "@withdrawUiNetworkMismatch": {
     "placeholders": {
-      "detected": { "type": "String" },
-      "expected": { "type": "String" }
+      "detected": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiWaitFeeEstimate": "Wait for the network fee estimate before reviewing the total send amount.",
@@ -1593,7 +1528,9 @@
   "withdrawUiPlatformFeeWithRate": "Kerosene fee ({rate})",
   "@withdrawUiPlatformFeeWithRate": {
     "placeholders": {
-      "rate": { "type": "String" }
+      "rate": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiRoutingFeeCap": "Routing limit",
@@ -1629,7 +1566,9 @@
   "withdrawUiEquivalentTo": "Equivalent to {amount}",
   "@withdrawUiEquivalentTo": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiColdWalletTitle": "Cold wallet",
@@ -1643,7 +1582,9 @@
   "withdrawUiDestinationValidOnchainNetwork": "On-chain address is valid for {network}.",
   "@withdrawUiDestinationValidOnchainNetwork": {
     "placeholders": {
-      "network": { "type": "String" }
+      "network": {
+        "type": "String"
+      }
     }
   },
   "withdrawUiScreenTitleOnchain": "Send on-chain",
@@ -1663,7 +1604,9 @@
   "depositLedgerPage": "Page {page}",
   "@depositLedgerPage": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerBackTooltip": "Back",
@@ -1682,12 +1625,13 @@
   "depositLedgerCopyAddress": "Copy address",
   "depositLedgerLoadingCharges": "Loading requests",
   "depositLedgerOpenChargesTitle": "Open requests",
-  "depositLedgerVoucherTitle": "Welcome voucher",
   "depositLedgerPaymentLinkTitle": "Payment link",
   "depositLedgerExpiresIn": "Expires {time}",
   "@depositLedgerExpiresIn": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "depositLedgerNow": "Now",
@@ -1708,13 +1652,17 @@
   "depositLedgerPageShort": "Page {page}",
   "@depositLedgerPageShort": {
     "placeholders": {
-      "page": { "type": "int" }
+      "page": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRowsPerPage": "{count} per page",
   "@depositLedgerRowsPerPage": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerNoCounterparty": "No counterparty",
@@ -1729,32 +1677,42 @@
   "depositLedgerRelativeInMinutes": "in {count} min",
   "@depositLedgerRelativeInMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeInHours": "in {count} h",
   "@depositLedgerRelativeInHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeInDays": "in {count} d",
   "@depositLedgerRelativeInDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeNow": "now",
   "depositLedgerRelativeMinutesAgo": "{count} min ago",
   "@depositLedgerRelativeMinutesAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "depositLedgerRelativeHoursAgo": "{count} h ago",
   "@depositLedgerRelativeHoursAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "paymentConfirmationErrorTitle": "We could not confirm",
@@ -1765,7 +1723,9 @@
   "paymentConfirmationCopied": "{label} copied.",
   "@paymentConfirmationCopied": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
   "depositFlowDepositTitle": "Deposit",
@@ -1776,13 +1736,17 @@
   "depositFlowEquivalentTo": "Equivalent to {amount}",
   "@depositFlowEquivalentTo": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "depositFlowYouReceive": "You receive {amount}",
   "@depositFlowYouReceive": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "depositFlowMethodTitle": "Deposit method",
@@ -1819,7 +1783,9 @@
   "depositFlowEstimatedPurchase": "Estimated purchase in {amount}",
   "@depositFlowEstimatedPurchase": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "depositFlowProviderLoadError": "We could not load the provider",
@@ -1901,13 +1867,17 @@
   "receiveScreenEquivalentTo": "Equivalent to {amount}",
   "@receiveScreenEquivalentTo": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenDestination": "Destination {walletName}",
   "@receiveScreenDestination": {
     "placeholders": {
-      "walletName": { "type": "String" }
+      "walletName": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenPrivacyHint": "The payer will see only the details needed to confirm the receive.",
@@ -1916,13 +1886,17 @@
   "receiveScreenPaymentLinkError": "We could not generate the payment link: {error}",
   "@receiveScreenPaymentLinkError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenDefaultDescription": "Receive {walletName}",
   "@receiveScreenDefaultDescription": {
     "placeholders": {
-      "walletName": { "type": "String" }
+      "walletName": {
+        "type": "String"
+      }
     }
   },
   "receiveScreenConfigureLinkEyebrow": "Configure link",
@@ -1960,7 +1934,9 @@
   "receivePaymentLinkCancelledReason": "This link was cancelled: {reason}.",
   "@receivePaymentLinkCancelledReason": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkCancelledMessage": "This link was cancelled and no longer accepts payments.",
@@ -1973,19 +1949,25 @@
   "receivePaymentLinkExpiresIn": "Expires in {duration}",
   "@receivePaymentLinkExpiresIn": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkDepositFee": "deposit {amount}",
   "@receivePaymentLinkDepositFee": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkNetAmount": "net {amount}",
   "@receivePaymentLinkNetAmount": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "receivePaymentLinkExpires": "Expires",
@@ -2069,10 +2051,18 @@
   "walletConfigHeroSummary": "Level {level} • {cardType}. External withdrawals use {withdrawRate} and external deposits use {depositRate}.",
   "@walletConfigHeroSummary": {
     "placeholders": {
-      "level": { "type": "int" },
-      "cardType": { "type": "String" },
-      "withdrawRate": { "type": "String" },
-      "depositRate": { "type": "String" }
+      "level": {
+        "type": "int"
+      },
+      "cardType": {
+        "type": "String"
+      },
+      "withdrawRate": {
+        "type": "String"
+      },
+      "depositRate": {
+        "type": "String"
+      }
     }
   },
   "walletConfigNetworkLabel": "Network",
@@ -2094,7 +2084,9 @@
   "walletCardAccountCardsSubtitle": "Swipe to view cards, fees and requirements for account {walletName}.",
   "@walletCardAccountCardsSubtitle": {
     "placeholders": {
-      "walletName": { "type": "String" }
+      "walletName": {
+        "type": "String"
+      }
     }
   },
   "walletCardCurrentLabel": "Current",
@@ -2112,22 +2104,29 @@
   "walletCardCurrentExpires": "{cardNumber} • expires {date}",
   "@walletCardCurrentExpires": {
     "placeholders": {
-      "cardNumber": { "type": "String" },
-      "date": { "type": "String" }
+      "cardNumber": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "walletCardLastRotationLabel": "Last rotation",
   "walletCardPreviousExpired": "{cardNumber} • expired {date}",
   "@walletCardPreviousExpired": {
     "placeholders": {
-      "cardNumber": { "type": "String" },
-      "date": { "type": "String" }
+      "cardNumber": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "walletCardYourCard": "Your card",
   "walletCardDepositLabel": "Deposit",
   "walletCardWithdrawLabel": "Withdraw",
-  "walletCardMiningLabel": "Mining",
   "walletCardHowToGet": "How to get it",
   "walletCardRulesTitle": "How cards change",
   "walletCardRulesSubtitle": "When your account meets the requirements, the card changes automatically.",
@@ -2139,7 +2138,7 @@
   "walletCardSilverTier": "Intermediate",
   "walletCardBlackTier": "Top tier",
   "walletCardGraphiteDescription": "Initial card for new users. It is the default account level.",
-  "walletCardSilverDescription": "Intermediate upgrade with lower fees for deposits, withdrawals and mining.",
+  "walletCardSilverDescription": "Intermediate upgrade with lower fees for deposits and withdrawals.",
   "walletCardBlackDescription": "Lowest platform cost for accounts with more time and higher volume.",
   "walletCardGraphiteQualification": "Available automatically for new accounts.",
   "walletCardSilverQualification": "Movement above 1500 per month and at least 6 months of account history.",
@@ -2160,14 +2159,20 @@
   "appEntryPinLengthError": "Use {min} to {max} digits.",
   "@appEntryPinLengthError": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "appEntryRetryIn": "Try again in {duration}.",
   "@appEntryRetryIn": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "appEntryUnlockPrompt": "Enter this device PIN to open your wallet.",
@@ -2175,7 +2180,9 @@
   "appEntryAttemptsHelper": "Attempts remaining before lock: {count}.",
   "@appEntryAttemptsHelper": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "appEntryLocalPinHelper": "This PIN protects only this device.",
@@ -2187,242 +2194,11 @@
   "primaryNavHome": "Home",
   "primaryNavCard": "Card",
   "primaryNavHistory": "History",
-  "primaryNavMining": "Mining",
   "primaryNavSettings": "Settings",
   "securityTreasuryBuffer": "Buffer",
   "securityTreasuryConfirmations": "Confirmations",
   "securityTreasuryLightning": "Lightning",
   "securityTreasuryProfit": "Profit",
-  "miningContractSelectRigTitle": "Select equipment",
-  "miningContractSelectRigMessage": "We could not find equipment available for rent right now.",
-  "miningContractInvalidDurationTitle": "Invalid term",
-  "miningContractInvalidDurationMessage": "Choose a term between {minHours}h and {maxHours}h for this equipment.",
-  "@miningContractInvalidDurationMessage": {
-    "placeholders": {
-      "minHours": { "type": "int" },
-      "maxHours": { "type": "int" }
-    }
-  },
-  "miningContractInvalidBudgetTitle": "Invalid amount",
-  "miningContractInvalidBudgetMessage": "Enter a BTC amount greater than zero.",
-  "miningContractInvalidHashrateTitle": "Invalid power",
-  "miningContractInvalidHashrateMessage": "Enter the desired power in {unit}.",
-  "@miningContractInvalidHashrateMessage": {
-    "placeholders": {
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractNoAllocationTitle": "No estimated allocation",
-  "miningContractNoAllocationMessage": "The selected combination does not generate contractable power.",
-  "miningContractTotpRequiredTitle": "Code required",
-  "miningContractTotpRequiredMessage": "Enter the wallet authenticator code to continue.",
-  "miningContractRequiredFieldsTitle": "Required fields",
-  "miningContractRequiredFieldsMessage": "Fill the receiving address, pool and miner identifier.",
-  "miningContractAuthIncompleteTitle": "Authorization incomplete",
-  "miningContractAuthIncompleteMessage": "The operation was cancelled before final authorization.",
-  "miningContractCreateFailedTitle": "We could not create the allocation",
-  "miningContractUnknownError": "We could not complete this right now.",
-  "miningContractCreatedTitle": "Allocation created",
-  "miningContractCreatedMessage": "{rigName} rented with {hashrate} for {durationHours}h.",
-  "@miningContractCreatedMessage": {
-    "placeholders": {
-      "rigName": { "type": "String" },
-      "hashrate": { "type": "String" },
-      "durationHours": { "type": "int" }
-    }
-  },
-  "miningContractCancelFailedTitle": "We could not cancel",
-  "miningContractCancelledTitle": "Allocation ended",
-  "miningContractCancelledMessage": "Proportional amounts were updated in your history.",
-  "miningContractRigsTitle": "Available equipment",
-  "miningContractRigsSubtitle": "Choose equipment and review the estimated price before authorizing.",
-  "miningContractCreateAction": "Create allocation",
-  "miningContractAllocationsTitle": "Active and recent allocations",
-  "miningContractAllocationsSubtitle": "Track your contracts and cancel when the policy allows it.",
-  "miningContractNetworkContextTitle": "Network and settlement",
-  "miningContractNetworkHashrate": "Network power",
-  "miningContractDailyReward": "Daily reward",
-  "miningContractSelectWalletHint": "Select a wallet to debit the rental and fill the receiving address.",
-  "miningContractActiveWallet": "Active wallet: {walletName} • balance {balance}",
-  "@miningContractActiveWallet": {
-    "placeholders": {
-      "walletName": { "type": "String" },
-      "balance": { "type": "String" }
-    }
-  },
-  "miningContractRigAvailable": "{algorithm} • {provider} • {hashrate} {unit} available",
-  "@miningContractRigAvailable": {
-    "placeholders": {
-      "algorithm": { "type": "String" },
-      "provider": { "type": "String" },
-      "hashrate": { "type": "String" },
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractPricePerUnit": "Price per {unit}/day",
-  "@miningContractPricePerUnit": {
-    "placeholders": {
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractYieldPerUnit": "Yield per {unit}/day",
-  "@miningContractYieldPerUnit": {
-    "placeholders": {
-      "unit": { "type": "String" }
-    }
-  },
-  "miningContractBudgetMode": "BTC amount",
-  "miningContractHashrateMode": "Power",
-  "miningContractBudgetLabel": "BTC amount",
-  "miningContractHashrateLabel": "Desired power",
-  "miningContractPayoutAddressLabel": "Receiving address",
-  "miningContractPoolUrlLabel": "Mining pool",
-  "miningContractWorkerNameLabel": "Miner identifier",
-  "miningContractEstimateTitle": "Allocation preview",
-  "miningContractAllocatedHashrate": "Allocated power",
-  "miningContractEstimatedCost": "Estimated cost",
-  "miningContractProjectedYield": "Projected gross yield",
-  "miningContractTotpAuthorization": "Code authorization",
-  "miningContractCost": "Cost",
-  "miningContractNetYield": "Net yield",
-  "miningContractCancelAllocation": "Cancel allocation",
-  "miningContractRetry": "Try again",
-  "miningStateOfflineTitle": "No connectivity",
-  "miningStateOfflineMessage": "We could not query the Bitcoin network right now.",
-  "miningStateEmptyTitle": "No data available",
-  "miningStateEmptyMessage": "We could not find enough information to build the mining panel right now.",
-  "miningStateErrorTitle": "Panel could not start",
-  "miningStateRetryLater": "Try syncing again shortly.",
-  "miningTxInternalTitle": "Internal flow",
-  "miningTxInternalSubtitle": "Internal reconciliation. No public settlement.",
-  "miningTxReference": "Reference",
-  "miningTxConfirmations": "Confirmations",
-  "miningTxLightningTitle": "Lightning flow",
-  "miningTxLightningSubtitle": "Settlement outside the base layer. Local context only.",
-  "miningTxChannel": "Channel",
-  "miningTxRecord": "Record",
-  "miningTxNoPublicSummaryTitle": "Transaction without public summary",
-  "miningTxNoPublicSummaryMessage": "The network did not return a detailed summary.",
-  "miningTxLookupUnavailableTitle": "On-chain query unavailable",
-  "miningTxLocalStatus": "Local status",
-  "miningTxOnchainTitle": "On-chain context",
-  "miningTxOnchainSubtitle": "Inclusion, position and effective transaction cost.",
-  "miningTxConfirmed": "Confirmed",
-  "miningTxPending": "Pending",
-  "miningTxTxid": "TXID",
-  "miningTxFeeRate": "Fee per vByte",
-  "miningTxBlock": "Block",
-  "miningTxAwaiting": "waiting",
-  "miningTxPosition": "Position",
-  "miningTxNotAvailable": "n/a",
-  "miningTxLoadingTitle": "Transaction context",
-  "miningTxLoadingSubtitle": "Checking public transaction data.",
-  "miningMetricsCurrentHeight": "Current height",
-  "miningMetricsRetargetInBlocks": "retarget in {blocks} blocks",
-  "@miningMetricsRetargetInBlocks": {
-    "placeholders": {
-      "blocks": { "type": "int" }
-    }
-  },
-  "miningMetricsMrr": "MRR",
-  "miningMetricsHashrate": "Hashrate",
-  "miningMetricsDifficulty": "Difficulty",
-  "miningMetricsPace": "Pace",
-  "miningMetricsLastUpdated": "Last update",
-  "miningMetricsNow": "now",
-  "miningMetricsMempool": "Mempool",
-  "miningMetricsPriorityFee": "Priority fee",
-  "miningMetricsEstimatedTps": "Estimated TPS",
-  "miningMetricsMempoolPressureTitle": "Mempool pressure",
-  "miningMetricsMempoolPressureSubtitle": "Fee range, pending volume and inclusion pressure.",
-  "miningMetricsPending": "Pending",
-  "miningMetricsVbytes": "vBytes",
-  "miningMetricsVolumeMb": "MB volume",
-  "miningMetricsAggregatedFees": "Aggregated fees",
-  "miningMetricsNetworkHealthTitle": "Network health",
-  "miningMetricsNetworkHealthSubtitle": "Difficulty, retarget and recent throughput.",
-  "miningMetricsThroughput": "Throughput",
-  "miningMetricsOccupancy": "Occupancy",
-  "miningMetricsFeesInReward": "Fees in reward",
-  "miningMetricsNextAdjustment": "Next adjustment",
-  "miningMetricsLocalMonitorTitle": "Local monitor",
-  "miningMetricsLocalMonitorActiveSubtitle": "Estimated local telemetry for the active operation.",
-  "miningMetricsLocalMonitorInactiveSubtitle": "No local miner active.",
-  "miningMetricsMiningStatus": "Mining",
-  "miningMetricsOfflineStatus": "Offline",
-  "miningMetricsLocalHashrate": "Local hashrate",
-  "miningMetricsAcceptedShares": "Accepted shares",
-  "miningMetricsRejectedShares": "Rejected shares",
-  "miningMetricsTemperature": "Temperature",
-  "miningMetricsHashrateTrendTitle": "Hashrate trend",
-  "miningMetricsHashrateTrendSubtitle": "Recent curve of network computing power.",
-  "miningMetricsTrendEmpty": "Not enough time series data to draw the curve.",
-  "miningMetricsRecentBlocksTitle": "Recent blocks",
-  "miningMetricsRecentBlocksSubtitle": "Cadence, volume and occupancy in a short read.",
-  "miningMetricsDominantPoolsTitle": "Dominant pools",
-  "miningMetricsDominantPoolsSubtitle": "Recent share, average match and empty blocks.",
-  "miningMetricsLeadingPool": "{percent}% leader",
-  "@miningMetricsLeadingPool": {
-    "placeholders": {
-      "percent": { "type": "String" }
-    }
-  },
-  "miningFeesTitle": "Fee market",
-  "miningFeesSubtitle": "Active bands, spread and inclusion window.",
-  "miningFeesWideSpread": "wide spread",
-  "miningFeesControlledSpread": "controlled spread",
-  "miningFeesWindow": "window {fee}+",
-  "@miningFeesWindow": {
-    "placeholders": {
-      "fee": { "type": "String" }
-    }
-  },
-  "miningFeesPriority": "Priority",
-  "miningFeesExpress": "Express",
-  "miningFeesStandard": "Standard",
-  "miningFeesEconomy": "Economy",
-  "miningFeesMinimum": "Minimum",
-  "miningFeesMedian": "Median",
-  "miningFeesMaximum": "Maximum",
-  "miningBlocksTitle": "Blocks forming",
-  "miningBlocksSubtitle": "Projected queue beside recent confirmations.",
-  "miningBlocksQueued": "{count} queued",
-  "@miningBlocksQueued": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "miningBlocksQueue": "Queue",
-  "miningBlocksConfirmed": "Confirmed",
-  "miningBlocksNew": "New",
-  "miningBlocksNoBlocks": "no blocks",
-  "miningBlocksNext": "Next {number}",
-  "@miningBlocksNext": {
-    "placeholders": {
-      "number": { "type": "int" }
-    }
-  },
-  "miningBlocksRange": "Range",
-  "miningBlocksFees": "Fees",
-  "miningBlocksNewHeight": "New #{height}",
-  "@miningBlocksNewHeight": {
-    "placeholders": {
-      "height": { "type": "int" }
-    }
-  },
-  "miningBlocksBitcoinNetwork": "Bitcoin network",
-  "miningBlocksTransactions": "{count} transactions",
-  "@miningBlocksTransactions": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "miningBlocksHash": "Hash",
-  "miningBlocksWeight": "Weight",
-  "miningBlocksTimestamp": "Timestamp",
-  "miningBlocksSize": "Size",
-  "miningBlocksFee": "Fee",
-  "miningBlocksUnavailable": "unavailable",
   "landingNavProduct": "Product",
   "landingNavSecurity": "Security",
   "landingNavBusiness": "Business",
@@ -2508,8 +2284,7 @@
   "landingStatusService": "Service",
   "landingStatusRegion": "Region",
   "landingStatusBuild": "Build",
-  "landingStatusManifest": "Manifest"
-,
+  "landingStatusManifest": "Manifest",
   "homeFundsDistributionTitle": "Fund Distribution",
   "homeRecentActivitiesTitle": "Activities",
   "homeViewStatementShortLabel": "Statement",
@@ -2540,5 +2315,12 @@
   "homeEducationLightningGeneralBody": "Lightning is useful for smaller and faster payments using invoices, LNURL, or lightning addresses.",
   "homeEducationLightningGeneralTag": "Instant payment",
   "homeEducationKeroseneGeneralBody": "Kerosene separates internal, Lightning, and on-chain flows to reduce payment mistakes.",
-  "homeEducationKeroseneGeneralTag": "How to choose"
+  "homeEducationKeroseneGeneralTag": "How to choose",
+  "designSystemTemplateTitle": "Design system",
+  "designSystemTemplateIdentitySection": "01. Visual identity and title",
+  "designSystemTemplateHeroTitle": "Kerosene Sovereign Core",
+  "designSystemTemplatePanelsSection": "02. Panels and monochrome box",
+  "designSystemTemplateInputSection": "03. Formatted data input",
+  "designSystemTemplateButtonsSection": "04. Standard buttons",
+  "designSystemTemplateStatusSection": "05. Status labels"
 }

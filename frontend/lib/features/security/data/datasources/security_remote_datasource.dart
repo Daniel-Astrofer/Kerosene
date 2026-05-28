@@ -309,7 +309,11 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
               ))
           .toList();
     }
-    return const [];
+    throw ServerException(
+      message: 'Resposta inesperada ao carregar tentativas admin.',
+      errorCode: 'ERR_ADMIN_ATTEMPTS_INVALID_RESPONSE',
+      data: body,
+    );
   }
 
   @override
@@ -338,7 +342,11 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
               ))
           .toList();
     }
-    return const [];
+    throw ServerException(
+      message: 'Resposta inesperada ao carregar dispositivos admin.',
+      errorCode: 'ERR_ADMIN_DEVICES_INVALID_RESPONSE',
+      data: body,
+    );
   }
 
   @override

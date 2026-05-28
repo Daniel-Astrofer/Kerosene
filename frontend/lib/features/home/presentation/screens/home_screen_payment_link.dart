@@ -252,7 +252,7 @@ class _PaymentLinkEntryScreenState
                   onChanged: (_) => setState(() {}),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: receiveFlowTextColor,
-                        fontFamily: 'IBM Plex Mono',
+                        fontFamily: 'IBMPlexSansHebrew',
                         height: 1.35,
                       ),
                   decoration: InputDecoration(
@@ -451,7 +451,7 @@ class _PaymentPreviewRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowTextColor,
-                    fontFamily: value.length > 18 ? 'IBM Plex Mono' : null,
+                    fontFamily: value.length > 18 ? 'IBMPlexSansHebrew' : null,
                     fontWeight: FontWeight.w300,
                     height: 1.3,
                   ),

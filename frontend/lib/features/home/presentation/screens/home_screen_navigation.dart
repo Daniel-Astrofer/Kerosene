@@ -9,7 +9,6 @@ class _HomeBottomNavigationOverlay extends StatelessWidget {
     AppPrimaryDestination.home,
     AppPrimaryDestination.card,
     AppPrimaryDestination.history,
-    AppPrimaryDestination.mining,
     AppPrimaryDestination.settings,
   ];
 

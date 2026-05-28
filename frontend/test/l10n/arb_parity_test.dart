@@ -16,6 +16,7 @@ void main() {
             key.startsWith('apiDisplay') ||
             key.startsWith('appEntry') ||
             key.startsWith('auth') ||
+            key.startsWith('designSystemTemplate') ||
             key.startsWith('depositFlow') ||
             key.startsWith('depositInstructions') ||
             key.startsWith('depositLedger') ||
@@ -23,7 +24,6 @@ void main() {
             key.startsWith('depositQr') ||
             key.startsWith('detail') ||
             key.startsWith('home') ||
-            key.startsWith('mining') ||
             key.startsWith('onchainDeposit') ||
             key.startsWith('paymentConfirmation') ||
             key.startsWith('profile') ||

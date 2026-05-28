@@ -5,7 +5,7 @@ import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/l10n/l10n_extension.dart';
 
-enum AppPrimaryDestination { home, card, history, mining, settings }
+enum AppPrimaryDestination { home, card, history, settings }
 
 extension AppPrimaryDestinationX on AppPrimaryDestination {
   String get routeName {
@@ -16,8 +16,6 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
         return '/card';
       case AppPrimaryDestination.history:
         return '/history';
-      case AppPrimaryDestination.mining:
-        return '/mining';
       case AppPrimaryDestination.settings:
         return '/settings';
     }
@@ -31,8 +29,6 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
         return context.tr.primaryNavCard;
       case AppPrimaryDestination.history:
         return context.tr.primaryNavHistory;
-      case AppPrimaryDestination.mining:
-        return context.tr.primaryNavMining;
       case AppPrimaryDestination.settings:
         return context.tr.primaryNavSettings;
     }
@@ -46,8 +42,6 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
         return LucideIcons.walletCards;
       case AppPrimaryDestination.history:
         return LucideIcons.receipt;
-      case AppPrimaryDestination.mining:
-        return LucideIcons.zap;
       case AppPrimaryDestination.settings:
         return LucideIcons.settings;
     }
@@ -302,11 +296,11 @@ class _AppPrimaryMenuDestinationTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: color,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w300,
-                    letterSpacing: 0,
-                  ),
+                        color: color,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 0,
+                      ),
                 ),
               ),
               if (selected)

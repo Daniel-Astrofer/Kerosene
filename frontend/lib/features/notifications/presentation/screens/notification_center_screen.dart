@@ -367,7 +367,7 @@ class _NotificationCenterHeader extends StatelessWidget {
               en: 'Notifications',
               es: 'Notificaciones',
             ),
-            style: GoogleFonts.ebGaramond(
+            style: GoogleFonts.ibmPlexSerif(
               color: Colors.white,
               fontSize: 30,
               fontWeight: FontWeight.w700,

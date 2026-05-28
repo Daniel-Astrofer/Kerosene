@@ -263,7 +263,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
               child: Text(
                 'Valor a receber',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ebGaramond(
+                style: GoogleFonts.ibmPlexSerif(
                   color: _text,
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
@@ -311,7 +311,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
                       amountLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.junge(
+                      style: GoogleFonts.ibmPlexSerif(
                         color: _text,
                         fontSize: amountFontSize,
                         fontWeight: FontWeight.w100,
@@ -323,7 +323,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'BTC',
-                    style: GoogleFonts.junge(
+                    style: GoogleFonts.ibmPlexSerif(
                       color: _text,
                       fontSize: unitFontSize,
                       fontWeight: FontWeight.w100,
@@ -338,7 +338,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
                 fiatLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _outline,
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: 'IBMPlexSansHebrew',
                       fontSize: compact ? 12 : 14,
                       height: 1.4,
                       letterSpacing: 0.2,
@@ -413,7 +413,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: _mutedText,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: compact ? 12 : 14,
                   height: 1.4,
                 ),
@@ -481,7 +481,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
             foregroundColor: isBackspace ? _outline : _text,
             shape: const CircleBorder(),
             textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0,
