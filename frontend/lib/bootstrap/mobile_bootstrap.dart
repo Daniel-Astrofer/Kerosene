@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:teste/core/theme/app_theme.dart';
 
-import 'package:teste/l10n/app_localizations.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
+import '../core/providers/shared_preferences_provider.dart';
 import '../core/providers/appearance_provider.dart';
 import '../core/providers/locale_provider.dart';
 import '../core/providers/session_invalidation_provider.dart';
@@ -18,9 +20,7 @@ import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
 import '../features/mining/presentation/screens/mining_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
-import '../features/wallet/presentation/screens/create_wallet_screen.dart';
 import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
-import '../features/wallet/presentation/screens/receive_hub_screen.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart';
 import '../features/security/presentation/providers/security_provider.dart';
 import '../features/security/presentation/widgets/app_entry_pin_gate.dart';
@@ -38,6 +38,24 @@ import '../core/utils/qr_payment_parser.dart';
 import '../features/auth/controller/auth_controller.dart';
 import '../core/utils/snackbar_helper.dart';
 import '../features/wallet/presentation/providers/balance_websocket_provider.dart';
+
+Future<void> bootstrapMobile() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final sharedPreferences = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
+  );
+
+  await initializeApp(container);
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: buildApp(),
+    ),
+  );
+}
 
 Future<void> initializeApp(ProviderContainer container) async {
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -148,16 +166,15 @@ class MyApp extends ConsumerWidget {
               child: SettingsScreen(showPrimaryNavigation: true),
             ),
         '/history': (context) => const _PrivateMobileRoute(
-              child: DepositsScreen(),
+              child: TransactionStatementScreen(),
             ),
         '/card': (context) =>
             const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
         '/mining': (context) =>
             const _PrivateMobileRoute(child: MiningScreen()),
-        '/receive': (context) =>
-            const _PrivateMobileRoute(child: ReceiveHubScreen()),
-        '/create_wallet': (context) =>
-            const _PrivateMobileRoute(child: CreateWalletScreen()),
+        '/receive': (context) => const _PrivateMobileRoute(
+              child: DepositsScreen(),
+            ),
         '/send-money': (context) =>
             const _PrivateMobileRoute(child: SendMoneyScreen()),
         '/deposits': (context) => const _PrivateMobileRoute(
