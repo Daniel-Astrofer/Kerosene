@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:nfc_manager/nfc_manager.dart';
 import 'package:teste/core/providers/shared_preferences_provider.dart';
 import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
@@ -22,7 +21,7 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/qr_payment_parser.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import 'package:teste/shared/widgets/bitcoin_refresh_indicator.dart';
 import 'package:teste/shared/widgets/bouncing_button_wrapper.dart';
 
@@ -39,13 +38,10 @@ import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import '../../../wallet/presentation/screens/create_wallet_screen.dart';
+import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../../../wallet/presentation/screens/deposit/deposit_amount_screen.dart';
 import '../../../wallet/presentation/screens/send_money_screen.dart';
-import '../../../wallet/presentation/screens/nfc_interaction_screen.dart';
-import '../../../wallet/presentation/screens/receive_hub_screen.dart';
 import '../widgets/animated_balance_display.dart';
-import '../../../transactions/presentation/screens/withdraw_screen.dart';
 import 'qr_scanner_screen.dart';
 import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
@@ -160,7 +156,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _isNfcAvailable = false;
   Future<void>? _refreshHomeFuture;
   String? _firstUseActionPanelUserId;
   late final ProviderSubscription<ReceivedTxEvent?> _receivedTxSubscription;
@@ -168,7 +163,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_checkNfcAvailability());
     _receivedTxSubscription = ref.listenManual<ReceivedTxEvent?>(
       receivedTxEventProvider,
       (previous, next) {
@@ -204,25 +198,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       title: context.tr.homeWalletRequiredTitle,
       message: context.tr.homeWalletRequiredMessage,
     );
-  }
-
-  Future<void> _checkNfcAvailability() async {
-    try {
-      final availability = await NfcManager.instance.checkAvailability();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isNfcAvailable = availability == NfcAvailability.enabled;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isNfcAvailable = false;
-      });
-    }
   }
 
   Future<void> _refreshHomeData() async {
@@ -302,26 +277,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await _presentFinancialActionResult(result);
   }
 
-  Future<void> _openWithdrawFlow({
-    required Wallet wallet,
-    required WithdrawEntryMode entryMode,
-    String? initialDestination,
-    double? initialAmountBtc,
-    String? initialDescription,
-  }) async {
-    final result = await _pushFromBottom<TxStatus>(
-      (_) => WithdrawScreen(
-        wallet: wallet,
-        entryMode: entryMode,
-        initialDestination: initialDestination,
-        initialAmountBtc: initialAmountBtc,
-        initialDescription: initialDescription,
-      ),
-    );
-
-    await _presentFinancialActionResult(result);
-  }
-
   void _openSend(WalletState walletState) {
     final wallet = _resolveActiveWallet(walletState);
     HapticFeedback.lightImpact();
@@ -335,10 +290,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _openSendActionsSheet(WalletState walletState) {
-    // Keep this entrypoint for existing Home wiring; the send flow now detects
-    // internal, on-chain, Lightning, QR, NFC and links from one destination.
-    _buildSendActions(walletState);
-    _openSend(walletState);
+    final wallet = _resolveActiveWallet(walletState);
+    HapticFeedback.lightImpact();
+
+    if (wallet == null) {
+      _showWalletRequiredNotice();
+      return;
+    }
+
+    final actions = _buildSendActions(walletState);
+    unawaited(
+      _pushFromBottom<void>((_) => _SendMethodScreen(actions: actions)),
+    );
   }
 
   void _openSendOnChain(WalletState walletState) {
@@ -350,9 +313,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
 
-    unawaited(
-      _openWithdrawFlow(wallet: wallet, entryMode: WithdrawEntryMode.onChain),
-    );
+    unawaited(_openSendFlow(wallet: wallet));
   }
 
   void _openSendLightning(WalletState walletState) {
@@ -364,12 +325,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
 
-    unawaited(
-      _openWithdrawFlow(wallet: wallet, entryMode: WithdrawEntryMode.lightning),
-    );
+    unawaited(_openSendFlow(wallet: wallet));
   }
 
-  void _openReceiveHub(WalletState walletState) {
+  void _openReceiveFlow(WalletState walletState) {
     final wallet = _resolveActiveWallet(walletState);
     HapticFeedback.lightImpact();
 
@@ -379,7 +338,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _pushFromBottom<void>((_) => ReceiveHubScreen(initialWallet: wallet)),
+      _pushFromBottom<void>((_) => DepositsScreen(initialWallet: wallet)),
     );
   }
 
@@ -397,35 +356,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (!mounted || payload == null || payload.trim().isEmpty) {
-      return;
-    }
-
-    _routeSendPayload(wallet, payload);
-  }
-
-  Future<void> _openSendNfc(WalletState walletState) async {
-    if (!_isNfcAvailable) {
-      AppNotice.showInfo(
-        context,
-        title: context.tr.nfc,
-        message: context.tr.homeNfcUnavailable,
-      );
-      return;
-    }
-
-    final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
-
-    if (wallet == null) {
-      _showWalletRequiredNotice();
-      return;
-    }
-
-    final payload = await _pushFromBottom<dynamic>(
-      (_) => const NfcInteractionScreen(amountDisplay: '0'),
-    );
-
-    if (!mounted || payload is! String || payload.trim().isEmpty) {
       return;
     }
 
@@ -468,13 +398,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (_looksLikeLightningRequest(candidate)) {
       unawaited(
-        _openWithdrawFlow(
+        _openSendFlow(
           wallet: wallet,
-          entryMode: WithdrawEntryMode.lightning,
-          initialDestination: candidate,
+          initialAddress: candidate,
           initialAmountBtc:
               parsed?.amountBtc ?? _extractLightningAmountBtc(candidate),
-          initialDescription: parsed?.message ?? parsed?.label,
         ),
       );
       return;
@@ -482,12 +410,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (_looksLikeOnChainRequest(trimmed, candidate)) {
       unawaited(
-        _openWithdrawFlow(
+        _openSendFlow(
           wallet: wallet,
-          entryMode: WithdrawEntryMode.onChain,
-          initialDestination: candidate,
+          initialAddress: candidate,
           initialAmountBtc: parsed?.amountBtc,
-          initialDescription: parsed?.message,
         ),
       );
       return;
@@ -530,10 +456,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _openCreateWalletFlow() async {
-    final created = await _pushFromBottom<bool>(
-      (_) => const CreateWalletScreen(),
+    await _pushFromBottom<void>(
+      (_) => const BitcoinAccountsScreen(),
     );
-    if (created != true || !mounted) {
+    if (!mounted) {
       return;
     }
 
@@ -570,36 +496,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  List<_QuickActionData> _buildSendActions(WalletState walletState) {
-    final actions = <_QuickActionData>[
-      _QuickActionData(
-        kind: _HomeActionIconKind.sendOnChain,
+  List<_HomeSendActionData> _buildSendActions(WalletState walletState) {
+    final actions = <_HomeSendActionData>[
+      _HomeSendActionData(
+        kind: _HomeSendActionKind.sendOnChain,
         label: context.tr.homeSendMethodOnchainLabel,
         subtitle: context.tr.homeSendMethodOnchainSubtitle,
         onTap: () => _openSendOnChain(walletState),
       ),
-      _QuickActionData(
-        kind: _HomeActionIconKind.payLightning,
+      _HomeSendActionData(
+        kind: _HomeSendActionKind.payLightning,
         label: context.tr.homeSendMethodLightningLabel,
         subtitle: context.tr.homeSendMethodLightningSubtitle,
         onTap: () => _openSendLightning(walletState),
       ),
-      _QuickActionData(
-        kind: _HomeActionIconKind.internalTransfer,
+      _HomeSendActionData(
+        kind: _HomeSendActionKind.internalTransfer,
         label: context.tr.homeSendMethodInternalLabel,
         subtitle: context.tr.homeSendMethodInternalSubtitle,
         onTap: () => _openSend(walletState),
       ),
-      _QuickActionData(
-        kind: _HomeActionIconKind.scanQr,
+      _HomeSendActionData(
+        kind: _HomeSendActionKind.scanQr,
         label: context.tr.homeScanQrLabel,
         subtitle: context.tr.homeScanQrSubtitle,
         onTap: () {
           unawaited(_openSendQr(walletState));
         },
       ),
-      _QuickActionData(
-        kind: _HomeActionIconKind.payLink,
+      _HomeSendActionData(
+        kind: _HomeSendActionKind.payLink,
         label: context.tr.homePaymentLinkLabel,
         subtitle: context.tr.homePaymentLinkSubtitle,
         onTap: () {
@@ -607,19 +533,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
       ),
     ];
-
-    if (_isNfcAvailable) {
-      actions.add(
-        _QuickActionData(
-          kind: _HomeActionIconKind.sendNfc,
-          label: context.tr.homeNfcPayLabel,
-          subtitle: context.tr.homeNfcPaySubtitle,
-          onTap: () {
-            unawaited(_openSendNfc(walletState));
-          },
-        ),
-      );
-    }
 
     return actions;
   }
@@ -676,7 +589,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             transactionHistoryAsync.isLoading);
 
     void openStatement() {
-      unawaited(_pushFromBottom<void>((_) => const DepositsScreen()));
+      unawaited(
+        _pushFromBottom<void>((_) => const TransactionStatementScreen()),
+      );
     }
 
     // ── NOME DE USUÁRIO REAL E SEGURO ──
@@ -695,7 +610,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     if (userName.isEmpty || userName == 'Not Found') {
-      userName = context.tr.profileFallbackUser;
+      userName = context.tr.homeFallbackUser;
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -750,7 +665,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         walletState: walletState,
                                         activeWallet: activeWallet,
                                         onReceive: () =>
-                                            _openReceiveHub(walletState),
+                                            _openReceiveFlow(walletState),
                                         onSend: () =>
                                             _openSendActionsSheet(walletState),
                                         onViewStatement: openStatement,
@@ -821,7 +736,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       SizedBox(height: _homeSize(12)),
                                       const _HomeActivityFilterChips(),
                                       SizedBox(height: _homeSize(14)),
-                                      const _TransactionsList(),
+                                      const HomeTransactionsList(),
                                     ],
                                   ),
                                 ),

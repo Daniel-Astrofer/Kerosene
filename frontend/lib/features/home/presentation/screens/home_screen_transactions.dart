@@ -1,7 +1,7 @@
 part of 'home_screen.dart';
 
-class _TransactionsList extends ConsumerWidget {
-  const _TransactionsList();
+class HomeTransactionsList extends ConsumerWidget {
+  const HomeTransactionsList({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,9 +14,7 @@ class _TransactionsList extends ConsumerWidget {
     final walletState = ref.watch(walletProvider);
     final activeWallet = walletState is WalletLoaded
         ? walletState.selectedWallet ??
-              (walletState.wallets.isNotEmpty
-                  ? walletState.wallets.first
-                  : null)
+            (walletState.wallets.isNotEmpty ? walletState.wallets.first : null)
         : null;
 
     return transactionsAsync.when(
@@ -32,33 +30,33 @@ class _TransactionsList extends ConsumerWidget {
               icon: !hasWallet
                   ? LucideIcons.wallet
                   : !hasBalance
-                  ? LucideIcons.landmark
-                  : LucideIcons.receipt,
+                      ? LucideIcons.landmark
+                      : LucideIcons.receipt,
               title: !hasWallet
                   ? context.tr.homeEmptyNoWalletTitle
                   : !hasBalance
-                  ? context.tr.homeEmptyNoBalanceTitle
-                  : context.tr.homeEmptyNoTransactionsTitle,
+                      ? context.tr.homeEmptyNoBalanceTitle
+                      : context.tr.homeEmptyNoTransactionsTitle,
               description: !hasWallet
                   ? context.tr.homeEmptyNoWalletDescription
                   : !hasBalance
-                  ? context.tr.homeEmptyNoBalanceDescription
-                  : context.tr.homeEmptyNoTransactionsDescription,
+                      ? context.tr.homeEmptyNoBalanceDescription
+                      : context.tr.homeEmptyNoTransactionsDescription,
               actionLabel: !hasWallet
                   ? context.tr.homeCreateWalletAction
                   : !hasBalance
-                  ? context.tr.homeDepositAction
-                  : context.tr.homeRefreshAction,
+                      ? context.tr.homeDepositAction
+                      : context.tr.homeRefreshAction,
               actionIcon: !hasWallet
                   ? LucideIcons.arrowRight
                   : !hasBalance
-                  ? LucideIcons.download
-                  : LucideIcons.refreshCw,
+                      ? LucideIcons.download
+                      : LucideIcons.refreshCw,
               onAction: () {
                 if (!hasWallet) {
                   Navigator.of(context).push<void>(
                     _buildBottomUpRoute(
-                      builder: (_) => const CreateWalletScreen(),
+                      builder: (_) => const BitcoinAccountsScreen(),
                     ),
                   );
                   return;
@@ -114,14 +112,12 @@ class _TransactionsList extends ConsumerWidget {
     _HomeActivityFilter filter,
   ) {
     return switch (filter) {
-      _HomeActivityFilter.platform =>
-        txs
-            .where((tx) => tx.isInternal || tx.isLightning)
-            .toList(growable: false),
-      _HomeActivityFilter.onChain =>
-        txs
-            .where((tx) => !tx.isInternal && !tx.isLightning)
-            .toList(growable: false),
+      _HomeActivityFilter.platform => txs
+          .where((tx) => tx.isInternal || tx.isLightning)
+          .toList(growable: false),
+      _HomeActivityFilter.onChain => txs
+          .where((tx) => !tx.isInternal && !tx.isLightning)
+          .toList(growable: false),
       _HomeActivityFilter.notices => const <Transaction>[],
     };
   }
@@ -264,7 +260,9 @@ class _HomeNotificationCard extends ConsumerWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
                                 ?.copyWith(
                                   color: Colors.white,
                                   fontSize: _homeFontSize(13),
@@ -276,13 +274,13 @@ class _HomeNotificationCard extends ConsumerWidget {
                         SizedBox(width: _homeSize(8)),
                         Text(
                           _homeNotificationTimeLabel(context, item.timestamp),
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.42),
-                                fontSize: _homeFontSize(10),
-                                fontWeight: FontWeight.w300,
-                                letterSpacing: 0,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.42),
+                                    fontSize: _homeFontSize(10),
+                                    fontWeight: FontWeight.w300,
+                                    letterSpacing: 0,
+                                  ),
                         ),
                       ],
                     ),
@@ -293,11 +291,11 @@ class _HomeNotificationCard extends ConsumerWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.62),
-                          fontSize: _homeFontSize(12),
-                          height: 1.35,
-                          letterSpacing: 0,
-                        ),
+                              color: Colors.white.withValues(alpha: 0.62),
+                              fontSize: _homeFontSize(12),
+                              height: 1.35,
+                              letterSpacing: 0,
+                            ),
                       ),
                     ],
                   ],
@@ -465,77 +463,5 @@ class _HomeEmptyTransactionsPanel extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-enum _HomeActionIconKind {
-  createWallet,
-  primaryDeposit,
-  primarySend,
-  primaryReceive,
-  viewDeposits,
-  internalTransfer,
-  sendOnChain,
-  payLightning,
-  scanQr,
-  payLink,
-  sendNfc,
-}
-
-class _QuickActionData {
-  final _HomeActionIconKind kind;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _QuickActionData({
-    required this.kind,
-    required this.label,
-    required this.subtitle,
-    required this.onTap,
-  });
-}
-
-class _HomeActionIcon extends StatelessWidget {
-  final _HomeActionIconKind kind;
-  final Color iconColor;
-  final double size;
-
-  const _HomeActionIcon({
-    required this.kind,
-    required this.iconColor,
-    this.size = 24,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _buildIcon();
-  }
-
-  Widget _buildIcon() {
-    switch (kind) {
-      case _HomeActionIconKind.createWallet:
-        return Icon(LucideIcons.wallet, size: size, color: iconColor);
-      case _HomeActionIconKind.primaryDeposit:
-        return Icon(LucideIcons.landmark, size: size, color: iconColor);
-      case _HomeActionIconKind.primarySend:
-        return Icon(LucideIcons.arrowUpRight, size: size, color: iconColor);
-      case _HomeActionIconKind.primaryReceive:
-        return Icon(LucideIcons.arrowDownLeft, size: size, color: iconColor);
-      case _HomeActionIconKind.viewDeposits:
-        return Icon(LucideIcons.history, size: size, color: iconColor);
-      case _HomeActionIconKind.internalTransfer:
-        return Icon(LucideIcons.arrowLeftRight, size: size, color: iconColor);
-      case _HomeActionIconKind.sendOnChain:
-        return Icon(LucideIcons.link2, size: size, color: iconColor);
-      case _HomeActionIconKind.payLightning:
-        return Icon(LucideIcons.zap, size: size, color: iconColor);
-      case _HomeActionIconKind.scanQr:
-        return Icon(LucideIcons.scanLine, size: size, color: iconColor);
-      case _HomeActionIconKind.payLink:
-        return Icon(LucideIcons.link2, size: size, color: iconColor);
-      case _HomeActionIconKind.sendNfc:
-        return Icon(LucideIcons.smartphoneNfc, size: size, color: iconColor);
-    }
   }
 }

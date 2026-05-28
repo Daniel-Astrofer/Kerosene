@@ -1,7 +1,72 @@
 part of 'home_screen.dart';
 
+enum _HomeSendActionKind {
+  internalTransfer,
+  sendOnChain,
+  payLightning,
+  scanQr,
+  payLink,
+}
+
+class _HomeSendActionData {
+  final _HomeSendActionKind kind;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _HomeSendActionData({
+    required this.kind,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+}
+
+class _HomeSendActionIcon extends StatelessWidget {
+  final _HomeSendActionKind kind;
+  final Color iconColor;
+  final double size;
+
+  const _HomeSendActionIcon({
+    required this.kind,
+    required this.iconColor,
+    this.size = 24,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (kind) {
+      _HomeSendActionKind.internalTransfer => Icon(
+          LucideIcons.arrowLeftRight,
+          size: size,
+          color: iconColor,
+        ),
+      _HomeSendActionKind.sendOnChain => Icon(
+          LucideIcons.link2,
+          size: size,
+          color: iconColor,
+        ),
+      _HomeSendActionKind.payLightning => Icon(
+          LucideIcons.zap,
+          size: size,
+          color: iconColor,
+        ),
+      _HomeSendActionKind.scanQr => Icon(
+          LucideIcons.scanLine,
+          size: size,
+          color: iconColor,
+        ),
+      _HomeSendActionKind.payLink => Icon(
+          LucideIcons.link2,
+          size: size,
+          color: iconColor,
+        ),
+    };
+  }
+}
+
 class _SendMethodScreen extends StatefulWidget {
-  final List<_QuickActionData> actions;
+  final List<_HomeSendActionData> actions;
 
   const _SendMethodScreen({required this.actions});
 
@@ -13,16 +78,16 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
   static const Color _screenBackground = Color(0xFF000000);
   static const Color _mutedTextColor = Color(0xFFA0A0A0);
 
-  _HomeActionIconKind? _selectedKind;
+  _HomeSendActionKind? _selectedKind;
 
-  List<_QuickActionData> get _transferActions {
+  List<_HomeSendActionData> get _transferActions {
     final actionsByKind = {
       for (final action in widget.actions) action.kind: action,
     };
     const orderedKinds = [
-      _HomeActionIconKind.internalTransfer,
-      _HomeActionIconKind.payLightning,
-      _HomeActionIconKind.sendOnChain,
+      _HomeSendActionKind.internalTransfer,
+      _HomeSendActionKind.payLightning,
+      _HomeSendActionKind.sendOnChain,
     ];
 
     return [
@@ -31,7 +96,22 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
     ];
   }
 
-  void _selectAction(_QuickActionData action) {
+  List<_HomeSendActionData> get _secondaryActions {
+    final actionsByKind = {
+      for (final action in widget.actions) action.kind: action,
+    };
+    const orderedKinds = [
+      _HomeSendActionKind.scanQr,
+      _HomeSendActionKind.payLink,
+    ];
+
+    return [
+      for (final kind in orderedKinds)
+        if (actionsByKind[kind] != null) actionsByKind[kind]!,
+    ];
+  }
+
+  void _selectAction(_HomeSendActionData action) {
     HapticFeedback.selectionClick();
     setState(() => _selectedKind = action.kind);
 
@@ -50,6 +130,7 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
     final isNarrow = mediaQuery.size.width < 360;
     final horizontalPadding = isNarrow ? 20.0 : 24.0;
     final transferActions = _transferActions;
+    final secondaryActions = _secondaryActions;
 
     return Scaffold(
       backgroundColor: _screenBackground,
@@ -136,7 +217,7 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
                                   selected: _selectedKind ==
                                       transferActions[index].kind,
                                   showFeeBadge: transferActions[index].kind ==
-                                      _HomeActionIconKind.internalTransfer,
+                                      _HomeSendActionKind.internalTransfer,
                                   feeLabel: _localizedTransferFeeLabel(context),
                                   onTap: () =>
                                       _selectAction(transferActions[index]),
@@ -145,6 +226,21 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
                             ],
                           ],
                         ),
+                        if (secondaryActions.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          for (var index = 0;
+                              index < secondaryActions.length;
+                              index++) ...[
+                            if (index > 0) const SizedBox(height: 10),
+                            _SendMethodSecondaryActionTile(
+                              action: secondaryActions[index],
+                              selected:
+                                  _selectedKind == secondaryActions[index].kind,
+                              onTap: () =>
+                                  _selectAction(secondaryActions[index]),
+                            ),
+                          ],
+                        ],
                         const SizedBox(height: 48),
                         Text(
                           _localizedLearnMoreTitle(context),
@@ -211,21 +307,21 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
 
   String _localizedTransferOptionLabel(
     BuildContext context,
-    _HomeActionIconKind kind,
+    _HomeSendActionKind kind,
   ) {
     final languageCode = Localizations.localeOf(context).languageCode;
     return switch (kind) {
-      _HomeActionIconKind.internalTransfer => switch (languageCode) {
+      _HomeSendActionKind.internalTransfer => switch (languageCode) {
           'en' => 'Internal\nTransfer',
           'es' => 'Transferencia\nInterna',
           _ => 'Transferência\nInterna',
         },
-      _HomeActionIconKind.payLightning => switch (languageCode) {
+      _HomeSendActionKind.payLightning => switch (languageCode) {
           'en' => 'Lightning\nTransfer',
           'es' => 'Transferencia\nLightning',
           _ => 'Transferência\nLightning',
         },
-      _HomeActionIconKind.sendOnChain => switch (languageCode) {
+      _HomeSendActionKind.sendOnChain => switch (languageCode) {
           'en' => 'On-chain\nTransfer',
           'es' => 'Transferencia\nOn-chain',
           _ => 'Transferência\nOn-chain',
@@ -271,7 +367,7 @@ class _SendMethodScreenState extends State<_SendMethodScreen> {
 }
 
 class _SendMethodOptionButton extends StatelessWidget {
-  final _QuickActionData action;
+  final _HomeSendActionData action;
   final String label;
   final bool selected;
   final bool showFeeBadge;
@@ -329,7 +425,7 @@ class _SendMethodOptionButton extends StatelessWidget {
                       ),
                     ),
                     child: Center(
-                      child: _HomeActionIcon(
+                      child: _HomeSendActionIcon(
                         kind: action.kind,
                         iconColor: Colors.white,
                         size: 28,
@@ -367,6 +463,110 @@ class _SendMethodOptionButton extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SendMethodSecondaryActionTile extends StatelessWidget {
+  final _HomeSendActionData action;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SendMethodSecondaryActionTile({
+    required this.action,
+    required this.selected,
+    required this.onTap,
+  });
+
+  static const Color _panelColor = Color(0xFF111111);
+  static const Color _borderColor = Color(0xFF222222);
+  static const Color _mutedTextColor = Color(0xFFA0A0A0);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: action.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color:
+                  selected ? Colors.white.withValues(alpha: 0.08) : _panelColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.48)
+                    : _borderColor,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.07),
+                  ),
+                  child: Center(
+                    child: _HomeSendActionIcon(
+                      kind: action.kind,
+                      iconColor: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        action.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w300,
+                              height: 1.2,
+                              letterSpacing: 0,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        action.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              height: 1.3,
+                              letterSpacing: 0,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: Colors.white.withValues(alpha: 0.44),
+                  size: 20,
+                ),
+              ],
             ),
           ),
         ),
