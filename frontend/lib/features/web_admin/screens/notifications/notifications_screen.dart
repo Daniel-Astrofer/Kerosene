@@ -26,7 +26,7 @@ class NotificationsScreen extends ConsumerWidget {
         title: const Text(
           'Notifications Inbox',
           style: TextStyle(
-            fontFamily: 'IBM Plex Sans',
+            fontFamily: 'IBMPlexSansHebrew',
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -152,7 +152,7 @@ class _NotificationCard extends ConsumerWidget {
                       notification.kind,
                       style: const TextStyle(
                         fontSize: 10,
-                        fontFamily: 'IBM Plex Mono',
+                        fontFamily: 'IBMPlexSansHebrew',
                         color: AdminColors.textSecondary,
                       ),
                     ),

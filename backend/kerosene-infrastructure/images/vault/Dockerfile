@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # ═══════════════════════════════════════════════════════════════════════════════
 # Kerosene Vault — Production Dockerfile
 # ─────────────────────────────────────────────────────────────────────────────
@@ -16,17 +15,14 @@
 FROM maven:3.9.6-eclipse-temurin-21-jammy AS builder
 
 WORKDIR /build
-ENV MAVEN_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0"
 
 # ── Layer 1: Dependency resolution ────────────────────────────────────────────
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn dependency:go-offline --no-transfer-progress -q
+RUN mvn dependency:go-offline --no-transfer-progress -q
 
 # ── Layer 2: Source compilation ───────────────────────────────────────────────
 COPY src src/
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn clean package --no-transfer-progress -DskipTests -q
+RUN mvn clean package --no-transfer-progress -DskipTests
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM gcr.io/distroless/java21-debian12:nonroot AS runtime

@@ -23,11 +23,6 @@ class TransactionListItem extends ConsumerWidget {
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  String _formatBTC(double v) {
-    if (v < 0.00001) return '${(v * 1e8).toStringAsFixed(0)} sat';
-    return '${v.toStringAsFixed(6)} BTC';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final visual = TransactionVisualSpec.fromTransaction(transaction);
@@ -36,11 +31,20 @@ class TransactionListItem extends ConsumerWidget {
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
     final amountLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: transaction.amountBTC,
+      btcAmount: transaction.signedAmountBTC,
       currency: selectedCurrency,
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      signed: true,
+    );
+    final btcAmountLabel = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: transaction.signedAmountBTC,
+      currency: Currency.btc,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+      signed: true,
     );
 
     final counterparty = resolvePrimaryTransactionAddress(transaction).trim();
@@ -117,7 +121,7 @@ class TransactionListItem extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${visual.prefix}$amountLabel',
+                  amountLabel,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontWeight: FontWeight.w700,
                         color: visual.amountColor,
@@ -126,7 +130,7 @@ class TransactionListItem extends ConsumerWidget {
                 if (selectedCurrency != Currency.btc) ...[
                   const SizedBox(height: 2),
                   Text(
-                    '${visual.prefix}${_formatBTC(transaction.amountBTC)}',
+                    btcAmountLabel,
                     style: Theme.of(context).textTheme.labelSmall!.copyWith(
                           color: Theme.of(context)
                               .colorScheme

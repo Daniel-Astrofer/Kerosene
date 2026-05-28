@@ -1,266 +1,145 @@
-# Infraestrutura Real do Kerosene
+# Infrastructure
 
-Documento baseado nos arquivos Docker, compose, propriedades Spring e scripts existentes em 2026-04-07.
+Esta documentacao reflete o codigo atual, scripts e arquivos de configuracao do repositorio. Ela substitui leituras antigas chamadas Hydra por uma visao Kerosene baseada nos arquivos atuais.
 
-## Arquivos Relevantes
+## Fontes analisadas
 
-| Arquivo | Papel |
-| --- | --- |
-| `backend/kerosene-infrastructure/docker-compose.local.yml` | Compose local para simular Vault e shards IS/CH/SG no mesmo host. |
-| `backend/kerosene/docker-compose.yml` | Compose de topologia distribuida antiga/producao, com mTLS e sidecars MPC definidos. |
-| `backend/kerosene-infrastructure/images/app/Dockerfile` | Build do backend principal em Java 21 com runtime Distroless. |
-| `backend/kerosene-infrastructure/images/vault/Dockerfile` | Build do Vault Maven/Java 21 com runtime Distroless. |
-| `backend/kerosene/tor/Dockerfile` | Imagem Tor baseada em Debian Bookworm Slim. |
-| `backend/mpc-sidecar/Dockerfile` | Build Go/gRPC do sidecar MPC. |
-| `backend/kerosene-infrastructure/scripts/init-local.sh` | Bootstrap local: valida `.env`, tenta gerar certificados e reescreve `torrc`. |
-| `scripts/start-local.sh` | Wrapper local canonico para inicializar o backend via compose. |
-| `scripts/arm-vault.sh` | Arma o Vault local usando `AES_SECRET` do `.env` e quorom de dois diretores de desenvolvimento. |
-| `backend/kerosene/deploy/init-iptables.sh` | Regras host-level de egress guard por iptables. |
+- `docker-compose.yml`: compose raiz que inclui `backend/kerosene-infrastructure/docker-compose.local.yml` e carrega `backend/kerosene/.env`.
+- `backend/kerosene-infrastructure/docker-compose.local.yml`: topologia local completa com shards, Bitcoin Core, indexer, Vault Raft, Prometheus e web admin.
+- `backend/kerosene/docker-compose.yml`: topologia distribuida/producao com shards regionais, Tor, Vanguards, Vault e LND.
+- `backend/kerosene/src/main/resources/application.properties`, `application-docker.properties`, `application-prod.properties`.
+- `scripts/start-local.sh`, `stop-local.sh`, `logs-local.sh`, `init-local.sh`, `arm-vault.sh`, `build-web-admin-backend.sh`, `release-snapshot.sh`.
+- `backend/mpc-sidecar`, `backend/vault` e migracoes SQL em `backend/kerosene/src/main/resources/db/migration`.
 
-## Compose Local Recomendado
+## Topologia local canonica
 
-O compose local atual usa o layout real `backend/*`:
+O comando canonico e:
 
 ```bash
-bash scripts/init-local.sh
 bash scripts/start-local.sh
-bash scripts/logs-local.sh
-bash scripts/stop-local.sh
 ```
 
-Comando compose equivalente:
+Esse script usa o compose raiz, prepara o build web Flutter para ser servido pelo backend, sobe a infraestrutura local, arma o Vault quando habilitado, aguarda provisionamento de master key nos shards e imprime enderecos onion quando disponiveis.
 
-```bash
-docker compose --project-name kerosene-infrastructure --env-file backend/kerosene/.env -f backend/kerosene-infrastructure/docker-compose.local.yml config
-docker compose --project-name kerosene-infrastructure --env-file backend/kerosene/.env -f backend/kerosene-infrastructure/docker-compose.local.yml up -d --build
-```
+Servicos principais em `backend/kerosene-infrastructure/docker-compose.local.yml`:
 
-Servicos definidos:
-
-| Servico | Funcao |
-| --- | --- |
-| `kerosene-vault` | Vault local sem port binding de host. |
-| `kerosene-tor-vault` | Hidden service Tor do Vault. |
-| `db-is`, `db-ch`, `db-sg` | PostgreSQL 17 Alpine por shard, `REQUIRE_MTLS=false` no local. |
-| `redis-is`, `redis-ch`, `redis-sg` | Redis 7 Alpine por shard com `--requirepass`. |
-| `mpc-sidecar-is`, `mpc-sidecar-ch`, `mpc-sidecar-sg` | Sidecars Go/gRPC usados por `MPC_SIDECAR_HOST`. |
-| `kerosene-app-is`, `kerosene-app-ch`, `kerosene-app-sg` | API principal por regiao. |
-| `kerosene-tor-is`, `kerosene-tor-ch`, `kerosene-tor-sg` | Hidden services Tor dos shards. |
-
-Redes definidas:
-
-| Rede | Tipo | Observacao |
+| Grupo | Servicos | Funcao |
 | --- | --- | --- |
-| `net_vault` | bridge internal | Sem egress direto; Vault isolado. |
-| `net_db_is`, `net_db_ch`, `net_db_sg` | bridge internal | Banco e Redis por shard. |
-| `net_mpc` | bridge internal | Declarada para sidecar MPC. |
-| `net_tor` | bridge internal | Comunicacao app/Tor. |
-| `tor_egress` | bridge | Apenas daemons Tor devem ter saida. |
+| App shards | `kerosene-app-is`, `kerosene-app-ch`, `kerosene-app-sg` | Tres instancias Spring Boot com perfis `docker,prod`, cada uma ligada a Postgres/Redis regionais. |
+| Bancos | `db-is`, `db-ch`, `db-sg` | PostgreSQL 17 com volumes separados por shard. |
+| Cache | `redis-is`, `redis-ch`, `redis-sg` | Redis 7 com senha e AOF. |
+| MPC | `mpc-sidecar-is`, `mpc-sidecar-ch`, `mpc-sidecar-sg` | Go gRPC sidecar para assinatura/MPC com TLS. |
+| Tor | `kerosene-tor-is`, `kerosene-tor-ch`, `kerosene-tor-sg`, `kerosene-tor-vault` | Hidden services e egress controlado. |
+| Vanguards | `kerosene-vanguards-is`, `kerosene-vanguards-ch`, `kerosene-vanguards-sg` | Hardening Tor. |
+| Vault | `kerosene-vault`, `kerosene-vault-arm`, `vault-raft-1..3`, `vault-raft-bootstrap` | Cofre Java e quorum/health de Vault Raft. |
+| Bitcoin | `bitcoin-core`, `bitcoin-indexer` | Bitcoin Core pruned e indexador opcional para deposits/PSBT. |
+| Lightning | `lnd-neutrino`, `lnd-bootstrap` | LND para invoices e pagamentos Lightning. |
+| Operacao | `web-admin`, `prometheus` | Painel web/admin e metricas. |
 
-Volumes definidos:
+## Topologia distribuida
 
-```text
-pg_data_is, pg_data_ch, pg_data_sg
-redis_data_is, redis_data_ch, redis_data_sg
-mpc_shards_is, mpc_shards_ch, mpc_shards_sg
-tor_socks_is, tor_socks_ch, tor_socks_sg
-tor_keys_vault, tor_keys_is, tor_keys_ch, tor_keys_sg
-shard_identity_is, shard_identity_ch, shard_identity_sg
-```
+`backend/kerosene/docker-compose.yml` modela o deployment endurecido:
 
-Observacao operacional: o compose local define os sidecars `mpc-sidecar-is`, `mpc-sidecar-ch` e `mpc-sidecar-sg` no `net_mpc`. O compose `backend/kerosene/docker-compose.yml` permanece como topologia distribuida antiga/producao e ainda deve ser revisado antes de producao para garantir build contexts consistentes com o layout `backend/*`.
+- Um Vault central sem `ports`, acessivel via `kerosene-tor-vault`.
+- Tres shards regionais `IS`, `CH` e `SG` com redes separadas de DB, Tor e MPC.
+- PostgreSQL com SSL, Redis com senha, sidecar MPC com mTLS e volumes separados de shards.
+- Apps com `cap_drop: ALL`, `IPC_LOCK`, `no-new-privileges`, tmpfs e identidade persistente por shard.
+- Tor hidden service por shard e Vanguards por shard.
 
-## Topologia de Runtime
+## Backend Spring
 
-```mermaid
-flowchart TB
-  subgraph IS[Shard IS]
-    AppIS[kerosene-app-is] --> DbIS[(db-is)]
-    AppIS --> RedisIS[(redis-is)]
-    AppIS --> MpcIS[mpc-sidecar-is]
-    TorIS[kerosene-tor-is] --> AppIS
-  end
+O backend principal fica em `backend/kerosene` e roda Java 21/Spring Boot.
 
-  subgraph CH[Shard CH]
-    AppCH[kerosene-app-ch] --> DbCH[(db-ch)]
-    AppCH --> RedisCH[(redis-ch)]
-    AppCH --> MpcCH[mpc-sidecar-ch]
-    TorCH[kerosene-tor-ch] --> AppCH
-  end
+Configuracoes importantes:
 
-  subgraph SG[Shard SG]
-    AppSG[kerosene-app-sg] --> DbSG[(db-sg)]
-    AppSG --> RedisSG[(redis-sg)]
-    AppSG --> MpcSG[mpc-sidecar-sg]
-    TorSG[kerosene-tor-sg] --> AppSG
-  end
+| Area | Config atual |
+| --- | --- |
+| Banco | `spring.jpa.hibernate.ddl-auto=validate`; schema por Flyway/migracoes SQL. |
+| Redis | host local no perfil default; service DNS no perfil docker. |
+| Flyway | default desligado; `application-prod.properties` liga por `FLYWAY_ENABLED=true`. |
+| HTTP | `server.address=0.0.0.0`; porta docker `8080`. |
+| CORS | origins explicitas via `APP_CORS_ALLOWED_ORIGINS`; wildcard causa falha de boot. |
+| Payload | limite padrao `2KB`; PSBT `64KB`; content type estrito. |
+| Auth | JWT stateless, method security e filtros `ParanoidSecurityFilter`, `RateLimitFilter`, `JwtAuthenticationFilter`. |
+| Passkey/WebAuthn | `WEBAUTHN_RP_ID` default local/docker `kerosene-device`; prod exige valor explicito. |
+| Observabilidade | Actuator health/info/metrics/prometheus, health groups de liveness/readiness. |
 
-  TorVault[kerosene-tor-vault] --> Vault[kerosene-vault]
-  AppIS --> TorVault
-  AppCH --> TorVault
-  AppSG --> TorVault
-```
+## Banco e migracoes
 
-## Backend App Image
+Arquivos atuais:
 
-Dockerfile: `backend/kerosene-infrastructure/images/app/Dockerfile`
+- `db/migration.sql` legado/manual.
+- `db/migration/V1__baseline_schema.sql` ate `V10__notification_device_tokens.sql`.
+- Ha duas migracoes `V10` (`V10__lightning_invoice_inbound_guards.sql` e `V10__notification_device_tokens.sql`), o que deve ser corrigido antes de Flyway prod, porque versoes duplicadas podem quebrar validacao.
 
-Caracteristicas:
-
-- Stage builder com `eclipse-temurin:21-jdk`.
-- Build Gradle `./gradlew bootJar --no-daemon -x test`.
-- Runtime `gcr.io/distroless/java21-debian12:nonroot`.
-- Usuario `65532:65532`.
-- `EXPOSE 8080` apenas interno.
-- Entrypoint Java com `UseContainerSupport`, `MaxRAMPercentage=75.0` e `java.security.egd`.
-
-Hardening no compose:
-
-- `cap_drop: [ALL]`.
-- `cap_add: [IPC_LOCK]`.
-- `security_opt: no-new-privileges:true`.
-- `tmpfs` para `/tmp` e `/opt/kerosene`.
-
-## Vault Image
-
-Dockerfile: `backend/kerosene-infrastructure/images/vault/Dockerfile`
-
-Caracteristicas:
-
-- Stage builder com `maven:3.9.6-eclipse-temurin-21-jammy`.
-- `mvn clean package -DskipTests`.
-- Runtime `gcr.io/distroless/java21-debian12:nonroot`.
-- Sem port binding de host no compose local.
-- `server.port=8090` em `backend/vault/src/main/resources/application.properties`.
-
-## Tor Sidecars
-
-Arquivos:
-
-- `backend/kerosene/tor/Dockerfile`.
-- `backend/kerosene/tor/entrypoint.sh`.
-- `backend/kerosene/tor/torrc-is`.
-- `backend/kerosene/tor/torrc-ch`.
-- `backend/kerosene/tor/torrc-sg`.
-- `backend/kerosene/tor/torrc-vault`.
-
-Configuracao real dos shards:
-
-```text
-SocksPort unix:/var/run/tor/socks/tor.sock WorldWritable
-HiddenServicePort 80 kerosene-app-<region>-local:8080
-```
-
-Configuracao real do Vault:
-
-```text
-SocksPort 0
-HiddenServicePort 80 kerosene-vault-local:8090
-```
-
-O entrypoint:
-
-- Verifica o hash do binario Tor se `EXPECTED_TOR_HASH` estiver definida.
-- Cria usuario `kerosene` com UID/GID `65532`.
-- Ajusta permissoes de `/var/run/tor/socks` e `/var/lib/tor/kerosene_service`.
-- Inicia `tor -f /etc/tor/torrc`.
-
-## Banco de Dados
-
-Configuracao local de app:
-
-- `application.properties`: `jdbc:postgresql://localhost:5432/kerosene`.
-- `application-docker.properties`: `jdbc:postgresql://db:5432/kerosene`, mas o compose sobrescreve com `SPRING_DATASOURCE_URL` por shard.
-- `ddl-auto=update`.
-- `spring.sql.init.mode=always` no profile docker usando `classpath:db/migration.sql`.
-
-Schemas:
-
-- `auth`.
-- `financial`.
-
-Inicializacao:
-
-- `backend/kerosene/docker-entrypoint-initdb.d/init.sql`.
-- `backend/kerosene/docker-entrypoint-initdb.d/99-init-ssl.sh`.
-- `backend/kerosene/src/main/resources/db/migration.sql`.
-
-No compose local, `REQUIRE_MTLS=false`, entao o `pg_hba.conf` permite `scram-sha-256`. No compose distribuido antigo, os bancos usam SSL e certificados em `backend/kerosene/certs`.
+Dados persistidos incluem usuarios, passkeys, wallets, ledger, transfers externos, payment intents, payment links, Bitcoin accounts, cold wallets, PSBT workflows, tax events, audit events, treasury config/payouts e notificacoes/device tokens.
 
 ## Redis
 
-Configuracao:
+Usos observados:
 
-- Local default: `127.0.0.1:6379`.
-- Docker: host por shard via `SPRING_DATA_REDIS_HOST`.
-- Senha por `REDIS_PASSWORD`.
-- Comando real: `redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes`.
+- Rate limit por rota e identidade.
+- Signup state, recovery state e passkey challenge.
+- Idempotencia/replay financeiro.
+- Circuit breakers e sinais efemeros.
+- Eventos temporarios de ledger/history conforme servicos atuais.
 
-Uso no codigo:
+Redis e dependencia critica para auth, rate limit e fluxos financeiros; health de readiness inclui Redis.
 
-- Rate limit.
-- Signup state.
-- Payment links.
-- Internal payment requests.
-- Economy status.
+## Bitcoin e Lightning
 
-## Variaveis de Ambiente
+O codigo atual suporta:
 
-Nunca commitar valores reais. Lista de nomes usados:
+- Bitcoin Core RPC opcional no default, obrigatorio em prod/docker endurecido.
+- ZMQ `rawtx` e `hashblock` quando habilitado.
+- Esplora/indexer opcional para consulta.
+- Hot wallet address/xpub e platform master xpub.
+- LND com TLS e macaroon para invoice/pagamento Lightning.
+- Quorum PSBT com signers configuraveis por URL/API key/id.
 
-```text
-POSTGRES_USER
-POSTGRES_PASSWORD
-REDIS_PASSWORD
-AES_SECRET
-JWT_SECRET
-PASSWORD_PEPPER
-API_KEY
-FOUNDER_TOTP_SECRET
-HMAC_SECRET_KEY
-WEBAUTHN_RP_ID
-WEBAUTHN_RP_NAME
-WEBAUTHN_ORIGINS
-EXPECTED_TOR_HASH
-REGION
-MPC_SIDECAR_HOST
-VAULT_ENABLED
-VAULT_ONION_FILE
-VAULT_PROXY_PATH
-```
+Em producao, `application-prod.properties` fecha mock/fallback: `bitcoin.mock-mode=false`, `transactions.local-derived-address-fallback-enabled=false`, `voucher.mock.accept-any-txid=false`.
 
-Variaveis com defaults no codigo:
+## Vault e MPC
 
-- `bitcoin.deposit-address`.
-- `bitcoin.min-confirmations`.
-- `bitcoin.payment-link-expiration-minutes`.
-- `bitcoin.mock-mode`.
-- `audit.merkle.interval-ms`.
-- `blockchain.monitor.interval.min`.
-- `blockchain.monitor.interval.max`.
-- `onramp.moonpay.url`.
-- `onramp.banxa.url`.
-- `onramp.bipa.url`.
-- `bitcoin.network`.
-- `bitcoin.derivation.salt`.
+`backend/vault` e um servico Java separado empacotado por Maven. Ele e armado por diretores via HMAC e usado para material sensivel/master key.
 
-## Validacao Antes de Deploy
+`backend/mpc-sidecar` e um servico Go gRPC com proto em `proto/mpc.proto`; no compose roda em modo `HARDWARE_ENCLAVE`, exige master key e TLS. O backend fala com ele via `mpc.sidecar.*`.
 
-Checklist minimo:
+## Jobs e workers agendados
+
+| Area | Jobs |
+| --- | --- |
+| Preco | `TickerService` a cada 5 min. |
+| Ledger/audit | Merkle audit, cleanup de history, reconciliation audit, shadow balance audit. |
+| Seguranca | time drift, remote attestation, sovereignty heartbeat. |
+| Transactions | liquidity monitor, inbound transfer monitor, pending tx monitor, account activation monitor, financial reconciliation, provider outbox worker. |
+| Treasury | financial integrity, treasury payout worker. |
+| Bitcoin accounts | retention, receive monitor, cold wallet monitor, PSBT expiry. |
+| Payments | external execution worker e reconciliation service. |
+
+## Health e operacao
+
+Endpoints publicos:
+
+- `GET /healthz`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /system/release`
+- Actuator `/actuator/health/**` quando habilitado.
+
+Comandos:
 
 ```bash
-bash scripts/init-local.sh
-bash scripts/start-local.sh --no-arm
+bash scripts/start-local.sh
+bash scripts/logs-local.sh
 bash scripts/stop-local.sh
-cd backend/kerosene
-./gradlew test
-./gradlew dependencyCheckAnalyze
+cd backend/kerosene && JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test
+cd backend/mpc-sidecar && go test ./...
+cd backend/vault && mvn package
 ```
 
-Cuidados:
+## Segredos e arquivos proibidos
 
-- `docker compose config` imprime variaveis resolvidas; nao publique a saida se estiver usando `.env` real.
-- Confirme se os sidecars MPC estao definidos no compose usado em producao.
-- Confirme se os build contexts apontam para `backend/vault` e `backend/mpc-sidecar` no layout atual.
-- Confirme se `bitcoin.deposit-address` nao esta usando o default de desenvolvimento.
-- Confirme se `WEBAUTHN_RP_ID` e `WEBAUTHN_ORIGINS` batem com o dominio/onion acessado pelo app.
+Nunca versionar `.env`, certificados, keystores, Tor keys, macaroons LND, service accounts, secrets de diretores, master keys, dumps de banco ou `frontend/build/**`.
+
+A arvore atual contem varios `web-admin-build.stale-*`; eles devem ser tratados como artefatos antigos, nao como fonte de verdade.

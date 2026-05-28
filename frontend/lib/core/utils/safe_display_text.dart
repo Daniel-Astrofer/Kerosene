@@ -1,15 +1,15 @@
 import 'package:flutter/widgets.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class SafeDisplayText {
   SafeDisplayText._();
 
   static String unavailable(BuildContext context) {
-    return context.l10n.apiDisplayInformationUnavailable;
+    return context.tr.apiDisplayInformationUnavailable;
   }
 
   static String addressUnavailable(BuildContext context) {
-    return context.l10n.apiDisplayAddressUnavailable;
+    return context.tr.apiDisplayAddressUnavailable;
   }
 
   static String maskAddress(

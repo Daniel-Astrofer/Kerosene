@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:teste/core/motion/app_motion.dart';
 
+const Duration kKerosenePageTransitionDuration = KeroseneMotion.pageIn;
+const Duration kKerosenePageReverseTransitionDuration = KeroseneMotion.pageOut;
+
 const PageTransitionsTheme kerosenePageTransitionsTheme = PageTransitionsTheme(
   builders: <TargetPlatform, PageTransitionsBuilder>{
     TargetPlatform.android: KerosenePageTransitionsBuilder(),
@@ -20,13 +23,13 @@ Route<T> keroseneHorizontalRoute<T>({
   return PageRouteBuilder<T>(
     settings: settings,
     fullscreenDialog: fullscreenDialog,
-    transitionDuration: KeroseneMotion.route,
-    reverseTransitionDuration: KeroseneMotion.medium,
+    transitionDuration: kKerosenePageTransitionDuration,
+    reverseTransitionDuration: kKerosenePageReverseTransitionDuration,
     pageBuilder: (context, animation, secondaryAnimation) => builder(context),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return buildKeroseneRouteTransition(
-        context: context,
+      return buildKeroseneHorizontalTransition(
         animation: animation,
+        secondaryAnimation: secondaryAnimation,
         child: child,
       );
     },
@@ -52,6 +55,32 @@ class KerosenePageTransitionsBuilder extends PageTransitionsBuilder {
   }
 }
 
+Widget buildKeroseneHorizontalTransition({
+  required Animation<double> animation,
+  required Animation<double> secondaryAnimation,
+  required Widget child,
+}) {
+  final curved = CurvedAnimation(
+    parent: animation,
+    curve: KeroseneMotion.entrance,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  return RepaintBoundary(
+    child: FadeTransition(
+      opacity: Tween<double>(begin: 0.96, end: 1).animate(curved),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.045, 0),
+          end: Offset.zero,
+        ).animate(curved),
+        transformHitTests: false,
+        child: child,
+      ),
+    ),
+  );
+}
+
 Widget buildKeroseneRouteTransition({
   required BuildContext context,
   required Animation<double> animation,
@@ -61,21 +90,9 @@ Widget buildKeroseneRouteTransition({
     return child;
   }
 
-  final curved = CurvedAnimation(
-    parent: animation,
-    curve: KeroseneMotion.entrance,
-    reverseCurve: Curves.easeInCubic,
-  );
-
-  return FadeTransition(
-    opacity: Tween<double>(begin: 0.96, end: 1).animate(curved),
-    child: SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0.045, 0),
-        end: Offset.zero,
-      ).animate(curved),
-      transformHitTests: false,
-      child: child,
-    ),
+  return buildKeroseneHorizontalTransition(
+    animation: animation,
+    secondaryAnimation: const AlwaysStoppedAnimation<double>(0),
+    child: child,
   );
 }

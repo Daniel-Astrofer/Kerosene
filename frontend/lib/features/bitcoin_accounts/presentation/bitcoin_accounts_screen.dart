@@ -5,6 +5,7 @@ import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
@@ -17,13 +18,24 @@ import 'package:teste/core/theme/monochrome_theme.dart';
 import 'package:teste/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
 import 'package:teste/features/bitcoin_accounts/data/cold_wallet_public_material.dart';
 import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
-class BitcoinAccountsScreen extends ConsumerWidget {
+class BitcoinAccountsScreen extends ConsumerStatefulWidget {
   const BitcoinAccountsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BitcoinAccountsScreen> createState() =>
+      _BitcoinAccountsScreenState();
+}
+
+class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
+  int _selectedInternalIndex = 0;
+  String? _managedAccountId;
+
+  @override
+  Widget build(BuildContext context) {
     final accounts = ref.watch(bitcoinAccountsProvider);
     final bottom = AppPrimaryNavigationBar.scaffoldBottomClearance(context);
     final responsive = context.responsive;
@@ -56,22 +68,41 @@ class BitcoinAccountsScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _Header(
-                            title: context.l10n.bitcoinAccountsTitle,
-                            subtitle: context.l10n.bitcoinAccountsSubtitle,
+                            onAdd: _openInternalAccountFlow,
+                            managing: _managedAccountId != null,
+                            onBack: _managedAccountId == null
+                                ? null
+                                : () =>
+                                    setState(() => _managedAccountId = null),
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           accounts.when(
                             loading: () => const _AccountsSkeleton(),
                             error: (_, __) => _StatePanel(
                               icon: LucideIcons.alertTriangle,
-                              title: context.l10n.bitcoinAccountsErrorTitle,
-                              message: context.l10n.bitcoinAccountsErrorMessage,
-                              actionLabel: context.l10n.tryAgain,
+                              title: context.tr.bitcoinAccountsErrorTitle,
+                              message: context.tr.bitcoinAccountsErrorMessage,
+                              actionLabel: context.tr.tryAgain,
                               onAction: () => ref
                                   .read(bitcoinAccountsProvider.notifier)
                                   .refresh(),
                             ),
-                            data: (items) => _AccountsContent(accounts: items),
+                            data: (items) => _AccountsContent(
+                              accounts: items,
+                              selectedInternalIndex: _selectedInternalIndex,
+                              managedAccountId: _managedAccountId,
+                              onInternalChanged: (index) => setState(() {
+                                _selectedInternalIndex = index;
+                                _managedAccountId = null;
+                              }),
+                              onManageAccount: (account) => setState(() {
+                                _managedAccountId = account.id;
+                              }),
+                              onCreateColdWallet: _openColdWalletFlow,
+                              onCreateInternalAccount: _openInternalAccountFlow,
+                              onReceive: (account) =>
+                                  _showReceiveSheet(context, account),
+                            ),
                           ),
                         ],
                       ),
@@ -88,334 +119,1020 @@ class BitcoinAccountsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _openColdWalletFlow() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const ColdWalletCreationScreen(),
+      ),
+    );
+  }
+
+  void _openInternalAccountFlow() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const _InternalAccountCreationFlow(),
+      ),
+    );
+  }
 }
 
 class _Header extends StatelessWidget {
-  final String title;
-  final String subtitle;
+  final VoidCallback onAdd;
+  final VoidCallback? onBack;
+  final bool managing;
 
-  const _Header({required this.title, required this.subtitle});
+  const _Header({
+    required this.onAdd,
+    required this.managing,
+    this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final responsive = context.responsive;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            _IconFrame(icon: LucideIcons.bitcoin),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: monoTextColor,
-                      fontSize: responsive.compactFontSize(
-                        tiny: 22,
-                        compact: 24,
-                        regular: 25,
-                      ),
-                      height: 1.05,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
+        if (onBack != null) ...[
+          _RoundHeaderButton(icon: LucideIcons.chevronLeft, onTap: onBack!),
+          const SizedBox(width: 10),
+        ],
+        Expanded(
+          child: Text(
+            'Carteira interna',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.ibmPlexSerif(
+              color: Colors.white,
+              fontSize: managing ? 32 : 36,
+              fontWeight: FontWeight.w500,
+              height: 1.05,
+              letterSpacing: 0,
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          subtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: monoMutedTextColor,
-                height: 1.4,
-              ),
-        ),
+        const SizedBox(width: 12),
+        _RoundHeaderButton(icon: LucideIcons.plus, onTap: onAdd),
       ],
+    );
+  }
+}
+
+class _RoundHeaderButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _RoundHeaderButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.10),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
     );
   }
 }
 
 class _AccountsContent extends ConsumerWidget {
   final List<BitcoinAccount> accounts;
+  final int selectedInternalIndex;
+  final String? managedAccountId;
+  final ValueChanged<int> onInternalChanged;
+  final ValueChanged<BitcoinAccount> onManageAccount;
+  final VoidCallback onCreateColdWallet;
+  final VoidCallback onCreateInternalAccount;
+  final ValueChanged<BitcoinAccount> onReceive;
 
-  const _AccountsContent({required this.accounts});
+  const _AccountsContent({
+    required this.accounts,
+    required this.selectedInternalIndex,
+    required this.managedAccountId,
+    required this.onInternalChanged,
+    required this.onManageAccount,
+    required this.onCreateColdWallet,
+    required this.onCreateInternalAccount,
+    required this.onReceive,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final internal = accounts.where((account) => account.isInternal).toList();
     final watchOnly = accounts.where((account) => account.isWatchOnly).toList();
+    final selectedIndex = internal.isEmpty
+        ? 0
+        : selectedInternalIndex.clamp(0, internal.length - 1);
+    final selectedInternal = internal.isEmpty ? null : internal[selectedIndex];
+    BitcoinAccount? managedAccount;
+    if (managedAccountId != null) {
+      for (final account in internal) {
+        if (account.id == managedAccountId) {
+          managedAccount = account;
+          break;
+        }
+      }
+    }
+
+    if (accounts.isEmpty) {
+      return _StatePanel(
+        icon: LucideIcons.walletCards,
+        title: context.tr.bitcoinAccountsEmptyTitle,
+        message: context.tr.bitcoinAccountsEmptyMessage,
+        actionLabel: context.tr.bitcoinAccountsNewKeroseneCard,
+        onAction: onCreateInternalAccount,
+      );
+    }
+
+    if (managedAccount != null) {
+      final account = managedAccount;
+      return _InternalAccountManagementView(
+        account: account,
+        onReceive: () => onReceive(account),
+      );
+    }
+
+    final txAsync = ref.watch(transactionHistoryProvider);
+    final requestsAsync = selectedInternal == null
+        ? const AsyncValue<List<ReceivingRequestView>>.data(
+            <ReceivingRequestView>[],
+          )
+        : ref.watch(bitcoinAccountReceiveRequestsProvider(selectedInternal.id));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final shouldStack = constraints.maxWidth < 360;
-            final buttons = [
-              _ActionButton(
-                icon: LucideIcons.snowflake,
-                label: context.l10n.bitcoinAccountsCreateColdWallet,
-                onTap: () => _openColdWalletFlow(context),
-              ),
-              _ActionButton(
-                icon: LucideIcons.creditCard,
-                label: context.l10n.bitcoinAccountsNewKeroseneCard,
-                onTap: () => _showCreateInternalCard(context, ref),
-              ),
-            ];
-
-            if (shouldStack) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  buttons[0],
-                  const SizedBox(height: AppSpacing.sm),
-                  buttons[1],
-                ],
-              );
-            }
-
-            return Row(
-              children: [
-                Expanded(child: buttons[0]),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(child: buttons[1]),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        if (accounts.isEmpty)
+        if (selectedInternal == null)
           _StatePanel(
-            icon: LucideIcons.walletCards,
-            title: context.l10n.bitcoinAccountsEmptyTitle,
-            message: context.l10n.bitcoinAccountsEmptyMessage,
-            actionLabel: context.l10n.bitcoinAccountsCreateColdWallet,
-            onAction: () => _openColdWalletFlow(context),
+            icon: LucideIcons.creditCard,
+            title: context.tr.bitcoinAccountsNoKeroseneCard,
+            message: context.tr.bitcoinAccountsEmptyMessage,
+            actionLabel: context.tr.bitcoinAccountsNewKeroseneCard,
+            onAction: onCreateInternalAccount,
           )
         else ...[
-          _SectionTitle(context.l10n.bitcoinAccountsKeroseneCardSection),
-          if (internal.isEmpty)
-            _MutedPanel(text: context.l10n.bitcoinAccountsNoKeroseneCard)
-          else
-            for (final account in internal)
-              _BitcoinAccountCard(
-                account: account,
-                onReceive: () => _showReceiveSheet(context, account),
-              ),
-          const SizedBox(height: AppSpacing.lg),
-          _SectionTitle(context.l10n.bitcoinAccountsColdWalletSection),
-          if (watchOnly.isEmpty)
-            _MutedPanel(text: context.l10n.bitcoinAccountsNoColdWallet)
-          else
-            for (final account in watchOnly)
-              _BitcoinAccountCard(account: account),
+          _InternalCardPager(
+            accounts: internal,
+            selectedIndex: selectedIndex,
+            onChanged: onInternalChanged,
+            onTapCard: () => onManageAccount(selectedInternal),
+          ),
+          const SizedBox(height: 30),
+          _InternalBalanceSection(account: selectedInternal),
+          const SizedBox(height: 30),
+          _InternalTransactionsSection(
+            account: selectedInternal,
+            transactionsAsync: txAsync,
+            requestsAsync: requestsAsync,
+          ),
         ],
+        const SizedBox(height: 32),
+        _ColdWalletSection(
+          accounts: watchOnly,
+          onCreateColdWallet: onCreateColdWallet,
+        ),
+      ],
+    );
+  }
+}
+
+class _InternalCardPager extends StatelessWidget {
+  final List<BitcoinAccount> accounts;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+  final VoidCallback onTapCard;
+
+  const _InternalCardPager({
+    required this.accounts,
+    required this.selectedIndex,
+    required this.onChanged,
+    required this.onTapCard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 224,
+          child: PageView.builder(
+            controller: PageController(
+              viewportFraction: 0.96,
+              initialPage: selectedIndex,
+            ),
+            onPageChanged: onChanged,
+            itemCount: accounts.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _InternalWalletCard(
+                  account: accounts[index],
+                  onTap: onTapCard,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var index = 0; index < accounts.length; index++)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: index == selectedIndex
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.30),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _InternalWalletCard extends StatelessWidget {
+  final BitcoinAccount account;
+  final VoidCallback onTap;
+
+  const _InternalWalletCard({required this.account, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = account.label.trim().isEmpty
+        ? context.tr.bitcoinAccountsUnnamedAccount
+        : account.label.trim();
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(28),
+      child: SizedBox(
+        height: 224,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(28),
+          child: Ink(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1E1B38), Color(0xFF141414)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.50),
+                  blurRadius: 25,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.ibmPlexSerif(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 21,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      _cardExpiryLabel(account),
+                      style: GoogleFonts.ibmPlexSerif(
+                        color: Colors.white.withValues(alpha: 0.70),
+                        fontSize: 18,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  'Kerosene',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.ibmPlexSerif(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _shortCardIdentifier(account),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.technicalMono(
+                          textStyle:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.50),
+                                    fontSize: 11,
+                                    letterSpacing: 1.2,
+                                  ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _cardCode(account),
+                      style: AppTypography.technicalMono(
+                        textStyle:
+                            Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.50),
+                                  fontSize: 11,
+                                  letterSpacing: 1.2,
+                                ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InternalBalanceSection extends StatelessWidget {
+  final BitcoinAccount account;
+
+  const _InternalBalanceSection({required this.account});
+
+  @override
+  Widget build(BuildContext context) {
+    final limit = account.dailyLimitSats;
+    final available = account.balanceAvailableSats;
+    final progress =
+        limit <= 0 ? 0.0 : (available / limit).clamp(0.0, 1.0).toDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _Pill(text: context.tr.bitcoinAccountsKeroseneCardBadge),
+            _Pill(text: _friendlyStatus(context, account.status)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text(
+                context.tr.bitcoinAccountsAvailableBalance,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+            Text(
+              _formatSats(available),
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Container(
+          height: 16,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: progress,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.20),
+                    Colors.white.withValues(alpha: 0.62),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${_formatSats(available)} / ${_formatSats(limit)}',
+          textAlign: TextAlign.right,
+          style: GoogleFonts.inter(
+            color: const Color(0xFF888888),
+            fontSize: 13,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          context.tr.bitcoinAccountsKeroseneCardNote,
+          style: GoogleFonts.inter(
+            color: const Color(0xFF888888),
+            fontSize: 13,
+            height: 1.35,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InternalTransactionsSection extends StatelessWidget {
+  final BitcoinAccount account;
+  final AsyncValue<List<Transaction>> transactionsAsync;
+  final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+
+  const _InternalTransactionsSection({
+    required this.account,
+    required this.transactionsAsync,
+    required this.requestsAsync,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return requestsAsync.when(
+      loading: () => const _CompactLoadingPanel(),
+      error: (_, __) => _TransactionsPanel(
+        title: 'Transactions',
+        children: [
+          _DarkListMessage(text: context.tr.bitcoinAccountsErrorMessage),
+        ],
+      ),
+      data: (requests) => transactionsAsync.when(
+        loading: () => const _CompactLoadingPanel(),
+        error: (_, __) => _TransactionsPanel(
+          title: 'Transactions',
+          children: [
+            _DarkListMessage(text: context.tr.bitcoinAccountsErrorMessage),
+          ],
+        ),
+        data: (transactions) {
+          final rows = _transactionsForAccount(
+            account: account,
+            transactions: transactions,
+            requests: requests,
+          ).take(3).toList(growable: false);
+
+          return _TransactionsPanel(
+            title: 'Transactions',
+            children: rows.isEmpty
+                ? [_DarkListMessage(text: 'Sem transações desta carteira.')]
+                : [
+                    for (var index = 0; index < rows.length; index++)
+                      _TransactionSummaryRow(
+                        transaction: rows[index],
+                        showDivider: index != rows.length - 1,
+                      ),
+                  ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TransactionsPanel extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _TransactionsPanel({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.ibmPlexSerif(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(children: children),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TransactionSummaryRow extends StatelessWidget {
+  final Transaction transaction;
+  final bool showDivider;
+
+  const _TransactionSummaryRow({
+    required this.transaction,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = transaction.description?.trim().isNotEmpty == true
+        ? transaction.description!.trim()
+        : _transactionTitle(transaction);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  _relativeTransactionDate(transaction.timestamp),
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF888888),
+                    fontSize: 13,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            _signedSats(transaction),
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DarkListMessage extends StatelessWidget {
+  final String text;
+
+  const _DarkListMessage({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          color: const Color(0xFF888888),
+          fontSize: 13,
+          height: 1.35,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactLoadingPanel extends StatelessWidget {
+  const _CompactLoadingPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 88,
+      child: Center(
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+      ),
+    );
+  }
+}
+
+class _ColdWalletSection extends StatelessWidget {
+  final List<BitcoinAccount> accounts;
+  final VoidCallback onCreateColdWallet;
+
+  const _ColdWalletSection({
+    required this.accounts,
+    required this.onCreateColdWallet,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                context.tr.bitcoinAccountsColdWalletSection,
+                style: GoogleFonts.ibmPlexSerif(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: onCreateColdWallet,
+              icon: const Icon(LucideIcons.plus, color: Colors.white),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (accounts.isEmpty)
+          _MutedPanel(text: context.tr.bitcoinAccountsNoColdWallet)
+        else
+          for (final account in accounts) _ColdWalletTile(account: account),
+      ],
+    );
+  }
+}
+
+class _ColdWalletTile extends StatelessWidget {
+  final BitcoinAccount account;
+
+  const _ColdWalletTile({required this.account});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = account.label.trim().isEmpty
+        ? context.tr.bitcoinAccountsUnnamedAccount
+        : account.label.trim();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.snowflake, color: Colors.white, size: 22),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _Pill(text: context.tr.bitcoinAccountsColdWalletBadge),
+                    _Pill(text: context.tr.bitcoinAccountsReviewBalance),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  context.tr.bitcoinAccountsObservedBalance,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF888888),
+                    fontSize: 12,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _formatSats(account.observedBalanceSats),
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF888888),
+                    fontSize: 13,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  context.tr.bitcoinAccountsColdWalletNote,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF888888),
+                    fontSize: 12,
+                    height: 1.35,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            account.xpubFingerprint ?? account.coldWalletId ?? '',
+            style: AppTypography.technicalMono(
+              textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFF888888),
+                    fontSize: 11,
+                    letterSpacing: 0.8,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InternalAccountManagementView extends StatefulWidget {
+  final BitcoinAccount account;
+  final VoidCallback onReceive;
+
+  const _InternalAccountManagementView({
+    required this.account,
+    required this.onReceive,
+  });
+
+  @override
+  State<_InternalAccountManagementView> createState() =>
+      _InternalAccountManagementViewState();
+}
+
+class _InternalAccountManagementViewState
+    extends State<_InternalAccountManagementView> {
+  String? _expandedKey = 'limit';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _InternalWalletCard(account: widget.account, onTap: () {}),
+        const SizedBox(height: 18),
+        _ManagementItem(
+          title: 'Limite disponível',
+          expanded: _expandedKey == 'limit',
+          onTap: () => _toggle('limit'),
+          rows: [
+            ('Seu limite', _formatSats(widget.account.balanceAvailableSats)),
+          ],
+        ),
+        _ManagementItem(
+          title: 'Endereço de recebimento',
+          expanded: _expandedKey == 'receive',
+          onTap: () {
+            _toggle('receive');
+            widget.onReceive();
+          },
+          rows: const [
+            ('Ação', 'Gerar ou visualizar endereço'),
+          ],
+        ),
+        _ManagementItem(
+          title: 'Limite de gastos diário',
+          expanded: _expandedKey == 'daily',
+          onTap: () => _toggle('daily'),
+          rows: [
+            ('Limite diário', _formatSats(widget.account.dailyLimitSats)),
+          ],
+        ),
+        _ManagementItem(
+          title: 'Senha do cartão',
+          expanded: _expandedKey == 'password',
+          onTap: () => _toggle('password'),
+          rows: const [
+            ('Status', 'Protegida'),
+          ],
+        ),
+        _ManagementItem(
+          title: 'Data de validade',
+          expanded: _expandedKey == 'expiry',
+          onTap: () => _toggle('expiry'),
+          rows: [
+            ('Validade', _cardExpiryLabel(widget.account)),
+          ],
+        ),
       ],
     );
   }
 
-  void _openColdWalletFlow(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const _ColdWalletCreationScreen(),
-      ),
-    );
+  void _toggle(String key) {
+    HapticFeedback.selectionClick();
+    setState(() => _expandedKey = _expandedKey == key ? null : key);
   }
 }
 
-class _BitcoinAccountCard extends StatelessWidget {
-  final BitcoinAccount account;
-  final VoidCallback? onReceive;
+class _ManagementItem extends StatelessWidget {
+  final String title;
+  final bool expanded;
+  final VoidCallback onTap;
+  final List<(String, String)> rows;
 
-  const _BitcoinAccountCard({required this.account, this.onReceive});
+  const _ManagementItem({
+    required this.title,
+    required this.expanded,
+    required this.onTap,
+    required this.rows,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isInternal = account.isInternal;
-    final balance =
-        isInternal ? account.balanceAvailableSats : account.observedBalanceSats;
-    final note = isInternal
-        ? context.l10n.bitcoinAccountsKeroseneCardNote
-        : context.l10n.bitcoinAccountsColdWalletNote;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      padding: const EdgeInsets.all(16),
-      decoration: monochromePanelDecoration(
-        color: isInternal ? monoSurfaceAltColor : monoSurfaceColor,
-        borderColor: monoBorderColor,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1F),
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(28),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 18,
+                ),
+                child: Row(
                   children: [
-                    _Pill(
-                      text: isInternal
-                          ? context.l10n.bitcoinAccountsKeroseneCardBadge
-                          : context.l10n.bitcoinAccountsColdWalletBadge,
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0,
+                        ),
+                      ),
                     ),
-                    _Pill(text: _friendlyStatus(context, account.status)),
+                    AnimatedRotation(
+                      duration: const Duration(milliseconds: 220),
+                      turns: expanded ? 0.5 : 0,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Colors.black,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.chevronDown,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Icon(
-                isInternal ? LucideIcons.creditCard : LucideIcons.eye,
-                color: monoMutedTextColor,
-                size: 18,
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            account.label.trim().isEmpty
-                ? context.l10n.bitcoinAccountsUnnamedAccount
-                : account.label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: monoTextColor,
-                  fontWeight: FontWeight.w700,
-                  height: 1.1,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            isInternal
-                ? context.l10n.bitcoinAccountsAvailableBalance
-                : context.l10n.bitcoinAccountsObservedBalance,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: monoMutedTextColor,
-                  letterSpacing: 0,
-                ),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _formatSats(balance),
-              maxLines: 1,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: monoTextColor,
-                    fontFamily: AppTypography.numericFontFamily,
-                    fontSize: context.responsive.compactFontSize(
-                      tiny: 24,
-                      compact: 26,
-                      regular: 28,
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 20),
+              child: Column(
+                children: [
+                  Divider(color: Colors.white.withValues(alpha: 0.05)),
+                  for (final row in rows)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              row.$1,
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF8E8E93),
+                                fontSize: 13,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            row.$2,
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFF8E8E93),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            note,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: monoMutedTextColor,
-                  height: 1.35,
-                ),
-          ),
-          if (isInternal &&
-              (account.balancePendingSats > 0 ||
-                  account.balanceLockedSats > 0 ||
-                  account.balanceAutoHoldSats > 0)) ...[
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (account.balancePendingSats > 0)
-                  _MiniMetric(
-                    context.l10n.bitcoinAccountsPendingBalance,
-                    account.balancePendingSats,
-                  ),
-                if (account.balanceLockedSats > 0)
-                  _MiniMetric(
-                    context.l10n.bitcoinAccountsReservedBalance,
-                    account.balanceLockedSats,
-                  ),
-                if (account.balanceAutoHoldSats > 0)
-                  _MiniMetric(
-                    context.l10n.bitcoinAccountsReviewBalance,
-                    account.balanceAutoHoldSats,
-                  ),
-              ],
-            ),
-          ],
-          if (onReceive != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                style: monochromeFilledButtonStyle(),
-                onPressed: onReceive,
-                icon: const Icon(LucideIcons.qrCode, size: 18),
-                label: Text(context.l10n.bitcoinAccountsReceiveBtc),
+                ],
               ),
             ),
-          ],
+            crossFadeState:
+                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeOutCubic,
+          ),
         ],
       ),
     );
   }
 }
 
-class _MiniMetric extends StatelessWidget {
-  final String label;
-  final int sats;
-
-  const _MiniMetric(this.label, this.sats);
+class ColdWalletCreationScreen extends ConsumerStatefulWidget {
+  const ColdWalletCreationScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: monoSurfaceRaisedColor,
-        border: Border.all(color: monoBorderColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Text(
-          '$label · ${_formatSats(sats)}',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: monoMutedTextColor,
-                letterSpacing: 0,
-              ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ColdWalletCreationScreen extends ConsumerStatefulWidget {
-  const _ColdWalletCreationScreen();
-
-  @override
-  ConsumerState<_ColdWalletCreationScreen> createState() =>
+  ConsumerState<ColdWalletCreationScreen> createState() =>
       _ColdWalletCreationScreenState();
 }
 
 class _ColdWalletCreationScreenState
-    extends ConsumerState<_ColdWalletCreationScreen> {
-  final TextEditingController _labelController = TextEditingController(
-    text: 'Cold Wallet',
-  );
+    extends ConsumerState<ColdWalletCreationScreen> {
   final TextEditingController _extraWordController = TextEditingController();
   final List<TextEditingController> _verificationControllers = [];
   final _deriver = const ColdWalletPublicMaterialDeriver();
 
   _ColdWalletLevel _level = _ColdWalletLevel.recommended;
-  _ColdWalletStep _step = _ColdWalletStep.prepare;
+  _ColdWalletStep _step = _ColdWalletStep.purpose;
+  _WalletPurpose? _purpose;
   ColdWalletPublicMaterial? _publicMaterial;
   List<int> _verificationIndexes = const [];
   String _mnemonic = '';
@@ -427,24 +1144,69 @@ class _ColdWalletCreationScreenState
   bool _busy = false;
 
   bool get _canGenerate =>
-      _labelController.text.trim().isNotEmpty &&
+      _purpose != null &&
       _paperReady &&
       _privatePlace &&
       _offlineReady &&
       _noPhotos;
+
+  String get _walletLabel => _purpose?.label ?? 'Cold Wallet';
 
   List<String> get _words =>
       _mnemonic.trim().isEmpty ? const [] : _mnemonic.split(' ');
 
   @override
   void dispose() {
-    _labelController.dispose();
     _extraWordController.dispose();
     for (final controller in _verificationControllers) {
       controller.dispose();
     }
     _mnemonic = '';
     super.dispose();
+  }
+
+  void _goBack() {
+    if (_busy) return;
+    switch (_step) {
+      case _ColdWalletStep.purpose:
+        Navigator.maybePop(context);
+        return;
+      case _ColdWalletStep.prepare:
+        setState(() => _step = _ColdWalletStep.purpose);
+        return;
+      case _ColdWalletStep.backup:
+        _discardGeneratedMaterial();
+        setState(() => _step = _ColdWalletStep.prepare);
+        return;
+      case _ColdWalletStep.verify:
+        setState(() => _step = _ColdWalletStep.backup);
+        return;
+    }
+  }
+
+  void _continueFromPurpose() {
+    if (_busy) return;
+    if (_purpose == null) {
+      AppNotice.showWarning(
+        context,
+        title: 'Selecione a finalidade',
+        message: 'Escolha para que essa carteira on-chain será usada.',
+      );
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() => _step = _ColdWalletStep.prepare);
+  }
+
+  void _discardGeneratedMaterial() {
+    _mnemonic = '';
+    _publicMaterial = null;
+    _showWords = false;
+    _verificationIndexes = const [];
+    for (final controller in _verificationControllers) {
+      controller.dispose();
+    }
+    _verificationControllers.clear();
   }
 
   void _generateColdWallet() {
@@ -508,8 +1270,8 @@ class _ColdWalletCreationScreenState
     if (material == null || !_verificationMatches()) {
       AppNotice.showWarning(
         context,
-        title: context.l10n.coldWalletVerifyFailedTitle,
-        message: context.l10n.coldWalletVerifyFailedMessage,
+        title: context.tr.coldWalletVerifyFailedTitle,
+        message: context.tr.coldWalletVerifyFailedMessage,
       );
       return;
     }
@@ -518,7 +1280,7 @@ class _ColdWalletCreationScreenState
     try {
       final notifier = ref.read(bitcoinAccountsProvider.notifier);
       await notifier.importColdWallet(
-        label: _labelController.text.trim(),
+        label: _walletLabel,
         xpub: material.xpub,
         fingerprint: material.fingerprint,
         derivationPath: material.derivationPath,
@@ -533,16 +1295,16 @@ class _ColdWalletCreationScreenState
       if (!mounted) return;
       AppNotice.showSuccess(
         context,
-        title: context.l10n.coldWalletImportedTitle,
-        message: context.l10n.coldWalletImportedMessage,
+        title: context.tr.coldWalletImportedTitle,
+        message: context.tr.coldWalletImportedMessage,
       );
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
       AppNotice.showError(
         context,
-        title: context.l10n.coldWalletImportErrorTitle,
-        message: context.l10n.coldWalletImportErrorMessage,
+        title: context.tr.coldWalletImportErrorTitle,
+        message: context.tr.coldWalletImportErrorMessage,
       );
     } finally {
       if (mounted) {
@@ -553,6 +1315,10 @@ class _ColdWalletCreationScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_step == _ColdWalletStep.purpose) {
+      return _buildPurposeScaffold();
+    }
+
     final responsive = context.responsive;
 
     return Scaffold(
@@ -571,7 +1337,7 @@ class _ColdWalletCreationScreenState
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: _busy ? null : () => Navigator.maybePop(context),
+                    onPressed: _busy ? null : _goBack,
                     icon: const Icon(
                       LucideIcons.chevronLeft,
                       color: monoTextColor,
@@ -580,7 +1346,7 @@ class _ColdWalletCreationScreenState
                   ),
                   Expanded(
                     child: Text(
-                      context.l10n.coldWalletCreateTitle,
+                      context.tr.coldWalletCreateTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -611,6 +1377,7 @@ class _ColdWalletCreationScreenState
                       maxWidth: responsive.mobileContentMaxWidth,
                     ),
                     child: switch (_step) {
+                      _ColdWalletStep.purpose => const SizedBox.shrink(),
                       _ColdWalletStep.prepare => _buildPrepare(),
                       _ColdWalletStep.backup => _buildBackup(),
                       _ColdWalletStep.verify => _buildVerify(),
@@ -625,23 +1392,83 @@ class _ColdWalletCreationScreenState
     );
   }
 
+  Widget _buildPurposeScaffold() {
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: _goBack,
+                  icon: const Icon(
+                    LucideIcons.arrowLeft,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _CreationTitle(
+                      'Para Que Finalidade\nDeseja Derivar essa\nCarteira?',
+                    ),
+                    const SizedBox(height: 40),
+                    DecoratedBox(
+                      decoration: const BoxDecoration(
+                        border: Border.symmetric(
+                          horizontal: BorderSide(color: Color(0xFF222222)),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          for (final purpose in _walletPurposeOptions)
+                            _PurposeTile(
+                              purpose: purpose,
+                              selected: _purpose == purpose,
+                              onTap: () => setState(() => _purpose = purpose),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                MediaQuery.viewInsetsOf(context).bottom > 0 ? 20 : 40,
+              ),
+              child: _CreationPrimaryButton(
+                label: 'Gerar Carteira',
+                onPressed: _purpose == null ? null : _continueFromPurpose,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPrepare() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MutedPanel(text: context.l10n.coldWalletCreateSubtitle),
-        const SizedBox(height: AppSpacing.lg),
-        TextField(
-          controller: _labelController,
-          onChanged: (_) => setState(() {}),
-          style: const TextStyle(color: monoTextColor),
-          decoration: monochromeInputDecoration(
-            label: context.l10n.coldWalletNameLabel,
-            hintText: context.l10n.coldWalletNameHint,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _SectionTitle(context.l10n.coldWalletSecurityLevelTitle),
+        _SectionTitle(context.tr.coldWalletSecurityLevelTitle),
         for (final level in _ColdWalletLevel.values)
           _ColdWalletLevelTile(
             level: level,
@@ -655,33 +1482,33 @@ class _ColdWalletCreationScreenState
             obscureText: true,
             style: const TextStyle(color: monoTextColor),
             decoration: monochromeInputDecoration(
-              label: context.l10n.coldWalletExtraWordLabel,
-              hintText: context.l10n.coldWalletExtraWordHint,
+              label: context.tr.coldWalletExtraWordLabel,
+              hintText: context.tr.coldWalletExtraWordHint,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          _MutedPanel(text: context.l10n.coldWalletExtraWordWarning),
+          _MutedPanel(text: context.tr.coldWalletExtraWordWarning),
         ],
         const SizedBox(height: AppSpacing.lg),
-        _SectionTitle(context.l10n.coldWalletChecklistTitle),
+        _SectionTitle(context.tr.coldWalletChecklistTitle),
         _ChecklistTile(
           value: _paperReady,
-          text: context.l10n.coldWalletChecklistPaper,
+          text: context.tr.coldWalletChecklistPaper,
           onChanged: (value) => setState(() => _paperReady = value),
         ),
         _ChecklistTile(
           value: _privatePlace,
-          text: context.l10n.coldWalletChecklistPrivate,
+          text: context.tr.coldWalletChecklistPrivate,
           onChanged: (value) => setState(() => _privatePlace = value),
         ),
         _ChecklistTile(
           value: _offlineReady,
-          text: context.l10n.coldWalletChecklistOffline,
+          text: context.tr.coldWalletChecklistOffline,
           onChanged: (value) => setState(() => _offlineReady = value),
         ),
         _ChecklistTile(
           value: _noPhotos,
-          text: context.l10n.coldWalletChecklistNoPhotos,
+          text: context.tr.coldWalletChecklistNoPhotos,
           onChanged: (value) => setState(() => _noPhotos = value),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -689,7 +1516,7 @@ class _ColdWalletCreationScreenState
           style: monochromeFilledButtonStyle(),
           onPressed: _canGenerate ? _generateColdWallet : null,
           icon: const Icon(LucideIcons.keyRound, size: 18),
-          label: Text(context.l10n.coldWalletGenerateAction),
+          label: Text(context.tr.coldWalletGenerateAction),
         ),
       ],
     );
@@ -699,7 +1526,7 @@ class _ColdWalletCreationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MutedPanel(text: context.l10n.coldWalletBackupSubtitle),
+        _MutedPanel(text: context.tr.coldWalletBackupSubtitle),
         const SizedBox(height: AppSpacing.lg),
         DecoratedBox(
           decoration: monochromePanelDecoration(color: monoSurfaceAltColor),
@@ -713,7 +1540,7 @@ class _ColdWalletCreationScreenState
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        context.l10n.coldWalletBackupTitle,
+                        context.tr.coldWalletBackupTitle,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: monoTextColor,
                               fontWeight: FontWeight.w700,
@@ -739,7 +1566,7 @@ class _ColdWalletCreationScreenState
                         .toList(),
                   )
                 else
-                  _MutedPanel(text: context.l10n.coldWalletWordsHidden),
+                  _MutedPanel(text: context.tr.coldWalletWordsHidden),
                 const SizedBox(height: AppSpacing.md),
                 OutlinedButton.icon(
                   style: monochromeOutlinedButtonStyle(),
@@ -747,8 +1574,8 @@ class _ColdWalletCreationScreenState
                   icon: Icon(_showWords ? LucideIcons.eyeOff : LucideIcons.eye),
                   label: Text(
                     _showWords
-                        ? context.l10n.coldWalletHideWords
-                        : context.l10n.coldWalletShowWords,
+                        ? context.tr.coldWalletHideWords
+                        : context.tr.coldWalletShowWords,
                   ),
                 ),
               ],
@@ -760,7 +1587,7 @@ class _ColdWalletCreationScreenState
           style: monochromeFilledButtonStyle(),
           onPressed: _showWords ? _startVerification : null,
           icon: const Icon(LucideIcons.checkCircle, size: 18),
-          label: Text(context.l10n.coldWalletBackupDoneAction),
+          label: Text(context.tr.coldWalletBackupDoneAction),
         ),
       ],
     );
@@ -770,7 +1597,7 @@ class _ColdWalletCreationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MutedPanel(text: context.l10n.coldWalletVerifySubtitle),
+        _MutedPanel(text: context.tr.coldWalletVerifySubtitle),
         const SizedBox(height: AppSpacing.lg),
         for (var index = 0; index < _verificationIndexes.length; index++) ...[
           TextField(
@@ -778,7 +1605,7 @@ class _ColdWalletCreationScreenState
             onChanged: (_) => setState(() {}),
             style: const TextStyle(color: monoTextColor),
             decoration: monochromeInputDecoration(
-              label: context.l10n.coldWalletVerifyWordLabel(
+              label: context.tr.coldWalletVerifyWordLabel(
                 _verificationIndexes[index] + 1,
               ),
             ),
@@ -797,8 +1624,8 @@ class _ColdWalletCreationScreenState
               : const Icon(LucideIcons.shieldCheck, size: 18),
           label: Text(
             _busy
-                ? context.l10n.coldWalletImportingAction
-                : context.l10n.coldWalletImportAction,
+                ? context.tr.coldWalletImportingAction
+                : context.tr.coldWalletImportAction,
           ),
         ),
       ],
@@ -821,48 +1648,54 @@ class _ColdWalletLevelTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected ? monoSurfaceRaisedColor : monoSurfaceColor,
-            border: Border.all(
-              color: selected ? monoTextColor : monoBorderColor,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: monoSurfaceRaisedColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: selected ? monoTextColor : Colors.transparent,
+              ),
             ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                selected ? LucideIcons.checkCircle : LucideIcons.circle,
-                color: selected ? monoTextColor : monoMutedTextColor,
-                size: 18,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      level.title(context),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: monoTextColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      level.body(context),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: monoMutedTextColor,
-                            height: 1.35,
-                          ),
-                    ),
-                  ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  selected ? LucideIcons.checkCircle : LucideIcons.circle,
+                  color: selected ? monoTextColor : monoMutedTextColor,
+                  size: 18,
                 ),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        level.title(context),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: monoTextColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        level.body(context),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: monoMutedTextColor,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -883,19 +1716,36 @@ class _ChecklistTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      value: value,
-      onChanged: (next) => onChanged(next ?? false),
-      activeColor: monoTextColor,
-      checkColor: Colors.black,
-      controlAffinity: ListTileControlAffinity.leading,
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: monoMutedTextColor,
-              height: 1.35,
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: monoDividerColor),
+          ),
+        ),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: (next) => onChanged(next ?? false),
+              activeColor: monoTextColor,
+              checkColor: Colors.black,
+              side: const BorderSide(color: monoBorderStrongColor),
             ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: monoMutedTextColor,
+                      height: 1.35,
+                    ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -942,55 +1792,651 @@ class _SeedWordBadge extends StatelessWidget {
   }
 }
 
-void _showCreateInternalCard(BuildContext context, WidgetRef ref) {
-  final controller = TextEditingController(text: 'Kerosene BTC Card');
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: monoSurfaceColor,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(borderRadius: monoRadius),
-    builder: (context) => _SheetScaffold(
-      title: context.l10n.bitcoinAccountsCreateCardTitle,
+class _InternalAccountCreationFlow extends ConsumerStatefulWidget {
+  const _InternalAccountCreationFlow();
+
+  @override
+  ConsumerState<_InternalAccountCreationFlow> createState() =>
+      _InternalAccountCreationFlowState();
+}
+
+class _InternalAccountCreationFlowState
+    extends ConsumerState<_InternalAccountCreationFlow> {
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _dailyLimitController = TextEditingController();
+
+  _InternalAccountStep _step = _InternalAccountStep.custody;
+  _WalletPurpose? _purpose;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _dailyLimitController.dispose();
+    super.dispose();
+  }
+
+  void _goBack() {
+    if (_busy) return;
+    if (_step == _InternalAccountStep.custody) {
+      Navigator.maybePop(context);
+      return;
+    }
+    setState(() {
+      _step = _step == _InternalAccountStep.security
+          ? _InternalAccountStep.purpose
+          : _InternalAccountStep.custody;
+    });
+  }
+
+  void _continueFromCustody() {
+    if (_busy) return;
+    setState(() => _step = _InternalAccountStep.purpose);
+  }
+
+  void _continueFromPurpose() {
+    if (_busy) return;
+    if (_purpose == null) {
+      AppNotice.showWarning(
+        context,
+        title: 'Selecione a finalidade',
+        message: 'Escolha para que essa conta interna será usada.',
+      );
+      return;
+    }
+    setState(() => _step = _InternalAccountStep.security);
+  }
+
+  Future<void> _createInternalAccount() async {
+    if (_busy) return;
+    final password = _passwordController.text.trim();
+    final dailyLimit = _parseDailyLimit();
+
+    if (password.isEmpty) {
+      AppNotice.showWarning(
+        context,
+        title: 'Senha obrigatória',
+        message: 'Defina uma senha para proteger alterações nessa carteira.',
+      );
+      return;
+    }
+
+    if (dailyLimit <= 0) {
+      AppNotice.showWarning(
+        context,
+        title: 'Limite obrigatório',
+        message: 'Informe um limite diário maior que zero.',
+      );
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      await ref.read(bitcoinAccountsProvider.notifier).createInternalCard(
+            label: _purpose?.label ?? 'Kerosene BTC Card',
+            dailyLimitSats: dailyLimit,
+          );
+      final state = ref.read(bitcoinAccountsProvider);
+      if (state.hasError) {
+        throw state.error ?? Exception('Create internal account failed');
+      }
+      HapticFeedback.mediumImpact();
+      if (!mounted) return;
+      AppNotice.showSuccess(
+        context,
+        title: context.tr.bitcoinAccountsCreateCardTitle,
+        message: 'Carteira interna criada com sucesso.',
+      );
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      AppNotice.showError(
+        context,
+        title: context.tr.bitcoinAccountsCreateCardErrorTitle,
+        message: context.tr.bitcoinAccountsCreateCardErrorMessage,
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  int _parseDailyLimit() {
+    final raw = _dailyLimitController.text.trim();
+    final normalized = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(normalized) ?? 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                _step == _InternalAccountStep.purpose ? 14 : 24,
+                16,
+                _step == _InternalAccountStep.purpose ? 2 : 8,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: _goBack,
+                  icon: const Icon(
+                    LucideIcons.arrowLeft,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: switch (_step) {
+                  _InternalAccountStep.custody => _buildCustodyStep(),
+                  _InternalAccountStep.purpose => _buildPurposeStep(),
+                  _InternalAccountStep.security => _buildSecurityStep(),
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustodyStep() {
+    return _CreationStepFrame(
+      key: const ValueKey('custody'),
+      footer: _CreationPrimaryButton(
+        label: 'Continuar',
+        onPressed: _continueFromCustody,
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: controller,
-            style: const TextStyle(color: monoTextColor),
-            decoration: monochromeInputDecoration(
-              label: context.l10n.bitcoinAccountsCardNameLabel,
-              hintText: context.l10n.bitcoinAccountsCardNameHint,
-            ),
+          _CreationTitle('Nova Carteira.'),
+          const SizedBox(height: 16),
+          const _CreationBodyText(
+            'Selecione o modelo de custódia preferido para prosseguir. Cada opção define como seus ativos serão gerenciados e armazenados.',
           ),
-          const SizedBox(height: AppSpacing.md),
-          _MutedPanel(text: context.l10n.bitcoinAccountsCreateCardNotice),
-          const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              style: monochromeFilledButtonStyle(),
-              onPressed: () async {
-                await ref
-                    .read(bitcoinAccountsProvider.notifier)
-                    .createInternalCard(controller.text.trim());
-                if (!context.mounted) return;
-                final state = ref.read(bitcoinAccountsProvider);
-                if (state.hasError) {
-                  AppNotice.showError(
-                    context,
-                    title: context.l10n.bitcoinAccountsCreateCardErrorTitle,
-                    message: context.l10n.bitcoinAccountsCreateCardErrorMessage,
-                  );
-                  return;
-                }
-                Navigator.pop(context);
-              },
-              child: Text(context.l10n.bitcoinAccountsCreateCardAction),
-            ),
+          const SizedBox(height: 32),
+          _CustodyOptionCard(
+            selected: true,
+            icon: LucideIcons.wallet,
+            title: 'Carteira Interna Kerosene',
+            subtitle:
+                'Saldo custodiado, transferências instantâneas, menor responsabilidade.',
+            onTap: () {},
+          ),
+          const SizedBox(height: 16),
+          _CustodyOptionCard(
+            selected: false,
+            icon: LucideIcons.keyRound,
+            title: 'Carteira Fria / On-chain',
+            subtitle:
+                'Controle total do usuário, backup necessário, maior responsabilidade.',
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ColdWalletCreationScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _buildPurposeStep() {
+    return _CreationStepFrame(
+      key: const ValueKey('purpose'),
+      footer: _CreationPrimaryButton(
+        label: 'Gerar Carteira',
+        onPressed: _continueFromPurpose,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _CreationTitle(
+            'Para Que Finalidade Deseja Derivar essa Carteira?',
+          ),
+          const SizedBox(height: 40),
+          for (final purpose in _walletPurposeOptions)
+            _PurposeTile(
+              purpose: purpose,
+              selected: _purpose == purpose,
+              onTap: () => setState(() => _purpose = purpose),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityStep() {
+    return _CreationStepFrame(
+      key: const ValueKey('security'),
+      footer: _CreationPrimaryButton(
+        label: _busy ? 'Gerando...' : 'Gerar Carteira',
+        onPressed: _busy ? null : _createInternalAccount,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _CreationTitle('Digite uma senha e um limite de gasto diário.'),
+          const SizedBox(height: 24),
+          const _CreationBodyText(
+            'O limite diário serve para a segurança da sua conta depois de inserido só pode ser alterado uma unica vez, após a segunda alteração é necessário a criação de uma nova carteira.',
+          ),
+          const SizedBox(height: 18),
+          const _CreationBodyText(
+            'Esta senha é obrigatória para fazer quaisquer alteração na carteira.',
+          ),
+          const SizedBox(height: 48),
+          _CreationTextField(
+            controller: _passwordController,
+            label: 'Digite uma senha para a carteira.',
+            hintText: 'Senha',
+            obscureText: true,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 40),
+          _CreationTextField(
+            controller: _dailyLimitController,
+            label: 'Limite diário.',
+            hintText: 'Limite',
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CreationStepFrame extends StatelessWidget {
+  final Widget child;
+  final Widget footer;
+
+  const _CreationStepFrame({
+    super.key,
+    required this.child,
+    required this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: child,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            16,
+            24,
+            MediaQuery.viewInsetsOf(context).bottom > 0 ? 20 : 40,
+          ),
+          child: footer,
+        ),
+      ],
+    );
+  }
+}
+
+class _CreationTitle extends StatelessWidget {
+  final String text;
+
+  const _CreationTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.ibmPlexSerif(
+        color: Colors.white,
+        fontSize: 40,
+        fontWeight: FontWeight.w500,
+        height: 1.05,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+class _CreationBodyText extends StatelessWidget {
+  final String text;
+
+  const _CreationBodyText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontFamily: AppTypography.fontFamily,
+        color: Color(0xFF888888),
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 1.45,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+class _CreationPrimaryButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _CreationPrimaryButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          disabledBackgroundColor: const Color(0xFF2A2A2A),
+          disabledForegroundColor: const Color(0xFF777777),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            height: 1,
+            letterSpacing: 0,
+          ),
+        ),
+        onPressed: onPressed,
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+class _CustodyOptionCard extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _CustodyOptionCard({
+    required this.selected,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? Colors.transparent : const Color(0xFF111111),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? Colors.white : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CreationCircleIcon(icon: icon, outlined: true),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: AppTypography.fontFamily,
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: AppTypography.fontFamily,
+                        color: Color(0xFF888888),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        height: 1.25,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PurposeTile extends StatelessWidget {
+  final _WalletPurpose purpose;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PurposeTile({
+    required this.purpose,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 80,
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Color(0xFF222222)),
+            ),
+          ),
+          child: Row(
+            children: [
+              _CreationCircleIcon(icon: purpose.icon),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  purpose.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: AppTypography.fontFamily,
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w400,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : const Color(0xFF1A1A1A),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  selected ? LucideIcons.check : LucideIcons.chevronRight,
+                  color: selected ? Colors.black : const Color(0xFF888888),
+                  size: selected ? 16 : 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreationCircleIcon extends StatelessWidget {
+  final IconData icon;
+  final bool outlined;
+
+  const _CreationCircleIcon({
+    required this.icon,
+    this.outlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: outlined ? Colors.transparent : const Color(0xFF1A1A1A),
+        shape: BoxShape.circle,
+        border: outlined ? Border.all(color: const Color(0xFF333333)) : null,
+      ),
+      child: Icon(icon, color: Colors.white, size: outlined ? 24 : 20),
+    );
+  }
+}
+
+class _CreationTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hintText;
+  final bool obscureText;
+  final TextAlign textAlign;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+
+  const _CreationTextField({
+    required this.controller,
+    required this.label,
+    required this.hintText,
+    this.obscureText = false,
+    this.textAlign = TextAlign.start,
+    this.keyboardType,
+    this.inputFormatters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.ibmPlexSerif(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            height: 1.2,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          textAlign: textAlign,
+          cursorColor: Colors.white,
+          style: const TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: hintText,
+            hintStyle: const TextStyle(
+              color: Color(0xFF666666),
+              fontSize: 16,
+              letterSpacing: 0,
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF333333)),
+            ),
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF333333)),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WalletPurpose {
+  final String label;
+  final IconData icon;
+
+  const _WalletPurpose(this.label, this.icon);
+}
+
+const _walletPurposeOptions = [
+  _WalletPurpose('Investimento', LucideIcons.trendingUp),
+  _WalletPurpose('Casa', LucideIcons.home),
+  _WalletPurpose('Reserva', LucideIcons.building2),
+  _WalletPurpose('Veículo', LucideIcons.car),
+  _WalletPurpose('Gastos mensais', LucideIcons.receipt),
+  _WalletPurpose('Dia a Dia', LucideIcons.calendarDays),
+];
+
+enum _InternalAccountStep { custody, purpose, security }
+
+String _friendlyStatus(BuildContext context, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'ACTIVE' => context.tr.bitcoinAccountsStatusActive,
+    'PENDING' => context.tr.bitcoinAccountsStatusPending,
+    'DISABLED' => context.tr.bitcoinAccountsStatusDisabled,
+    _ => context.tr.bitcoinAccountsStatusReady,
+  };
 }
 
 void _showReceiveSheet(BuildContext context, BitcoinAccount account) {
@@ -1030,7 +2476,7 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetScaffold(
-      title: context.l10n.bitcoinReceiveTitle,
+      title: context.tr.bitcoinReceiveTitle,
       child: _result == null ? _buildForm(context) : _buildLiveRequest(context),
     );
   }
@@ -1043,7 +2489,7 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
           keyboardType: TextInputType.number,
           style: const TextStyle(color: monoTextColor),
           decoration: monochromeInputDecoration(
-            label: context.l10n.bitcoinReceiveAmountOptional,
+            label: context.tr.bitcoinReceiveAmountOptional,
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -1064,11 +2510,11 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
           onChanged: (value) => setState(() => _oneTime = value),
           contentPadding: EdgeInsets.zero,
           title: Text(
-            context.l10n.bitcoinReceiveOneTime,
+            context.tr.bitcoinReceiveOneTime,
             style: const TextStyle(color: monoTextColor),
           ),
           subtitle: Text(
-            context.l10n.bitcoinReceiveOneTimeSubtitle,
+            context.tr.bitcoinReceiveOneTimeSubtitle,
             style: const TextStyle(color: monoMutedTextColor),
           ),
         ),
@@ -1081,8 +2527,8 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
             icon: const Icon(LucideIcons.qrCode, size: 18),
             label: Text(
               _busy
-                  ? context.l10n.bitcoinReceiveGenerating
-                  : context.l10n.bitcoinReceiveGenerateAddress,
+                  ? context.tr.bitcoinReceiveGenerating
+                  : context.tr.bitcoinReceiveGenerateAddress,
             ),
           ),
         ),
@@ -1146,13 +2592,13 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
                 style: monochromeOutlinedButtonStyle(),
                 onPressed: _busy ? null : _copyAddress,
                 icon: const Icon(LucideIcons.copy, size: 18),
-                label: Text(context.l10n.copyAddress),
+                label: Text(context.tr.copyAddress),
               ),
               OutlinedButton.icon(
                 style: monochromeOutlinedButtonStyle(),
                 onPressed: _busy ? null : () => _refreshStatus(silent: false),
                 icon: const Icon(LucideIcons.refreshCw, size: 18),
-                label: Text(context.l10n.bitcoinReceiveRefresh),
+                label: Text(context.tr.bitcoinReceiveRefresh),
               ),
             ];
 
@@ -1198,8 +2644,8 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
       if (!mounted) return;
       AppNotice.showError(
         context,
-        title: context.l10n.bitcoinReceiveCreateErrorTitle,
-        message: context.l10n.bitcoinReceiveCreateErrorMessage,
+        title: context.tr.bitcoinReceiveCreateErrorTitle,
+        message: context.tr.bitcoinReceiveCreateErrorMessage,
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1222,8 +2668,8 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
       if (!silent && mounted) {
         AppNotice.showError(
           context,
-          title: context.l10n.bitcoinReceiveStatusErrorTitle,
-          message: context.l10n.bitcoinReceiveStatusErrorMessage,
+          title: context.tr.bitcoinReceiveStatusErrorTitle,
+          message: context.tr.bitcoinReceiveStatusErrorMessage,
         );
       }
     } finally {
@@ -1238,8 +2684,8 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
     if (!mounted) return;
     AppNotice.showSuccess(
       context,
-      title: context.l10n.bitcoinReceiveCopiedTitle,
-      message: context.l10n.bitcoinReceiveCopiedMessage,
+      title: context.tr.bitcoinReceiveCopiedTitle,
+      message: context.tr.bitcoinReceiveCopiedMessage,
     );
   }
 
@@ -1253,28 +2699,6 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
 
   bool _isTerminal(String status) =>
       status == 'PAID' || status == 'HIDDEN' || status == 'FAILED_SAFE';
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      style: monochromeOutlinedButtonStyle(minHeight: 54),
-      onPressed: onTap,
-      icon: Icon(icon, size: 18),
-      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-    );
-  }
 }
 
 class _SheetScaffold extends StatelessWidget {
@@ -1488,7 +2912,7 @@ class _AccountsSkeleton extends StatelessWidget {
   }
 }
 
-enum _ColdWalletStep { prepare, backup, verify }
+enum _ColdWalletStep { purpose, prepare, backup, verify }
 
 enum _ColdWalletLevel {
   essential,
@@ -1500,52 +2924,43 @@ enum _ColdWalletLevel {
 
   String title(BuildContext context) {
     return switch (this) {
-      essential => context.l10n.coldWalletLevelEssentialTitle,
-      recommended => context.l10n.coldWalletLevelRecommendedTitle,
-      maximum => context.l10n.coldWalletLevelMaximumTitle,
+      essential => context.tr.coldWalletLevelEssentialTitle,
+      recommended => context.tr.coldWalletLevelRecommendedTitle,
+      maximum => context.tr.coldWalletLevelMaximumTitle,
     };
   }
 
   String body(BuildContext context) {
     return switch (this) {
-      essential => context.l10n.coldWalletLevelEssentialBody,
-      recommended => context.l10n.coldWalletLevelRecommendedBody,
-      maximum => context.l10n.coldWalletLevelMaximumBody,
+      essential => context.tr.coldWalletLevelEssentialBody,
+      recommended => context.tr.coldWalletLevelRecommendedBody,
+      maximum => context.tr.coldWalletLevelMaximumBody,
     };
   }
 }
 
-String _friendlyStatus(BuildContext context, String status) {
-  return switch (status.trim().toUpperCase()) {
-    'ACTIVE' => context.l10n.bitcoinAccountsStatusActive,
-    'PENDING' => context.l10n.bitcoinAccountsStatusPending,
-    'DISABLED' => context.l10n.bitcoinAccountsStatusDisabled,
-    _ => context.l10n.bitcoinAccountsStatusReady,
-  };
-}
-
 String _expiryLabel(BuildContext context, String value) {
   return switch (value) {
-    '15M' => context.l10n.receive15Min,
-    '1H' => context.l10n.receive1Hour,
-    '24H' => context.l10n.receive24Hours,
-    'PERMANENT' => context.l10n.receiveNoExpiration,
+    '15M' => context.tr.receive15Min,
+    '1H' => context.tr.receive1Hour,
+    '24H' => context.tr.receive24Hours,
+    'PERMANENT' => context.tr.receiveNoExpiration,
     _ => value,
   };
 }
 
 String _receiveStatusLabel(BuildContext context, String status) {
   return switch (status) {
-    'ACTIVE' => context.l10n.bitcoinReceiveStatusActive,
-    'MEMPOOL_SEEN' => context.l10n.bitcoinReceiveStatusDetected,
-    'CONFIRMING' => context.l10n.bitcoinReceiveStatusConfirming,
-    'PAID' => context.l10n.bitcoinReceiveStatusPaid,
-    'EXPIRED' => context.l10n.bitcoinReceiveStatusExpired,
-    'EXPIRED_RECEIVED' => context.l10n.bitcoinReceiveStatusLate,
-    'AUTO_RESOLUTION_PENDING' => context.l10n.bitcoinReceiveStatusReview,
-    'USER_ACTION_REQUIRED' => context.l10n.bitcoinReceiveStatusAction,
-    'FAILED_SAFE' => context.l10n.bitcoinReceiveStatusProtected,
-    _ => context.l10n.bitcoinReceiveStatusWaiting,
+    'ACTIVE' => context.tr.bitcoinReceiveStatusActive,
+    'MEMPOOL_SEEN' => context.tr.bitcoinReceiveStatusDetected,
+    'CONFIRMING' => context.tr.bitcoinReceiveStatusConfirming,
+    'PAID' => context.tr.bitcoinReceiveStatusPaid,
+    'EXPIRED' => context.tr.bitcoinReceiveStatusExpired,
+    'EXPIRED_RECEIVED' => context.tr.bitcoinReceiveStatusLate,
+    'AUTO_RESOLUTION_PENDING' => context.tr.bitcoinReceiveStatusReview,
+    'USER_ACTION_REQUIRED' => context.tr.bitcoinReceiveStatusAction,
+    'FAILED_SAFE' => context.tr.bitcoinReceiveStatusProtected,
+    _ => context.tr.bitcoinReceiveStatusWaiting,
   };
 }
 
@@ -1554,17 +2969,114 @@ String _receiveStatusMessage(
   ReceivingRequestView request,
 ) {
   return switch (request.status) {
-    'ACTIVE' => context.l10n.bitcoinReceiveMessageActive,
-    'MEMPOOL_SEEN' => context.l10n.bitcoinReceiveMessageDetected,
-    'CONFIRMING' => context.l10n.bitcoinReceiveMessageConfirming,
-    'PAID' => context.l10n.bitcoinReceiveMessagePaid,
-    'EXPIRED' => context.l10n.bitcoinReceiveMessageExpired,
-    'EXPIRED_RECEIVED' => context.l10n.bitcoinReceiveMessageLate,
-    'AUTO_RESOLUTION_PENDING' => context.l10n.bitcoinReceiveMessageReview,
-    'USER_ACTION_REQUIRED' => context.l10n.bitcoinReceiveMessageAction,
-    'FAILED_SAFE' => context.l10n.bitcoinReceiveMessageProtected,
-    _ => context.l10n.bitcoinReceiveMessageWaiting,
+    'ACTIVE' => context.tr.bitcoinReceiveMessageActive,
+    'MEMPOOL_SEEN' => context.tr.bitcoinReceiveMessageDetected,
+    'CONFIRMING' => context.tr.bitcoinReceiveMessageConfirming,
+    'PAID' => context.tr.bitcoinReceiveMessagePaid,
+    'EXPIRED' => context.tr.bitcoinReceiveMessageExpired,
+    'EXPIRED_RECEIVED' => context.tr.bitcoinReceiveMessageLate,
+    'AUTO_RESOLUTION_PENDING' => context.tr.bitcoinReceiveMessageReview,
+    'USER_ACTION_REQUIRED' => context.tr.bitcoinReceiveMessageAction,
+    'FAILED_SAFE' => context.tr.bitcoinReceiveMessageProtected,
+    _ => context.tr.bitcoinReceiveMessageWaiting,
   };
+}
+
+List<Transaction> _transactionsForAccount({
+  required BitcoinAccount account,
+  required List<Transaction> transactions,
+  required List<ReceivingRequestView> requests,
+}) {
+  final keys = <String>{
+    account.id,
+    account.cardId ?? '',
+    account.coldWalletId ?? '',
+    account.label,
+    account.xpubFingerprint ?? '',
+    for (final request in requests) request.address,
+    for (final request in requests) request.bip21,
+  }.map((value) => value.trim()).where((value) => value.isNotEmpty).toSet();
+
+  if (keys.isEmpty) return const [];
+
+  bool matches(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return false;
+    return keys.any((key) => normalized == key || normalized.contains(key));
+  }
+
+  final rows = transactions.where((tx) {
+    return matches(tx.fromAddress) ||
+        matches(tx.toAddress) ||
+        matches(tx.description ?? '') ||
+        matches(tx.externalReference ?? '') ||
+        matches(tx.invoiceId ?? '') ||
+        matches(tx.paymentHash ?? '');
+  }).toList();
+  rows.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  return rows;
+}
+
+String _cardExpiryLabel(BitcoinAccount account) {
+  final source = account.cardId ?? account.id;
+  final hash = source.codeUnits.fold<int>(0, (value, unit) => value + unit);
+  final month = (hash % 12) + 1;
+  final year = 29 + (hash % 5);
+  return '${month.toString().padLeft(2, '0')}/$year';
+}
+
+String _cardCode(BitcoinAccount account) {
+  final source = account.cardId ?? account.id;
+  final hash = source.hashCode.abs() % 1000;
+  return hash.toString().padLeft(3, '0');
+}
+
+String _shortCardIdentifier(BitcoinAccount account) {
+  final source = (account.cardId ?? account.id).replaceAll('-', '');
+  if (source.length <= 20) return source;
+  return source.substring(0, 20);
+}
+
+String _transactionTitle(Transaction transaction) {
+  if (transaction.isLightning) return 'Lightning';
+  if (transaction.isInternal) return 'Kerosene';
+  return switch (transaction.type) {
+    TransactionType.receive || TransactionType.deposit => 'Recebimento',
+    TransactionType.send || TransactionType.withdrawal => 'Envio',
+    TransactionType.fee => 'Taxa',
+    TransactionType.swap => 'Swap',
+  };
+}
+
+String _relativeTransactionDate(DateTime timestamp) {
+  final now = DateTime.now();
+  final local = timestamp.toLocal();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(local.year, local.month, local.day);
+  final difference = today.difference(day).inDays;
+  if (difference == 0) return 'Hoje';
+  if (difference == 1) return 'Ontem';
+  if (difference < 7) {
+    return switch (local.weekday) {
+      DateTime.monday => 'Segunda',
+      DateTime.tuesday => 'Terça',
+      DateTime.wednesday => 'Quarta',
+      DateTime.thursday => 'Quinta',
+      DateTime.friday => 'Sexta',
+      DateTime.saturday => 'Sábado',
+      _ => 'Domingo',
+    };
+  }
+  final year = local.year.toString().substring(2);
+  final month = local.month.toString().padLeft(2, '0');
+  return '${local.day}/$month/$year';
+}
+
+String _signedSats(Transaction transaction) {
+  final isIncoming = transaction.type == TransactionType.receive ||
+      transaction.type == TransactionType.deposit;
+  final sign = isIncoming ? '+' : '-';
+  return '$sign${_formatSats(transaction.amountSatoshis)}';
 }
 
 String _formatSats(int sats) {

@@ -335,7 +335,7 @@ class _PinDialogState extends State<PinDialog> {
                                 .error
                                 .withValues(alpha: 0.7)
                             : Theme.of(context).colorScheme.onPrimary,
-                        fontFamily: 'JetBrainsMono',
+                        fontFamily: 'IBMPlexSansHebrew',
                         fontWeight: FontWeight.w300,
                       ),
                 ),

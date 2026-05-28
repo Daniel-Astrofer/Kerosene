@@ -151,9 +151,22 @@ class QrPaymentParser {
       return _parseBitcoinUri(trimmed);
     }
 
+    // lightning: BOLT11/LNURL URI
+    if (trimmed.toLowerCase().startsWith('lightning:')) {
+      final request = trimmed.substring('lightning:'.length).trim();
+      if (_looksLikeLightningRequest(request)) {
+        return PaymentData(address: request);
+      }
+      return null;
+    }
+
     // kerosene:pay?...
     if (trimmed.toLowerCase().startsWith('kerosene:pay')) {
       return _parseKeroseneUri(trimmed);
+    }
+
+    if (_looksLikeLightningRequest(trimmed)) {
+      return PaymentData(address: trimmed);
     }
 
     // Plain address (no scheme) — looks like a bitcoin address
@@ -233,6 +246,25 @@ class QrPaymentParser {
     // Testnet/regtest: start with m, n, 2, tb1, or bcrt1
     return RegExp(r'^(1|3|bc1|m|n|2|tb1|bcrt1)[a-zA-HJ-NP-Z0-9]{20,90}$')
         .hasMatch(s);
+  }
+
+  static bool _looksLikeLightningRequest(String s) {
+    final trimmed = s.trim();
+    if (trimmed.isEmpty) return false;
+    final lower = trimmed.toLowerCase();
+    return RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(lower) ||
+        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(lower) ||
+        _looksLikeLightningAddress(trimmed);
+  }
+
+  static bool _looksLikeLightningAddress(String s) {
+    final trimmed = s.trim();
+    if (trimmed.length > 254 || trimmed.contains(RegExp(r'\s'))) {
+      return false;
+    }
+    return RegExp(
+      r'^[a-zA-Z0-9._%+\-]{1,64}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$',
+    ).hasMatch(trimmed);
   }
 
   static bool _looksLikeUsername(String s) {

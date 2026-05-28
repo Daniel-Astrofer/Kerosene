@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:teste/core/responsive/kerosene_responsive.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../presentation/widgets/cyber_button.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE FEEDBACK VIEW
@@ -74,9 +74,9 @@ class StateFeedbackView extends StatelessWidget {
   }) =>
       StateFeedbackView(
         state: FeedbackState.networkError,
-        title: context.l10n.errNoInternet,
-        description: context.l10n.errCommFailure,
-        actionLabel: context.l10n.tryAgain,
+        title: context.tr.errNoInternet,
+        description: context.tr.errCommFailure,
+        actionLabel: context.tr.tryAgain,
         onAction: onAction,
       );
 

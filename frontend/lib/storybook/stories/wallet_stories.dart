@@ -5,23 +5,13 @@ import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/home/presentation/screens/home_screen.dart';
 import 'package:teste/features/home/presentation/screens/home_loading_screen.dart';
-import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/create_wallet_screen.dart';
 import 'package:teste/features/wallet/presentation/screens/send_money_screen.dart';
-import 'package:teste/features/transactions/presentation/screens/withdraw_screen.dart'
-    as tx_withdraw;
-import 'package:teste/features/wallet/presentation/screens/wallet_details_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/wallet_config_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/unified_transaction_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_qr_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/nfc_interaction_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/deposit_instructions_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/deposit/deposit_method_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/deposit/deposit_provider_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/deposit/deposit_onchain_invoice_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/deposit/deposit_lightning_invoice_screen.dart';
+import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
+import 'package:teste/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
+import 'package:teste/features/wallet/presentation/screens/receive_request_flow_screen.dart';
+import 'package:teste/features/transactions/presentation/screens/deposits_screen.dart';
+import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+    show ColdWalletCreationScreen;
 
 /// Shared mock wallet used across wallet stories for constructor requirements.
 final Wallet _mockWallet = Wallet(
@@ -33,6 +23,13 @@ final Wallet _mockWallet = Wallet(
   type: WalletType.nativeSegwit,
   createdAt: DateTime.now(),
   updatedAt: DateTime.now(),
+);
+
+final Wallet _mockColdWallet = _mockWallet.copyWith(
+  id: 'story_wallet_cold',
+  name: 'Storybook Cold Vault',
+  address: 'bc1qstorybookcoldvault0address0sovereign0key',
+  walletMode: 'ONCHAIN',
 );
 
 /// Returns all wallet and transaction-related stories.
@@ -51,120 +48,109 @@ List<Story> walletStories() {
       builder: (context) => const HomeLoadingScreen(),
     ),
 
-    // ─── Wallet Management ──────────────────────────────
-    Story(
-      name: 'Wallet/Create Wallet',
-      description: 'New wallet creation form.',
-      builder: (context) => const CreateWalletScreen(),
-    ),
-    Story(
-      name: 'Wallet/Details',
-      description:
-          'Individual wallet detail view with balance and transactions.',
-      builder: (context) => WalletDetailsScreen(wallet: _mockWallet),
-    ),
-    Story(
-      name: 'Wallet/Config',
-      description: 'Wallet settings and configuration.',
-      builder: (context) => WalletConfigScreen(wallet: _mockWallet),
-    ),
-
-    // ─── Send & Withdraw ────────────────────────────────
+    // ─── Send ───────────────────────────────────────────
     Story(
       name: 'Wallet/Send Money',
       description: 'Send BTC screen with keypad and address input.',
       builder: (context) => SendMoneyScreen(walletId: _mockWallet.name),
     ),
     Story(
-      name: 'Wallet/Withdraw (External BTC)',
-      description: 'External BTC withdraw with fees and TOTP.',
-      builder: (context) => tx_withdraw.WithdrawScreen(wallet: _mockWallet),
+      name: 'Wallet/Cold Wallet — Create',
+      description:
+          'Create a watch-only cold wallet with purpose, seed backup, and verification.',
+      builder: (context) => const ColdWalletCreationScreen(),
     ),
 
     // ─── Receive ────────────────────────────────────────
     Story(
-      name: 'Wallet/Receive',
-      description: 'Receive BTC landing screen.',
-      builder: (context) => const ReceiveScreen(),
+      name: 'Wallet/Receive — Selection',
+      description: 'Minimal receive method selection flow.',
+      builder: (context) => DepositsScreen(initialWallet: _mockWallet),
     ),
     Story(
-      name: 'Wallet/Receive QR',
-      description: 'Generated QR code for receiving payment.',
-      builder: (context) => const ReceiveQrScreen(
-        amountDisplay: '0.002 BTC',
-        paymentUri: 'bitcoin:bc1qstorybook...',
-      ),
-    ),
-
-    // ─── Deposit Flow ───────────────────────────────────
-    Story(
-      name: 'Wallet/Deposit — Amount',
-      description: 'Enter BRL amount to convert to BTC.',
-      builder: (context) => DepositAmountScreen(wallet: _mockWallet),
+      name: 'Wallet/Receive — Provedores',
+      description: 'Payment gateway provider selection for receiving funds.',
+      builder: (context) => ReceiveGatewayProvidersScreen(wallet: _mockWallet),
     ),
     Story(
-      name: 'Wallet/Deposit — Method',
-      description: 'Choose deposit method (Pix, Card, Wire).',
-      builder: (context) =>
-          DepositMethodScreen(wallet: _mockWallet, amountFiat: 1000.0),
-    ),
-    Story(
-      name: 'Wallet/Deposit — Provider',
-      description: 'Select onramp provider for the deposit.',
-      builder: (context) => DepositProviderScreen(
+      name: 'Wallet/Receive — QR Code e Dados',
+      description: 'New receive QR and payment data screen.',
+      builder: (context) => ReceiveRequestFlowScreen(
         wallet: _mockWallet,
-        amountFiat: 1000.0,
-        method: 'Pix',
+        onChainWallet: false,
+        amountBtc: 0.025,
+        method: ReceiveAmountMethod.qrCode,
+        initialStage: ReceiveRequestStage.qr,
+        enableStatusPolling: false,
+        initialAddress: _mockWallet.address,
+        initialPaymentUri:
+            'kerosene:pay?address=${_mockWallet.address}&amount=0.02500000',
       ),
     ),
     Story(
-      name: 'Wallet/Deposit — Onchain Invoice',
-      description: 'On-chain BTC invoice with address and QR.',
-      builder: (context) => DepositOnchainInvoiceScreen(
+      name: 'Wallet/Receive — Confirmações',
+      description: 'New receive network confirmation screen.',
+      builder: (context) => ReceiveRequestFlowScreen(
+        wallet: _mockColdWallet,
+        onChainWallet: true,
+        amountBtc: 0.045,
+        method: ReceiveAmountMethod.qrCode,
+        initialStage: ReceiveRequestStage.confirmations,
+        enableStatusPolling: false,
+        initialAddress: _mockColdWallet.address,
+        initialPaymentUri:
+            'bitcoin:${_mockColdWallet.address}?amount=0.04500000',
+        initialTxid: 'storybook-onchain-txid',
+        initialConfirmations: 0,
+        requiredConfirmations: 3,
+      ),
+    ),
+    Story(
+      name: 'Wallet/Receive — Pagamento Identificado',
+      description: 'New receive payment identified success screen.',
+      builder: (context) => ReceiveRequestFlowScreen(
+        wallet: _mockColdWallet,
+        onChainWallet: true,
+        amountBtc: 0.045,
+        method: ReceiveAmountMethod.qrCode,
+        initialStage: ReceiveRequestStage.identified,
+        enableStatusPolling: false,
+        initialAddress: _mockColdWallet.address,
+        initialPaymentUri:
+            'bitcoin:${_mockColdWallet.address}?amount=0.04500000',
+        initialTxid: 'storybook-onchain-txid',
+        initialConfirmations: 3,
+        requiredConfirmations: 3,
+        identifiedAt: DateTime(2023, 10, 24, 14, 32),
+      ),
+    ),
+    Story(
+      name: 'Wallet/Receive — NFC Kerosene',
+      description:
+          'Internal NFC receive flow with searching, detected, and success states.',
+      builder: (context) => ReceiveNfcFlowScreen(
         wallet: _mockWallet,
-        amountFiat: 1000.0,
-        providerName: 'Kerosene',
+        onChainWallet: false,
+        amountBtc: 0.00125,
       ),
     ),
     Story(
-      name: 'Wallet/Deposit — Lightning Invoice',
-      description: 'Lightning Network invoice with BOLT11 QR.',
-      builder: (context) => DepositLightningInvoiceScreen(
-        wallet: _mockWallet,
-        amountFiat: 1000.0,
-        providerName: 'Kerosene',
+      name: 'Wallet/Receive — NFC On-chain',
+      description:
+          'On-chain NFC receive flow with searching, detected, and success states.',
+      builder: (context) => ReceiveNfcFlowScreen(
+        wallet: _mockWallet.copyWith(
+          name: 'Carteira Fria',
+          walletMode: 'ONCHAIN',
+        ),
+        onChainWallet: true,
+        amountBtc: 0.00125,
       ),
     ),
     Story(
-      name: 'Wallet/Deposit — Instructions',
-      description: 'Step-by-step deposit instructions.',
-      builder: (context) => const DepositInstructionsScreen(),
-    ),
-
-    // ─── Transaction History ────────────────────────────
-    Story(
-      name: 'Wallet/Transaction History',
-      description: 'Unified transaction history (send & receive).',
-      builder: (context) {
-        final isSend = context.knobs.boolean(
-          label: 'Show Send Mode',
-          initial: false,
-        );
-        return UnifiedTransactionScreen(isSend: isSend);
-      },
-    ),
-
-    // ─── Scanning & NFC ─────────────────────────────────
-    Story(
-      name: 'Wallet/QR Scanner',
-      description: 'Camera-based QR code scanner.',
-      builder: (context) => const QrScannerScreen(),
-    ),
-    Story(
-      name: 'Wallet/NFC Interaction',
-      description: 'NFC tap-to-pay interaction screen.',
-      builder: (context) =>
-          const NfcInteractionScreen(amountDisplay: '0.001 BTC'),
+      name: 'Wallet/Transactions — Statement',
+      description: 'Transaction statement screen used by history.',
+      builder: (context) => const TransactionStatementScreen(),
     ),
   ];
 }

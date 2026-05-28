@@ -8,7 +8,7 @@ import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import 'deposit_lightning_invoice_screen.dart';
 import 'deposit_onchain_invoice_screen.dart';
 
@@ -73,52 +73,52 @@ class DepositMethodScreen extends ConsumerWidget {
     final lightningSubtitle = walletProfileAsync.when(
       data: (profile) {
         if (profile.lightningEnabled) {
-          return context.l10n.depositFlowLightningFastSubtitle;
+          return context.tr.depositFlowLightningFastSubtitle;
         }
         final reason = profile.lightningUnavailableReason.trim();
         if (reason.isNotEmpty) {
           return ApiDisplayText.message(context, reason);
         }
-        return context.l10n.depositFlowLightningUnavailable;
+        return context.tr.depositFlowLightningUnavailable;
       },
-      loading: () => context.l10n.depositFlowLightningChecking,
-      error: (_, __) => context.l10n.depositFlowLightningCheckError,
+      loading: () => context.tr.depositFlowLightningChecking,
+      error: (_, __) => context.tr.depositFlowLightningCheckError,
     );
     final lightningTag = walletProfileAsync.when(
       data: (profile) => profile.lightningEnabled
-          ? context.l10n.depositFlowLightningInstant
-          : context.l10n.depositFlowUnavailable,
-      loading: () => context.l10n.depositFlowValidating,
-      error: (_, __) => context.l10n.depositFlowUnavailable,
+          ? context.tr.depositFlowLightningInstant
+          : context.tr.depositFlowUnavailable,
+      loading: () => context.tr.depositFlowValidating,
+      error: (_, __) => context.tr.depositFlowUnavailable,
     );
     final onchainTitle = walletProfileAsync.maybeWhen(
       data: (profile) => profile.isSelfCustody
-          ? context.l10n.depositFlowOnchainColdTitle
-          : context.l10n.depositFlowOnchainTitle,
+          ? context.tr.depositFlowOnchainColdTitle
+          : context.tr.depositFlowOnchainTitle,
       orElse: () => wallet.isSelfCustody
-          ? context.l10n.depositFlowOnchainColdTitle
-          : context.l10n.depositFlowOnchainTitle,
+          ? context.tr.depositFlowOnchainColdTitle
+          : context.tr.depositFlowOnchainTitle,
     );
     final onchainSubtitle = walletProfileAsync.maybeWhen(
       data: (profile) => profile.isSelfCustody
-          ? context.l10n.depositFlowOnchainColdSubtitle
-          : context.l10n.depositFlowOnchainSubtitle,
+          ? context.tr.depositFlowOnchainColdSubtitle
+          : context.tr.depositFlowOnchainSubtitle,
       orElse: () => wallet.isSelfCustody
-          ? context.l10n.depositFlowOnchainColdSubtitle
-          : context.l10n.depositFlowOnchainSubtitle,
+          ? context.tr.depositFlowOnchainColdSubtitle
+          : context.tr.depositFlowOnchainSubtitle,
     );
     final onchainTag = walletProfileAsync.maybeWhen(
       data: (profile) => profile.isSelfCustody
-          ? context.l10n.depositFlowColdWalletTag
-          : context.l10n.depositFlowConfirmationsTag,
+          ? context.tr.depositFlowColdWalletTag
+          : context.tr.depositFlowConfirmationsTag,
       orElse: () => wallet.isSelfCustody
-          ? context.l10n.depositFlowColdWalletTag
-          : context.l10n.depositFlowConfirmationsTag,
+          ? context.tr.depositFlowColdWalletTag
+          : context.tr.depositFlowConfirmationsTag,
     );
 
     return ReceiveFlowScaffold(
-      title: context.l10n.depositFlowMethodTitle,
-      subtitle: context.l10n.depositFlowMethodSubtitle,
+      title: context.tr.depositFlowMethodTitle,
+      subtitle: context.tr.depositFlowMethodSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -127,7 +127,7 @@ class DepositMethodScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ReceiveFlowSectionLabel(context.l10n.depositFlowSelectedAmount),
+                ReceiveFlowSectionLabel(context.tr.depositFlowSelectedAmount),
                 const SizedBox(height: 4),
                 Text(
                   MoneyDisplay.format(
@@ -141,7 +141,7 @@ class DepositMethodScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  context.l10n.depositFlowEquivalentTo(
+                  context.tr.depositFlowEquivalentTo(
                     MoneyDisplay.format(
                       amount: btcAmount,
                       currency: Currency.btc,
@@ -154,11 +154,11 @@ class DepositMethodScreen extends ConsumerWidget {
               ],
             ),
           ),
-          ReceiveFlowSectionLabel(context.l10n.depositFlowChooseOption),
+          ReceiveFlowSectionLabel(context.tr.depositFlowChooseOption),
           const SizedBox(height: AppSpacing.sm),
           _buildMethodCard(
             icon: LucideIcons.zap,
-            title: context.l10n.lightning,
+            title: context.tr.lightning,
             subtitle: lightningSubtitle,
             badgeText: lightningTag,
             enabled: lightningEnabled,

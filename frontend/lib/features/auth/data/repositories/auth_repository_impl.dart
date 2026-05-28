@@ -37,6 +37,10 @@ class AuthRepositoryImpl implements AuthRepository {
           loginResult.jwt.isNotEmpty &&
           loginResult.jwt.contains('.')) {
         await localDataSource.saveToken(loginResult.jwt);
+        await _saveSessionUser(
+          userId: loginResult.userId,
+          username: username,
+        );
       } else {
         await localDataSource.removeToken();
       }
@@ -75,6 +79,12 @@ class AuthRepositoryImpl implements AuthRepository {
       if (result.token.isNotEmpty && result.token.contains('.')) {
         final parsed = LoginResult.fromResponseData(result.token);
         await localDataSource.saveToken(parsed.jwt);
+        await _saveSessionUser(
+          userId: parsed.userId,
+          username: username,
+          role: 'ADMIN',
+          isAdmin: true,
+        );
       }
       return Right(result);
     } on AuthException catch (e) {
@@ -105,6 +115,12 @@ class AuthRepositoryImpl implements AuthRepository {
         final parsed = LoginResult.fromResponseData(result.token);
         if (parsed.jwt.isNotEmpty && parsed.jwt.contains('.')) {
           await localDataSource.saveToken(parsed.jwt);
+          await _saveSessionUser(
+            userId: parsed.userId,
+            username: 'Admin',
+            role: 'ADMIN',
+            isAdmin: true,
+          );
         }
       }
       return Right(result);
@@ -361,55 +377,6 @@ class AuthRepositoryImpl implements AuthRepository {
           statusCode: e.statusCode,
           errorCode: e.errorCode,
           data: e.data));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, EmergencyRecoveryStartResult>> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  }) async {
-    try {
-      final result = await remoteDataSource.startEmergencyRecovery(
-        username: username,
-        newPassphrase: newPassphrase,
-        recoveryCodes: recoveryCodes,
-      );
-      return Right(result);
-    } on AppException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-      ));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, EmergencyRecoveryFinishResult>>
-      finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  }) async {
-    try {
-      final result = await remoteDataSource.finishEmergencyRecovery(
-        recoverySessionId: recoverySessionId,
-        totpCode: totpCode,
-        credential: credential,
-      );
-      return Right(result);
-    } on AppException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-      ));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -692,6 +659,26 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
     }
+  }
+
+  Future<void> _saveSessionUser({
+    required String username,
+    String? userId,
+    String role = 'USER',
+    bool isAdmin = false,
+  }) async {
+    final normalizedUsername = username.trim();
+    if (normalizedUsername.isEmpty) {
+      return;
+    }
+
+    await localDataSource.saveUser(UserModel(
+      id: userId != null && userId.trim().isNotEmpty ? userId.trim() : '0',
+      username: normalizedUsername,
+      role: role,
+      isAdmin: isAdmin,
+      createdAt: DateTime.now(),
+    ));
   }
 
   // ─── refreshToken ─────────────────────────────────────────────────────────────

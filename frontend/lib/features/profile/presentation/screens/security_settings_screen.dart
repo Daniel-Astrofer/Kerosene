@@ -14,7 +14,7 @@ import 'package:teste/features/security/domain/entities/app_pin_status.dart';
 import 'package:teste/features/security/domain/entities/account_security_profile.dart';
 import 'package:teste/features/security/domain/entities/passkey_inventory.dart';
 import 'package:teste/features/security/presentation/providers/security_provider.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class SecuritySettingsScreen extends ConsumerStatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -68,9 +68,9 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: context.l10n.securityTotpFailureTitle,
+            title: context.tr.securityTotpFailureTitle,
             message: ErrorTranslator.translate(
-              context.l10n,
+              context.tr,
               failure.toString(),
             ),
           );
@@ -90,8 +90,8 @@ class _SecuritySettingsScreenState
     if (_totpCodeController.text.trim().length != 6) {
       AppNotice.showError(
         context,
-        title: context.l10n.securityInvalidCodeTitle,
-        message: context.l10n.securityTotpCodeRequiredMessage,
+        title: context.tr.securityInvalidCodeTitle,
+        message: context.tr.securityTotpCodeRequiredMessage,
       );
       return;
     }
@@ -105,9 +105,9 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: context.l10n.securityTotpFailureTitle,
+            title: context.tr.securityTotpFailureTitle,
             message: ErrorTranslator.translate(
-              context.l10n,
+              context.tr,
               failure.toString(),
             ),
           );
@@ -121,8 +121,8 @@ class _SecuritySettingsScreenState
           _refreshSecurityProviders();
           AppNotice.showSuccess(
             context,
-            title: context.l10n.securityTotpEnabledTitle,
-            message: context.l10n.securityTotpEnabledMessage,
+            title: context.tr.securityTotpEnabledTitle,
+            message: context.tr.securityTotpEnabledMessage,
           );
           if (status.newlyGeneratedCodes.isNotEmpty) {
             _showBackupCodesSheet(status.newlyGeneratedCodes);
@@ -140,9 +140,9 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: context.l10n.securityTotpDisableFailedTitle,
+            title: context.tr.securityTotpDisableFailedTitle,
             message: ErrorTranslator.translate(
-              context.l10n,
+              context.tr,
               failure.toString(),
             ),
           );
@@ -156,8 +156,8 @@ class _SecuritySettingsScreenState
           _refreshSecurityProviders();
           AppNotice.showSuccess(
             context,
-            title: context.l10n.securityTotpDisabledTitle,
-            message: context.l10n.securityTotpDisabledMessage,
+            title: context.tr.securityTotpDisabledTitle,
+            message: context.tr.securityTotpDisabledMessage,
           );
         },
       );
@@ -172,9 +172,9 @@ class _SecuritySettingsScreenState
         (failure) {
           AppNotice.showError(
             context,
-            title: context.l10n.securityBackupRegenerateFailedTitle,
+            title: context.tr.securityBackupRegenerateFailedTitle,
             message: ErrorTranslator.translate(
-              context.l10n,
+              context.tr,
               failure.toString(),
             ),
           );
@@ -241,7 +241,7 @@ class _SecuritySettingsScreenState
                   color: monoBorderStrongColor,
                 ),
                 Text(
-                  context.l10n.securityBackupCodesTitle.toUpperCase(),
+                  context.tr.securityBackupCodesTitle.toUpperCase(),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: monoMutedTextColor,
                         fontWeight: FontWeight.w800,
@@ -250,7 +250,7 @@ class _SecuritySettingsScreenState
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  context.l10n.securityBackupCodesBody,
+                  context.tr.securityBackupCodesBody,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: monoMutedTextColor,
                         height: 1.45,
@@ -276,7 +276,7 @@ class _SecuritySettingsScreenState
                             code,
                             style: const TextStyle(
                               color: monoTextColor,
-                              fontFamily: 'IBM Plex Mono',
+                              fontFamily: 'IBMPlexSansHebrew',
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                             ),
@@ -304,9 +304,9 @@ class _SecuritySettingsScreenState
       if (authState is AuthError) {
         AppNotice.showError(
           context,
-          title: context.l10n.securityRegisterDeviceFailedTitle,
+          title: context.tr.securityRegisterDeviceFailedTitle,
           message: ErrorTranslator.translate(
-            context.l10n,
+            context.tr,
             authState.toString(),
           ),
         );
@@ -317,8 +317,8 @@ class _SecuritySettingsScreenState
       _refreshSecurityProviders();
       AppNotice.showSuccess(
         context,
-        title: context.l10n.securityDeviceRegisteredTitle,
-        message: context.l10n.securityDeviceRegisteredMessage,
+        title: context.tr.securityDeviceRegisteredTitle,
+        message: context.tr.securityDeviceRegisteredMessage,
       );
     });
   }
@@ -330,8 +330,8 @@ class _SecuritySettingsScreenState
     final inventory = profile?.passkeys;
     if (inventory == null || !inventory.passkeyRegistered) {
       return security.passkeyRegistered
-          ? context.l10n.securityDeviceInventoryLoadingSubtitle
-          : context.l10n.securityRegisterDeviceSubtitle;
+          ? context.tr.securityDeviceInventoryLoadingSubtitle
+          : context.tr.securityRegisterDeviceSubtitle;
     }
 
     if (inventory.compatibleForCurrentLogin) {
@@ -339,15 +339,15 @@ class _SecuritySettingsScreenState
           .where((device) => device.compatibleWithCurrentLogin)
           .length;
       return compatibleCount == 1
-          ? context.l10n.securityCompatibleDeviceOne
-          : context.l10n.securityCompatibleDeviceMany(compatibleCount);
+          ? context.tr.securityCompatibleDeviceOne
+          : context.tr.securityCompatibleDeviceMany(compatibleCount);
     }
 
     if (inventory.legacyCredentialsPresent) {
-      return context.l10n.securityLegacyDeviceSubtitle;
+      return context.tr.securityLegacyDeviceSubtitle;
     }
 
-    return context.l10n.securityNoCompatibleDeviceSubtitle;
+    return context.tr.securityNoCompatibleDeviceSubtitle;
   }
 
   @override
@@ -385,7 +385,7 @@ class _SecuritySettingsScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        context.l10n.securityScreenTitle,
+                        context.tr.securityScreenTitle,
                         style:
                             Theme.of(context).textTheme.displaySmall?.copyWith(
                                   color: monoTextColor,
@@ -394,7 +394,7 @@ class _SecuritySettingsScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        context.l10n.securityScreenSubtitle,
+                        context.tr.securityScreenSubtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: monoMutedTextColor,
                               height: 1.4,
@@ -414,10 +414,10 @@ class _SecuritySettingsScreenState
                     _BannerCard(
                       color: Colors.white54,
                       icon: Icons.warning_amber_rounded,
-                      title: context.l10n.securityUnprotectedTitle,
+                      title: context.tr.securityUnprotectedTitle,
                       body: security.warningMessage.isNotEmpty
                           ? security.warningMessage
-                          : context.l10n.securityUnprotectedFallback,
+                          : context.tr.securityUnprotectedFallback,
                     ),
                   const SizedBox(height: AppSpacing.md),
                   _StatusCard(
@@ -447,24 +447,23 @@ class _SecuritySettingsScreenState
                     ),
                     loading: () => const _LoadingCard(),
                     error: (_, __) => _ErrorCard(
-                      title: context.l10n.securityPinEntryTitle,
-                      body: context.l10n.securityPinLoadError,
+                      title: context.tr.securityPinEntryTitle,
+                      body: context.tr.securityPinLoadError,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _SectionCard(
-                    title: context.l10n.securityAuthenticatedDevicesTitle,
+                    title: context.tr.securityAuthenticatedDevicesTitle,
                     subtitle: securityProfileAsync.maybeWhen(
                       data: (profile) =>
                           _authenticatedDevicesSubtitle(security, profile),
                       orElse: () => security.passkeyRegistered
-                          ? context.l10n.securityRegisteredDeviceSubtitle
-                          : context.l10n.securityRegisterThisDeviceSubtitle,
+                          ? context.tr.securityRegisteredDeviceSubtitle
+                          : context.tr.securityRegisterThisDeviceSubtitle,
                     ),
                     actionLabel: security.passkeyRegistered
-                        ? context.l10n.securityLinkNewDeviceAction.toUpperCase()
-                        : context.l10n.securityRegisterDeviceAction
-                            .toUpperCase(),
+                        ? context.tr.securityLinkNewDeviceAction.toUpperCase()
+                        : context.tr.securityRegisterDeviceAction.toUpperCase(),
                     onAction: _registerPasskey,
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -474,8 +473,8 @@ class _SecuritySettingsScreenState
                     ),
                     loading: () => const _LoadingCard(),
                     error: (_, __) => _ErrorCard(
-                      title: context.l10n.securityAuthenticatedDevicesTitle,
-                      body: context.l10n.securityDeviceCompatibilityError,
+                      title: context.tr.securityAuthenticatedDevicesTitle,
+                      body: context.tr.securityDeviceCompatibilityError,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -489,13 +488,13 @@ class _SecuritySettingsScreenState
                     ),
                   ] else
                     _SectionCard(
-                      title: context.l10n.securityTotpOptionalTitle,
+                      title: context.tr.securityTotpOptionalTitle,
                       subtitle: security.totpEnabled
-                          ? context.l10n.securityTotpEnabledSubtitle
-                          : context.l10n.securityTotpDisabledSubtitle,
+                          ? context.tr.securityTotpEnabledSubtitle
+                          : context.tr.securityTotpDisabledSubtitle,
                       actionLabel: security.totpEnabled
-                          ? context.l10n.securityDisableTotpAction.toUpperCase()
-                          : context.l10n.securityEnableTotpAction.toUpperCase(),
+                          ? context.tr.securityDisableTotpAction.toUpperCase()
+                          : context.tr.securityEnableTotpAction.toUpperCase(),
                       destructive: security.totpEnabled,
                       onAction:
                           security.totpEnabled ? _disableTotp : _beginTotpSetup,
@@ -503,17 +502,16 @@ class _SecuritySettingsScreenState
                   const SizedBox(height: AppSpacing.md),
                   backupCodesAsync.when(
                     data: (backupStatus) => _SectionCard(
-                      title: context.l10n.securityBackupCodesTitle,
+                      title: context.tr.securityBackupCodesTitle,
                       subtitle: security.totpEnabled
-                          ? context.l10n.securityBackupCodesRemaining(
+                          ? context.tr.securityBackupCodesRemaining(
                               backupStatus.remainingCodes,
                             )
-                          : context.l10n.securityBackupCodesLockedSubtitle,
+                          : context.tr.securityBackupCodesLockedSubtitle,
                       actionLabel: security.totpEnabled
-                          ? context.l10n.securityRegenerateCodesAction
+                          ? context.tr.securityRegenerateCodesAction
                               .toUpperCase()
-                          : context.l10n.securityWaitingTotpAction
-                              .toUpperCase(),
+                          : context.tr.securityWaitingTotpAction.toUpperCase(),
                       disabled: !security.totpEnabled,
                       onAction:
                           security.totpEnabled ? _regenerateBackupCodes : null,
@@ -523,7 +521,7 @@ class _SecuritySettingsScreenState
                                   _showBackupCodesSheet(_latestGeneratedCodes),
                               style: monochromeTextButtonStyle(),
                               child: Text(
-                                context.l10n.securityViewLatestAction
+                                context.tr.securityViewLatestAction
                                     .toUpperCase(),
                               ),
                             )
@@ -531,16 +529,16 @@ class _SecuritySettingsScreenState
                     ),
                     loading: () => const _LoadingCard(),
                     error: (_, __) => _ErrorCard(
-                      title: context.l10n.securityBackupCodesTitle,
-                      body: context.l10n.securityBackupCodesLoadError,
+                      title: context.tr.securityBackupCodesTitle,
+                      body: context.tr.securityBackupCodesLoadError,
                     ),
                   ),
                 ],
               ),
               loading: () => const _LoadingCard(),
               error: (_, __) => _ErrorCard(
-                title: context.l10n.securityScreenTitle,
-                body: context.l10n.securityStatusLoadError,
+                title: context.tr.securityScreenTitle,
+                body: context.tr.securityStatusLoadError,
               ),
             ),
           ],
@@ -630,7 +628,7 @@ class _StatusCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.l10n.securityCurrentStatusTitle,
+            context.tr.securityCurrentStatusTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
@@ -642,21 +640,21 @@ class _StatusCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               _StatusPill(
-                context.l10n.securityStrongPasswordPill,
+                context.tr.securityStrongPasswordPill,
                 security.passwordConfigured,
               ),
               _StatusPill(
-                context.l10n.securityDevicePill,
+                context.tr.securityDevicePill,
                 security.passkeyRegistered,
               ),
               _StatusPill('TOTP', security.totpEnabled),
               _StatusPill(
-                context.l10n.securityInboundPill,
+                context.tr.securityInboundPill,
                 security.inboundEnabled,
               ),
-              _StatusPill(context.l10n.securityAppPinPill, appPinEnabled),
+              _StatusPill(context.tr.securityAppPinPill, appPinEnabled),
               _StatusPill(
-                context.l10n.securityLocalBiometricsPill,
+                context.tr.securityLocalBiometricsPill,
                 biometricEnabled,
               ),
             ],
@@ -714,7 +712,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            context.l10n.securityAuthenticatedDevicesTitle,
+            context.tr.securityAuthenticatedDevicesTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
@@ -763,12 +761,12 @@ class _PasskeyInventoryCard extends StatelessWidget {
               children: [
                 if (inventory.currentHost.isNotEmpty)
                   _InventoryContextChip(
-                    label: context.l10n.securityCurrentHostLabel,
+                    label: context.tr.securityCurrentHostLabel,
                     value: inventory.currentHost,
                   ),
                 if (inventory.currentRelyingPartyId.isNotEmpty)
                   _InventoryContextChip(
-                    label: context.l10n.securityCurrentRpLabel,
+                    label: context.tr.securityCurrentRpLabel,
                     value: inventory.currentRelyingPartyId,
                   ),
               ],
@@ -779,14 +777,14 @@ class _PasskeyInventoryCard extends StatelessWidget {
             _BannerCard(
               color: Colors.white54,
               icon: Icons.history_toggle_off_rounded,
-              title: context.l10n.securityLegacyCredentialsTitle,
-              body: context.l10n.securityLegacyCredentialsBody,
+              title: context.tr.securityLegacyCredentialsTitle,
+              body: context.tr.securityLegacyCredentialsBody,
             ),
           ],
           const SizedBox(height: AppSpacing.md),
           if (inventory == null || !inventory.passkeyRegistered)
             Text(
-              context.l10n.securityNoAuthenticatedDevice,
+              context.tr.securityNoAuthenticatedDevice,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: monoMutedTextColor,
                     height: 1.45,
@@ -794,7 +792,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
             )
           else if (inventory.devices.isEmpty)
             Text(
-              context.l10n.securityDeviceDetailsUnavailable,
+              context.tr.securityDeviceDetailsUnavailable,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: monoMutedTextColor,
                     height: 1.45,
@@ -827,18 +825,18 @@ class _PasskeyInventoryCard extends StatelessWidget {
   static String _summaryText(
       BuildContext context, PasskeyInventory? inventory) {
     if (inventory == null) {
-      return context.l10n.securityInventoryNotLoaded;
+      return context.tr.securityInventoryNotLoaded;
     }
     if (!inventory.passkeyRegistered) {
-      return context.l10n.securityInventoryNone;
+      return context.tr.securityInventoryNone;
     }
     if (inventory.compatibleForCurrentLogin) {
-      return context.l10n.securityInventoryCompatible;
+      return context.tr.securityInventoryCompatible;
     }
     if (inventory.legacyCredentialsPresent) {
-      return context.l10n.securityInventoryLegacy;
+      return context.tr.securityInventoryLegacy;
     }
-    return context.l10n.securityInventoryIncompatible;
+    return context.tr.securityInventoryIncompatible;
   }
 
   static String _summaryBanner(
@@ -846,23 +844,23 @@ class _PasskeyInventoryCard extends StatelessWidget {
     PasskeyInventory? inventory,
   ) {
     if (inventory == null) {
-      return context.l10n.securityInventoryUnknownBanner;
+      return context.tr.securityInventoryUnknownBanner;
     }
     if (!inventory.passkeyRegistered) {
-      return context.l10n.securityInventoryRegisterBanner;
+      return context.tr.securityInventoryRegisterBanner;
     }
     if (inventory.compatibleForCurrentLogin) {
       final compatibleCount = inventory.devices
           .where((device) => device.compatibleWithCurrentLogin)
           .length;
       return compatibleCount > 0
-          ? context.l10n.securityInventoryCompatibleCount(compatibleCount)
-          : context.l10n.securityInventoryCompatibleFallback;
+          ? context.tr.securityInventoryCompatibleCount(compatibleCount)
+          : context.tr.securityInventoryCompatibleFallback;
     }
     if (inventory.legacyCredentialsPresent) {
-      return context.l10n.securityInventoryLegacyBanner;
+      return context.tr.securityInventoryLegacyBanner;
     }
-    return context.l10n.securityInventoryIncompatibleBanner;
+    return context.tr.securityInventoryIncompatibleBanner;
   }
 }
 
@@ -883,24 +881,24 @@ class _AppPinSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final subtitle = status.enabled
         ? status.locked
-            ? context.l10n.securityPinActiveLockedSubtitle
-            : context.l10n.securityPinActiveAttemptsSubtitle(
+            ? context.tr.securityPinActiveLockedSubtitle
+            : context.tr.securityPinActiveAttemptsSubtitle(
                 status.remainingAttempts,
               )
-        : context.l10n.securityPinDisabledSubtitle;
+        : context.tr.securityPinDisabledSubtitle;
 
     return _SectionCard(
-      title: context.l10n.securityPinEntryTitle,
+      title: context.tr.securityPinEntryTitle,
       subtitle: subtitle,
       actionLabel: status.enabled
-          ? context.l10n.securityChangePinAction.toUpperCase()
-          : context.l10n.securityEnablePinAction.toUpperCase(),
+          ? context.tr.securityChangePinAction.toUpperCase()
+          : context.tr.securityEnablePinAction.toUpperCase(),
       onAction: status.enabled ? onChange : onEnable,
       trailing: status.enabled
           ? TextButton(
               onPressed: onDisable,
               style: monochromeTextButtonStyle(),
-              child: Text(context.l10n.securityDisableAction.toUpperCase()),
+              child: Text(context.tr.securityDisableAction.toUpperCase()),
             )
           : null,
     );
@@ -947,7 +945,7 @@ class _AppPinManagementSheetState
     if (_requiresNewPin &&
         _newPinController.text.trim() != _confirmPinController.text.trim()) {
       setState(
-        () => _error = context.l10n.securityPinMismatchError,
+        () => _error = context.tr.securityPinMismatchError,
       );
       return;
     }
@@ -975,7 +973,7 @@ class _AppPinManagementSheetState
         }
         setState(() {
           _busy = false;
-          _error = ErrorTranslator.translate(context.l10n, failure.message);
+          _error = ErrorTranslator.translate(context.tr, failure.message);
         });
       },
       (_) {
@@ -989,15 +987,15 @@ class _AppPinManagementSheetState
   @override
   Widget build(BuildContext context) {
     final title = switch (widget.mode) {
-      _AppPinSheetMode.enable => context.l10n.securityPinEnableTitle,
-      _AppPinSheetMode.change => context.l10n.securityPinChangeTitle,
-      _AppPinSheetMode.disable => context.l10n.securityPinDisableTitle,
+      _AppPinSheetMode.enable => context.tr.securityPinEnableTitle,
+      _AppPinSheetMode.change => context.tr.securityPinChangeTitle,
+      _AppPinSheetMode.disable => context.tr.securityPinDisableTitle,
     };
 
     final body = switch (widget.mode) {
-      _AppPinSheetMode.enable => context.l10n.securityPinEnableBody,
-      _AppPinSheetMode.change => context.l10n.securityPinChangeBody,
-      _AppPinSheetMode.disable => context.l10n.securityPinDisableBody,
+      _AppPinSheetMode.enable => context.tr.securityPinEnableBody,
+      _AppPinSheetMode.change => context.tr.securityPinChangeBody,
+      _AppPinSheetMode.disable => context.tr.securityPinDisableBody,
     };
 
     return Padding(
@@ -1046,7 +1044,7 @@ class _AppPinManagementSheetState
                 maxLength: widget.initialStatus.maxPinLength,
                 style: const TextStyle(color: monoTextColor),
                 decoration: monochromeInputDecoration(
-                  label: context.l10n.securityCurrentPinLabel,
+                  label: context.tr.securityCurrentPinLabel,
                   counterText: '',
                 ),
               ),
@@ -1058,7 +1056,7 @@ class _AppPinManagementSheetState
                   maxLength: 6,
                   style: const TextStyle(color: monoTextColor),
                   decoration: monochromeInputDecoration(
-                    label: context.l10n.securityTotpCodeLabel,
+                    label: context.tr.securityTotpCodeLabel,
                     counterText: '',
                   ),
                 ),
@@ -1071,7 +1069,7 @@ class _AppPinManagementSheetState
                 maxLength: widget.initialStatus.maxPinLength,
                 style: const TextStyle(color: monoTextColor),
                 decoration: monochromeInputDecoration(
-                  label: context.l10n.securityNewPinLabel(
+                  label: context.tr.securityNewPinLabel(
                     widget.initialStatus.minPinLength,
                     widget.initialStatus.maxPinLength,
                   ),
@@ -1085,7 +1083,7 @@ class _AppPinManagementSheetState
                 maxLength: widget.initialStatus.maxPinLength,
                 style: const TextStyle(color: monoTextColor),
                 decoration: monochromeInputDecoration(
-                  label: context.l10n.securityConfirmNewPinLabel,
+                  label: context.tr.securityConfirmNewPinLabel,
                   counterText: '',
                 ),
               ),
@@ -1120,8 +1118,8 @@ class _AppPinManagementSheetState
                     )
                   : Text(
                       widget.mode == _AppPinSheetMode.disable
-                          ? context.l10n.securityDisablePinAction.toUpperCase()
-                          : context.l10n.securitySavePinAction.toUpperCase(),
+                          ? context.tr.securityDisablePinAction.toUpperCase()
+                          : context.tr.securitySavePinAction.toUpperCase(),
                     ),
             ),
           ],
@@ -1164,7 +1162,7 @@ class _InventoryContextChip extends StatelessWidget {
               text: value,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'IBM Plex Mono',
+                fontFamily: 'IBMPlexSansHebrew',
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1212,62 +1210,62 @@ class _PasskeyDeviceRow extends StatelessWidget {
           const SizedBox(height: 10),
           if (device.brand.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceBrandLabel,
+              label: context.tr.securityDeviceBrandLabel,
               value: device.brand,
             ),
           if (device.model.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceModelLabel,
+              label: context.tr.securityDeviceModelLabel,
               value: device.model,
             ),
           if (device.serialNumber.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceSerialLabel,
+              label: context.tr.securityDeviceSerialLabel,
               value: device.serialNumber,
             )
           else if (device.deviceInstallId.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceInstallIdLabel,
+              label: context.tr.securityDeviceInstallIdLabel,
               value: device.deviceInstallId,
             ),
           if (device.browser.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceBrowserLabel,
+              label: context.tr.securityDeviceBrowserLabel,
               value: device.browser,
             ),
           if (device.platform.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceSystemLabel,
+              label: context.tr.securityDeviceSystemLabel,
               value: device.platform,
             ),
           _DeviceMetaLine(
-            label: context.l10n.securityDeviceStatusLabel,
+            label: context.tr.securityDeviceStatusLabel,
             value: _statusLabel(context, device.status),
           ),
           if (device.firstAccessAt != null)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceFirstAccessLabel,
+              label: context.tr.securityDeviceFirstAccessLabel,
               value: _dateLabel(device.firstAccessAt!),
             ),
           if (device.lastAccessAt != null)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceLastAccessLabel,
+              label: context.tr.securityDeviceLastAccessLabel,
               value: _dateLabel(device.lastAccessAt!),
             ),
           if (device.originHost.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceOriginLabel,
+              label: context.tr.securityDeviceOriginLabel,
               value: device.originHost,
             ),
           if (device.relyingPartyId.isNotEmpty)
             _DeviceMetaLine(
-              label: context.l10n.securityDeviceRelyingPartyLabel,
+              label: context.tr.securityDeviceRelyingPartyLabel,
               value: device.relyingPartyId,
             ),
           const SizedBox(height: 8),
           Text(
             device.compatibleWithCurrentLogin
-                ? context.l10n.securityDeviceCanUse
+                ? context.tr.securityDeviceCanUse
                 : _compatibilityHint(context, device.compatibilityStatus),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: device.compatibleWithCurrentLogin
@@ -1287,24 +1285,24 @@ class _PasskeyDeviceRow extends StatelessWidget {
   ) {
     switch (status) {
       case PasskeyCompatibilityStatus.compatible:
-        return context.l10n.securityDeviceCanUse;
+        return context.tr.securityDeviceCanUse;
       case PasskeyCompatibilityStatus.incompatible:
-        return context.l10n.securityDeviceCannotUse;
+        return context.tr.securityDeviceCannotUse;
       case PasskeyCompatibilityStatus.unknown:
-        return context.l10n.securityDeviceUnknownUse;
+        return context.tr.securityDeviceUnknownUse;
     }
   }
 
   static String _statusLabel(BuildContext context, String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return context.l10n.securityStatusPending;
+        return context.tr.securityStatusPending;
       case 'BLOCKED':
-        return context.l10n.securityStatusBlocked;
+        return context.tr.securityStatusBlocked;
       case 'REVOKED':
-        return context.l10n.securityStatusRevoked;
+        return context.tr.securityStatusRevoked;
       default:
-        return context.l10n.securityStatusActive;
+        return context.tr.securityStatusActive;
     }
   }
 
@@ -1343,7 +1341,7 @@ class _DeviceMetaLine extends StatelessWidget {
               text: value,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'IBM Plex Mono',
+                fontFamily: 'IBMPlexSansHebrew',
               ),
             ),
           ],
@@ -1362,15 +1360,15 @@ class _PasskeyStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       PasskeyCompatibilityStatus.compatible => (
-          context.l10n.securityCompatibleBadge.toUpperCase(),
+          context.tr.securityCompatibleBadge.toUpperCase(),
           monoTextColor,
         ),
       PasskeyCompatibilityStatus.incompatible => (
-          context.l10n.securityIncompatibleBadge.toUpperCase(),
+          context.tr.securityIncompatibleBadge.toUpperCase(),
           monoFaintTextColor,
         ),
       PasskeyCompatibilityStatus.unknown => (
-          context.l10n.securityUnknownBadge.toUpperCase(),
+          context.tr.securityUnknownBadge.toUpperCase(),
           monoMutedTextColor,
         ),
     };
@@ -1485,7 +1483,7 @@ class _TotpSetupCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            context.l10n.securityTotpSetupTitle,
+            context.tr.securityTotpSetupTitle,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: monoTextColor,
                   fontWeight: FontWeight.w700,
@@ -1512,7 +1510,7 @@ class _TotpSetupCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: monoTextColor,
-                  fontFamily: 'IBM Plex Mono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -1522,7 +1520,7 @@ class _TotpSetupCard extends StatelessWidget {
             keyboardType: TextInputType.number,
             style: const TextStyle(color: monoTextColor),
             decoration: monochromeInputDecoration(
-              label: context.l10n.securityTotpCodeLabel,
+              label: context.tr.securityTotpCodeLabel,
               hintText: '000000',
             ),
           ),
@@ -1540,7 +1538,7 @@ class _TotpSetupCard extends StatelessWidget {
                       color: Colors.black,
                     ),
                   )
-                : Text(context.l10n.securityValidateTotpAction.toUpperCase()),
+                : Text(context.tr.securityValidateTotpAction.toUpperCase()),
           ),
         ],
       ),

@@ -63,10 +63,6 @@ class AppConfig {
       '/auth/passkey/devices/$deviceInstallId/block';
   static String authPasskeyDeviceRevoke(String deviceInstallId) =>
       '/auth/passkey/devices/$deviceInstallId/revoke';
-  static const String authRecoveryEmergencyStart =
-      '/auth/recovery/emergency/start';
-  static const String authRecoveryEmergencyFinish =
-      '/auth/recovery/emergency/finish';
   static const String passkeyOrigin = String.fromEnvironment(
     'PASSKEY_ORIGIN',
     defaultValue: 'android:apk-key-hash:kerosene',
@@ -202,14 +198,6 @@ class AppConfig {
   static String bitcoinPsbtSigned(String workflowId) =>
       '/bitcoin/psbt/$workflowId/signed';
 
-  // 5. Vouchers
-  static const String voucherRequest = '/voucher/request';
-  static const String voucherConfirm = '/voucher/confirm';
-  static const String voucherOnboardingLink = '/voucher/onboarding-link';
-  static const String voucherOnboardingMockConfirm =
-      '/voucher/onboarding-mock-confirm';
-  static const String voucherTestClaim = '/voucher/test-claim';
-
   // 6. Notifications
   static const String notificationsList = '/notifications';
   static const String notificationsRead = '/notifications/{id}/read';
@@ -257,10 +245,6 @@ class AppConfig {
   static const String transactionsDepositBalance =
       '/transactions/deposit-balance';
   static const String transactionsDeposit = '/transactions/deposit';
-
-  // 4.3 Mining Marketplace
-  static const String miningRigs = '/mining/rigs';
-  static const String miningAllocations = '/mining/allocations';
 
   // ==================== Storage Keys ====================
 

@@ -1,0 +1,10 @@
+import 'package:flutter/widgets.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
+
+extension AppLocalizationsX on BuildContext {
+  /// Retorna as strings baseadas no locale atual do context.
+  AppLocalizations get l10n => AppLocalizations.of(this)!;
+
+  /// Alias curto usado nas telas refatoradas.
+  AppLocalizations get tr => l10n;
+}

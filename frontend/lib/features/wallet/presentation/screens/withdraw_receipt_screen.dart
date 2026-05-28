@@ -4,7 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:teste/core/constants/app_copy.dart';
 import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
 
 class WithdrawReceiptScreen extends StatelessWidget {
@@ -30,8 +30,8 @@ class WithdrawReceiptScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ReceiveFlowScaffold(
-      title: context.l10n.withdrawSuccess,
-      subtitle: context.l10n.withdrawReceiptSubtitle,
+      title: context.tr.withdrawSuccess,
+      subtitle: context.tr.withdrawReceiptSubtitle,
       onBack: () => Navigator.of(context).popUntil((route) => route.isFirst),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,7 +43,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
           _buildDetailsCard(context),
           const SizedBox(height: AppSpacing.xl),
           ReceiveFlowPrimaryButton(
-            label: context.l10n.done.toUpperCase(),
+            label: context.tr.done.toUpperCase(),
             icon: LucideIcons.check,
             onTap: () =>
                 Navigator.of(context).popUntil((route) => route.isFirst),
@@ -76,7 +76,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
     return Column(
       children: [
         Text(
-          context.l10n.withdrawSuccess.toUpperCase(),
+          context.tr.withdrawSuccess.toUpperCase(),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: receiveFlowFaintTextColor,
                 fontWeight: FontWeight.w500,
@@ -100,7 +100,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
                     color: receiveFlowTextColor,
                     fontSize: 48,
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'JetBrainsMono',
+                    fontFamily: 'IBMPlexSansHebrew',
                   ),
             ),
           ],
@@ -115,7 +115,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
     return ReceiveFlowPanel(
       child: Column(
         children: [
-          _buildDetailRow(context, context.l10n.walletName, walletName),
+          _buildDetailRow(context, context.tr.walletName, walletName),
           const ReceiveFlowDivider(),
           _buildDetailRow(
               context,
@@ -175,7 +175,7 @@ class WithdrawReceiptScreen extends StatelessWidget {
               child: Text(
                 value,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontFamily: 'JetBrainsMono',
+                      fontFamily: 'IBMPlexSansHebrew',
                       color: color ?? receiveFlowTextColor,
                       fontSize: isAddress ? 12 : 14,
                       fontWeight:

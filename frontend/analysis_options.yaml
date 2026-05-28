@@ -13,45 +13,7 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - lib/src/bridge_generated.dart
-    - lib/bootstrap/web_bootstrap.dart
-    - lib/bootstrap/mobile_bootstrap.dart
-    - lib/features/web_admin/**
     - lib/storybook/**
-    - lib/core/presentation/widgets/pin_dialog.dart
-    - lib/core/presentation/widgets/recent_transaction_destinations_section.dart
-    - lib/core/services/notification_orchestrator.dart
-    - lib/core/widgets/pin_dialog.dart
-    - lib/core/widgets/transaction_auth_gate.dart
-    - lib/features/auth/presentation/screens/login_username_screen.dart
-    - lib/features/auth/presentation/screens/passkey_verification_screen.dart
-    - lib/features/auth/presentation/screens/presentation_screen.dart
-    - lib/features/auth/presentation/screens/signup/signup_flow_screen.dart
-    - lib/features/auth/presentation/screens/totp_screen.dart
-    - lib/features/bitcoin_accounts/**
-    - lib/features/home/presentation/screens/home_loading_screen.dart
-    - lib/features/home/presentation/screens/home_screen.dart
-    - lib/features/home/presentation/widgets/tor_loading_overlay.dart
-    - lib/features/home/presentation/widgets/tx_detail_overlay.dart
-    - lib/features/landing/presentation/kerosene_landing_page.dart
-    - lib/features/mining/**
-    - lib/features/notifications/presentation/providers/session_notification_provider.dart
-    - lib/features/notifications/presentation/widgets/session_notification_sidebar.dart
-    - lib/features/profile/presentation/screens/profile_screen.dart
-    - lib/features/profile/presentation/screens/security_settings_screen.dart
-    - lib/features/security/presentation/widgets/app_entry_pin_gate.dart
-    - lib/features/settings/presentation/screens/settings_screen.dart
-    - lib/features/transactions/data/datasources/transaction_remote_datasource.dart
-    - lib/features/transactions/data/repositories/transaction_repository_impl.dart
-    - lib/features/transactions/presentation/providers/add_funds_notifier.dart
-    - lib/features/transactions/presentation/screens/deposits_screen.dart
-    - lib/features/transactions/presentation/screens/withdraw_screen.dart
-    - lib/features/wallet/presentation/screens/receive_screen.dart
-    - lib/features/wallet/presentation/screens/send_money_screen.dart
-    - lib/features/wallet/presentation/screens/wallet_card_screen.dart
-    - lib/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart
-    - lib/shared/widgets/brushed_metal_container.dart
-    - test/**
-    - test/features/bitcoin_accounts/**
 
 linter:
   # The lint rules applied to this project can be customized in the

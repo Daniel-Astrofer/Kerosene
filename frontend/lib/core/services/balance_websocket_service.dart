@@ -259,16 +259,6 @@ class RealtimeNotificationEvent {
         combined.contains('pagamento')) {
       return 'payment_sent';
     }
-    if (combined.contains('hashpower')) {
-      if (combined.contains('cancelada')) {
-        return 'mining_cancelled';
-      }
-      if (combined.contains('concluida')) {
-        return 'mining_completed';
-      }
-      return 'mining_started';
-    }
-
     return 'system_info';
   }
 
@@ -289,19 +279,16 @@ class RealtimeNotificationEvent {
     switch (kind) {
       case 'security_login_detected':
       case 'security_recovery_completed':
-      case 'mining_cancelled':
         return 'warning';
       case 'account_created':
       case 'transfer_received':
       case 'payment_request_paid':
       case 'deposit_confirmed':
-      case 'mining_completed':
         return 'success';
       case 'payment_request_created':
       case 'deposit_detected':
       case 'transfer_sent':
       case 'payment_sent':
-      case 'mining_started':
         return 'info';
       default:
         final combined = '$title $body'.toLowerCase();

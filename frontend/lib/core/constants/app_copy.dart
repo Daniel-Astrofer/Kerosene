@@ -1017,27 +1017,6 @@ class AppCopy {
     es: 'Localización',
   );
 
-  static const profileWallets = LocalizedCopy(
-    en: 'Wallets',
-    pt: 'Carteiras',
-    es: 'Billeteras',
-  );
-  static const profileProtection = LocalizedCopy(
-    en: 'Protection',
-    pt: 'Proteção',
-    es: 'Protección',
-  );
-  static const profileBiometrics = LocalizedCopy(
-    en: 'Biometrics',
-    pt: 'Biometria',
-    es: 'Biometría',
-  );
-  static const profilePrivacy = LocalizedCopy(
-    en: 'Privacy',
-    pt: 'Privacidade',
-    es: 'Privacidad',
-  );
-
   static const loginPassphraseIntro = LocalizedCopy(
     en: 'Enter your secret phrase exactly as it was stored.',
     pt: 'Digite sua frase secreta exatamente como foi armazenada.',
@@ -1742,14 +1721,14 @@ class AppCopy {
     es: 'No fue posible validar la passkey',
   );
   static const passkeyVerificationHeadlinePreparing = LocalizedCopy(
-    en: 'Preparing verification',
-    pt: 'Preparando a verificacao',
-    es: 'Preparando la verificación',
+    en: 'Preparing passkey',
+    pt: 'Preparando passkey',
+    es: 'Preparando passkey',
   );
   static const passkeyVerificationHeadlineSending = LocalizedCopy(
-    en: 'Confirming security',
-    pt: 'Confirmando seguranca',
-    es: 'Confirmando seguridad',
+    en: 'Checking device',
+    pt: 'Verificando aparelho',
+    es: 'Verificando dispositivo',
   );
   static const passkeyVerificationHeadlineDevice = LocalizedCopy(
     en: 'Confirm on your device',
@@ -1762,24 +1741,24 @@ class AppCopy {
     es: 'Passkey validada',
   );
   static const passkeyVerificationBodyPreparing = LocalizedCopy(
-    en: 'Preparing the secure confirmation on this device.',
-    pt: 'Preparando a confirmacao segura neste aparelho.',
-    es: 'Preparando la confirmacion segura en este dispositivo.',
+    en: 'Starting secure confirmation.',
+    pt: 'Iniciando confirmação segura.',
+    es: 'Iniciando confirmación segura.',
   );
   static const passkeyVerificationBodySending = LocalizedCopy(
-    en: 'Your device is confirming that this action was approved by you.',
-    pt: 'Seu aparelho esta confirmando que esta acao foi aprovada por voce.',
-    es: 'Tu dispositivo esta confirmando que esta accion fue aprobada por ti.',
+    en: 'Waiting for approval from this device.',
+    pt: 'Aguardando aprovação neste aparelho.',
+    es: 'Esperando aprobación en este dispositivo.',
   );
   static const passkeyVerificationBodyDevice = LocalizedCopy(
-    en: 'Use biometrics, PIN, or local lock to release the passkey signature.',
-    pt: 'Use biometria, PIN ou bloqueio local para liberar a assinatura da passkey.',
-    es: 'Usa biometria, PIN o bloqueo local para liberar la firma de la passkey.',
+    en: 'Use biometrics, PIN, or local lock.',
+    pt: 'Use biometria, PIN ou bloqueio local.',
+    es: 'Usa biometría, PIN o bloqueo local.',
   );
   static const passkeyVerificationBodySuccess = LocalizedCopy(
-    en: 'The credential was accepted. If your account requires TOTP, the next step will open automatically.',
-    pt: 'A credencial foi aceita. Se sua conta exigir TOTP, a proxima etapa sera aberta automaticamente.',
-    es: 'La credencial fue aceptada. Si tu cuenta exige TOTP, el siguiente paso se abrira automaticamente.',
+    en: 'Credential accepted. Continuing automatically.',
+    pt: 'Credencial aceita. Continuando automaticamente.',
+    es: 'Credencial aceptada. Continuando automáticamente.',
   );
   static const passkeyVerificationScreenTitle = LocalizedCopy(
     en: 'Passkey login',
@@ -1807,9 +1786,9 @@ class AppCopy {
     es: 'Volver y revisar usuario',
   );
   static const passkeyVerificationFallbackHint = LocalizedCopy(
-    en: 'If this device does not hold the linked passkey, sign in with your passphrase and continue through TOTP.',
-    pt: 'Se este aparelho nao tiver a passkey vinculada, entre com a frase secreta e prossiga pelo TOTP.',
-    es: 'Si este dispositivo no tiene la passkey vinculada, entra con tu frase secreta y continua con el TOTP.',
+    en: 'Use passphrase if this device has no linked passkey.',
+    pt: 'Use a passphrase se este aparelho não tiver a passkey vinculada.',
+    es: 'Usa la frase secreta si este dispositivo no tiene la passkey vinculada.',
   );
 
   static const signupFinalPaymentAddressCopiedTitle = LocalizedCopy(
@@ -1928,9 +1907,9 @@ class AppCopy {
     es: 'Polling público en curso',
   );
   static const signupFinalPaymentPollingBody = LocalizedCopy(
-    en: 'This voucher is being monitored via /voucher/onboarding-link/{linkId} without authentication.',
-    pt: 'Este voucher esta sendo monitorado por /voucher/onboarding-link/{linkId} sem exigir autenticacao.',
-    es: 'Este voucher se monitorea via /voucher/onboarding-link/{linkId} sin autenticación.',
+    en: 'This payment link is being monitored without authentication.',
+    pt: 'Este link de pagamento esta sendo monitorado sem exigir autenticacao.',
+    es: 'Este enlace de pago se monitorea sin autenticación.',
   );
 
   static const transactionAuthPassphraseTitle = LocalizedCopy(
@@ -2436,9 +2415,9 @@ class AppCopy {
     }
     return _resolve(
       context,
-      en: 'This voucher status keeps being polled without authentication while payment is pending.',
-      pt: 'O status deste voucher continua sendo consultado sem autenticacao enquanto o pagamento estiver pendente.',
-      es: 'El estado de este voucher se sigue consultando sin autenticación mientras el pago siga pendiente.',
+      en: 'This payment link status keeps being polled without authentication while payment is pending.',
+      pt: 'O status deste link de pagamento continua sendo consultado sem autenticacao enquanto o pagamento estiver pendente.',
+      es: 'El estado de este enlace de pago se sigue consultando sin autenticación mientras el pago siga pendiente.',
     );
   }
 

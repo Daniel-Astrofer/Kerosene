@@ -2,8 +2,8 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../../domain/entities/wallet.dart';
-import '../screens/create_wallet_screen.dart';
 import 'wallet_credit_card.dart';
 
 class InfiniteCardsController {
@@ -311,8 +311,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
                         wallet: wallet,
                         isAddCard: isAddCard,
                         colorIndex: isAddCard ? 0 : vIdx,
-                        isSelected:
-                            rank == 0 &&
+                        isSelected: rank == 0 &&
                             !(!_isDragUp && _draggedVisualRank != null),
                         elevation: elevation,
                         showDetails: showDetails,
@@ -433,7 +432,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
       if (wallet == null) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const CreateWalletScreen()),
+          MaterialPageRoute(builder: (_) => const BitcoinAccountsScreen()),
         );
       } else {
         widget.onCardTap(wallet);

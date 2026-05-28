@@ -12,7 +12,7 @@ import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import 'deposit_method_screen.dart';
 
 class DepositAmountScreen extends ConsumerStatefulWidget {
@@ -71,7 +71,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
         btcEur: btcEur,
         btcBrl: btcBrl,
       );
-      return context.l10n.depositFlowEquivalentTo(
+      return context.tr.depositFlowEquivalentTo(
         MoneyDisplay.formatCompact(amount: brlValue, currency: Currency.brl),
       );
     }
@@ -83,7 +83,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
-    return context.l10n.depositFlowYouReceive(
+    return context.tr.depositFlowYouReceive(
       MoneyDisplay.formatCompact(amount: btcAmount, currency: Currency.btc),
     );
   }
@@ -153,8 +153,8 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
     );
 
     return ReceiveFlowScaffold(
-      title: context.l10n.depositFlowDepositTitle,
-      subtitle: context.l10n.depositFlowAmountSubtitle,
+      title: context.tr.depositFlowDepositTitle,
+      subtitle: context.tr.depositFlowAmountSubtitle,
       scrollable: false,
       bodyPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Column(
@@ -166,7 +166,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ReceiveFlowSectionLabel(
-                  context.l10n.depositFlowSelectedCurrency,
+                  context.tr.depositFlowSelectedCurrency,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -193,7 +193,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
           _buildKeypad(),
           const SizedBox(height: AppSpacing.md),
           ReceiveFlowPrimaryButton(
-            label: context.l10n.depositFlowContinue,
+            label: context.tr.depositFlowContinue,
             onTap: _onContinue,
           ),
         ],
@@ -206,7 +206,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
       child: Column(
         children: [
           Text(
-            context.l10n.depositFlowAmountLabel,
+            context.tr.depositFlowAmountLabel,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: receiveFlowMutedTextColor),
@@ -283,7 +283,7 @@ class _DepositAmountScreenState extends ConsumerState<DepositAmountScreen> {
               key,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: receiveFlowTextColor,
-                    fontFamily: 'JetBrainsMono',
+                    fontFamily: 'IBMPlexSansHebrew',
                     fontWeight: FontWeight.w400,
                   ),
             ),

@@ -6,7 +6,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/providers/session_invalidation_provider.dart';
 import '../../../../core/utils/device_helper.dart';
 import '../../../../core/utils/snackbar_helper.dart';
-import '../../../../l10n/l10n_extension.dart';
+import '../../../../core/l10n/l10n_extension.dart';
 import '../datasources/auth_local_datasource.dart';
 
 class TokenInterceptor extends QueuedInterceptor {
@@ -63,8 +63,7 @@ class TokenInterceptor extends QueuedInterceptor {
           path.contains('/auth/passkey/register/onboarding') ||
           path.contains('/auth/hardware/challenge') ||
           path.contains('/auth/hardware/verify') ||
-          path.contains('/auth/hardware/register/onboarding') ||
-          path.contains('/voucher/');
+          path.contains('/auth/hardware/register/onboarding');
 
       // 1. Injetar Token se não for rota de Auth/Onboarding e se não estiver presente
       if (!isOnboardingOrAuth && options.headers['Authorization'] == null) {
@@ -200,7 +199,7 @@ class TokenInterceptor extends QueuedInterceptor {
 
         // Snackbar informativo após a navegação
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          final l10n = navigator.context.l10n;
+          final l10n = navigator.context.tr;
           SnackbarHelper.showWarning(
             l10n.errSessionExpired,
             title: l10n.sessionEndedTitle,

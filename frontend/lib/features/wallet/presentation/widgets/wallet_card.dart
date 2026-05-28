@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import '../../domain/entities/wallet.dart';
 
 import 'package:teste/shared/widgets/brushed_metal_container.dart';
@@ -121,7 +121,7 @@ class _WalletCardState extends State<WalletCard>
             ListTile(
               leading: Icon(LucideIcons.edit,
                   color: Theme.of(context).colorScheme.onPrimary),
-              title: Text(context.l10n.walletEditNameAction.toUpperCase(),
+              title: Text(context.tr.walletEditNameAction.toUpperCase(),
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall!
@@ -134,7 +134,7 @@ class _WalletCardState extends State<WalletCard>
             ListTile(
               leading: Icon(LucideIcons.trash2,
                   color: Theme.of(context).colorScheme.error),
-              title: Text(context.l10n.removeWallet.toUpperCase(),
+              title: Text(context.tr.removeWallet.toUpperCase(),
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: Theme.of(context).colorScheme.error,
                       fontWeight: FontWeight.w900,
@@ -340,7 +340,7 @@ class _WalletCardState extends State<WalletCard>
                                                 .colorScheme
                                                 .onPrimary
                                                 .withValues(alpha: 0.5),
-                                            fontFamily: 'JetBrainsMono',
+                                            fontFamily: 'IBMPlexSansHebrew',
                                           ),
                                       overflow: TextOverflow.ellipsis,
                                     ),

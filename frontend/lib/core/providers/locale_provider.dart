@@ -1,7 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui' show PlatformDispatcher;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/localization/app_localization_manager.dart';
+
+import 'shared_preferences_provider.dart';
 
 class LocaleState {
   final Locale locale;
@@ -18,22 +19,20 @@ class LocaleNotifier extends Notifier<LocaleState> {
 
   @override
   LocaleState build() {
-    _loadLocale();
-    return LocaleState(PlatformDispatcher.instance.locale);
-  }
-
-  Future<void> _loadLocale() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = ref.watch(sharedPreferencesProvider);
     final languageCode = prefs.getString(_localeKey);
     if (languageCode != null) {
-      state = LocaleState(Locale(languageCode));
+      return LocaleState(AppLocalizationManager.resolve(Locale(languageCode)));
     }
+    return LocaleState(AppLocalizationManager.deviceOrFallback());
   }
 
   Future<void> setLocale(Locale locale) async {
-    state = LocaleState(locale);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localeKey, locale.languageCode);
+    final next = AppLocalizationManager.resolve(locale);
+    state = LocaleState(next);
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_localeKey, next.languageCode);
   }
 }
 

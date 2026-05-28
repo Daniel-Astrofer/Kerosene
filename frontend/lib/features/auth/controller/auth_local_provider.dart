@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../main.dart' show sharedPreferencesProvider;
+import '../../../core/providers/shared_preferences_provider.dart';
 import '../data/datasources/auth_local_datasource.dart';
 
 export '../data/datasources/auth_local_datasource.dart';

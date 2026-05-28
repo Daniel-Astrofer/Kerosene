@@ -128,7 +128,7 @@ class _CyberTextFieldState extends State<CyberTextField>
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                     color: Theme.of(context).colorScheme.onPrimary,
                   ),
-              cursorColor: Theme.of(context).colorScheme.primary,
+              cursorColor: Theme.of(context).colorScheme.onPrimary,
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
@@ -159,7 +159,7 @@ class _CyberTextFieldState extends State<CyberTextField>
                           ).colorScheme.error.withValues(alpha: 0.8)
                         : Theme.of(
                             context,
-                          ).colorScheme.primary.withValues(alpha: 0.5),
+                          ).colorScheme.onPrimary.withValues(alpha: 0.20),
                     width: 1,
                   ),
                 ),

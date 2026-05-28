@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/navigation/app_page_transitions.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
 import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 import '../../domain/entities/wallet.dart';
 import '../providers/balance_settings_provider.dart';
-import '../screens/wallet_config_screen.dart';
 
 const _creditCardWidth = 336.0;
 const _creditCardHeight = 190.0;
@@ -49,14 +47,6 @@ class WalletCreditCard extends ConsumerWidget {
     if (isAddCard || wallet == null) {
       return;
     }
-
-    HapticFeedback.mediumImpact();
-    Navigator.push(
-      context,
-      keroseneHorizontalRoute<void>(
-        builder: (_) => WalletConfigScreen(wallet: wallet!),
-      ),
-    );
   }
 
   @override
@@ -195,7 +185,7 @@ class _PhysicalCreditCardFace extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMedium.copyWith(
                   color: palette.inkPrimary,
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.8,
@@ -319,7 +309,7 @@ class _EmptyCreditCardFace extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                context.l10n.addCard.toUpperCase(),
+                context.tr.addCard.toUpperCase(),
                 style: AppTypography.bodySmall.copyWith(
                   color: palette.inkPrimary,
                   fontWeight: FontWeight.w800,
@@ -417,7 +407,7 @@ class _BalanceBlock extends StatelessWidget {
               maxLines: 1,
               style: AppTypography.bodySmall.copyWith(
                 color: palette.inkPrimary,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBMPlexSansHebrew',
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -495,8 +485,8 @@ class _SecurityHashButton extends StatelessWidget {
     HapticFeedback.selectionClick();
     AppNotice.showSuccess(
       context,
-      title: context.l10n.walletCardHashCopiedTitle,
-      message: context.l10n.walletCardHashCopiedMessage,
+      title: context.tr.walletCardHashCopiedTitle,
+      message: context.tr.walletCardHashCopiedMessage,
     );
   }
 

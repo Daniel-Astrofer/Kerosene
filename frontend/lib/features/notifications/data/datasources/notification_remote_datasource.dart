@@ -27,7 +27,11 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
       final body = response.data;
 
       if (body is! List) {
-        return const [];
+        throw ServerException(
+          message: 'Resposta inesperada ao carregar notificações.',
+          errorCode: 'ERR_NOTIFICATIONS_INVALID_RESPONSE',
+          data: body,
+        );
       }
 
       return body

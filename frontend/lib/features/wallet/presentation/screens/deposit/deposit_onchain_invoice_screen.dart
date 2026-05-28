@@ -21,7 +21,7 @@ import 'package:teste/features/transactions/domain/entities/onchain_address_allo
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class DepositOnchainInvoiceScreen extends ConsumerStatefulWidget {
   final Wallet wallet;
@@ -98,7 +98,7 @@ class _DepositOnchainInvoiceScreenState
       }
 
       if (normalized.isEmpty) {
-        final message = context.l10n.onchainDepositAddressUnavailable;
+        final message = context.tr.onchainDepositAddressUnavailable;
         setState(() {
           _isLoadingAddress = false;
           _errorMessage = message;
@@ -106,13 +106,13 @@ class _DepositOnchainInvoiceScreenState
         });
         SnackbarHelper.showError(
           message,
-          title: context.l10n.onchainDepositTitle,
+          title: context.tr.onchainDepositTitle,
         );
         return;
       }
 
       if (!looksLikeBitcoinAddress(normalized)) {
-        final message = context.l10n.onchainDepositAddressUnavailable;
+        final message = context.tr.onchainDepositAddressUnavailable;
         setState(() {
           _isLoadingAddress = false;
           _errorMessage = message;
@@ -120,13 +120,13 @@ class _DepositOnchainInvoiceScreenState
         });
         SnackbarHelper.showError(
           message,
-          title: context.l10n.onchainDepositTitle,
+          title: context.tr.onchainDepositTitle,
         );
         return;
       }
 
       if (!allocation.hasTransferId) {
-        final message = context.l10n.onchainDepositTrackingUnavailable;
+        final message = context.tr.onchainDepositTrackingUnavailable;
         setState(() {
           _isLoadingAddress = false;
           _errorMessage = message;
@@ -134,7 +134,7 @@ class _DepositOnchainInvoiceScreenState
         });
         SnackbarHelper.showError(
           message,
-          title: context.l10n.onchainDepositTitle,
+          title: context.tr.onchainDepositTitle,
         );
         return;
       }
@@ -152,14 +152,14 @@ class _DepositOnchainInvoiceScreenState
         return;
       }
       final translated =
-          ErrorTranslator.translate(context.l10n, error.toString());
+          ErrorTranslator.translate(context.tr, error.toString());
       setState(() {
         _isLoadingAddress = false;
         _errorMessage = translated;
       });
       SnackbarHelper.showError(
         translated,
-        title: context.l10n.onchainDepositTitle,
+        title: context.tr.onchainDepositTitle,
       );
     }
   }
@@ -248,11 +248,11 @@ class _DepositOnchainInvoiceScreenState
         previousStatus != normalizedStatus &&
         latest.blockchainTxid.trim().isNotEmpty) {
       SnackbarHelper.showInfo(
-        context.l10n.onchainDepositDetectedNotice(
+        context.tr.onchainDepositDetectedNotice(
           latest.confirmations,
           _requiredConfirmations,
         ),
-        title: context.l10n.onchainDepositStatusDetected,
+        title: context.tr.onchainDepositStatusDetected,
       );
     }
 
@@ -260,8 +260,8 @@ class _DepositOnchainInvoiceScreenState
         previousConfirmations < _requiredConfirmations &&
         _isTransferFinal(normalizedStatus)) {
       SnackbarHelper.showSuccess(
-        context.l10n.onchainDepositConfirmedNotice,
-        title: context.l10n.onchainDepositStatusConfirmed,
+        context.tr.onchainDepositConfirmedNotice,
+        title: context.tr.onchainDepositStatusConfirmed,
       );
     }
   }
@@ -278,7 +278,7 @@ class _DepositOnchainInvoiceScreenState
   void _copyAddress(String address) {
     HapticFeedback.mediumImpact();
     Clipboard.setData(ClipboardData(text: address));
-    SnackbarHelper.showSuccess(context.l10n.onchainDepositAddressCopied);
+    SnackbarHelper.showSuccess(context.tr.onchainDepositAddressCopied);
   }
 
   int get _requiredConfirmations => _allocation?.requiredConfirmations ?? 3;
@@ -312,7 +312,7 @@ class _DepositOnchainInvoiceScreenState
     if (walletName.isNotEmpty) {
       return walletName;
     }
-    return context.l10n.onchainDepositSelectedWallet;
+    return context.tr.onchainDepositSelectedWallet;
   }
 
   String get _networkLabel {
@@ -320,7 +320,7 @@ class _DepositOnchainInvoiceScreenState
     return switch (network) {
       'mainnet' => 'Bitcoin',
       'testnet' => 'Testnet',
-      'regtest' => context.l10n.onchainDepositLocalNetwork,
+      'regtest' => context.tr.onchainDepositLocalNetwork,
       _ => network.isEmpty ? 'Bitcoin' : network,
     };
   }
@@ -331,13 +331,13 @@ class _DepositOnchainInvoiceScreenState
             .trim()
             .toUpperCase();
     return switch (status) {
-      'COMPLETED' => context.l10n.onchainDepositStatusCompleted,
-      'CONFIRMED' => context.l10n.onchainDepositStatusConfirmed,
-      'DETECTED' || 'MEMPOOL' => context.l10n.onchainDepositStatusDetected,
-      'PENDING' => context.l10n.onchainDepositStatusWaiting,
-      'FAILED' => context.l10n.onchainDepositStatusFailed,
-      'CANCELLED' => context.l10n.onchainDepositStatusCancelled,
-      'EXPIRED' => context.l10n.onchainDepositStatusExpired,
+      'COMPLETED' => context.tr.onchainDepositStatusCompleted,
+      'CONFIRMED' => context.tr.onchainDepositStatusConfirmed,
+      'DETECTED' || 'MEMPOOL' => context.tr.onchainDepositStatusDetected,
+      'PENDING' => context.tr.onchainDepositStatusWaiting,
+      'FAILED' => context.tr.onchainDepositStatusFailed,
+      'CANCELLED' => context.tr.onchainDepositStatusCancelled,
+      'EXPIRED' => context.tr.onchainDepositStatusExpired,
       _ => ApiDisplayText.status(context, status),
     };
   }
@@ -348,18 +348,18 @@ class _DepositOnchainInvoiceScreenState
             .trim()
             .toUpperCase();
     if (normalizedStatus == 'CANCELLED') {
-      return context.l10n.onchainDepositDescriptionCancelled;
+      return context.tr.onchainDepositDescriptionCancelled;
     }
     if (_observedTransfer == null ||
         (_observedTransfer!.blockchainTxid.trim().isEmpty &&
             _currentConfirmations == 0)) {
-      return context.l10n.onchainDepositDescriptionWaiting(_networkLabel);
+      return context.tr.onchainDepositDescriptionWaiting(_networkLabel);
     }
     if (_currentConfirmations >= _requiredConfirmations &&
         _isTransferFinal(_observedTransfer!.status)) {
-      return context.l10n.onchainDepositDescriptionConfirmed;
+      return context.tr.onchainDepositDescriptionConfirmed;
     }
-    return context.l10n.onchainDepositDescriptionConfirming(
+    return context.tr.onchainDepositDescriptionConfirming(
       _currentConfirmations,
       _requiredConfirmations,
     );
@@ -374,16 +374,16 @@ class _DepositOnchainInvoiceScreenState
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(context.l10n.onchainDepositCancelTitle),
-            content: Text(context.l10n.onchainDepositCancelMessage),
+            title: Text(context.tr.onchainDepositCancelTitle),
+            content: Text(context.tr.onchainDepositCancelMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.l10n.cancel),
+                child: Text(context.tr.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.l10n.onchainDepositCancelAction),
+                child: Text(context.tr.onchainDepositCancelAction),
               ),
             ],
           ),
@@ -407,13 +407,13 @@ class _DepositOnchainInvoiceScreenState
       });
       ref.invalidate(externalTransfersProvider);
       ref.invalidate(transactionHistoryProvider);
-      SnackbarHelper.showSuccess(context.l10n.onchainDepositCancelledNotice);
+      SnackbarHelper.showSuccess(context.tr.onchainDepositCancelledNotice);
     } catch (error) {
       if (!mounted) {
         return;
       }
       final translated =
-          ErrorTranslator.translate(context.l10n, error.toString());
+          ErrorTranslator.translate(context.tr, error.toString());
       SnackbarHelper.showError(translated);
     } finally {
       if (mounted) {
@@ -430,12 +430,12 @@ class _DepositOnchainInvoiceScreenState
 
     if (btcUsd == null && btcBrl == null) {
       return ReceiveFlowScaffold(
-        title: context.l10n.onchainDepositTitle,
-        subtitle: context.l10n.onchainDepositPreparingSubtitle,
+        title: context.tr.onchainDepositTitle,
+        subtitle: context.tr.onchainDepositPreparingSubtitle,
         child: ReceiveFlowStatePanel(
           icon: LucideIcons.loader2,
-          title: context.l10n.onchainDepositLoadingTitle,
-          message: context.l10n.onchainDepositLoadingMessage,
+          title: context.tr.onchainDepositLoadingTitle,
+          message: context.tr.onchainDepositLoadingMessage,
         ),
       );
     }
@@ -458,8 +458,8 @@ class _DepositOnchainInvoiceScreenState
     );
 
     return ReceiveFlowScaffold(
-      title: context.l10n.onchainDepositTitle,
-      subtitle: context.l10n.onchainDepositSubtitle,
+      title: context.tr.onchainDepositTitle,
+      subtitle: context.tr.onchainDepositSubtitle,
       child: Builder(
         builder: (context) {
           if (_isLoadingAddress) {
@@ -493,8 +493,8 @@ class _DepositOnchainInvoiceScreenState
                 const SizedBox(height: AppSpacing.md),
                 ReceiveFlowSecondaryButton(
                   label: _isCancelling
-                      ? context.l10n.onchainDepositCancelling
-                      : context.l10n.onchainDepositCancelAction,
+                      ? context.tr.onchainDepositCancelling
+                      : context.tr.onchainDepositCancelAction,
                   icon: LucideIcons.xCircle,
                   onTap: _isCancelling ? null : _cancelDeposit,
                 ),
@@ -511,18 +511,18 @@ class _DepositOnchainInvoiceScreenState
   Widget _buildAddressLoading() {
     return ReceiveFlowStatePanel(
       icon: LucideIcons.network,
-      title: context.l10n.onchainDepositGettingAddressTitle,
-      message: context.l10n.onchainDepositGettingAddressMessage,
+      title: context.tr.onchainDepositGettingAddressTitle,
+      message: context.tr.onchainDepositGettingAddressMessage,
     );
   }
 
   Widget _buildAddressError() {
     return ReceiveFlowStatePanel(
       icon: LucideIcons.alertTriangle,
-      title: context.l10n.onchainDepositErrorTitle,
-      message: _errorMessage ?? context.l10n.errUnexpected,
+      title: context.tr.onchainDepositErrorTitle,
+      message: _errorMessage ?? context.tr.errUnexpected,
       footer: ReceiveFlowSecondaryButton(
-        label: context.l10n.tryAgain,
+        label: context.tr.tryAgain,
         icon: LucideIcons.refreshCw,
         onTap: () {
           _requestTriggered = false;
@@ -537,7 +537,7 @@ class _DepositOnchainInvoiceScreenState
       backgroundColor: receiveFlowPanelAltColor,
       child: Column(
         children: [
-          ReceiveFlowSectionLabel(context.l10n.onchainDepositTotalLabel),
+          ReceiveFlowSectionLabel(context.tr.onchainDepositTotalLabel),
           const SizedBox(height: AppSpacing.sm),
           Text(
             MoneyDisplay.format(
@@ -553,7 +553,7 @@ class _DepositOnchainInvoiceScreenState
           ),
           const SizedBox(height: AppSpacing.md),
           ReceiveFlowTag(
-            label: context.l10n.onchainDepositNetworkTag(_networkLabel),
+            label: context.tr.onchainDepositNetworkTag(_networkLabel),
             icon: LucideIcons.bitcoin,
           ),
         ],
@@ -611,18 +611,18 @@ class _DepositOnchainInvoiceScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ReceiveFlowSectionLabel(context.l10n.onchainDepositTrackingTitle),
+          ReceiveFlowSectionLabel(context.tr.onchainDepositTrackingTitle),
           const SizedBox(height: AppSpacing.md),
-          ReceiveFlowMetricRow(label: context.l10n.status, value: _statusLabel),
+          ReceiveFlowMetricRow(label: context.tr.status, value: _statusLabel),
           const ReceiveFlowDivider(),
           ReceiveFlowMetricRow(
-            label: context.l10n.onchainDepositConfirmationsLabel,
+            label: context.tr.onchainDepositConfirmationsLabel,
             value: '$_currentConfirmations/$_requiredConfirmations',
           ),
           if (txid.isNotEmpty) ...[
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: context.l10n.onchainDepositTxidLabel,
+              label: context.tr.onchainDepositTxidLabel,
               value: txid,
               mono: true,
             ),
@@ -630,7 +630,7 @@ class _DepositOnchainInvoiceScreenState
           if (observedAmountBtc > 0) ...[
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: context.l10n.onchainDepositObservedAmountLabel,
+              label: context.tr.onchainDepositObservedAmountLabel,
               value: MoneyDisplay.format(
                 amount: observedAmountBtc,
                 currency: Currency.btc,
@@ -638,10 +638,10 @@ class _DepositOnchainInvoiceScreenState
             ),
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: context.l10n.onchainDepositAmountCheckLabel,
+              label: context.tr.onchainDepositAmountCheckLabel,
               value: amountMatches
-                  ? context.l10n.onchainDepositAmountCheckOk
-                  : context.l10n.onchainDepositAmountCheckDifferent,
+                  ? context.tr.onchainDepositAmountCheckOk
+                  : context.tr.onchainDepositAmountCheckDifferent,
             ),
           ],
         ],
@@ -656,7 +656,7 @@ class _DepositOnchainInvoiceScreenState
     return ReceiveFlowPanel(
       child: Column(
         children: [
-          ReceiveFlowSectionLabel(context.l10n.onchainDepositQrTitle),
+          ReceiveFlowSectionLabel(context.tr.onchainDepositQrTitle),
           const SizedBox(height: AppSpacing.lg),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -711,7 +711,7 @@ class _DepositOnchainInvoiceScreenState
           Align(
             alignment: Alignment.centerRight,
             child: ReceiveFlowSecondaryButton(
-              label: context.l10n.copy,
+              label: context.tr.copy,
               icon: LucideIcons.copy,
               fullWidth: false,
               onTap: () => _copyAddress(address),
@@ -737,30 +737,30 @@ class _DepositOnchainInvoiceScreenState
         children: [
           if (quoteLabel != null) ...[
             ReceiveFlowMetricRow(
-              label: context.l10n.onchainDepositQuoteLabel,
+              label: context.tr.onchainDepositQuoteLabel,
               value: quoteLabel,
             ),
             const ReceiveFlowDivider(),
           ],
           ReceiveFlowMetricRow(
-            label: context.l10n.onchainDepositDestinationWalletLabel,
+            label: context.tr.onchainDepositDestinationWalletLabel,
             value: _destinationWalletLabel,
           ),
           const ReceiveFlowDivider(),
           ReceiveFlowMetricRow(
-            label: context.l10n.onchainDepositNetworkLabel,
+            label: context.tr.onchainDepositNetworkLabel,
             value: _networkLabel,
           ),
           const ReceiveFlowDivider(),
           ReceiveFlowMetricRow(
-            label: context.l10n.onchainDepositExpectedAmountLabel,
+            label: context.tr.onchainDepositExpectedAmountLabel,
             value: MoneyDisplay.format(
                 amount: expectedAmountBtc, currency: Currency.btc),
           ),
           if (observedAmountBtc > 0) ...[
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
-              label: context.l10n.onchainDepositReceivedAmountLabel,
+              label: context.tr.onchainDepositReceivedAmountLabel,
               value: MoneyDisplay.format(
                 amount: observedAmountBtc,
                 currency: Currency.btc,
@@ -769,16 +769,16 @@ class _DepositOnchainInvoiceScreenState
           ],
           const ReceiveFlowDivider(),
           ReceiveFlowMetricRow(
-            label: context.l10n.onchainDepositMinimumConfirmationsLabel,
-            value: context.l10n.onchainDepositMinimumConfirmationsValue(
+            label: context.tr.onchainDepositMinimumConfirmationsLabel,
+            value: context.tr.onchainDepositMinimumConfirmationsValue(
                 _requiredConfirmations),
           ),
           const ReceiveFlowDivider(),
           ReceiveFlowMetricRow(
-            label: context.l10n.onchainDepositCustodyLabel,
+            label: context.tr.onchainDepositCustodyLabel,
             value: _isSelfCustody
-                ? context.l10n.onchainDepositCustodySelf
-                : context.l10n.onchainDepositCustodyKerosene,
+                ? context.tr.onchainDepositCustodySelf
+                : context.tr.onchainDepositCustodyKerosene,
           ),
         ],
       ),
@@ -808,8 +808,8 @@ class _DepositOnchainInvoiceScreenState
           Expanded(
             child: Text(
               _isSelfCustody
-                  ? context.l10n.onchainDepositSecuritySelf
-                  : context.l10n.onchainDepositSecurityKerosene,
+                  ? context.tr.onchainDepositSecuritySelf
+                  : context.tr.onchainDepositSecurityKerosene,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowMutedTextColor,
                     height: 1.35,

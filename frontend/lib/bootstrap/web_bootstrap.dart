@@ -174,7 +174,7 @@ class _AdminAuthGate extends ConsumerWidget {
               Text(
                 'Establishing secure connection...',
                 style: TextStyle(
-                  fontFamily: 'IBM Plex Sans',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: 12,
                   color: Color(0xFF6A6A74),
                 ),

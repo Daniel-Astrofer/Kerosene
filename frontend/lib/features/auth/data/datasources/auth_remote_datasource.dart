@@ -133,7 +133,7 @@ class OnboardingPaymentLinkDto {
     required this.linkId,
     required this.amountBtc,
     required this.depositAddress,
-    this.type = 'ONBOARDING_VOUCHER',
+    this.type = 'ONBOARDING_PAYMENT_LINK',
     this.status = 'pending',
   });
 
@@ -151,7 +151,7 @@ class OnboardingPaymentLinkDto {
       amountBtc: btc,
       depositAddress:
           (json['address'] ?? json['depositAddress'] ?? '').toString(),
-      type: (json['type'] ?? 'ONBOARDING_VOUCHER').toString(),
+      type: (json['type'] ?? 'ONBOARDING_PAYMENT_LINK').toString(),
       status: (json['status'] ?? 'pending').toString(),
     );
   }
@@ -281,52 +281,6 @@ class TotpSetupResult {
   }
 }
 
-class EmergencyRecoveryStartResult {
-  final String recoverySessionId;
-  final String otpUri;
-  final String passkeyChallenge;
-  final int expiresInSeconds;
-  final int requiredRecoveryCodes;
-
-  const EmergencyRecoveryStartResult({
-    required this.recoverySessionId,
-    required this.otpUri,
-    required this.passkeyChallenge,
-    required this.expiresInSeconds,
-    required this.requiredRecoveryCodes,
-  });
-
-  factory EmergencyRecoveryStartResult.fromJson(Map<String, dynamic> json) {
-    return EmergencyRecoveryStartResult(
-      recoverySessionId: (json['recoverySessionId'] ?? '').toString(),
-      otpUri: (json['otpUri'] ?? '').toString(),
-      passkeyChallenge: (json['passkeyChallenge'] ?? '').toString(),
-      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt() ?? 600,
-      requiredRecoveryCodes:
-          (json['requiredRecoveryCodes'] as num?)?.toInt() ?? 3,
-    );
-  }
-}
-
-class EmergencyRecoveryFinishResult {
-  final String username;
-  final List<String> newBackupCodes;
-
-  const EmergencyRecoveryFinishResult({
-    required this.username,
-    required this.newBackupCodes,
-  });
-
-  factory EmergencyRecoveryFinishResult.fromJson(Map<String, dynamic> json) {
-    return EmergencyRecoveryFinishResult(
-      username: (json['username'] ?? '').toString(),
-      newBackupCodes: ((json['newBackupCodes'] ?? const <dynamic>[]) as List)
-          .map((item) => item.toString())
-          .toList(),
-    );
-  }
-}
-
 // ─── Abstract interface ───────────────────────────────────────────────────────
 abstract class AuthRemoteDataSource {
   /// Obter desafio PoW
@@ -394,20 +348,6 @@ abstract class AuthRemoteDataSource {
 
   /// Finaliza registro de passkey para usuário logado
   Future<void> passkeyRegisterFinish(Map<String, dynamic> credential);
-
-  /// Inicia emergency recovery com PoW e múltiplos recovery codes.
-  Future<EmergencyRecoveryStartResult> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  });
-
-  /// Finaliza emergency recovery com novo TOTP e nova passkey.
-  Future<EmergencyRecoveryFinishResult> finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  });
 
   Future<ActivationStatusResult> getActivationStatus();
 
@@ -867,101 +807,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (e is AppException) rethrow;
       throw ServerException(
           message: 'Não conseguimos concluir a confirmação por passkey.');
-    }
-  }
-
-  // ─── Emergency Recovery ───────────────────────────────────────────────────────
-
-  @override
-  Future<EmergencyRecoveryStartResult> startEmergencyRecovery({
-    required String username,
-    required String newPassphrase,
-    required List<String> recoveryCodes,
-  }) async {
-    try {
-      final challenge = await getPowChallenge();
-      final nonce = await compute(_solvePoWTask, challenge);
-
-      final response = await apiClient.post(
-        AppConfig.authRecoveryEmergencyStart,
-        data: {
-          'username': username,
-          'newPassphrase': newPassphrase,
-          'recoveryCodes': recoveryCodes,
-          'challenge': challenge,
-          'nonce': nonce,
-        },
-      );
-
-      final body = response.data;
-      if (body is Map<String, dynamic>) {
-        return EmergencyRecoveryStartResult.fromJson(body);
-      }
-      if (body is String) {
-        final trimmed = body.trim();
-        if (trimmed.startsWith('{')) {
-          final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
-          return EmergencyRecoveryStartResult.fromJson(parsed);
-        }
-      }
-
-      throw const ServerException(
-        message: 'Não conseguimos iniciar a recuperação agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos iniciar a recuperação agora.',
-      );
-    }
-  }
-
-  @override
-  Future<EmergencyRecoveryFinishResult> finishEmergencyRecovery({
-    required String recoverySessionId,
-    required String totpCode,
-    required Map<String, dynamic> credential,
-  }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.authRecoveryEmergencyFinish,
-        data: {
-          'recoverySessionId': recoverySessionId,
-          'totpCode': totpCode,
-          'publicKey': credential['publicKey'] ?? credential['public_key'],
-          'publicKeyCose':
-              credential['publicKeyCose'] ?? credential['public_key_cose'],
-          'deviceName': credential['deviceName'] ?? credential['device_name'],
-          'signature': credential['signature'],
-          'authData': credential['authData'],
-          'clientDataJSON': credential['clientDataJSON'],
-          'credentialId': credential['credentialId'] ??
-              credential['credential_id'] ??
-              credential['id'],
-          'userHandle': credential['userHandle'] ?? credential['user_handle'],
-        },
-      );
-
-      final body = response.data;
-      if (body is Map<String, dynamic>) {
-        return EmergencyRecoveryFinishResult.fromJson(body);
-      }
-      if (body is String) {
-        final trimmed = body.trim();
-        if (trimmed.startsWith('{')) {
-          final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
-          return EmergencyRecoveryFinishResult.fromJson(parsed);
-        }
-      }
-
-      throw const ServerException(
-        message: 'Não conseguimos concluir a recuperação agora.',
-      );
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos concluir a recuperação agora.',
-      );
     }
   }
 

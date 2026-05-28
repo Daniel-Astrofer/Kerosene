@@ -41,16 +41,16 @@ class ModernAuthTextField extends StatelessWidget {
     final enabledBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
       borderSide: BorderSide(
-        color: Colors.white.withValues(alpha: 0.08),
-        width: 1,
+        color: Colors.white.withValues(alpha: 0.06),
+        width: 0.8,
       ),
     );
 
     final focusedBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
       borderSide: BorderSide(
-        color: Colors.white.withValues(alpha: 0.30),
-        width: 1,
+        color: Colors.white.withValues(alpha: 0.16),
+        width: 0.8,
       ),
     );
 
@@ -60,7 +60,7 @@ class ModernAuthTextField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: AppTypography.caption.copyWith(
-            fontFamily: 'HubotSansCondensed',
+            fontFamily: 'IBMPlexSansHebrew',
             color: Colors.white.withValues(alpha: 0.76),
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
@@ -80,26 +80,27 @@ class ModernAuthTextField extends StatelessWidget {
           enabled: enabled,
           cursorColor: Colors.white,
           style: AppTypography.bodyLarge.copyWith(
-            color: enabled
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.58),
+            color:
+                enabled ? Colors.white : Colors.white.withValues(alpha: 0.58),
             fontWeight: FontWeight.w500,
-            height: 1.2,
+            height: 1.12,
+            fontSize: 16,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: AppTypography.bodyMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.48),
+              color: Colors.white.withValues(alpha: 0.36),
+              fontSize: 15,
             ),
             filled: true,
             fillColor: Colors.white.withValues(alpha: enabled ? 0.055 : 0.025),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
-              vertical: 18,
+              vertical: 14,
             ),
             prefixIcon: Padding(
-              padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
+              padding: const EdgeInsetsDirectional.only(start: 10, end: 2),
               child: Icon(
                 icon,
                 color: Colors.white.withValues(alpha: enabled ? 0.64 : 0.34),
@@ -113,10 +114,11 @@ class ModernAuthTextField extends StatelessWidget {
             suffixIcon: suffixIcon,
             enabledBorder: enabledBorder,
             focusedBorder: focusedBorder,
+            disabledBorder: enabledBorder,
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
               borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.24),
+                color: const Color(0xFFFF6B6B).withValues(alpha: 0.72),
                 width: 1,
               ),
             ),

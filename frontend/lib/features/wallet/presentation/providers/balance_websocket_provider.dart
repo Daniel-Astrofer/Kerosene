@@ -3,7 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/core/providers/alert_preferences_provider.dart';
 import 'package:teste/features/auth/controller/auth_local_provider.dart';
 import '../../../../core/services/balance_websocket_service.dart';
@@ -238,7 +237,7 @@ final balanceWebSocketServiceProvider =
       unawaited(ref.read(walletProvider.notifier).refresh());
 
       if (alertPreferences.inAppBannersEnabled) {
-        SnackbarHelper.showPushNotification(notification);
+        ref.read(notificationBannerProvider.notifier).show(notification);
       }
     },
   );
@@ -292,6 +291,8 @@ bool _isSecurityNotification(SessionNotificationItem notification) {
   return notification.kind ==
           SessionNotificationItem.kindSecurityLoginDetected ||
       notification.kind ==
+          SessionNotificationItem.kindSecurityAdminAccessAttempt ||
+      notification.kind ==
           SessionNotificationItem.kindSecurityRecoveryCompleted;
 }
 
@@ -304,8 +305,5 @@ bool _isTransactionNotification(SessionNotificationItem notification) {
     SessionNotificationItem.kindDepositDetected,
     SessionNotificationItem.kindDepositConfirmed,
     SessionNotificationItem.kindPaymentSent,
-    SessionNotificationItem.kindMiningStarted,
-    SessionNotificationItem.kindMiningCompleted,
-    SessionNotificationItem.kindMiningCancelled,
   }.contains(notification.kind);
 }

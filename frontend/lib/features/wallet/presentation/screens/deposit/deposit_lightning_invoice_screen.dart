@@ -17,7 +17,7 @@ import 'package:teste/features/transactions/domain/entities/lightning_invoice.da
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 import 'package:uuid/uuid.dart';
 
 class DepositLightningInvoiceScreen extends ConsumerStatefulWidget {
@@ -66,7 +66,7 @@ class _DepositLightningInvoiceScreenState
   }
 
   String _copy({required String pt, required String en, required String es}) {
-    return switch (context.l10n.localeName) {
+    return switch (context.tr.localeName) {
       'en' => en,
       'es' => es,
       _ => pt,
@@ -149,7 +149,7 @@ class _DepositLightningInvoiceScreenState
         return;
       }
       final translated = ErrorTranslator.translate(
-        context.l10n,
+        context.tr,
         error.toString(),
       );
       setState(() {
@@ -407,7 +407,7 @@ class _DepositLightningInvoiceScreenState
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.l10n.depositLedgerBackAction),
+                child: Text(context.tr.depositLedgerBackAction),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
@@ -453,7 +453,7 @@ class _DepositLightningInvoiceScreenState
         return;
       }
       final translated = ErrorTranslator.translate(
-        context.l10n,
+        context.tr,
         error.toString(),
       );
       SnackbarHelper.showError(translated);
@@ -484,7 +484,7 @@ class _DepositLightningInvoiceScreenState
         ),
         child: ReceiveFlowStatePanel(
           icon: LucideIcons.loader2,
-          title: context.l10n.depositLightningLoading,
+          title: context.tr.depositLightningLoading,
           message: _copy(
             pt: 'Buscando a cotação atual antes de criar o pedido.',
             en: 'Checking the current quote before creating the request.',
@@ -618,9 +618,9 @@ class _DepositLightningInvoiceScreenState
         en: 'Could not create the request',
         es: 'No se pudo crear el pedido',
       ),
-      message: _errorMessage ?? context.l10n.errUnexpected,
+      message: _errorMessage ?? context.tr.errUnexpected,
       footer: ReceiveFlowSecondaryButton(
-        label: context.l10n.tryAgain,
+        label: context.tr.tryAgain,
         icon: LucideIcons.refreshCw,
         onTap: () {
           _requestTriggered = false;
@@ -762,7 +762,7 @@ class _DepositLightningInvoiceScreenState
             const ReceiveFlowDivider(),
           ],
           ReceiveFlowMetricRow(
-            label: context.l10n.depositLightningGoesTo,
+            label: context.tr.depositLightningGoesTo,
             value: invoice.walletName,
           ),
           if (invoice.lightningAddress.isNotEmpty) ...[
@@ -809,7 +809,7 @@ class _DepositLightningInvoiceScreenState
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ReceiveFlowMetricRow(label: context.l10n.status, value: _statusLabel),
+          ReceiveFlowMetricRow(label: context.tr.status, value: _statusLabel),
           if (transfer?.detectedAt != null) ...[
             const ReceiveFlowDivider(),
             ReceiveFlowMetricRow(
@@ -834,7 +834,7 @@ class _DepositLightningInvoiceScreenState
           ],
           const ReceiveFlowDivider(),
           ReceiveFlowMetricRow(
-            label: context.l10n.depositLightningSummary,
+            label: context.tr.depositLightningSummary,
             value: _statusDescription,
           ),
         ],

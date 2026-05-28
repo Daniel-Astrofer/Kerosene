@@ -92,7 +92,7 @@ abstract class WalletRepository {
   Future<Either<Failure, void>> deleteMnemonic();
 }
 
-/// Estimativa de taxa de mineração
+/// Estimativa de taxa de rede
 class FeeEstimate {
   /// Taxa para confirmação rápida (próximo bloco)
   final int fastSatoshisPerByte;

@@ -2,6 +2,8 @@ import 'dart:io';
 
 const _ignoredPathParts = <String>[
   '/lib/l10n/',
+  '/storybook/',
+  '/features/debug/',
   '/features/landing/',
   '/features/web_admin/',
   '/test/',
@@ -10,6 +12,7 @@ const _ignoredPathParts = <String>[
 
 const _allowedFiles = <String>{
   'lib/core/constants/app_copy.dart',
+  'lib/core/utils/locale_copy.dart',
   'lib/core/utils/api_display_text.dart',
 };
 

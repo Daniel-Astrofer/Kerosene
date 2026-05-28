@@ -20,13 +20,11 @@ import '../../domain/repositories/wallet_repository.dart';
 import '../../domain/usecases/get_wallets_usecase.dart';
 import '../../domain/usecases/get_transactions_usecase.dart';
 import '../../domain/usecases/send_bitcoin_usecase.dart';
-import '../../domain/usecases/create_wallet_usecase.dart';
 import '../../domain/usecases/wallet_crud_usecases.dart'; // [NEW]
 import '../../domain/usecases/create_unsigned_transaction_usecase.dart';
 import '../../domain/usecases/broadcast_transaction_usecase.dart';
 import '../../domain/usecases/get_deposit_address_usecase.dart';
 import '../state/wallet_state.dart';
-import '../state/create_wallet_state.dart';
 
 // ==================== Repository Providers ====================
 
@@ -85,11 +83,6 @@ final sendBitcoinUseCaseProvider = Provider<SendBitcoinUseCase>((ref) {
   return SendBitcoinUseCase(repository);
 });
 
-final createWalletUseCaseProvider = Provider<CreateWalletUseCase>((ref) {
-  final repository = ref.watch(walletRepositoryProvider);
-  return CreateWalletUseCase(repository);
-});
-
 // [NEW] Wallet CRUD Providers
 final findWalletUseCaseProvider = Provider<FindWalletUseCase>((ref) {
   final repository = ref.watch(walletRepositoryProvider);
@@ -138,44 +131,6 @@ final getDepositAddressUseCaseProvider = Provider<GetDepositAddressUseCase>((
 });
 
 // ==================== State Notifiers ====================
-
-/// StateNotifier para gerenciar criação de carteiras
-class CreateWalletNotifier extends Notifier<CreateWalletState> {
-  late CreateWalletUseCase createWalletUseCase;
-
-  @override
-  CreateWalletState build() {
-    createWalletUseCase = ref.watch(createWalletUseCaseProvider);
-    return const CreateWalletInitial();
-  }
-
-  Future<void> createWallet({
-    required String name,
-    required String passphrase,
-    String accountSecurity = 'STANDARD',
-    String? xpub,
-    String walletMode = 'KEROSENE',
-  }) async {
-    state = const CreateWalletLoading();
-
-    final result = await createWalletUseCase(
-      name: name,
-      passphrase: passphrase,
-      accountSecurity: accountSecurity,
-      xpub: xpub,
-      walletMode: walletMode,
-    );
-
-    result.fold(
-      (failure) => state = CreateWalletError(failure.message),
-      (success) => state = CreateWalletSuccess(success),
-    );
-  }
-}
-
-final createWalletProvider =
-    NotifierProvider<CreateWalletNotifier, CreateWalletState>(
-        CreateWalletNotifier.new);
 
 /// StateNotifier para gerenciar estado de carteiras
 class WalletNotifier extends Notifier<WalletState> {

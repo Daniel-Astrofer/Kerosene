@@ -26,7 +26,7 @@ services:
       context: ../vault
       dockerfile: ../kerosene-infrastructure/images/vault/Dockerfile
     container_name: kerosene-vault-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -86,7 +86,7 @@ services:
       - DIRECTOR_2_ARM_SIGNATURE=${DIRECTOR_2_ARM_SIGNATURE}
       - DIRECTOR_3_ARM_SIGNATURE=${DIRECTOR_3_ARM_SIGNATURE:-}
     volumes:
-      - ../kerosene/vault-scripts/arm-vault-compose.sh:/arm-vault.sh:ro,z
+      - ../../scripts/arm-vault-compose.sh:/arm-vault.sh:ro,z
     entrypoint: ["sh", "/arm-vault.sh"]
     networks: [net_vault]
     depends_on:
@@ -95,7 +95,7 @@ services:
   lnd-neutrino:
     image: ${LIGHTNING_LND_IMAGE:-lightninglabs/lnd:v0.20.1-beta}
     container_name: lnd-neutrino-local
-    restart: unless-stopped
+    restart: "no"
     env_file: ../kerosene/.env
     environment:
       - BITCOIN_NETWORK=${BITCOIN_NETWORK:-mainnet}
@@ -117,7 +117,7 @@ services:
       - BITCOIN_ZMQ_RAWBLOCK=${BITCOIN_ZMQ_RAWBLOCK:-tcp://bitcoin-pruned-node:28334}
     volumes:
       - lnd_data:/root/.lnd
-      - ../kerosene/lnd-scripts/lnd-entrypoint.sh:/lnd-entrypoint.sh:ro,z
+      - ./scripts/lnd-entrypoint.sh:/lnd-entrypoint.sh:ro,z
     entrypoint: ["/bin/sh", "/lnd-entrypoint.sh"]
     networks:
       net_bitcoin:
@@ -145,7 +145,7 @@ services:
       - LND_TLS_SERVER_NAME=${LIGHTNING_LND_TLS_SERVER_NAME:-lnd-bitcoind}
     volumes:
       - lnd_data:/lnd
-      - ../kerosene/lnd-scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
+      - ./scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
     entrypoint: ["sh", "/lnd-bootstrap.sh"]
     networks: [net_tor]
     depends_on:
@@ -154,7 +154,7 @@ services:
   lnd-unlocker:
     image: curlimages/curl:8.10.1
     container_name: lnd-unlocker-local
-    restart: unless-stopped
+    restart: "no"
     user: "0:0"
     env_file: ../kerosene/.env
     environment:
@@ -168,7 +168,7 @@ services:
       - LND_TLS_SERVER_NAME=${LIGHTNING_LND_TLS_SERVER_NAME:-lnd-bitcoind}
     volumes:
       - lnd_data:/lnd
-      - ../kerosene/lnd-scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
+      - ./scripts/lnd-bootstrap.sh:/lnd-bootstrap.sh:ro,z
     entrypoint: ["sh", "/lnd-bootstrap.sh"]
     networks: [net_tor]
     depends_on:
@@ -182,15 +182,13 @@ services:
     image: ${BITCOIN_CORE_IMAGE:-bitcoin/bitcoin:27.1}
     container_name: bitcoin-pruned-node-local
     hostname: bitcoin-pruned-node
-    restart: unless-stopped
-    mem_limit: ${BITCOIN_MEM_LIMIT:-768m}
-    cpus: "${BITCOIN_CPUS:-1.0}"
+    restart: "no"
     env_file: ../kerosene/.env
     environment:
       - BITCOIN_CHAIN=${BITCOIN_CHAIN:-mainnet}
-      - BITCOIN_PRUNE_MB=${BITCOIN_PRUNE_MB:-550}
-      - BITCOIN_MAX_MEMPOOL_MB=${BITCOIN_MAX_MEMPOOL_MB:-64}
-      - BITCOIN_DBCACHE_MB=${BITCOIN_DBCACHE_MB:-64}
+      - BITCOIN_PRUNE_MB=${BITCOIN_PRUNE_MB:-5500}
+      - BITCOIN_MAX_MEMPOOL_MB=${BITCOIN_MAX_MEMPOOL_MB:-300}
+      - BITCOIN_DBCACHE_MB=${BITCOIN_DBCACHE_MB:-1024}
       - BITCOIN_P2P_PORT=${BITCOIN_P2P_PORT:-8333}
       - BITCOIN_RPC_USER=${BITCOIN_RPC_USER:-kerosene}
       - BITCOIN_RPC_PASSWORD=${BITCOIN_RPC_PASSWORD}
@@ -200,8 +198,8 @@ services:
       - BITCOIN_REINDEX_ONCE=${BITCOIN_REINDEX_ONCE:-false}
     volumes:
       - bitcoin_core_data:/home/bitcoin/.bitcoin
-      - ../kerosene/bitcoin-scripts/bitcoind-entrypoint.sh:/entrypoint.sh:ro,z
-      - ../kerosene/bitcoin-scripts/bitcoind-healthcheck.sh:/healthcheck.sh:ro,z
+      - ./bitcoin/bitcoind-entrypoint.sh:/entrypoint.sh:ro,z
+      - ./bitcoin/bitcoind-healthcheck.sh:/healthcheck.sh:ro,z
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       net_bitcoin:
@@ -213,13 +211,14 @@ services:
       test: ["CMD-SHELL", "sh /healthcheck.sh"]
       interval: 10s
       timeout: 5s
+      start_period: ${BITCOIN_HEALTH_START_PERIOD:-2h}
       retries: 30
 
   bitcoin-indexer:
     image: ${BITCOIN_INDEXER_IMAGE:-getumbrel/electrs:v0.10.2}
     container_name: bitcoin-indexer-local
     profiles: ["archive-indexer"]
-    restart: unless-stopped
+    restart: "no"
     env_file: ../kerosene/.env
     command:
       - --network
@@ -274,14 +273,14 @@ services:
   vault-raft-1:
     image: ${VAULT_IMAGE:-hashicorp/vault:1.17.6}
     container_name: vault-raft-1-local
-    restart: unless-stopped
+    restart: "no"
     cap_add: [IPC_LOCK]
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
     command: ["server"]
     volumes:
       - vault_raft_1_data:/vault/data
-      - ../kerosene/vault-raft/vault-raft-1.hcl:/vault/config/vault.hcl:ro,z
+      - ./vault/raft/vault-raft-1.hcl:/vault/config/vault.hcl:ro,z
     networks: [net_vault]
     healthcheck:
       test: ["CMD-SHELL", "vault status >/dev/null 2>&1 || test $$? -eq 2"]
@@ -294,14 +293,14 @@ services:
   vault-raft-2:
     image: ${VAULT_IMAGE:-hashicorp/vault:1.17.6}
     container_name: vault-raft-2-local
-    restart: unless-stopped
+    restart: "no"
     cap_add: [IPC_LOCK]
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
     command: ["server"]
     volumes:
       - vault_raft_2_data:/vault/data
-      - ../kerosene/vault-raft/vault-raft-2.hcl:/vault/config/vault.hcl:ro,z
+      - ./vault/raft/vault-raft-2.hcl:/vault/config/vault.hcl:ro,z
     networks: [net_vault]
     healthcheck:
       test: ["CMD-SHELL", "vault status >/dev/null 2>&1 || test $$? -eq 2"]
@@ -314,14 +313,14 @@ services:
   vault-raft-3:
     image: ${VAULT_IMAGE:-hashicorp/vault:1.17.6}
     container_name: vault-raft-3-local
-    restart: unless-stopped
+    restart: "no"
     cap_add: [IPC_LOCK]
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200
     command: ["server"]
     volumes:
       - vault_raft_3_data:/vault/data
-      - ../kerosene/vault-raft/vault-raft-3.hcl:/vault/config/vault.hcl:ro,z
+      - ./vault/raft/vault-raft-3.hcl:/vault/config/vault.hcl:ro,z
     networks: [net_vault]
     healthcheck:
       test: ["CMD-SHELL", "vault status >/dev/null 2>&1 || test $$? -eq 2"]
@@ -341,7 +340,7 @@ services:
       - VAULT_APP_READ_GID=65532
     volumes:
       - vault_raft_bootstrap:/vault/bootstrap
-      - ../kerosene/vault-raft/bootstrap-raft.sh:/bootstrap-raft.sh:ro,z
+      - ./vault/raft/bootstrap-raft.sh:/bootstrap-raft.sh:ro,z
     entrypoint: ["/bin/sh", "/bootstrap-raft.sh"]
     networks: [net_vault]
     depends_on:
@@ -392,7 +391,7 @@ services:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
     container_name: mpc-sidecar-is-local
-    restart: unless-stopped
+    restart: "no"
     environment:
       - MPC_ALLOW_INSECURE_GRPC=true
       - MPC_REQUIRE_MASTER_KEY=true
@@ -448,7 +447,7 @@ services:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
     container_name: kerosene-app-is-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -546,7 +545,8 @@ services:
       context: ../kerosene/tor/vanguards
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-is-local
-    restart: unless-stopped
+    restart: "no"
+    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -608,7 +608,7 @@ services:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
     container_name: mpc-sidecar-ch-local
-    restart: unless-stopped
+    restart: "no"
     environment:
       - MPC_ALLOW_INSECURE_GRPC=true
       - MPC_REQUIRE_MASTER_KEY=true
@@ -664,7 +664,7 @@ services:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
     container_name: kerosene-app-ch-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -762,7 +762,8 @@ services:
       context: ../kerosene/tor/vanguards
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-ch-local
-    restart: unless-stopped
+    restart: "no"
+    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -824,7 +825,7 @@ services:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
     container_name: mpc-sidecar-sg-local
-    restart: unless-stopped
+    restart: "no"
     environment:
       - MPC_ALLOW_INSECURE_GRPC=true
       - MPC_REQUIRE_MASTER_KEY=true
@@ -880,7 +881,7 @@ services:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
     container_name: kerosene-app-sg-local
-    restart: unless-stopped
+    restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -978,7 +979,8 @@ services:
       context: ../kerosene/tor/vanguards
       dockerfile: Dockerfile
     container_name: kerosene-vanguards-sg-local
-    restart: unless-stopped
+    restart: "no"
+    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -1000,18 +1002,18 @@ services:
   web-admin:
     image: nginx:1.27-alpine
     container_name: kerosene-web-admin-local
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "${WEB_ADMIN_PORT:-3000}:8080"
     volumes:
       - ../../frontend/build/web:/usr/share/nginx/html:ro,z
-      - ../kerosene/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro,z
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro,z
       - ../../release:/release:ro,z
     networks: [net_ingress]
     depends_on:
       kerosene-app-is: { condition: service_healthy }
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null"]
+      test: ["CMD-SHELL", "test -s /usr/share/nginx/html/index.html"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -1019,11 +1021,11 @@ services:
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: kerosene-prometheus-local
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "${PROMETHEUS_PORT:-19090}:9090"
     volumes:
-      - ../kerosene/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,z
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,z
       - prometheus_data:/prometheus
     networks: [net_ingress, net_tor]
     depends_on:

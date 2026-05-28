@@ -15,7 +15,7 @@ final class Transaction extends Equatable {
   /// Valor em satoshis
   final int amountSatoshis;
 
-  /// Taxa de mineração em satoshis
+  /// Taxa de rede em satoshis
   final int feeSatoshis;
 
   /// Status da transação
@@ -102,6 +102,19 @@ final class Transaction extends Equatable {
 
   /// Taxa em BTC
   double get feeBTC => feeSatoshis / 100000000.0;
+
+  /// Movimentos que reduzem o saldo do usuario.
+  bool get isDebit =>
+      type == TransactionType.send ||
+      type == TransactionType.withdrawal ||
+      type == TransactionType.fee;
+
+  /// Movimentos que aumentam o saldo do usuario.
+  bool get isCredit =>
+      type == TransactionType.receive || type == TransactionType.deposit;
+
+  /// Valor em BTC com sinal do ponto de vista do usuario atual.
+  double get signedAmountBTC => isDebit ? -amountBTC : amountBTC;
 
   /// Verifica se a transação está confirmada (6+ confirmações)
   bool get isConfirmed => confirmations >= 6;
@@ -195,9 +208,24 @@ final class Transaction extends Equatable {
     // LedgerSyncEventDTO / sanitized ephemeral API payload format
     final amountVal = (json['amount'] as num?)?.toDouble() ?? 0.0;
     final networkFee = (json['networkFee'] as num?)?.toDouble() ?? 0.0;
-    final currentUserId = _parseInt(json['currentUserId']);
-    final senderUserId = _parseInt(json['senderUserId']);
-    final receiverUserId = _parseInt(json['receiverUserId']);
+    final currentUserId = _parseInt(
+      json['currentUserId'] ??
+          json['currentUserID'] ??
+          json['userId'] ??
+          json['authenticatedUserId'],
+    );
+    final senderUserId = _parseInt(
+      json['senderUserId'] ??
+          json['senderUserID'] ??
+          json['payerUserId'] ??
+          json['fromUserId'],
+    );
+    final receiverUserId = _parseInt(
+      json['receiverUserId'] ??
+          json['receiverUserID'] ??
+          json['payeeUserId'] ??
+          json['toUserId'],
+    );
 
     final senderField = [
       json['senderIdentifier'],
@@ -216,18 +244,50 @@ final class Transaction extends Equatable {
     ]
         .map((e) => e?.toString())
         .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+    final currentUserIdentifier = [
+      json['currentUsername'],
+      json['currentUserName'],
+      json['currentWalletName'],
+      json['currentWalletAddress'],
+    ]
+        .map((e) => e?.toString())
+        .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
     final typeField =
         (json['transactionType'] ?? json['type'])?.toString().toUpperCase() ??
+            '';
+    final transferTypeField =
+        (json['externalTransferType'] ?? json['transferType'])
+                ?.toString()
+                .toUpperCase() ??
+            '';
+    final directionField = (json['direction'] ??
+                json['ledgerDirection'] ??
+                json['movement'] ??
+                json['operation'] ??
+                json['entryType'] ??
+                json['side'] ??
+                json['amountDirection'])
+            ?.toString()
+            .toUpperCase() ??
+        '';
+    final contextField =
+        (json['context'] ?? json['description'])?.toString().toUpperCase() ??
             '';
     final confirmations =
         _parseInt(json['confirmations']) ?? _parseInt(json['nonce']) ?? 0;
     final txType = _resolveType(
       typeField: typeField,
+      transferTypeField: transferTypeField,
+      contextField: contextField,
+      directionField: directionField,
       amountVal: amountVal,
       currentUserId: currentUserId,
       senderUserId: senderUserId,
       receiverUserId: receiverUserId,
+      currentUserIdentifier: currentUserIdentifier,
+      senderIdentifier: senderField,
+      receiverIdentifier: receiverField,
     );
     final txStatus = _resolveStatus(
       rawStatus: json['status']?.toString(),
@@ -273,10 +333,9 @@ final class Transaction extends Equatable {
           (json['description']?.toString().toLowerCase().contains('transfer') ??
               false),
       isLightning: typeField.contains('LIGHTNING') ||
-          (json['description']
-                  ?.toString()
-                  .toUpperCase()
-                  .contains('LIGHTNING') ??
+          (json['description']?.toString().toUpperCase().contains(
+                    'LIGHTNING',
+                  ) ??
               false) ||
           (json['context']?.toString().toUpperCase().contains('LIGHTNING') ??
               false),
@@ -302,28 +361,23 @@ final class Transaction extends Equatable {
 
   static TransactionType _resolveType({
     required String typeField,
+    required String transferTypeField,
+    required String contextField,
+    required String directionField,
     required double amountVal,
     required int? currentUserId,
     required int? senderUserId,
     required int? receiverUserId,
+    required String? currentUserIdentifier,
+    required String? senderIdentifier,
+    required String? receiverIdentifier,
   }) {
-    if (typeField == 'EXTERNAL_WITHDRAWAL' || typeField == 'WITHDRAWAL') {
-      return TransactionType.withdrawal;
-    }
-
-    if (typeField == 'EXTERNAL_DEPOSIT' || typeField == 'DEPOSIT') {
-      return TransactionType.deposit;
-    }
-
-    if (typeField == 'TRANSACTION_SEND' ||
-        typeField == 'SEND' ||
-        typeField == 'DEBIT') {
-      return TransactionType.send;
-    }
-
-    if (typeField == 'TRANSACTION_RECEIVE' || typeField == 'RECEIVE') {
-      return TransactionType.receive;
-    }
+    final typeParts = [
+      typeField,
+      transferTypeField,
+      directionField,
+      contextField,
+    ].where((value) => value.trim().isNotEmpty).join('|');
 
     if (typeField == 'INTERNAL' || typeField == 'TRANSFER') {
       if (currentUserId != null) {
@@ -334,9 +388,88 @@ final class Transaction extends Equatable {
           return TransactionType.receive;
         }
       }
+      if (_containsAny(directionField, const [
+        'OUTGOING',
+        'OUTBOUND',
+        'DEBIT',
+        'SENT',
+        'SEND',
+        'PAYER',
+      ])) {
+        return TransactionType.send;
+      }
+      if (_containsAny(directionField, const [
+        'INCOMING',
+        'INBOUND',
+        'CREDIT',
+        'RECEIVED',
+        'RECEIVE',
+        'PAYEE',
+      ])) {
+        return TransactionType.receive;
+      }
+      final currentIdentifier = _normalizeIdentity(currentUserIdentifier);
+      final sender = _normalizeIdentity(senderIdentifier);
+      final receiver = _normalizeIdentity(receiverIdentifier);
+      if (currentIdentifier.isNotEmpty) {
+        if (sender == currentIdentifier && receiver != currentIdentifier) {
+          return TransactionType.send;
+        }
+        if (receiver == currentIdentifier && sender != currentIdentifier) {
+          return TransactionType.receive;
+        }
+      }
+    }
+
+    if (_containsAny(typeParts, const [
+      'EXTERNAL_WITHDRAWAL',
+      'WITHDRAWAL',
+      'TRANSACTION_SEND',
+      'TRANSFER_SENT',
+      'PAYMENT_SENT',
+      'PAYMENT_INTERNAL_DEBIT',
+      'INTERNAL_DEBIT',
+      'LEDGER_DEBIT',
+      'OUTBOUND_PAYMENT',
+      'OUTBOUND',
+      'OUTGOING',
+      'DEBIT',
+      'SEND',
+      'SENT',
+      'CASHOUT',
+      'CASH_OUT',
+    ])) {
+      return TransactionType.withdrawal;
+    }
+
+    if (_containsAny(typeParts, const [
+      'EXTERNAL_DEPOSIT',
+      'DEPOSIT',
+      'TRANSACTION_RECEIVE',
+      'TRANSFER_RECEIVED',
+      'PAYMENT_RECEIVED',
+      'PAYMENT_INTERNAL_CREDIT',
+      'INTERNAL_CREDIT',
+      'LEDGER_CREDIT',
+      'INBOUND_INVOICE',
+      'INBOUND',
+      'INCOMING',
+      'CREDIT',
+      'RECEIVE',
+      'RECEIVED',
+    ])) {
+      return TransactionType.deposit;
     }
 
     return amountVal < 0 ? TransactionType.send : TransactionType.receive;
+  }
+
+  static bool _containsAny(String value, List<String> tokens) {
+    return tokens.any(value.contains);
+  }
+
+  static String _normalizeIdentity(String? value) {
+    return (value ?? '').trim().toLowerCase().replaceAll(RegExp(r'^@+'), '');
   }
 
   static TransactionStatus _resolveStatus({

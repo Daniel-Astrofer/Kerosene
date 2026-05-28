@@ -81,6 +81,11 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
     final t = widget.transaction;
     final visual = TransactionVisualSpec.fromTransaction(t);
     final statusColor = visual.amountColor;
+    final amountPrefix = t.isDebit
+        ? '-'
+        : t.isCredit
+            ? '+'
+            : visual.prefix;
 
     return GestureDetector(
       onTap: () {
@@ -151,7 +156,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                     children: [
                       _buildBtcAmount(
                         t.amountBTC.abs(),
-                        visual.prefix,
+                        amountPrefix,
                         statusColor,
                       ),
                       const SizedBox(height: 4),
@@ -211,21 +216,21 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'JetBrainsMono'),
+                fontFamily: 'IBMPlexSansHebrew'),
           ),
         Text(
           parts[0],
           style: Theme.of(context).textTheme.bodyLarge!.copyWith(
               color: color,
               fontWeight: FontWeight.w900,
-              fontFamily: 'JetBrainsMono'),
+              fontFamily: 'IBMPlexSansHebrew'),
         ),
         Text(
           '.${parts[1]}',
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
               color: color.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
-              fontFamily: 'JetBrainsMono'),
+              fontFamily: 'IBMPlexSansHebrew'),
         ),
         const SizedBox(width: 4),
         Text(
@@ -321,7 +326,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                       .colorScheme
                       .onPrimary
                       .withValues(alpha: 0.5),
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   fontSize: 9,
                 ),
           ),

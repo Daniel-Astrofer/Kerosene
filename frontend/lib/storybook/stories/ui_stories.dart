@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:teste/core/theme/app_spacing.dart';
+import 'package:teste/core/presentation/widgets/cyber_button.dart';
+import 'package:teste/core/presentation/widgets/kerosene_logo.dart';
 import 'package:teste/core/widgets/bouncing_button.dart';
 import 'package:teste/core/widgets/cyber_text_field.dart';
-import 'package:teste/core/widgets/cyber_progress_bar.dart';
-import 'package:teste/core/widgets/neon_action_button.dart';
-import 'package:teste/core/widgets/kerosene_logo.dart';
 import 'package:teste/core/widgets/kerosene_header.dart';
 
 List<Story> uiStories() {
@@ -59,13 +58,16 @@ List<Story> uiStories() {
       },
     ),
     Story(
-      name: 'UI/Atomic/Neon Action Button',
+      name: 'UI/Atomic/Cyber Button',
       builder: (context) {
         final text = context.knobs.text(label: 'Text', initial: 'ATIVAR');
         return Center(
-          child: NeonActionButton(
-            text: text,
-            onPressed: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: CyberButton(
+              text: text,
+              onTap: () {},
+            ),
           ),
         );
       },
@@ -78,9 +80,8 @@ List<Story> uiStories() {
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            child: CyberProgressBar(
-              currentStep: currentStep,
-              totalSteps: 10,
+            child: LinearProgressIndicator(
+              value: currentStep / 10,
             ),
           ),
         );

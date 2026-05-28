@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # ═══════════════════════════════════════════════════════════════════════════════
 # Kerosene App — Production Dockerfile
 # ─────────────────────────────────────────────────────────────────────────────
@@ -18,7 +17,6 @@
 FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /workspace
-ENV GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs=-Xmx1024m -Dorg.gradle.console=plain"
 
 # ── Layer 1: Gradle wrapper (cached independently) ────────────────────────────
 COPY gradlew gradlew.bat ./
@@ -27,15 +25,15 @@ RUN chmod +x gradlew
 
 # ── Layer 2: Dependency resolution (cache until build.gradle.kts changes) ─────
 COPY build.gradle.kts settings.gradle.kts ./
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew dependencies --no-daemon --quiet >/dev/null || true
+COPY gradle.properties ./
+ARG GRADLE_MAX_WORKERS=2
+RUN ./gradlew dependencies --no-daemon --max-workers=${GRADLE_MAX_WORKERS} --quiet || true
 
 # ── Layer 3: Source compilation ───────────────────────────────────────────────
 COPY src src/
 COPY docker docker/
 COPY web-admin-build web-admin-build/
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew bootJar --no-daemon -x test --quiet
+RUN ./gradlew bootJar --no-daemon --max-workers=${GRADLE_MAX_WORKERS} -x test
 RUN javac docker/Healthcheck.java -d /workspace/healthcheck
 
 # ── Stage 2: Runtime (Distroless — minimal attack surface) ────────────────────
@@ -56,7 +54,7 @@ USER 65532:65532
 EXPOSE 8080
 
 HEALTHCHECK --interval=10s --timeout=4s --start-period=180s --retries=12 \
-  CMD ["java", "-cp", "/app/healthcheck", "Healthcheck", "http://127.0.0.1:8080/actuator/health"]
+  CMD ["java", "-cp", "/app/healthcheck", "Healthcheck", "http://127.0.0.1:8080/health/ready"]
 
 ENTRYPOINT [ \
   "java", \

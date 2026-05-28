@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
 import 'package:teste/features/auth/presentation/screens/signup/signup_flow_screen.dart';
-import 'package:teste/l10n/app_localizations.dart';
-import '../../helpers/test_auth_controller.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
+import 'package:teste/storybook/storybook_mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +16,7 @@ void main() {
       ProviderScope(
         overrides: [
           authControllerProvider.overrideWith(
-            () => TestAuthController(
+            () => MockAuthController(
               initialOverride: const AuthUnauthenticated(),
             ),
           ),

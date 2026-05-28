@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:teste/core/providers/alert_preferences_provider.dart';
 import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/presentation/widgets/cyber_background.dart';
 
-class NotificationSettingsScreen extends StatefulWidget {
+class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() =>
+  ConsumerState<NotificationSettingsScreen> createState() =>
       _NotificationSettingsScreenState();
 }
 
 class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
-  // Mock state for alerts
-  bool _pushEnabled = true;
-  bool _emailEnabled = true;
-  bool _transactionAlerts = true;
-  bool _marketingUpdates = false;
-  bool _securityAlerts = true;
-
+    extends ConsumerState<NotificationSettingsScreen> {
   @override
   Widget build(BuildContext context) {
+    final preferences = ref.watch(alertPreferencesProvider);
+    final notifier = ref.read(alertPreferencesProvider.notifier);
+
     return CyberBackground(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,49 +37,41 @@ class _NotificationSettingsScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionHeader(
-                      context.l10n.notificationChannels.toUpperCase()),
+                      context.tr.notificationChannels.toUpperCase()),
                   _buildSwitchItem(
                     context,
-                    context.l10n.pushNotifications,
-                    context.l10n.pushNotificationsDesc,
-                    _pushEnabled,
-                    (val) => setState(() => _pushEnabled = val),
+                    context.tr.pushNotifications,
+                    context.tr.pushNotificationsDesc,
+                    preferences.backgroundAlertsEnabled,
+                    notifier.setBackgroundAlertsEnabled,
                     Icons.notifications_active_rounded,
                   ),
                   _buildSwitchItem(
                     context,
-                    context.l10n.emailNotifications,
-                    context.l10n.emailNotificationsDesc,
-                    _emailEnabled,
-                    (val) => setState(() => _emailEnabled = val),
-                    Icons.email_rounded,
+                    context.tr.settingsUiInAppBannersTitle,
+                    context.tr.settingsUiInAppBannersOnSubtitle,
+                    preferences.inAppBannersEnabled,
+                    notifier.setInAppBannersEnabled,
+                    Icons.bolt_rounded,
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   _buildSectionHeader(
-                      context.l10n.notificationAlerts.toUpperCase()),
+                      context.tr.notificationAlerts.toUpperCase()),
                   _buildSwitchItem(
                     context,
-                    context.l10n.transactionUpdates,
-                    context.l10n.transactionUpdatesDesc,
-                    _transactionAlerts,
-                    (val) => setState(() => _transactionAlerts = val),
+                    context.tr.transactionUpdates,
+                    context.tr.transactionUpdatesDesc,
+                    preferences.transactionAlertsEnabled,
+                    notifier.setTransactionAlertsEnabled,
                     Icons.swap_horiz_rounded,
                   ),
                   _buildSwitchItem(
                     context,
-                    context.l10n.securityAlertsTitle,
-                    context.l10n.securityAlertsDesc,
-                    _securityAlerts,
-                    (val) => setState(() => _securityAlerts = val),
+                    context.tr.securityAlertsTitle,
+                    context.tr.securityAlertsDesc,
+                    preferences.securityAlertsEnabled,
+                    notifier.setSecurityAlertsEnabled,
                     Icons.security_rounded,
-                  ),
-                  _buildSwitchItem(
-                    context,
-                    context.l10n.marketingNews,
-                    context.l10n.marketingNewsDesc,
-                    _marketingUpdates,
-                    (val) => setState(() => _marketingUpdates = val),
-                    Icons.campaign_rounded,
                   ),
                 ],
               ),
@@ -137,7 +127,7 @@ class _NotificationSettingsScreenState
         ),
         const SizedBox(width: AppSpacing.md),
         Text(
-          context.l10n.notifications.toUpperCase(),
+          context.tr.notifications.toUpperCase(),
           style: Theme.of(context)
               .textTheme
               .titleMedium!

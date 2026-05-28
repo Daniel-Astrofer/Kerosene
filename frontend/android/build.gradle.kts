@@ -21,6 +21,7 @@ subprojects {
             val android = project.extensions.getByName("android") as com.android.build.gradle.BaseExtension
             android.compileSdkVersion(36)
             android.buildToolsVersion("34.0.0")
+            android.ndkVersion = "28.2.13676358"
             android.defaultConfig {
                 targetSdkVersion(36)
             }
@@ -28,11 +29,17 @@ subprojects {
     }
 
     if (project.name == "tor") {
-        tasks.configureEach {
-            when (name) {
-                "mergeDebugJniLibFolders" -> dependsOn("cargokitCargoBuildTorDebug")
-                "mergeReleaseJniLibFolders" -> dependsOn("cargokitCargoBuildTorRelease")
-            }
+        afterEvaluate {
+            tasks
+                .matching { it.name.startsWith("merge") && it.name.endsWith("JniLibFolders") }
+                .configureEach {
+                    val variant = name
+                        .removePrefix("merge")
+                        .removeSuffix("JniLibFolders")
+                    tasks.findByName("cargokitCargoBuildTor$variant")?.let { cargoBuildTask ->
+                        dependsOn(cargoBuildTask)
+                    }
+                }
         }
     }
 }

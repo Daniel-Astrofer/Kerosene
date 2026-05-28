@@ -265,8 +265,7 @@ final class Wallet extends Equatable {
     return fallback;
   }
 
-  bool get isSelfCustody =>
-      walletMode.trim().toUpperCase() == 'SELF_CUSTODY';
+  bool get isSelfCustody => walletMode.trim().toUpperCase() == 'SELF_CUSTODY';
 
   bool get isKeroseneCustody => !isSelfCustody;
 

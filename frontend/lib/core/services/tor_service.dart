@@ -16,6 +16,7 @@ class TorService {
 
   bool _isRunning = false;
   int _socksPort = 9050;
+  Future<bool>? _startFuture;
 
   bool get isRunning => _isRunning;
   int get socksPort => _socksPort;
@@ -24,7 +25,18 @@ class TorService {
   /// Returns true if Tor is ready.
   Future<bool> start() async {
     if (_isRunning) return true;
+    final inFlight = _startFuture;
+    if (inFlight != null) return inFlight;
 
+    _startFuture = _startInternal().whenComplete(() {
+      if (!_isRunning) {
+        _startFuture = null;
+      }
+    });
+    return _startFuture!;
+  }
+
+  Future<bool> _startInternal() async {
     try {
       debugPrint('🧅 TorService: Initializing Tor (Arti) via tor package...');
 

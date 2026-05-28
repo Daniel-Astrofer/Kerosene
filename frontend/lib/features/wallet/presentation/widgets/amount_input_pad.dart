@@ -102,7 +102,7 @@ class AmountInputPad extends StatelessWidget {
               style: AppTypography.h3.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w300,
-                fontFamily: 'JetBrainsMono',
+                fontFamily: 'IBMPlexSansHebrew',
               ),
             ),
           ),

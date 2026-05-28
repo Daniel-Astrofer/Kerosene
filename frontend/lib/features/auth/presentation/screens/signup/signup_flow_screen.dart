@@ -5,13 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/presentation/widgets/app_notice.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:teste/core/responsive/kerosene_responsive.dart';
 import 'package:teste/core/theme/app_typography.dart';
 import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/features/auth/presentation/widgets/auth_motion.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 const Color _signupInk = Color(0xFF000000);
 const Color _signupSurface = Color(0xFF0A0A0A);
@@ -22,6 +23,15 @@ const Color _signupBorderSoft = Color(0xFF27272A);
 const Color _signupMuted = Color(0xFFA1A1AA);
 const Color _signupDim = Color(0xFF71717A);
 const Color _signupText = Color(0xFFFFFFFF);
+
+enum _SignupErrorTarget {
+  username,
+  passphrase,
+  confirmation,
+  totp,
+  risk,
+  general
+}
 
 class SignupFlowScreen extends ConsumerStatefulWidget {
   const SignupFlowScreen({super.key});
@@ -51,6 +61,11 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   String _totpSecret = '';
   String _qrCodeUri = '';
   List<String> _backupCodes = const [];
+  String? _inlineFeedbackTitle;
+  String? _inlineFeedbackMessage;
+  IconData _inlineFeedbackIcon = LucideIcons.alertTriangle;
+  _SignupErrorTarget? _inlineFeedbackTarget;
+  int _inlineFeedbackPulseKey = 0;
 
   @override
   void initState() {
@@ -132,10 +147,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       if (_step == 3) {
         _goToStep(2);
       }
-      AppNotice.showError(
-        context,
-        title: context.l10n.authFlowInterruptedTitle,
-        message: ErrorTranslator.translate(context.l10n, next.toString()),
+      _showInlineFeedback(
+        title: context.tr.authFlowInterruptedTitle,
+        message: ErrorTranslator.translate(context.tr, next.toString()),
+        target: _SignupErrorTarget.general,
       );
     }
   }
@@ -146,12 +161,13 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     }
     _successRedirectScheduled = true;
     _redirectTimer?.cancel();
-    _redirectTimer = Timer(const Duration(milliseconds: 3600), () {
+    _redirectTimer = Timer(const Duration(milliseconds: 5200), () {
       if (!mounted) {
         return;
       }
+      AppScreenFeedbackBus.clear();
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/home_loading',
+        '/home',
         (route) => false,
       );
     });
@@ -160,10 +176,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   String? _usernameError(BuildContext context, String value) {
     final username = value.trim();
     if (username.length < 3) {
-      return context.l10n.authUsernameMinError;
+      return context.tr.authUsernameMinError;
     }
     if (!RegExp(r'^[a-z0-9_]+$').hasMatch(username)) {
-      return context.l10n.authUsernameCharsError;
+      return context.tr.authUsernameCharsError;
     }
     return null;
   }
@@ -177,7 +193,11 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         selection: TextSelection.collapsed(offset: normalized.length),
       );
     }
-    setState(() {});
+    setState(() {
+      _inlineFeedbackTitle = null;
+      _inlineFeedbackMessage = null;
+      _inlineFeedbackTarget = null;
+    });
   }
 
   void _goToStep(int nextStep) {
@@ -187,6 +207,36 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     setState(() {
       _isForward = nextStep > _step;
       _step = nextStep;
+      _inlineFeedbackTitle = null;
+      _inlineFeedbackMessage = null;
+      _inlineFeedbackTarget = null;
+    });
+  }
+
+  void _showInlineFeedback({
+    required String title,
+    required String message,
+    IconData icon = LucideIcons.alertTriangle,
+    _SignupErrorTarget target = _SignupErrorTarget.general,
+  }) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _inlineFeedbackTitle = title;
+      _inlineFeedbackMessage = message;
+      _inlineFeedbackIcon = icon;
+      _inlineFeedbackTarget = target;
+      _inlineFeedbackPulseKey += 1;
+    });
+  }
+
+  void _clearInlineFeedback() {
+    if (_inlineFeedbackTitle == null && _inlineFeedbackMessage == null) {
+      return;
+    }
+    setState(() {
+      _inlineFeedbackTitle = null;
+      _inlineFeedbackMessage = null;
+      _inlineFeedbackTarget = null;
     });
   }
 
@@ -204,10 +254,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   void _continueFromUsername() {
     final error = _usernameError(context, _username);
     if (error != null) {
-      AppNotice.showError(
-        context,
-        title: context.l10n.authInvalidUsernameTitle,
+      _showInlineFeedback(
+        title: context.tr.authInvalidUsernameTitle,
         message: error,
+        target: _SignupErrorTarget.username,
       );
       return;
     }
@@ -216,10 +266,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
 
   void _continueFromPassword() {
     if (!_passwordLooksStrong) {
-      AppNotice.showError(
-        context,
-        title: context.l10n.authWeakPasswordTitle,
-        message: context.l10n.authPasswordStrengthMessage,
+      _showInlineFeedback(
+        title: context.tr.authWeakPasswordTitle,
+        message: context.tr.authPasswordStrengthMessage,
+        target: _SignupErrorTarget.passphrase,
       );
       return;
     }
@@ -230,38 +280,38 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     final usernameError = _usernameError(context, _username);
     if (usernameError != null) {
       _goToStep(0);
-      AppNotice.showError(
-        context,
-        title: context.l10n.authInvalidUsernameTitle,
+      _showInlineFeedback(
+        title: context.tr.authInvalidUsernameTitle,
         message: usernameError,
+        target: _SignupErrorTarget.username,
       );
       return;
     }
 
     if (!_passwordLooksStrong) {
       _goToStep(1);
-      AppNotice.showError(
-        context,
-        title: context.l10n.authWeakPasswordTitle,
-        message: context.l10n.authPasswordStrengthMessage,
+      _showInlineFeedback(
+        title: context.tr.authWeakPasswordTitle,
+        message: context.tr.authPasswordStrengthMessage,
+        target: _SignupErrorTarget.passphrase,
       );
       return;
     }
 
     if (_confirmPasswordController.text != _password) {
-      AppNotice.showError(
-        context,
-        title: context.l10n.authInvalidConfirmationTitle,
-        message: context.l10n.authPasswordMismatchMessage,
+      _showInlineFeedback(
+        title: context.tr.authInvalidConfirmationTitle,
+        message: context.tr.authPasswordMismatchMessage,
+        target: _SignupErrorTarget.confirmation,
       );
       return;
     }
 
     if (!_acceptedPasswordRisk) {
-      AppNotice.showError(
-        context,
-        title: context.l10n.authConfirmationRequiredTitle,
-        message: context.l10n.authPasswordRiskRequiredMessage,
+      _showInlineFeedback(
+        title: context.tr.authConfirmationRequiredTitle,
+        message: context.tr.authPasswordRiskRequiredMessage,
+        target: _SignupErrorTarget.risk,
       );
       return;
     }
@@ -280,10 +330,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
 
   void _verifyTotp() {
     if (_totpCode.length != 6) {
-      AppNotice.showError(
-        context,
-        title: context.l10n.authInvalidConfirmationTitle,
-        message: context.l10n.authSignupTotpCodeRequiredMessage,
+      _showInlineFeedback(
+        title: context.tr.authInvalidConfirmationTitle,
+        message: context.tr.authSignupTotpCodeRequiredMessage,
+        target: _SignupErrorTarget.totp,
       );
       return;
     }
@@ -298,10 +348,11 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
 
   void _registerPasskey() {
     if (_sessionId.isEmpty) {
-      AppNotice.showInfo(
-        context,
-        title: context.l10n.authSecurityPreparingTitle,
-        message: context.l10n.authSecurityPreparingMessage,
+      _showInlineFeedback(
+        title: context.tr.authSecurityPreparingTitle,
+        message: context.tr.authSecurityPreparingMessage,
+        icon: LucideIcons.info,
+        target: _SignupErrorTarget.general,
       );
       return;
     }
@@ -365,30 +416,23 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                                   totalSteps: 6,
                                   onBack: _handleBack,
                                 ),
+                                if (_inlineFeedbackMessage != null) ...[
+                                  const SizedBox(height: 18),
+                                  AuthMotionShake(
+                                    triggerKey: _inlineFeedbackPulseKey,
+                                    child: _SignupInlineFeedback(
+                                      title: _inlineFeedbackTitle ??
+                                          context.tr.authFlowInterruptedTitle,
+                                      message: _inlineFeedbackMessage!,
+                                      icon: _inlineFeedbackIcon,
+                                    ),
+                                  ),
+                                ],
                                 SizedBox(
                                   height: responsive.isTinyPhone ? 24 : 34,
                                 ),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  transitionBuilder: (child, animation) {
-                                    final isIncoming =
-                                        child.key == ValueKey(_step);
-                                    final begin = isIncoming
-                                        ? Offset(_isForward ? 0.16 : -0.16, 0)
-                                        : Offset(_isForward ? -0.16 : 0.16, 0);
-                                    return FadeTransition(
-                                      opacity: animation,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: begin,
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
+                                AuthDirectionalSwitcher(
+                                  isForward: _isForward,
                                   child: KeyedSubtree(
                                     key: ValueKey(_step),
                                     child: _buildStepBody(isLoading),
@@ -425,30 +469,38 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       title: _signupCreateAccountTitle(context),
       subtitle: _signupUsernameSubtitle(context),
       children: [
-        _SignupTextField(
-          controller: _usernameController,
-          label: context.l10n.authSignupUsernameLabel,
-          hintText: _signupUsernameHint(context),
-          autofocus: true,
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.username],
-          keyboardType: TextInputType.text,
-          onChanged: _normalizeUsername,
-          onSubmitted: (_) => _continueFromUsername(),
-          suffixIcon: _usernameController.text.isNotEmpty
-              ? Icon(
-                  _usernameLooksValid
-                      ? LucideIcons.checkCircle2
-                      : LucideIcons.alertCircle,
-                  size: 18,
-                  color: _usernameLooksValid ? _signupText : _signupMuted,
-                )
-              : null,
+        AuthMotionShake(
+          triggerKey: _inlineFeedbackPulseKey,
+          enabled: _inlineFeedbackTarget == _SignupErrorTarget.username,
+          child: _SignupTextField(
+            controller: _usernameController,
+            label: context.tr.authSignupUsernameLabel,
+            hintText: _signupUsernameHint(context),
+            autofocus: true,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.username],
+            keyboardType: TextInputType.text,
+            onChanged: _normalizeUsername,
+            onSubmitted: (_) => _continueFromUsername(),
+            suffixIcon: _usernameController.text.isNotEmpty
+                ? AnimatedSwitcher(
+                    duration: AuthMotion.entrance,
+                    child: Icon(
+                      _usernameLooksValid
+                          ? LucideIcons.checkCircle2
+                          : LucideIcons.alertCircle,
+                      key: ValueKey<bool>(_usernameLooksValid),
+                      size: 18,
+                      color: _usernameLooksValid ? _signupText : _signupMuted,
+                    ),
+                  )
+                : null,
+          ),
         ),
         const SizedBox(height: 18),
         _SignupRuleRow(
           passed: _username.length >= 3,
-          text: context.l10n.authSignupUsernameRuleMin,
+          text: context.tr.authSignupUsernameRuleMin,
         ),
         _SignupRuleRow(
           passed: _username.isNotEmpty &&
@@ -458,11 +510,11 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         _SignupRuleRow(
           passed: _usernameController.text ==
               _usernameController.text.toLowerCase(),
-          text: context.l10n.authSignupUsernameRuleLowercase,
+          text: context.tr.authSignupUsernameRuleLowercase,
         ),
         const SizedBox(height: 68),
         _SignupPrimaryButton(
-          text: context.l10n.continueButton,
+          text: context.tr.continueButton,
           onPressed: _continueFromUsername,
         ),
       ],
@@ -474,47 +526,54 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       title: _signupPassphraseTitle(context),
       subtitle: _signupPassphraseSubtitle(context),
       children: [
-        _SignupTextField(
-          controller: _passwordController,
-          label: _signupPassphraseLabel(context),
-          hintText: _signupPassphraseHint(context),
-          autofocus: true,
-          obscureText: _obscurePassword,
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.newPassword],
-          onChanged: (_) => setState(() {}),
-          onSubmitted: (_) => _continueFromPassword(),
-          suffixIcon: IconButton(
-            onPressed: () => setState(() {
-              _obscurePassword = !_obscurePassword;
-            }),
-            icon: Icon(
-              _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
-              size: 18,
-              color: _signupMuted,
+        AuthMotionShake(
+          triggerKey: _inlineFeedbackPulseKey,
+          enabled: _inlineFeedbackTarget == _SignupErrorTarget.passphrase,
+          child: _SignupTextField(
+            controller: _passwordController,
+            label: _signupPassphraseLabel(context),
+            hintText: _signupPassphraseHint(context),
+            autofocus: true,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.newPassword],
+            onChanged: (_) {
+              _clearInlineFeedback();
+              setState(() {});
+            },
+            onSubmitted: (_) => _continueFromPassword(),
+            suffixIcon: IconButton(
+              onPressed: () => setState(() {
+                _obscurePassword = !_obscurePassword;
+              }),
+              icon: Icon(
+                _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                size: 18,
+                color: _signupMuted,
+              ),
             ),
           ),
         ),
         const SizedBox(height: 16),
         _SignupRuleRow(
           passed: _passwordHasMin,
-          text: context.l10n.authSignupPassphraseRuleMin,
+          text: context.tr.authSignupPassphraseRuleMin,
         ),
         _SignupRuleRow(
           passed: _passwordHasUpper,
-          text: context.l10n.authSignupPassphraseRuleUppercase,
+          text: context.tr.authSignupPassphraseRuleUppercase,
         ),
         _SignupRuleRow(
           passed: _passwordHasLower,
-          text: context.l10n.authSignupPassphraseRuleLowercase,
+          text: context.tr.authSignupPassphraseRuleLowercase,
         ),
         _SignupRuleRow(
           passed: _passwordHasNumber,
-          text: context.l10n.authSignupPassphraseRuleNumber,
+          text: context.tr.authSignupPassphraseRuleNumber,
         ),
         _SignupRuleRow(
           passed: _passwordHasSymbol,
-          text: context.l10n.authSignupPassphraseRuleSymbol,
+          text: context.tr.authSignupPassphraseRuleSymbol,
         ),
         const SizedBox(height: 54),
         _SignupPrimaryButton(
@@ -531,34 +590,48 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       title: _signupConfirmTitle(context),
       subtitle: _signupConfirmSubtitle(context),
       children: [
-        _SignupTextField(
-          controller: _confirmPasswordController,
-          label: context.l10n.authSignupConfirmPassphraseLabel,
-          hintText: _signupConfirmHint(context),
-          autofocus: true,
-          obscureText: _obscureConfirmPassword,
-          textInputAction: TextInputAction.done,
-          autofillHints: const [AutofillHints.newPassword],
-          onChanged: (_) => setState(() {}),
-          onSubmitted: (_) => isLoading ? null : _submitSignup(),
-          suffixIcon: IconButton(
-            onPressed: () => setState(() {
-              _obscureConfirmPassword = !_obscureConfirmPassword;
-            }),
-            icon: Icon(
-              _obscureConfirmPassword ? LucideIcons.eye : LucideIcons.eyeOff,
-              size: 18,
-              color: _signupMuted,
+        AuthMotionShake(
+          triggerKey: _inlineFeedbackPulseKey,
+          enabled: _inlineFeedbackTarget == _SignupErrorTarget.confirmation,
+          child: _SignupTextField(
+            controller: _confirmPasswordController,
+            label: context.tr.authSignupConfirmPassphraseLabel,
+            hintText: _signupConfirmHint(context),
+            autofocus: true,
+            obscureText: _obscureConfirmPassword,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.newPassword],
+            onChanged: (_) {
+              _clearInlineFeedback();
+              setState(() {});
+            },
+            onSubmitted: (_) => isLoading ? null : _submitSignup(),
+            suffixIcon: IconButton(
+              onPressed: () => setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              }),
+              icon: Icon(
+                _obscureConfirmPassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                size: 18,
+                color: _signupMuted,
+              ),
             ),
           ),
         ),
         const SizedBox(height: 20),
-        _SignupRiskAcknowledgement(
-          checked: _acceptedPasswordRisk,
-          text: context.l10n.authSignupPassphraseRiskAcknowledgement,
-          onTap: () => setState(() {
-            _acceptedPasswordRisk = !_acceptedPasswordRisk;
-          }),
+        AuthMotionShake(
+          triggerKey: _inlineFeedbackPulseKey,
+          enabled: _inlineFeedbackTarget == _SignupErrorTarget.risk,
+          child: _SignupRiskAcknowledgement(
+            checked: _acceptedPasswordRisk,
+            text: context.tr.authSignupPassphraseRiskAcknowledgement,
+            onTap: () => setState(() {
+              _inlineFeedbackTitle = null;
+              _inlineFeedbackMessage = null;
+              _inlineFeedbackTarget = null;
+              _acceptedPasswordRisk = !_acceptedPasswordRisk;
+            }),
+          ),
         ),
         const SizedBox(height: 66),
         _SignupPrimaryButton(
@@ -571,7 +644,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   }
 
   Widget _buildCreatingStep() {
-    return Column(
+    return AuthMotionStagger(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: 26),
@@ -688,19 +761,26 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                 children: [
                   _NumberedInstruction(
                     number: 1,
-                    text: context.l10n.authSignupTotpScanInstruction,
+                    text: context.tr.authSignupTotpScanInstruction,
                   ),
                   const SizedBox(height: 12),
                   _NumberedInstruction(
                     number: 2,
-                    text: context.l10n.authSignupTotpCodeLabel,
+                    text: context.tr.authSignupTotpCodeLabel,
                   ),
                   const SizedBox(height: 8),
-                  _TotpCodeField(
-                    controller: _totpController,
-                    countdownText: _totpCountdownHint,
-                    onChanged: (_) => setState(() {}),
-                    onSubmitted: (_) => isLoading ? null : _verifyTotp(),
+                  AuthMotionShake(
+                    triggerKey: _inlineFeedbackPulseKey,
+                    enabled: _inlineFeedbackTarget == _SignupErrorTarget.totp,
+                    child: _TotpCodeField(
+                      controller: _totpController,
+                      countdownText: _totpCountdownHint,
+                      onChanged: (_) {
+                        _clearInlineFeedback();
+                        setState(() {});
+                      },
+                      onSubmitted: (_) => isLoading ? null : _verifyTotp(),
+                    ),
                   ),
                 ],
               ),
@@ -714,7 +794,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          context.l10n.authSignupRecoveryCodesBody,
+          context.tr.authSignupRecoveryCodesBody,
           style: _SignupTypography.bodySmall(),
         ),
         const SizedBox(height: 14),
@@ -769,15 +849,15 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         ),
         const SizedBox(height: 28),
         _SignupBullet(
-          text: context.l10n.authSignupPasskeyBiometricBullet,
+          text: context.tr.authSignupPasskeyBiometricBullet,
           icon: LucideIcons.fingerprint,
         ),
         _SignupBullet(
-          text: context.l10n.authSignupPasskeyPasswordBullet,
+          text: context.tr.authSignupPasskeyPasswordBullet,
           icon: LucideIcons.shieldCheck,
         ),
         _SignupBullet(
-          text: context.l10n.authSignupPasskeyDeviceBullet,
+          text: context.tr.authSignupPasskeyDeviceBullet,
           icon: LucideIcons.shieldCheck,
         ),
         const SizedBox(height: 46),
@@ -793,10 +873,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
 
   Widget _buildSuccessStep() {
     return _SignupSuccessScene(
-      appTitle: context.l10n.appTitle,
-      title: context.l10n.authSignupSuccessTitle,
-      preparingSubtitle: context.l10n.authSignupSuccessPreparingSubtitle,
-      redirectSubtitle: context.l10n.authSignupSuccessSubtitle,
+      appTitle: context.tr.appTitle,
+      title: context.tr.authSignupSuccessTitle,
+      preparingSubtitle: context.tr.authSignupSuccessPreparingSubtitle,
+      redirectSubtitle: context.tr.authSignupSuccessSubtitle,
     );
   }
 }
@@ -1036,7 +1116,7 @@ class _SignupTypography {
   const _SignupTypography._();
 
   static TextStyle title() {
-    return GoogleFonts.ebGaramond(
+    return GoogleFonts.ibmPlexSerif(
       color: _signupText,
       fontSize: 32,
       fontWeight: FontWeight.w500,
@@ -1123,7 +1203,7 @@ class _SignupTypography {
   }
 
   static TextStyle successTitle() {
-    return GoogleFonts.ebGaramond(
+    return GoogleFonts.ibmPlexSerif(
       color: _signupText,
       fontSize: 31,
       fontWeight: FontWeight.w500,
@@ -1145,7 +1225,7 @@ class _SignupTypography {
 
   static TextStyle percent() {
     return const TextStyle(
-      fontFamily: AppTypography.spaceGroteskVariableFamily,
+      fontFamily: AppTypography.numericFontFamily,
       color: _signupText,
       fontSize: 18,
       fontWeight: FontWeight.w500,
@@ -1181,8 +1261,18 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2900),
-    )..forward();
+      duration: AuthMotion.ceremonial,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AuthMotion.reduce(context)) {
+      _controller.value = 1;
+    } else if (_controller.status == AnimationStatus.dismissed) {
+      _controller.forward();
+    }
   }
 
   @override
@@ -1197,6 +1287,9 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
       animation: _controller,
       builder: (context, _) {
         final progress = _easeInOut(_interval(_controller.value, 0, 1));
+        final badgeProgress = AuthMotion.reduce(context)
+            ? 1.0
+            : _easeInOut(_interval(_controller.value, 0, 0.32));
         final showRedirect = _controller.value >= 0.72;
 
         return SafeArea(
@@ -1215,17 +1308,26 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 96,
-                            height: 96,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: _signupText, width: 2),
-                            ),
-                            child: const Icon(
-                              LucideIcons.check,
-                              color: _signupText,
-                              size: 42,
+                          Opacity(
+                            opacity: badgeProgress,
+                            child: Transform.scale(
+                              scale: 0.92 + (0.08 * badgeProgress),
+                              child: Container(
+                                width: 96,
+                                height: 96,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: _signupText,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  LucideIcons.check,
+                                  color: _signupText,
+                                  size: 42,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 34),
@@ -1401,15 +1503,23 @@ class _SignupTopBar extends StatelessWidget {
             children: [
               for (var index = 0; index < totalSteps; index++) ...[
                 if (index > 0) const SizedBox(width: 7),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 26,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: index == step
-                        ? _signupText
-                        : Colors.white.withValues(alpha: 0.2),
+                SizedBox(
+                  width: 30,
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: AuthMotion.step,
+                      curve: Curves.easeOutCubic,
+                      width: index == step ? 30 : (index < step ? 18 : 8),
+                      height: 4,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        color: index <= step
+                            ? _signupText.withValues(
+                                alpha: index == step ? 1 : 0.58,
+                              )
+                            : Colors.white.withValues(alpha: 0.18),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1434,8 +1544,7 @@ class _SignupStepColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AuthMotionStagger(
       children: [
         Text(
           title,
@@ -1449,6 +1558,67 @@ class _SignupStepColumn extends StatelessWidget {
         const SizedBox(height: 34),
         ...children,
       ],
+    );
+  }
+}
+
+class _SignupInlineFeedback extends StatelessWidget {
+  final String title;
+  final String message;
+  final IconData icon;
+
+  const _SignupInlineFeedback({
+    required this.title,
+    required this.message,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _SignupPanel(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      borderRadius: 14,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: Colors.white.withValues(alpha: 0.82),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: _SignupTypography.label().copyWith(
+                    color: _signupText,
+                    fontSize: 14,
+                    height: 1.16,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: _SignupTypography.bodySmall().copyWith(
+                    color: _signupMuted,
+                    height: 1.34,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1637,33 +1807,41 @@ class _SignupPrimaryButton extends StatelessWidget {
             : _signupText;
     final foreground = outlined ? _signupText : _signupInk;
 
-    return SizedBox(
-      height: 54,
-      child: FilledButton(
-        onPressed: disabled ? null : onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: background,
-          disabledBackgroundColor: background,
-          foregroundColor: foreground,
-          disabledForegroundColor: foreground.withValues(alpha: 0.7),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            side: outlined
-                ? BorderSide(color: Colors.white.withValues(alpha: 0.16))
-                : BorderSide.none,
+    return AuthMotionPressScale(
+      enabled: !disabled,
+      child: SizedBox(
+        height: 54,
+        child: FilledButton(
+          onPressed: disabled
+              ? null
+              : () {
+                  HapticFeedback.selectionClick();
+                  onPressed?.call();
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: background,
+            disabledBackgroundColor: background,
+            foregroundColor: foreground,
+            disabledForegroundColor: foreground.withValues(alpha: 0.7),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+              side: outlined
+                  ? BorderSide(color: Colors.white.withValues(alpha: 0.16))
+                  : BorderSide.none,
+            ),
+            textStyle: _SignupTypography.button(color: foreground),
           ),
-          textStyle: _SignupTypography.button(color: foreground),
+          child: isLoading
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: foreground,
+                  ),
+                )
+              : Text(text),
         ),
-        child: isLoading
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: foreground,
-                ),
-              )
-            : Text(text),
       ),
     );
   }
@@ -1846,7 +2024,7 @@ class _TotpCodeField extends StatelessWidget {
       onSubmitted: onSubmitted,
       cursorColor: _signupText,
       style: AppTypography.bodyMedium.copyWith(
-        fontFamily: AppTypography.spaceGroteskVariableFamily,
+        fontFamily: AppTypography.numericFontFamily,
         color: _signupText,
         fontWeight: FontWeight.w700,
         letterSpacing: 0,

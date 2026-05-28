@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
-import '../../../main.dart' show sharedPreferencesProvider;
+import '../../../core/network/api_client_route_policy.dart';
+import '../../../core/providers/tor_providers.dart';
+import '../../../core/providers/shared_preferences_provider.dart';
 import '../data/datasources/auth_local_datasource.dart';
 import '../data/datasources/auth_remote_datasource.dart';
 import '../data/interceptors/token_interceptor.dart';
@@ -11,8 +12,12 @@ import '../domain/usecases/login_usecase.dart';
 import '../domain/usecases/signup_usecase.dart';
 
 final authApiClientProvider = Provider<ApiClient>((ref) {
-  final baseUrl = AppConfig.apiUrl;
-  final client = ApiClient(baseUrl: baseUrl, ref: ref);
+  final baseUrl = ref.watch(torApiUrlProvider);
+  final client = ApiClient(
+    baseUrl: baseUrl,
+    ref: ref,
+    routePolicy: ApiClientRoutePolicy.tor,
+  );
   final localDataSource = ref.watch(authLocalDataSourceProvider);
 
   client.addInterceptor(

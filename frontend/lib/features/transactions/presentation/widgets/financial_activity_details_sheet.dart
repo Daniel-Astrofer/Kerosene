@@ -11,14 +11,12 @@ import 'package:teste/core/utils/error_translator.dart';
 import 'package:teste/core/utils/money_display.dart';
 import 'package:teste/core/utils/safe_display_text.dart';
 import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/features/mining/presentation/mining_explorer.dart';
-import 'package:teste/features/mining/presentation/screens/mining_screen.dart';
 import 'package:teste/features/transactions/domain/entities/payment_link.dart';
 import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
 import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 String _financialCopy(
   BuildContext context, {
@@ -86,7 +84,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
     final statusMeta = paymentLink != null
         ? FinancialStatusBadge.paymentLink(paymentLink!.status)
         : FinancialStatusBadge.transaction(transaction!.status);
-    final amountBtc = paymentLink?.amountBtc ?? transaction!.amountBTC;
+    final amountBtc = paymentLink?.amountBtc ?? transaction!.signedAmountBTC;
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
@@ -97,10 +95,18 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      signed: transaction != null,
     );
     final secondaryAmount = selectedCurrency == Currency.btc
         ? null
-        : MoneyDisplay.format(amount: amountBtc, currency: Currency.btc);
+        : MoneyDisplay.formatAmountFromBtc(
+            btcAmount: amountBtc,
+            currency: Currency.btc,
+            btcUsd: btcUsd,
+            btcEur: btcEur,
+            btcBrl: btcBrl,
+            signed: transaction != null,
+          );
     final createdAt =
         paymentLink?.createdAt ?? paymentLink?.paidAt ?? transaction?.timestamp;
     final hasAdvancedDetails = (_secondaryAddress != null &&
@@ -239,10 +245,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                   ],
                 ),
               ],
-              if (transaction != null) ...[
-                const SizedBox(height: 12),
-                _NetworkExplorerButton(transaction: transaction!),
-              ],
               if (transaction?.canCancelPendingReceive == true) ...[
                 const SizedBox(height: 12),
                 _CancelReceiveButton(transaction: transaction!),
@@ -256,14 +258,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
 
   String _headline(BuildContext context) {
     if (paymentLink != null) {
-      if (paymentLink!.isOnboardingVoucher) {
-        return _financialCopy(
-          context,
-          pt: 'Voucher de boas-vindas',
-          en: 'Welcome voucher',
-          es: 'Voucher de bienvenida',
-        );
-      }
       return _financialCopy(
         context,
         pt: 'Pagamento por link',
@@ -278,14 +272,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
 
   String _contextLabel(BuildContext context) {
     if (paymentLink != null) {
-      if (paymentLink!.isOnboardingVoucher) {
-        return _financialCopy(
-          context,
-          pt: 'Voucher de boas-vindas',
-          en: 'Welcome voucher',
-          es: 'Voucher de bienvenida',
-        );
-      }
       return _financialCopy(
         context,
         pt: 'Pagamento por link',
@@ -427,7 +413,7 @@ class _CancelReceiveButton extends ConsumerWidget {
       child: OutlinedButton.icon(
         onPressed: () => _cancel(context, ref),
         icon: const Icon(Icons.block_rounded),
-        label: Text(context.l10n.onchainDepositCancelAction),
+        label: Text(context.tr.onchainDepositCancelAction),
       ),
     );
   }
@@ -441,16 +427,16 @@ class _CancelReceiveButton extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(context.l10n.onchainDepositCancelTitle),
-            content: Text(context.l10n.onchainDepositCancelMessage),
+            title: Text(context.tr.onchainDepositCancelTitle),
+            content: Text(context.tr.onchainDepositCancelMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.l10n.goBack),
+                child: Text(context.tr.goBack),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.l10n.onchainDepositCancelAction),
+                child: Text(context.tr.onchainDepositCancelAction),
               ),
             ],
           ),
@@ -472,14 +458,14 @@ class _CancelReceiveButton extends ConsumerWidget {
         Navigator.of(context).maybePop();
         AppNotice.showSuccess(
           context,
-          message: context.l10n.apiDisplayReceiveCancelled,
+          message: context.tr.apiDisplayReceiveCancelled,
         );
       }
     } catch (error) {
       if (context.mounted) {
         AppNotice.showError(
           context,
-          message: ErrorTranslator.translate(context.l10n, error.toString()),
+          message: ErrorTranslator.translate(context.tr, error.toString()),
         );
       }
     }
@@ -506,56 +492,6 @@ class _ContextChip extends StatelessWidget {
               color: monoTextColor,
               fontWeight: FontWeight.w700,
             ),
-      ),
-    );
-  }
-}
-
-class _NetworkExplorerButton extends StatelessWidget {
-  final Transaction transaction;
-
-  const _NetworkExplorerButton({required this.transaction});
-
-  @override
-  Widget build(BuildContext context) {
-    final explorer = MiningExplorerDescriptor.fromTransaction(transaction);
-
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () {
-          final navigator = Navigator.of(context);
-          final route = MaterialPageRoute<void>(
-            builder: (_) => MiningScreen(initialTransaction: transaction),
-          );
-
-          navigator.pop();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (navigator.mounted) {
-              navigator.push(route);
-            }
-          });
-        },
-        style: FilledButton.styleFrom(
-          backgroundColor: monoTextColor,
-          foregroundColor: Colors.black,
-          minimumSize: const Size.fromHeight(52),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          side: const BorderSide(color: monoBorderStrongColor),
-        ),
-        icon: Icon(
-          explorer.rail == MiningExplorerRail.lightning
-              ? Icons.bolt_rounded
-              : Icons.open_in_new_rounded,
-          color: Colors.black,
-        ),
-        label: Text(
-          'Abrir ${explorer.buttonLabel}',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.black,
-                fontWeight: FontWeight.w800,
-              ),
-        ),
       ),
     );
   }
@@ -645,7 +581,7 @@ class _CopyablePanel extends StatelessWidget {
               }
               AppNotice.showSuccess(
                 context,
-                message: context.l10n.apiDisplayCopied,
+                message: context.tr.apiDisplayCopied,
               );
             },
             icon: const Icon(Icons.copy_rounded),

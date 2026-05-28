@@ -1,49 +1,28 @@
-# Documentacao Tecnica Kerosene
+# Kerosene Documentation
 
-Esta pasta contem a documentacao real do repositorio para publicacao no GitHub.
+Documentacao consolidada a partir dos `.md` existentes, controllers Spring, DTOs, configuracoes, scripts e app Flutter atuais.
 
-Ela deve permanecer enxuta: mantenha aqui somente documentos canonicos, versionaveis e auditaveis. Logs diarios, checklists temporarios, dumps JSON de API, analises antigas e documentos com nomes/rotas divergentes devem ficar fora desta pasta ou ser consolidados nos arquivos abaixo.
+## Documentos principais
 
 | Documento | Conteudo |
 | --- | --- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura por componente, fluxo de dados, seguranca e limites atuais. |
-| [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Docker Compose, Tor hidden services, PostgreSQL, Redis, Vault, redes, volumes e scripts operacionais. |
-| [API_REFERENCE.md](API_REFERENCE.md) | API REST, WebSocket/STOMP e API interna do Vault derivadas dos controllers reais. |
-| [APK.md](APK.md) | Metadados, checksums e processo profissional de publicacao do APK. |
+| [API_REFERENCE.md](API_REFERENCE.md) | Referencia completa da API atual. Cada endpoint tem headers, path/query params, request body e response body independentes. |
+| [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Infraestrutura atual por compose, scripts, profiles Spring, Vault, MPC, Tor, Bitcoin, Lightning, Redis e Postgres. |
+| [APP.md](APP.md) | Documentacao do app Flutter: mobile, web admin, rotas, HTTP, Tor relay, auth, realtime e features. |
+| [IMPLEMENTATION_NEXT_STEPS.md](IMPLEMENTATION_NEXT_STEPS.md) | Proximos passos de implementacao por prioridade. |
+| [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md) | Auditoria dos `.md` existentes e decisao de fonte canonica. |
 
-## Escopo
+## Limpeza aplicada
 
-Esta documentacao foi montada a partir destes arquivos reais:
+As documentacoes antigas e contraditorias foram removidas: `docs-final/**`, `backend/kerosene/*.md`, `backend/kerosene/docs/*.md`, docs antigas em `docs/` e a pasta `docs/bitcoin-accounts/`. A fonte canonica fica restrita aos documentos principais acima.
 
-- `backend/kerosene/src/main/java/**`
-- `backend/kerosene/src/main/resources/application*.properties`
-- `backend/kerosene/docker-compose.yml`
-- `backend/kerosene-infrastructure/docker-compose.local.yml`
-- `backend/kerosene-infrastructure/scripts/init-local.sh`
-- `backend/vault/src/main/java/**`
-- `backend/mpc-sidecar/**`
-- `scripts/*.sh`
-- `frontend/lib/**`
-- `frontend/android/app/build.gradle.kts`
-- `frontend/build/app/outputs/apk/release/output-metadata.json`
+## Validacao recomendada
 
-## Observacoes de Publicacao
+```bash
+cd backend/kerosene && JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test
+cd frontend && flutter analyze && flutter test
+cd backend/mpc-sidecar && go test ./...
+cd backend/vault && mvn package
+```
 
-- Nao versionar `frontend/build/**`; publique o APK em GitHub Releases.
-- Nao versionar `.env`, certificados, chaves Tor, keystores, `.jks`, `.p12`, `.pfx`, `google-services.json` ou service accounts.
-- Use `bash scripts/start-local.sh` para subir o backend local canonico.
-- Antes de publicar, rode `docker compose --project-name kerosene-infrastructure --env-file backend/kerosene/.env -f backend/kerosene-infrastructure/docker-compose.local.yml config` para validar o compose local sem exibir a saida em canais publicos, pois o comando materializa variaveis de ambiente.
-- O README raiz referencia somente documentacao e checksums; valores sensiveis devem ficar fora do repositorio.
-
-## Validacao Real
-
-Validacoes executadas durante a preparacao desta documentacao:
-
-| Verificacao | Resultado |
-| --- | --- |
-| `git diff --cached --check` no README, docs e `.gitignore` | OK. |
-| `docker compose -f backend/kerosene-infrastructure/docker-compose.local.yml config` | OK no working tree local. |
-| `./gradlew test` com Java padrao da maquina | Falhou porque o Gradle recebeu Java 25, enquanto o projeto usa Java 21. |
-| `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test` | Falhou em `:compileJava` com erros pre-existentes no backend. |
-
-Bloqueios de backend identificados: dependencia CBOR ausente, contratos divergentes em `PasskeyCredential`, `RedisServicer`, `UserDataBase`, `BlockchainClient`, `LedgerService`, `WalletEntity`, `WalletService` e `SignupState`.
+A referencia de API foi reconciliada com os controllers atuais, mas ainda vale automatizar uma validacao CI que compare mappings Java com a documentacao.

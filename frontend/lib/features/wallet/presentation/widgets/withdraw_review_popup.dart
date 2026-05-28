@@ -8,7 +8,7 @@ import 'package:teste/core/theme/app_spacing.dart';
 import 'package:teste/core/theme/app_colors.dart';
 import 'package:teste/core/utils/snackbar_helper.dart';
 import 'package:teste/features/home/presentation/screens/qr_scanner_screen.dart';
-import 'package:teste/l10n/l10n_extension.dart';
+import 'package:teste/core/l10n/l10n_extension.dart';
 
 class WithdrawReviewPopup extends ConsumerStatefulWidget {
   final double amount;
@@ -169,7 +169,7 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall!
-                      .copyWith(fontFamily: 'JetBrainsMono', fontSize: 14),
+                      .copyWith(fontFamily: 'IBMPlexSansHebrew', fontSize: 14),
                   decoration: InputDecoration(
                     hintText: AppCopy.withdrawReviewAddressPrompt(
                       context,
@@ -252,14 +252,14 @@ class _WithdrawReviewPopupState extends ConsumerState<WithdrawReviewPopup> {
             maxLength: 6,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.displaySmall!.copyWith(
-                  fontFamily: 'JetBrainsMono',
+                  fontFamily: 'IBMPlexSansHebrew',
                   letterSpacing: 10,
                   fontSize: 24,
                 ),
             decoration: InputDecoration(
               border: InputBorder.none,
               counterText: "",
-              hintText: context.l10n.totpEnterCodeHint,
+              hintText: context.tr.totpEnterCodeHint,
             ),
           ),
         ),

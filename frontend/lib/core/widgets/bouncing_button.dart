@@ -110,21 +110,30 @@ class _BouncingButtonState extends State<BouncingButton> {
                         strokeWidth: 2.5,
                       ),
                     )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (widget.icon != null) ...[
-                          Icon(widget.icon, color: foregroundColor, size: 20),
-                          const SizedBox(width: AppSpacing.sm),
-                        ],
-                        Text(
-                          widget.text,
-                          style: AppTypography.buttonText.copyWith(
-                            color: foregroundColor,
-                            fontWeight: FontWeight.w800,
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.icon != null) ...[
+                            Icon(widget.icon, color: foregroundColor, size: 20),
+                            const SizedBox(width: AppSpacing.sm),
+                          ],
+                          Flexible(
+                            child: Text(
+                              widget.text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.buttonText.copyWith(
+                                color: foregroundColor,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ),

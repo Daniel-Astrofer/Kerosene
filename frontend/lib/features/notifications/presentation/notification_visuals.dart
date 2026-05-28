@@ -30,6 +30,17 @@ NotificationVisuals resolveNotificationVisuals(
           es: 'Seguridad',
         ),
       );
+    case SessionNotificationItem.kindSecurityAdminAccessAttempt:
+      return NotificationVisuals(
+        tone: AppNotificationTone.warning,
+        icon: Icons.admin_panel_settings_outlined,
+        categoryLabel: _copy(
+          context,
+          pt: 'Segurança',
+          en: 'Security',
+          es: 'Seguridad',
+        ),
+      );
     case SessionNotificationItem.kindSecurityRecoveryCompleted:
       return NotificationVisuals(
         tone: AppNotificationTone.warning,
@@ -127,19 +138,6 @@ NotificationVisuals resolveNotificationVisuals(
           pt: 'Pagamento',
           en: 'Payment',
           es: 'Pago',
-        ),
-      );
-    case SessionNotificationItem.kindMiningStarted:
-    case SessionNotificationItem.kindMiningCompleted:
-    case SessionNotificationItem.kindMiningCancelled:
-      return NotificationVisuals(
-        tone: _toneForSeverity(item.severity),
-        icon: Icons.memory_outlined,
-        categoryLabel: _copy(
-          context,
-          pt: 'Mining',
-          en: 'Mining',
-          es: 'Mining',
         ),
       );
     default:

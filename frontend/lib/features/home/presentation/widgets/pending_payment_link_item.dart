@@ -133,7 +133,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        fontFamily: 'monospace',
+                        fontFamily: 'IBMPlexSansHebrew',
                       ),
                     ),
                   ],

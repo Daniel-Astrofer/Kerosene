@@ -117,7 +117,7 @@ class _RecentDestinationRow extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: _recentDestinationTextColor,
                             fontWeight: FontWeight.w600,
-                            fontFamily: 'IBM Plex Mono',
+                            fontFamily: 'IBMPlexSansHebrew',
                           ),
                     ),
                     const SizedBox(height: 2),

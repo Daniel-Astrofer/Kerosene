@@ -225,10 +225,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     final message = payload['message']?.toString().trim().isNotEmpty == true
         ? payload['message']!.toString().trim()
         : (payload['error']?.toString().trim().isNotEmpty == true
-              ? payload['error']!.toString().trim()
-              : (error.message?.trim().isNotEmpty == true
-                    ? error.message!.trim()
-                    : 'Não conseguimos concluir sua solicitação agora.'));
+            ? payload['error']!.toString().trim()
+            : (error.message?.trim().isNotEmpty == true
+                ? error.message!.trim()
+                : 'Não conseguimos concluir sua solicitação agora.'));
     final rawCode = payload['errorCode']?.toString().trim();
     final errorCode = rawCode == null || rawCode.isEmpty ? null : rawCode;
     final errorData = payload['data'];
@@ -333,9 +333,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     int? requestTimestamp,
   }) async {
     try {
-      final normalizedSender = fromAddress.trim().isNotEmpty
-          ? fromAddress.trim()
-          : '';
+      final normalizedSender =
+          fromAddress.trim().isNotEmpty ? fromAddress.trim() : '';
       final response = await apiClient.post(
         AppConfig.ledgerTransaction,
         data: {
@@ -355,19 +354,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
       final data = _parseJsonResponse(response.data);
       if (data.isEmpty) {
-        final fallbackTxid =
-            idempotencyKey ??
-            requestTimestamp?.toString() ??
-            DateTime.now().microsecondsSinceEpoch.toString();
-        return TxStatus(
-          txid: fallbackTxid,
-          status: 'confirmed',
-          feeSatoshis: feeSatoshis,
-          amountReceived: amount,
-          sender: normalizedSender,
-          receiver: toAddress,
-          context: context,
-          message: 'Transaction successfully processed.',
+        throw const ServerException(
+          message:
+              'O ledger confirmou a chamada, mas não retornou o status da transação.',
+          errorCode: 'ERR_LEDGER_EMPTY_TRANSACTION_RESPONSE',
         );
       }
       return TxStatus.fromJson(data);
@@ -640,15 +630,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
             .map((e) => PaymentLink.fromJson(e))
             .toList();
       }
-      return [];
+      throw ServerException(
+        message: 'Resposta inesperada ao carregar links de pagamento.',
+        errorCode: 'ERR_PAYMENT_LINKS_INVALID_RESPONSE',
+        data: data,
+      );
     } catch (e) {
-      if (e is DioException && e.response?.statusCode == 403) {
-        return [];
-      }
-      if (e is AppException && e.statusCode == 403) {
-        return [];
-      }
-
       if (e is AppException) rethrow;
       throw ServerException(
         message: 'Não conseguimos carregar seus links de pagamento agora.',

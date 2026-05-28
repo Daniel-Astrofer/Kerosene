@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:teste/core/providers/shader_provider.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/home/presentation/widgets/animated_balance_display.dart';
 import 'package:teste/features/wallet/domain/entities/wallet.dart';
 import 'package:teste/features/wallet/presentation/providers/balance_settings_provider.dart';
+import 'package:teste/features/wallet/presentation/widgets/wallet_credit_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +43,14 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        metalShaderProvider.overrideWith(
+          (ref) async =>
+              throw UnsupportedError('Shader disabled in widget test'),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
@@ -257,6 +266,24 @@ class _HomeBalanceHarness extends ConsumerWidget {
                       style: theme.textTheme.titleMedium!.copyWith(
                         color: colorScheme.onPrimary.withValues(alpha: 0.52),
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                      width: 303,
+                      height: 191,
+                      child: WalletCreditCard(
+                        wallet: wallet,
+                        colorIndex: 0,
+                        isSelected: true,
+                        showDetails: true,
+                        onLongPress: () {},
                       ),
                     ),
                   ),

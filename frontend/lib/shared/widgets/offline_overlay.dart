@@ -67,7 +67,7 @@ class OfflineOverlay extends ConsumerWidget {
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 4,
-                                fontFamily: 'monospace',
+                                fontFamily: 'IBMPlexSansHebrew',
                                 decoration: TextDecoration.none,
                               ),
                             ),

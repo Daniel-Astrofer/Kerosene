@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:teste/core/theme/app_theme.dart';
 import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/auth/presentation/screens/login_passphrase_screen.dart';
-import 'package:teste/features/auth/presentation/screens/login_username_screen.dart';
+import 'package:teste/features/auth/presentation/screens/login_screen.dart';
 import 'package:teste/features/auth/presentation/screens/passkey_verification_screen.dart';
-import 'package:teste/features/auth/presentation/screens/totp_screen.dart';
-import 'package:teste/l10n/app_localizations.dart';
-import '../../helpers/test_auth_controller.dart';
+import 'package:teste/features/auth/presentation/screens/signup/signup_flow_screen.dart';
+import 'package:teste/core/l10n/app_localizations.dart';
+import 'package:teste/storybook/storybook_mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +31,7 @@ void main() {
       ProviderScope(
         overrides: [
           authControllerProvider.overrideWith(
-            () => TestAuthController(
+            () => MockAuthController(
               initialOverride: const AuthUnauthenticated(),
             ),
           ),
@@ -74,35 +73,56 @@ void main() {
   }
 
   group('Auth responsive layouts', () {
-    testWidgets('login username screen remains centered on narrow screens', (
+    testWidgets('real signup flow stays stable in compact sizes', (
       tester,
     ) async {
       for (final size in [compactPortrait, compactLandscape]) {
         await pumpResponsiveScreen(
           tester,
           size: size,
-          child: const LoginUsernameScreen(),
+          child: const SignupFlowScreen(),
         );
         expectNoLayoutExceptions(
           tester,
-          label: 'LoginUsernameScreen @ $size',
+          label: 'SignupFlowScreen @ $size',
         );
       }
     });
 
-    testWidgets(
-        'login passphrase screen avoids overflow in portrait and landscape', (
+    testWidgets('login screen remains centered on narrow screens', (
       tester,
     ) async {
       for (final size in [compactPortrait, compactLandscape]) {
         await pumpResponsiveScreen(
           tester,
           size: size,
-          child: const LoginPassphraseScreen(username: 'astroferas'),
+          child: const LoginScreen(),
+        );
+        expect(find.text('lucas_01'), findsNothing);
+        expect(find.text('KEROSENE'), findsNothing);
+        expectNoLayoutExceptions(
+          tester,
+          label: 'LoginScreen @ $size',
+        );
+      }
+    });
+
+    testWidgets('login password step avoids overflow in portrait and landscape',
+        (
+      tester,
+    ) async {
+      for (final size in [compactPortrait, compactLandscape]) {
+        await pumpResponsiveScreen(
+          tester,
+          size: size,
+          child: const LoginScreen(
+            username: 'astroferas',
+            focusPassword: true,
+          ),
         );
         expectNoLayoutExceptions(
           tester,
-          label: 'LoginPassphraseScreen @ $size',
+          label: 'LoginScreen fallback @ $size',
         );
       }
     });
@@ -116,31 +136,10 @@ void main() {
           size: size,
           child: const PasskeyVerificationScreen(username: 'astroferas'),
         );
+        expect(find.text('@astroferas'), findsNothing);
         expectNoLayoutExceptions(
           tester,
           label: 'PasskeyVerificationScreen @ $size',
-        );
-      }
-    });
-
-    testWidgets('totp screen remains stable in compact portrait and landscape',
-        (
-      tester,
-    ) async {
-      for (final size in [compactPortrait, compactLandscape]) {
-        await pumpResponsiveScreen(
-          tester,
-          size: size,
-          child: const TotpScreen(
-            username: 'astroferas',
-            passphrase: 'alpha beta gamma',
-            isSetup: false,
-            preAuthToken: 'token',
-          ),
-        );
-        expectNoLayoutExceptions(
-          tester,
-          label: 'TotpScreen @ $size',
         );
       }
     });

@@ -3,30 +3,29 @@ import 'package:flutter/material.dart';
 /// Kerosene — Core Color Tokens
 class AppColors {
   // ─── Core Colors ─────────────────────────────────────
-  static const Color primary = Color(0xFF6A11CB); // Purple (Primary UI)
-  static const Color secondary = Color(0xFF2575FC); // Blue (Secondary UI)
-  static const Color accent = Color(0xFF00E5BC); // Neon Green (Accent only)
-  static const Color background =
-      Color(0xFF000000); // Deep AMOLED Black (Figma)
-  static const Color surface = Color(0xFF1A1A1B); // Surface/Glass (Figma)
+  static const Color primary = Color(0xFFF2A900); // Bitcoin gold
+  static const Color secondary = Color(0xFF4B8BFF); // Institutional blue
+  static const Color accent = Color(0xFF22C7A9); // Teal accent
+  static const Color background = Color(0xFF030405);
+  static const Color surface = Color(0xFF15171A);
 
   // Backward compatibility from initial design
-  static const Color darkSurface = Color(0xFF1A1A1B);
-  static const Color secondary1 = Color(0xFF0073D0);
-  static const Color secondary2 = Color(0xFF3579A0);
-  static const Color secondary3 = Color(0xFF386075);
-  static const Color secondary4 = Color(0xFF22424B);
+  static const Color darkSurface = surface;
+  static const Color secondary1 = Color(0xFF4B8BFF);
+  static const Color secondary2 = Color(0xFF2D6CDF);
+  static const Color secondary3 = Color(0xFF22C7A9);
+  static const Color secondary4 = Color(0xFF3A4048);
 
   // ─── Semantic Colors ─────────────────────────────────
-  static const Color error = Color(0xFFFF003C); // Neon Red/Crimson
-  static const Color warning = Color(0xFFFFC371); // Neon Orange/Yellow
-  static const Color success = Color(0xFF00FF9D); // Neon Green
+  static const Color error = Color(0xFFFF5A67);
+  static const Color warning = Color(0xFFFFC46B);
+  static const Color success = Color(0xFF3EDB9B);
 
   // ─── Neutral Colors ──────────────────────────────────
   static const Color white = Colors.white;
   static const Color black = Colors.black;
-  static const Color grey = Color(0xFF5A5A6E);
-  static const Color darkGrey = Color(0xFF1E1E30);
+  static const Color grey = Color(0xFF8B929E);
+  static const Color darkGrey = Color(0xFF252A31);
 
   // ─── Transparency Tokens (Legacy/Shortcut) ─────────────
   static const Color white10 = Color(0x1AFFFFFF);
@@ -38,22 +37,21 @@ class AppColors {
   // ─── Extended Tokens for Compatibility ────────────────
   static const Color bgDeep = background;
   static const Color bgCard = surface;
-  static const Color border = darkGrey;
+  static const Color border = Color(0xFF2B3037);
   static const Color textPrimary = white;
   static const Color textSecondary = white70;
   static const Color textMuted = grey;
-  static const Color neonCyan = primary;
-  static const Color bgInput = Color(0xFF121212);
+  static const Color neonCyan = accent;
+  static const Color bgInput = Color(0xFF101215);
 
-  static const Color surfaceLight = Color(0xFF1A1A1A);
-  static const Color surfaceDark = Color(0xFF050505);
+  static const Color surfaceLight = Color(0xFF1C2025);
+  static const Color surfaceDark = Color(0xFF070809);
 
-  /// Button gradient: light blue (#60A5FA) → dark blue (#1D4ED8)
-  /// Used by all BouncingButton solid instances in the auth flow.
+  /// Button gradient used by solid action surfaces.
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF60A5FA), Color(0xFF1D4ED8)],
+    colors: [Color(0xFFF8C45B), Color(0xFFF2A900)],
   );
 
   /// Alias kept for clarity
@@ -62,16 +60,16 @@ class AppColors {
   static const LinearGradient bgGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0F0B1E), Color(0xFF000000)], // Subtly purplish black
+    colors: [Color(0xFF11151B), Color(0xFF030405)],
   );
 
   static const LinearGradient onboardingBackgroundGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF050505),
-      Color(0xFF0A1624),
-      Color(0xFF111111),
+      Color(0xFF030405),
+      Color(0xFF10171B),
+      Color(0xFF15120A),
     ],
   );
 

@@ -4,14 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/backend-common.sh
 source "$SCRIPT_DIR/backend-common.sh"
+# shellcheck source=scripts/flutter-common.sh
+source "$SCRIPT_DIR/flutter-common.sh"
 
 ARM_VAULT=1
 BUILD=1
 DETACH=1
-INIT=1
-LITE=0
-REGION="is"
-PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-2}"
+RUN_MIGRATIONS=1
+FORCE_MIGRATIONS=0
+VERBOSE_MIGRATIONS=0
 START_FRONTEND=0
 FRONTEND_BUILD=1
 COMPOSE_SERVICES=()
@@ -35,18 +36,21 @@ usage() {
 Usage: scripts/start-local.sh [options] [compose-service...]
 
 Options:
-  --lite         Start only Vault plus one app shard for faster local testing.
-  --region R     Region for --lite: is, ch, or sg. Default: is.
-  --no-init      Skip local bootstrap file regeneration.
   --no-arm       Do not call scripts/arm-vault.sh after containers start.
   --no-build     Start without rebuilding Docker images or Flutter web.
-  --parallel N   Limit Docker Compose build/start parallelism. Default: 2.
   --frontend-server
                  Also start a separate localhost Flutter web server for dev.
                  Tor Browser access does not use this; the backend serves web.
   --no-frontend  Legacy no-op; web admin is served by the backend.
   --no-frontend-build
                  Serve the existing Flutter build/web output if present.
+  --skip-migrations
+                 Start containers without applying local database migrations.
+  --force-migrations
+                 Re-run all SQL migrations even if the local checksum cache says
+                 they are already applied.
+  --verbose-migrations
+                 Print successful psql output while applying migrations.
   --foreground   Run docker compose in the foreground.
   -h, --help     Show this help.
 EOF
@@ -71,50 +75,6 @@ maybe_enable_redis_overcommit() {
   fi
 }
 
-configure_lite_services() {
-  if [[ "$LITE" -ne 1 || "${#COMPOSE_SERVICES[@]}" -gt 0 ]]; then
-    return
-  fi
-
-  COMPOSE_SERVICES=(
-    kerosene-vault
-    kerosene-tor-vault
-    kerosene-vault-arm
-    vault-raft-data-init
-    vault-raft-1
-    vault-raft-2
-    vault-raft-3
-    vault-raft-bootstrap
-    "db-$REGION"
-    "redis-$REGION"
-    "mpc-sidecar-$REGION"
-    "shard-identity-init-$REGION"
-    "kerosene-app-$REGION"
-    "kerosene-tor-$REGION"
-  )
-}
-
-repair_stale_local_networks() {
-  local net_vault="${COMPOSE_PROJECT_NAME}_net_vault"
-  local subnets labels
-
-  if ! docker network inspect "$net_vault" >/dev/null 2>&1; then
-    return
-  fi
-
-  labels="$(docker network inspect -f '{{index .Labels "com.docker.compose.project"}} {{index .Labels "com.docker.compose.network"}}' "$net_vault" 2>/dev/null || true)"
-  [[ "$labels" == "$COMPOSE_PROJECT_NAME net_vault" ]] || return
-
-  subnets="$(docker network inspect -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' "$net_vault" 2>/dev/null || true)"
-  if grep -qw '10.242.0.0/24' <<<"$subnets"; then
-    return
-  fi
-
-  warn "$net_vault exists with subnet '${subnets:-unknown}', but this compose file requires 10.242.0.0/24."
-  warn "Stopping the local compose stack so Docker can recreate the network without deleting volumes."
-  compose down --remove-orphans >/dev/null || warn "Could not stop stale compose stack before network repair."
-}
-
 service_has_master_key() {
   local service="$1"
   compose logs --no-color --tail 2000 "$service" 2>/dev/null | grep -Eq \
@@ -135,18 +95,7 @@ prepare_backend_web_admin() {
     return
   fi
 
-  if [[ -x "$SCRIPT_DIR/build-web-admin-backend.sh" ]]; then
-    "$SCRIPT_DIR/build-web-admin-backend.sh" --no-jar
-    return
-  fi
-
-  if [[ -f "$BACKEND_WEB_ADMIN_BUILD_DIR/index.html" ]]; then
-    warn "scripts/build-web-admin-backend.sh is missing; using existing embedded web admin build."
-    return
-  fi
-
-  warn "scripts/build-web-admin-backend.sh is missing and no embedded web admin build exists."
-  warn "Continuing backend startup without rebuilding the web admin."
+  "$SCRIPT_DIR/build-web-admin-backend.sh" --no-jar
 }
 
 service_is_healthy() {
@@ -249,27 +198,6 @@ wait_for_master_keys_and_print_onions() {
   local deadline now
   deadline=$(( $(date +%s) + MASTER_KEY_WAIT_TIMEOUT_SECONDS ))
 
-  if [[ "$LITE" -eq 1 ]]; then
-    local service="kerosene-app-$REGION"
-    info "Waiting for ${REGION^^} shard to provision the master key..."
-    while true; do
-      if service_has_master_key "$service"; then
-        info "${REGION^^} shard provisioned the master key."
-        print_onion_addresses
-        return 0
-      fi
-
-      now=$(date +%s)
-      if (( now >= deadline )); then
-        warn "Timed out waiting for ${REGION^^} shard to provision the master key."
-        print_onion_addresses
-        return 1
-      fi
-
-      sleep 2
-    done
-  fi
-
   info "Waiting for IS, CH, and SG shards to provision the master key..."
   while true; do
     if service_has_master_key kerosene-app-is &&
@@ -325,8 +253,9 @@ start_frontend() {
     return
   fi
 
-  if ! command -v flutter >/dev/null 2>&1; then
-    warn "Flutter CLI not found; backend is up, but frontend was not started."
+  local flutter_bin
+  if ! flutter_bin="$(kerosene_resolve_flutter_bin "$FRONTEND_DIR")"; then
+    warn "Flutter CLI not found for the non-root build user; backend is up, but frontend was not started."
     return
   fi
 
@@ -346,19 +275,21 @@ start_frontend() {
   fi
 
   mkdir -p "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
+  kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
   if [[ "$FRONTEND_BUILD" -eq 1 || ! -f "$FRONTEND_BUILD_DIR/index.html" ]]; then
     info "Building Flutter web frontend for $FRONTEND_PUBLIC_URL (API: $FRONTEND_API_URL)."
     (
       cd "$FRONTEND_DIR"
-      FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn)
+      FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn --target lib/web_main.dart)
       if [[ "${FLUTTER_BUILD_NO_PUB:-0}" == "1" ]]; then
         FLUTTER_BUILD_ARGS+=(--no-pub)
       fi
-      flutter build "${FLUTTER_BUILD_ARGS[@]}" \
+      kerosene_run_flutter "$flutter_bin" build "${FLUTTER_BUILD_ARGS[@]}" \
         --dart-define="WEB_API_URL=$FRONTEND_API_URL" \
         --dart-define="PASSKEY_RP_ID=$FRONTEND_PASSKEY_RP_ID" \
         --dart-define="PASSKEY_ORIGIN=$FRONTEND_PASSKEY_ORIGIN"
     ) > "$FRONTEND_BUILD_LOG_FILE" 2>&1 || {
+      kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
       warn "Flutter web build failed. See $FRONTEND_BUILD_LOG_FILE"
       tail -n 80 "$FRONTEND_BUILD_LOG_FILE" >&2 || true
       return
@@ -366,6 +297,7 @@ start_frontend() {
   else
     info "Using existing Flutter web build at $FRONTEND_BUILD_DIR."
   fi
+  kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
 
   info "Serving Flutter web frontend at $FRONTEND_PUBLIC_URL."
   if command -v setsid >/dev/null 2>&1; then
@@ -414,25 +346,14 @@ start_frontend() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --lite) LITE=1 ;;
-    --region)
-      shift
-      [[ $# -gt 0 ]] || fail "--region requires one of: is, ch, sg"
-      REGION="${1,,}"
-      ;;
-    --region=*) REGION="${1#*=}"; REGION="${REGION,,}" ;;
-    --no-init) INIT=0 ;;
     --no-arm) ARM_VAULT=0 ;;
     --no-build) BUILD=0; FRONTEND_BUILD=0 ;;
-    --parallel)
-      shift
-      [[ $# -gt 0 ]] || fail "--parallel requires a positive integer"
-      PARALLEL_LIMIT="$1"
-      ;;
-    --parallel=*) PARALLEL_LIMIT="${1#*=}" ;;
     --frontend-server) START_FRONTEND=1 ;;
     --no-frontend) START_FRONTEND=0 ;;
     --no-frontend-build) FRONTEND_BUILD=0 ;;
+    --skip-migrations) RUN_MIGRATIONS=0 ;;
+    --force-migrations) FORCE_MIGRATIONS=1 ;;
+    --verbose-migrations) VERBOSE_MIGRATIONS=1 ;;
     --foreground) DETACH=0 ;;
     -h|--help) usage; exit 0 ;;
     *) COMPOSE_SERVICES+=("$1") ;;
@@ -440,19 +361,10 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-[[ "$REGION" =~ ^(is|ch|sg)$ ]] || fail "--region must be one of: is, ch, sg"
-[[ "$PARALLEL_LIMIT" =~ ^[1-9][0-9]*$ ]] || fail "--parallel must be a positive integer"
-configure_lite_services
-
-if [[ "$INIT" -eq 1 ]]; then
-  "$INFRA_DIR/scripts/init-local.sh"
-else
-  info "Skipping local bootstrap regeneration (--no-init)."
-fi
+"$INFRA_DIR/scripts/init-local.sh"
 require_docker
 maybe_enable_redis_overcommit
 prepare_backend_web_admin
-repair_stale_local_networks
 
 UP_ARGS=(up)
 if [[ "$DETACH" -eq 1 ]]; then
@@ -462,37 +374,22 @@ if [[ "$BUILD" -eq 1 ]]; then
   UP_ARGS+=(--build)
 fi
 
-export COMPOSE_PARALLEL_LIMIT="$PARALLEL_LIMIT"
-export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
-
 info "Starting local backend cluster with $COMPOSE_FILE"
-if [[ "$LITE" -eq 1 ]]; then
-  info "Lite mode enabled for region ${REGION^^}: ${COMPOSE_SERVICES[*]}"
-fi
-info "Docker Compose parallel limit: $COMPOSE_PARALLEL_LIMIT"
 if ! compose "${UP_ARGS[@]}" "${COMPOSE_SERVICES[@]}"; then
   print_compose_start_diagnostics
   exit 1
 fi
 
 if [[ "$DETACH" -eq 1 ]]; then
-  if [[ "$LITE" -eq 1 ]]; then
-    info "Lite mode skips full-cluster Vault Raft refresh."
-  else
-    refresh_vault_raft_bootstrap
-  fi
+  refresh_vault_raft_bootstrap
 fi
 
-if [[ "$DETACH" -eq 1 ]]; then
-  if [[ -x "$SCRIPT_DIR/migrate-local-db.sh" ]]; then
-    if [[ "$LITE" -eq 1 ]]; then
-      "$SCRIPT_DIR/migrate-local-db.sh" "db-$REGION"
-    else
-      "$SCRIPT_DIR/migrate-local-db.sh"
-    fi
-  else
-    warn "scripts/migrate-local-db.sh is missing; skipping automatic local DB migrations."
-  fi
+if [[ "$DETACH" -eq 1 && "$RUN_MIGRATIONS" -eq 1 ]]; then
+  KEROSENE_FORCE_MIGRATIONS="$FORCE_MIGRATIONS" \
+    KEROSENE_MIGRATION_VERBOSE="$VERBOSE_MIGRATIONS" \
+    "$SCRIPT_DIR/migrate-local-db.sh"
+elif [[ "$DETACH" -eq 1 ]]; then
+  warn "Skipping local DB migrations by request. Run scripts/migrate-local-db.sh before testing schema changes."
 else
   warn "Foreground mode skips automatic local DB migrations. Run scripts/migrate-local-db.sh in another terminal if you reuse persisted volumes."
 fi
@@ -507,5 +404,5 @@ fi
 start_frontend
 
 info "Backend cluster command completed."
-info "Logs: scripts/logs-local.sh"
+info "Logs: scripts/logs-local.sh -- use --raw for unfiltered Docker logs"
 info "Stop: scripts/stop-local.sh"

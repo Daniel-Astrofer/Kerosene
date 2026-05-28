@@ -98,6 +98,7 @@ class ApiClient {
     Options? options,
   }) async {
     try {
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.get(
         path,
@@ -121,6 +122,7 @@ class ApiClient {
   }) async {
     try {
       _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.post(
         path,
@@ -145,6 +147,7 @@ class ApiClient {
   }) async {
     try {
       _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.put(
         path,
@@ -169,6 +172,7 @@ class ApiClient {
   }) async {
     try {
       _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
       final mergedOptions = _mergeOptions(options, headers);
       final response = await _dio.delete(
         path,
@@ -181,6 +185,15 @@ class ApiClient {
     } catch (e) {
       throw _handleError(e);
     }
+  }
+
+  Future<void> _prepareRequestRoute() async {
+    await platform.ensureNetworkReady(
+      ref: ref,
+      routePolicy: routePolicy,
+      baseUrl: _dio.options.baseUrl,
+    );
+    _configureProxyRouting();
   }
 
   /// Mesclar options com headers customizados
@@ -258,6 +271,10 @@ class ApiClient {
 
   /// Tratamento de erros
   AppException _handleError(dynamic error) {
+    if (error is AppException) {
+      return error;
+    }
+
     if (error is DioException) {
       if (error.response != null) {
         ref.read(networkStatusProvider.notifier).markOnline();

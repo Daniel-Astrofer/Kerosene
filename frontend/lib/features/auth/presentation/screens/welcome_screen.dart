@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/widgets/bouncing_button.dart';
-import '../../../../l10n/app_localizations.dart';
-import '../../../../core/presentation/widgets/kerosene_logo.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../controller/auth_controller.dart';
-import 'presentation_screen.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -16,38 +12,16 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 }
 
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
-  String _copy({
-    required BuildContext context,
-    required String pt,
-    required String en,
-    required String es,
-  }) {
-    switch (Localizations.localeOf(context).languageCode) {
-      case 'en':
-        return en;
-      case 'es':
-        return es;
-      default:
-        return pt;
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  static const _phoneMockupAsset = 'assets/welcome_phone_mockup.png';
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-carregar imagens pesadas para evitar "Jank" ao navegar para as telas
-    precacheImage(const AssetImage('assets/presentationimage.png'), context);
-    precacheImage(const AssetImage('assets/logo/kerosene-logo.png'), context);
+    precacheImage(const AssetImage(_phoneMockupAsset), context);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Handles the case where _checkAuthStatus resolves after first frame
     ref.listen<AuthState>(authControllerProvider, (_, next) {
       if (next is AuthAuthenticated && mounted) {
         Navigator.pushNamedAndRemoveUntil(
@@ -59,126 +33,235 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/presentationimage.png',
-              fit: BoxFit.cover,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 432),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 42, 24, 28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const _WelcomeHeader(),
+                          const SizedBox(height: 28),
+                          SizedBox(
+                            height: (constraints.maxHeight * 0.42)
+                                .clamp(280.0, 440.0)
+                                .toDouble(),
+                            child: const Center(child: _PhoneHeroImage()),
+                          ),
+                          const SizedBox(height: 34),
+                          _WelcomeActions(
+                            onCreateAccount: () =>
+                                Navigator.pushNamed(context, '/signup'),
+                            onSignIn: () =>
+                                Navigator.pushNamed(context, '/login'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.45),
-                    Colors.black.withValues(alpha: 0.72),
-                    const Color(0xFF05070B),
-                  ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WelcomeHeader extends StatelessWidget {
+  const _WelcomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text.rich(
+          TextSpan(
+            children: [
+              const TextSpan(text: 'Custódia institucional.\n'),
+              TextSpan(
+                text: 'Simplicidade absoluta.',
+                style: GoogleFonts.ibmPlexSerif(
+                  color: const Color(0xFF9CA3AF),
+                  fontSize: 40,
+                  fontWeight: FontWeight.w500,
+                  height: 1.05,
+                  letterSpacing: 0,
                 ),
               ),
-            ),
+            ],
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, 0.15),
-                  radius: 0.9,
-                  colors: [
-                    AppColors.secondary.withValues(alpha: 0.14),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.ibmPlexSerif(
+            color: Colors.white,
+            fontSize: 40,
+            fontWeight: FontWeight.w500,
+            height: 1.05,
+            letterSpacing: 0,
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 20),
-                  const Spacer(),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onLongPress: () {
-                            Navigator.pushNamed(context, '/gallery');
-                          },
-                          child: const KeroseneLogo(size: 64),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          'Kerosene Bank',
-                          style: Theme.of(context)
-                              .textTheme
-                              .displayLarge!
-                              .copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                letterSpacing: 0,
-                                height: 1.0,
-                              ),
-                        ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Segurança de nível superior para seu patrimônio digital. '
+          'Projetado para quem exige o melhor.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: const Color(0xFF9CA3AF),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            height: 1.45,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PhoneHeroImage extends StatelessWidget {
+  const _PhoneHeroImage();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imageSize =
+            constraints.biggest.shortestSide.clamp(280.0, 500.0).toDouble();
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Image.asset(
+              _WelcomeScreenState._phoneMockupAsset,
+              width: imageSize,
+              height: imageSize,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.72),
                       ],
+                      stops: const [0, 0.62, 1],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    AppLocalizations.of(context)!.welcomeSlogan,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.white,
-                          height: 1.45,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Spacer(),
-                  BouncingButton(
-                    text: AppLocalizations.of(context)!.createAccount,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PresentationScreen(),
-                        ),
-                      );
-                    },
-                    variant: BouncingButtonVariant.solid,
-                  ),
-                  const SizedBox(height: 16),
-                  BouncingButton(
-                    text: AppLocalizations.of(context)!.signIn,
-                    onPressed: () => Navigator.pushNamed(context, '/login'),
-                    variant: BouncingButtonVariant.outlined,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    _copy(
-                      context: context,
-                      pt: 'Se você já tem uma conta, entre diretamente. Se estiver começando agora, revise os requisitos antes de avançar.',
-                      en: 'If you already have an account, sign in directly. If you are just getting started, review the requirements before you continue.',
-                      es: 'Si ya tienes una cuenta, entra directamente. Si estás comenzando ahora, revisa los requisitos antes de continuar.',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          color: Colors.white.withValues(alpha: 0.66),
-                        ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WelcomeActions extends StatelessWidget {
+  const _WelcomeActions({
+    required this.onCreateAccount,
+    required this.onSignIn,
+  });
+
+  final VoidCallback onCreateAccount;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _WelcomeButton(
+          label: 'Criar conta',
+          onPressed: onCreateAccount,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          borderColor: Colors.white,
+        ),
+        const SizedBox(height: 14),
+        _WelcomeButton(
+          label: 'Já tenho conta',
+          onPressed: onSignIn,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          borderColor: Colors.white.withValues(alpha: 0.22),
+        ),
+      ],
+    );
+  }
+}
+
+class _WelcomeButton extends StatelessWidget {
+  const _WelcomeButton({
+    required this.label,
+    required this.onPressed,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.borderColor,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
+      child: TextButton(
+        onPressed: onPressed,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return Color.alphaBlend(
+                foregroundColor.withValues(alpha: 0.08),
+                backgroundColor,
+              );
+            }
+            return backgroundColor;
+          }),
+          foregroundColor: WidgetStateProperty.all(foregroundColor),
+          overlayColor: WidgetStateProperty.all(
+            foregroundColor.withValues(alpha: 0.08),
           ),
-        ],
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: borderColor),
+            ),
+          ),
+          textStyle: WidgetStateProperty.all(
+            GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(label),
+        ),
       ),
     );
   }
