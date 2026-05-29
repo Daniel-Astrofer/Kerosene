@@ -638,7 +638,7 @@ class _HomeAvatar extends StatelessWidget {
         color: _homeCardColor,
         border: Border.all(color: _homePanelBorderColor),
         image: const DecorationImage(
-          image: AssetImage('assets/logo/kerosene-logo.png'),
+          image: AssetImage(KeroseneLogo.assetPath),
           fit: BoxFit.cover,
           opacity: 0.18,
         ),

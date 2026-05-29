@@ -33,6 +33,35 @@ abstract class BitcoinAccountsService {
   );
 
   Future<ReceivingRequestView> getReceiveStatus(String requestId);
+
+  Future<List<ColdWalletUtxoView>> listColdWalletUtxos(String coldWalletId);
+
+  Future<List<PsbtWorkflowView>> listColdWalletPsbt(String coldWalletId);
+
+  Future<PsbtWorkflowView> createColdWalletPsbt({
+    required String coldWalletId,
+    required String destinationAddress,
+    required int amountSats,
+    int? feeRate,
+    List<String> selectedUtxoIds = const [],
+  });
+
+  Future<PsbtWorkflowView> getPsbtWorkflow(String workflowId);
+
+  Future<PsbtWorkflowView> submitSignedPsbt({
+    required String workflowId,
+    required String signedPsbt,
+    required bool broadcast,
+  });
+
+  Future<List<TaxEventView>> listTaxEvents();
+
+  Future<TaxEventsExportView> exportTaxEvents({required String format});
+
+  Future<TaxEventView> classifyTaxEvent({
+    required String eventId,
+    required String classification,
+  });
 }
 
 class RemoteBitcoinAccountsService implements BitcoinAccountsService {
@@ -124,11 +153,17 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
   Future<List<ReceivingRequestView>> listReceiveRequestsForAccount(
     String accountId,
   ) async {
-    throw const ServerException(
-      message:
-          'O backend ainda não expõe a listagem real de solicitações de recebimento por conta.',
-      errorCode: 'ERR_BITCOIN_RECEIVE_REQUEST_HISTORY_UNAVAILABLE',
-    );
+    try {
+      final response = await _api.get(
+        AppConfig.bitcoinAccountReceiveRequests(accountId),
+      );
+      return _receiveRequestList(response.data, accountId);
+    } on ValidationException catch (error) {
+      if (error.statusCode == 404 || error.statusCode == 405) {
+        return const <ReceivingRequestView>[];
+      }
+      rethrow;
+    }
   }
 
   static String _riskTierForDailyLimit(int dailyLimitSats) {
@@ -163,6 +198,150 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
       message: 'Resposta inesperada do backend Bitcoin.',
       errorCode: 'ERR_BITCOIN_${operation.toUpperCase()}_INVALID_RESPONSE',
       data: data,
+    );
+  }
+
+  static List<ReceivingRequestView> _receiveRequestList(
+    Object? data,
+    String accountId,
+  ) {
+    Object? source = data;
+    if (source is Map) {
+      final map = Map<String, dynamic>.from(source);
+      source = map['requests'] ?? map['items'] ?? map['content'] ?? map['data'];
+    }
+    if (source is! List) {
+      throw ServerException(
+        message: 'Resposta inesperada do backend Bitcoin.',
+        errorCode: 'ERR_BITCOIN_LISTRECEIVEREQUESTS_INVALID_RESPONSE',
+        data: data,
+      );
+    }
+
+    return source
+        .map((item) => _requireMap(item, operation: 'listReceiveRequests'))
+        .map(
+          (item) => ReceivingRequestView.fromJson(
+            item,
+            fallbackAccountId: accountId,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<List<ColdWalletUtxoView>> listColdWalletUtxos(
+    String coldWalletId,
+  ) async {
+    final response = await _api.get(AppConfig.bitcoinColdWalletUtxos(
+      coldWalletId,
+    ));
+    return _requireList(
+      response.data,
+      operation: 'listColdWalletUtxos',
+    ).map(ColdWalletUtxoView.fromJson).toList();
+  }
+
+  @override
+  Future<List<PsbtWorkflowView>> listColdWalletPsbt(
+    String coldWalletId,
+  ) async {
+    final response = await _api.get(AppConfig.bitcoinColdWalletPsbt(
+      coldWalletId,
+    ));
+    return _requireList(
+      response.data,
+      operation: 'listColdWalletPsbt',
+    ).map(PsbtWorkflowView.fromJson).toList();
+  }
+
+  @override
+  Future<PsbtWorkflowView> createColdWalletPsbt({
+    required String coldWalletId,
+    required String destinationAddress,
+    required int amountSats,
+    int? feeRate,
+    List<String> selectedUtxoIds = const [],
+  }) async {
+    final response = await _api.post(
+      AppConfig.bitcoinColdWalletPsbt(coldWalletId),
+      data: {
+        'destinationAddress': destinationAddress,
+        'amountSats': amountSats,
+        if (feeRate != null) 'feeRate': feeRate,
+        if (selectedUtxoIds.isNotEmpty) 'selectedUtxoIds': selectedUtxoIds,
+      },
+    );
+    return PsbtWorkflowView.fromJson(
+      _requireMap(response.data, operation: 'createColdWalletPsbt'),
+    );
+  }
+
+  @override
+  Future<PsbtWorkflowView> getPsbtWorkflow(String workflowId) async {
+    final response = await _api.get(AppConfig.bitcoinPsbt(workflowId));
+    return PsbtWorkflowView.fromJson(
+      _requireMap(response.data, operation: 'getPsbtWorkflow'),
+    );
+  }
+
+  @override
+  Future<PsbtWorkflowView> submitSignedPsbt({
+    required String workflowId,
+    required String signedPsbt,
+    required bool broadcast,
+  }) async {
+    final response = await _api.post(
+      AppConfig.bitcoinPsbtSigned(workflowId),
+      data: {
+        'signedPsbt': signedPsbt,
+        'broadcast': broadcast,
+      },
+    );
+    return PsbtWorkflowView.fromJson(
+      _requireMap(response.data, operation: 'submitSignedPsbt'),
+    );
+  }
+
+  @override
+  Future<List<TaxEventView>> listTaxEvents() async {
+    final response = await _api.get(AppConfig.bitcoinTaxEvents);
+    return _requireList(
+      response.data,
+      operation: 'listTaxEvents',
+    ).map(TaxEventView.fromJson).toList();
+  }
+
+  @override
+  Future<TaxEventsExportView> exportTaxEvents({required String format}) async {
+    final response = await _api.get(AppConfig.bitcoinTaxEventsExport(format));
+    return TaxEventsExportView.fromJson(
+      _requireMap(response.data, operation: 'exportTaxEvents'),
+    );
+  }
+
+  @override
+  Future<TaxEventView> classifyTaxEvent({
+    required String eventId,
+    required String classification,
+  }) async {
+    await _api.post(
+      AppConfig.bitcoinTaxEventClassify(eventId),
+      data: {'classification': classification},
+    );
+
+    final events = await listTaxEvents();
+    return events.firstWhere(
+      (event) => event.id == eventId,
+      orElse: () => TaxEventView(
+        id: eventId,
+        eventType: '',
+        asset: 'BTC',
+        quantitySats: 0,
+        classification: classification,
+        sourceRef: '',
+        createdAt: '',
+      ),
     );
   }
 }

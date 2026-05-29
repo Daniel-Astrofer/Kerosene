@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/logging/app_log.dart';
+import 'package:kerosene/core/logging/app_log.dart';
 
 void main() {
   test('sanitizeLogMessage masks financial and session secrets', () {

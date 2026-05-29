@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
-import 'package:teste/core/providers/alert_preferences_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/providers/alert_preferences_provider.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key});

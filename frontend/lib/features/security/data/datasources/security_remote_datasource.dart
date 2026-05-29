@@ -4,6 +4,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/device_helper.dart';
 import '../../domain/entities/account_security_profile.dart';
 import '../../domain/entities/admin_access.dart';
+import '../../domain/entities/passkey_inventory.dart';
 
 abstract class SecurityRemoteDataSource {
   Future<Map<String, dynamic>> getSovereigntyStatus();
@@ -33,6 +34,8 @@ abstract class SecurityRemoteDataSource {
   Future<Map<String, dynamic>> verifyAppPin({
     required String pin,
   });
+  Future<PasskeyInventory> blockPasskeyDevice(String deviceInstallId);
+  Future<PasskeyInventory> revokePasskeyDevice(String deviceInstallId);
   Future<Map<String, dynamic>> getAdminKeyStatus();
   Future<Map<String, dynamic>> createAdminKey({
     required String keyMaterialHash,
@@ -266,6 +269,42 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
       if (e is AppException) rethrow;
       throw ServerException(
         message: 'Erro ao validar PIN do aplicativo: $e',
+      );
+    }
+  }
+
+  @override
+  Future<PasskeyInventory> blockPasskeyDevice(String deviceInstallId) async {
+    try {
+      final response = await apiClient.post(
+        AppConfig.authPasskeyDeviceBlock(deviceInstallId),
+        headers: await _deviceHeaders(),
+      );
+      return PasskeyInventory.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+        message: 'Erro ao bloquear dispositivo autenticado: $e',
+      );
+    }
+  }
+
+  @override
+  Future<PasskeyInventory> revokePasskeyDevice(String deviceInstallId) async {
+    try {
+      final response = await apiClient.post(
+        AppConfig.authPasskeyDeviceRevoke(deviceInstallId),
+        headers: await _deviceHeaders(),
+      );
+      return PasskeyInventory.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException(
+        message: 'Erro ao revogar dispositivo autenticado: $e',
       );
     }
   }

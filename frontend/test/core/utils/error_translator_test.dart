@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/l10n/app_localizations_pt.dart';
-import 'package:teste/core/utils/error_translator.dart';
+import 'package:kerosene/core/l10n/app_localizations_pt.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
 
 void main() {
   final l10n = AppLocalizationsPt();

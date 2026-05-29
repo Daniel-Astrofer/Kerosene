@@ -3,13 +3,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/providers/alert_preferences_provider.dart';
-import 'package:teste/features/auth/controller/auth_local_provider.dart';
+import 'package:kerosene/core/providers/alert_preferences_provider.dart';
+import 'package:kerosene/features/auth/controller/auth_local_provider.dart';
 import '../../../../core/services/balance_websocket_service.dart';
 import '../../../../core/providers/tor_providers.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import '../../../../core/utils/device_helper.dart';

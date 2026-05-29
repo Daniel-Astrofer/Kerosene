@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/core/providers/currency_provider.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/utils/transaction_address_display.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/core/utils/safe_display_text.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 
 class TransactionListItem extends ConsumerWidget {
   final Transaction transaction;

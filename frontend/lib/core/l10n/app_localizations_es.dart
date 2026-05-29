@@ -1761,6 +1761,889 @@ class AppLocalizationsEs extends AppLocalizations {
       'Reconéctate a internet e inténtalo de nuevo. Tus palabras de recuperación no fueron enviadas.';
 
   @override
+  String get bitcoinAdvancedTitle => 'Bitcoin Advanced';
+
+  @override
+  String get bitcoinAdvancedNewPsbtAction => 'Nueva PSBT';
+
+  @override
+  String get bitcoinAdvancedRefreshAction => 'Actualizar';
+
+  @override
+  String get bitcoinAdvancedUtxosTitle => 'UTXOs monitoreados';
+
+  @override
+  String get bitcoinAdvancedUtxosUnavailableTitle => 'UTXOs no disponibles';
+
+  @override
+  String get bitcoinAdvancedUtxosUnavailableMessage =>
+      'No se pudieron cargar los outputs observados.';
+
+  @override
+  String get bitcoinAdvancedPsbtsTitle => 'Flujos PSBT';
+
+  @override
+  String get bitcoinAdvancedPsbtsUnavailableTitle => 'PSBTs no disponibles';
+
+  @override
+  String get bitcoinAdvancedPsbtsUnavailableMessage =>
+      'No se pudieron cargar los flujos de firma.';
+
+  @override
+  String get bitcoinAdvancedPsbtCopiedTitle => 'PSBT copiada';
+
+  @override
+  String get bitcoinAdvancedSignExternallyMessage =>
+      'Firma esta PSBT en tu billetera externa.';
+
+  @override
+  String get bitcoinAdvancedNoUtxos =>
+      'No hay UTXO observado para esta billetera.';
+
+  @override
+  String get bitcoinAdvancedSpendableForPsbt => 'Disponible para PSBT';
+
+  @override
+  String bitcoinAdvancedHiddenUtxos(int count) {
+    return '+$count UTXOs ocultos';
+  }
+
+  @override
+  String get bitcoinAdvancedNoPsbts =>
+      'No hay PSBT creada para esta billetera.';
+
+  @override
+  String bitcoinAdvancedHiddenPsbts(int count) {
+    return '+$count PSBTs antiguas';
+  }
+
+  @override
+  String get bitcoinAdvancedFeePrefix => 'Comisión';
+
+  @override
+  String get bitcoinAdvancedCopyUnsignedAction => 'Copiar unsigned';
+
+  @override
+  String get bitcoinAdvancedSubmitSignatureAction => 'Enviar firma';
+
+  @override
+  String get bitcoinAdvancedUtxoStatusUnspent => 'Libre';
+
+  @override
+  String get bitcoinAdvancedUtxoStatusLocked => 'Reservado';
+
+  @override
+  String get bitcoinAdvancedUtxoStatusSpent => 'Gastado';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusDraft => 'Borrador';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusUnsignedCreated => 'Unsigned creada';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusWaitingSignature => 'Esperando firma';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusValidated => 'Validada';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusBroadcasted => 'Transmitida';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusRejectedTampered =>
+      'Rechazada por cambio';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusRejectedPolicy =>
+      'Rechazada por política';
+
+  @override
+  String get bitcoinAdvancedPsbtStatusFailedSafe => 'Protegida';
+
+  @override
+  String get bitcoinAdvancedCreatePsbtTitle => 'Nueva PSBT watch-only';
+
+  @override
+  String get bitcoinAdvancedPsbtCreatedTitle => 'PSBT creada';
+
+  @override
+  String get bitcoinAdvancedCreatePsbtIntro =>
+      'Kerosene arma la transacción sin firmar. Firma fuera de la app y envía la PSBT firmada para validación.';
+
+  @override
+  String get bitcoinAdvancedDestinationLabel => 'Dirección de destino';
+
+  @override
+  String get bitcoinAdvancedAmountSatsLabel => 'Monto en sats';
+
+  @override
+  String get bitcoinAdvancedFeeRateOptionalLabel => 'Fee rate opcional';
+
+  @override
+  String get bitcoinAdvancedOptionalUtxosTitle => 'UTXOs opcionales';
+
+  @override
+  String get bitcoinAdvancedAutoUtxosMessage =>
+      'Sin selección manual, el backend elige suficientes UTXOs automáticamente.';
+
+  @override
+  String get bitcoinAdvancedNoSpendableUtxos =>
+      'No hay UTXO disponible. La creación depende del saldo observado.';
+
+  @override
+  String get bitcoinAdvancedAutoUtxosFallback =>
+      'Todavía puedes dejar la selección automática.';
+
+  @override
+  String get bitcoinAdvancedCreatePsbtAction => 'Crear PSBT';
+
+  @override
+  String get bitcoinAdvancedCreatingPsbtAction => 'Creando...';
+
+  @override
+  String get bitcoinAdvancedCreatedReviewMessage =>
+      'Revisa destino y monto en la billetera externa antes de firmar. Kerosene rechaza firmas que cambien inputs, destino, monto o política de cambio.';
+
+  @override
+  String get bitcoinAdvancedDestinationMetric => 'Destino';
+
+  @override
+  String get bitcoinAdvancedAmountMetric => 'Monto';
+
+  @override
+  String get bitcoinAdvancedEstimatedFeeMetric => 'Comisión estimada';
+
+  @override
+  String get bitcoinAdvancedCopyUnsignedPsbtAction => 'Copiar unsigned PSBT';
+
+  @override
+  String get bitcoinAdvancedIncompleteDataTitle => 'Datos incompletos';
+
+  @override
+  String get bitcoinAdvancedIncompleteDataMessage =>
+      'Ingresa destino y monto en sats.';
+
+  @override
+  String get bitcoinAdvancedCreateFailedTitle => 'PSBT no creada';
+
+  @override
+  String get bitcoinAdvancedCreateFailedMessage =>
+      'Revisa saldo, destino y conexión antes de intentar de nuevo.';
+
+  @override
+  String get bitcoinAdvancedSubmitPsbtTitle => 'Enviar PSBT firmada';
+
+  @override
+  String get bitcoinAdvancedPsbtValidatedTitle => 'PSBT validada';
+
+  @override
+  String get bitcoinAdvancedSubmitPsbtIntro =>
+      'Pega la PSBT firmada por la billetera externa. Kerosene valida inputs, destino, monto, cambio y comisión antes de transmitir.';
+
+  @override
+  String get bitcoinAdvancedSignedPsbtLabel => 'PSBT firmada';
+
+  @override
+  String get bitcoinAdvancedSignedPsbtHint => 'Pega la firma aquí';
+
+  @override
+  String get bitcoinAdvancedBroadcastAfterValidationTitle =>
+      'Transmitir después de validar';
+
+  @override
+  String get bitcoinAdvancedBroadcastAfterValidationSubtitle =>
+      'Desactiva para validar la firma sin broadcast.';
+
+  @override
+  String get bitcoinAdvancedValidatePsbtAction => 'Validar PSBT';
+
+  @override
+  String get bitcoinAdvancedValidatingPsbtAction => 'Validando...';
+
+  @override
+  String get bitcoinAdvancedDoneAction => 'Concluir';
+
+  @override
+  String get bitcoinAdvancedSignatureRequiredTitle => 'Firma obligatoria';
+
+  @override
+  String get bitcoinAdvancedSignatureRequiredMessage =>
+      'Pega la PSBT firmada antes de validar.';
+
+  @override
+  String get bitcoinAdvancedPsbtRejectedTitle => 'PSBT rechazada';
+
+  @override
+  String get bitcoinAdvancedPsbtRejectedMessage =>
+      'La firma no pasó las validaciones de seguridad.';
+
+  @override
+  String get bitcoinTaxReportsTitle => 'Informes fiscales';
+
+  @override
+  String get bitcoinTaxEventsUnavailableTitle => 'Eventos no disponibles';
+
+  @override
+  String get bitcoinTaxEventsUnavailableMessage =>
+      'No se pudieron cargar los eventos temporales.';
+
+  @override
+  String get bitcoinTaxNoEventsTitle => 'Ningún evento temporal.';
+
+  @override
+  String get bitcoinTaxNoEventsMessage =>
+      'Depósitos, envíos y comisiones recientes aparecerán aquí temporalmente.';
+
+  @override
+  String bitcoinTaxHiddenEvents(int count) {
+    return '+$count eventos ocultos.';
+  }
+
+  @override
+  String get bitcoinTaxClassifyTooltip => 'Clasificar evento';
+
+  @override
+  String get bitcoinTaxClassificationUpdatedTitle =>
+      'Clasificación actualizada';
+
+  @override
+  String get bitcoinTaxClassificationNotSavedTitle =>
+      'Clasificación no guardada';
+
+  @override
+  String get bitcoinTaxRetryLaterMessage => 'Intenta de nuevo en instantes.';
+
+  @override
+  String get bitcoinTaxExportJsonAction => 'Exportar JSON';
+
+  @override
+  String get bitcoinTaxExportCsvAction => 'Exportar CSV';
+
+  @override
+  String get bitcoinTaxReportCopiedTitle => 'Informe copiado';
+
+  @override
+  String get bitcoinTaxExportUnavailableTitle => 'Exportación no disponible';
+
+  @override
+  String get bitcoinTaxExportUnavailableMessage =>
+      'No se pudo generar el informe ahora.';
+
+  @override
+  String get bitcoinTaxEventDepositInternal => 'Depósito interno';
+
+  @override
+  String get bitcoinTaxEventDepositExternal => 'Depósito externo';
+
+  @override
+  String get bitcoinTaxEventWithdrawal => 'Retiro';
+
+  @override
+  String get bitcoinTaxEventSpend => 'Gasto';
+
+  @override
+  String get bitcoinTaxEventFee => 'Comisión';
+
+  @override
+  String get bitcoinTaxClassSelfTransfer => 'Transferencia propia';
+
+  @override
+  String get bitcoinTaxClassThirdPartyDeposit => 'Depósito de tercero';
+
+  @override
+  String get bitcoinTaxClassSpend => 'Gasto';
+
+  @override
+  String get bitcoinTaxClassFee => 'Comisión';
+
+  @override
+  String get bitcoinTaxClassUnknown => 'Indefinido';
+
+  @override
+  String get bitcoinTaxClassPending => 'Clasificación pendiente';
+
+  @override
+  String get adminLoginMissingFields =>
+      'Ingresa usuario, passphrase y clave administrativa';
+
+  @override
+  String get adminLoginApprovalRegistered =>
+      'Acceso administrativo registrado.';
+
+  @override
+  String get adminLoginAccessNotApproved =>
+      'El acceso administrativo no fue aprobado.';
+
+  @override
+  String get adminLoginInvalidTotp =>
+      'Ingresa un código TOTP válido de 6 dígitos';
+
+  @override
+  String get adminLoginSessionExpired =>
+      'Sesión expirada. Inicia sesión de nuevo.';
+
+  @override
+  String get adminLoginUsernameHint => 'Usuario';
+
+  @override
+  String get adminLoginPassphraseHint => 'Passphrase';
+
+  @override
+  String get adminLoginAdminKeyHint => 'Clave admin';
+
+  @override
+  String get adminLoginSignInAction => 'ENTRAR';
+
+  @override
+  String get adminLoginSecureAccessFooter => 'Acceso seguro vía onion service';
+
+  @override
+  String get adminLoginTotpTitle => 'AUTENTICACIÓN DE DOS FACTORES';
+
+  @override
+  String get adminLoginTotpSubtitle =>
+      'Ingresa el código de 6 dígitos de tu app autenticadora';
+
+  @override
+  String adminLoginTotpAuthenticatingAs(String username) {
+    return 'Autenticando como $username';
+  }
+
+  @override
+  String get adminLoginVerifyAction => 'VERIFICAR';
+
+  @override
+  String get adminLoginBackToLoginAction => 'Volver al login';
+
+  @override
+  String get adminLoginConsoleSubtitle => 'Consola de gestión empresarial';
+
+  @override
+  String get adminLoginApprovalPending =>
+      'Esperando aprobación en la app móvil.';
+
+  @override
+  String get adminConnectionOnionBrowser => 'Conectado vía Onion Service';
+
+  @override
+  String get adminConnectionOnionApi => 'API enrutada hacia Onion Service';
+
+  @override
+  String get adminConnectionGateway =>
+      'Ruta directa/gateway - onion no verificado por el navegador';
+
+  @override
+  String get adminShellNavOverview => 'VISTA GENERAL';
+
+  @override
+  String get adminShellNavOperations => 'OPERACIONES';
+
+  @override
+  String get adminShellNavManagement => 'GESTIÓN';
+
+  @override
+  String get adminShellSystemOperational => 'Sistema operando con normalidad';
+
+  @override
+  String get adminShellIntegrityOnly => 'Solo integridad';
+
+  @override
+  String get adminRouteDashboard => 'Panel';
+
+  @override
+  String get adminRouteMonitoring => 'Monitoreo';
+
+  @override
+  String get adminRouteTransactions => 'Pruebas de integridad';
+
+  @override
+  String get adminRouteLightning => 'Lightning';
+
+  @override
+  String get adminRouteOnchain => 'On-chain';
+
+  @override
+  String get adminRouteChecks => 'Hash Chain';
+
+  @override
+  String get adminRoutePaymentLinks => 'Métricas de pago';
+
+  @override
+  String get adminRouteAnalytics => 'Analítica';
+
+  @override
+  String get adminRouteVolatility => 'Volatilidad';
+
+  @override
+  String get adminRouteCompanies => 'Infraestructura';
+
+  @override
+  String get adminRouteAudit => 'Auditoría y seguridad';
+
+  @override
+  String get adminRouteAuthenticatedDevices => 'Dispositivos autenticados';
+
+  @override
+  String get adminRouteNotifications => 'Notificaciones';
+
+  @override
+  String get adminRouteSettings => 'Configuración';
+
+  @override
+  String get adminActionRefresh => 'Actualizar';
+
+  @override
+  String get adminValueTor => 'Tor';
+
+  @override
+  String get adminValueDirect => 'Directo';
+
+  @override
+  String get adminValueAuthenticated => 'Autenticado';
+
+  @override
+  String get adminValueChecking => 'Verificando';
+
+  @override
+  String get adminValueAdminContext => 'contexto admin';
+
+  @override
+  String get adminValueMobileUnknown => 'móvil desconocido';
+
+  @override
+  String get adminValueCheckingRelease => 'verificando release';
+
+  @override
+  String get adminValueReleaseUnavailable => 'release no disponible';
+
+  @override
+  String get adminValueEnabled => 'activado';
+
+  @override
+  String get adminValueDisabled => 'desactivado';
+
+  @override
+  String get adminValueNotConfigured => 'no configurado';
+
+  @override
+  String get adminValueNotSet => 'no definido';
+
+  @override
+  String get adminValueAbsent => 'ausente';
+
+  @override
+  String get adminValueBackend => 'backend';
+
+  @override
+  String get adminValueTrue => 'true';
+
+  @override
+  String get adminValueFalse => 'false';
+
+  @override
+  String get adminStatusAuthorized => 'AUTORIZADO';
+
+  @override
+  String get adminStatusBlocked => 'BLOQUEADO';
+
+  @override
+  String get adminWaitingForResponse => 'esperando respuesta';
+
+  @override
+  String get adminBackendError => 'error del backend';
+
+  @override
+  String get adminColumnEntity => 'Entidad';
+
+  @override
+  String get adminColumnRole => 'Rol';
+
+  @override
+  String get adminColumnEnvironment => 'Entorno';
+
+  @override
+  String get adminColumnHealth => 'Salud';
+
+  @override
+  String get adminColumnDetail => 'Detalle';
+
+  @override
+  String get adminColumnName => 'Nombre';
+
+  @override
+  String get adminColumnEndpoint => 'Endpoint';
+
+  @override
+  String get adminColumnId => 'ID';
+
+  @override
+  String get adminColumnReference => 'Referencia';
+
+  @override
+  String get adminColumnAmount => 'Importe';
+
+  @override
+  String get adminColumnStatus => 'Estado';
+
+  @override
+  String get adminColumnRail => 'Rail';
+
+  @override
+  String get adminColumnCreated => 'Creado';
+
+  @override
+  String get adminColumnSettled => 'Liquidado';
+
+  @override
+  String get adminLabelPrimarySource => 'Fuente primaria';
+
+  @override
+  String get adminLabelNetwork => 'Red';
+
+  @override
+  String get adminLabelBlockHeight => 'Altura del bloque';
+
+  @override
+  String get adminLabelBestHash => 'Mejor hash';
+
+  @override
+  String get adminLabelMempoolTxs => 'Transacciones en mempool';
+
+  @override
+  String get adminLabelIndexer => 'Indexador';
+
+  @override
+  String get adminLabelStatus => 'Estado';
+
+  @override
+  String get adminLabelSession => 'Sesión';
+
+  @override
+  String get adminLabelAlias => 'Alias';
+
+  @override
+  String get adminLabelVersion => 'Versión';
+
+  @override
+  String get adminLabelSyncedChain => 'Cadena sincronizada';
+
+  @override
+  String get adminLabelSyncedGraph => 'Grafo sincronizado';
+
+  @override
+  String get adminLabelBlockHash => 'Hash del bloque';
+
+  @override
+  String get adminLabelPeers => 'Peers';
+
+  @override
+  String get adminLabelActiveChannels => 'Canales activos';
+
+  @override
+  String get adminLabelPendingChannels => 'Canales pendientes';
+
+  @override
+  String get adminLabelLocalBalance => 'Saldo local';
+
+  @override
+  String get adminLabelRemoteBalance => 'Saldo remoto';
+
+  @override
+  String get adminLabelWalletBalance => 'Saldo de billetera';
+
+  @override
+  String get adminLabelManifest => 'Manifiesto';
+
+  @override
+  String get adminLabelImageDigest => 'Digest de imagen';
+
+  @override
+  String get adminLabelCodeHash => 'Hash del código';
+
+  @override
+  String get adminLabelConfigHash => 'Hash de configuración';
+
+  @override
+  String get adminLabelAuthorized => 'Autorizado';
+
+  @override
+  String get adminLabelReason => 'Motivo';
+
+  @override
+  String get adminLabelCommit => 'Commit';
+
+  @override
+  String get adminLabelMobileVersion => 'Versión móvil';
+
+  @override
+  String get adminLabelPlatform => 'Plataforma';
+
+  @override
+  String get adminLabelActiveNode => 'Nodo activo';
+
+  @override
+  String get adminLabelApiRoute => 'Ruta API';
+
+  @override
+  String get adminLabelTorEnabled => 'Tor activado';
+
+  @override
+  String get adminLabelChecked => 'Verificado';
+
+  @override
+  String get adminLabelUser => 'Usuario';
+
+  @override
+  String get adminLabelRole => 'Rol';
+
+  @override
+  String get adminLabelJwtRefreshHeader => 'Header de refresh JWT';
+
+  @override
+  String get adminLabelPasskeyRp => 'RP de passkey';
+
+  @override
+  String get adminLabelDebugLogs => 'Logs de debug';
+
+  @override
+  String get adminLabelApiUrl => 'URL de API';
+
+  @override
+  String get adminLabelOnionBase => 'Base onion';
+
+  @override
+  String get adminLabelConnectionTimeout => 'Timeout de conexión';
+
+  @override
+  String get adminLabelReceiveTimeout => 'Timeout de recepción';
+
+  @override
+  String get adminLabelPasskeyRelyingParty => 'relying party de passkey';
+
+  @override
+  String get adminSettingsSubtitle =>
+      'Enrutamiento de API, postura de sesión, preferencias de seguridad y versión de release.';
+
+  @override
+  String get adminSettingsApiRoutingTitle => 'Enrutamiento de API';
+
+  @override
+  String get adminSettingsSessionSecurityTitle => 'Sesión y seguridad';
+
+  @override
+  String get adminSettingsCurrentSessionError =>
+      'No se pudo cargar la sesión admin actual.';
+
+  @override
+  String get adminSettingsReleaseTitle => 'Release';
+
+  @override
+  String get adminSettingsReleaseAttestationUnavailable =>
+      'Atestación de release no disponible.';
+
+  @override
+  String get adminSettingsMobileReleaseUnavailable =>
+      'Release móvil no disponible.';
+
+  @override
+  String get adminMonitoringSubtitle =>
+      'Salud real de servicios, estado on-chain de Bitcoin Core, estado Lightning de LND, quórum Vault Raft, atestación de release y logs operacionales saneados.';
+
+  @override
+  String get adminMonitoringMetricServices => 'Servicios';
+
+  @override
+  String get adminMonitoringMetricVaultRaft => 'Vault Raft';
+
+  @override
+  String get adminMonitoringBitcoinPanel => 'Monitor Bitcoin';
+
+  @override
+  String get adminMonitoringLightningPanel => 'Monitor Lightning';
+
+  @override
+  String get adminMonitoringReleasePanel => 'Atestación de release';
+
+  @override
+  String get adminMonitoringHealthPanel => 'Salud de servicios';
+
+  @override
+  String get adminMonitoringLogsPanel => 'Logs operacionales saneados';
+
+  @override
+  String get adminMonitoringRelevantTransactions => 'Transacciones relevantes';
+
+  @override
+  String get adminMonitoringNoRelevantTransactions =>
+      'Ninguna transacción on-chain monitoreada requiere acción en este momento.';
+
+  @override
+  String get adminMonitoringNoHealthChecks => 'No se reportaron health checks.';
+
+  @override
+  String get adminMonitoringNoLogs =>
+      'Aún no se registraron eventos operacionales.';
+
+  @override
+  String adminMonitoringBlockchainError(String error) {
+    return 'Error al cargar monitor blockchain: $error';
+  }
+
+  @override
+  String adminMonitoringLightningError(String error) {
+    return 'Error al cargar monitor Lightning: $error';
+  }
+
+  @override
+  String adminMonitoringReleaseError(String error) {
+    return 'Error al cargar snapshot de release: $error';
+  }
+
+  @override
+  String adminMonitoringHealthError(String error) {
+    return 'Error al cargar salud: $error';
+  }
+
+  @override
+  String adminMonitoringLogsError(String error) {
+    return 'Error al cargar logs: $error';
+  }
+
+  @override
+  String get adminCompaniesSubtitle =>
+      'Entidades operacionales, entornos, enrutamiento de nodos y dependencias críticas.';
+
+  @override
+  String get adminCompaniesMetricControlPlane => 'Plano de control';
+
+  @override
+  String get adminCompaniesMetricVaultRaft => 'Vault/Raft';
+
+  @override
+  String get adminCompaniesOperationalEntities => 'Entidades operacionales';
+
+  @override
+  String get adminCompaniesRoutingDependencies => 'Enrutamiento y dependencias';
+
+  @override
+  String get adminCompaniesRemoteNodes => 'Nodos remotos';
+
+  @override
+  String get adminCompaniesOverviewUnavailable => 'Overview no disponible.';
+
+  @override
+  String get adminCompaniesEntityKeroseneApi => 'API Kerosene';
+
+  @override
+  String get adminCompaniesEntityReleaseGate => 'Gate de release';
+
+  @override
+  String get adminCompaniesRoleControlPlane => 'Plano de control';
+
+  @override
+  String get adminCompaniesRoleOnchainSource => 'Fuente on-chain';
+
+  @override
+  String get adminCompaniesRoleLightningRouting => 'Enrutamiento Lightning';
+
+  @override
+  String get adminCompaniesRoleReleaseQuorum => 'Quórum de release';
+
+  @override
+  String get adminCompaniesRoleDeploymentAttestation => 'Atestación de deploy';
+
+  @override
+  String get adminPaymentLinksSubtitle =>
+      'Volumen de enlaces de pago, conversión, fallas y últimos eventos de ciclo de vida.';
+
+  @override
+  String get adminPaymentLinksLinksCreated => 'Enlaces creados';
+
+  @override
+  String get adminPaymentLinksObservedVolume => 'Volumen observado';
+
+  @override
+  String get adminPaymentLinksConversion => 'Conversión';
+
+  @override
+  String get adminPaymentLinksFailures => 'Fallas';
+
+  @override
+  String get adminPaymentLinksLatestEvents =>
+      'Últimos eventos de enlaces de pago';
+
+  @override
+  String get adminPaymentLinksLoadError =>
+      'No se pudieron cargar los enlaces de pago.';
+
+  @override
+  String get adminPaymentLinksEmptyTitle => 'Aún no hay enlaces de pago';
+
+  @override
+  String get adminPaymentLinksEmptySubtitle =>
+      'Los enlaces creados aparecerán aquí con estado y metadatos de liquidación.';
+
+  @override
+  String get adminPaymentLinksUnlabeled => 'Enlace sin etiqueta';
+
+  @override
+  String get adminPaymentLinksWaitingList => 'esperando respuesta de la lista';
+
+  @override
+  String get adminPaymentLinksExpiredCancelled => 'expirado o cancelado';
+
+  @override
+  String adminPaidOpen(String paid, String open) {
+    return '$paid pagados | $open abiertos';
+  }
+
+  @override
+  String adminLinksLoaded(String count) {
+    return '$count enlaces cargados';
+  }
+
+  @override
+  String adminSettledRatio(String paid, String created) {
+    return '$paid/$created liquidados';
+  }
+
+  @override
+  String adminHeightValue(String height) {
+    return 'altura $height';
+  }
+
+  @override
+  String adminVotersValue(String current, String expected) {
+    return '$current/$expected votantes';
+  }
+
+  @override
+  String adminActiveChannelsValue(String count) {
+    return '$count canales activos';
+  }
+
+  @override
+  String adminPeersValue(String alias, String peers) {
+    return '$alias | peers $peers';
+  }
+
+  @override
+  String adminConfirmationsValue(String count) {
+    return '$count confirmaciones';
+  }
+
+  @override
+  String adminLogBody(
+    String createdAt,
+    String reference,
+    String userRef,
+    String payloadRef,
+  ) {
+    return '$createdAt · ref $reference · usuario $userRef · payload $payloadRef';
+  }
+
+  @override
   String get bitcoinReceiveTitle => 'Recibir BTC';
 
   @override
@@ -1804,6 +2687,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get bitcoinReceiveStatusActive => 'Esperando';
+
+  @override
+  String get bitcoinReceiveRequestsTitle => 'Solicitudes de recepción';
+
+  @override
+  String get bitcoinReceiveRequestsLoadErrorTitle =>
+      'No se pudieron cargar las solicitudes.';
+
+  @override
+  String get bitcoinReceiveRequestsOfflineTitle => 'Offline.';
+
+  @override
+  String get bitcoinReceiveRequestsLoadErrorMessage =>
+      'Kerosene no pudo actualizar las solicitudes de recepción de esta cuenta.';
+
+  @override
+  String get bitcoinReceiveRequestsOfflineMessage =>
+      'Reconecta e intenta de nuevo para cargar las solicitudes de recepción.';
+
+  @override
+  String get bitcoinReceiveRequestsEmptyTitle => 'No hay solicitudes activas.';
+
+  @override
+  String get bitcoinReceiveRequestsEmptyMessage =>
+      'Las solicitudes Bitcoin generadas aparecerán aquí.';
+
+  @override
+  String get bitcoinReceiveRequestsFlexibleAmount => 'Monto flexible';
+
+  @override
+  String get bitcoinReceiveRequestsNoExpiry => 'sin expiración';
 
   @override
   String get bitcoinReceiveStatusDetected => 'Detectado';
@@ -3526,6 +4440,34 @@ class AppLocalizationsEs extends AppLocalizations {
       'Compatibilidad aún no determinada para esta credencial.';
 
   @override
+  String get securityDeviceBlockAction => 'Bloquear';
+
+  @override
+  String get securityDeviceRevokeAction => 'Revocar';
+
+  @override
+  String get securityDeviceBlockFailedTitle =>
+      'No pudimos bloquear el dispositivo';
+
+  @override
+  String get securityDeviceRevokeFailedTitle =>
+      'No pudimos revocar el dispositivo';
+
+  @override
+  String get securityDeviceBlockedTitle => 'Dispositivo bloqueado';
+
+  @override
+  String get securityDeviceBlockedMessage =>
+      'Esta credencial no podrá confirmar nuevos accesos hasta que sea reactivada en el backend.';
+
+  @override
+  String get securityDeviceRevokedTitle => 'Dispositivo revocado';
+
+  @override
+  String get securityDeviceRevokedMessage =>
+      'Esta credencial fue removida del conjunto de dispositivos autenticados.';
+
+  @override
   String get securityStatusPending => 'Pendiente';
 
   @override
@@ -4283,6 +5225,81 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pega la solicitud Lightning o LNURL';
 
   @override
+  String get withdrawUiPasteAction => 'Pegar';
+
+  @override
+  String get withdrawUiScanQrTooltip => 'Escanear QR';
+
+  @override
+  String get withdrawUiExternalDestinationInstructionLightning =>
+      'Ingresa una factura Lightning, LNURL o dirección Lightning para iniciar la transferencia.';
+
+  @override
+  String get withdrawUiExternalDestinationInstructionOnchain =>
+      'Ingresa la dirección Bitcoin de destino para iniciar la transferencia.';
+
+  @override
+  String get withdrawUiExternalDestinationHintLightning => 'lnbc...';
+
+  @override
+  String get withdrawUiExternalDestinationHintOnchain => 'bc1...';
+
+  @override
+  String get withdrawUiDestinationFallback => 'Destino';
+
+  @override
+  String get withdrawUiEstimatedSeconds => 'Segundos';
+
+  @override
+  String get withdrawUiEstimatedTenMinutes => '~10 min';
+
+  @override
+  String get withdrawUiReviewPaymentTitle => 'Revisar pago';
+
+  @override
+  String get withdrawUiReviewSendTitle => 'Revisar envío';
+
+  @override
+  String get withdrawUiReviewDetailsSubtitle =>
+      'Verifica los detalles antes de confirmar.';
+
+  @override
+  String get withdrawUiAmountToSendLabel => 'VALOR A ENVIAR';
+
+  @override
+  String get withdrawUiReviewInvoiceDestination => 'Para (Invoice)';
+
+  @override
+  String get withdrawUiReviewAddressDestination => 'Para (Dirección)';
+
+  @override
+  String get withdrawUiLightningFee => 'Comisión Lightning';
+
+  @override
+  String get withdrawUiPlatformFee => 'Comisión Kerosene';
+
+  @override
+  String get withdrawUiConfirmPayment => 'Confirmar pago';
+
+  @override
+  String get withdrawUiConfirmSend => 'Confirmar envío';
+
+  @override
+  String get withdrawUiSendingFromPrefix => 'Enviando desde:';
+
+  @override
+  String get withdrawUiSendingToPrefix => 'a:';
+
+  @override
+  String get withdrawUiCurrentBalance => 'Saldo actual';
+
+  @override
+  String get withdrawUiEstimatedTime => 'Tiempo estimado';
+
+  @override
+  String get withdrawUiCalculating => 'Calculando';
+
+  @override
   String get depositLedgerAddressCopied => 'Dirección copiada.';
 
   @override
@@ -4788,6 +5805,203 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get receiveHubNoWalletMessage =>
       'Crea o selecciona una billetera antes de iniciar una recepción.';
+
+  @override
+  String get receiveWalletInternalUnavailable =>
+      'No hay una billetera interna Kerosene disponible para recibir.';
+
+  @override
+  String get receiveWalletOnchainUnavailable =>
+      'No hay una billetera fría on-chain disponible para recibir.';
+
+  @override
+  String get receiveWalletSelectionTitle => '¿Dónde quieres\nrecibir?';
+
+  @override
+  String get receiveWalletSelectionSubtitle =>
+      'Elige si los fondos entran en la billetera interna Kerosene o en tu billetera fría on-chain.';
+
+  @override
+  String get receiveWalletKeroseneTitle => 'Billetera principal';
+
+  @override
+  String get receiveWalletKeroseneSubtitle =>
+      'Recibe directamente en tu billetera en Kerosene';
+
+  @override
+  String get receiveWalletOnchainTitle => 'Billetera de casa';
+
+  @override
+  String get receiveWalletOnchainSubtitle =>
+      'Recibe directo en la dirección Bitcoin de tu billetera de casa';
+
+  @override
+  String get receiveMethodKeroseneTitle => 'Recibir en Kerosene';
+
+  @override
+  String get receiveMethodKeroseneSubtitle =>
+      'Elige QR Code, link de pago o NFC para tu billetera interna.';
+
+  @override
+  String get receiveMethodOnchainTitle => 'Recibir on-chain';
+
+  @override
+  String get receiveMethodOnchainSubtitle =>
+      'Elige QR Code, link de pago o NFC para tu billetera fría.';
+
+  @override
+  String get receiveMethodGatewayTitle => 'Gateway de pago';
+
+  @override
+  String get receiveMethodGatewaySubtitle =>
+      'Elegir un proveedor para comprar Bitcoin';
+
+  @override
+  String get receiveMethodQrTitle => 'QR Code';
+
+  @override
+  String get receiveMethodQrSubtitle =>
+      'Generar un código para mostrar al pagador';
+
+  @override
+  String get receiveMethodPaymentLinkTitle => 'Link de pago';
+
+  @override
+  String get receiveMethodPaymentLinkSubtitle => 'Crear un cobro compartible';
+
+  @override
+  String get receiveMethodNfcTitle => 'NFC';
+
+  @override
+  String get receiveMethodNfcSubtitle => 'Preparar recepción por aproximación';
+
+  @override
+  String get receiveGatewayProvidersTitle => 'Proveedores';
+
+  @override
+  String get receiveGatewayRecommendedBrazil => 'Recomendados para Brasil';
+
+  @override
+  String get receiveGatewayInstitutional => 'Institucionales';
+
+  @override
+  String get receiveGatewayAggregators => 'Agregadores';
+
+  @override
+  String get receiveGatewayOther => 'Otros';
+
+  @override
+  String get receiveGatewayInstitutionalBadge => 'INSTITUCIONAL';
+
+  @override
+  String get receiveGatewayMoonPayMethods =>
+      'Pix, tarjeta, Apple Pay • Instantáneo';
+
+  @override
+  String get receiveGatewayMoonPayFees => 'Comisiones: 1% a 4,5%';
+
+  @override
+  String get receiveGatewayBanxaMethods =>
+      'Tarjeta, Apple Pay, Google Pay • Instantáneo';
+
+  @override
+  String get receiveGatewayBanxaFees => 'Comisión: 1,99% + network fee';
+
+  @override
+  String get receiveGatewayMercuryoMethods =>
+      'Pix, tarjeta, Apple Pay • Minutos';
+
+  @override
+  String get receiveGatewayMercuryoFees => 'Comisión: 3,95% a 4%';
+
+  @override
+  String get receiveGatewayRampMethods =>
+      'Tarjeta, Apple Pay, transferencia • Minutos';
+
+  @override
+  String get receiveGatewayRampFees => 'Comisiones dinámicas en checkout';
+
+  @override
+  String get receiveGatewayStripeMethods =>
+      'Tarjeta, Apple Pay, ACH • 1 a 5 min';
+
+  @override
+  String get receiveGatewayStripeFees => 'Comisiones dinámicas';
+
+  @override
+  String get receiveGatewayCoinbaseMethods =>
+      'Tarjeta de débito/crédito • Minutos';
+
+  @override
+  String get receiveGatewayCoinbaseFees => 'Comisiones dinámicas';
+
+  @override
+  String get receiveGatewayOnramperMethods =>
+      'Más de 130 métodos y 30 proveedores';
+
+  @override
+  String get receiveGatewayOnramperFees =>
+      'Mejor ruta disponible • Fallback ideal';
+
+  @override
+  String get receiveGatewayTransakMethods =>
+      'Tarjeta, billeteras digitales • Minutos';
+
+  @override
+  String get receiveGatewayTransakFees =>
+      'Límites y comisiones variables por cobertura';
+
+  @override
+  String get receiveGatewayWertMethods =>
+      'Tarjeta, Apple Pay, Google Pay • < 60 seg';
+
+  @override
+  String get receiveGatewayWertFees => 'Mínimo de US\$30 para BTC';
+
+  @override
+  String get receiveGatewayGateFiMethods =>
+      'E-wallets, QR Code, cash • Variable';
+
+  @override
+  String get receiveGatewayGateFiFees => 'Amplia cobertura global';
+
+  @override
+  String get receiveGatewayComingSoon => 'Próximamente';
+
+  @override
+  String receiveGatewayLinkCopied(String provider, String wallet) {
+    return 'Link de $provider copiado para $wallet.';
+  }
+
+  @override
+  String receiveGatewayProviderUnavailable(String provider) {
+    return '$provider aún no está disponible para esta billetera.';
+  }
+
+  @override
+  String get financialStatementTitle => 'Transacciones';
+
+  @override
+  String get financialStatementLoadErrorTitle => 'No se pudo cargar';
+
+  @override
+  String get financialStatementEmptyTitle => 'Sin transacciones';
+
+  @override
+  String get financialStatementEmptyMessage =>
+      'Los movimientos de la cuenta aparecerán aquí.';
+
+  @override
+  String get financialStatementSearchHint => 'Buscar';
+
+  @override
+  String get financialStatementFilterAll => 'Todas';
+
+  @override
+  String get financialStatementFilterIncoming => 'Recibidas';
+
+  @override
+  String get financialStatementFilterOutgoing => 'Enviadas';
 
   @override
   String get receiveScreenQrEyebrow => 'QR Code';
@@ -5982,6 +7196,127 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeEducationKeroseneGeneralTag => 'Cómo elegir';
+
+  @override
+  String get paymentIntentScreenTitle => 'Intención de pago';
+
+  @override
+  String get paymentIntentScreenSubtitle => 'Cotización, confirmación y estado';
+
+  @override
+  String get paymentIntentRecipientHint => 'username, email o dirección';
+
+  @override
+  String get paymentIntentSearchAction => 'Buscar';
+
+  @override
+  String get paymentIntentAmountFeeTitle => 'Monto y comisión';
+
+  @override
+  String get paymentIntentGenerateQuoteAction => 'Generar cotización';
+
+  @override
+  String get paymentIntentQuoteTitle => 'Cotización';
+
+  @override
+  String get paymentIntentMetricReceiver => 'Receptor';
+
+  @override
+  String get paymentIntentMetricRoute => 'Ruta';
+
+  @override
+  String get paymentIntentMetricReceives => 'Recibe';
+
+  @override
+  String get paymentIntentMetricNetworkFee => 'Comisión de red';
+
+  @override
+  String get paymentIntentMetricKeroseneFee => 'Comisión Kerosene';
+
+  @override
+  String get paymentIntentMetricTotalDebit => 'Total debitado';
+
+  @override
+  String get paymentIntentConfirmPaymentAction => 'Confirmar pago';
+
+  @override
+  String get paymentIntentStatusTitle => 'Estado';
+
+  @override
+  String get paymentIntentNotCompleted => 'Pago no completado.';
+
+  @override
+  String get paymentIntentReviewTitle => 'Revisar envío';
+
+  @override
+  String paymentIntentReviewDebitMessage(String total, String receiver) {
+    return '$total se debitarán para $receiver.';
+  }
+
+  @override
+  String get paymentIntentAuthorizeAction => 'Autorizar';
+
+  @override
+  String get paymentIntentValidationRecipientRequired => 'Ingresa el receptor.';
+
+  @override
+  String get paymentIntentValidationAmountRequired => 'Ingresa el monto.';
+
+  @override
+  String get paymentIntentRailInternal => 'Kerosene';
+
+  @override
+  String get paymentIntentRailLightning => 'Lightning';
+
+  @override
+  String get paymentIntentRailOnchain => 'On-chain';
+
+  @override
+  String get paymentIntentFeeSenderPays => 'Paga el remitente';
+
+  @override
+  String get paymentIntentFeeRecipientPays => 'Paga el receptor';
+
+  @override
+  String get paymentIntentSpeedEconomy => 'Económica';
+
+  @override
+  String get paymentIntentSpeedNormal => 'Normal';
+
+  @override
+  String get paymentIntentSpeedFast => 'Rápida';
+
+  @override
+  String get paymentIntentStatusCreated => 'Creado';
+
+  @override
+  String get paymentIntentStatusQuoted => 'Cotizado';
+
+  @override
+  String get paymentIntentStatusConfirmed => 'Confirmado';
+
+  @override
+  String get paymentIntentStatusProcessing => 'Procesando';
+
+  @override
+  String get paymentIntentStatusAcceptedByProvider =>
+      'Aceptado por el proveedor';
+
+  @override
+  String get paymentIntentStatusRequiresReconciliation =>
+      'Requiere conciliación';
+
+  @override
+  String get paymentIntentStatusSettled => 'Liquidado';
+
+  @override
+  String get paymentIntentStatusFailed => 'Falló';
+
+  @override
+  String get paymentIntentStatusCanceled => 'Cancelado';
+
+  @override
+  String get paymentIntentStatusExpired => 'Expirado';
 
   @override
   String get designSystemTemplateTitle => 'Design system';

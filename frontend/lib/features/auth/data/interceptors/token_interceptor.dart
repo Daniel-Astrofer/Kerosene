@@ -56,6 +56,7 @@ class TokenInterceptor extends QueuedInterceptor {
       // stale token can force an unnecessary JWT failure before auth starts.
       final isOnboardingOrAuth = path.contains('/auth/login') ||
           path.contains('/auth/signup') ||
+          path.contains('/auth/recovery/emergency/') ||
           path.contains('/auth/passkey/challenge') ||
           path.contains('/auth/passkey/verify') ||
           path.contains('/auth/passkey/onboarding/') ||

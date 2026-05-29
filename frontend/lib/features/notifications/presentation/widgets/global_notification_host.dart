@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
-import 'package:teste/core/presentation/widgets/app_screen_feedback_host.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:teste/features/notifications/presentation/notification_visuals.dart';
-import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:teste/features/notifications/presentation/screens/notification_center_screen.dart';
+import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/core/presentation/widgets/app_screen_feedback_host.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
+import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
+import 'package:kerosene/features/notifications/presentation/screens/notification_center_screen.dart';
 
 import 'session_notification_sidebar.dart';
 

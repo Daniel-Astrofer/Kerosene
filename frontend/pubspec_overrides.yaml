@@ -1,0 +1,3 @@
+dependency_overrides:
+  lucide_icons:
+    path: third_party/lucide_icons

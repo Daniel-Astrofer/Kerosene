@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/money_display.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/utils/money_display.dart';
 
 void main() {
   group('MoneyDisplay editable input helpers', () {

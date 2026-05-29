@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 class ModernAuthTextField extends StatelessWidget {
   final TextEditingController? controller;

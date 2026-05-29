@@ -15,13 +15,9 @@ out vec4 fragColor;
 // Adapted from Inigo Quilez (IQ) Warp shader
 
 float noise(vec2 U){
-    ivec2 I = ivec2(U);
-    // Bitwise XOR logic for deterministic-ish noise
-    int x = I.x;
-    int y = I.y;
-    int i = (x - y) ^ (y + x);
-    float v = float(i);
-    return (fract( v * 0.051618 ));
+    vec2 I = floor(U);
+    float v = dot(I, vec2(127.1, 311.7));
+    return fract(sin(v) * 43758.5453123);
 }
 
 const mat2 mtx = mat2( 0.80,  0.60, -0.60,  0.80 );

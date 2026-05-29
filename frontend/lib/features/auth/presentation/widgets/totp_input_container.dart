@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 /// 6-digit TOTP input using absolute CustomPaint fidelity and a hidden TextField.
 /// All styling follows the global typography and authenticated surface tokens.

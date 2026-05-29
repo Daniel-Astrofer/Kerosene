@@ -6,20 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/qr_payment_parser.dart';
-import 'package:teste/core/utils/snackbar_helper.dart';
-import 'package:teste/features/transactions/domain/entities/external_transfer.dart';
-import 'package:teste/features/transactions/domain/entities/onchain_address_allocation.dart';
-import 'package:teste/features/transactions/domain/entities/payment_link.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart'
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/core/utils/qr_payment_parser.dart';
+import 'package:kerosene/core/utils/snackbar_helper.dart';
+import 'package:kerosene/features/transactions/domain/entities/external_transfer.dart';
+import 'package:kerosene/features/transactions/domain/entities/onchain_address_allocation.dart';
+import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
+import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart'
     show ledgerRepositoryProvider;
-import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
 
 enum ReceiveRequestStage { qr, confirmations, identified }
 

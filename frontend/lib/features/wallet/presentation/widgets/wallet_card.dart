@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/utils/safe_display_text.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import '../../domain/entities/wallet.dart';
 
-import 'package:teste/shared/widgets/brushed_metal_container.dart';
+import 'package:kerosene/shared/widgets/brushed_metal_container.dart';
 
 /// Premium Wallet Card Component - Refactored
 class WalletCard extends StatefulWidget {

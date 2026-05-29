@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/services/balance_websocket_service.dart';
-import 'package:teste/core/services/notification_orchestrator.dart';
-import 'package:teste/features/web_admin/theme/admin_colors.dart';
+import 'package:kerosene/core/services/balance_websocket_service.dart';
+import 'package:kerosene/core/services/notification_orchestrator.dart';
+import 'package:kerosene/features/web_admin/theme/admin_colors.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 final notificationsListProvider =

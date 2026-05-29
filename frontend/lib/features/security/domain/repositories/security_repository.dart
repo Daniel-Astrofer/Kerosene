@@ -3,6 +3,7 @@ import '../../../../core/errors/failures.dart';
 import '../entities/app_pin_status.dart';
 import '../entities/account_security_profile.dart';
 import '../entities/admin_access.dart';
+import '../entities/passkey_inventory.dart';
 import '../entities/security_status.dart';
 import '../entities/treasury_overview.dart';
 
@@ -33,6 +34,12 @@ abstract class SecurityRepository {
   Future<Either<Failure, AppPinStatus>> verifyAppPin({
     required String pin,
   });
+  Future<Either<Failure, PasskeyInventory>> blockPasskeyDevice(
+    String deviceInstallId,
+  );
+  Future<Either<Failure, PasskeyInventory>> revokePasskeyDevice(
+    String deviceInstallId,
+  );
   Future<Either<Failure, AdminKeyStatus>> getAdminKeyStatus();
   Future<Either<Failure, AdminKeyStatus>> createAdminKey({
     required String keyMaterialHash,

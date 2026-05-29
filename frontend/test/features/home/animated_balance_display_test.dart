@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/features/home/presentation/widgets/animated_balance_display.dart';
+import 'package:kerosene/features/home/presentation/widgets/animated_balance_display.dart';
 
 void main() {
   testWidgets('AnimatedBalanceDisplay updates rolling digits without errors',

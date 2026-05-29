@@ -3334,6 +3334,809 @@ abstract class AppLocalizations {
   /// **'Reconnect to the internet and try again. Your recovery words were not sent.'**
   String get coldWalletImportErrorMessage;
 
+  /// No description provided for @bitcoinAdvancedTitle.
+  String get bitcoinAdvancedTitle;
+
+  /// No description provided for @bitcoinAdvancedNewPsbtAction.
+  String get bitcoinAdvancedNewPsbtAction;
+
+  /// No description provided for @bitcoinAdvancedRefreshAction.
+  String get bitcoinAdvancedRefreshAction;
+
+  /// No description provided for @bitcoinAdvancedUtxosTitle.
+  String get bitcoinAdvancedUtxosTitle;
+
+  /// No description provided for @bitcoinAdvancedUtxosUnavailableTitle.
+  String get bitcoinAdvancedUtxosUnavailableTitle;
+
+  /// No description provided for @bitcoinAdvancedUtxosUnavailableMessage.
+  String get bitcoinAdvancedUtxosUnavailableMessage;
+
+  /// No description provided for @bitcoinAdvancedPsbtsTitle.
+  String get bitcoinAdvancedPsbtsTitle;
+
+  /// No description provided for @bitcoinAdvancedPsbtsUnavailableTitle.
+  String get bitcoinAdvancedPsbtsUnavailableTitle;
+
+  /// No description provided for @bitcoinAdvancedPsbtsUnavailableMessage.
+  String get bitcoinAdvancedPsbtsUnavailableMessage;
+
+  /// No description provided for @bitcoinAdvancedPsbtCopiedTitle.
+  String get bitcoinAdvancedPsbtCopiedTitle;
+
+  /// No description provided for @bitcoinAdvancedSignExternallyMessage.
+  String get bitcoinAdvancedSignExternallyMessage;
+
+  /// No description provided for @bitcoinAdvancedNoUtxos.
+  String get bitcoinAdvancedNoUtxos;
+
+  /// No description provided for @bitcoinAdvancedSpendableForPsbt.
+  String get bitcoinAdvancedSpendableForPsbt;
+
+  /// No description provided for @bitcoinAdvancedHiddenUtxos.
+  String bitcoinAdvancedHiddenUtxos(int count);
+
+  /// No description provided for @bitcoinAdvancedNoPsbts.
+  String get bitcoinAdvancedNoPsbts;
+
+  /// No description provided for @bitcoinAdvancedHiddenPsbts.
+  String bitcoinAdvancedHiddenPsbts(int count);
+
+  /// No description provided for @bitcoinAdvancedFeePrefix.
+  String get bitcoinAdvancedFeePrefix;
+
+  /// No description provided for @bitcoinAdvancedCopyUnsignedAction.
+  String get bitcoinAdvancedCopyUnsignedAction;
+
+  /// No description provided for @bitcoinAdvancedSubmitSignatureAction.
+  String get bitcoinAdvancedSubmitSignatureAction;
+
+  /// No description provided for @bitcoinAdvancedUtxoStatusUnspent.
+  String get bitcoinAdvancedUtxoStatusUnspent;
+
+  /// No description provided for @bitcoinAdvancedUtxoStatusLocked.
+  String get bitcoinAdvancedUtxoStatusLocked;
+
+  /// No description provided for @bitcoinAdvancedUtxoStatusSpent.
+  String get bitcoinAdvancedUtxoStatusSpent;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusDraft.
+  String get bitcoinAdvancedPsbtStatusDraft;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusUnsignedCreated.
+  String get bitcoinAdvancedPsbtStatusUnsignedCreated;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusWaitingSignature.
+  String get bitcoinAdvancedPsbtStatusWaitingSignature;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusValidated.
+  String get bitcoinAdvancedPsbtStatusValidated;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusBroadcasted.
+  String get bitcoinAdvancedPsbtStatusBroadcasted;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusRejectedTampered.
+  String get bitcoinAdvancedPsbtStatusRejectedTampered;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusRejectedPolicy.
+  String get bitcoinAdvancedPsbtStatusRejectedPolicy;
+
+  /// No description provided for @bitcoinAdvancedPsbtStatusFailedSafe.
+  String get bitcoinAdvancedPsbtStatusFailedSafe;
+
+  /// No description provided for @bitcoinAdvancedCreatePsbtTitle.
+  String get bitcoinAdvancedCreatePsbtTitle;
+
+  /// No description provided for @bitcoinAdvancedPsbtCreatedTitle.
+  String get bitcoinAdvancedPsbtCreatedTitle;
+
+  /// No description provided for @bitcoinAdvancedCreatePsbtIntro.
+  String get bitcoinAdvancedCreatePsbtIntro;
+
+  /// No description provided for @bitcoinAdvancedDestinationLabel.
+  String get bitcoinAdvancedDestinationLabel;
+
+  /// No description provided for @bitcoinAdvancedAmountSatsLabel.
+  String get bitcoinAdvancedAmountSatsLabel;
+
+  /// No description provided for @bitcoinAdvancedFeeRateOptionalLabel.
+  String get bitcoinAdvancedFeeRateOptionalLabel;
+
+  /// No description provided for @bitcoinAdvancedOptionalUtxosTitle.
+  String get bitcoinAdvancedOptionalUtxosTitle;
+
+  /// No description provided for @bitcoinAdvancedAutoUtxosMessage.
+  String get bitcoinAdvancedAutoUtxosMessage;
+
+  /// No description provided for @bitcoinAdvancedNoSpendableUtxos.
+  String get bitcoinAdvancedNoSpendableUtxos;
+
+  /// No description provided for @bitcoinAdvancedAutoUtxosFallback.
+  String get bitcoinAdvancedAutoUtxosFallback;
+
+  /// No description provided for @bitcoinAdvancedCreatePsbtAction.
+  String get bitcoinAdvancedCreatePsbtAction;
+
+  /// No description provided for @bitcoinAdvancedCreatingPsbtAction.
+  String get bitcoinAdvancedCreatingPsbtAction;
+
+  /// No description provided for @bitcoinAdvancedCreatedReviewMessage.
+  String get bitcoinAdvancedCreatedReviewMessage;
+
+  /// No description provided for @bitcoinAdvancedDestinationMetric.
+  String get bitcoinAdvancedDestinationMetric;
+
+  /// No description provided for @bitcoinAdvancedAmountMetric.
+  String get bitcoinAdvancedAmountMetric;
+
+  /// No description provided for @bitcoinAdvancedEstimatedFeeMetric.
+  String get bitcoinAdvancedEstimatedFeeMetric;
+
+  /// No description provided for @bitcoinAdvancedCopyUnsignedPsbtAction.
+  String get bitcoinAdvancedCopyUnsignedPsbtAction;
+
+  /// No description provided for @bitcoinAdvancedIncompleteDataTitle.
+  String get bitcoinAdvancedIncompleteDataTitle;
+
+  /// No description provided for @bitcoinAdvancedIncompleteDataMessage.
+  String get bitcoinAdvancedIncompleteDataMessage;
+
+  /// No description provided for @bitcoinAdvancedCreateFailedTitle.
+  String get bitcoinAdvancedCreateFailedTitle;
+
+  /// No description provided for @bitcoinAdvancedCreateFailedMessage.
+  String get bitcoinAdvancedCreateFailedMessage;
+
+  /// No description provided for @bitcoinAdvancedSubmitPsbtTitle.
+  String get bitcoinAdvancedSubmitPsbtTitle;
+
+  /// No description provided for @bitcoinAdvancedPsbtValidatedTitle.
+  String get bitcoinAdvancedPsbtValidatedTitle;
+
+  /// No description provided for @bitcoinAdvancedSubmitPsbtIntro.
+  String get bitcoinAdvancedSubmitPsbtIntro;
+
+  /// No description provided for @bitcoinAdvancedSignedPsbtLabel.
+  String get bitcoinAdvancedSignedPsbtLabel;
+
+  /// No description provided for @bitcoinAdvancedSignedPsbtHint.
+  String get bitcoinAdvancedSignedPsbtHint;
+
+  /// No description provided for @bitcoinAdvancedBroadcastAfterValidationTitle.
+  String get bitcoinAdvancedBroadcastAfterValidationTitle;
+
+  /// No description provided for @bitcoinAdvancedBroadcastAfterValidationSubtitle.
+  String get bitcoinAdvancedBroadcastAfterValidationSubtitle;
+
+  /// No description provided for @bitcoinAdvancedValidatePsbtAction.
+  String get bitcoinAdvancedValidatePsbtAction;
+
+  /// No description provided for @bitcoinAdvancedValidatingPsbtAction.
+  String get bitcoinAdvancedValidatingPsbtAction;
+
+  /// No description provided for @bitcoinAdvancedDoneAction.
+  String get bitcoinAdvancedDoneAction;
+
+  /// No description provided for @bitcoinAdvancedSignatureRequiredTitle.
+  String get bitcoinAdvancedSignatureRequiredTitle;
+
+  /// No description provided for @bitcoinAdvancedSignatureRequiredMessage.
+  String get bitcoinAdvancedSignatureRequiredMessage;
+
+  /// No description provided for @bitcoinAdvancedPsbtRejectedTitle.
+  String get bitcoinAdvancedPsbtRejectedTitle;
+
+  /// No description provided for @bitcoinAdvancedPsbtRejectedMessage.
+  String get bitcoinAdvancedPsbtRejectedMessage;
+
+  /// No description provided for @bitcoinTaxReportsTitle.
+  String get bitcoinTaxReportsTitle;
+
+  /// No description provided for @bitcoinTaxEventsUnavailableTitle.
+  String get bitcoinTaxEventsUnavailableTitle;
+
+  /// No description provided for @bitcoinTaxEventsUnavailableMessage.
+  String get bitcoinTaxEventsUnavailableMessage;
+
+  /// No description provided for @bitcoinTaxNoEventsTitle.
+  String get bitcoinTaxNoEventsTitle;
+
+  /// No description provided for @bitcoinTaxNoEventsMessage.
+  String get bitcoinTaxNoEventsMessage;
+
+  /// No description provided for @bitcoinTaxHiddenEvents.
+  String bitcoinTaxHiddenEvents(int count);
+
+  /// No description provided for @bitcoinTaxClassifyTooltip.
+  String get bitcoinTaxClassifyTooltip;
+
+  /// No description provided for @bitcoinTaxClassificationUpdatedTitle.
+  String get bitcoinTaxClassificationUpdatedTitle;
+
+  /// No description provided for @bitcoinTaxClassificationNotSavedTitle.
+  String get bitcoinTaxClassificationNotSavedTitle;
+
+  /// No description provided for @bitcoinTaxRetryLaterMessage.
+  String get bitcoinTaxRetryLaterMessage;
+
+  /// No description provided for @bitcoinTaxExportJsonAction.
+  String get bitcoinTaxExportJsonAction;
+
+  /// No description provided for @bitcoinTaxExportCsvAction.
+  String get bitcoinTaxExportCsvAction;
+
+  /// No description provided for @bitcoinTaxReportCopiedTitle.
+  String get bitcoinTaxReportCopiedTitle;
+
+  /// No description provided for @bitcoinTaxExportUnavailableTitle.
+  String get bitcoinTaxExportUnavailableTitle;
+
+  /// No description provided for @bitcoinTaxExportUnavailableMessage.
+  String get bitcoinTaxExportUnavailableMessage;
+
+  /// No description provided for @bitcoinTaxEventDepositInternal.
+  String get bitcoinTaxEventDepositInternal;
+
+  /// No description provided for @bitcoinTaxEventDepositExternal.
+  String get bitcoinTaxEventDepositExternal;
+
+  /// No description provided for @bitcoinTaxEventWithdrawal.
+  String get bitcoinTaxEventWithdrawal;
+
+  /// No description provided for @bitcoinTaxEventSpend.
+  String get bitcoinTaxEventSpend;
+
+  /// No description provided for @bitcoinTaxEventFee.
+  String get bitcoinTaxEventFee;
+
+  /// No description provided for @bitcoinTaxClassSelfTransfer.
+  String get bitcoinTaxClassSelfTransfer;
+
+  /// No description provided for @bitcoinTaxClassThirdPartyDeposit.
+  String get bitcoinTaxClassThirdPartyDeposit;
+
+  /// No description provided for @bitcoinTaxClassSpend.
+  String get bitcoinTaxClassSpend;
+
+  /// No description provided for @bitcoinTaxClassFee.
+  String get bitcoinTaxClassFee;
+
+  /// No description provided for @bitcoinTaxClassUnknown.
+  String get bitcoinTaxClassUnknown;
+
+  /// No description provided for @bitcoinTaxClassPending.
+  String get bitcoinTaxClassPending;
+
+  /// No description provided for @adminLoginMissingFields.
+  String get adminLoginMissingFields;
+
+  /// No description provided for @adminLoginApprovalRegistered.
+  String get adminLoginApprovalRegistered;
+
+  /// No description provided for @adminLoginAccessNotApproved.
+  String get adminLoginAccessNotApproved;
+
+  /// No description provided for @adminLoginInvalidTotp.
+  String get adminLoginInvalidTotp;
+
+  /// No description provided for @adminLoginSessionExpired.
+  String get adminLoginSessionExpired;
+
+  /// No description provided for @adminLoginUsernameHint.
+  String get adminLoginUsernameHint;
+
+  /// No description provided for @adminLoginPassphraseHint.
+  String get adminLoginPassphraseHint;
+
+  /// No description provided for @adminLoginAdminKeyHint.
+  String get adminLoginAdminKeyHint;
+
+  /// No description provided for @adminLoginSignInAction.
+  String get adminLoginSignInAction;
+
+  /// No description provided for @adminLoginSecureAccessFooter.
+  String get adminLoginSecureAccessFooter;
+
+  /// No description provided for @adminLoginTotpTitle.
+  String get adminLoginTotpTitle;
+
+  /// No description provided for @adminLoginTotpSubtitle.
+  String get adminLoginTotpSubtitle;
+
+  /// No description provided for @adminLoginTotpAuthenticatingAs.
+  String adminLoginTotpAuthenticatingAs(String username);
+
+  /// No description provided for @adminLoginVerifyAction.
+  String get adminLoginVerifyAction;
+
+  /// No description provided for @adminLoginBackToLoginAction.
+  String get adminLoginBackToLoginAction;
+
+  /// No description provided for @adminLoginConsoleSubtitle.
+  String get adminLoginConsoleSubtitle;
+
+  /// No description provided for @adminLoginApprovalPending.
+  String get adminLoginApprovalPending;
+
+  /// No description provided for @adminConnectionOnionBrowser.
+  String get adminConnectionOnionBrowser;
+
+  /// No description provided for @adminConnectionOnionApi.
+  String get adminConnectionOnionApi;
+
+  /// No description provided for @adminConnectionGateway.
+  String get adminConnectionGateway;
+
+  /// No description provided for @adminShellNavOverview.
+  String get adminShellNavOverview;
+
+  /// No description provided for @adminShellNavOperations.
+  String get adminShellNavOperations;
+
+  /// No description provided for @adminShellNavManagement.
+  String get adminShellNavManagement;
+
+  /// No description provided for @adminShellSystemOperational.
+  String get adminShellSystemOperational;
+
+  /// No description provided for @adminShellIntegrityOnly.
+  String get adminShellIntegrityOnly;
+
+  /// No description provided for @adminRouteDashboard.
+  String get adminRouteDashboard;
+
+  /// No description provided for @adminRouteMonitoring.
+  String get adminRouteMonitoring;
+
+  /// No description provided for @adminRouteTransactions.
+  String get adminRouteTransactions;
+
+  /// No description provided for @adminRouteLightning.
+  String get adminRouteLightning;
+
+  /// No description provided for @adminRouteOnchain.
+  String get adminRouteOnchain;
+
+  /// No description provided for @adminRouteChecks.
+  String get adminRouteChecks;
+
+  /// No description provided for @adminRoutePaymentLinks.
+  String get adminRoutePaymentLinks;
+
+  /// No description provided for @adminRouteAnalytics.
+  String get adminRouteAnalytics;
+
+  /// No description provided for @adminRouteVolatility.
+  String get adminRouteVolatility;
+
+  /// No description provided for @adminRouteCompanies.
+  String get adminRouteCompanies;
+
+  /// No description provided for @adminRouteAudit.
+  String get adminRouteAudit;
+
+  /// No description provided for @adminRouteAuthenticatedDevices.
+  String get adminRouteAuthenticatedDevices;
+
+  /// No description provided for @adminRouteNotifications.
+  String get adminRouteNotifications;
+
+  /// No description provided for @adminRouteSettings.
+  String get adminRouteSettings;
+
+  /// No description provided for @adminActionRefresh.
+  String get adminActionRefresh;
+
+  /// No description provided for @adminValueTor.
+  String get adminValueTor;
+
+  /// No description provided for @adminValueDirect.
+  String get adminValueDirect;
+
+  /// No description provided for @adminValueAuthenticated.
+  String get adminValueAuthenticated;
+
+  /// No description provided for @adminValueChecking.
+  String get adminValueChecking;
+
+  /// No description provided for @adminValueAdminContext.
+  String get adminValueAdminContext;
+
+  /// No description provided for @adminValueMobileUnknown.
+  String get adminValueMobileUnknown;
+
+  /// No description provided for @adminValueCheckingRelease.
+  String get adminValueCheckingRelease;
+
+  /// No description provided for @adminValueReleaseUnavailable.
+  String get adminValueReleaseUnavailable;
+
+  /// No description provided for @adminValueEnabled.
+  String get adminValueEnabled;
+
+  /// No description provided for @adminValueDisabled.
+  String get adminValueDisabled;
+
+  /// No description provided for @adminValueNotConfigured.
+  String get adminValueNotConfigured;
+
+  /// No description provided for @adminValueNotSet.
+  String get adminValueNotSet;
+
+  /// No description provided for @adminValueAbsent.
+  String get adminValueAbsent;
+
+  /// No description provided for @adminValueBackend.
+  String get adminValueBackend;
+
+  /// No description provided for @adminValueTrue.
+  String get adminValueTrue;
+
+  /// No description provided for @adminValueFalse.
+  String get adminValueFalse;
+
+  /// No description provided for @adminStatusAuthorized.
+  String get adminStatusAuthorized;
+
+  /// No description provided for @adminStatusBlocked.
+  String get adminStatusBlocked;
+
+  /// No description provided for @adminWaitingForResponse.
+  String get adminWaitingForResponse;
+
+  /// No description provided for @adminBackendError.
+  String get adminBackendError;
+
+  /// No description provided for @adminColumnEntity.
+  String get adminColumnEntity;
+
+  /// No description provided for @adminColumnRole.
+  String get adminColumnRole;
+
+  /// No description provided for @adminColumnEnvironment.
+  String get adminColumnEnvironment;
+
+  /// No description provided for @adminColumnHealth.
+  String get adminColumnHealth;
+
+  /// No description provided for @adminColumnDetail.
+  String get adminColumnDetail;
+
+  /// No description provided for @adminColumnName.
+  String get adminColumnName;
+
+  /// No description provided for @adminColumnEndpoint.
+  String get adminColumnEndpoint;
+
+  /// No description provided for @adminColumnId.
+  String get adminColumnId;
+
+  /// No description provided for @adminColumnReference.
+  String get adminColumnReference;
+
+  /// No description provided for @adminColumnAmount.
+  String get adminColumnAmount;
+
+  /// No description provided for @adminColumnStatus.
+  String get adminColumnStatus;
+
+  /// No description provided for @adminColumnRail.
+  String get adminColumnRail;
+
+  /// No description provided for @adminColumnCreated.
+  String get adminColumnCreated;
+
+  /// No description provided for @adminColumnSettled.
+  String get adminColumnSettled;
+
+  /// No description provided for @adminLabelPrimarySource.
+  String get adminLabelPrimarySource;
+
+  /// No description provided for @adminLabelNetwork.
+  String get adminLabelNetwork;
+
+  /// No description provided for @adminLabelBlockHeight.
+  String get adminLabelBlockHeight;
+
+  /// No description provided for @adminLabelBestHash.
+  String get adminLabelBestHash;
+
+  /// No description provided for @adminLabelMempoolTxs.
+  String get adminLabelMempoolTxs;
+
+  /// No description provided for @adminLabelIndexer.
+  String get adminLabelIndexer;
+
+  /// No description provided for @adminLabelStatus.
+  String get adminLabelStatus;
+
+  /// No description provided for @adminLabelSession.
+  String get adminLabelSession;
+
+  /// No description provided for @adminLabelAlias.
+  String get adminLabelAlias;
+
+  /// No description provided for @adminLabelVersion.
+  String get adminLabelVersion;
+
+  /// No description provided for @adminLabelSyncedChain.
+  String get adminLabelSyncedChain;
+
+  /// No description provided for @adminLabelSyncedGraph.
+  String get adminLabelSyncedGraph;
+
+  /// No description provided for @adminLabelBlockHash.
+  String get adminLabelBlockHash;
+
+  /// No description provided for @adminLabelPeers.
+  String get adminLabelPeers;
+
+  /// No description provided for @adminLabelActiveChannels.
+  String get adminLabelActiveChannels;
+
+  /// No description provided for @adminLabelPendingChannels.
+  String get adminLabelPendingChannels;
+
+  /// No description provided for @adminLabelLocalBalance.
+  String get adminLabelLocalBalance;
+
+  /// No description provided for @adminLabelRemoteBalance.
+  String get adminLabelRemoteBalance;
+
+  /// No description provided for @adminLabelWalletBalance.
+  String get adminLabelWalletBalance;
+
+  /// No description provided for @adminLabelManifest.
+  String get adminLabelManifest;
+
+  /// No description provided for @adminLabelImageDigest.
+  String get adminLabelImageDigest;
+
+  /// No description provided for @adminLabelCodeHash.
+  String get adminLabelCodeHash;
+
+  /// No description provided for @adminLabelConfigHash.
+  String get adminLabelConfigHash;
+
+  /// No description provided for @adminLabelAuthorized.
+  String get adminLabelAuthorized;
+
+  /// No description provided for @adminLabelReason.
+  String get adminLabelReason;
+
+  /// No description provided for @adminLabelCommit.
+  String get adminLabelCommit;
+
+  /// No description provided for @adminLabelMobileVersion.
+  String get adminLabelMobileVersion;
+
+  /// No description provided for @adminLabelPlatform.
+  String get adminLabelPlatform;
+
+  /// No description provided for @adminLabelActiveNode.
+  String get adminLabelActiveNode;
+
+  /// No description provided for @adminLabelApiRoute.
+  String get adminLabelApiRoute;
+
+  /// No description provided for @adminLabelTorEnabled.
+  String get adminLabelTorEnabled;
+
+  /// No description provided for @adminLabelChecked.
+  String get adminLabelChecked;
+
+  /// No description provided for @adminLabelUser.
+  String get adminLabelUser;
+
+  /// No description provided for @adminLabelRole.
+  String get adminLabelRole;
+
+  /// No description provided for @adminLabelJwtRefreshHeader.
+  String get adminLabelJwtRefreshHeader;
+
+  /// No description provided for @adminLabelPasskeyRp.
+  String get adminLabelPasskeyRp;
+
+  /// No description provided for @adminLabelDebugLogs.
+  String get adminLabelDebugLogs;
+
+  /// No description provided for @adminLabelApiUrl.
+  String get adminLabelApiUrl;
+
+  /// No description provided for @adminLabelOnionBase.
+  String get adminLabelOnionBase;
+
+  /// No description provided for @adminLabelConnectionTimeout.
+  String get adminLabelConnectionTimeout;
+
+  /// No description provided for @adminLabelReceiveTimeout.
+  String get adminLabelReceiveTimeout;
+
+  /// No description provided for @adminLabelPasskeyRelyingParty.
+  String get adminLabelPasskeyRelyingParty;
+
+  /// No description provided for @adminSettingsSubtitle.
+  String get adminSettingsSubtitle;
+
+  /// No description provided for @adminSettingsApiRoutingTitle.
+  String get adminSettingsApiRoutingTitle;
+
+  /// No description provided for @adminSettingsSessionSecurityTitle.
+  String get adminSettingsSessionSecurityTitle;
+
+  /// No description provided for @adminSettingsCurrentSessionError.
+  String get adminSettingsCurrentSessionError;
+
+  /// No description provided for @adminSettingsReleaseTitle.
+  String get adminSettingsReleaseTitle;
+
+  /// No description provided for @adminSettingsReleaseAttestationUnavailable.
+  String get adminSettingsReleaseAttestationUnavailable;
+
+  /// No description provided for @adminSettingsMobileReleaseUnavailable.
+  String get adminSettingsMobileReleaseUnavailable;
+
+  /// No description provided for @adminMonitoringSubtitle.
+  String get adminMonitoringSubtitle;
+
+  /// No description provided for @adminMonitoringMetricServices.
+  String get adminMonitoringMetricServices;
+
+  /// No description provided for @adminMonitoringMetricVaultRaft.
+  String get adminMonitoringMetricVaultRaft;
+
+  /// No description provided for @adminMonitoringBitcoinPanel.
+  String get adminMonitoringBitcoinPanel;
+
+  /// No description provided for @adminMonitoringLightningPanel.
+  String get adminMonitoringLightningPanel;
+
+  /// No description provided for @adminMonitoringReleasePanel.
+  String get adminMonitoringReleasePanel;
+
+  /// No description provided for @adminMonitoringHealthPanel.
+  String get adminMonitoringHealthPanel;
+
+  /// No description provided for @adminMonitoringLogsPanel.
+  String get adminMonitoringLogsPanel;
+
+  /// No description provided for @adminMonitoringRelevantTransactions.
+  String get adminMonitoringRelevantTransactions;
+
+  /// No description provided for @adminMonitoringNoRelevantTransactions.
+  String get adminMonitoringNoRelevantTransactions;
+
+  /// No description provided for @adminMonitoringNoHealthChecks.
+  String get adminMonitoringNoHealthChecks;
+
+  /// No description provided for @adminMonitoringNoLogs.
+  String get adminMonitoringNoLogs;
+
+  /// No description provided for @adminMonitoringBlockchainError.
+  String adminMonitoringBlockchainError(String error);
+
+  /// No description provided for @adminMonitoringLightningError.
+  String adminMonitoringLightningError(String error);
+
+  /// No description provided for @adminMonitoringReleaseError.
+  String adminMonitoringReleaseError(String error);
+
+  /// No description provided for @adminMonitoringHealthError.
+  String adminMonitoringHealthError(String error);
+
+  /// No description provided for @adminMonitoringLogsError.
+  String adminMonitoringLogsError(String error);
+
+  /// No description provided for @adminCompaniesSubtitle.
+  String get adminCompaniesSubtitle;
+
+  /// No description provided for @adminCompaniesMetricControlPlane.
+  String get adminCompaniesMetricControlPlane;
+
+  /// No description provided for @adminCompaniesMetricVaultRaft.
+  String get adminCompaniesMetricVaultRaft;
+
+  /// No description provided for @adminCompaniesOperationalEntities.
+  String get adminCompaniesOperationalEntities;
+
+  /// No description provided for @adminCompaniesRoutingDependencies.
+  String get adminCompaniesRoutingDependencies;
+
+  /// No description provided for @adminCompaniesRemoteNodes.
+  String get adminCompaniesRemoteNodes;
+
+  /// No description provided for @adminCompaniesOverviewUnavailable.
+  String get adminCompaniesOverviewUnavailable;
+
+  /// No description provided for @adminCompaniesEntityKeroseneApi.
+  String get adminCompaniesEntityKeroseneApi;
+
+  /// No description provided for @adminCompaniesEntityReleaseGate.
+  String get adminCompaniesEntityReleaseGate;
+
+  /// No description provided for @adminCompaniesRoleControlPlane.
+  String get adminCompaniesRoleControlPlane;
+
+  /// No description provided for @adminCompaniesRoleOnchainSource.
+  String get adminCompaniesRoleOnchainSource;
+
+  /// No description provided for @adminCompaniesRoleLightningRouting.
+  String get adminCompaniesRoleLightningRouting;
+
+  /// No description provided for @adminCompaniesRoleReleaseQuorum.
+  String get adminCompaniesRoleReleaseQuorum;
+
+  /// No description provided for @adminCompaniesRoleDeploymentAttestation.
+  String get adminCompaniesRoleDeploymentAttestation;
+
+  /// No description provided for @adminPaymentLinksSubtitle.
+  String get adminPaymentLinksSubtitle;
+
+  /// No description provided for @adminPaymentLinksLinksCreated.
+  String get adminPaymentLinksLinksCreated;
+
+  /// No description provided for @adminPaymentLinksObservedVolume.
+  String get adminPaymentLinksObservedVolume;
+
+  /// No description provided for @adminPaymentLinksConversion.
+  String get adminPaymentLinksConversion;
+
+  /// No description provided for @adminPaymentLinksFailures.
+  String get adminPaymentLinksFailures;
+
+  /// No description provided for @adminPaymentLinksLatestEvents.
+  String get adminPaymentLinksLatestEvents;
+
+  /// No description provided for @adminPaymentLinksLoadError.
+  String get adminPaymentLinksLoadError;
+
+  /// No description provided for @adminPaymentLinksEmptyTitle.
+  String get adminPaymentLinksEmptyTitle;
+
+  /// No description provided for @adminPaymentLinksEmptySubtitle.
+  String get adminPaymentLinksEmptySubtitle;
+
+  /// No description provided for @adminPaymentLinksUnlabeled.
+  String get adminPaymentLinksUnlabeled;
+
+  /// No description provided for @adminPaymentLinksWaitingList.
+  String get adminPaymentLinksWaitingList;
+
+  /// No description provided for @adminPaymentLinksExpiredCancelled.
+  String get adminPaymentLinksExpiredCancelled;
+
+  /// No description provided for @adminPaidOpen.
+  String adminPaidOpen(String paid, String open);
+
+  /// No description provided for @adminLinksLoaded.
+  String adminLinksLoaded(String count);
+
+  /// No description provided for @adminSettledRatio.
+  String adminSettledRatio(String paid, String created);
+
+  /// No description provided for @adminHeightValue.
+  String adminHeightValue(String height);
+
+  /// No description provided for @adminVotersValue.
+  String adminVotersValue(String current, String expected);
+
+  /// No description provided for @adminActiveChannelsValue.
+  String adminActiveChannelsValue(String count);
+
+  /// No description provided for @adminPeersValue.
+  String adminPeersValue(String alias, String peers);
+
+  /// No description provided for @adminConfirmationsValue.
+  String adminConfirmationsValue(String count);
+
+  /// No description provided for @adminLogBody.
+  String adminLogBody(
+    String createdAt,
+    String reference,
+    String userRef,
+    String payloadRef,
+  );
+
   /// No description provided for @bitcoinReceiveTitle.
   ///
   /// In en, this message translates to:
@@ -3417,6 +4220,177 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting'**
   String get bitcoinReceiveStatusActive;
+
+  /// No description provided for @bitcoinReceiveRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive requests'**
+  String get bitcoinReceiveRequestsTitle;
+
+  /// No description provided for @bitcoinReceiveRequestsLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load requests.'**
+  String get bitcoinReceiveRequestsLoadErrorTitle;
+
+  /// No description provided for @bitcoinReceiveRequestsOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline.'**
+  String get bitcoinReceiveRequestsOfflineTitle;
+
+  /// No description provided for @bitcoinReceiveRequestsLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene could not refresh receive requests for this account.'**
+  String get bitcoinReceiveRequestsLoadErrorMessage;
+
+  /// No description provided for @bitcoinReceiveRequestsOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect and retry to load receive requests.'**
+  String get bitcoinReceiveRequestsOfflineMessage;
+
+  /// No description provided for @bitcoinReceiveRequestsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active receive requests.'**
+  String get bitcoinReceiveRequestsEmptyTitle;
+
+  /// No description provided for @bitcoinReceiveRequestsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated Bitcoin receive requests will appear here.'**
+  String get bitcoinReceiveRequestsEmptyMessage;
+
+  /// No description provided for @bitcoinReceiveRequestsFlexibleAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible amount'**
+  String get bitcoinReceiveRequestsFlexibleAmount;
+
+  /// No description provided for @bitcoinReceiveRequestsNoExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'no expiry'**
+  String get bitcoinReceiveRequestsNoExpiry;
+
+  /// No description provided for @paymentIntentScreenTitle.
+  String get paymentIntentScreenTitle;
+
+  /// No description provided for @paymentIntentScreenSubtitle.
+  String get paymentIntentScreenSubtitle;
+
+  /// No description provided for @paymentIntentRecipientHint.
+  String get paymentIntentRecipientHint;
+
+  /// No description provided for @paymentIntentSearchAction.
+  String get paymentIntentSearchAction;
+
+  /// No description provided for @paymentIntentAmountFeeTitle.
+  String get paymentIntentAmountFeeTitle;
+
+  /// No description provided for @paymentIntentGenerateQuoteAction.
+  String get paymentIntentGenerateQuoteAction;
+
+  /// No description provided for @paymentIntentQuoteTitle.
+  String get paymentIntentQuoteTitle;
+
+  /// No description provided for @paymentIntentMetricReceiver.
+  String get paymentIntentMetricReceiver;
+
+  /// No description provided for @paymentIntentMetricRoute.
+  String get paymentIntentMetricRoute;
+
+  /// No description provided for @paymentIntentMetricReceives.
+  String get paymentIntentMetricReceives;
+
+  /// No description provided for @paymentIntentMetricNetworkFee.
+  String get paymentIntentMetricNetworkFee;
+
+  /// No description provided for @paymentIntentMetricKeroseneFee.
+  String get paymentIntentMetricKeroseneFee;
+
+  /// No description provided for @paymentIntentMetricTotalDebit.
+  String get paymentIntentMetricTotalDebit;
+
+  /// No description provided for @paymentIntentConfirmPaymentAction.
+  String get paymentIntentConfirmPaymentAction;
+
+  /// No description provided for @paymentIntentStatusTitle.
+  String get paymentIntentStatusTitle;
+
+  /// No description provided for @paymentIntentNotCompleted.
+  String get paymentIntentNotCompleted;
+
+  /// No description provided for @paymentIntentReviewTitle.
+  String get paymentIntentReviewTitle;
+
+  /// No description provided for @paymentIntentReviewDebitMessage.
+  String paymentIntentReviewDebitMessage(String total, String receiver);
+
+  /// No description provided for @paymentIntentAuthorizeAction.
+  String get paymentIntentAuthorizeAction;
+
+  /// No description provided for @paymentIntentValidationRecipientRequired.
+  String get paymentIntentValidationRecipientRequired;
+
+  /// No description provided for @paymentIntentValidationAmountRequired.
+  String get paymentIntentValidationAmountRequired;
+
+  /// No description provided for @paymentIntentRailInternal.
+  String get paymentIntentRailInternal;
+
+  /// No description provided for @paymentIntentRailLightning.
+  String get paymentIntentRailLightning;
+
+  /// No description provided for @paymentIntentRailOnchain.
+  String get paymentIntentRailOnchain;
+
+  /// No description provided for @paymentIntentFeeSenderPays.
+  String get paymentIntentFeeSenderPays;
+
+  /// No description provided for @paymentIntentFeeRecipientPays.
+  String get paymentIntentFeeRecipientPays;
+
+  /// No description provided for @paymentIntentSpeedEconomy.
+  String get paymentIntentSpeedEconomy;
+
+  /// No description provided for @paymentIntentSpeedNormal.
+  String get paymentIntentSpeedNormal;
+
+  /// No description provided for @paymentIntentSpeedFast.
+  String get paymentIntentSpeedFast;
+
+  /// No description provided for @paymentIntentStatusCreated.
+  String get paymentIntentStatusCreated;
+
+  /// No description provided for @paymentIntentStatusQuoted.
+  String get paymentIntentStatusQuoted;
+
+  /// No description provided for @paymentIntentStatusConfirmed.
+  String get paymentIntentStatusConfirmed;
+
+  /// No description provided for @paymentIntentStatusProcessing.
+  String get paymentIntentStatusProcessing;
+
+  /// No description provided for @paymentIntentStatusAcceptedByProvider.
+  String get paymentIntentStatusAcceptedByProvider;
+
+  /// No description provided for @paymentIntentStatusRequiresReconciliation.
+  String get paymentIntentStatusRequiresReconciliation;
+
+  /// No description provided for @paymentIntentStatusSettled.
+  String get paymentIntentStatusSettled;
+
+  /// No description provided for @paymentIntentStatusFailed.
+  String get paymentIntentStatusFailed;
+
+  /// No description provided for @paymentIntentStatusCanceled.
+  String get paymentIntentStatusCanceled;
+
+  /// No description provided for @paymentIntentStatusExpired.
+  String get paymentIntentStatusExpired;
 
   /// No description provided for @bitcoinReceiveStatusDetected.
   ///
@@ -6448,6 +7422,54 @@ abstract class AppLocalizations {
   /// **'Compatibility has not been determined for this credential yet.'**
   String get securityDeviceUnknownUse;
 
+  /// No description provided for @securityDeviceBlockAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get securityDeviceBlockAction;
+
+  /// No description provided for @securityDeviceRevokeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get securityDeviceRevokeAction;
+
+  /// No description provided for @securityDeviceBlockFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not block the device'**
+  String get securityDeviceBlockFailedTitle;
+
+  /// No description provided for @securityDeviceRevokeFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not revoke the device'**
+  String get securityDeviceRevokeFailedTitle;
+
+  /// No description provided for @securityDeviceBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device blocked'**
+  String get securityDeviceBlockedTitle;
+
+  /// No description provided for @securityDeviceBlockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This credential cannot confirm new sign-ins until it is reactivated in the backend.'**
+  String get securityDeviceBlockedMessage;
+
+  /// No description provided for @securityDeviceRevokedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device revoked'**
+  String get securityDeviceRevokedTitle;
+
+  /// No description provided for @securityDeviceRevokedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This credential was removed from the authenticated device set.'**
+  String get securityDeviceRevokedMessage;
+
   /// No description provided for @securityStatusPending.
   ///
   /// In en, this message translates to:
@@ -7768,6 +8790,150 @@ abstract class AppLocalizations {
   /// **'Paste the Lightning request or LNURL'**
   String get withdrawUiDestinationHintLightning;
 
+  /// No description provided for @withdrawUiPasteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get withdrawUiPasteAction;
+
+  /// No description provided for @withdrawUiScanQrTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR'**
+  String get withdrawUiScanQrTooltip;
+
+  /// No description provided for @withdrawUiExternalDestinationInstructionLightning.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a Lightning invoice, LNURL or Lightning address to start the transfer.'**
+  String get withdrawUiExternalDestinationInstructionLightning;
+
+  /// No description provided for @withdrawUiExternalDestinationInstructionOnchain.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the destination Bitcoin address to start the transfer.'**
+  String get withdrawUiExternalDestinationInstructionOnchain;
+
+  /// No description provided for @withdrawUiExternalDestinationHintLightning.
+  ///
+  /// In en, this message translates to:
+  /// **'lnbc...'**
+  String get withdrawUiExternalDestinationHintLightning;
+
+  /// No description provided for @withdrawUiExternalDestinationHintOnchain.
+  ///
+  /// In en, this message translates to:
+  /// **'bc1...'**
+  String get withdrawUiExternalDestinationHintOnchain;
+
+  /// No description provided for @withdrawUiDestinationFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get withdrawUiDestinationFallback;
+
+  /// No description provided for @withdrawUiEstimatedSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Seconds'**
+  String get withdrawUiEstimatedSeconds;
+
+  /// No description provided for @withdrawUiEstimatedTenMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'~10 min'**
+  String get withdrawUiEstimatedTenMinutes;
+
+  /// No description provided for @withdrawUiReviewPaymentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review payment'**
+  String get withdrawUiReviewPaymentTitle;
+
+  /// No description provided for @withdrawUiReviewSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review send'**
+  String get withdrawUiReviewSendTitle;
+
+  /// No description provided for @withdrawUiReviewDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the details before confirming.'**
+  String get withdrawUiReviewDetailsSubtitle;
+
+  /// No description provided for @withdrawUiAmountToSendLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AMOUNT TO SEND'**
+  String get withdrawUiAmountToSendLabel;
+
+  /// No description provided for @withdrawUiReviewInvoiceDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'To (Invoice)'**
+  String get withdrawUiReviewInvoiceDestination;
+
+  /// No description provided for @withdrawUiReviewAddressDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'To (Address)'**
+  String get withdrawUiReviewAddressDestination;
+
+  /// No description provided for @withdrawUiLightningFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning fee'**
+  String get withdrawUiLightningFee;
+
+  /// No description provided for @withdrawUiPlatformFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerosene fee'**
+  String get withdrawUiPlatformFee;
+
+  /// No description provided for @withdrawUiConfirmPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm payment'**
+  String get withdrawUiConfirmPayment;
+
+  /// No description provided for @withdrawUiConfirmSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm send'**
+  String get withdrawUiConfirmSend;
+
+  /// No description provided for @withdrawUiSendingFromPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending from:'**
+  String get withdrawUiSendingFromPrefix;
+
+  /// No description provided for @withdrawUiSendingToPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'to:'**
+  String get withdrawUiSendingToPrefix;
+
+  /// No description provided for @withdrawUiCurrentBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Current balance'**
+  String get withdrawUiCurrentBalance;
+
+  /// No description provided for @withdrawUiEstimatedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated time'**
+  String get withdrawUiEstimatedTime;
+
+  /// No description provided for @withdrawUiCalculating.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating'**
+  String get withdrawUiCalculating;
+
   /// No description provided for @depositLedgerAddressCopied.
   ///
   /// In en, this message translates to:
@@ -8673,6 +9839,348 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create or select a wallet before starting a receive flow.'**
   String get receiveHubNoWalletMessage;
+
+  /// No description provided for @receiveWalletInternalUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No internal Kerosene wallet is available for receiving.'**
+  String get receiveWalletInternalUnavailable;
+
+  /// No description provided for @receiveWalletOnchainUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No on-chain cold wallet is available for receiving.'**
+  String get receiveWalletOnchainUnavailable;
+
+  /// No description provided for @receiveWalletSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where do you want\nto receive?'**
+  String get receiveWalletSelectionTitle;
+
+  /// No description provided for @receiveWalletSelectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether funds enter your internal Kerosene wallet or your on-chain cold wallet.'**
+  String get receiveWalletSelectionSubtitle;
+
+  /// No description provided for @receiveWalletKeroseneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Main wallet'**
+  String get receiveWalletKeroseneTitle;
+
+  /// No description provided for @receiveWalletKeroseneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive directly in your Kerosene wallet'**
+  String get receiveWalletKeroseneSubtitle;
+
+  /// No description provided for @receiveWalletOnchainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Home wallet'**
+  String get receiveWalletOnchainTitle;
+
+  /// No description provided for @receiveWalletOnchainSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive directly at your home wallet Bitcoin address'**
+  String get receiveWalletOnchainSubtitle;
+
+  /// No description provided for @receiveMethodKeroseneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive in Kerosene'**
+  String get receiveMethodKeroseneTitle;
+
+  /// No description provided for @receiveMethodKeroseneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose QR Code, payment link or NFC for your internal wallet.'**
+  String get receiveMethodKeroseneSubtitle;
+
+  /// No description provided for @receiveMethodOnchainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive on-chain'**
+  String get receiveMethodOnchainTitle;
+
+  /// No description provided for @receiveMethodOnchainSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose QR Code, payment link or NFC for your cold wallet.'**
+  String get receiveMethodOnchainSubtitle;
+
+  /// No description provided for @receiveMethodGatewayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment gateway'**
+  String get receiveMethodGatewayTitle;
+
+  /// No description provided for @receiveMethodGatewaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a provider to buy Bitcoin'**
+  String get receiveMethodGatewaySubtitle;
+
+  /// No description provided for @receiveMethodQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QR Code'**
+  String get receiveMethodQrTitle;
+
+  /// No description provided for @receiveMethodQrSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a code to show the payer'**
+  String get receiveMethodQrSubtitle;
+
+  /// No description provided for @receiveMethodPaymentLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment link'**
+  String get receiveMethodPaymentLinkTitle;
+
+  /// No description provided for @receiveMethodPaymentLinkSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shareable request'**
+  String get receiveMethodPaymentLinkSubtitle;
+
+  /// No description provided for @receiveMethodNfcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC'**
+  String get receiveMethodNfcTitle;
+
+  /// No description provided for @receiveMethodNfcSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare tap-to-receive'**
+  String get receiveMethodNfcSubtitle;
+
+  /// No description provided for @receiveGatewayProvidersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get receiveGatewayProvidersTitle;
+
+  /// No description provided for @receiveGatewayRecommendedBrazil.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for Brazil'**
+  String get receiveGatewayRecommendedBrazil;
+
+  /// No description provided for @receiveGatewayInstitutional.
+  ///
+  /// In en, this message translates to:
+  /// **'Institutional'**
+  String get receiveGatewayInstitutional;
+
+  /// No description provided for @receiveGatewayAggregators.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregators'**
+  String get receiveGatewayAggregators;
+
+  /// No description provided for @receiveGatewayOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get receiveGatewayOther;
+
+  /// No description provided for @receiveGatewayInstitutionalBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'INSTITUTIONAL'**
+  String get receiveGatewayInstitutionalBadge;
+
+  /// No description provided for @receiveGatewayMoonPayMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Pix, card, Apple Pay • Instant'**
+  String get receiveGatewayMoonPayMethods;
+
+  /// No description provided for @receiveGatewayMoonPayFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees: 1% to 4.5%'**
+  String get receiveGatewayMoonPayFees;
+
+  /// No description provided for @receiveGatewayBanxaMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Card, Apple Pay, Google Pay • Instant'**
+  String get receiveGatewayBanxaMethods;
+
+  /// No description provided for @receiveGatewayBanxaFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee: 1.99% + network fee'**
+  String get receiveGatewayBanxaFees;
+
+  /// No description provided for @receiveGatewayMercuryoMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Pix, card, Apple Pay • Minutes'**
+  String get receiveGatewayMercuryoMethods;
+
+  /// No description provided for @receiveGatewayMercuryoFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee: 3.95% to 4%'**
+  String get receiveGatewayMercuryoFees;
+
+  /// No description provided for @receiveGatewayRampMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Card, Apple Pay, transfer • Minutes'**
+  String get receiveGatewayRampMethods;
+
+  /// No description provided for @receiveGatewayRampFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic fees at checkout'**
+  String get receiveGatewayRampFees;
+
+  /// No description provided for @receiveGatewayStripeMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Card, Apple Pay, ACH • 1 to 5 min'**
+  String get receiveGatewayStripeMethods;
+
+  /// No description provided for @receiveGatewayStripeFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic fees'**
+  String get receiveGatewayStripeFees;
+
+  /// No description provided for @receiveGatewayCoinbaseMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit/credit card • Minutes'**
+  String get receiveGatewayCoinbaseMethods;
+
+  /// No description provided for @receiveGatewayCoinbaseFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic fees'**
+  String get receiveGatewayCoinbaseFees;
+
+  /// No description provided for @receiveGatewayOnramperMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'More than 130 methods and 30 providers'**
+  String get receiveGatewayOnramperMethods;
+
+  /// No description provided for @receiveGatewayOnramperFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Best available route • Ideal fallback'**
+  String get receiveGatewayOnramperFees;
+
+  /// No description provided for @receiveGatewayTransakMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Card, digital wallets • Minutes'**
+  String get receiveGatewayTransakMethods;
+
+  /// No description provided for @receiveGatewayTransakFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable limits and fees by coverage'**
+  String get receiveGatewayTransakFees;
+
+  /// No description provided for @receiveGatewayWertMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Card, Apple Pay, Google Pay • < 60 sec'**
+  String get receiveGatewayWertMethods;
+
+  /// No description provided for @receiveGatewayWertFees.
+  ///
+  /// In en, this message translates to:
+  /// **'US$30 minimum for BTC'**
+  String get receiveGatewayWertFees;
+
+  /// No description provided for @receiveGatewayGateFiMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'E-wallets, QR Code, cash • Variable'**
+  String get receiveGatewayGateFiMethods;
+
+  /// No description provided for @receiveGatewayGateFiFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Broad global coverage'**
+  String get receiveGatewayGateFiFees;
+
+  /// No description provided for @receiveGatewayComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get receiveGatewayComingSoon;
+
+  /// No description provided for @receiveGatewayLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} link copied for {wallet}.'**
+  String receiveGatewayLinkCopied(String provider, String wallet);
+
+  /// No description provided for @receiveGatewayProviderUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} is not available for this wallet yet.'**
+  String receiveGatewayProviderUnavailable(String provider);
+
+  /// No description provided for @financialStatementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get financialStatementTitle;
+
+  /// No description provided for @financialStatementLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load'**
+  String get financialStatementLoadErrorTitle;
+
+  /// No description provided for @financialStatementEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions'**
+  String get financialStatementEmptyTitle;
+
+  /// No description provided for @financialStatementEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Account activity will appear here.'**
+  String get financialStatementEmptyMessage;
+
+  /// No description provided for @financialStatementSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get financialStatementSearchHint;
+
+  /// No description provided for @financialStatementFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get financialStatementFilterAll;
+
+  /// No description provided for @financialStatementFilterIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get financialStatementFilterIncoming;
+
+  /// No description provided for @financialStatementFilterOutgoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get financialStatementFilterOutgoing;
 
   /// No description provided for @receiveScreenQrEyebrow.
   ///

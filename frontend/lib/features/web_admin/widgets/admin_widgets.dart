@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+
 import '../theme/admin_colors.dart';
 import '../theme/admin_theme.dart';
 import '../theme/admin_typography.dart';
@@ -344,7 +346,7 @@ class AdminErrorState extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Retry'),
+                label: Text(context.tr.retry),
               ),
             ],
           ],
@@ -430,6 +432,185 @@ class AdminFilterChip extends StatelessWidget {
                 ? AdminColors.textPrimary
                 : AdminColors.textSecondary,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AdminPanel extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final IconData? icon;
+  final Widget child;
+  final Widget? trailing;
+
+  const AdminPanel({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.icon,
+    required this.child,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AdminTheme.spacingLg),
+      decoration: BoxDecoration(
+        color: AdminColors.surface,
+        border: Border.all(color: AdminColors.border),
+        borderRadius: AdminTheme.borderRadiusSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 17, color: AdminColors.textTertiary),
+                const SizedBox(width: AdminTheme.spacingSm),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AdminTypography.h4),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: AdminTheme.spacingXs),
+                      Text(
+                        subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AdminTypography.caption,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: AdminTheme.spacingMd),
+                trailing!,
+              ],
+            ],
+          ),
+          const SizedBox(height: AdminTheme.spacingLg),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class AdminKeyValueRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool monospace;
+
+  const AdminKeyValueRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.monospace = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AdminTheme.spacingXs),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: AdminTypography.caption,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AdminTheme.spacingMd),
+          Flexible(
+            flex: 2,
+            child: Tooltip(
+              message: value,
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: (monospace
+                        ? AdminTypography.mono
+                        : AdminTypography.tableCell)
+                    .copyWith(color: AdminColors.textSecondary),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AdminDataTable extends StatelessWidget {
+  final List<String> columns;
+  final List<List<Widget>> rows;
+
+  const AdminDataTable({
+    super.key,
+    required this.columns,
+    required this.rows,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AdminColors.backgroundElevated,
+        border: Border.all(color: AdminColors.borderSubtle),
+        borderRadius: AdminTheme.borderRadiusXs,
+      ),
+      child: ClipRRect(
+        borderRadius: AdminTheme.borderRadiusXs,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(AdminColors.tableHeader),
+            dataRowColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.hovered)) {
+                return AdminColors.tableRowHover;
+              }
+              return null;
+            }),
+            headingRowHeight: 34,
+            dataRowMinHeight: 46,
+            dataRowMaxHeight: 58,
+            horizontalMargin: AdminTheme.spacingMd,
+            columnSpacing: AdminTheme.spacingXl,
+            columns: [
+              for (final column in columns)
+                DataColumn(
+                  label: Text(column.toUpperCase(),
+                      style: AdminTypography.tableHeader),
+                ),
+            ],
+            rows: [
+              for (final row in rows)
+                DataRow(
+                  cells: [
+                    for (final cell in row)
+                      DataCell(
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 240),
+                          child: cell,
+                        ),
+                      ),
+                  ],
+                ),
+            ],
           ),
         ),
       ),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 import '../../domain/entities/wallet.dart';
 import '../providers/balance_settings_provider.dart';

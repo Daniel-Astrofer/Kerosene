@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/network/api_client.dart';
-import 'package:teste/core/network/api_client_route_policy.dart';
+import 'package:kerosene/core/network/api_client.dart';
+import 'package:kerosene/core/network/api_client_route_policy.dart';
 
 void main() {
   group('ApiClient.shouldUseSocksProxy', () {

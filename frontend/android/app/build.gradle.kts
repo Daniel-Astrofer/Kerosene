@@ -53,7 +53,7 @@ val allowDebugReleaseSigning =
 val isReleaseTaskRequested = releaseTaskRequested()
 
 android {
-    namespace = "com.teste.kersosene"
+    namespace = "com.kerosene.app"
     compileSdk = 36 // ATUALIZADO PARA 36 (exigido pelos seus plugins)
     ndkVersion = "28.2.13676358"
 
@@ -63,7 +63,7 @@ android {
 
     defaultConfig {
         applicationId = stringProperty("KEROSENE_ANDROID_APPLICATION_ID")
-            ?: "com.teste.kersosene"
+            ?: "com.kerosene.app"
         minSdk = flutter.minSdkVersion // Definido manualmente para garantir compatibilidade
         targetSdk = 36 // ATUALIZADO PARA 36
         versionCode = 1

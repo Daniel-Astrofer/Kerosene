@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 class AppScreenFeedbackHost extends StatelessWidget {
   final Widget child;

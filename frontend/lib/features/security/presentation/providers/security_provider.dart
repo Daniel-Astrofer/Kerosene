@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/core/network/api_client_provider.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import '../../data/datasources/security_remote_datasource.dart';
 import '../../data/repositories/security_repository_impl.dart';
 import '../../domain/entities/app_pin_status.dart';

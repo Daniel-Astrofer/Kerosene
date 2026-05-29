@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/price_provider.dart';
-import 'package:teste/features/auth/controller/auth_providers.dart';
-import 'package:teste/core/network/api_client_provider.dart';
+import 'package:kerosene/features/auth/controller/auth_providers.dart';
+import 'package:kerosene/core/network/api_client_provider.dart';
 import '../../../../core/services/wallet_security_service.dart';
 // [NEW]
 import '../../../../core/utils/transaction_signer.dart';

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/providers/shared_preferences_provider.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:teste/features/notifications/presentation/widgets/global_notification_host.dart';
+import 'package:kerosene/core/providers/shared_preferences_provider.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
+import 'package:kerosene/features/notifications/presentation/widgets/global_notification_host.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

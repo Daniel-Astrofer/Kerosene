@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/network/api_client_provider.dart';
+import 'package:kerosene/core/network/api_client_provider.dart';
 
 final publicMobileDownloadProvider =
     FutureProvider<Map<String, dynamic>>((ref) async {

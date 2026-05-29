@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 /// Lista de contatos rápidos - Refatorada
 class QuickContactList extends StatelessWidget {

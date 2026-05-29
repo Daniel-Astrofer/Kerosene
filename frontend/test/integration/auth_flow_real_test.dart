@@ -9,11 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/core/providers/tor_providers.dart';
-import 'package:teste/core/services/tor_service.dart';
-import 'package:teste/core/providers/shared_preferences_provider.dart';
+import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/network/api_client_provider.dart';
+import 'package:kerosene/core/providers/tor_providers.dart';
+import 'package:kerosene/core/services/tor_service.dart';
+import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'totp_utils.dart';
 

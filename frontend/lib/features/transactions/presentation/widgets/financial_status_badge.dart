@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/constants/app_copy.dart';
-import 'package:teste/core/theme/monochrome_theme.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/core/constants/app_copy.dart';
+import 'package:kerosene/core/theme/monochrome_theme.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 
 class FinancialStatusMeta {
   final LocalizedCopy label;

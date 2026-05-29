@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/errors/exceptions.dart';
-import 'package:teste/features/auth/data/datasources/auth_local_datasource.dart';
-import 'package:teste/features/transactions/data/datasources/transaction_remote_datasource.dart';
-import 'package:teste/features/transactions/data/repositories/transaction_repository_impl.dart';
-import 'package:teste/features/transactions/domain/entities/tx_status.dart';
+import 'package:kerosene/core/errors/exceptions.dart';
+import 'package:kerosene/features/auth/data/datasources/auth_local_datasource.dart';
+import 'package:kerosene/features/transactions/data/datasources/transaction_remote_datasource.dart';
+import 'package:kerosene/features/transactions/data/repositories/transaction_repository_impl.dart';
+import 'package:kerosene/features/transactions/domain/entities/tx_status.dart';
 
 class _SpyTransactionRemoteDataSource implements TransactionRemoteDataSource {
   TxStatus response = const TxStatus(

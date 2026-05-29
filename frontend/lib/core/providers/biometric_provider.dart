@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/features/auth/controller/auth_local_provider.dart';
+import 'package:kerosene/features/auth/controller/auth_local_provider.dart';
 import '../security/biometric_service.dart';
 
 class BiometricState {

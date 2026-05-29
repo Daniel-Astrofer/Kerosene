@@ -8,12 +8,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:socks5_proxy/socks_client.dart';
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/errors/exceptions.dart';
-import 'package:teste/core/network/api_client_route_policy.dart';
-import 'package:teste/core/providers/tor_providers.dart';
-import 'package:teste/core/services/tor_network_bootstrap.dart';
-import 'package:teste/core/services/tor_service.dart';
+import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/errors/exceptions.dart';
+import 'package:kerosene/core/network/api_client_route_policy.dart';
+import 'package:kerosene/core/providers/tor_providers.dart';
+import 'package:kerosene/core/services/tor_network_bootstrap.dart';
+import 'package:kerosene/core/services/tor_service.dart';
 
 Future<void> initializeCookieSupport(Dio dio) async {
   final appDocDir = await getApplicationDocumentsDirectory();

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/utils/api_display_text.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/utils/api_display_text.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'deposit_lightning_invoice_screen.dart';
 import 'deposit_onchain_invoice_screen.dart';
 

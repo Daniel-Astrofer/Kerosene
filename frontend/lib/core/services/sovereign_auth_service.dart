@@ -4,7 +4,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:teste/core/constants/app_copy.dart';
+import 'package:kerosene/core/constants/app_copy.dart';
 
 final class SovereignAuthErrorCodes {
   static const noLocalCredentials = 'ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS';

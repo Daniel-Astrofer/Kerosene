@@ -613,16 +613,8 @@ class _SendEducationCard extends StatelessWidget {
                     width: 64,
                     height: 64,
                     color: Colors.black,
-                    child: Image.asset(
-                      'assets/logo/kerosene-logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(
-                          LucideIcons.bitcoin,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
+                    child: const Center(
+                      child: KeroseneLogo(size: 42, showText: false),
                     ),
                   ),
                 ),

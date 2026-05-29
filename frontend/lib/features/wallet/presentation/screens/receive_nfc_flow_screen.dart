@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 
 enum ReceiveNfcStage { searching, found, success }
 

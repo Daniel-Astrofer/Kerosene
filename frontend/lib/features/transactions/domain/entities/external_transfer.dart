@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 
 class ExternalTransfer extends Equatable {
   final String id;

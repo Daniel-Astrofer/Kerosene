@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/network/api_client_route_policy.dart';
+import 'package:kerosene/core/network/api_client_route_policy.dart';
 
 Future<void> initializeCookieSupport(Dio dio) async {}
 

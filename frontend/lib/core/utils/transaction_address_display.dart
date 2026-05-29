@@ -1,4 +1,4 @@
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 
 const Set<String> _genericTransactionAddressLabels = {
   'rede bitcoin',

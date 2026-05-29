@@ -1,4 +1,4 @@
-package com.teste.kersosene
+package com.kerosene.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

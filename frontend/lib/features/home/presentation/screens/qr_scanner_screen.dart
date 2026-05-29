@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});

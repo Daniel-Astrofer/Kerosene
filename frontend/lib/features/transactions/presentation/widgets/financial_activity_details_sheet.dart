@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/theme/monochrome_theme.dart';
-import 'package:teste/core/utils/api_display_text.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/safe_display_text.dart';
-import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/features/transactions/domain/entities/payment_link.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/transactions/presentation/widgets/financial_status_badge.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/providers/currency_provider.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/monochrome_theme.dart';
+import 'package:kerosene/core/utils/api_display_text.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/core/utils/safe_display_text.dart';
+import 'package:kerosene/core/utils/transaction_address_display.dart';
+import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
+import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/financial_status_badge.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 String _financialCopy(
   BuildContext context, {

@@ -47,7 +47,9 @@ float dstScene(vec3 p) {
 
 float raymarch(vec3 ori, vec3 dir, int iter) {
     float t = 0.;
-    for(int i = 0; i < iter; i++) {
+    for(int i = 0; i < MAX_ITERATIONS; i++) {
+        if(i >= iter)
+            break;
         vec3  p = ori + dir * t;
         float d = dstScene(p);
         if(d < EPSILON || t > MAX_DISTANCE)

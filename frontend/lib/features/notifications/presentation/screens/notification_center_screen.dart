@@ -6,13 +6,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/motion/app_motion.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:teste/features/notifications/presentation/notification_navigation.dart';
-import 'package:teste/features/notifications/presentation/notification_visuals.dart';
-import 'package:teste/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:teste/features/profile/presentation/screens/notification_settings_screen.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
+import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
+import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
+import 'package:kerosene/features/profile/presentation/screens/notification_settings_screen.dart';
 
 Future<void> openNotificationCenter(
   BuildContext context, {

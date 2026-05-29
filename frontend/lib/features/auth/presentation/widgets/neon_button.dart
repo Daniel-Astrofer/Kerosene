@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 
 /// Neon-glowing CTA button — uses AppColors for the glow effect.
 class NeonButton extends StatelessWidget {

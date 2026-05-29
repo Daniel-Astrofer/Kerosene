@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/utils/safe_display_text.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/utils/safe_display_text.dart';
 import '../providers/balance_settings_provider.dart';
 
 /// Widget do card de balanço com gráfico circular

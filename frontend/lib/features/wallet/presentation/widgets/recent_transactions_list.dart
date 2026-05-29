@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
-import 'package:teste/core/theme/app_colors.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
+import 'package:kerosene/core/presentation/widgets/glass_container.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
 import '../../domain/entities/transaction.dart';
 import 'package:timeago/timeago.dart' as timeago;
 

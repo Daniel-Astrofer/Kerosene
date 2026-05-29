@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/money_display.dart';
+import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/core/providers/currency_provider.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/utils/money_display.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 
 class TransactionSuccessDialog extends ConsumerStatefulWidget {

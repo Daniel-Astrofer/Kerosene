@@ -1,1 +1,1 @@
-export 'package:teste/core/motion/app_motion.dart';
+export 'package:kerosene/core/motion/app_motion.dart';

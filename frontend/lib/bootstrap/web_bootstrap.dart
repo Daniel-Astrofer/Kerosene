@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/navigation/app_page_transitions.dart';
-import 'package:teste/core/performance/kerosene_performance_boundary.dart';
-import 'package:teste/core/providers/tor_providers.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/web_admin/theme/admin_theme.dart';
-import 'package:teste/features/web_admin/shell/admin_shell.dart';
-import 'package:teste/features/web_admin/navigation/admin_content_router.dart';
-import 'package:teste/features/web_admin/screens/login/admin_login_screen.dart';
-import 'package:teste/features/landing/presentation/kerosene_landing_page.dart';
+import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/navigation/app_page_transitions.dart';
+import 'package:kerosene/core/performance/kerosene_performance_boundary.dart';
+import 'package:kerosene/core/providers/tor_providers.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
+import 'package:kerosene/features/web_admin/shell/admin_shell.dart';
+import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
+import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart';
+import 'package:kerosene/features/landing/presentation/kerosene_landing_page.dart';
 
 /// Resolves the API URL for the web admin.
 ///

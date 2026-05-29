@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:teste/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 
 class AnimatedLoadingButton extends StatefulWidget {
   final Future<void> Function()? onPressed;

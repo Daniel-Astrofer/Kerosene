@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:slip39/slip39.dart';
-import 'package:teste/core/constants/app_copy.dart';
+import 'package:kerosene/core/constants/app_copy.dart';
 
 import '../../features/security/domain/entities/account_security_profile.dart';
 import '../security/biometric_service.dart';

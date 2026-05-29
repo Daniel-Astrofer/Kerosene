@@ -5,6 +5,7 @@ import '../datasources/security_remote_datasource.dart';
 import '../../domain/entities/app_pin_status.dart';
 import '../../domain/entities/account_security_profile.dart';
 import '../../domain/entities/admin_access.dart';
+import '../../domain/entities/passkey_inventory.dart';
 import '../../domain/entities/security_status.dart';
 import '../../domain/entities/treasury_overview.dart';
 import '../../domain/repositories/security_repository.dart';
@@ -248,6 +249,45 @@ class SecurityRepositoryImpl implements SecurityRepository {
     try {
       final result = await remoteDataSource.verifyAppPin(pin: pin);
       return Right(AppPinStatus.fromJson(result));
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, PasskeyInventory>> blockPasskeyDevice(
+    String deviceInstallId,
+  ) async {
+    try {
+      final result = await remoteDataSource.blockPasskeyDevice(deviceInstallId);
+      return Right(result);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, PasskeyInventory>> revokePasskeyDevice(
+    String deviceInstallId,
+  ) async {
+    try {
+      final result =
+          await remoteDataSource.revokePasskeyDevice(deviceInstallId);
+      return Right(result);
     } on AppException catch (e) {
       return Left(ServerFailure(
         message: e.message,

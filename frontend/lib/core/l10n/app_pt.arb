@@ -560,6 +560,419 @@
   "coldWalletImportedMessage": "Apenas a chave pública de acompanhamento foi importada.",
   "coldWalletImportErrorTitle": "Carteira fria não adicionada",
   "coldWalletImportErrorMessage": "Reconecte a internet e tente novamente. Suas palavras de recuperação não foram enviadas.",
+  "bitcoinAdvancedTitle": "Bitcoin Advanced",
+  "bitcoinAdvancedNewPsbtAction": "Nova PSBT",
+  "bitcoinAdvancedRefreshAction": "Atualizar",
+  "bitcoinAdvancedUtxosTitle": "UTXOs monitorados",
+  "bitcoinAdvancedUtxosUnavailableTitle": "UTXOs indisponíveis",
+  "bitcoinAdvancedUtxosUnavailableMessage": "Não foi possível carregar os outputs observados.",
+  "bitcoinAdvancedPsbtsTitle": "PSBT workflows",
+  "bitcoinAdvancedPsbtsUnavailableTitle": "PSBTs indisponíveis",
+  "bitcoinAdvancedPsbtsUnavailableMessage": "Não foi possível carregar os fluxos de assinatura.",
+  "bitcoinAdvancedPsbtCopiedTitle": "PSBT copiada",
+  "bitcoinAdvancedSignExternallyMessage": "Assine esta PSBT na sua carteira externa.",
+  "bitcoinAdvancedNoUtxos": "Nenhum UTXO observado para esta carteira.",
+  "bitcoinAdvancedSpendableForPsbt": "Disponível para PSBT",
+  "bitcoinAdvancedHiddenUtxos": "+{count} UTXOs ocultos",
+  "@bitcoinAdvancedHiddenUtxos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bitcoinAdvancedNoPsbts": "Nenhuma PSBT criada para esta carteira.",
+  "bitcoinAdvancedHiddenPsbts": "+{count} PSBTs antigas",
+  "@bitcoinAdvancedHiddenPsbts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bitcoinAdvancedFeePrefix": "Taxa",
+  "bitcoinAdvancedCopyUnsignedAction": "Copiar unsigned",
+  "bitcoinAdvancedSubmitSignatureAction": "Enviar assinatura",
+  "bitcoinAdvancedUtxoStatusUnspent": "Livre",
+  "bitcoinAdvancedUtxoStatusLocked": "Reservado",
+  "bitcoinAdvancedUtxoStatusSpent": "Gasto",
+  "bitcoinAdvancedPsbtStatusDraft": "Rascunho",
+  "bitcoinAdvancedPsbtStatusUnsignedCreated": "Unsigned criada",
+  "bitcoinAdvancedPsbtStatusWaitingSignature": "Aguardando assinatura",
+  "bitcoinAdvancedPsbtStatusValidated": "Validada",
+  "bitcoinAdvancedPsbtStatusBroadcasted": "Transmitida",
+  "bitcoinAdvancedPsbtStatusRejectedTampered": "Rejeitada por alteração",
+  "bitcoinAdvancedPsbtStatusRejectedPolicy": "Rejeitada por política",
+  "bitcoinAdvancedPsbtStatusFailedSafe": "Protegida",
+  "bitcoinAdvancedCreatePsbtTitle": "Nova PSBT watch-only",
+  "bitcoinAdvancedPsbtCreatedTitle": "PSBT criada",
+  "bitcoinAdvancedCreatePsbtIntro": "A Kerosene monta a transação sem assinar. Assine fora do app e envie a PSBT assinada para validação.",
+  "bitcoinAdvancedDestinationLabel": "Endereço de destino",
+  "bitcoinAdvancedAmountSatsLabel": "Valor em sats",
+  "bitcoinAdvancedFeeRateOptionalLabel": "Fee rate opcional",
+  "bitcoinAdvancedOptionalUtxosTitle": "UTXOs opcionais",
+  "bitcoinAdvancedAutoUtxosMessage": "Sem seleção manual, o backend escolhe UTXOs suficientes automaticamente.",
+  "bitcoinAdvancedNoSpendableUtxos": "Nenhum UTXO disponível. A criação depende de saldo observado.",
+  "bitcoinAdvancedAutoUtxosFallback": "Você ainda pode deixar a seleção automática.",
+  "bitcoinAdvancedCreatePsbtAction": "Criar PSBT",
+  "bitcoinAdvancedCreatingPsbtAction": "Criando...",
+  "bitcoinAdvancedCreatedReviewMessage": "Confira destino e valor na carteira externa antes de assinar. A Kerosene rejeita assinaturas que alterem inputs, destino, valor ou política de troco.",
+  "bitcoinAdvancedDestinationMetric": "Destino",
+  "bitcoinAdvancedAmountMetric": "Valor",
+  "bitcoinAdvancedEstimatedFeeMetric": "Taxa estimada",
+  "bitcoinAdvancedCopyUnsignedPsbtAction": "Copiar unsigned PSBT",
+  "bitcoinAdvancedIncompleteDataTitle": "Dados incompletos",
+  "bitcoinAdvancedIncompleteDataMessage": "Informe destino e valor em sats.",
+  "bitcoinAdvancedCreateFailedTitle": "PSBT não criada",
+  "bitcoinAdvancedCreateFailedMessage": "Revise saldo, destino e conexão antes de tentar novamente.",
+  "bitcoinAdvancedSubmitPsbtTitle": "Enviar PSBT assinada",
+  "bitcoinAdvancedPsbtValidatedTitle": "PSBT validada",
+  "bitcoinAdvancedSubmitPsbtIntro": "Cole a PSBT assinada pela carteira externa. A Kerosene valida inputs, destino, valor, troco e taxa antes de transmitir.",
+  "bitcoinAdvancedSignedPsbtLabel": "PSBT assinada",
+  "bitcoinAdvancedSignedPsbtHint": "Cole a assinatura aqui",
+  "bitcoinAdvancedBroadcastAfterValidationTitle": "Transmitir após validação",
+  "bitcoinAdvancedBroadcastAfterValidationSubtitle": "Desative para validar a assinatura sem broadcast.",
+  "bitcoinAdvancedValidatePsbtAction": "Validar PSBT",
+  "bitcoinAdvancedValidatingPsbtAction": "Validando...",
+  "bitcoinAdvancedDoneAction": "Concluir",
+  "bitcoinAdvancedSignatureRequiredTitle": "Assinatura obrigatória",
+  "bitcoinAdvancedSignatureRequiredMessage": "Cole a PSBT assinada antes de validar.",
+  "bitcoinAdvancedPsbtRejectedTitle": "PSBT rejeitada",
+  "bitcoinAdvancedPsbtRejectedMessage": "A assinatura não passou nas validações de segurança.",
+  "bitcoinTaxReportsTitle": "Relatórios fiscais",
+  "bitcoinTaxEventsUnavailableTitle": "Eventos indisponíveis",
+  "bitcoinTaxEventsUnavailableMessage": "Não foi possível carregar os eventos temporários.",
+  "bitcoinTaxNoEventsTitle": "Nenhum evento temporário.",
+  "bitcoinTaxNoEventsMessage": "Depósitos, envios e taxas recentes aparecerão aqui por tempo limitado.",
+  "bitcoinTaxHiddenEvents": "+{count} eventos ocultos.",
+  "@bitcoinTaxHiddenEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bitcoinTaxClassifyTooltip": "Classificar evento",
+  "bitcoinTaxClassificationUpdatedTitle": "Classificação atualizada",
+  "bitcoinTaxClassificationNotSavedTitle": "Classificação não salva",
+  "bitcoinTaxRetryLaterMessage": "Tente novamente em instantes.",
+  "bitcoinTaxExportJsonAction": "Exportar JSON",
+  "bitcoinTaxExportCsvAction": "Exportar CSV",
+  "bitcoinTaxReportCopiedTitle": "Relatório copiado",
+  "bitcoinTaxExportUnavailableTitle": "Exportação indisponível",
+  "bitcoinTaxExportUnavailableMessage": "Não foi possível gerar o relatório agora.",
+  "bitcoinTaxEventDepositInternal": "Depósito interno",
+  "bitcoinTaxEventDepositExternal": "Depósito externo",
+  "bitcoinTaxEventWithdrawal": "Saque",
+  "bitcoinTaxEventSpend": "Gasto",
+  "bitcoinTaxEventFee": "Taxa",
+  "bitcoinTaxClassSelfTransfer": "Transferência própria",
+  "bitcoinTaxClassThirdPartyDeposit": "Depósito de terceiro",
+  "bitcoinTaxClassSpend": "Gasto",
+  "bitcoinTaxClassFee": "Taxa",
+  "bitcoinTaxClassUnknown": "Indefinido",
+  "bitcoinTaxClassPending": "Classificação pendente",
+  "adminLoginMissingFields": "Informe usuário, passphrase e chave administrativa",
+  "adminLoginApprovalRegistered": "Acesso administrativo registrado.",
+  "adminLoginAccessNotApproved": "O acesso administrativo não foi aprovado.",
+  "adminLoginInvalidTotp": "Informe um código TOTP válido de 6 dígitos",
+  "adminLoginSessionExpired": "Sessão expirada. Faça login novamente.",
+  "adminLoginUsernameHint": "Usuário",
+  "adminLoginPassphraseHint": "Passphrase",
+  "adminLoginAdminKeyHint": "Chave admin",
+  "adminLoginSignInAction": "ENTRAR",
+  "adminLoginSecureAccessFooter": "Acesso seguro via onion service",
+  "adminLoginTotpTitle": "AUTENTICAÇÃO DE DOIS FATORES",
+  "adminLoginTotpSubtitle": "Informe o código de 6 dígitos do seu app autenticador",
+  "adminLoginTotpAuthenticatingAs": "Autenticando como {username}",
+  "@adminLoginTotpAuthenticatingAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "adminLoginVerifyAction": "VERIFICAR",
+  "adminLoginBackToLoginAction": "Voltar ao login",
+  "adminLoginConsoleSubtitle": "Console de gestão empresarial",
+  "adminLoginApprovalPending": "Aguardando aprovação no app mobile.",
+  "adminConnectionOnionBrowser": "Conectado via Onion Service",
+  "adminConnectionOnionApi": "API roteada para Onion Service",
+  "adminConnectionGateway": "Rota direta/gateway - onion não verificado pelo navegador",
+  "adminShellNavOverview": "VISÃO GERAL",
+  "adminShellNavOperations": "OPERAÇÕES",
+  "adminShellNavManagement": "GESTÃO",
+  "adminShellSystemOperational": "Sistema operando normalmente",
+  "adminShellIntegrityOnly": "Somente integridade",
+  "adminRouteDashboard": "Painel",
+  "adminRouteMonitoring": "Monitoramento",
+  "adminRouteTransactions": "Provas de integridade",
+  "adminRouteLightning": "Lightning",
+  "adminRouteOnchain": "On-chain",
+  "adminRouteChecks": "Hash Chain",
+  "adminRoutePaymentLinks": "Métricas de pagamento",
+  "adminRouteAnalytics": "Analytics",
+  "adminRouteVolatility": "Volatilidade",
+  "adminRouteCompanies": "Infraestrutura",
+  "adminRouteAudit": "Auditoria e segurança",
+  "adminRouteAuthenticatedDevices": "Dispositivos autenticados",
+  "adminRouteNotifications": "Notificações",
+  "adminRouteSettings": "Configurações",
+  "adminActionRefresh": "Atualizar",
+  "adminValueTor": "Tor",
+  "adminValueDirect": "Direto",
+  "adminValueAuthenticated": "Autenticado",
+  "adminValueChecking": "Verificando",
+  "adminValueAdminContext": "contexto admin",
+  "adminValueMobileUnknown": "mobile desconhecido",
+  "adminValueCheckingRelease": "verificando release",
+  "adminValueReleaseUnavailable": "release indisponível",
+  "adminValueEnabled": "ativado",
+  "adminValueDisabled": "desativado",
+  "adminValueNotConfigured": "não configurado",
+  "adminValueNotSet": "não definido",
+  "adminValueAbsent": "ausente",
+  "adminValueBackend": "backend",
+  "adminValueTrue": "true",
+  "adminValueFalse": "false",
+  "adminStatusAuthorized": "AUTORIZADO",
+  "adminStatusBlocked": "BLOQUEADO",
+  "adminWaitingForResponse": "aguardando resposta",
+  "adminBackendError": "erro no backend",
+  "adminColumnEntity": "Entidade",
+  "adminColumnRole": "Função",
+  "adminColumnEnvironment": "Ambiente",
+  "adminColumnHealth": "Saúde",
+  "adminColumnDetail": "Detalhe",
+  "adminColumnName": "Nome",
+  "adminColumnEndpoint": "Endpoint",
+  "adminColumnId": "ID",
+  "adminColumnReference": "Referência",
+  "adminColumnAmount": "Valor",
+  "adminColumnStatus": "Status",
+  "adminColumnRail": "Trilho",
+  "adminColumnCreated": "Criado",
+  "adminColumnSettled": "Liquidado",
+  "adminLabelPrimarySource": "Fonte primária",
+  "adminLabelNetwork": "Rede",
+  "adminLabelBlockHeight": "Altura do bloco",
+  "adminLabelBestHash": "Melhor hash",
+  "adminLabelMempoolTxs": "Transações na mempool",
+  "adminLabelIndexer": "Indexador",
+  "adminLabelStatus": "Status",
+  "adminLabelSession": "Sessão",
+  "adminLabelAlias": "Alias",
+  "adminLabelVersion": "Versão",
+  "adminLabelSyncedChain": "Chain sincronizada",
+  "adminLabelSyncedGraph": "Grafo sincronizado",
+  "adminLabelBlockHash": "Hash do bloco",
+  "adminLabelPeers": "Peers",
+  "adminLabelActiveChannels": "Canais ativos",
+  "adminLabelPendingChannels": "Canais pendentes",
+  "adminLabelLocalBalance": "Saldo local",
+  "adminLabelRemoteBalance": "Saldo remoto",
+  "adminLabelWalletBalance": "Saldo da carteira",
+  "adminLabelManifest": "Manifesto",
+  "adminLabelImageDigest": "Digest da imagem",
+  "adminLabelCodeHash": "Hash do código",
+  "adminLabelConfigHash": "Hash da configuração",
+  "adminLabelAuthorized": "Autorizado",
+  "adminLabelReason": "Motivo",
+  "adminLabelCommit": "Commit",
+  "adminLabelMobileVersion": "Versão mobile",
+  "adminLabelPlatform": "Plataforma",
+  "adminLabelActiveNode": "Nó ativo",
+  "adminLabelApiRoute": "Rota da API",
+  "adminLabelTorEnabled": "Tor ativado",
+  "adminLabelChecked": "Verificado",
+  "adminLabelUser": "Usuário",
+  "adminLabelRole": "Função",
+  "adminLabelJwtRefreshHeader": "Header de refresh JWT",
+  "adminLabelPasskeyRp": "RP da passkey",
+  "adminLabelDebugLogs": "Logs de debug",
+  "adminLabelApiUrl": "URL da API",
+  "adminLabelOnionBase": "Base onion",
+  "adminLabelConnectionTimeout": "Timeout de conexão",
+  "adminLabelReceiveTimeout": "Timeout de recebimento",
+  "adminLabelPasskeyRelyingParty": "relying party da passkey",
+  "adminSettingsSubtitle": "Roteamento da API, postura de sessão, preferências de segurança e versão de release.",
+  "adminSettingsApiRoutingTitle": "Roteamento da API",
+  "adminSettingsSessionSecurityTitle": "Sessão e segurança",
+  "adminSettingsCurrentSessionError": "A sessão admin atual não pôde ser carregada.",
+  "adminSettingsReleaseTitle": "Release",
+  "adminSettingsReleaseAttestationUnavailable": "Atestação de release indisponível.",
+  "adminSettingsMobileReleaseUnavailable": "Release mobile indisponível.",
+  "adminMonitoringSubtitle": "Saúde real dos serviços, estado on-chain do Bitcoin Core, estado Lightning do LND, quórum Vault Raft, atestação de release e logs operacionais sanitizados.",
+  "adminMonitoringMetricServices": "Serviços",
+  "adminMonitoringMetricVaultRaft": "Vault Raft",
+  "adminMonitoringBitcoinPanel": "Monitor Bitcoin",
+  "adminMonitoringLightningPanel": "Monitor Lightning",
+  "adminMonitoringReleasePanel": "Atestação de release",
+  "adminMonitoringHealthPanel": "Saúde dos serviços",
+  "adminMonitoringLogsPanel": "Logs operacionais sanitizados",
+  "adminMonitoringRelevantTransactions": "Transações relevantes",
+  "adminMonitoringNoRelevantTransactions": "Nenhuma transação on-chain monitorada exige ação no momento.",
+  "adminMonitoringNoHealthChecks": "Nenhum health check reportado.",
+  "adminMonitoringNoLogs": "Nenhum evento operacional foi registrado ainda.",
+  "adminMonitoringBlockchainError": "Falha ao carregar monitor blockchain: {error}",
+  "@adminMonitoringBlockchainError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminMonitoringLightningError": "Falha ao carregar monitor Lightning: {error}",
+  "@adminMonitoringLightningError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminMonitoringReleaseError": "Falha ao carregar snapshot de release: {error}",
+  "@adminMonitoringReleaseError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminMonitoringHealthError": "Falha ao carregar saúde: {error}",
+  "@adminMonitoringHealthError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminMonitoringLogsError": "Falha ao carregar logs: {error}",
+  "@adminMonitoringLogsError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCompaniesSubtitle": "Entidades operacionais, ambientes, roteamento de nós e dependências críticas.",
+  "adminCompaniesMetricControlPlane": "Plano de controle",
+  "adminCompaniesMetricVaultRaft": "Vault/Raft",
+  "adminCompaniesOperationalEntities": "Entidades operacionais",
+  "adminCompaniesRoutingDependencies": "Roteamento e dependências",
+  "adminCompaniesRemoteNodes": "Nós remotos",
+  "adminCompaniesOverviewUnavailable": "Overview indisponível.",
+  "adminCompaniesEntityKeroseneApi": "API Kerosene",
+  "adminCompaniesEntityReleaseGate": "Gate de release",
+  "adminCompaniesRoleControlPlane": "Plano de controle",
+  "adminCompaniesRoleOnchainSource": "Fonte on-chain",
+  "adminCompaniesRoleLightningRouting": "Roteamento Lightning",
+  "adminCompaniesRoleReleaseQuorum": "Quórum de release",
+  "adminCompaniesRoleDeploymentAttestation": "Atestação de deploy",
+  "adminPaymentLinksSubtitle": "Volume de links de pagamento, conversão, falhas e últimos eventos de ciclo de vida.",
+  "adminPaymentLinksLinksCreated": "Links criados",
+  "adminPaymentLinksObservedVolume": "Volume observado",
+  "adminPaymentLinksConversion": "Conversão",
+  "adminPaymentLinksFailures": "Falhas",
+  "adminPaymentLinksLatestEvents": "Últimos eventos de links de pagamento",
+  "adminPaymentLinksLoadError": "Os links de pagamento não puderam ser carregados.",
+  "adminPaymentLinksEmptyTitle": "Nenhum link de pagamento ainda",
+  "adminPaymentLinksEmptySubtitle": "Links criados aparecerão aqui com status e metadados de liquidação.",
+  "adminPaymentLinksUnlabeled": "Link sem rótulo",
+  "adminPaymentLinksWaitingList": "aguardando resposta da lista",
+  "adminPaymentLinksExpiredCancelled": "expirado ou cancelado",
+  "adminPaidOpen": "{paid} pagos | {open} abertos",
+  "@adminPaidOpen": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      },
+      "open": {
+        "type": "String"
+      }
+    }
+  },
+  "adminLinksLoaded": "{count} links carregados",
+  "@adminLinksLoaded": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSettledRatio": "{paid}/{created} liquidados",
+  "@adminSettledRatio": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      },
+      "created": {
+        "type": "String"
+      }
+    }
+  },
+  "adminHeightValue": "altura {height}",
+  "@adminHeightValue": {
+    "placeholders": {
+      "height": {
+        "type": "String"
+      }
+    }
+  },
+  "adminVotersValue": "{current}/{expected} votantes",
+  "@adminVotersValue": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
+    }
+  },
+  "adminActiveChannelsValue": "{count} canais ativos",
+  "@adminActiveChannelsValue": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adminPeersValue": "{alias} | peers {peers}",
+  "@adminPeersValue": {
+    "placeholders": {
+      "alias": {
+        "type": "String"
+      },
+      "peers": {
+        "type": "String"
+      }
+    }
+  },
+  "adminConfirmationsValue": "{count} confirmações",
+  "@adminConfirmationsValue": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "adminLogBody": "{createdAt} · ref {reference} · usuário {userRef} · payload {payloadRef}",
+  "@adminLogBody": {
+    "placeholders": {
+      "createdAt": {
+        "type": "String"
+      },
+      "reference": {
+        "type": "String"
+      },
+      "userRef": {
+        "type": "String"
+      },
+      "payloadRef": {
+        "type": "String"
+      }
+    }
+  },
   "bitcoinReceiveTitle": "Receber BTC",
   "bitcoinReceiveAmountOptional": "Valor opcional em sats",
   "bitcoinReceiveOneTime": "Endereço de uso único",
@@ -574,6 +987,60 @@
   "bitcoinReceiveCopiedTitle": "Copiado",
   "bitcoinReceiveCopiedMessage": "Endereço Bitcoin copiado.",
   "bitcoinReceiveStatusActive": "Aguardando",
+  "bitcoinReceiveRequestsTitle": "Pedidos de recebimento",
+  "bitcoinReceiveRequestsLoadErrorTitle": "Não foi possível carregar pedidos.",
+  "bitcoinReceiveRequestsOfflineTitle": "Offline.",
+  "bitcoinReceiveRequestsLoadErrorMessage": "A Kerosene não conseguiu atualizar os pedidos de recebimento desta conta.",
+  "bitcoinReceiveRequestsOfflineMessage": "Reconecte e tente novamente para carregar os pedidos de recebimento.",
+  "bitcoinReceiveRequestsEmptyTitle": "Nenhum pedido ativo.",
+  "bitcoinReceiveRequestsEmptyMessage": "Pedidos de recebimento Bitcoin gerados aparecerão aqui.",
+  "bitcoinReceiveRequestsFlexibleAmount": "Valor flexível",
+  "bitcoinReceiveRequestsNoExpiry": "sem expiração",
+  "paymentIntentScreenTitle": "Intenção de pagamento",
+  "paymentIntentScreenSubtitle": "Cotação, confirmação e status",
+  "paymentIntentRecipientHint": "username, e-mail ou endereço",
+  "paymentIntentSearchAction": "Buscar",
+  "paymentIntentAmountFeeTitle": "Valor e taxa",
+  "paymentIntentGenerateQuoteAction": "Gerar cotação",
+  "paymentIntentQuoteTitle": "Cotação",
+  "paymentIntentMetricReceiver": "Recebedor",
+  "paymentIntentMetricRoute": "Rota",
+  "paymentIntentMetricReceives": "Recebe",
+  "paymentIntentMetricNetworkFee": "Taxa de rede",
+  "paymentIntentMetricKeroseneFee": "Taxa Kerosene",
+  "paymentIntentMetricTotalDebit": "Total debitado",
+  "paymentIntentConfirmPaymentAction": "Confirmar pagamento",
+  "paymentIntentStatusTitle": "Status",
+  "paymentIntentNotCompleted": "Pagamento não concluído.",
+  "paymentIntentReviewTitle": "Revisar envio",
+  "paymentIntentReviewDebitMessage": "{total} serão debitados para {receiver}.",
+  "@paymentIntentReviewDebitMessage": {
+    "placeholders": {
+      "total": {},
+      "receiver": {}
+    }
+  },
+  "paymentIntentAuthorizeAction": "Autorizar",
+  "paymentIntentValidationRecipientRequired": "Informe o recebedor.",
+  "paymentIntentValidationAmountRequired": "Informe o valor.",
+  "paymentIntentRailInternal": "Kerosene",
+  "paymentIntentRailLightning": "Lightning",
+  "paymentIntentRailOnchain": "On-chain",
+  "paymentIntentFeeSenderPays": "Pagador paga",
+  "paymentIntentFeeRecipientPays": "Recebedor paga",
+  "paymentIntentSpeedEconomy": "Econômica",
+  "paymentIntentSpeedNormal": "Normal",
+  "paymentIntentSpeedFast": "Rápida",
+  "paymentIntentStatusCreated": "Criado",
+  "paymentIntentStatusQuoted": "Cotado",
+  "paymentIntentStatusConfirmed": "Confirmado",
+  "paymentIntentStatusProcessing": "Processando",
+  "paymentIntentStatusAcceptedByProvider": "Aceito pelo provedor",
+  "paymentIntentStatusRequiresReconciliation": "Requer conciliação",
+  "paymentIntentStatusSettled": "Liquidado",
+  "paymentIntentStatusFailed": "Falhou",
+  "paymentIntentStatusCanceled": "Cancelado",
+  "paymentIntentStatusExpired": "Expirado",
   "bitcoinReceiveStatusDetected": "Detectado",
   "bitcoinReceiveStatusConfirming": "Confirmando",
   "bitcoinReceiveStatusPaid": "Pago",
@@ -1214,6 +1681,14 @@
   "securityDeviceCanUse": "Pode ser usado neste login.",
   "securityDeviceCannotUse": "Não pode ser usado neste login atual.",
   "securityDeviceUnknownUse": "Compatibilidade ainda não determinada para esta credencial.",
+  "securityDeviceBlockAction": "Bloquear",
+  "securityDeviceRevokeAction": "Revogar",
+  "securityDeviceBlockFailedTitle": "Não foi possível bloquear o dispositivo",
+  "securityDeviceRevokeFailedTitle": "Não foi possível revogar o dispositivo",
+  "securityDeviceBlockedTitle": "Dispositivo bloqueado",
+  "securityDeviceBlockedMessage": "Esta credencial não poderá confirmar novos acessos até ser reativada no backend.",
+  "securityDeviceRevokedTitle": "Dispositivo revogado",
+  "securityDeviceRevokedMessage": "Esta credencial foi removida do conjunto de dispositivos autenticados.",
   "securityStatusPending": "Pendente",
   "securityStatusBlocked": "Bloqueado",
   "securityStatusRevoked": "Revogado",
@@ -1486,6 +1961,30 @@
   "withdrawUiLiquidityUnknownMessage": "Não conseguimos classificar a liquidez agora. Revise os valores antes de continuar.",
   "withdrawUiDestinationHintOnchain": "Cole o endereço Bitcoin",
   "withdrawUiDestinationHintLightning": "Cole o pedido Lightning ou LNURL",
+  "withdrawUiPasteAction": "Colar",
+  "withdrawUiScanQrTooltip": "Escanear QR",
+  "withdrawUiExternalDestinationInstructionLightning": "Insira uma fatura Lightning, LNURL ou endereço relâmpago para iniciar a transferência.",
+  "withdrawUiExternalDestinationInstructionOnchain": "Insira o endereço Bitcoin de destino para iniciar a transferência.",
+  "withdrawUiExternalDestinationHintLightning": "lnbc...",
+  "withdrawUiExternalDestinationHintOnchain": "bc1...",
+  "withdrawUiDestinationFallback": "Destino",
+  "withdrawUiEstimatedSeconds": "Segundos",
+  "withdrawUiEstimatedTenMinutes": "~10 min",
+  "withdrawUiReviewPaymentTitle": "Revisar pagamento",
+  "withdrawUiReviewSendTitle": "Revisar envio",
+  "withdrawUiReviewDetailsSubtitle": "Verifique os detalhes antes de confirmar.",
+  "withdrawUiAmountToSendLabel": "VALOR A ENVIAR",
+  "withdrawUiReviewInvoiceDestination": "Para (Invoice)",
+  "withdrawUiReviewAddressDestination": "Para (Endereço)",
+  "withdrawUiLightningFee": "Taxa Lightning",
+  "withdrawUiPlatformFee": "Taxa Kerosene",
+  "withdrawUiConfirmPayment": "Confirmar pagamento",
+  "withdrawUiConfirmSend": "Confirmar envio",
+  "withdrawUiSendingFromPrefix": "Enviando de:",
+  "withdrawUiSendingToPrefix": "para:",
+  "withdrawUiCurrentBalance": "Saldo atual",
+  "withdrawUiEstimatedTime": "Tempo estimado",
+  "withdrawUiCalculating": "Calculando",
   "depositLedgerAddressCopied": "Endereço copiado.",
   "depositLedgerMovementsTitle": "Movimentações",
   "depositLedgerPage": "Página {page}",
@@ -1728,6 +2227,80 @@
   "receiveHubNfcSubtitle": "Preparar cobrança por aproximação",
   "receiveHubNoWalletTitle": "Nenhuma carteira disponível",
   "receiveHubNoWalletMessage": "Crie ou selecione uma carteira antes de iniciar um recebimento.",
+  "receiveWalletInternalUnavailable": "Nenhuma carteira interna Kerosene disponível para recebimento.",
+  "receiveWalletOnchainUnavailable": "Nenhuma carteira fria on-chain disponível para recebimento.",
+  "receiveWalletSelectionTitle": "Onde deseja\nreceber?",
+  "receiveWalletSelectionSubtitle": "Escolha se os fundos entram na carteira interna Kerosene ou na sua carteira fria on-chain.",
+  "receiveWalletKeroseneTitle": "Carteira Principal",
+  "receiveWalletKeroseneSubtitle": "Receba diretamente na sua carteira na Kerosene",
+  "receiveWalletOnchainTitle": "Carteira de Casa",
+  "receiveWalletOnchainSubtitle": "Receba direto no endereço Bitcoin da sua carteira de casa",
+  "receiveMethodKeroseneTitle": "Receber na Kerosene",
+  "receiveMethodKeroseneSubtitle": "Escolha QR Code, link de pagamento ou NFC para sua carteira interna.",
+  "receiveMethodOnchainTitle": "Receber on-chain",
+  "receiveMethodOnchainSubtitle": "Escolha QR Code, link de pagamento ou NFC para sua carteira fria.",
+  "receiveMethodGatewayTitle": "Gateway de pagamento",
+  "receiveMethodGatewaySubtitle": "Escolher um provedor para comprar Bitcoin",
+  "receiveMethodQrTitle": "QR Code",
+  "receiveMethodQrSubtitle": "Gerar um código para exibir ao pagador",
+  "receiveMethodPaymentLinkTitle": "Link de pagamento",
+  "receiveMethodPaymentLinkSubtitle": "Criar uma cobrança compartilhável",
+  "receiveMethodNfcTitle": "NFC",
+  "receiveMethodNfcSubtitle": "Preparar recebimento por aproximação",
+  "receiveGatewayProvidersTitle": "Provedores",
+  "receiveGatewayRecommendedBrazil": "Recomendados para Brasil",
+  "receiveGatewayInstitutional": "Institucionais",
+  "receiveGatewayAggregators": "Agregadores",
+  "receiveGatewayOther": "Outros",
+  "receiveGatewayInstitutionalBadge": "INSTITUCIONAL",
+  "receiveGatewayMoonPayMethods": "Pix, Cartão, Apple Pay • Instantâneo",
+  "receiveGatewayMoonPayFees": "Taxas: 1% a 4,5%",
+  "receiveGatewayBanxaMethods": "Cartão, Apple Pay, Google Pay • Instantâneo",
+  "receiveGatewayBanxaFees": "Taxa: 1,99% + Network fee",
+  "receiveGatewayMercuryoMethods": "Pix, Cartão, Apple Pay • Minutos",
+  "receiveGatewayMercuryoFees": "Taxa: 3,95% a 4%",
+  "receiveGatewayRampMethods": "Cartão, Apple Pay, Transferência • Minutos",
+  "receiveGatewayRampFees": "Taxas dinâmicas no checkout",
+  "receiveGatewayStripeMethods": "Cartão, Apple Pay, ACH • 1 a 5 min",
+  "receiveGatewayStripeFees": "Taxas dinâmicas",
+  "receiveGatewayCoinbaseMethods": "Cartão de Débito/Crédito • Minutos",
+  "receiveGatewayCoinbaseFees": "Taxas dinâmicas",
+  "receiveGatewayOnramperMethods": "Mais de 130 métodos e 30 provedores",
+  "receiveGatewayOnramperFees": "Melhor rota disponível • Fallback ideal",
+  "receiveGatewayTransakMethods": "Cartão, Carteiras Digitais • Minutos",
+  "receiveGatewayTransakFees": "Limites e taxas variáveis por cobertura",
+  "receiveGatewayWertMethods": "Cartão, Apple Pay, Google Pay • < 60 seg",
+  "receiveGatewayWertFees": "Mínimo de US$30 para BTC",
+  "receiveGatewayGateFiMethods": "E-wallets, QR Code, Cash • Variável",
+  "receiveGatewayGateFiFees": "Ampla cobertura global",
+  "receiveGatewayComingSoon": "Em breve",
+  "receiveGatewayLinkCopied": "Link da {provider} copiado para {wallet}.",
+  "@receiveGatewayLinkCopied": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "wallet": {
+        "type": "String"
+      }
+    }
+  },
+  "receiveGatewayProviderUnavailable": "{provider} ainda não está disponível para esta carteira.",
+  "@receiveGatewayProviderUnavailable": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "financialStatementTitle": "Transações",
+  "financialStatementLoadErrorTitle": "Não foi possível carregar",
+  "financialStatementEmptyTitle": "Sem transações",
+  "financialStatementEmptyMessage": "As movimentações da conta aparecerão aqui.",
+  "financialStatementSearchHint": "Buscar",
+  "financialStatementFilterAll": "Todas",
+  "financialStatementFilterIncoming": "Recebidas",
+  "financialStatementFilterOutgoing": "Enviadas",
   "receiveScreenQrEyebrow": "QR Code",
   "receiveScreenPaymentLinkEyebrow": "Link de pagamento",
   "receiveScreenOnchainEyebrow": "On-chain",

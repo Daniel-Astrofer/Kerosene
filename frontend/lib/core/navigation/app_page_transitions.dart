@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/motion/app_motion.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 
 const Duration kKerosenePageTransitionDuration = KeroseneMotion.pageIn;
 const Duration kKerosenePageReverseTransitionDuration = KeroseneMotion.pageOut;

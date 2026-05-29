@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/l10n/app_localizations.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:kerosene/core/l10n/app_localizations.dart';
+import 'package:kerosene/core/presentation/widgets/glass_container.dart';
 
 class AnimatedErrorPopup extends StatefulWidget {
   final String title;

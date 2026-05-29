@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <application
-        android:label="Kerosene Bank"
+        android:label="Kerosene"
         android:name="${applicationName}"
         android:allowBackup="false"
         android:icon="@mipmap/launcher_icon"

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
 
 class PushNotificationCard extends StatelessWidget {
   final String title;

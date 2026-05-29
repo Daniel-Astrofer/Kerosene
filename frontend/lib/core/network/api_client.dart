@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:teste/core/providers/network_status_provider.dart';
+import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
-import 'package:teste/core/errors/exceptions.dart';
-import 'package:teste/core/network/api_response_interceptor.dart';
-import 'package:teste/core/network/api_client_route_policy.dart';
-import 'package:teste/core/network/api_client_platform.dart' as platform;
-import 'package:teste/core/utils/snackbar_helper.dart';
+import 'package:kerosene/core/errors/exceptions.dart';
+import 'package:kerosene/core/network/api_response_interceptor.dart';
+import 'package:kerosene/core/network/api_client_route_policy.dart';
+import 'package:kerosene/core/network/api_client_platform.dart' as platform;
+import 'package:kerosene/core/utils/snackbar_helper.dart';
 
 /// Cliente HTTP configurado com Dio
 class ApiClient {

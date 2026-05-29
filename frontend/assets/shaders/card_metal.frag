@@ -67,7 +67,7 @@ void main() {
     float engraveDx = engraveR - engraveC;
     float engraveDy = engraveC - engraveD;
 
-    float engraveAA = max(fwidth(engraveC), max(px.x, px.y) * 1.5);
+    float engraveAA = max(max(px.x, px.y) * 1.5, 0.001);
     // Sharpened mask for better clarity
     float engraveMask = smoothstep(0.02 - engraveAA, 0.12 + engraveAA, engraveC);
     float engraveDepth = smoothstep(0.01 - engraveAA, 0.45 + engraveAA, engraveC);

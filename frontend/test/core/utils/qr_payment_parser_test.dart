@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/utils/qr_payment_parser.dart';
+import 'package:kerosene/core/utils/qr_payment_parser.dart';
 
 void main() {
   group('QrPaymentParser', () {

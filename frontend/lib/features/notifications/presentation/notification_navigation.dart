@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 
 class NotificationNavigation {
   static Future<void> openFromContext(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/presentation/widgets/app_notification_surface.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 
 class NotificationVisuals {
   final AppNotificationTone tone;

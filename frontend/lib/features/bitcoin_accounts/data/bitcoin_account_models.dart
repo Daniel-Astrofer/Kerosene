@@ -178,6 +178,111 @@ class ReceivingRequestView {
   }
 }
 
+class ColdWalletUtxoView {
+  final String id;
+  final String txidRef;
+  final int vout;
+  final int amountSats;
+  final int confirmations;
+  final String status;
+
+  const ColdWalletUtxoView({
+    required this.id,
+    required this.txidRef,
+    required this.vout,
+    required this.amountSats,
+    required this.confirmations,
+    required this.status,
+  });
+
+  bool get isSpendable => status.toUpperCase() == 'UNSPENT';
+
+  factory ColdWalletUtxoView.fromJson(Map<String, dynamic> json) {
+    return ColdWalletUtxoView(
+      id: (json['id'] ?? '').toString(),
+      txidRef: (json['txidRef'] ?? json['txid'] ?? '').toString(),
+      vout: _intFromJson(json['vout']),
+      amountSats: _intFromJson(json['amountSats']),
+      confirmations: _intFromJson(json['confirmations']),
+      status: (json['status'] ?? 'UNSPENT').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'txidRef': txidRef,
+        'vout': vout,
+        'amountSats': amountSats,
+        'confirmations': confirmations,
+        'status': status,
+      };
+}
+
+class PsbtWorkflowView {
+  final String id;
+  final String coldWalletId;
+  final String unsignedPsbt;
+  final String status;
+  final String destinationAddress;
+  final int amountSats;
+  final int estimatedFeeSats;
+  final String? broadcastTxid;
+  final String? broadcastTxidRef;
+  final String expiresAt;
+  final String createdAt;
+
+  const PsbtWorkflowView({
+    required this.id,
+    required this.coldWalletId,
+    required this.unsignedPsbt,
+    required this.status,
+    required this.destinationAddress,
+    required this.amountSats,
+    required this.estimatedFeeSats,
+    this.broadcastTxid,
+    this.broadcastTxidRef,
+    required this.expiresAt,
+    required this.createdAt,
+  });
+
+  bool get awaitsSignature {
+    final normalized = status.toUpperCase();
+    return normalized == 'WAITING_EXTERNAL_SIGNATURE' ||
+        normalized == 'UNSIGNED_CREATED' ||
+        normalized == 'DRAFT';
+  }
+
+  factory PsbtWorkflowView.fromJson(Map<String, dynamic> json) {
+    return PsbtWorkflowView(
+      id: (json['id'] ?? '').toString(),
+      coldWalletId: (json['coldWalletId'] ?? '').toString(),
+      unsignedPsbt: (json['unsignedPsbt'] ?? '').toString(),
+      status: (json['status'] ?? 'WAITING_EXTERNAL_SIGNATURE').toString(),
+      destinationAddress: (json['destinationAddress'] ?? '').toString(),
+      amountSats: _intFromJson(json['amountSats']),
+      estimatedFeeSats: _intFromJson(json['estimatedFeeSats']),
+      broadcastTxid: json['broadcastTxid']?.toString(),
+      broadcastTxidRef: json['broadcastTxidRef']?.toString(),
+      expiresAt: (json['expiresAt'] ?? '').toString(),
+      createdAt: (json['createdAt'] ?? '').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'coldWalletId': coldWalletId,
+        'unsignedPsbt': unsignedPsbt,
+        'status': status,
+        'destinationAddress': destinationAddress,
+        'amountSats': amountSats,
+        'estimatedFeeSats': estimatedFeeSats,
+        'broadcastTxid': broadcastTxid,
+        'broadcastTxidRef': broadcastTxidRef,
+        'expiresAt': expiresAt,
+        'createdAt': createdAt,
+      };
+}
+
 class TaxEventView {
   final String id;
   final String eventType;
@@ -186,6 +291,10 @@ class TaxEventView {
   final String classification;
   final String sourceRef;
   final String createdAt;
+  final String? accountId;
+  final String? cardId;
+  final String? walletId;
+  final String? purgeAfter;
 
   const TaxEventView({
     required this.id,
@@ -195,17 +304,25 @@ class TaxEventView {
     required this.classification,
     required this.sourceRef,
     required this.createdAt,
+    this.accountId,
+    this.cardId,
+    this.walletId,
+    this.purgeAfter,
   });
 
   factory TaxEventView.fromJson(Map<String, dynamic> json) {
     return TaxEventView(
-      id: json['id'] as String? ?? '',
-      eventType: json['eventType'] as String? ?? '',
-      asset: json['asset'] as String? ?? 'BTC',
-      quantitySats: json['quantitySats'] as int? ?? 0,
-      classification: json['classification'] as String? ?? '',
-      sourceRef: json['sourceRef'] as String? ?? '',
-      createdAt: json['createdAt'] as String? ?? '',
+      id: (json['id'] ?? '').toString(),
+      eventType: (json['eventType'] ?? '').toString(),
+      asset: (json['asset'] ?? 'BTC').toString(),
+      quantitySats: _intFromJson(json['quantitySats']),
+      classification: (json['classification'] ?? '').toString(),
+      sourceRef: (json['sourceRef'] ?? '').toString(),
+      createdAt: (json['createdAt'] ?? '').toString(),
+      accountId: json['accountId']?.toString(),
+      cardId: json['cardId']?.toString(),
+      walletId: json['walletId']?.toString(),
+      purgeAfter: json['purgeAfter']?.toString(),
     );
   }
 
@@ -217,5 +334,57 @@ class TaxEventView {
         'classification': classification,
         'sourceRef': sourceRef,
         'createdAt': createdAt,
+        'accountId': accountId,
+        'cardId': cardId,
+        'walletId': walletId,
+        'purgeAfter': purgeAfter,
       };
+}
+
+class TaxEventsExportView {
+  final String format;
+  final String filename;
+  final String educationalNotice;
+  final String? content;
+  final List<TaxEventView> events;
+
+  const TaxEventsExportView({
+    required this.format,
+    required this.filename,
+    required this.educationalNotice,
+    this.content,
+    this.events = const [],
+  });
+
+  factory TaxEventsExportView.fromJson(Map<String, dynamic> json) {
+    final rawEvents = json['events'];
+    return TaxEventsExportView(
+      format: (json['format'] ?? 'json').toString(),
+      filename: (json['filename'] ?? 'kerosene-tax-events.json').toString(),
+      educationalNotice: (json['educationalNotice'] ?? '').toString(),
+      content: json['content']?.toString(),
+      events: rawEvents is List
+          ? rawEvents
+              .whereType<Map>()
+              .map((item) => TaxEventView.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ))
+              .toList()
+          : const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'format': format,
+        'filename': filename,
+        'educationalNotice': educationalNotice,
+        'content': content,
+        'events': events.map((event) => event.toJson()).toList(),
+      };
+}
+
+int _intFromJson(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse('$value') ?? 0;
 }

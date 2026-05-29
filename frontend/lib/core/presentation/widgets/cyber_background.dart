@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/presentation/widgets/subtle_noise_overlay.dart';
+import 'package:kerosene/core/presentation/widgets/subtle_noise_overlay.dart';
 
 const Color authenticatedSurfaceBackgroundColor = Color(0xFF080A0D);
 

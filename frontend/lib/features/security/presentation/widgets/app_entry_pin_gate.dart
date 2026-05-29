@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/tor_loading_dots.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/theme/monochrome_theme.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/security/domain/entities/app_pin_status.dart';
-import 'package:teste/features/security/presentation/providers/security_provider.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/monochrome_theme.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/security/domain/entities/app_pin_status.dart';
+import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 class AppEntryPinGate extends ConsumerWidget {
   final Widget child;

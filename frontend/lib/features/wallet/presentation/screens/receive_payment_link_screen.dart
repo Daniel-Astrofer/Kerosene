@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:teste/features/transactions/domain/entities/payment_link.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_request_flow_screen.dart';
+import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_request_flow_screen.dart';
 
 class ReceivePaymentLinkScreen extends StatelessWidget {
   final PaymentLink initialLink;

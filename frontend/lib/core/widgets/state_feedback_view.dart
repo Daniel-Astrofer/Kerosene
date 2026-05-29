@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../presentation/widgets/cyber_button.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATE FEEDBACK VIEW

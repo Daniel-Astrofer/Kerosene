@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/kerosene_logo.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 const Color receiveFlowBackgroundColor = Color(0xFF050708);
 const Color receiveFlowBackgroundTopColor = Color(0xFF0A0D10);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
@@ -33,15 +34,14 @@ class MonitoringScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AdminSectionHeader(
-              title: 'Monitoring',
-              subtitle:
-                  'Real service health, Bitcoin Core on-chain state, LND Lightning state, Vault Raft quorum, release attestation, and sanitized operations logs.',
+            AdminSectionHeader(
+              title: context.tr.adminRouteMonitoring,
+              subtitle: context.tr.adminMonitoringSubtitle,
             ),
             AdminResponsiveGrid(
               children: [
                 _AsyncMetric(
-                  title: 'Services',
+                  title: context.tr.adminMonitoringMetricServices,
                   asyncValue: health,
                   valueBuilder: (data) => '${data['status'] ?? 'UNKNOWN'}',
                   subtitleBuilder: (data) => '${data['service'] ?? 'kerosene'}',
@@ -53,7 +53,8 @@ class MonitoringScreen extends ConsumerWidget {
                   valueBuilder: (data) => '${data['status'] ?? 'UNKNOWN'}',
                   subtitleBuilder: (data) {
                     final chain = _map(data['chain']);
-                    return 'height ${chain['height'] ?? 0}';
+                    return context.tr
+                        .adminHeightValue('${chain['height'] ?? 0}');
                   },
                   icon: Icons.currency_bitcoin,
                 ),
@@ -63,24 +64,30 @@ class MonitoringScreen extends ConsumerWidget {
                   valueBuilder: (data) => '${data['status'] ?? 'UNKNOWN'}',
                   subtitleBuilder: (data) {
                     final node = _map(data['node']);
-                    return 'height ${node['blockHeight'] ?? 0}';
+                    return context.tr.adminHeightValue(
+                      '${node['blockHeight'] ?? 0}',
+                    );
                   },
                   icon: Icons.flash_on_outlined,
                 ),
                 _AsyncMetric(
-                  title: 'Vault Raft',
+                  title: context.tr.adminMonitoringMetricVaultRaft,
                   asyncValue: vault,
                   valueBuilder: (data) => '${data['status'] ?? 'UNKNOWN'}',
-                  subtitleBuilder: (data) =>
-                      '${data['votingServers'] ?? 0}/${data['expectedServers'] ?? 3} voters',
+                  subtitleBuilder: (data) => context.tr.adminVotersValue(
+                    '${data['votingServers'] ?? 0}',
+                    '${data['expectedServers'] ?? 3}',
+                  ),
                   icon: Icons.account_tree_outlined,
                 ),
                 _AsyncMetric(
-                  title: 'Release',
+                  title: context.tr.adminSettingsReleaseTitle,
                   asyncValue: release,
-                  valueBuilder: (data) =>
-                      data['authorized'] == true ? 'AUTHORIZED' : 'BLOCKED',
-                  subtitleBuilder: (data) => '${data['reason'] ?? 'unknown'}',
+                  valueBuilder: (data) => data['authorized'] == true
+                      ? context.tr.adminStatusAuthorized
+                      : context.tr.adminStatusBlocked,
+                  subtitleBuilder: (data) =>
+                      '${data['reason'] ?? context.tr.unknown}',
                   icon: Icons.verified_user_outlined,
                 ),
               ],
@@ -129,12 +136,12 @@ class _AsyncMetric extends StatelessWidget {
       ),
       loading: () => AdminMetricCard(
         label: title,
-        value: 'Loading',
+        value: context.tr.loading,
         icon: icon,
       ),
       error: (_, __) => AdminMetricCard(
         label: title,
-        value: 'Error',
+        value: context.tr.error,
         icon: icon,
         accentColor: AdminColors.negative,
       ),
@@ -150,7 +157,7 @@ class _BlockchainPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Bitcoin monitor',
+      title: context.tr.adminMonitoringBitcoinPanel,
       child: asyncValue.when(
         data: (data) {
           final chain = _map(data['chain']);
@@ -163,20 +170,35 @@ class _BlockchainPanel extends StatelessWidget {
                 spacing: 24,
                 runSpacing: 12,
                 children: [
-                  _KeyValue('Primary source', '${data['primarySource']}'),
-                  _KeyValue('Network', '${data['network']}'),
-                  _KeyValue('Block height', '${chain['height'] ?? 0}'),
-                  _KeyValue('Best hash', '${chain['bestBlockHash'] ?? ''}'),
-                  _KeyValue('Mempool txs', '${mempool['transactions'] ?? 0}'),
-                  _KeyValue('Indexer', '${data['indexer']}'),
+                  _KeyValue(
+                    context.tr.adminLabelPrimarySource,
+                    '${data['primarySource']}',
+                  ),
+                  _KeyValue(context.tr.adminLabelNetwork, '${data['network']}'),
+                  _KeyValue(
+                    context.tr.adminLabelBlockHeight,
+                    '${chain['height'] ?? 0}',
+                  ),
+                  _KeyValue(
+                    context.tr.adminLabelBestHash,
+                    '${chain['bestBlockHash'] ?? ''}',
+                  ),
+                  _KeyValue(
+                    context.tr.adminLabelMempoolTxs,
+                    '${mempool['transactions'] ?? 0}',
+                  ),
+                  _KeyValue(context.tr.adminLabelIndexer, '${data['indexer']}'),
                 ],
               ),
               const SizedBox(height: 18),
-              Text('Relevant transactions', style: AdminTypography.h4),
+              Text(
+                context.tr.adminMonitoringRelevantTransactions,
+                style: AdminTypography.h4,
+              ),
               const SizedBox(height: 8),
               if (relevant.isEmpty)
                 Text(
-                  'No watched on-chain transactions currently require action.',
+                  context.tr.adminMonitoringNoRelevantTransactions,
                   style: AdminTypography.bodySmall.copyWith(
                     color: AdminColors.textSecondary,
                   ),
@@ -185,9 +207,9 @@ class _BlockchainPanel extends StatelessWidget {
                 ...relevant.take(8).map((item) {
                   final row = _map(item);
                   return _LogRow(
-                    title: '${row['status'] ?? 'UNKNOWN'}',
+                    title: '${row['status'] ?? context.tr.unknown}',
                     body:
-                        '${row['txidRef'] ?? 'absent'} · ${row['confirmations'] ?? 0} confirmations',
+                        '${row['txidRef'] ?? context.tr.adminValueAbsent} · ${context.tr.adminConfirmationsValue('${row['confirmations'] ?? 0}')}',
                     severity: '${row['status'] ?? ''}',
                   );
                 }),
@@ -197,7 +219,7 @@ class _BlockchainPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text('Failed to load blockchain monitor: $e'),
+        error: (e, _) => Text(context.tr.adminMonitoringBlockchainError('$e')),
       ),
     );
   }
@@ -211,7 +233,7 @@ class _LightningPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Lightning monitor',
+      title: context.tr.adminMonitoringLightningPanel,
       child: asyncValue.when(
         data: (data) {
           final node = _map(data['node']);
@@ -219,28 +241,52 @@ class _LightningPanel extends StatelessWidget {
             spacing: 24,
             runSpacing: 12,
             children: [
-              _KeyValue('Primary source', '${data['primarySource']}'),
-              _KeyValue('Status', '${data['status'] ?? 'UNKNOWN'}'),
-              _KeyValue('Alias', '${node['alias'] ?? ''}'),
-              _KeyValue('Version', '${node['version'] ?? ''}'),
-              _KeyValue('Synced chain', '${node['syncedToChain'] == true}'),
-              _KeyValue('Synced graph', '${node['syncedToGraph'] == true}'),
-              _KeyValue('Block height', '${node['blockHeight'] ?? 0}'),
-              _KeyValue('Block hash', '${node['blockHash'] ?? ''}'),
-              _KeyValue('Peers', '${node['numPeers'] ?? 0}'),
-              _KeyValue('Active channels', '${node['numActiveChannels'] ?? 0}'),
               _KeyValue(
-                  'Pending channels', '${node['numPendingChannels'] ?? 0}'),
+                context.tr.adminLabelPrimarySource,
+                '${data['primarySource']}',
+              ),
               _KeyValue(
-                'Local balance',
+                context.tr.adminLabelStatus,
+                '${data['status'] ?? 'UNKNOWN'}',
+              ),
+              _KeyValue(context.tr.adminLabelAlias, '${node['alias'] ?? ''}'),
+              _KeyValue(
+                  context.tr.adminLabelVersion, '${node['version'] ?? ''}'),
+              _KeyValue(
+                context.tr.adminLabelSyncedChain,
+                _boolText(context, node['syncedToChain'] == true),
+              ),
+              _KeyValue(
+                context.tr.adminLabelSyncedGraph,
+                _boolText(context, node['syncedToGraph'] == true),
+              ),
+              _KeyValue(
+                context.tr.adminLabelBlockHeight,
+                '${node['blockHeight'] ?? 0}',
+              ),
+              _KeyValue(
+                context.tr.adminLabelBlockHash,
+                '${node['blockHash'] ?? ''}',
+              ),
+              _KeyValue(context.tr.adminLabelPeers, '${node['numPeers'] ?? 0}'),
+              _KeyValue(
+                context.tr.adminLabelActiveChannels,
+                '${node['numActiveChannels'] ?? 0}',
+              ),
+              _KeyValue(
+                context.tr.adminLabelPendingChannels,
+                '${node['numPendingChannels'] ?? 0}',
+              ),
+              _KeyValue(
+                context.tr.adminLabelLocalBalance,
                 '${node['localBalanceSats'] ?? 0} sats',
               ),
               _KeyValue(
-                'Remote balance',
+                context.tr.adminLabelRemoteBalance,
                 '${node['remoteBalanceSats'] ?? 0} sats',
               ),
               _KeyValue(
-                'Wallet balance',
+                context.tr.adminLabelWalletBalance,
                 '${node['walletConfirmedBalanceSats'] ?? 0} sats',
               ),
             ],
@@ -249,7 +295,7 @@ class _LightningPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text('Failed to load Lightning monitor: $e'),
+        error: (e, _) => Text(context.tr.adminMonitoringLightningError('$e')),
       ),
     );
   }
@@ -263,24 +309,42 @@ class _ReleasePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Release attestation',
+      title: context.tr.adminMonitoringReleasePanel,
       child: asyncValue.when(
         data: (data) => Wrap(
           spacing: 24,
           runSpacing: 12,
           children: [
-            _KeyValue('Authorized', '${data['authorized'] == true}'),
-            _KeyValue('Manifest', '${data['manifestDigest'] ?? 'absent'}'),
-            _KeyValue('Commit', '${data['gitCommit'] ?? 'unknown'}'),
-            _KeyValue('Image digest', '${data['imageDigest'] ?? 'unknown'}'),
-            _KeyValue('Code hash', '${data['codeHash'] ?? 'unknown'}'),
-            _KeyValue('Config hash', '${data['configHash'] ?? 'unknown'}'),
+            _KeyValue(
+              context.tr.adminLabelAuthorized,
+              _boolText(context, data['authorized'] == true),
+            ),
+            _KeyValue(
+              context.tr.adminLabelManifest,
+              '${data['manifestDigest'] ?? context.tr.adminValueAbsent}',
+            ),
+            _KeyValue(
+              context.tr.adminLabelCommit,
+              '${data['gitCommit'] ?? context.tr.unknown}',
+            ),
+            _KeyValue(
+              context.tr.adminLabelImageDigest,
+              '${data['imageDigest'] ?? context.tr.unknown}',
+            ),
+            _KeyValue(
+              context.tr.adminLabelCodeHash,
+              '${data['codeHash'] ?? context.tr.unknown}',
+            ),
+            _KeyValue(
+              context.tr.adminLabelConfigHash,
+              '${data['configHash'] ?? context.tr.unknown}',
+            ),
           ],
         ),
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text('Failed to load release snapshot: $e'),
+        error: (e, _) => Text(context.tr.adminMonitoringReleaseError('$e')),
       ),
     );
   }
@@ -294,11 +358,13 @@ class _HealthChecksPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Service health',
+      title: context.tr.adminMonitoringHealthPanel,
       child: asyncValue.when(
         data: (data) {
           final checks = _map(data['checks']);
-          if (checks.isEmpty) return const Text('No health checks reported.');
+          if (checks.isEmpty) {
+            return Text(context.tr.adminMonitoringNoHealthChecks);
+          }
           return Column(
             children: checks.entries.map((entry) {
               final value = _map(entry.value);
@@ -314,7 +380,7 @@ class _HealthChecksPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text('Failed to load health: $e'),
+        error: (e, _) => Text(context.tr.adminMonitoringHealthError('$e')),
       ),
     );
   }
@@ -328,12 +394,12 @@ class _LogsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Sanitized operational logs',
+      title: context.tr.adminMonitoringLogsPanel,
       child: asyncValue.when(
         data: (logs) {
           if (logs.isEmpty) {
             return Text(
-              'No operational events have been recorded yet.',
+              context.tr.adminMonitoringNoLogs,
               style: AdminTypography.bodySmall.copyWith(
                 color: AdminColors.textSecondary,
               ),
@@ -343,9 +409,13 @@ class _LogsPanel extends StatelessWidget {
             children: logs
                 .map(
                   (log) => _LogRow(
-                    title: '${log['eventType'] ?? 'event'}',
-                    body:
-                        '${log['createdAt'] ?? ''} · ref ${log['reference'] ?? 'absent'} · user ${log['userRef'] ?? 'absent'} · payload ${log['payloadRef'] ?? 'absent'}',
+                    title: '${log['eventType'] ?? context.tr.unknown}',
+                    body: context.tr.adminLogBody(
+                      '${log['createdAt'] ?? ''}',
+                      '${log['reference'] ?? context.tr.adminValueAbsent}',
+                      '${log['userRef'] ?? context.tr.adminValueAbsent}',
+                      '${log['payloadRef'] ?? context.tr.adminValueAbsent}',
+                    ),
                     severity: '${log['severity'] ?? 'INFO'}',
                   ),
                 )
@@ -355,7 +425,7 @@ class _LogsPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text('Failed to load logs: $e'),
+        error: (e, _) => Text(context.tr.adminMonitoringLogsError('$e')),
       ),
     );
   }
@@ -489,7 +559,7 @@ class _KeyValue extends StatelessWidget {
           Tooltip(
             message: value,
             child: Text(
-              value.isEmpty ? 'not configured' : value,
+              value.isEmpty ? context.tr.adminValueNotConfigured : value,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AdminTypography.tableCellMono,
@@ -499,6 +569,10 @@ class _KeyValue extends StatelessWidget {
       ),
     );
   }
+}
+
+String _boolText(BuildContext context, bool value) {
+  return value ? context.tr.adminValueTrue : context.tr.adminValueFalse;
 }
 
 Map<String, dynamic> _map(Object? value) {

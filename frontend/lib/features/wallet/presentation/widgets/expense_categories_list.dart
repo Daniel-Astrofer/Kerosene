@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/presentation/widgets/glass_container.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import '../../domain/entities/expense_category.dart';
 
 /// Lista de categorias de despesas - Refatorada

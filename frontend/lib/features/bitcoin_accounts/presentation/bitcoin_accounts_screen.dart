@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:bip39/bip39.dart' as bip39;
@@ -8,19 +9,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:teste/core/presentation/widgets/bitcoin_address_blocks.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/theme/monochrome_theme.dart';
-import 'package:teste/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
-import 'package:teste/features/bitcoin_accounts/data/cold_wallet_public_material.dart';
-import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
+import 'package:kerosene/core/presentation/widgets/bitcoin_address_blocks.dart';
+import 'package:kerosene/core/providers/network_status_provider.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/monochrome_theme.dart';
+import 'package:kerosene/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
+import 'package:kerosene/features/bitcoin_accounts/data/cold_wallet_public_material.dart';
+import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
+import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 class BitcoinAccountsScreen extends ConsumerStatefulWidget {
   const BitcoinAccountsScreen({super.key});
@@ -288,6 +290,13 @@ class _AccountsContent extends ConsumerWidget {
           ),
           const SizedBox(height: 30),
           _InternalBalanceSection(account: selectedInternal),
+          const SizedBox(height: 30),
+          _ReceiveRequestsSection(
+            requestsAsync: requestsAsync,
+            onRetry: () => ref.invalidate(
+              bitcoinAccountReceiveRequestsProvider(selectedInternal.id),
+            ),
+          ),
           const SizedBox(height: 30),
           _InternalTransactionsSection(
             account: selectedInternal,
@@ -584,6 +593,134 @@ class _InternalBalanceSection extends StatelessWidget {
   }
 }
 
+class _ReceiveRequestsSection extends ConsumerWidget {
+  final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+  final VoidCallback onRetry;
+
+  const _ReceiveRequestsSection({
+    required this.requestsAsync,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOnline = ref.watch(networkStatusProvider);
+
+    return _TransactionsPanel(
+      title: context.tr.bitcoinReceiveRequestsTitle,
+      children: requestsAsync.when(
+        loading: () => const [
+          _DarkSkeletonRow(),
+          _DarkSkeletonRow(),
+        ],
+        error: (_, __) => [
+          _DarkActionMessage(
+            icon: LucideIcons.alertTriangle,
+            title: isOnline
+                ? context.tr.bitcoinReceiveRequestsLoadErrorTitle
+                : context.tr.bitcoinReceiveRequestsOfflineTitle,
+            message: isOnline
+                ? context.tr.bitcoinReceiveRequestsLoadErrorMessage
+                : context.tr.bitcoinReceiveRequestsOfflineMessage,
+            actionLabel: context.tr.retry,
+            onAction: onRetry,
+          ),
+        ],
+        data: (requests) {
+          if (requests.isEmpty) {
+            return [
+              _DarkActionMessage(
+                icon: LucideIcons.inbox,
+                title: context.tr.bitcoinReceiveRequestsEmptyTitle,
+                message: context.tr.bitcoinReceiveRequestsEmptyMessage,
+              ),
+            ];
+          }
+
+          final visible = requests.take(5).toList(growable: false);
+          return [
+            for (var index = 0; index < visible.length; index++)
+              _ReceiveRequestRow(
+                request: visible[index],
+                showDivider: index != visible.length - 1,
+              ),
+          ];
+        },
+      ),
+    );
+  }
+}
+
+class _ReceiveRequestRow extends StatelessWidget {
+  final ReceivingRequestView request;
+  final bool showDivider;
+
+  const _ReceiveRequestRow({
+    required this.request,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = request.amountSats == null
+        ? context.tr.bitcoinReceiveRequestsFlexibleAmount
+        : _formatSats(request.amountSats!);
+    final subtitle = request.address.isEmpty
+        ? request.id
+        : '${_shortText(request.address)} | ${request.expiry.isEmpty ? context.tr.bitcoinReceiveRequestsNoExpiry : request.expiry}';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.technicalMono(
+                    textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF888888),
+                          fontSize: 12,
+                          letterSpacing: 0,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _Pill(text: _receiveStatusLabel(context, request.status)),
+        ],
+      ),
+    );
+  }
+}
+
 class _InternalTransactionsSection extends StatelessWidget {
   final BitcoinAccount account;
   final AsyncValue<List<Transaction>> transactionsAsync;
@@ -767,6 +904,86 @@ class _DarkListMessage extends StatelessWidget {
   }
 }
 
+class _DarkActionMessage extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _DarkActionMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF888888), size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  message,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF888888),
+                    fontSize: 13,
+                    height: 1.35,
+                    letterSpacing: 0,
+                  ),
+                ),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: onAction,
+                    icon: const Icon(LucideIcons.refreshCw, size: 15),
+                    label: Text(actionLabel!),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DarkSkeletonRow extends StatelessWidget {
+  const _DarkSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 58,
+      margin: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+      ),
+    );
+  }
+}
+
 class _CompactLoadingPanel extends StatelessWidget {
   const _CompactLoadingPanel();
 
@@ -817,8 +1034,11 @@ class _ColdWalletSection extends StatelessWidget {
         const SizedBox(height: 10),
         if (accounts.isEmpty)
           _MutedPanel(text: context.tr.bitcoinAccountsNoColdWallet)
-        else
+        else ...[
           for (final account in accounts) _ColdWalletTile(account: account),
+          const SizedBox(height: 16),
+          const _TaxEventsSection(),
+        ],
       ],
     );
   }
@@ -842,80 +1062,813 @@ class _ColdWalletTile extends StatelessWidget {
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
+      child: Column(
         children: [
-          const Icon(LucideIcons.snowflake, color: Colors.white, size: 22),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+          Row(
+            children: [
+              const Icon(LucideIcons.snowflake, color: Colors.white, size: 22),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Pill(text: context.tr.bitcoinAccountsColdWalletBadge),
-                    _Pill(text: context.tr.bitcoinAccountsReviewBalance),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _Pill(text: context.tr.bitcoinAccountsColdWalletBadge),
+                        _Pill(text: context.tr.bitcoinAccountsReviewBalance),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.tr.bitcoinAccountsObservedBalance,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF888888),
+                        fontSize: 12,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _formatSats(account.observedBalanceSats),
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF888888),
+                        fontSize: 13,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      context.tr.bitcoinAccountsColdWalletNote,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF888888),
+                        fontSize: 12,
+                        height: 1.35,
+                        letterSpacing: 0,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  label,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                account.xpubFingerprint ?? account.coldWalletId ?? '',
+                style: AppTypography.technicalMono(
+                  textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: const Color(0xFF888888),
+                        fontSize: 11,
+                        letterSpacing: 0.8,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          _ColdWalletAdvancedPanel(account: account),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColdWalletAdvancedPanel extends ConsumerWidget {
+  final BitcoinAccount account;
+
+  const _ColdWalletAdvancedPanel({required this.account});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coldWalletId = _coldWalletIdForAccount(account);
+    final utxosAsync = ref.watch(bitcoinColdWalletUtxosProvider(coldWalletId));
+    final workflowsAsync = ref.watch(
+      bitcoinColdWalletPsbtsProvider(coldWalletId),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            const Icon(LucideIcons.fileText, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                context.tr.bitcoinAdvancedTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              style: monochromeOutlinedButtonStyle(minHeight: 42),
+              onPressed: () => _showCreatePsbtSheet(context, account),
+              icon: const Icon(LucideIcons.fileText, size: 16),
+              label: Text(context.tr.bitcoinAdvancedNewPsbtAction),
+            ),
+            OutlinedButton.icon(
+              style: monochromeOutlinedButtonStyle(minHeight: 42),
+              onPressed: () {
+                ref.invalidate(bitcoinColdWalletUtxosProvider(coldWalletId));
+                ref.invalidate(bitcoinColdWalletPsbtsProvider(coldWalletId));
+              },
+              icon: const Icon(LucideIcons.refreshCw, size: 16),
+              label: Text(context.tr.bitcoinAdvancedRefreshAction),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _AdvancedSubsection(
+          title: context.tr.bitcoinAdvancedUtxosTitle,
+          icon: LucideIcons.coins,
+          child: utxosAsync.when(
+            loading: () => const _MiniLoadingRows(),
+            error: (_, __) => _MiniActionState(
+              icon: LucideIcons.alertTriangle,
+              title: context.tr.bitcoinAdvancedUtxosUnavailableTitle,
+              message: context.tr.bitcoinAdvancedUtxosUnavailableMessage,
+              onRetry: () =>
+                  ref.invalidate(bitcoinColdWalletUtxosProvider(coldWalletId)),
+            ),
+            data: (utxos) => _UtxoPreviewList(utxos: utxos),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _AdvancedSubsection(
+          title: context.tr.bitcoinAdvancedPsbtsTitle,
+          icon: LucideIcons.fileText,
+          child: workflowsAsync.when(
+            loading: () => const _MiniLoadingRows(),
+            error: (_, __) => _MiniActionState(
+              icon: LucideIcons.alertTriangle,
+              title: context.tr.bitcoinAdvancedPsbtsUnavailableTitle,
+              message: context.tr.bitcoinAdvancedPsbtsUnavailableMessage,
+              onRetry: () =>
+                  ref.invalidate(bitcoinColdWalletPsbtsProvider(coldWalletId)),
+            ),
+            data: (workflows) => _PsbtPreviewList(
+              workflows: workflows,
+              onSubmitSigned: (workflow) => _showSubmitPsbtSheet(
+                context,
+                account,
+                workflow,
+              ),
+              onCopyUnsigned: (workflow) => _copyText(
+                context,
+                workflow.unsignedPsbt,
+                title: context.tr.bitcoinAdvancedPsbtCopiedTitle,
+                message: context.tr.bitcoinAdvancedSignExternallyMessage,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdvancedSubsection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _AdvancedSubsection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: monochromePanelDecoration(
+        color: const Color(0xFF111111),
+        showShadow: false,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UtxoPreviewList extends StatelessWidget {
+  final List<ColdWalletUtxoView> utxos;
+
+  const _UtxoPreviewList({required this.utxos});
+
+  @override
+  Widget build(BuildContext context) {
+    if (utxos.isEmpty) {
+      return _MiniEmptyState(
+        text: context.tr.bitcoinAdvancedNoUtxos,
+      );
+    }
+
+    final visible = utxos.take(4).toList(growable: false);
+    final spendable = utxos.where((utxo) => utxo.isSpendable).fold<int>(
+          0,
+          (total, utxo) => total + utxo.amountSats,
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedSpendableForPsbt,
+          value: _formatSats(spendable),
+        ),
+        const SizedBox(height: 8),
+        for (var index = 0; index < visible.length; index++)
+          _UtxoRow(
+            utxo: visible[index],
+            showDivider: index != visible.length - 1,
+          ),
+        if (utxos.length > visible.length)
+          _MiniHint(
+            text: context.tr.bitcoinAdvancedHiddenUtxos(
+              utxos.length - visible.length,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _UtxoRow extends StatelessWidget {
+  final ColdWalletUtxoView utxo;
+  final bool showDivider;
+
+  const _UtxoRow({
+    required this.utxo,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${utxo.txidRef}:${utxo.vout}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.technicalMono(
+                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFFB8B8B8),
+                      fontSize: 11,
+                      letterSpacing: 0,
+                    ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _formatSats(utxo.amountSats),
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _Pill(text: _utxoStatusLabel(context, utxo.status)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PsbtPreviewList extends StatelessWidget {
+  final List<PsbtWorkflowView> workflows;
+  final ValueChanged<PsbtWorkflowView> onSubmitSigned;
+  final ValueChanged<PsbtWorkflowView> onCopyUnsigned;
+
+  const _PsbtPreviewList({
+    required this.workflows,
+    required this.onSubmitSigned,
+    required this.onCopyUnsigned,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (workflows.isEmpty) {
+      return _MiniEmptyState(
+        text: context.tr.bitcoinAdvancedNoPsbts,
+      );
+    }
+
+    final visible = workflows.take(3).toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < visible.length; index++)
+          _PsbtWorkflowRow(
+            workflow: visible[index],
+            showDivider: index != visible.length - 1,
+            onCopyUnsigned: () => onCopyUnsigned(visible[index]),
+            onSubmitSigned: visible[index].awaitsSignature
+                ? () => onSubmitSigned(visible[index])
+                : null,
+          ),
+        if (workflows.length > visible.length)
+          _MiniHint(
+            text: context.tr.bitcoinAdvancedHiddenPsbts(
+              workflows.length - visible.length,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PsbtWorkflowRow extends StatelessWidget {
+  final PsbtWorkflowView workflow;
+  final bool showDivider;
+  final VoidCallback onCopyUnsigned;
+  final VoidCallback? onSubmitSigned;
+
+  const _PsbtWorkflowRow({
+    required this.workflow,
+    required this.showDivider,
+    required this.onCopyUnsigned,
+    this.onSubmitSigned,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              )
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _shortText(workflow.destinationAddress),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  context.tr.bitcoinAccountsObservedBalance,
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFF888888),
-                    fontSize: 12,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _formatSats(account.observedBalanceSats),
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFF888888),
                     fontSize: 13,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 8),
+              ),
+              const SizedBox(width: 8),
+              _Pill(text: _psbtStatusLabel(context, workflow.status)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _Pill(text: _formatSats(workflow.amountSats)),
+              _Pill(
+                text:
+                    '${context.tr.bitcoinAdvancedFeePrefix} ${_formatSats(workflow.estimatedFeeSats)}',
+              ),
+              if ((workflow.broadcastTxidRef ?? '').isNotEmpty)
+                _Pill(text: workflow.broadcastTxidRef!),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                style: monochromeOutlinedButtonStyle(minHeight: 38),
+                onPressed: onCopyUnsigned,
+                icon: const Icon(LucideIcons.copy, size: 15),
+                label: Text(context.tr.bitcoinAdvancedCopyUnsignedAction),
+              ),
+              if (onSubmitSigned != null)
+                OutlinedButton.icon(
+                  style: monochromeOutlinedButtonStyle(minHeight: 38),
+                  onPressed: onSubmitSigned,
+                  icon: const Icon(LucideIcons.send, size: 15),
+                  label: Text(context.tr.bitcoinAdvancedSubmitSignatureAction),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaxEventsSection extends ConsumerWidget {
+  const _TaxEventsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eventsAsync = ref.watch(bitcoinTaxEventsProvider);
+    return _TransactionsPanel(
+      title: context.tr.bitcoinTaxReportsTitle,
+      children: eventsAsync.when(
+        loading: () => const [
+          _DarkSkeletonRow(),
+          _DarkSkeletonRow(),
+        ],
+        error: (_, __) => [
+          _DarkActionMessage(
+            icon: LucideIcons.alertTriangle,
+            title: context.tr.bitcoinTaxEventsUnavailableTitle,
+            message: context.tr.bitcoinTaxEventsUnavailableMessage,
+            actionLabel: context.tr.retry,
+            onAction: () => ref.invalidate(bitcoinTaxEventsProvider),
+          ),
+        ],
+        data: (events) {
+          if (events.isEmpty) {
+            return [
+              _DarkActionMessage(
+                icon: LucideIcons.receipt,
+                title: context.tr.bitcoinTaxNoEventsTitle,
+                message: context.tr.bitcoinTaxNoEventsMessage,
+              ),
+              _TaxExportActions(),
+            ];
+          }
+
+          final visible = events.take(4).toList(growable: false);
+          return [
+            for (var index = 0; index < visible.length; index++)
+              _TaxEventRow(
+                event: visible[index],
+                showDivider: index != visible.length - 1,
+              ),
+            if (events.length > visible.length)
+              _DarkListMessage(
+                text: context.tr.bitcoinTaxHiddenEvents(
+                  events.length - visible.length,
+                ),
+              ),
+            _TaxExportActions(),
+          ];
+        },
+      ),
+    );
+  }
+}
+
+class _TaxEventRow extends ConsumerWidget {
+  final TaxEventView event;
+  final bool showDivider;
+
+  const _TaxEventRow({
+    required this.event,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(LucideIcons.receipt, color: Color(0xFF888888), size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  context.tr.bitcoinAccountsColdWalletNote,
-                  maxLines: 2,
+                  _taxEventTypeLabel(context, event.eventType),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    color: const Color(0xFF888888),
-                    fontSize: 12,
-                    height: 1.35,
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${_formatSats(event.quantitySats)} | ${event.sourceRef.isEmpty ? event.asset : event.sourceRef}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.technicalMono(
+                    textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF888888),
+                          fontSize: 12,
+                          letterSpacing: 0,
+                        ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            account.xpubFingerprint ?? account.coldWalletId ?? '',
-            style: AppTypography.technicalMono(
-              textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF888888),
-                    fontSize: 11,
-                    letterSpacing: 0.8,
-                  ),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            tooltip: context.tr.bitcoinTaxClassifyTooltip,
+            color: monoSurfaceRaisedColor,
+            icon: const Icon(
+              LucideIcons.chevronDown,
+              color: Colors.white,
+              size: 18,
             ),
+            onSelected: (classification) async {
+              try {
+                final service = ref.read(bitcoinAccountsServiceProvider);
+                await service.classifyTaxEvent(
+                  eventId: event.id,
+                  classification: classification,
+                );
+                ref.invalidate(bitcoinTaxEventsProvider);
+                if (!context.mounted) return;
+                AppNotice.showSuccess(
+                  context,
+                  title: context.tr.bitcoinTaxClassificationUpdatedTitle,
+                  message: _taxClassificationLabel(context, classification),
+                );
+              } catch (_) {
+                if (!context.mounted) return;
+                AppNotice.showError(
+                  context,
+                  title: context.tr.bitcoinTaxClassificationNotSavedTitle,
+                  message: context.tr.bitcoinTaxRetryLaterMessage,
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'SELF_TRANSFER',
+                child: Text(context.tr.bitcoinTaxClassSelfTransfer),
+              ),
+              PopupMenuItem(
+                value: 'THIRD_PARTY_DEPOSIT',
+                child: Text(context.tr.bitcoinTaxClassThirdPartyDeposit),
+              ),
+              PopupMenuItem(
+                value: 'SPEND',
+                child: Text(context.tr.bitcoinTaxClassSpend),
+              ),
+              PopupMenuItem(
+                value: 'FEE',
+                child: Text(context.tr.bitcoinTaxClassFee),
+              ),
+              PopupMenuItem(
+                value: 'UNKNOWN',
+                child: Text(context.tr.bitcoinTaxClassUnknown),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TaxExportActions extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () => _exportTaxEvents(context, ref, 'json'),
+            icon: const Icon(LucideIcons.download, size: 15),
+            label: Text(context.tr.bitcoinTaxExportJsonAction),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => _exportTaxEvents(context, ref, 'csv'),
+            icon: const Icon(LucideIcons.download, size: 15),
+            label: Text(context.tr.bitcoinTaxExportCsvAction),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportTaxEvents(
+    BuildContext context,
+    WidgetRef ref,
+    String format,
+  ) async {
+    try {
+      final service = ref.read(bitcoinAccountsServiceProvider);
+      final exported = await service.exportTaxEvents(format: format);
+      final content = exported.content ??
+          const JsonEncoder.withIndent('  ').convert(
+            exported.toJson(),
+          );
+      await Clipboard.setData(ClipboardData(text: content));
+      if (!context.mounted) return;
+      AppNotice.showSuccess(
+        context,
+        title: context.tr.bitcoinTaxReportCopiedTitle,
+        message: exported.filename,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      AppNotice.showError(
+        context,
+        title: context.tr.bitcoinTaxExportUnavailableTitle,
+        message: context.tr.bitcoinTaxExportUnavailableMessage,
+      );
+    }
+  }
+}
+
+class _MiniLoadingRows extends StatelessWidget {
+  const _MiniLoadingRows();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: const [
+        _DarkSkeletonRow(),
+        _DarkSkeletonRow(),
+      ],
+    );
+  }
+}
+
+class _MiniActionState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+
+  const _MiniActionState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _DarkActionMessage(
+      icon: icon,
+      title: title,
+      message: message,
+      actionLabel: context.tr.retry,
+      onAction: onRetry,
+    );
+  }
+}
+
+class _MiniEmptyState extends StatelessWidget {
+  final String text;
+
+  const _MiniEmptyState({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return _MiniHint(text: text);
+  }
+}
+
+class _MiniHint extends StatelessWidget {
+  final String text;
+
+  const _MiniHint({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          color: const Color(0xFF888888),
+          fontSize: 12,
+          height: 1.35,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniMetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MiniMetricRow({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              color: const Color(0xFF888888),
+              fontSize: 12,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2449,6 +3402,33 @@ void _showReceiveSheet(BuildContext context, BitcoinAccount account) {
   );
 }
 
+void _showCreatePsbtSheet(BuildContext context, BitcoinAccount account) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: monoSurfaceColor,
+    shape: const RoundedRectangleBorder(borderRadius: monoRadius),
+    builder: (context) => _CreatePsbtSheet(account: account),
+  );
+}
+
+void _showSubmitPsbtSheet(
+  BuildContext context,
+  BitcoinAccount account,
+  PsbtWorkflowView workflow,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: monoSurfaceColor,
+    shape: const RoundedRectangleBorder(borderRadius: monoRadius),
+    builder: (context) => _SubmitPsbtSheet(
+      account: account,
+      workflow: workflow,
+    ),
+  );
+}
+
 class _ReceiveSheet extends ConsumerStatefulWidget {
   final BitcoinAccount account;
 
@@ -2638,6 +3618,7 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
         oneTime: _oneTime,
       );
       if (!mounted) return;
+      ref.invalidate(bitcoinAccountReceiveRequestsProvider(widget.account.id));
       setState(() => _result = created);
       _startPolling();
     } catch (_) {
@@ -2699,6 +3680,447 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
 
   bool _isTerminal(String status) =>
       status == 'PAID' || status == 'HIDDEN' || status == 'FAILED_SAFE';
+}
+
+class _CreatePsbtSheet extends ConsumerStatefulWidget {
+  final BitcoinAccount account;
+
+  const _CreatePsbtSheet({required this.account});
+
+  @override
+  ConsumerState<_CreatePsbtSheet> createState() => _CreatePsbtSheetState();
+}
+
+class _CreatePsbtSheetState extends ConsumerState<_CreatePsbtSheet> {
+  final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _feeRateController = TextEditingController();
+  final Set<String> _selectedUtxoIds = {};
+
+  bool _busy = false;
+  PsbtWorkflowView? _created;
+
+  String get _coldWalletId => _coldWalletIdForAccount(widget.account);
+
+  @override
+  void dispose() {
+    _destinationController.dispose();
+    _amountController.dispose();
+    _feeRateController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final created = _created;
+    return _SheetScaffold(
+      title: created == null
+          ? context.tr.bitcoinAdvancedCreatePsbtTitle
+          : context.tr.bitcoinAdvancedPsbtCreatedTitle,
+      child: created == null ? _buildForm(context) : _buildCreated(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    final utxosAsync = ref.watch(bitcoinColdWalletUtxosProvider(_coldWalletId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MutedPanel(
+          text: context.tr.bitcoinAdvancedCreatePsbtIntro,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _destinationController,
+          style: const TextStyle(color: monoTextColor),
+          decoration: monochromeInputDecoration(
+            label: context.tr.bitcoinAdvancedDestinationLabel,
+            hintText: 'bc1...',
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _amountController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: const TextStyle(color: monoTextColor),
+          decoration: monochromeInputDecoration(
+            label: context.tr.bitcoinAdvancedAmountSatsLabel,
+            hintText: '250000',
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _feeRateController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: const TextStyle(color: monoTextColor),
+          decoration: monochromeInputDecoration(
+            label: context.tr.bitcoinAdvancedFeeRateOptionalLabel,
+            hintText: 'sat/vB',
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _AdvancedSubsection(
+          title: context.tr.bitcoinAdvancedOptionalUtxosTitle,
+          icon: LucideIcons.coins,
+          child: utxosAsync.when(
+            loading: () => const _MiniLoadingRows(),
+            error: (_, __) => _MiniActionState(
+              icon: LucideIcons.alertTriangle,
+              title: context.tr.bitcoinAdvancedUtxosUnavailableTitle,
+              message: context.tr.bitcoinAdvancedAutoUtxosFallback,
+              onRetry: () =>
+                  ref.invalidate(bitcoinColdWalletUtxosProvider(_coldWalletId)),
+            ),
+            data: _buildSelectableUtxos,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        FilledButton.icon(
+          style: monochromeFilledButtonStyle(),
+          onPressed: _busy ? null : _create,
+          icon: _busy
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(LucideIcons.fileText, size: 18),
+          label: Text(
+            _busy
+                ? context.tr.bitcoinAdvancedCreatingPsbtAction
+                : context.tr.bitcoinAdvancedCreatePsbtAction,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectableUtxos(List<ColdWalletUtxoView> utxos) {
+    final spendable = utxos.where((utxo) => utxo.isSpendable).toList();
+    if (spendable.isEmpty) {
+      return _MiniEmptyState(
+        text: context.tr.bitcoinAdvancedNoSpendableUtxos,
+      );
+    }
+
+    return Column(
+      children: [
+        _MiniHint(
+          text: context.tr.bitcoinAdvancedAutoUtxosMessage,
+        ),
+        for (final utxo in spendable.take(8))
+          CheckboxListTile(
+            value: _selectedUtxoIds.contains(utxo.id),
+            onChanged: _busy
+                ? null
+                : (selected) {
+                    setState(() {
+                      if (selected == true) {
+                        _selectedUtxoIds.add(utxo.id);
+                      } else {
+                        _selectedUtxoIds.remove(utxo.id);
+                      }
+                    });
+                  },
+            activeColor: monoTextColor,
+            checkColor: Colors.black,
+            side: const BorderSide(color: monoBorderStrongColor),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              _formatSats(utxo.amountSats),
+              style: const TextStyle(color: monoTextColor),
+            ),
+            subtitle: Text(
+              '${utxo.txidRef}:${utxo.vout} | ${utxo.confirmations} conf.',
+              style: const TextStyle(color: monoMutedTextColor),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCreated(BuildContext context) {
+    final workflow = _created!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MutedPanel(
+          text: context.tr.bitcoinAdvancedCreatedReviewMessage,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedDestinationMetric,
+          value: _shortText(workflow.destinationAddress),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedAmountMetric,
+          value: _formatSats(workflow.amountSats),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedEstimatedFeeMetric,
+          value: _formatSats(workflow.estimatedFeeSats),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        DecoratedBox(
+          decoration: monochromePanelDecoration(
+            color: monoSurfaceAltColor,
+            showShadow: false,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              workflow.unsignedPsbt,
+              maxLines: 6,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.technicalMono(
+                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: monoTextColor,
+                      fontSize: 11,
+                      letterSpacing: 0,
+                    ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OutlinedButton.icon(
+          style: monochromeOutlinedButtonStyle(),
+          onPressed: () => _copyText(
+            context,
+            workflow.unsignedPsbt,
+            title: context.tr.bitcoinAdvancedPsbtCopiedTitle,
+            message: context.tr.bitcoinAdvancedSignExternallyMessage,
+          ),
+          icon: const Icon(LucideIcons.copy, size: 18),
+          label: Text(context.tr.bitcoinAdvancedCopyUnsignedPsbtAction),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _create() async {
+    final destination = _destinationController.text.trim();
+    final amountSats = int.tryParse(_amountController.text.trim()) ?? 0;
+    final feeRate = int.tryParse(_feeRateController.text.trim());
+
+    if (destination.isEmpty || amountSats <= 0) {
+      AppNotice.showWarning(
+        context,
+        title: context.tr.bitcoinAdvancedIncompleteDataTitle,
+        message: context.tr.bitcoinAdvancedIncompleteDataMessage,
+      );
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final service = ref.read(bitcoinAccountsServiceProvider);
+      final created = await service.createColdWalletPsbt(
+        coldWalletId: _coldWalletId,
+        destinationAddress: destination,
+        amountSats: amountSats,
+        feeRate: feeRate,
+        selectedUtxoIds: _selectedUtxoIds.toList(growable: false),
+      );
+      ref.invalidate(bitcoinColdWalletUtxosProvider(_coldWalletId));
+      ref.invalidate(bitcoinColdWalletPsbtsProvider(_coldWalletId));
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() => _created = created);
+    } catch (_) {
+      if (!mounted) return;
+      AppNotice.showError(
+        context,
+        title: context.tr.bitcoinAdvancedCreateFailedTitle,
+        message: context.tr.bitcoinAdvancedCreateFailedMessage,
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+}
+
+class _SubmitPsbtSheet extends ConsumerStatefulWidget {
+  final BitcoinAccount account;
+  final PsbtWorkflowView workflow;
+
+  const _SubmitPsbtSheet({
+    required this.account,
+    required this.workflow,
+  });
+
+  @override
+  ConsumerState<_SubmitPsbtSheet> createState() => _SubmitPsbtSheetState();
+}
+
+class _SubmitPsbtSheetState extends ConsumerState<_SubmitPsbtSheet> {
+  final TextEditingController _signedPsbtController = TextEditingController();
+  bool _broadcast = true;
+  bool _busy = false;
+  PsbtWorkflowView? _result;
+
+  String get _coldWalletId => _coldWalletIdForAccount(widget.account);
+
+  @override
+  void dispose() {
+    _signedPsbtController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    return _SheetScaffold(
+      title: result == null
+          ? context.tr.bitcoinAdvancedSubmitPsbtTitle
+          : context.tr.bitcoinAdvancedPsbtValidatedTitle,
+      child: result == null ? _buildForm(context) : _buildResult(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MutedPanel(
+          text: context.tr.bitcoinAdvancedSubmitPsbtIntro,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedDestinationMetric,
+          value: _shortText(widget.workflow.destinationAddress),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedAmountMetric,
+          value: _formatSats(widget.workflow.amountSats),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _signedPsbtController,
+          minLines: 4,
+          maxLines: 8,
+          style: AppTypography.technicalMono(
+            textStyle: const TextStyle(
+              color: monoTextColor,
+              fontSize: 12,
+              letterSpacing: 0,
+            ),
+          ),
+          decoration: monochromeInputDecoration(
+            label: context.tr.bitcoinAdvancedSignedPsbtLabel,
+            hintText: context.tr.bitcoinAdvancedSignedPsbtHint,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        SwitchListTile.adaptive(
+          value: _broadcast,
+          onChanged:
+              _busy ? null : (value) => setState(() => _broadcast = value),
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            context.tr.bitcoinAdvancedBroadcastAfterValidationTitle,
+            style: const TextStyle(color: monoTextColor),
+          ),
+          subtitle: Text(
+            context.tr.bitcoinAdvancedBroadcastAfterValidationSubtitle,
+            style: const TextStyle(color: monoMutedTextColor),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        FilledButton.icon(
+          style: monochromeFilledButtonStyle(),
+          onPressed: _busy ? null : _submit,
+          icon: _busy
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(LucideIcons.shieldCheck, size: 18),
+          label: Text(
+            _busy
+                ? context.tr.bitcoinAdvancedValidatingPsbtAction
+                : context.tr.bitcoinAdvancedValidatePsbtAction,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResult(BuildContext context) {
+    final workflow = _result!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MutedPanel(text: _psbtStatusLabel(context, workflow.status)),
+        const SizedBox(height: AppSpacing.md),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedAmountMetric,
+          value: _formatSats(workflow.amountSats),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _MiniMetricRow(
+          label: context.tr.bitcoinAdvancedEstimatedFeeMetric,
+          value: _formatSats(workflow.estimatedFeeSats),
+        ),
+        if ((workflow.broadcastTxidRef ?? '').isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _MiniMetricRow(
+            label: 'Broadcast',
+            value: workflow.broadcastTxidRef!,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        FilledButton(
+          style: monochromeFilledButtonStyle(),
+          onPressed: () => Navigator.maybePop(context),
+          child: Text(context.tr.bitcoinAdvancedDoneAction),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final signedPsbt = _signedPsbtController.text.trim();
+    if (signedPsbt.isEmpty) {
+      AppNotice.showWarning(
+        context,
+        title: context.tr.bitcoinAdvancedSignatureRequiredTitle,
+        message: context.tr.bitcoinAdvancedSignatureRequiredMessage,
+      );
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final service = ref.read(bitcoinAccountsServiceProvider);
+      final result = await service.submitSignedPsbt(
+        workflowId: widget.workflow.id,
+        signedPsbt: signedPsbt,
+        broadcast: _broadcast,
+      );
+      ref.invalidate(bitcoinColdWalletUtxosProvider(_coldWalletId));
+      ref.invalidate(bitcoinColdWalletPsbtsProvider(_coldWalletId));
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() => _result = result);
+    } catch (_) {
+      if (!mounted) return;
+      AppNotice.showError(
+        context,
+        title: context.tr.bitcoinAdvancedPsbtRejectedTitle,
+        message: context.tr.bitcoinAdvancedPsbtRejectedMessage,
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 }
 
 class _SheetScaffold extends StatelessWidget {
@@ -3025,6 +4447,12 @@ String _cardExpiryLabel(BitcoinAccount account) {
   return '${month.toString().padLeft(2, '0')}/$year';
 }
 
+String _shortText(String value) {
+  final text = value.trim();
+  if (text.length <= 18) return text;
+  return '${text.substring(0, 8)}...${text.substring(text.length - 8)}';
+}
+
 String _cardCode(BitcoinAccount account) {
   final source = account.cardId ?? account.id;
   final hash = source.hashCode.abs() % 1000;
@@ -3077,6 +4505,70 @@ String _signedSats(Transaction transaction) {
       transaction.type == TransactionType.deposit;
   final sign = isIncoming ? '+' : '-';
   return '$sign${_formatSats(transaction.amountSatoshis)}';
+}
+
+String _coldWalletIdForAccount(BitcoinAccount account) {
+  final coldWalletId = account.coldWalletId?.trim();
+  return coldWalletId == null || coldWalletId.isEmpty
+      ? account.id
+      : coldWalletId;
+}
+
+Future<void> _copyText(
+  BuildContext context,
+  String value, {
+  required String title,
+  required String message,
+}) async {
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) return;
+  AppNotice.showSuccess(context, title: title, message: message);
+}
+
+String _utxoStatusLabel(BuildContext context, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'UNSPENT' => context.tr.bitcoinAdvancedUtxoStatusUnspent,
+    'LOCKED' => context.tr.bitcoinAdvancedUtxoStatusLocked,
+    'SPENT' => context.tr.bitcoinAdvancedUtxoStatusSpent,
+    _ => status,
+  };
+}
+
+String _psbtStatusLabel(BuildContext context, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'DRAFT' => context.tr.bitcoinAdvancedPsbtStatusDraft,
+    'UNSIGNED_CREATED' => context.tr.bitcoinAdvancedPsbtStatusUnsignedCreated,
+    'WAITING_EXTERNAL_SIGNATURE' =>
+      context.tr.bitcoinAdvancedPsbtStatusWaitingSignature,
+    'VALIDATED' => context.tr.bitcoinAdvancedPsbtStatusValidated,
+    'BROADCASTED' => context.tr.bitcoinAdvancedPsbtStatusBroadcasted,
+    'REJECTED_TAMPERED' => context.tr.bitcoinAdvancedPsbtStatusRejectedTampered,
+    'REJECTED_POLICY' => context.tr.bitcoinAdvancedPsbtStatusRejectedPolicy,
+    'FAILED_SAFE' => context.tr.bitcoinAdvancedPsbtStatusFailedSafe,
+    _ => status,
+  };
+}
+
+String _taxEventTypeLabel(BuildContext context, String eventType) {
+  return switch (eventType.trim().toUpperCase()) {
+    'DEPOSIT_INTERNAL' => context.tr.bitcoinTaxEventDepositInternal,
+    'DEPOSIT_EXTERNAL' => context.tr.bitcoinTaxEventDepositExternal,
+    'WITHDRAWAL' => context.tr.bitcoinTaxEventWithdrawal,
+    'SPEND' => context.tr.bitcoinTaxEventSpend,
+    'FEE' => context.tr.bitcoinTaxEventFee,
+    _ => eventType,
+  };
+}
+
+String _taxClassificationLabel(BuildContext context, String classification) {
+  return switch (classification.trim().toUpperCase()) {
+    'SELF_TRANSFER' => context.tr.bitcoinTaxClassSelfTransfer,
+    'THIRD_PARTY_DEPOSIT' => context.tr.bitcoinTaxClassThirdPartyDeposit,
+    'SPEND' => context.tr.bitcoinTaxClassSpend,
+    'FEE' => context.tr.bitcoinTaxClassFee,
+    'UNKNOWN' => context.tr.bitcoinTaxClassUnknown,
+    _ => context.tr.bitcoinTaxClassPending,
+  };
 }
 
 String _formatSats(int sats) {

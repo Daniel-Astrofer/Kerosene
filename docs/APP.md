@@ -13,7 +13,6 @@ Esta documentacao descreve o app Flutter atual em `frontend/lib`, incluindo mobi
 | `frontend/lib/features/wallet` | Wallets, cartoes, envio, recebimento, deposito, NFC, QR e providers de wallet. |
 | `frontend/lib/features/transactions` | Depositos, saques, confirmacao de pagamentos e historico operacional. |
 | `frontend/lib/features/bitcoin_accounts` | Contas Bitcoin, internal BTC card, cold wallet watch-only, PSBT, receive requests e tax events. |
-| `frontend/lib/features/mining` | Marketplace/dashboard de mining e mempool. |
 | `frontend/lib/features/security` | Status de soberania, PIN local de entrada e treasury overview. |
 | `frontend/lib/features/web_admin` | Painel web/admin empresarial servido pelo backend. |
 | `frontend/lib/features/landing` | Landing publica, download e status publico. |
@@ -69,7 +68,6 @@ Web (`bootstrap/web_bootstrap.dart`):
 | `/history` e `/deposits` | `DepositsScreen` |
 | `/card` | `BitcoinAccountsScreen` |
 | `/receive` | `ReceiveHubScreen` |
-| `/mining` | `MiningScreen` |
 | `/create_wallet` | `CreateWalletScreen` |
 | `/send-money` | `SendMoneyScreen` |
 
@@ -142,7 +140,6 @@ A lista fonte fica em `core/config/app_config.dart`. Ha constantes que nao possu
 - `frontend/test/core/network/api_client_route_policy_test.dart`
 - `frontend/test/features/auth/*`
 - `frontend/test/features/wallet/*`
-- `frontend/test/features/mining/*`
 - `frontend/test/features/bitcoin_accounts/*`
 - `frontend/test/bootstrap/web_bootstrap_test.dart`
 - `frontend/test/l10n/arb_parity_test.dart`

@@ -3,16 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/auth/controller/auth_providers.dart';
-import 'package:teste/features/auth/presentation/widgets/auth_motion.dart';
-import 'package:teste/features/auth/presentation/widgets/totp_input_container.dart';
-import 'package:teste/features/home/presentation/screens/home_screen.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/auth/controller/auth_providers.dart';
+import 'package:kerosene/features/auth/presentation/widgets/auth_motion.dart';
+import 'package:kerosene/features/auth/presentation/widgets/totp_input_container.dart';
+import 'package:kerosene/features/home/presentation/screens/home_screen.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 import 'passkey_verification_screen.dart';
 
@@ -532,6 +532,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               onPressed:
                                   isLoading ? null : _continueToDeviceKey,
                               borderRadius: 16,
+                            ),
+                            const SizedBox(height: 14),
+                            TextButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () => Navigator.pushNamed(
+                                        context,
+                                        '/recovery/emergency',
+                                      ),
+                              child: Text(
+                                _copy(
+                                  context: context,
+                                  pt: 'Perdi acesso à conta',
+                                  en: 'I lost account access',
+                                  es: 'Perdí el acceso a la cuenta',
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 26),
                             _LoginSignupLink(

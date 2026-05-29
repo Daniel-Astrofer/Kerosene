@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/providers/network_status_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/core/providers/network_status_provider.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
 
 class ServerAvailabilityGate extends ConsumerStatefulWidget {
   final Widget child;

@@ -3,12 +3,12 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/notifications/data/datasources/notification_remote_datasource.dart';
-import 'package:teste/features/notifications/data/repositories/notification_repository_impl.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:teste/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:kerosene/core/network/api_client_provider.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/notifications/data/datasources/notification_remote_datasource.dart';
+import 'package:kerosene/features/notifications/data/repositories/notification_repository_impl.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/domain/repositories/notification_repository.dart';
 
 class SessionNotificationFeedNotifier
     extends Notifier<List<SessionNotificationItem>> {

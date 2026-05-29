@@ -5,8 +5,9 @@ import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/providers/tor_providers.dart';
-import 'package:teste/core/utils/device_helper.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/providers/tor_providers.dart';
+import 'package:kerosene/core/utils/device_helper.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../auth/controller/auth_providers.dart';
 import '../../theme/admin_colors.dart';
@@ -60,7 +61,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
     final adminKey = _adminKeyController.text.trim();
 
     if (username.isEmpty || password.isEmpty || adminKey.isEmpty) {
-      setState(() => _error = 'Enter username, passphrase and admin key');
+      setState(() => _error = context.tr.adminLoginMissingFields);
       return;
     }
 
@@ -127,8 +128,8 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             await ref.read(authControllerProvider.notifier).retrySessionCheck();
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Acesso administrativo registrado.')),
+                SnackBar(
+                    content: Text(context.tr.adminLoginApprovalRegistered)),
               );
             }
           } else if (!adminLogin.requiresMobileApproval) {
@@ -137,7 +138,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
               _pendingAttemptId = null;
               _error = adminLogin.message.isNotEmpty
                   ? adminLogin.message
-                  : 'Admin access was not approved.';
+                  : context.tr.adminLoginAccessNotApproved;
             });
           }
         },
@@ -148,13 +149,13 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   Future<void> _handleTotpVerify() async {
     final code = _totpController.text.trim();
     if (code.isEmpty || code.length < 6) {
-      setState(() => _error = 'Enter a valid 6-digit TOTP code');
+      setState(() => _error = context.tr.adminLoginInvalidTotp);
       return;
     }
 
     final authState = ref.read(authControllerProvider);
     if (authState is! AuthRequiresLoginTotp) {
-      setState(() => _error = 'Session expired. Please login again.');
+      setState(() => _error = context.tr.adminLoginSessionExpired);
       return;
     }
 
@@ -258,9 +259,9 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           focusNode: _usernameFocus,
           style: AdminTypography.bodyLarge,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            hintText: 'Username',
-            prefixIcon: Icon(
+          decoration: InputDecoration(
+            hintText: context.tr.adminLoginUsernameHint,
+            prefixIcon: const Icon(
               Icons.person_outline,
               size: 18,
               color: AdminColors.textTertiary,
@@ -278,7 +279,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           style: AdminTypography.bodyLarge,
           textInputAction: TextInputAction.go,
           decoration: InputDecoration(
-            hintText: 'Passphrase',
+            hintText: context.tr.adminLoginPassphraseHint,
             prefixIcon: const Icon(
               Icons.lock_outline,
               size: 18,
@@ -307,7 +308,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           style: AdminTypography.bodyLarge,
           textInputAction: TextInputAction.go,
           decoration: InputDecoration(
-            hintText: 'Admin key',
+            hintText: context.tr.adminLoginAdminKeyHint,
             prefixIcon: const Icon(
               Icons.vpn_key_outlined,
               size: 18,
@@ -343,8 +344,9 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           height: 44,
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handleLogin,
-            child:
-                _isLoading ? const _LoadingIndicator() : const Text('SIGN IN'),
+            child: _isLoading
+                ? const _LoadingIndicator()
+                : Text(context.tr.adminLoginSignInAction),
           ),
         ),
 
@@ -352,7 +354,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
 
         // Footer
         Text(
-          'Secure access via onion service',
+          context.tr.adminLoginSecureAccessFooter,
           style: AdminTypography.caption,
           textAlign: TextAlign.center,
         ),
@@ -381,9 +383,9 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           ),
         ),
         const SizedBox(height: AdminTheme.spacingXl),
-        const Text(
-          'TWO-FACTOR AUTHENTICATION',
-          style: TextStyle(
+        Text(
+          context.tr.adminLoginTotpTitle,
+          style: const TextStyle(
             fontFamily: 'IBMPlexSansHebrew',
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -393,13 +395,13 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         ),
         const SizedBox(height: AdminTheme.spacingSm),
         Text(
-          'Enter the 6-digit code from your authenticator app',
+          context.tr.adminLoginTotpSubtitle,
           style: AdminTypography.bodyMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AdminTheme.spacingXs),
         Text(
-          'Authenticating as ${totpState.username}',
+          context.tr.adminLoginTotpAuthenticatingAs(totpState.username),
           style: AdminTypography.caption,
           textAlign: TextAlign.center,
         ),
@@ -457,8 +459,9 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           height: 44,
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handleTotpVerify,
-            child:
-                _isLoading ? const _LoadingIndicator() : const Text('VERIFY'),
+            child: _isLoading
+                ? const _LoadingIndicator()
+                : Text(context.tr.adminLoginVerifyAction),
           ),
         ),
 
@@ -468,7 +471,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         TextButton.icon(
           onPressed: _isLoading ? null : _handleBackToLogin,
           icon: const Icon(Icons.arrow_back, size: 16),
-          label: const Text('Back to login'),
+          label: Text(context.tr.adminLoginBackToLoginAction),
         ),
       ],
     );
@@ -510,7 +513,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         ),
         const SizedBox(height: AdminTheme.spacingSm),
         Text(
-          'Enterprise Management Console',
+          context.tr.adminLoginConsoleSubtitle,
           style: AdminTypography.bodyMedium,
         ),
       ],
@@ -557,8 +560,10 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
 class _ConnectionIndicator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final status =
-        _AdminConnectionStatus.fromApiUrl(ref.watch(torApiUrlProvider));
+    final status = _AdminConnectionStatus.fromApiUrl(
+      context,
+      ref.watch(torApiUrlProvider),
+    );
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AdminTheme.spacingMd,
@@ -622,7 +627,7 @@ class _ApprovalPendingBanner extends StatelessWidget {
           const SizedBox(width: AdminTheme.spacingSm),
           Expanded(
             child: Text(
-              'Waiting for approval in the mobile app.',
+              context.tr.adminLoginApprovalPending,
               style: AdminTypography.bodySmall.copyWith(
                 color: AdminColors.warning,
               ),
@@ -649,7 +654,10 @@ class _AdminConnectionStatus {
     required this.border,
   });
 
-  factory _AdminConnectionStatus.fromApiUrl(String apiUrl) {
+  factory _AdminConnectionStatus.fromApiUrl(
+    BuildContext context,
+    String apiUrl,
+  ) {
     final apiHost = Uri.tryParse(apiUrl)?.host.toLowerCase() ?? '';
     final browserHost = _currentBrowserHost();
     final isBrowserOnion = browserHost.endsWith('.onion');
@@ -657,7 +665,7 @@ class _AdminConnectionStatus {
 
     if (isBrowserOnion && (apiHost.isEmpty || apiHost == browserHost)) {
       return _AdminConnectionStatus(
-        label: 'Connected via Onion Service',
+        label: context.tr.adminConnectionOnionBrowser,
         icon: Icons.shield_outlined,
         foreground: AdminColors.positive,
         background: AdminColors.positiveSubtle,
@@ -667,7 +675,7 @@ class _AdminConnectionStatus {
 
     if (isApiOnion) {
       return _AdminConnectionStatus(
-        label: 'API routed to Onion Service',
+        label: context.tr.adminConnectionOnionApi,
         icon: Icons.shield_outlined,
         foreground: AdminColors.positive,
         background: AdminColors.positiveSubtle,
@@ -676,7 +684,7 @@ class _AdminConnectionStatus {
     }
 
     return _AdminConnectionStatus(
-      label: 'Direct/gateway route - onion not browser-verified',
+      label: context.tr.adminConnectionGateway,
       icon: Icons.warning_amber,
       foreground: AdminColors.warning,
       background: AdminColors.warningSubtle,

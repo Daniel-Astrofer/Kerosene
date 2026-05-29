@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/providers/shared_preferences_provider.dart';
+import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 
 enum RecentTransactionDestinationKind {
   internal,

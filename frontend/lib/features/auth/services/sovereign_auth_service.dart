@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:teste/core/constants/app_copy.dart';
-import 'package:teste/core/services/sovereign_auth_service.dart' as core;
+import 'package:kerosene/core/constants/app_copy.dart';
+import 'package:kerosene/core/services/sovereign_auth_service.dart' as core;
 
 @Deprecated(
-  'Use package:teste/core/services/sovereign_auth_service.dart instead.',
+  'Use package:kerosene/core/services/sovereign_auth_service.dart instead.',
 )
 class SovereignAuthService {
   final core.SovereignAuthService _delegate;

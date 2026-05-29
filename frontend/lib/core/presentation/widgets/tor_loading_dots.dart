@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:teste/core/motion/app_motion.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 
 class TorLoadingDots extends StatefulWidget {
   final double dotSize;

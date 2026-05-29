@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/responsive/kerosene_responsive.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/features/auth/presentation/widgets/auth_motion.dart';
+import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/features/auth/presentation/widgets/auth_motion.dart';
 
 const Color authEntryInk = Color(0xFF000000);
 const Color authEntrySurface = Color(0xFF0B0B0B);

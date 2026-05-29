@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 
 void main() {
   group('Wallet.fromJson', () {

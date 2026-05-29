@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/providers/recent_transaction_destinations_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:kerosene/core/providers/recent_transaction_destinations_provider.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 
 const Color _recentDestinationPanelColor = Color(0xFF0D0D0D);
 const Color _recentDestinationBorderColor = Color(0xFF262626);

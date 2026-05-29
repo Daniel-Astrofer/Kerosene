@@ -3,16 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/constants/app_copy.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/snackbar_helper.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/constants/app_copy.dart';
+import 'package:kerosene/core/providers/currency_provider.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/core/utils/snackbar_helper.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'deposit_method_screen.dart';
 
 class DepositAmountScreen extends ConsumerStatefulWidget {

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/bootstrap/web_bootstrap.dart';
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/providers/tor_providers.dart';
+import 'package:kerosene/bootstrap/web_bootstrap.dart';
+import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/providers/tor_providers.dart';
 
 void main() {
   test('configureResolvedApiUrl aligns apiUrl, activeNodeUrl and provider', () {

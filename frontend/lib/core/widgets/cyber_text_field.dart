@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_spacing.dart';
-import 'package:teste/core/presentation/widgets/glass_container.dart';
+import 'package:kerosene/core/presentation/widgets/glass_container.dart';
 
 /// Design System-compliant text field with shake animation for form errors.
 /// Drop-in replacement for any input in the app — zero hardcoded values.

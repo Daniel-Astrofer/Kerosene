@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import '../navigation/admin_routes.dart';
 import '../theme/admin_colors.dart';
 import '../theme/admin_typography.dart';
@@ -58,7 +59,7 @@ class _AdminAccessNotice extends StatelessWidget {
       ),
       color: AdminColors.warningSubtle,
       child: Text(
-        'Acesso administrativo registrado.',
+        context.tr.adminLoginApprovalRegistered,
         style: AdminTypography.caption.copyWith(color: AdminColors.warning),
       ),
     );
@@ -139,7 +140,7 @@ class _AdminSidebar extends ConsumerWidget {
               ),
               children: [
                 _NavSection(
-                  label: 'OVERVIEW',
+                  label: context.tr.adminShellNavOverview,
                   items: [
                     AdminRoute.dashboard,
                     AdminRoute.monitoring,
@@ -153,7 +154,7 @@ class _AdminSidebar extends ConsumerWidget {
                 ),
                 const SizedBox(height: AdminTheme.spacingLg),
                 _NavSection(
-                  label: 'OPERATIONS',
+                  label: context.tr.adminShellNavOperations,
                   items: [
                     AdminRoute.transactions,
                     AdminRoute.lightning,
@@ -168,7 +169,7 @@ class _AdminSidebar extends ConsumerWidget {
                 ),
                 const SizedBox(height: AdminTheme.spacingLg),
                 _NavSection(
-                  label: 'MANAGEMENT',
+                  label: context.tr.adminShellNavManagement,
                   items: [
                     AdminRoute.companies,
                     AdminRoute.audit,
@@ -205,7 +206,7 @@ class _AdminSidebar extends ConsumerWidget {
                   const SizedBox(width: AdminTheme.spacingSm),
                   Flexible(
                     child: Text(
-                      'System Operational',
+                      context.tr.adminShellSystemOperational,
                       overflow: TextOverflow.ellipsis,
                       style: AdminTypography.caption.copyWith(
                         color: AdminColors.textTertiary,
@@ -293,6 +294,7 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
+    final routeLabel = widget.route.localizedLabel(context);
     final item = MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -332,7 +334,7 @@ class _NavItemState extends State<_NavItem> {
                 const SizedBox(width: AdminTheme.spacingMd),
                 Expanded(
                   child: Text(
-                    widget.route.label,
+                    routeLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AdminTypography.bodyMedium.copyWith(
@@ -357,7 +359,7 @@ class _NavItemState extends State<_NavItem> {
     }
 
     return Tooltip(
-      message: widget.route.label,
+      message: routeLabel,
       waitDuration: const Duration(milliseconds: 350),
       child: item,
     );
@@ -372,6 +374,7 @@ class _AdminTopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeRoute = ref.watch(adminRouteProvider);
+    final activeRouteLabel = activeRoute.localizedLabel(context);
     final btcPriceAsync = ref.watch(adminBtcPriceProvider);
 
     return Container(
@@ -382,7 +385,7 @@ class _AdminTopBar extends ConsumerWidget {
         children: [
           Flexible(
             child: Text(
-              activeRoute.label,
+              activeRouteLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AdminTypography.h4,
@@ -416,7 +419,7 @@ class _AdminTopBar extends ConsumerWidget {
                       const SizedBox(width: AdminTheme.spacingLg),
                       _TopBarPill(
                         icon: Icons.verified_outlined,
-                        label: 'Integrity only',
+                        label: context.tr.adminShellIntegrityOnly,
                         iconColor: AdminColors.positive,
                       ),
                     ],

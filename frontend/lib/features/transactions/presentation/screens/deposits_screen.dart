@@ -6,19 +6,19 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/navigation/app_page_transitions.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/core/utils/snackbar_helper.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/transactions/presentation/widgets/statement_transaction_card.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/providers/wallet_provider.dart'
+import 'package:kerosene/core/navigation/app_page_transitions.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/core/utils/snackbar_helper.dart';
+import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/statement_transaction_card.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart'
     show walletProvider;
-import 'package:teste/features/wallet/presentation/screens/receive_amount_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
-import 'package:teste/features/wallet/presentation/state/wallet_state.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_amount_screen.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
+import 'package:kerosene/features/wallet/presentation/state/wallet_state.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 Future<void> openTransactionStatement(
   BuildContext context, {
@@ -261,10 +261,8 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   void _showWalletRequiredNotice([_ReceiveRail? rail]) {
     HapticFeedback.selectionClick();
     final message = switch (rail) {
-      _ReceiveRail.kerosene =>
-        'Nenhuma carteira interna Kerosene disponível para recebimento.',
-      _ReceiveRail.onChain =>
-        'Nenhuma carteira fria on-chain disponível para recebimento.',
+      _ReceiveRail.kerosene => context.tr.receiveWalletInternalUnavailable,
+      _ReceiveRail.onChain => context.tr.receiveWalletOnchainUnavailable,
       null => context.tr.receiveHubNoWalletMessage,
     };
     SnackbarHelper.showInfo(message);
@@ -319,7 +317,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Onde deseja\nreceber?',
+                    context.tr.receiveWalletSelectionTitle,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.ibmPlexSerif(
                       color: _receiveTextColor,
@@ -331,7 +329,7 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Escolha se os fundos entram na carteira interna Kerosene ou na sua carteira fria on-chain.',
+                    context.tr.receiveWalletSelectionSubtitle,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       color: _receiveMutedTextColor,
@@ -346,16 +344,14 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                     children: [
                       _ReceiveActionTile(
                         icon: LucideIcons.arrowLeftRight,
-                        title: 'Carteira Principal',
-                        subtitle:
-                            'Receba diretamente na sua carteira na Kerosene',
+                        title: context.tr.receiveWalletKeroseneTitle,
+                        subtitle: context.tr.receiveWalletKeroseneSubtitle,
                         onTap: () => _selectRail(_ReceiveRail.kerosene),
                       ),
                       _ReceiveActionTile(
                         icon: LucideIcons.bitcoin,
-                        title: 'Carteira de Casa',
-                        subtitle:
-                            'Receba direto no endereço Bitcoin da sua carteira de casa',
+                        title: context.tr.receiveWalletOnchainTitle,
+                        subtitle: context.tr.receiveWalletOnchainSubtitle,
                         onTap: () => _selectRail(_ReceiveRail.onChain),
                         showDivider: false,
                       ),
@@ -373,10 +369,12 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   Widget _buildMethodSelection() {
     final rail = _selectedRail ?? _ReceiveRail.kerosene;
     final isOnChain = rail == _ReceiveRail.onChain;
-    final title = isOnChain ? 'Receber on-chain' : 'Receber na Kerosene';
+    final title = isOnChain
+        ? context.tr.receiveMethodOnchainTitle
+        : context.tr.receiveMethodKeroseneTitle;
     final subtitle = isOnChain
-        ? 'Escolha QR Code, link de pagamento ou NFC para sua carteira fria.'
-        : 'Escolha QR Code, link de pagamento ou NFC para sua carteira interna.';
+        ? context.tr.receiveMethodOnchainSubtitle
+        : context.tr.receiveMethodKeroseneSubtitle;
 
     return SingleChildScrollView(
       key: ValueKey('receive-method-${rail.name}'),
@@ -414,29 +412,29 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
               if (!isOnChain)
                 _ReceiveActionTile(
                   icon: LucideIcons.creditCard,
-                  title: 'Gateway de pagamento',
-                  subtitle: 'Escolher um provedor para comprar Bitcoin',
+                  title: context.tr.receiveMethodGatewayTitle,
+                  subtitle: context.tr.receiveMethodGatewaySubtitle,
                   onTap: _openGatewayProviders,
                   verticalPadding: 24,
                 ),
               _ReceiveActionTile(
                 icon: LucideIcons.qrCode,
-                title: 'QR Code',
-                subtitle: 'Gerar um código para exibir ao pagador',
+                title: context.tr.receiveMethodQrTitle,
+                subtitle: context.tr.receiveMethodQrSubtitle,
                 onTap: () => _openReceive(ReceiveAmountMethod.qrCode),
                 verticalPadding: 24,
               ),
               _ReceiveActionTile(
                 icon: LucideIcons.link2,
-                title: 'Link de pagamento',
-                subtitle: 'Criar uma cobrança compartilhável',
+                title: context.tr.receiveMethodPaymentLinkTitle,
+                subtitle: context.tr.receiveMethodPaymentLinkSubtitle,
                 onTap: () => _openReceive(ReceiveAmountMethod.paymentLink),
                 verticalPadding: 24,
               ),
               _ReceiveActionTile(
                 icon: LucideIcons.nfc,
-                title: 'NFC',
-                subtitle: 'Preparar recebimento por aproximação',
+                title: context.tr.receiveMethodNfcTitle,
+                subtitle: context.tr.receiveMethodNfcSubtitle,
                 onTap: () => _openReceive(ReceiveAmountMethod.nfc),
                 showDivider: false,
                 verticalPadding: 24,
@@ -472,7 +470,7 @@ class _ReceiveTopBar extends StatelessWidget {
               ),
             ),
             Text(
-              'Receber',
+              context.tr.receive,
               style: GoogleFonts.inter(
                 color: _receiveTextColor,
                 fontSize: 15,
@@ -641,104 +639,112 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
     required this.wallet,
   });
 
-  static const _providers = <_GatewayProviderSection>[
-    _GatewayProviderSection(
-      title: 'Recomendados para Brasil',
-      providers: [
-        _GatewayProvider(
-          name: 'MoonPay',
-          methods: 'Pix, Cartão, Apple Pay • Instantâneo',
-          fees: 'Taxas: 1% a 4,5%',
-          icon: LucideIcons.creditCard,
-          aliases: ['moonpay'],
-        ),
-        _GatewayProvider(
-          name: 'Banxa',
-          methods: 'Cartão, Apple Pay, Google Pay • Instantâneo',
-          fees: 'Taxa: 1,99% + Network fee',
-          icon: LucideIcons.circleDollarSign,
-          aliases: ['banxa'],
-        ),
-        _GatewayProvider(
-          name: 'Mercuryo',
-          methods: 'Pix, Cartão, Apple Pay • Minutos',
-          fees: 'Taxa: 3,95% a 4%',
-          icon: LucideIcons.smartphone,
-          aliases: ['mercuryo'],
-        ),
-        _GatewayProvider(
-          name: 'Ramp Network',
-          methods: 'Cartão, Apple Pay, Transferência • Minutos',
-          fees: 'Taxas dinâmicas no checkout',
-          icon: LucideIcons.trendingUp,
-          aliases: ['ramp', 'ramp_network', 'rampnetwork'],
-        ),
-      ],
-    ),
-    _GatewayProviderSection(
-      title: 'Institucionais',
-      providers: [
-        _GatewayProvider(
-          name: 'Stripe Crypto Onramp',
-          methods: 'Cartão, Apple Pay, ACH • 1 a 5 min',
-          fees: 'Taxas dinâmicas',
-          icon: LucideIcons.building2,
-          badge: 'INSTITUCIONAL',
-          aliases: ['stripe', 'stripe_crypto_onramp', 'stripe_onramp'],
-        ),
-        _GatewayProvider(
-          name: 'Coinbase Onramp',
-          methods: 'Cartão de Débito/Crédito • Minutos',
-          fees: 'Taxas dinâmicas',
-          icon: LucideIcons.database,
-          badge: 'INSTITUCIONAL',
-          aliases: ['coinbase', 'coinbase_onramp'],
-        ),
-      ],
-    ),
-    _GatewayProviderSection(
-      title: 'Agregadores',
-      providers: [
-        _GatewayProvider(
-          name: 'Onramper',
-          methods: 'Mais de 130 métodos e 30 provedores',
-          fees: 'Melhor rota disponível • Fallback ideal',
-          icon: LucideIcons.boxes,
-          aliases: ['onramper'],
-        ),
-      ],
-    ),
-    _GatewayProviderSection(
-      title: 'Outros',
-      providers: [
-        _GatewayProvider(
-          name: 'Transak',
-          methods: 'Cartão, Carteiras Digitais • Minutos',
-          fees: 'Limites e taxas variáveis por cobertura',
-          icon: LucideIcons.arrowLeftRight,
-          aliases: ['transak'],
-        ),
-        _GatewayProvider(
-          name: 'Wert',
-          methods: 'Cartão, Apple Pay, Google Pay • < 60 seg',
-          fees: 'Mínimo de US\$30 para BTC',
-          icon: LucideIcons.zap,
-          aliases: ['wert'],
-        ),
-        _GatewayProvider(
-          name: 'GateFi / Unlimit',
-          methods: 'E-wallets, QR Code, Cash • Variável',
-          fees: 'Ampla cobertura global',
-          icon: LucideIcons.globe2,
-          aliases: ['gatefi', 'unlimit', 'gatefi_unlimit'],
-        ),
-      ],
-    ),
-  ];
+  List<_GatewayProviderSection> _providerSections(BuildContext context) {
+    final tr = context.tr;
+    return [
+      _GatewayProviderSection(
+        title: tr.receiveGatewayRecommendedBrazil,
+        providers: [
+          _GatewayProvider(
+            name: 'MoonPay',
+            methods: tr.receiveGatewayMoonPayMethods,
+            fees: tr.receiveGatewayMoonPayFees,
+            icon: LucideIcons.creditCard,
+            aliases: const ['moonpay'],
+          ),
+          _GatewayProvider(
+            name: 'Banxa',
+            methods: tr.receiveGatewayBanxaMethods,
+            fees: tr.receiveGatewayBanxaFees,
+            icon: LucideIcons.circleDollarSign,
+            aliases: const ['banxa'],
+          ),
+          _GatewayProvider(
+            name: 'Mercuryo',
+            methods: tr.receiveGatewayMercuryoMethods,
+            fees: tr.receiveGatewayMercuryoFees,
+            icon: LucideIcons.smartphone,
+            aliases: const ['mercuryo'],
+          ),
+          _GatewayProvider(
+            name: 'Ramp Network',
+            methods: tr.receiveGatewayRampMethods,
+            fees: tr.receiveGatewayRampFees,
+            icon: LucideIcons.trendingUp,
+            aliases: const ['ramp', 'ramp_network', 'rampnetwork'],
+          ),
+        ],
+      ),
+      _GatewayProviderSection(
+        title: tr.receiveGatewayInstitutional,
+        providers: [
+          _GatewayProvider(
+            name: 'Stripe Crypto Onramp',
+            methods: tr.receiveGatewayStripeMethods,
+            fees: tr.receiveGatewayStripeFees,
+            icon: LucideIcons.building2,
+            badge: tr.receiveGatewayInstitutionalBadge,
+            aliases: const [
+              'stripe',
+              'stripe_crypto_onramp',
+              'stripe_onramp',
+            ],
+          ),
+          _GatewayProvider(
+            name: 'Coinbase Onramp',
+            methods: tr.receiveGatewayCoinbaseMethods,
+            fees: tr.receiveGatewayCoinbaseFees,
+            icon: LucideIcons.database,
+            badge: tr.receiveGatewayInstitutionalBadge,
+            aliases: const ['coinbase', 'coinbase_onramp'],
+          ),
+        ],
+      ),
+      _GatewayProviderSection(
+        title: tr.receiveGatewayAggregators,
+        providers: [
+          _GatewayProvider(
+            name: 'Onramper',
+            methods: tr.receiveGatewayOnramperMethods,
+            fees: tr.receiveGatewayOnramperFees,
+            icon: LucideIcons.boxes,
+            aliases: const ['onramper'],
+          ),
+        ],
+      ),
+      _GatewayProviderSection(
+        title: tr.receiveGatewayOther,
+        providers: [
+          _GatewayProvider(
+            name: 'Transak',
+            methods: tr.receiveGatewayTransakMethods,
+            fees: tr.receiveGatewayTransakFees,
+            icon: LucideIcons.arrowLeftRight,
+            aliases: const ['transak'],
+          ),
+          _GatewayProvider(
+            name: 'Wert',
+            methods: tr.receiveGatewayWertMethods,
+            fees: tr.receiveGatewayWertFees,
+            icon: LucideIcons.zap,
+            aliases: const ['wert'],
+          ),
+          _GatewayProvider(
+            name: 'GateFi / Unlimit',
+            methods: tr.receiveGatewayGateFiMethods,
+            fees: tr.receiveGatewayGateFiFees,
+            icon: LucideIcons.globe2,
+            aliases: const ['gatefi', 'unlimit', 'gatefi_unlimit'],
+          ),
+        ],
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final urlsAsync = ref.watch(_receiveGatewayProviderUrlsProvider);
+    final providers = _providerSections(context);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -767,7 +773,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Provedores',
+                        context.tr.receiveGatewayProvidersTitle,
                         style: GoogleFonts.ibmPlexSerif(
                           color: _receiveTextColor,
                           fontSize: 40,
@@ -787,13 +793,13 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
                       ),
                     ),
                     error: (_, __) => _GatewayProviderList(
-                      sections: _providers,
+                      sections: providers,
                       urls: const {},
                       onSelect: (provider) =>
                           _showProviderUnavailable(context, provider),
                     ),
                     data: (urls) => _GatewayProviderList(
-                      sections: _providers,
+                      sections: providers,
                       urls: urls,
                       onSelect: (provider) =>
                           _selectProvider(context, provider, urls),
@@ -821,7 +827,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
 
     Clipboard.setData(ClipboardData(text: url));
     SnackbarHelper.showSuccess(
-      'Link da ${provider.name} copiado para ${wallet.name}.',
+      context.tr.receiveGatewayLinkCopied(provider.name, wallet.name),
     );
   }
 
@@ -830,7 +836,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
     _GatewayProvider provider,
   ) {
     SnackbarHelper.showInfo(
-      '${provider.name} ainda não está disponível para esta carteira.',
+      context.tr.receiveGatewayProviderUnavailable(provider.name),
     );
   }
 }
@@ -993,7 +999,9 @@ class _GatewayProviderTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    available ? provider.fees : '${provider.fees} • Em breve',
+                    available
+                        ? provider.fees
+                        : '${provider.fees} • ${context.tr.receiveGatewayComingSoon}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1168,7 +1176,7 @@ class _TransactionStatementScreenState
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
                           child: Text(
-                            'Transações',
+                            context.tr.financialStatementTitle,
                             style: GoogleFonts.ibmPlexSerif(
                               color: Colors.white,
                               fontSize: 34,
@@ -1202,7 +1210,7 @@ class _TransactionStatementScreenState
                           hasScrollBody: false,
                           child: _StatementMessage(
                             icon: LucideIcons.alertCircle,
-                            title: 'Não foi possível carregar',
+                            title: context.tr.financialStatementLoadErrorTitle,
                             message: ErrorTranslator.translate(
                               context.tr,
                               error.toString(),
@@ -1212,13 +1220,13 @@ class _TransactionStatementScreenState
                         data: (transactions) {
                           final rows = _filtered(transactions);
                           if (rows.isEmpty) {
-                            return const SliverFillRemaining(
+                            return SliverFillRemaining(
                               hasScrollBody: false,
                               child: _StatementMessage(
                                 icon: LucideIcons.receipt,
-                                title: 'Sem transações',
+                                title: context.tr.financialStatementEmptyTitle,
                                 message:
-                                    'As movimentações da conta aparecerão aqui.',
+                                    context.tr.financialStatementEmptyMessage,
                               ),
                             );
                           }
@@ -1626,7 +1634,7 @@ class _StatementTopBarState extends State<_StatementTopBar> {
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 isDense: true,
-                hintText: 'Buscar',
+                hintText: context.tr.financialStatementSearchHint,
                 hintStyle: GoogleFonts.inter(
                   color: const Color(0xFF8A8A8E),
                   fontSize: 14,
@@ -1702,17 +1710,17 @@ class _StatementTabs extends StatelessWidget {
       child: Row(
         children: [
           _StatementTab(
-            label: 'Todas',
+            label: context.tr.financialStatementFilterAll,
             selected: selected == _StatementFilter.all,
             onTap: () => onChanged(_StatementFilter.all),
           ),
           _StatementTab(
-            label: 'Recebidas',
+            label: context.tr.financialStatementFilterIncoming,
             selected: selected == _StatementFilter.incoming,
             onTap: () => onChanged(_StatementFilter.incoming),
           ),
           _StatementTab(
-            label: 'Enviadas',
+            label: context.tr.financialStatementFilterOutgoing,
             selected: selected == _StatementFilter.outgoing,
             onTap: () => onChanged(_StatementFilter.outgoing),
           ),

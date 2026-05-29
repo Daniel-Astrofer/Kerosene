@@ -1,7 +1,7 @@
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/errors/exceptions.dart';
-import 'package:teste/core/network/api_client.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/errors/exceptions.dart';
+import 'package:kerosene/core/network/api_client.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 
 abstract class NotificationRemoteDataSource {
   Future<List<SessionNotificationItem>> getNotifications();

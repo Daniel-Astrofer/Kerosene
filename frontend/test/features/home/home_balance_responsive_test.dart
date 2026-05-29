@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/providers/shader_provider.dart';
-import 'package:teste/core/theme/app_theme.dart';
-import 'package:teste/features/home/presentation/widgets/animated_balance_display.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/providers/balance_settings_provider.dart';
-import 'package:teste/features/wallet/presentation/widgets/wallet_credit_card.dart';
+import 'package:kerosene/core/providers/shader_provider.dart';
+import 'package:kerosene/core/theme/app_theme.dart';
+import 'package:kerosene/features/home/presentation/widgets/animated_balance_display.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/providers/balance_settings_provider.dart';
+import 'package:kerosene/features/wallet/presentation/widgets/wallet_credit_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

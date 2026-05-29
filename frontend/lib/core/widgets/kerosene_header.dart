@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 
 /// Glass-morphism top bar with blurred background.
 class KeroseneHeader extends StatelessWidget implements PreferredSizeWidget {

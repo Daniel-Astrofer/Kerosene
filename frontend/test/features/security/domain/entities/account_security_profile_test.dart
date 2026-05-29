@@ -1,6 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/features/security/domain/entities/account_security_profile.dart';
-import 'package:teste/features/security/domain/entities/passkey_inventory.dart';
+import 'package:test/test.dart';
+import 'package:kerosene/features/security/domain/entities/account_security_profile.dart';
+import 'package:kerosene/features/security/domain/entities/passkey_inventory.dart';
 
 void main() {
   group('AccountSecurityProfile', () {
@@ -21,6 +21,8 @@ void main() {
             {
               'credentialId': 'cred-123',
               'deviceName': 'Pixel 9',
+              'deviceInstallId': 'install-pixel-9',
+              'status': 'ACTIVE',
               'relyingPartyId': 'app.kerosene.test',
               'originHost': 'app.kerosene.test',
               'compatibilityStatus': 'INCOMPATIBLE',
@@ -40,6 +42,9 @@ void main() {
       expect(profile.passkeys!.currentHost, 'app.kerosene.test');
       expect(profile.passkeys!.devices, hasLength(1));
       expect(profile.passkeys!.devices.first.deviceName, 'Pixel 9');
+      expect(
+          profile.passkeys!.devices.first.deviceInstallId, 'install-pixel-9');
+      expect(profile.passkeys!.devices.first.status, 'ACTIVE');
       expect(
         profile.passkeys!.devices.first.compatibilityStatus,
         PasskeyCompatibilityStatus.incompatible,

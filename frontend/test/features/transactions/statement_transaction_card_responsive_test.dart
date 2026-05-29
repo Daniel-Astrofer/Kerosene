@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_list_item.dart';
-import 'package:teste/features/transactions/presentation/widgets/statement_transaction_card.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
-import 'package:teste/core/l10n/app_localizations.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_list_item.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/statement_transaction_card.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/core/l10n/app_localizations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

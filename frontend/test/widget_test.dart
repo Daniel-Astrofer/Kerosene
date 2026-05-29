@@ -9,10 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/bootstrap/mobile_bootstrap.dart';
-import 'package:teste/core/providers/shared_preferences_provider.dart';
-import 'package:teste/features/security/domain/entities/app_pin_status.dart';
-import 'package:teste/features/security/presentation/providers/security_provider.dart';
+import 'package:kerosene/bootstrap/mobile_bootstrap.dart';
+import 'package:kerosene/core/providers/shared_preferences_provider.dart';
+import 'package:kerosene/features/security/domain/entities/app_pin_status.dart';
+import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

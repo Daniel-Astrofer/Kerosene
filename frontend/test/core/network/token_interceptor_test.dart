@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/features/auth/data/interceptors/token_interceptor.dart';
+import 'package:kerosene/features/auth/data/interceptors/token_interceptor.dart';
 
 void main() {
   group('TokenInterceptor.shouldOverrideHostForOnionRelay', () {

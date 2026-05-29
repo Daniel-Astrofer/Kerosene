@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
-import 'package:teste/core/errors/exceptions.dart';
-import 'package:teste/core/errors/failures.dart';
-import 'package:teste/features/notifications/data/datasources/notification_remote_datasource.dart';
-import 'package:teste/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:teste/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:kerosene/core/errors/exceptions.dart';
+import 'package:kerosene/core/errors/failures.dart';
+import 'package:kerosene/features/notifications/data/datasources/notification_remote_datasource.dart';
+import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/domain/repositories/notification_repository.dart';
 
 class NotificationRepositoryImpl implements NotificationRepository {
   final NotificationRemoteDataSource remoteDataSource;

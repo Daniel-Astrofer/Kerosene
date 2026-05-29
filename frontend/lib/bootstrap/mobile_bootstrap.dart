@@ -4,9 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/theme/app_theme.dart';
+import 'package:kerosene/core/theme/app_theme.dart';
 
-import 'package:teste/core/l10n/app_localizations.dart';
+import 'package:kerosene/core/l10n/app_localizations.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../core/providers/appearance_provider.dart';
 import '../core/providers/locale_provider.dart';
@@ -14,6 +14,7 @@ import '../core/providers/session_invalidation_provider.dart';
 import '../core/presentation/widgets/kerosene_logo_loading_view.dart';
 import '../core/responsive/kerosene_responsive.dart';
 import '../features/auth/presentation/screens/welcome_screen.dart';
+import '../features/auth/presentation/screens/emergency_recovery_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
@@ -103,7 +104,7 @@ class MyApp extends ConsumerWidget {
     });
 
     return MaterialApp(
-      title: 'Kerosene Bank',
+      title: 'Kerosene',
       navigatorKey: SnackbarHelper.navigatorKey,
       scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
@@ -156,6 +157,7 @@ class MyApp extends ConsumerWidget {
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
+        '/recovery/emergency': (context) => const EmergencyRecoveryScreen(),
         '/signup': (context) => const SignupFlowScreen(),
         '/server-unavailable': (context) => const ServerUnavailableScreen(),
         '/home': (context) => const _PrivateMobileRoute(child: HomeScreen()),
@@ -168,6 +170,8 @@ class MyApp extends ConsumerWidget {
               child: TransactionStatementScreen(),
             ),
         '/card': (context) =>
+            const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
+        '/bitcoin/advanced': (context) =>
             const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
         '/receive': (context) => const _PrivateMobileRoute(
               child: DepositsScreen(),

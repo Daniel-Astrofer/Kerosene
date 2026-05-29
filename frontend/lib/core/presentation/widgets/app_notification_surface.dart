@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:teste/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 enum AppNotificationTone { neutral, success, error, info, warning }
 

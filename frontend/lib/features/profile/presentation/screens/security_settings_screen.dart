@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:teste/core/presentation/widgets/app_notice.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/presentation/widgets/tor_loading_dots.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/theme/monochrome_theme.dart';
-import 'package:teste/core/providers/biometric_provider.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/features/auth/controller/auth_controller.dart';
-import 'package:teste/features/auth/controller/auth_providers.dart';
-import 'package:teste/features/security/domain/entities/app_pin_status.dart';
-import 'package:teste/features/security/domain/entities/account_security_profile.dart';
-import 'package:teste/features/security/domain/entities/passkey_inventory.dart';
-import 'package:teste/features/security/presentation/providers/security_provider.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/monochrome_theme.dart';
+import 'package:kerosene/core/providers/biometric_provider.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/auth/controller/auth_providers.dart';
+import 'package:kerosene/features/security/domain/entities/app_pin_status.dart';
+import 'package:kerosene/features/security/domain/entities/account_security_profile.dart';
+import 'package:kerosene/features/security/domain/entities/passkey_inventory.dart';
+import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 class SecuritySettingsScreen extends ConsumerStatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -1173,10 +1173,31 @@ class _InventoryContextChip extends StatelessWidget {
   }
 }
 
-class _PasskeyDeviceRow extends StatelessWidget {
+class _PasskeyDeviceRow extends ConsumerStatefulWidget {
   final PasskeyDevice device;
 
   const _PasskeyDeviceRow({required this.device});
+
+  @override
+  ConsumerState<_PasskeyDeviceRow> createState() => _PasskeyDeviceRowState();
+}
+
+class _PasskeyDeviceRowState extends ConsumerState<_PasskeyDeviceRow> {
+  bool _busy = false;
+
+  PasskeyDevice get device => widget.device;
+
+  bool get _canBlock {
+    final status = device.status.toUpperCase();
+    return device.deviceInstallId.trim().isNotEmpty &&
+        status != 'BLOCKED' &&
+        status != 'REVOKED';
+  }
+
+  bool get _canRevoke {
+    final status = device.status.toUpperCase();
+    return device.deviceInstallId.trim().isNotEmpty && status != 'REVOKED';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1274,9 +1295,100 @@ class _PasskeyDeviceRow extends StatelessWidget {
                   height: 1.4,
                 ),
           ),
+          if (_canBlock || _canRevoke) ...[
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (_busy)
+                  const SizedBox(
+                    width: 42,
+                    height: 28,
+                    child: Center(
+                      child: TorLoadingDots(
+                        dotSize: 4,
+                        spacing: 5,
+                        travel: 7,
+                        color: monoMutedTextColor,
+                      ),
+                    ),
+                  ),
+                if (_canBlock)
+                  OutlinedButton.icon(
+                    style: monochromeOutlinedButtonStyle(minHeight: 40),
+                    onPressed: _busy
+                        ? null
+                        : () => _updateDeviceStatus(
+                              revoke: false,
+                            ),
+                    icon: const Icon(Icons.block_rounded, size: 16),
+                    label: Text(
+                      context.tr.securityDeviceBlockAction.toUpperCase(),
+                    ),
+                  ),
+                if (_canRevoke)
+                  OutlinedButton.icon(
+                    style: monochromeOutlinedButtonStyle(minHeight: 40),
+                    onPressed: _busy
+                        ? null
+                        : () => _updateDeviceStatus(
+                              revoke: true,
+                            ),
+                    icon: const Icon(Icons.link_off_rounded, size: 16),
+                    label: Text(
+                      context.tr.securityDeviceRevokeAction.toUpperCase(),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _updateDeviceStatus({required bool revoke}) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    try {
+      final repository = ref.read(securityRepositoryProvider);
+      final result = revoke
+          ? await repository.revokePasskeyDevice(device.deviceInstallId)
+          : await repository.blockPasskeyDevice(device.deviceInstallId);
+
+      if (!mounted) return;
+
+      result.fold(
+        (failure) {
+          AppNotice.showError(
+            context,
+            title: revoke
+                ? context.tr.securityDeviceRevokeFailedTitle
+                : context.tr.securityDeviceBlockFailedTitle,
+            message: ErrorTranslator.translate(context.tr, failure.message),
+          );
+        },
+        (_) {
+          ref.invalidate(accountSecurityProfileProvider);
+          ref.invalidate(securityStatusProvider);
+          AppNotice.showSuccess(
+            context,
+            title: revoke
+                ? context.tr.securityDeviceRevokedTitle
+                : context.tr.securityDeviceBlockedTitle,
+            message: revoke
+                ? context.tr.securityDeviceRevokedMessage
+                : context.tr.securityDeviceBlockedMessage,
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
   }
 
   static String _compatibilityHint(

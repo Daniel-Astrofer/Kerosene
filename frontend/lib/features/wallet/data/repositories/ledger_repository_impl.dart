@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
-import 'package:teste/features/auth/data/datasources/auth_local_datasource.dart';
-import 'package:teste/features/auth/data/models/user_model.dart';
+import 'package:kerosene/features/auth/data/datasources/auth_local_datasource.dart';
+import 'package:kerosene/features/auth/data/models/user_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/transaction.dart';

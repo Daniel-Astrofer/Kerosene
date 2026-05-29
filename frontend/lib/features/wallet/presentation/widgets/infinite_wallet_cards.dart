@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:teste/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
+import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../../domain/entities/wallet.dart';
 import 'wallet_credit_card.dart';
 

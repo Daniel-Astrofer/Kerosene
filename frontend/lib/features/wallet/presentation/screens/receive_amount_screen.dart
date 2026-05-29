@@ -3,17 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/error_translator.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/snackbar_helper.dart';
-import 'package:teste/features/transactions/domain/entities/payment_link.dart';
-import 'package:teste/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:teste/features/wallet/domain/entities/wallet.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_method.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
-import 'package:teste/features/wallet/presentation/screens/receive_request_flow_screen.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/core/utils/snackbar_helper.dart';
+import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
+import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
+import 'package:kerosene/features/wallet/presentation/screens/receive_request_flow_screen.dart';
 
 class ReceiveAmountScreen extends ConsumerStatefulWidget {
   final Wallet wallet;

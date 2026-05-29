@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/providers/currency_provider.dart';
-import 'package:teste/core/providers/price_provider.dart';
-import 'package:teste/core/utils/money_display.dart';
-import 'package:teste/core/utils/transaction_address_display.dart';
-import 'package:teste/features/transactions/presentation/widgets/transaction_visuals.dart';
-import 'package:teste/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/core/providers/currency_provider.dart';
+import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/utils/money_display.dart';
+import 'package:kerosene/core/utils/transaction_address_display.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 
 enum StatementTransactionCardMode { stacked, separated }
 

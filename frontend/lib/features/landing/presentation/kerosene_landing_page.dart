@@ -6,9 +6,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/theme/app_typography.dart';
-import 'package:teste/features/landing/data/public_site_service.dart';
-import 'package:teste/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/features/landing/data/public_site_service.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 const _ink = Color(0xFF000000);
 const _surface = Color(0xFF131313);
@@ -780,12 +781,7 @@ class _BrandMark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset(
-          'assets/logo/kerosene-logo.png',
-          width: compact ? 34 : 44,
-          height: compact ? 34 : 44,
-          fit: BoxFit.contain,
-        ),
+        KeroseneLogo(size: compact ? 34 : 44, showText: false),
         SizedBox(width: compact ? 12 : 18),
         Text(
           label.toUpperCase(),

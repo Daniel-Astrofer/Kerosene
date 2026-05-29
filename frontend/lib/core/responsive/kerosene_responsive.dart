@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
-import 'package:teste/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 
 enum KeroseneWindowClass { compact, medium, expanded, wide }
 

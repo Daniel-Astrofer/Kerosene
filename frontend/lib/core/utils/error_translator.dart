@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:teste/core/l10n/app_localizations.dart';
+import 'package:kerosene/core/l10n/app_localizations.dart';
 
 class ErrorTranslator {
   static String translate(AppLocalizations l10n, String codeOrMessage) {

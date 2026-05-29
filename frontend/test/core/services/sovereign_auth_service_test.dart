@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/core/services/sovereign_auth_service.dart';
+import 'package:kerosene/core/services/sovereign_auth_service.dart';
 
 class _InMemorySovereignKeyStore implements SovereignKeyStore {
   Uint8List? privateKeySeed;

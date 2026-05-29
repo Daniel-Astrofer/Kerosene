@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:teste/core/localization/app_localization_manager.dart';
+import 'package:kerosene/core/localization/app_localization_manager.dart';
 
 import 'shared_preferences_provider.dart';
 

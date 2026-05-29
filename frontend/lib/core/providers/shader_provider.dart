@@ -57,12 +57,3 @@ final bitcoinShaderProvider = FutureProvider<FragmentProgram>((ref) async {
     rethrow;
   }
 });
-
-final hydraLogoShaderProvider = FutureProvider<FragmentProgram>((ref) async {
-  try {
-    return await FragmentProgram.fromAsset('assets/shaders/hydra_logo.frag');
-  } catch (e) {
-    debugPrint('🚨 Error loading hydra logo shader: $e');
-    rethrow;
-  }
-});

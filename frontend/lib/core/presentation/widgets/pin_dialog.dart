@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:teste/core/presentation/widgets/cyber_background.dart';
-import 'package:teste/core/theme/app_spacing.dart';
-import 'package:teste/core/security/app_pin_service.dart';
+import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/security/app_pin_service.dart';
 
 enum _PinMode { setup, enter }
 

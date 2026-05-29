@@ -65,3 +65,22 @@ final bitcoinAccountReceiveRequestsProvider =
   final service = ref.watch(bitcoinAccountsServiceProvider);
   return service.listReceiveRequestsForAccount(accountId);
 });
+
+final bitcoinColdWalletUtxosProvider =
+    FutureProvider.family<List<ColdWalletUtxoView>, String>(
+        (ref, coldWalletId) async {
+  final service = ref.watch(bitcoinAccountsServiceProvider);
+  return service.listColdWalletUtxos(coldWalletId);
+});
+
+final bitcoinColdWalletPsbtsProvider =
+    FutureProvider.family<List<PsbtWorkflowView>, String>(
+        (ref, coldWalletId) async {
+  final service = ref.watch(bitcoinAccountsServiceProvider);
+  return service.listColdWalletPsbt(coldWalletId);
+});
+
+final bitcoinTaxEventsProvider = FutureProvider<List<TaxEventView>>((ref) {
+  final service = ref.watch(bitcoinAccountsServiceProvider);
+  return service.listTaxEvents();
+});

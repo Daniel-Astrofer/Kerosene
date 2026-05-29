@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:teste/core/config/app_config.dart';
-import 'package:teste/core/network/api_client.dart';
-import 'package:teste/core/network/api_client_provider.dart';
-import 'package:teste/core/services/balance_websocket_service.dart';
+import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/network/api_client.dart';
+import 'package:kerosene/core/network/api_client_provider.dart';
+import 'package:kerosene/core/services/balance_websocket_service.dart';
 
 final notificationOrchestratorProvider =
     Provider<NotificationOrchestrator>((ref) {

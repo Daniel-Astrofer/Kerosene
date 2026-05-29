@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/exceptions.dart';
-import 'package:teste/features/auth/data/datasources/auth_local_datasource.dart';
+import 'package:kerosene/features/auth/data/datasources/auth_local_datasource.dart';
 import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';

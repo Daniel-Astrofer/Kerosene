@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:teste/core/navigation/app_page_transitions.dart';
+import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import '../providers/appearance_provider.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';

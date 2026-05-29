@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:teste/features/bitcoin_accounts/data/cold_wallet_public_material.dart';
+import 'package:kerosene/features/bitcoin_accounts/data/cold_wallet_public_material.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('derives public watch-only material without exposing the seed', () {
