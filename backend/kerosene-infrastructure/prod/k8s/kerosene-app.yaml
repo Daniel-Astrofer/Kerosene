@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kerosene-app
+  namespace: kerosene-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kerosene-app
+  template:
+    metadata:
+      labels:
+        app: kerosene-app
+    spec:
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: kerosene-app
+        image: kerosene/kerosene-app:latest
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "production"
+        - name: POSTGRES_URL
+          value: "jdbc:postgresql://kerosene-db-headless:5432/kerosene"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-db-secrets
+              key: application-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-db-secrets
+              key: application-password
+        - name: REDIS_HOST
+          value: "kerosene-redis-headless"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-redis-secrets
+              key: redis-password
+        - name: LND_HOST
+          value: "kerosene-lnd-headless"
+        - name: LND_MACAROON_HEX
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-lnd-secrets
+              key: admin-macaroon
+        - name: VAULT_BOOTSTRAP_STARTUP_TIMEOUT_MS
+          value: "1800000" # 30 minutes in prod due to Tor DHT latency
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - kerosene-app
+              topologyKey: "kubernetes.io/hostname"

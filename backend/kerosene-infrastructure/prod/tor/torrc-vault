@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Kerosene Vault Tor Configuration (PRODUCTION)
+# ═══════════════════════════════════════════════════════════════════════════════
+User kerosene
+SocksPort 0
+
+# Limit capabilities of the Tor process
+Sandbox 1
+RunAsDaemon 0
+HardwareAccel 1
+
+DataDirectory /var/lib/tor
+HiddenServiceDir /var/lib/tor/kerosene_service/
+HiddenServiceVersion 3
+HiddenServicePort 80 127.0.0.1:8090
+
+# --- SOVEREIGNTY & SECURITY ---
+# Require Client Authorization (V3 Auth)
+# Only clients with the corresponding private key can connect to this Vault.
+# Clients public keys must be placed in /var/lib/tor/kerosene_service/authorized_clients/
+HiddenServiceAuthorizeClient auth-type basic
+
+# Guard isolation
+NumCPUs 2
+SafeLogging 1
+Log notice stdout
+
+# Drop unneeded features
+ClientOnly 0
+PublishServerDescriptor 0
+ExitRelay 0

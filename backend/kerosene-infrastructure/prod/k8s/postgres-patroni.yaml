@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kerosene-db-patroni
+  namespace: kerosene-production
+spec:
+  serviceName: kerosene-db-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kerosene-db-patroni
+  template:
+    metadata:
+      labels:
+        app: kerosene-db-patroni
+    spec:
+      containers:
+      - name: patroni
+        image: zalando/spilo-17:3.2-p3
+        env:
+        - name: SPILO_CONFIGURATION
+          value: |
+            postgresql:
+              parameters:
+                max_connections: "500"
+                ssl: "on"
+        - name: PATRONI_KUBERNETES_LABELS
+          value: '{app: kerosene-db-patroni}'
+        - name: PATRONI_SUPERUSER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-db-secrets
+              key: superuser-password
+        ports:
+        - containerPort: 5432
+          name: postgres
+        - containerPort: 8008
+          name: patroni
+        volumeMounts:
+        - name: db-data
+          mountPath: /home/postgres/pgdata
+      # Ensure Pods are distributed across different bare-metal nodes
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - kerosene-db-patroni
+            topologyKey: "kubernetes.io/hostname"
+  volumeClaimTemplates:
+  - metadata:
+      name: db-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-luks-encrypted"
+      resources:
+        requests:
+          storage: 100Gi

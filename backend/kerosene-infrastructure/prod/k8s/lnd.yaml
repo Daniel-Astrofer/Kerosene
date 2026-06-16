@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kerosene-lnd
+  namespace: kerosene-production
+spec:
+  serviceName: kerosene-lnd-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kerosene-lnd
+  template:
+    metadata:
+      labels:
+        app: kerosene-lnd
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: init-wallet-password
+        image: alpine:latest
+        command: ['sh', '-c', 'echo $LND_WALLET_PASSWORD > /lnd/password.txt']
+        env:
+        - name: LND_WALLET_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-lnd-secrets
+              key: wallet-password
+        volumeMounts:
+        - name: lnd-data
+          mountPath: /lnd
+      containers:
+      - name: lnd
+        image: lightninglabs/lnd:v0.18.0-beta
+        command:
+        - "lnd"
+        - "--bitcoin.active"
+        - "--bitcoin.mainnet"
+        - "--bitcoin.node=bitcoind"
+        - "--bitcoind.rpchost=kerosene-bitcoin-headless:8332"
+        - "--bitcoind.rpcuser=$(BITCOIN_RPC_USER)"
+        - "--bitcoind.rpcpass=$(BITCOIN_RPC_PASSWORD)"
+        - "--bitcoind.zmqpubrawblock=tcp://kerosene-bitcoin-headless:28332"
+        - "--bitcoind.zmqpubrawtx=tcp://kerosene-bitcoin-headless:28333"
+        - "--lnddir=/lnd"
+        - "--rpclisten=0.0.0.0:10009"
+        - "--restlisten=0.0.0.0:8080"
+        - "--listen=0.0.0.0:9735"
+        - "--tor.active"
+        - "--tor.v3"
+        - "--tor.socks=kerosene-tor-headless:9050"
+        - "--tor.control=kerosene-tor-headless:9051"
+        - "--wallet-unlock-password-file=/lnd/password.txt"
+        - "--watchtower.active"
+        - "--wtclient.active"
+        env:
+        - name: BITCOIN_RPC_USER
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-bitcoin-secrets
+              key: rpc-user
+        - name: BITCOIN_RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kerosene-bitcoin-secrets
+              key: rpc-password
+        ports:
+        - containerPort: 10009
+          name: grpc
+        - containerPort: 8080
+          name: rest
+        - containerPort: 9735
+          name: p2p
+        volumeMounts:
+        - name: lnd-data
+          mountPath: /lnd
+  volumeClaimTemplates:
+  - metadata:
+      name: lnd-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-luks-encrypted"
+      resources:
+        requests:
+          storage: 20Gi
