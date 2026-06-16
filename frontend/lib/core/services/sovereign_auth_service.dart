@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:kerosene/core/constants/app_copy.dart';
@@ -198,6 +199,14 @@ class LocalAuthSovereignPresenceVerifier implements SovereignPresenceVerifier {
       );
     } on LocalAuthException catch (error) {
       throw _mapLocalAuthException(error);
+    } on MissingPluginException catch (error) {
+      throw _unsupportedLocalAuth(error);
+    } on PlatformException catch (error) {
+      throw _unsupportedLocalAuth(error);
+    } on UnimplementedError catch (error) {
+      throw _unsupportedLocalAuth(error);
+    } on UnsupportedError catch (error) {
+      throw _unsupportedLocalAuth(error);
     }
   }
 
@@ -218,7 +227,24 @@ class LocalAuthSovereignPresenceVerifier implements SovereignPresenceVerifier {
       }
     } on LocalAuthException catch (error) {
       throw _mapLocalAuthException(error);
+    } on MissingPluginException catch (error) {
+      throw _unsupportedLocalAuth(error);
+    } on PlatformException catch (error) {
+      throw _unsupportedLocalAuth(error);
+    } on UnimplementedError catch (error) {
+      throw _unsupportedLocalAuth(error);
+    } on UnsupportedError catch (error) {
+      throw _unsupportedLocalAuth(error);
     }
+  }
+
+  SovereignAuthException _unsupportedLocalAuth(Object error) {
+    return SovereignAuthException(
+      code: SovereignAuthErrorCodes.noLocalCredentials,
+      message:
+          'Passkey confirmation requires biometrics or a local device lock on a supported platform.',
+      cause: error,
+    );
   }
 
   SovereignAuthException _mapLocalAuthException(LocalAuthException error) {

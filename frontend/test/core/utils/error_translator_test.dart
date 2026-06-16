@@ -127,6 +127,17 @@ void main() {
       );
     });
 
+    test('maps unsupported local passkey platforms to biometric setup guidance',
+        () {
+      expect(
+        ErrorTranslator.translate(
+          l10n,
+          'SovereignAuthException(ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS): Passkey confirmation requires biometrics or a local device lock on a supported platform.',
+        ),
+        'Configure biometria ou um bloqueio de tela neste dispositivo para usar a chave do dispositivo.',
+      );
+    });
+
     test('maps backend device recognition errors to actionable guidance', () {
       expect(
         ErrorTranslator.translate(

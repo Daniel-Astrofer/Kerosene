@@ -89,6 +89,8 @@ class ErrorTranslator {
       case 'ERR_AUTH_UNRECOGNIZED_DEVICE':
       case 'ERR_AUTH_PASSKEY_NOT_REGISTERED':
         return l10n.errPasskeyDeviceNotLinked;
+      case 'ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS':
+        return l10n.passkeyNoBiometrics;
       case 'AUTH_011':
       case 'ERR_AUTH_TOTP_TIMEOUT':
         return l10n.errAuthTotpTimeout;

@@ -17,6 +17,7 @@ class TorService {
   bool _isRunning = false;
   int _socksPort = 9050;
   Future<bool>? _startFuture;
+  Future<bool>? _restartFuture;
 
   bool get isRunning => _isRunning;
   int get socksPort => _socksPort;
@@ -79,6 +80,7 @@ class TorService {
 
   /// Stops the embedded Tor daemon.
   Future<void> stop() async {
+    await _closeRelays();
     if (!_isRunning) return;
     try {
       await Tor.instance.stop();
@@ -86,7 +88,41 @@ class TorService {
       debugPrint('🧅 TorService: Error stopping Tor: $e');
     }
     _isRunning = false;
+    _startFuture = null;
     debugPrint('🧅 TorService: Tor (Arti) stopped.');
+  }
+
+  Future<bool> _restartTorProxyForStaleDescriptor() async {
+    final inFlight = _restartFuture;
+    if (inFlight != null) return inFlight;
+
+    _restartFuture = () async {
+      debugPrint(
+        '🧅 TorService: Restarting Tor proxy after stale onion descriptor.',
+      );
+      try {
+        if (_isRunning) {
+          await Tor.instance.stop();
+        }
+      } catch (error) {
+        debugPrint('🧅 TorService: Error stopping stale Tor proxy: $error');
+      }
+
+      _isRunning = false;
+      _startFuture = null;
+      final restarted = await start();
+      if (restarted) {
+        debugPrint(
+          '🧅 TorService: Tor proxy restarted on SOCKS5 port $_socksPort.',
+        );
+      }
+      return restarted;
+    }()
+        .whenComplete(() {
+      _restartFuture = null;
+    });
+
+    return _restartFuture!;
   }
 
   /// Polls the SOCKS port until a raw TCP connection succeeds.
@@ -130,6 +166,19 @@ class TorService {
   /// Map of active relay servers, keyed by 'host:port'.
   final Map<String, ServerSocket> _relayServers = {};
   final Map<String, int> _relayPorts = {};
+  final Map<String, Future<int>> _relayStartFutures = {};
+
+  Future<void> _closeRelays() async {
+    final servers = List<ServerSocket>.from(_relayServers.values);
+    _relayServers.clear();
+    _relayPorts.clear();
+    _relayStartFutures.clear();
+    for (final server in servers) {
+      try {
+        await server.close();
+      } catch (_) {}
+    }
+  }
 
   /// Starts a local TCP server that blindly relays bytes through the Tor SOCKS5 proxy.
   /// This is used to tunnel protocols like WebSockets that don't natively support SOCKS5.
@@ -141,7 +190,25 @@ class TorService {
     if (_relayPorts.containsKey(key)) {
       return _relayPorts[key]!;
     }
+    final inFlight = _relayStartFutures[key];
+    if (inFlight != null) {
+      return inFlight;
+    }
 
+    final startFuture = _startRelayInternal(key, targetHost, targetPort);
+    _relayStartFutures[key] = startFuture;
+    try {
+      return await startFuture;
+    } finally {
+      _relayStartFutures.remove(key);
+    }
+  }
+
+  Future<int> _startRelayInternal(
+    String key,
+    String targetHost,
+    int targetPort,
+  ) async {
     final relayServer = await ServerSocket.bind('127.0.0.1', 0);
     final relayPort = relayServer.port;
     _relayServers[key] = relayServer;
@@ -153,6 +220,7 @@ class TorService {
         bool established = false;
         int relayAttempts = 0;
         const int maxRelayAttempts = 10;
+        bool restartedForStaleDescriptor = false;
         Socket? torSocket;
         StreamIterator<Uint8List>? torIter;
         final readBuffer = <int>[];
@@ -236,6 +304,17 @@ class TorService {
               debugPrint(
                 ' onion TorService [Relay]: SOCKS5 Connect failure: $errorMsg on attempt $relayAttempts/$maxRelayAttempts',
               );
+              if (errorCode == 0xF2 && !restartedForStaleDescriptor) {
+                restartedForStaleDescriptor = true;
+                final restarted = await _restartTorProxyForStaleDescriptor();
+                if (!restarted) {
+                  throw const SocketException(
+                    'Tor restart failed after stale onion descriptor',
+                  );
+                }
+                relayAttempts = 0;
+                continue;
+              }
               if (relayAttempts >= maxRelayAttempts) {
                 throw SocketException(
                   'Tor SOCKS5 to $targetHost refused after $maxRelayAttempts attempts: $errorMsg',

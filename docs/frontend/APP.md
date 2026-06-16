@@ -122,6 +122,10 @@ Comportamento do cliente:
   erro Dio.
 - Retry está habilitado para códigos de status de gateway/rede transitórios:
   `408`, `502`, `503`, `504`, `440`, `522`, `524`, `598`, `599`.
+- Retry é bloqueado para rotas/corpos que consomem challenge de passkey/WebAuthn
+  (`passkey` finish/verify/register, recuperação emergencial e payloads com
+  prova passkey), porque repetir a mesma assinatura transforma uma falha
+  transitória real em replay/challenge inválido.
 - Payloads têm limite de tamanho antes do envio: `2048` bytes por padrão e `64 KiB`
   para caminhos PSBT.
 - Roteamento de plataforma prepara suporte Tor/SOCKS quando aplicável.
