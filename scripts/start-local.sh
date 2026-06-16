@@ -153,27 +153,44 @@ refresh_vault_raft_bootstrap() {
     return
   fi
 
-  local bootstrap_container
+  local bootstrap_container exit_file
   bootstrap_container="$(compose ps -a -q vault-raft-bootstrap 2>/dev/null | head -n 1 || true)"
   [[ -n "$bootstrap_container" ]] || return
+  exit_file="$(mktemp "${TMPDIR:-/tmp}/kerosene-vault-raft-bootstrap.XXXXXX")"
 
   info "Refreshing Vault Raft bootstrap/unseal state..."
   compose start vault-raft-bootstrap >/dev/null || {
     warn "Could not start vault-raft-bootstrap. App startup may fail if Vault Raft is sealed."
+    rm -f "$exit_file"
     return
   }
 
-  if ! timeout 180s docker wait "$bootstrap_container" >/tmp/kerosene-vault-raft-bootstrap.exit 2>/dev/null; then
+  if ! timeout 180s docker wait "$bootstrap_container" >"$exit_file" 2>/dev/null; then
     warn "Timed out waiting for vault-raft-bootstrap to complete."
     compose logs --no-color --tail 80 vault-raft-bootstrap >&2 || true
+    rm -f "$exit_file"
     return
   fi
 
   local exit_code
-  exit_code="$(tr -d '[:space:]' < /tmp/kerosene-vault-raft-bootstrap.exit || true)"
+  exit_code="$(tr -d '[:space:]' < "$exit_file" || true)"
+  rm -f "$exit_file"
   if [[ "$exit_code" != "0" ]]; then
     warn "vault-raft-bootstrap exited with code ${exit_code:-unknown}."
     compose logs --no-color --tail 80 vault-raft-bootstrap >&2 || true
+  fi
+}
+
+validate_local_runtime_env() {
+  local missing=() var
+  for var in BITCOIN_RPC_PASSWORD LND_WALLET_PASSWORD; do
+    if [[ -z "${!var:-}" ]]; then
+      missing+=("$var")
+    fi
+  done
+
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    fail "Missing required local runtime variables after loading $ENV_FILE: ${missing[*]}"
   fi
 }
 
@@ -366,6 +383,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 "$INFRA_DIR/scripts/init-local.sh"
+load_backend_env
+validate_local_runtime_env
 require_docker
 maybe_enable_redis_overcommit
 prepare_backend_web_admin

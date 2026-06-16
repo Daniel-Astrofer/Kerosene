@@ -127,7 +127,7 @@ class _RecentDestinationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = destination.label?.trim();
     final hasLabel = label != null && label.isNotEmpty;
-    final title = hasLabel ? label! : destination.address;
+    final title = hasLabel ? label : destination.address;
     final subtitle =
         hasLabel ? destination.address : _kindLabel(context, destination.kind);
 

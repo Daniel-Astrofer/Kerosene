@@ -23,7 +23,7 @@ type MpcService struct {
 
 const maxUserIDLength = 256
 
-func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.KeygenResponse, error) {
+func (s *MpcService) Keygen(_ context.Context, req *pb.KeygenRequest) (*pb.KeygenResponse, error) {
 	if err := validateKeygenRequest(req); err != nil {
 		return &pb.KeygenResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
@@ -73,7 +73,7 @@ func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.Key
 	}, nil
 }
 
-func (s *MpcService) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignResponse, error) {
+func (s *MpcService) Sign(_ context.Context, req *pb.SignRequest) (*pb.SignResponse, error) {
 	if err := validateSignRequest(req); err != nil {
 		return &pb.SignResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}

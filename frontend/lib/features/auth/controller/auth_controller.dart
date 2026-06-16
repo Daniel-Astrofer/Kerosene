@@ -356,16 +356,14 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    state = const AuthLoading();
-    final result = await authRepository.verifyTotp(
-      sessionId: currentState.sessionId,
-      totpCode: null,
-    );
+    if (!currentState.totpOptional) {
+      state = const AuthError(
+        'TOTP é obrigatório para este perfil de segurança.',
+      );
+      return;
+    }
 
-    result.fold(
-      (failure) => state = _mapFailureToAuthError(failure),
-      (sessionId) => state = AuthTotpVerified(sessionId, currentState.username),
-    );
+    state = AuthTotpVerified(currentState.sessionId, currentState.username);
   }
 
   Future<void> verifyLoginTotp({

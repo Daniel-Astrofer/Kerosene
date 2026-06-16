@@ -112,6 +112,7 @@ services:
       - BITCOIN_RPC_HOST=bitcoin-pruned-node
       - BITCOIN_RPC_PORT=${BITCOIN_RPC_PORT:-8332}
       - BITCOIN_RPC_USER=${BITCOIN_RPC_USER:-kerosene}
+      - BITCOIN_RPC_PASSWORD=${BITCOIN_RPC_PASSWORD:?BITCOIN_RPC_PASSWORD is required}
       - BITCOIN_ZMQ_RAWTX=${BITCOIN_ZMQ_RAWTX:-tcp://bitcoin-pruned-node:28332}
       - BITCOIN_ZMQ_RAWBLOCK=${BITCOIN_ZMQ_RAWBLOCK:-tcp://bitcoin-pruned-node:28334}
     volumes:
@@ -128,6 +129,12 @@ services:
       tor_egress:
     depends_on:
       bitcoin-core: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "lncli --lnddir=/root/.lnd --rpcserver=127.0.0.1:${LIGHTNING_LND_PORT:-10009} --network=${BITCOIN_NETWORK:-mainnet} getinfo >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 36
+      start_period: 20s
 
   lnd-bootstrap:
     image: curlimages/curl:8.10.1
@@ -543,7 +550,8 @@ services:
       kerosene-tor-is: { condition: service_healthy }
       kerosene-vanguards-is: { condition: service_healthy }
       shard-identity-init-is: { condition: service_completed_successfully }
-      lnd-neutrino: { condition: service_started }
+      lnd-bootstrap: { condition: service_completed_successfully }
+      lnd-neutrino: { condition: service_healthy }
 
   kerosene-vanguards-is:
     build:
@@ -760,7 +768,8 @@ services:
       kerosene-tor-ch: { condition: service_healthy }
       kerosene-vanguards-ch: { condition: service_healthy }
       shard-identity-init-ch: { condition: service_completed_successfully }
-      lnd-neutrino: { condition: service_started }
+      lnd-bootstrap: { condition: service_completed_successfully }
+      lnd-neutrino: { condition: service_healthy }
 
   kerosene-vanguards-ch:
     build:
@@ -977,7 +986,8 @@ services:
       kerosene-tor-sg: { condition: service_healthy }
       kerosene-vanguards-sg: { condition: service_healthy }
       shard-identity-init-sg: { condition: service_completed_successfully }
-      lnd-neutrino: { condition: service_started }
+      lnd-bootstrap: { condition: service_completed_successfully }
+      lnd-neutrino: { condition: service_healthy }
 
   kerosene-vanguards-sg:
     build:

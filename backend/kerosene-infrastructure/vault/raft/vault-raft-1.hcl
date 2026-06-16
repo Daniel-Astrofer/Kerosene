@@ -1,3 +1,4 @@
+# noinspection ALL
 ui = true
 disable_mlock = false
 
