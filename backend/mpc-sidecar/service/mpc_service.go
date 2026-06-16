@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,18 +21,21 @@ type MpcService struct {
 	pb.UnimplementedMpcServiceServer
 }
 
-func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.KeygenResponse, error) {
-	log.Printf("[MPC] Starting Keygen for user %s (%d/%d)", req.UserId, req.Threshold, req.TotalParties)
+const maxUserIDLength = 256
 
+func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.KeygenResponse, error) {
 	if err := validateKeygenRequest(req); err != nil {
 		return &pb.KeygenResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
 
-	shardName := safeShardName(req.UserId)
-	if existing, err := loadStoredKey(shardName); err == nil {
+	userID := normalizedUserID(req.UserId)
+	log.Printf("[MPC] Starting Keygen for user fingerprint %s (%d/%d)", userFingerprint(userID), req.Threshold, req.TotalParties)
+
+	shardName := shardNameForUserID(userID)
+	if existing, existingShardName, err := loadStoredKeyForUser(userID); err == nil {
 		return &pb.KeygenResponse{
 			PublicKey: existing.PublicKeyB64,
-			ShareId:   []byte(shardName),
+			ShareId:   []byte(existingShardName),
 			Success:   true,
 		}, nil
 	}
@@ -43,7 +48,7 @@ func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.Key
 
 	stored := storedKeyShare{
 		Version:       1,
-		UserID:        req.UserId,
+		UserID:        userID,
 		PublicKeyB64:  base64.StdEncoding.EncodeToString(publicKey),
 		PrivateKeyB64: base64.StdEncoding.EncodeToString(privateKey),
 		Threshold:     req.Threshold,
@@ -60,7 +65,7 @@ func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.Key
 		return &pb.KeygenResponse{Success: false, ErrorMessage: fmt.Sprintf("failed to persist encrypted key share: %v", err)}, nil
 	}
 
-	log.Printf("[MPC] Enclave key share ready for user %s", req.UserId)
+	log.Printf("[MPC] Enclave key share ready for user fingerprint %s", userFingerprint(userID))
 	return &pb.KeygenResponse{
 		PublicKey: stored.PublicKeyB64,
 		ShareId:   []byte(shardName),
@@ -69,26 +74,21 @@ func (s *MpcService) Keygen(ctx context.Context, req *pb.KeygenRequest) (*pb.Key
 }
 
 func (s *MpcService) Sign(ctx context.Context, req *pb.SignRequest) (*pb.SignResponse, error) {
-	log.Printf("[MPC] Starting Signing for hash %x requested by user %s", req.MessageHash, req.UserId)
-
 	if err := validateSignRequest(req); err != nil {
 		return &pb.SignResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
 
-	shardName := safeShardName(req.UserId)
-	shardData, err := GetShardFromRam(shardName)
+	userID := normalizedUserID(req.UserId)
+	log.Printf("[MPC] Starting Signing for hash length %d requested by user fingerprint %s", len(req.MessageHash), userFingerprint(userID))
+
+	_, shardData, stored, err := loadStoredKeyDataForUser(userID)
 	if err != nil {
-		log.Printf("[MPC] Critical Security Failure: Shard for user %s not found in volatile RAM! Has the server rebooted or lost power?", req.UserId)
+		log.Printf("[MPC] Critical Security Failure: Shard for user fingerprint %s not found in volatile RAM! Has the server rebooted or lost power?", userFingerprint(userID))
 		return &pb.SignResponse{Success: false, ErrorMessage: fmt.Sprintf("failed to read shard from memory: %v", err)}, nil
 	}
 	defer zeroBytes(shardData)
 
-	stored, err := decodeStoredKey(shardData)
-	if err != nil {
-		return &pb.SignResponse{Success: false, ErrorMessage: err.Error()}, nil
-	}
-
-	log.Printf("[MPC] Successfully read shard (%d bytes) from volatile RAM (tmpfs) for user %s. Continuing with MPC Signing...", len(shardData), req.UserId)
+	log.Printf("[MPC] Successfully read shard (%d bytes) from volatile RAM (tmpfs) for user fingerprint %s. Continuing with MPC Signing...", len(shardData), userFingerprint(userID))
 
 	if req.PublicKey != "" && req.PublicKey != stored.PublicKeyB64 {
 		return &pb.SignResponse{Success: false, ErrorMessage: "public key does not match stored enclave key"}, nil
@@ -117,13 +117,36 @@ type storedKeyShare struct {
 	CreatedAtUTC  string `json:"created_at_utc"`
 }
 
-func loadStoredKey(shardName string) (*storedKeyShare, error) {
-	shardData, err := GetShardFromRam(shardName)
+func loadStoredKeyForUser(userID string) (*storedKeyShare, string, error) {
+	shardName, shardData, stored, err := loadStoredKeyDataForUser(userID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer zeroBytes(shardData)
-	return decodeStoredKey(shardData)
+	return stored, shardName, nil
+}
+
+func loadStoredKeyDataForUser(userID string) (string, []byte, *storedKeyShare, error) {
+	for _, shardName := range shardNameCandidates(userID) {
+		shardData, err := GetShardFromRam(shardName)
+		if err != nil {
+			continue
+		}
+
+		stored, err := decodeStoredKey(shardData)
+		if err != nil {
+			zeroBytes(shardData)
+			return shardName, nil, nil, err
+		}
+
+		if normalizedUserID(stored.UserID) != userID {
+			zeroBytes(shardData)
+			return shardName, nil, nil, fmt.Errorf("stored key share owner does not match requested user")
+		}
+
+		return shardName, shardData, stored, nil
+	}
+	return "", nil, nil, fmt.Errorf("stored key share for user fingerprint %s was not found", userFingerprint(userID))
 }
 
 func decodeStoredKey(shardData []byte) (*storedKeyShare, error) {
@@ -144,6 +167,9 @@ func validateKeygenRequest(req *pb.KeygenRequest) error {
 	if strings.TrimSpace(req.UserId) == "" {
 		return fmt.Errorf("user_id is required")
 	}
+	if len(normalizedUserID(req.UserId)) > maxUserIDLength {
+		return fmt.Errorf("user_id must be at most %d bytes", maxUserIDLength)
+	}
 	if req.TotalParties < 1 || req.Threshold < 1 || req.Threshold > req.TotalParties {
 		return fmt.Errorf("invalid threshold parameters")
 	}
@@ -157,6 +183,9 @@ func validateSignRequest(req *pb.SignRequest) error {
 	if strings.TrimSpace(req.UserId) == "" {
 		return fmt.Errorf("user_id is required")
 	}
+	if len(normalizedUserID(req.UserId)) > maxUserIDLength {
+		return fmt.Errorf("user_id must be at most %d bytes", maxUserIDLength)
+	}
 	if len(req.MessageHash) != 32 {
 		return fmt.Errorf("message_hash must be exactly 32 bytes")
 	}
@@ -165,11 +194,34 @@ func validateSignRequest(req *pb.SignRequest) error {
 
 var unsafeShardNameChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
 
-func safeShardName(userID string) string {
-	trimmed := strings.TrimSpace(userID)
+func shardNameForUserID(userID string) string {
+	digest := sha256.Sum256([]byte(normalizedUserID(userID)))
+	return "user_" + hex.EncodeToString(digest[:])
+}
+
+func shardNameCandidates(userID string) []string {
+	current := shardNameForUserID(userID)
+	legacy := legacyShardName(userID)
+	if legacy == current {
+		return []string{current}
+	}
+	return []string{current, legacy}
+}
+
+func legacyShardName(userID string) string {
+	trimmed := normalizedUserID(userID)
 	safe := unsafeShardNameChars.ReplaceAllString(trimmed, "_")
 	if safe == "" {
 		return "unknown"
 	}
 	return safe
+}
+
+func normalizedUserID(userID string) string {
+	return strings.TrimSpace(userID)
+}
+
+func userFingerprint(userID string) string {
+	digest := sha256.Sum256([]byte(normalizedUserID(userID)))
+	return hex.EncodeToString(digest[:8])
 }

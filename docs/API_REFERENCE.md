@@ -1,15 +1,16 @@
-# API Reference
+# Kerosene Backend API Reference
 
-Documento gerado a partir dos controllers atuais em `backend/kerosene/src/main/java/source/**`, da cadeia de seguranca em `Security.java`, dos filtros HTTP e dos DTOs Java. Cada endpoint abaixo declara seus proprios headers, parametros, body e response body; nada depende de uma tabela global para saber como chamar a rota.
+Referencia operacional dos endpoints HTTP expostos pelo backend Kerosene. O inventario foi derivado dos controllers Spring em `backend/kerosene/src/main/java/source/**`, da cadeia de seguranca, dos filtros HTTP e dos DTOs Java. Cada endpoint declara autenticacao, headers, parametros, corpo de request e formato de response para que a rota possa ser chamada sem depender de uma tabela global.
 
-## Cobertura
+## Escopo e cobertura
 
-- Secoes de endpoint HTTP documentadas: `148` (`147` pares metodo/path unicos; `GET /` tem variante JSON e HTML por content negotiation).
+- Secoes de endpoint HTTP documentadas: `161` (`160` pares metodo/path unicos; `GET /` tem variante JSON e HTML por content negotiation).
 - Inclui controllers REST, rotas HTML servidas pelo backend, webhook BTCPay e `POST /audit/trigger`, que usa anotacao fully-qualified no codigo.
 - WebSocket/STOMP e Actuator aparecem em secoes proprias porque nao sao metodos REST de controller de dominio.
 - O formato de erro padrao e `ApiResponse` com `success=false`, `message`, `errorCode`, `data` opcional e `timestamp`; filtros tambem podem retornar erro sem envelope em `413`, `415` e alguns `401/403` do Spring Security.
+- Contagem verificada por headings `### <METHOD> <PATH>` neste documento: `161` secoes, `160` pares unicos.
 
-## Regras HTTP Globais Observadas
+## Regras HTTP globais
 
 - Bodies em `POST`, `PUT`, `PATCH` e `DELETE` com corpo precisam usar `Content-Type: application/json`, salvo rotas HTML.
 - O filtro paranoico limita o corpo padrao a `2048` bytes; rotas de PSBT aceitam ate `64 KiB`.
@@ -3485,6 +3486,8 @@ Response body:
     "publicCode": "KRS-example",
     "amountSats": 10000,
     "expiresAt": "2026-01-01T00:00:00",
+    "createdAt": "2026-01-01T00:00:00",
+    "paidAt": null,
     "oneTime": true,
     "status": "ACTIVE",
     "network": "mainnet",
@@ -3492,6 +3495,7 @@ Response body:
     "bip21": "bitcoin:bc1qexampleaddress?amount=0.00010000",
     "minimumConfirmations": 3,
     "nextAction": "NONE",
+    "accountId": "00000000-0000-0000-0000-000000000000",
     "cardId": "00000000-0000-0000-0000-000000000000",
     "addressId": "00000000-0000-0000-0000-000000000000",
     "selfServiceReason": "string"
@@ -3499,6 +3503,68 @@ Response body:
   "timestamp": "2026-01-01T00:00:00"
 }
 ```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido quando protegido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `413` payload acima do limite, `415` content-type invalido, `429` rate limit, `500` erro nao tratado. Consulte o controller e `GlobalExceptionHandler` para codigos de dominio especificos.
+
+### GET /bitcoin/accounts/{accountId}/receive-requests
+
+- Controller: `BitcoinAccountsController.listReceiveRequests` (`backend/kerosene/src/main/java/source/bitcoinaccounts/controller/BitcoinAccountsController.java`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<List<Map<String, Object>>>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `accountId` | `string` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "...",
+  "data": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "publicCode": "KRS-example",
+      "amountSats": 10000,
+      "expiresAt": "2026-01-01T00:00:00",
+      "createdAt": "2026-01-01T00:00:00",
+      "paidAt": null,
+      "oneTime": true,
+      "status": "ACTIVE",
+      "network": "mainnet",
+      "address": "bc1qexampleaddress",
+      "bip21": "bitcoin:bc1qexampleaddress?amount=0.00010000",
+      "minimumConfirmations": 3,
+      "nextAction": "NONE",
+      "accountId": "00000000-0000-0000-0000-000000000000",
+      "cardId": "00000000-0000-0000-0000-000000000000",
+      "addressId": "00000000-0000-0000-0000-000000000000",
+      "selfServiceReason": null
+    }
+  ],
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Observacoes: retorna ate 50 solicitacoes mais recentes da conta interna, omitindo itens ocultos. Solicitacoes `ACTIVE` vencidas sao marcadas como `EXPIRED` antes da resposta.
 
 Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido quando protegido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `413` payload acima do limite, `415` content-type invalido, `429` rate limit, `500` erro nao tratado. Consulte o controller e `GlobalExceptionHandler` para codigos de dominio especificos.
 
@@ -4644,6 +4710,543 @@ Response body:
 Sem corpo.
 
 Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido quando protegido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `413` payload acima do limite, `415` content-type invalido, `429` rate limit, `500` erro nao tratado. Consulte o controller e `GlobalExceptionHandler` para codigos de dominio especificos.
+
+## KFE
+
+Verificacao de saude em `2026-06-12`:
+
+| Check | Resultado | Evidencia |
+| --- | --- | --- |
+| Compilacao e testes KFE | Saudavel | `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew test --tests 'source.kfe.*'` concluiu com `BUILD SUCCESSFUL`; o comando executou `compileJava`, `processResources` e a suite filtrada de KFE. |
+| `processResources` | Saudavel | A tarefa executou no caminho normal do teste; o workaround de Gradle para artefatos antigos de `build/resources/main` evita o erro anterior em `Icon-512.png`. |
+| Health runtime local | Nao verificado nesta referencia | Esta secao valida mapeamento/compilacao/testes KFE. A saude runtime deve ser verificada contra um backend em execucao via `GET /health/live`, `GET /health/ready` e `GET /healthz`. |
+| JDK de verificacao | Java 21 | O build Gradle Kotlin DSL foi executado com `JAVA_HOME=/usr/lib/jvm/java-21-openjdk`, alinhado ao `sourceCompatibility` do backend. |
+
+Status consolidado: as rotas KFE abaixo estao mapeadas nos controllers atuais e a suite KFE passa com Java 21. A disponibilidade runtime depende de uma instancia backend em execucao e deve ser acompanhada pelos endpoints publicos de health.
+
+### GET /api/admin/kfe/audit/latest
+
+- Controller: `KfeAuditAdminController.latest` (`backend/kerosene/src/main/java/source/kfe/controller/KfeAuditAdminController.java:31`).
+- Autenticacao: `JWT com ROLE_ADMIN`.
+- Response Java: `ResponseEntity<ApiResponse<KfeAuditLatestResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt com ROLE_ADMIN>` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE audit latest root retrieved.",
+  "data": "KfeAuditLatestResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` requer `ROLE_ADMIN`, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### GET /api/admin/kfe/audit/events
+
+- Controller: `KfeAuditAdminController.events` (`backend/kerosene/src/main/java/source/kfe/controller/KfeAuditAdminController.java:36`).
+- Autenticacao: `JWT com ROLE_ADMIN`.
+- Response Java: `ResponseEntity<ApiResponse<List<KfeAuditEventResponse>>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt com ROLE_ADMIN>` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+| Param | Tipo | Obrigatorio | Default |
+| --- | --- | --- | --- |
+| `limit` | `int` | no | `50` |
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE audit events retrieved.",
+  "data": [
+    "KfeAuditEventResponse"
+  ],
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` requer `ROLE_ADMIN`, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### GET /api/admin/kfe/audit/transactions/{transactionId}
+
+- Controller: `KfeAuditAdminController.transactionEvents` (`backend/kerosene/src/main/java/source/kfe/controller/KfeAuditAdminController.java:42`).
+- Autenticacao: `JWT com ROLE_ADMIN`.
+- Response Java: `ResponseEntity<ApiResponse<List<KfeAuditEventResponse>>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt com ROLE_ADMIN>` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `transactionId` | `UUID` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE transaction audit events retrieved.",
+  "data": [
+    "KfeAuditEventResponse"
+  ],
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` requer `ROLE_ADMIN`, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### POST /api/admin/kfe/audit/root
+
+- Controller: `KfeAuditAdminController.root` (`backend/kerosene/src/main/java/source/kfe/controller/KfeAuditAdminController.java:50`).
+- Autenticacao: `JWT com ROLE_ADMIN`.
+- Response Java: `ResponseEntity<ApiResponse<KfeAuditRootResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt com ROLE_ADMIN>` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE audit root computed.",
+  "data": "KfeAuditRootResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` requer `ROLE_ADMIN`, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### GET /kfe/dashboard
+
+- Controller: `KfeDashboardController.dashboard` (`backend/kerosene/src/main/java/source/kfe/controller/KfeDashboardController.java:22`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeDashboardResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE dashboard retrieved.",
+  "data": "KfeDashboardResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### GET /kfe/users/{receiverIdentifier}/receiving-capabilities
+
+- Controller: `KfeReceivingController.capabilities` (`backend/kerosene/src/main/java/source/kfe/controller/KfeReceivingController.java:22`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeReceivingCapabilitiesResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `receiverIdentifier` | `string` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE receiving capabilities retrieved.",
+  "data": "KfeReceivingCapabilitiesResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### POST /kfe/transactions
+
+- Controller: `KfeTransactionController.submit` (`backend/kerosene/src/main/java/source/kfe/controller/KfeTransactionController.java:38`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeTransactionResponse>>`.
+- Idempotencia: em conflito de integridade, o controller recalcula o hash do request e retorna a transacao existente para a mesma chave de idempotencia quando compativel.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+| `Content-Type` | yes | `application/json` |
+| `Digest` | no | `SHA-256=<base64 do corpo>; se enviado, precisa bater com o corpo` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Objeto JSON validado por `KfeSubmitTransactionRequest`.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE transaction accepted.",
+  "data": "KfeTransactionResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de idempotencia/estado, `413` payload acima do limite, `415` content-type invalido, `429` rate limit, `500` erro nao tratado.
+
+### GET /kfe/transactions/{transactionId}
+
+- Controller: `KfeTransactionController.get` (`backend/kerosene/src/main/java/source/kfe/controller/KfeTransactionController.java:53`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeTransactionResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `transactionId` | `UUID` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE transaction retrieved.",
+  "data": "KfeTransactionResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` transacao KFE inexistente para o usuario autenticado, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### POST /kfe/wallets
+
+- Controller: `KfeWalletController.create` (`backend/kerosene/src/main/java/source/kfe/controller/KfeWalletController.java:40`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeWalletResponse>>`.
+- Status de sucesso: `201 Created`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+| `Content-Type` | yes | `application/json` |
+| `Digest` | no | `SHA-256=<base64 do corpo>; se enviado, precisa bater com o corpo` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Objeto JSON validado por `KfeCreateWalletRequest`.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE wallet created.",
+  "data": "KfeWalletResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `413` payload acima do limite, `415` content-type invalido, `429` rate limit, `500` erro nao tratado.
+
+### GET /kfe/wallets
+
+- Controller: `KfeWalletController.list` (`backend/kerosene/src/main/java/source/kfe/controller/KfeWalletController.java:49`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<List<KfeWalletResponse>>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+Nenhum.
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE wallets retrieved.",
+  "data": [
+    "KfeWalletResponse"
+  ],
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` recurso inexistente, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### POST /kfe/wallets/{walletId}/addresses/rotate
+
+- Controller: `KfeWalletController.rotateAddress` (`backend/kerosene/src/main/java/source/kfe/controller/KfeWalletController.java:56`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeAddressResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `walletId` | `UUID` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE wallet address rotated.",
+  "data": "KfeAddressResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` carteira KFE inexistente para o usuario autenticado, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### GET /kfe/wallets/{walletId}/utxos
+
+- Controller: `KfeWalletController.listUtxos` (`backend/kerosene/src/main/java/source/kfe/controller/KfeWalletController.java:65`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<List<KfeUtxoResponse>>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `walletId` | `UUID` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Nenhum.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE wallet UTXOs retrieved.",
+  "data": [
+    "KfeUtxoResponse"
+  ],
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` carteira KFE inexistente para o usuario autenticado, `409` conflito de estado, `429` rate limit, `500` erro nao tratado.
+
+### POST /kfe/wallets/{walletId}/cold-wallet/psbt
+
+- Controller: `KfeWalletController.createColdWalletPsbt` (`backend/kerosene/src/main/java/source/kfe/controller/KfeWalletController.java:74`).
+- Autenticacao: `JWT`.
+- Response Java: `ResponseEntity<ApiResponse<KfeColdWalletPsbtResponse>>`.
+
+Headers:
+
+| Header | Obrigatorio | Valor/observacao |
+| --- | --- | --- |
+| `Accept` | no | `application/json` |
+| `Authorization` | yes | `Bearer <jwt>` |
+| `Content-Type` | yes | `application/json` |
+| `Digest` | no | `SHA-256=<base64 do corpo>; se enviado, precisa bater com o corpo` |
+
+Path params:
+
+| Param | Tipo | Obrigatorio |
+| --- | --- | --- |
+| `walletId` | `UUID` | yes |
+
+Query params:
+
+Nenhum.
+
+Request body:
+
+Objeto JSON validado por `KfeColdWalletPsbtRequest`.
+
+Response body:
+
+```json
+{
+  "success": true,
+  "message": "KFE cold wallet PSBT created.",
+  "data": "KfeColdWalletPsbtResponse",
+  "timestamp": "2026-01-01T00:00:00"
+}
+```
+
+Erros relevantes: `400` validacao/desserializacao, `401` token ausente/invalido, `403` autorizacao insuficiente, `404` carteira KFE inexistente para o usuario autenticado, `409` conflito de estado, `413` payload acima do limite, `415` content-type invalido, `429` rate limit, `500` erro nao tratado.
 
 ## Ledger
 
@@ -9410,4 +10013,3 @@ Source: `backend/kerosene/src/main/java/source/transactions/dto/WithdrawRequestD
 | `passkeyAssertionResponseJSON` | `String` | `-` |
 | `passkeyAssertionRequestJSON` | `String` | `-` |
 | `confirmationPassphrase` | `String` | `-` |
-

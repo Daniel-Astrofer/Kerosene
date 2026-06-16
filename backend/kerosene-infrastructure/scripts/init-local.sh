@@ -8,7 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$INFRA_DIR/../.." && pwd)"
 BACKEND_DIR="$REPO_ROOT/backend/kerosene"
-CERTS_DIR="$BACKEND_DIR/certs"
+BACKEND_DEPLOY_DIR="$BACKEND_DIR/deploy"
+TOR_DIR="$BACKEND_DEPLOY_DIR/tor"
+CERTS_DIR="$BACKEND_DEPLOY_DIR/local/certs"
 ENV_FILE="$BACKEND_DIR/.env"
 
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; NC='\033[0m'
@@ -315,7 +317,13 @@ ensure_local_env() {
   ensure_env_value VAULT_RAFT_ENABLED "true" && changed=1 || true
   ensure_env_value VAULT_RAFT_REQUIRED "true" && changed=1 || true
   ensure_env_value VAULT_RAFT_EXPECTED_SERVERS "3" && changed=1 || true
-  ensure_env_value VAULT_RAFT_URL "http://vault-raft-1:8200" && changed=1 || true
+  local current_raft_url
+  current_raft_url="$(env_value VAULT_RAFT_URL || true)"
+  if [[ "$current_raft_url" == http://vault-raft-1:* ]]; then
+    set_env_value VAULT_RAFT_URL "https://vault-raft-1:8200"
+    changed=1
+  fi
+  ensure_env_value VAULT_RAFT_URL "https://vault-raft-1:8200" && changed=1 || true
   ensure_env_value VAULT_RAFT_TOKEN_FILE "/vault-raft/app-health-token" && changed=1 || true
   if [[ "$(env_value VAULT_RAFT_TOKEN_FILE || true)" == "/vault-raft/root-token" ]]; then
     set_env_value VAULT_RAFT_TOKEN_FILE "/vault-raft/app-health-token"
@@ -399,10 +407,10 @@ restore_invoking_user_ownership() {
 
   chown "$SUDO_UID:$SUDO_GID" "$ENV_FILE" 2>/dev/null || true
   chown "$SUDO_UID:$SUDO_GID" \
-    "$BACKEND_DIR/tor/torrc-is" \
-    "$BACKEND_DIR/tor/torrc-ch" \
-    "$BACKEND_DIR/tor/torrc-sg" \
-    "$BACKEND_DIR/tor/torrc-vault" 2>/dev/null || true
+    "$TOR_DIR/torrc-is" \
+    "$TOR_DIR/torrc-ch" \
+    "$TOR_DIR/torrc-sg" \
+    "$TOR_DIR/torrc-vault" 2>/dev/null || true
 }
 
 # ── 1. Validate .env ──────────────────────────────────────────────────────────
@@ -439,7 +447,38 @@ info "Environment variables validated. ✓"
 
 # ── 2. TLS certificates ───────────────────────────────────────────────────────
 if [[ ! -f "$CERTS_DIR/rootCA.crt" ]]; then
-  bash "$BACKEND_DIR/deploy/cert-generator.sh" || warn "Cert generator failed, check if it exists."
+  CERTS_DIR="$CERTS_DIR" bash "$BACKEND_DEPLOY_DIR/host/cert-generator.sh" || warn "Cert generator failed, check if it exists."
+fi
+
+# ── 2b. Vault Raft TLS certificates ──────────────────────────────────────────
+VAULT_RAFT_CERTS_DIR="$INFRA_DIR/vault/raft/certs"
+if [[ ! -f "$VAULT_RAFT_CERTS_DIR/ca.pem" ]]; then
+  require_openssl
+  mkdir -p "$VAULT_RAFT_CERTS_DIR"
+  openssl req -x509 -new -nodes -days 3650 \
+    -subj "/CN=Vault Raft Local CA" \
+    -keyout "$VAULT_RAFT_CERTS_DIR/ca-key.pem" \
+    -out "$VAULT_RAFT_CERTS_DIR/ca.pem"
+  for node in vault-raft-1 vault-raft-2 vault-raft-3; do
+    cat > "$VAULT_RAFT_CERTS_DIR/$node.ext" << EXTEOF
+subjectAltName = DNS:$node, DNS:localhost, IP:127.0.0.1
+EXTEOF
+    openssl genrsa -out "$VAULT_RAFT_CERTS_DIR/$node-key.pem" 2048
+    openssl req -new -key "$VAULT_RAFT_CERTS_DIR/$node-key.pem" \
+      -subj "/CN=$node" \
+      -out "$VAULT_RAFT_CERTS_DIR/$node.csr"
+    openssl x509 -req -days 3650 \
+      -in "$VAULT_RAFT_CERTS_DIR/$node.csr" \
+      -CA "$VAULT_RAFT_CERTS_DIR/ca.pem" \
+      -CAkey "$VAULT_RAFT_CERTS_DIR/ca-key.pem" \
+      -CAcreateserial \
+      -extfile "$VAULT_RAFT_CERTS_DIR/$node.ext" \
+      -out "$VAULT_RAFT_CERTS_DIR/$node.pem"
+    rm -f "$VAULT_RAFT_CERTS_DIR/$node.csr" "$VAULT_RAFT_CERTS_DIR/$node.ext"
+  done
+  chmod 600 "$VAULT_RAFT_CERTS_DIR/ca-key.pem" "$VAULT_RAFT_CERTS_DIR"/*-key.pem
+  chmod 644 "$VAULT_RAFT_CERTS_DIR/ca.pem" "$VAULT_RAFT_CERTS_DIR"/*.pem
+  info "Vault Raft TLS certs generated in $VAULT_RAFT_CERTS_DIR"
 fi
 
 # ── 3. Tor Configs (Force LF Line Endings) ──────────────────────────────────
@@ -451,12 +490,12 @@ fix_torrc() {
   printf "User kerosene\nSocksPort unix:/var/run/tor/socks/tor.sock WorldWritable\nControlSocket /var/run/tor/control/control\nControlSocketsGroupWritable 1\nCookieAuthentication 1\nCookieAuthFile /var/run/tor/control/control_auth_cookie\nCookieAuthFileGroupReadable 1\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 %s:8080\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" "$app_service" > "$file"
 }
 
-fix_torrc "$BACKEND_DIR/tor/torrc-is" "10.241.0.10"
-fix_torrc "$BACKEND_DIR/tor/torrc-ch" "10.241.0.11"
-fix_torrc "$BACKEND_DIR/tor/torrc-sg" "10.241.0.12"
+fix_torrc "$TOR_DIR/torrc-is" "10.241.0.10"
+fix_torrc "$TOR_DIR/torrc-ch" "10.241.0.11"
+fix_torrc "$TOR_DIR/torrc-sg" "10.241.0.12"
 
-info "Generating $BACKEND_DIR/tor/torrc-vault..."
-printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 10.242.0.10:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$BACKEND_DIR/tor/torrc-vault"
+info "Generating $TOR_DIR/torrc-vault..."
+printf "User kerosene\nSocksPort 0\nHiddenServiceDir /var/lib/tor/kerosene_service/\nHiddenServiceVersion 3\nHiddenServicePort 80 10.242.0.10:8090\nLog notice stdout\nDataDirectory /var/lib/tor\nNumCPUs 1\n" > "$TOR_DIR/torrc-vault"
 
 restore_invoking_user_ownership
 

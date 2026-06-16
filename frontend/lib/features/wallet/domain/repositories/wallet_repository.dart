@@ -13,7 +13,7 @@ abstract class WalletRepository {
   Future<Either<Failure, Wallet>> getWalletById(String id);
 
   /// Criar nova carteira
-  Future<Either<Failure, String>> createWallet({
+  Future<Either<Failure, Wallet>> createWallet({
     required String name,
     required String passphrase, // Mnemonic
     String accountSecurity = 'STANDARD',

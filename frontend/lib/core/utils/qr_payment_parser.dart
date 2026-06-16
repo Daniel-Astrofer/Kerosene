@@ -1,7 +1,10 @@
+import 'bitcoin_network.dart';
+
 /// Represents a decoded payment request from QR or NFC.
 class PaymentData {
   final String address;
   final String? paymentLinkId;
+  final String? lightningRequest;
   final double? amountBtc;
   final String? label;
   final String? message;
@@ -9,25 +12,38 @@ class PaymentData {
   const PaymentData({
     required this.address,
     this.paymentLinkId,
+    this.lightningRequest,
     this.amountBtc,
     this.label,
     this.message,
   });
 
   /// Whether this data has enough info to pre-fill a send form.
-  bool get isComplete => address.isNotEmpty || isPaymentLink;
+  bool get isComplete =>
+      address.isNotEmpty || isPaymentLink || hasLightningRequest;
 
   bool get isPaymentLink => paymentLinkId != null && paymentLinkId!.isNotEmpty;
+
+  bool get hasLightningRequest =>
+      lightningRequest != null && lightningRequest!.isNotEmpty;
+
+  /// Lightning is preferred when a unified BIP-21 URI carries both rails.
+  String get preferredDestination =>
+      hasLightningRequest ? lightningRequest! : address;
 }
 
 /// Encodes and decodes payment request URIs used in QR codes and NFC tags.
 ///
 /// Supported formats:
 ///   `bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>`
+///   `web+bitcoin:<address>?amount=<btc>&label=<label>&message=<msg>`
+///   `bitcoin:<address>?amount=<btc>&lightning=<bolt11-or-lnurl>`
 ///   `kerosene:pay?address=<address>&amount=<btc>&label=<label>`
 ///   `kerosene://pay/<id>`
 ///   `kerosene:link:<id>`
 class QrPaymentParser {
+  static const double _maxBitcoinSupply = 21000000;
+
   /// Encodes a payment request into a bitcoin: BIP-21 URI.
   static String encode({
     required String address,
@@ -146,8 +162,8 @@ class QrPaymentParser {
       );
     }
 
-    // bitcoin: BIP-21 URI
-    if (trimmed.toLowerCase().startsWith('bitcoin:')) {
+    // bitcoin: / web+bitcoin: BIP-21 URI
+    if (_isBitcoinUri(trimmed)) {
       return _parseBitcoinUri(trimmed);
     }
 
@@ -155,7 +171,7 @@ class QrPaymentParser {
     if (trimmed.toLowerCase().startsWith('lightning:')) {
       final request = trimmed.substring('lightning:'.length).trim();
       if (_looksLikeLightningRequest(request)) {
-        return PaymentData(address: request);
+        return PaymentData(address: request, lightningRequest: request);
       }
       return null;
     }
@@ -166,12 +182,12 @@ class QrPaymentParser {
     }
 
     if (_looksLikeLightningRequest(trimmed)) {
-      return PaymentData(address: trimmed);
+      return PaymentData(address: trimmed, lightningRequest: trimmed);
     }
 
     // Plain address (no scheme) — looks like a bitcoin address
     if (_looksLikeBitcoinAddress(trimmed)) {
-      return PaymentData(address: trimmed);
+      return PaymentData(address: _normalizeAddress(trimmed));
     }
 
     // Could be a username for internal transfer
@@ -185,29 +201,44 @@ class QrPaymentParser {
   static PaymentData? _parseBitcoinUri(String uri) {
     try {
       // bitcoin:<address>?params
-      final withoutScheme = uri.substring('bitcoin:'.length);
+      final withoutScheme = _stripBitcoinUriScheme(uri);
       final questionIdx = withoutScheme.indexOf('?');
 
-      final address = questionIdx >= 0
+      final rawAddress = questionIdx >= 0
           ? withoutScheme.substring(0, questionIdx)
           : withoutScheme;
-
-      if (address.isEmpty) return null;
+      final address = _normalizeBitcoinUriAddress(rawAddress);
+      if (address.isNotEmpty && !_looksLikeBitcoinAddress(address)) {
+        return null;
+      }
 
       double? amount;
       String? label;
       String? message;
+      String? lightningRequest;
 
       if (questionIdx >= 0) {
         final query = withoutScheme.substring(questionIdx + 1);
         final params = Uri.splitQueryString(query);
-        amount = double.tryParse(params['amount'] ?? '');
+        if (_hasUnsupportedRequiredParams(params)) {
+          return null;
+        }
+        amount = _parseAmountBtc(params['amount']);
+        if (params.containsKey('amount') &&
+            params['amount']!.trim().isNotEmpty &&
+            amount == null) {
+          return null;
+        }
         label = params['label'];
         message = params['message'];
+        lightningRequest = _normalizeLightningRequest(params['lightning']);
       }
+
+      if (address.isEmpty && lightningRequest == null) return null;
 
       return PaymentData(
         address: address,
+        lightningRequest: lightningRequest,
         amountBtc: amount,
         label: label,
         message: message,
@@ -215,6 +246,23 @@ class QrPaymentParser {
     } catch (_) {
       return null;
     }
+  }
+
+  static bool _isBitcoinUri(String value) {
+    final lower = value.toLowerCase();
+    return lower.startsWith('bitcoin:') || lower.startsWith('web+bitcoin:');
+  }
+
+  static String _stripBitcoinUriScheme(String value) {
+    final lower = value.toLowerCase();
+    if (lower.startsWith('web+bitcoin:')) {
+      return value.substring('web+bitcoin:'.length);
+    }
+    return value.substring('bitcoin:'.length);
+  }
+
+  static bool _hasUnsupportedRequiredParams(Map<String, String> params) {
+    return params.keys.any((key) => key.toLowerCase().startsWith('req-'));
   }
 
   static PaymentData? _parseKeroseneUri(String uri) {
@@ -225,10 +273,15 @@ class QrPaymentParser {
       final query = uri.substring(questionIdx + 1);
       final params = Uri.splitQueryString(query);
 
-      final address = params['address'] ?? '';
+      final address = _normalizeAddress(params['address'] ?? '');
       if (address.isEmpty) return null;
 
-      final amount = double.tryParse(params['amount'] ?? '');
+      final amount = _parseAmountBtc(params['amount']);
+      if (params.containsKey('amount') &&
+          params['amount']!.trim().isNotEmpty &&
+          amount == null) {
+        return null;
+      }
       final label = params['label'];
 
       return PaymentData(
@@ -241,11 +294,61 @@ class QrPaymentParser {
     }
   }
 
+  static String _normalizeBitcoinUriAddress(String address) {
+    final trimmed = address.trim();
+    final withoutDeepLinkSlashes =
+        trimmed.startsWith('//') ? trimmed.substring(2).trim() : trimmed;
+    return _normalizeAddress(withoutDeepLinkSlashes);
+  }
+
+  static String _normalizeAddress(String address) {
+    final trimmed = address.trim();
+    if (_looksLikeBitcoinAddress(trimmed)) {
+      return normalizeBitcoinAddressForDisplay(trimmed);
+    }
+    return trimmed;
+  }
+
+  static double? _parseAmountBtc(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+
+    if (!_hasValidBitcoinAmountPrecision(trimmed)) {
+      return null;
+    }
+
+    final amount = double.tryParse(trimmed);
+    if (amount == null ||
+        !amount.isFinite ||
+        amount < 0 ||
+        amount > _maxBitcoinSupply) {
+      return null;
+    }
+    return amount;
+  }
+
+  static bool _hasValidBitcoinAmountPrecision(String value) {
+    final match = RegExp(r'^\d+(?:\.(\d{1,8}))?$').firstMatch(value);
+    return match != null;
+  }
+
+  static String? _normalizeLightningRequest(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+
+    final withoutScheme = trimmed.toLowerCase().startsWith('lightning:')
+        ? trimmed.substring('lightning:'.length).trim()
+        : trimmed;
+
+    return _looksLikeLightningRequest(withoutScheme) ? withoutScheme : null;
+  }
+
   static bool _looksLikeBitcoinAddress(String s) {
-    // Mainnet: start with 1, 3, or bc1
-    // Testnet/regtest: start with m, n, 2, tb1, or bcrt1
-    return RegExp(r'^(1|3|bc1|m|n|2|tb1|bcrt1)[a-zA-HJ-NP-Z0-9]{20,90}$')
-        .hasMatch(s);
+    return looksLikeBitcoinAddress(s);
   }
 
   static bool _looksLikeLightningRequest(String s) {

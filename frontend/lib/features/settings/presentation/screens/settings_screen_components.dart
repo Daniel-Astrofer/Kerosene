@@ -43,6 +43,8 @@ class _SettingsNavigationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _SettingsDesignColors.of(context);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -59,18 +61,12 @@ class _SettingsNavigationTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _SettingsDesignColors.surfaceContainerHighest,
+                  color: colors.surfaceContainerHighest,
                   border: Border.all(
-                    color: _SettingsDesignColors.borderMuted.withValues(
-                      alpha: 0.3,
-                    ),
+                    color: colors.borderMuted.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Icon(
-                  item.icon,
-                  color: _SettingsDesignColors.outlineVariant,
-                  size: 22,
-                ),
+                child: Icon(item.icon, color: colors.outlineVariant, size: 22),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -82,7 +78,7 @@ class _SettingsNavigationTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: _SettingsDesignColors.primary,
+                        color: colors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
                         height: 1.5,
@@ -95,7 +91,7 @@ class _SettingsNavigationTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: _SettingsDesignColors.onSurfaceVariant,
+                        color: colors.onSurfaceVariant,
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
                         height: 1.2,
@@ -106,9 +102,9 @@ class _SettingsNavigationTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: _SettingsDesignColors.outlineVariant,
+                color: colors.outlineVariant,
                 size: 24,
               ),
             ],
@@ -124,6 +120,7 @@ class _AccountDetailsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = _SettingsDesignColors.of(context);
     final authState = ref.watch(authControllerProvider);
     final user = authState is AuthAuthenticated ? authState.user : null;
     final handle = _formatAccountHandle(user?.username ?? 'lucas_01');
@@ -141,12 +138,12 @@ class _AccountDetailsSheet extends ConsumerWidget {
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _SettingsDesignColors.surfaceContainerHighest,
-              border: Border.all(color: _SettingsDesignColors.borderMuted),
+              color: colors.surfaceContainerHighest,
+              border: Border.all(color: colors.borderMuted),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_rounded,
-              color: _SettingsDesignColors.primary,
+              color: colors.primary,
               size: 28,
             ),
           ),
@@ -181,6 +178,58 @@ class _AccountDetailsSheet extends ConsumerWidget {
     if (context.mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
     }
+  }
+}
+
+class _AppearanceSheet extends ConsumerWidget {
+  const _AppearanceSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appearance = ref.watch(appearanceProvider);
+
+    return _BottomSheetContainer(
+      title: context.tr.settingsUiAppearanceSection,
+      icon: Icons.contrast_rounded,
+      iconColor: Colors.white54,
+      child: RadioGroup<AppThemeVariant>(
+        groupValue: appearance.themeVariant,
+        onChanged: (next) {
+          if (next == null) return;
+          HapticFeedback.selectionClick();
+          ref.read(appearanceProvider.notifier).setThemeVariant(next);
+        },
+        child: Column(
+          children: [
+            for (final variant in AppThemeVariant.values)
+              RadioListTile<AppThemeVariant>(
+                value: variant,
+                selected: appearance.themeVariant == variant,
+                activeColor: monoTextColor,
+                fillColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? monoTextColor
+                      : monoMutedTextColor,
+                ),
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  variant.label,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: monoTextColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  variant.description,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: monoMutedTextColor,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-export VAULT_ADDR="${VAULT_ADDR:-http://vault-raft-1:8200}"
+export VAULT_ADDR="${VAULT_ADDR:-https://vault-raft-1:8200}"
+export VAULT_SKIP_VERIFY="${VAULT_SKIP_VERIFY:-true}"
 BOOTSTRAP_DIR="${VAULT_BOOTSTRAP_DIR:-/vault/bootstrap}"
 APP_READ_GID="${VAULT_APP_READ_GID:-65532}"
 mkdir -p "$BOOTSTRAP_DIR"
@@ -30,9 +31,9 @@ wait_for_raft_leader() {
   deadline=$(( $(date +%s) + 180 ))
   while :; do
     for node in \
-      "http://vault-raft-1:8200" \
-      "http://vault-raft-2:8200" \
-      "http://vault-raft-3:8200"; do
+      "https://vault-raft-1:8200" \
+      "https://vault-raft-2:8200" \
+      "https://vault-raft-3:8200"; do
       if timeout 15s vault operator raft list-peers -address="$node" >/tmp/vault-raft-peers.txt 2>/tmp/vault-raft-leader.err; then
         export VAULT_ADDR="$node"
         return 0
@@ -47,9 +48,9 @@ wait_for_raft_leader() {
   done
 }
 
-wait_for_api "http://vault-raft-1:8200"
-wait_for_api "http://vault-raft-2:8200"
-wait_for_api "http://vault-raft-3:8200"
+wait_for_api "https://vault-raft-1:8200"
+wait_for_api "https://vault-raft-2:8200"
+wait_for_api "https://vault-raft-3:8200"
 
 if [ ! -f "$BOOTSTRAP_DIR/root-token" ]; then
   vault operator init -key-shares=3 -key-threshold=2 > "$BOOTSTRAP_DIR/init.txt"
@@ -65,18 +66,18 @@ unseal_node() {
   done
 }
 
-unseal_node "http://vault-raft-1:8200"
+unseal_node "https://vault-raft-1:8200"
 export VAULT_TOKEN="$(cat "$BOOTSTRAP_DIR/root-token")"
 
 join_node() {
   node="$1"
-  timeout 15s vault operator raft join -address="$node" "http://vault-raft-1:8200" >/dev/null || true
+  timeout 15s vault operator raft join -address="$node" "https://vault-raft-1:8200" >/dev/null || true
 }
 
-join_node "http://vault-raft-2:8200"
-join_node "http://vault-raft-3:8200"
-unseal_node "http://vault-raft-2:8200"
-unseal_node "http://vault-raft-3:8200"
+join_node "https://vault-raft-2:8200"
+join_node "https://vault-raft-3:8200"
+unseal_node "https://vault-raft-2:8200"
+unseal_node "https://vault-raft-3:8200"
 
 wait_for_raft_leader
 

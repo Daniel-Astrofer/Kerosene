@@ -17,18 +17,41 @@ class LedgerRepositoryImpl implements LedgerRepository {
     required this.authLocalDataSource,
   });
 
+  Failure _failureFromAppException(AppException e) {
+    if (e is ValidationException) {
+      return ValidationFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      );
+    }
+    if (e is AuthException) {
+      return AuthFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      );
+    }
+    if (e is NetworkException) {
+      return NetworkFailure(message: e.message);
+    }
+    return ServerFailure(
+      message: e.message,
+      statusCode: e.statusCode,
+      errorCode: e.errorCode,
+      data: e.data,
+    );
+  }
+
   @override
   Future<Either<Failure, List<dynamic>>> getAllLedgers() async {
     try {
       final result = await remoteDataSource.getAllLedgers();
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -40,13 +63,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
     try {
       final result = await remoteDataSource.findLedger(walletName: walletName);
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -57,13 +75,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
     try {
       final result = await remoteDataSource.getBalance(walletName: walletName);
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -89,15 +102,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
       }).toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return Right(transactions);
-    } on ServerException catch (e) {
-      return Left(
-        ServerFailure(
-          message: e.message,
-          statusCode: e.statusCode,
-          errorCode: e.errorCode,
-          data: e.data,
-        ),
-      );
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -128,13 +134,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
         requestTimestamp: DateTime.now().millisecondsSinceEpoch,
       );
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -151,13 +152,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
         receiverWalletName: receiverWalletName,
       );
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -169,13 +165,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
     try {
       final result = await remoteDataSource.getPaymentRequest(linkId);
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -203,12 +194,7 @@ class LedgerRepositoryImpl implements LedgerRepository {
       );
       return Right(result);
     } on AppException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -220,13 +206,8 @@ class LedgerRepositoryImpl implements LedgerRepository {
       final result =
           await remoteDataSource.deleteLedger(walletName: walletName);
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
+    } on AppException catch (e) {
+      return Left(_failureFromAppException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao deletar ledger: $e'));
     }

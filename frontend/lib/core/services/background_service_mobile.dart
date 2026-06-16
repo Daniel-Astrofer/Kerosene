@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'balance_websocket_service.dart';
 import '../config/app_config.dart';
@@ -86,12 +85,11 @@ void onStart(ServiceInstance service) async {
   await NotificationService().init();
 
   // Get Token & User Data
-  final prefs = await SharedPreferences.getInstance();
-  String? token = await SecureStorageService().read(
+  final secureStorage = SecureStorageService();
+  String? token = await secureStorage.read(
     key: AppConfig.authTokenKey,
   );
-  token ??= prefs.getString(AppConfig.authTokenKey);
-  final userDataJson = prefs.getString(AppConfig.userDataKey);
+  final userDataJson = await secureStorage.read(key: AppConfig.userDataKey);
 
   String? userId;
   if (userDataJson != null) {
@@ -136,6 +134,7 @@ void onStart(ServiceInstance service) async {
   }
 
   // Store last known balance to detect changes
+  final lastBalances = <String, double>{};
   final wsService = BalanceWebSocketService(
     baseUrl: AppConfig.apiUrl,
     userId: userId,
@@ -145,9 +144,7 @@ void onStart(ServiceInstance service) async {
         'BackgroundService: Update for ${update.walletName}: ${update.newBalance}',
       );
 
-      final prefs = await SharedPreferences.getInstance();
-      final lastBalanceKey = 'last_balance_${update.walletName}';
-      final lastBalance = prefs.getDouble(lastBalanceKey) ?? 0.0;
+      final lastBalance = lastBalances[update.walletName] ?? 0.0;
 
       // Check if balance INCREASED (Received money)
       if (update.newBalance > lastBalance + 0.00000001) {
@@ -163,7 +160,7 @@ void onStart(ServiceInstance service) async {
       }
 
       // Update stored balance regardless of increase/decrease
-      await prefs.setDouble(lastBalanceKey, update.newBalance);
+      lastBalances[update.walletName] = update.newBalance;
     },
   );
 

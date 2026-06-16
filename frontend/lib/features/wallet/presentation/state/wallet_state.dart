@@ -51,8 +51,22 @@ final class WalletLoaded extends WalletState {
 /// Estado de erro
 final class WalletError extends WalletState {
   final String message;
+  final int? statusCode;
+  final String? errorCode;
 
-  const WalletError(this.message);
+  const WalletError(
+    this.message, {
+    this.statusCode,
+    this.errorCode,
+  });
+
+  bool get isRetryable {
+    final status = statusCode;
+    if (status == null) {
+      return true;
+    }
+    return status == 408 || status == 425 || status == 429 || status >= 500;
+  }
 }
 
 // ==================== Transaction States ====================

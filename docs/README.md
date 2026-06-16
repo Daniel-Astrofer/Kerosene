@@ -9,12 +9,12 @@ Documentacao consolidada a partir dos `.md` existentes, controllers Spring, DTOs
 | [API_REFERENCE.md](API_REFERENCE.md) | Referencia completa da API atual. Cada endpoint tem headers, path/query params, request body e response body independentes. |
 | [INFRASTRUCTURE.md](INFRASTRUCTURE.md) | Infraestrutura atual por compose, scripts, profiles Spring, Vault, MPC, Tor, Bitcoin, Lightning, Redis e Postgres. |
 | [APP.md](APP.md) | Documentacao do app Flutter: mobile, web admin, rotas, HTTP, Tor relay, auth, realtime e features. |
-| [IMPLEMENTATION_NEXT_STEPS.md](IMPLEMENTATION_NEXT_STEPS.md) | Proximos passos de implementacao por prioridade. |
-| [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md) | Auditoria dos `.md` existentes e decisao de fonte canonica. |
+| [FRONTEND_DESIGN_SYSTEM.md](FRONTEND_DESIGN_SYSTEM.md) | Sistema visual e convencoes de UI do frontend. |
+| [REPOSITORY_ORGANIZATION.md](REPOSITORY_ORGANIZATION.md) | Politica de estrutura de diretorios, caches, builds e adapters. |
 
 ## Limpeza aplicada
 
-As documentacoes antigas e contraditorias foram removidas: `docs-final/**`, `backend/kerosene/*.md`, `backend/kerosene/docs/*.md`, docs antigas em `docs/` e a pasta `docs/bitcoin-accounts/`. A fonte canonica fica restrita aos documentos principais acima.
+As documentacoes antigas e contraditorias devem permanecer fora da raiz operacional. A fonte canonica fica restrita aos documentos principais acima e aos relatórios tecnicos atuais mantidos em `docs/`.
 
 ## Validacao recomendada
 

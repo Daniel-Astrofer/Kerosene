@@ -43,7 +43,7 @@ class TxStatus extends Equatable {
       }.contains(status.toLowerCase());
 
   factory TxStatus.fromJson(Map<String, dynamic> json) {
-    // Handle the nested 'data' object returned by /ledger/transaction
+    // Handle nested legacy data and direct KFE transaction responses.
     final data = json['data'] is Map<String, dynamic>
         ? json['data'] as Map<String, dynamic>
         : json;
@@ -55,29 +55,50 @@ class TxStatus extends Equatable {
     final receiverField = [data['receiver'], data['to'], data['toAddress']]
         .map((e) => e?.toString())
         .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+    final networkFeeSats = (data['networkFeeSats'] as num?)?.toInt();
+    final keroseneFeeSats = (data['keroseneFeeSats'] as num?)?.toInt() ?? 0;
+    final receiverAmountSats = (data['receiverAmountSats'] as num?)?.toInt();
+    final totalDebitSats = (data['totalDebitSats'] as num?)?.toInt();
 
     return TxStatus(
       txid: data['txid']?.toString() ??
+          data['blockchainTxid']?.toString() ??
           data['externalReference']?.toString() ??
           data['id']?.toString() ??
           '',
       status: data['status']?.toString() ?? 'confirmed',
       feeSatoshis: (data['feeSatoshis'] as num?)?.toInt() ??
+          (networkFeeSats == null ? null : networkFeeSats + keroseneFeeSats) ??
           (((data['networkFeeBtc'] as num?)?.toDouble() ?? 0) * 100000000)
               .round(),
-      amountReceived: (data['amount'] as num?)?.toDouble() ??
-          (data['amountReceived'] as num?)?.toDouble() ??
-          (data['amountBtc'] as num?)?.toDouble() ??
-          0,
-      networkFeeBtc: (data['networkFeeBtc'] as num?)?.toDouble() ?? 0,
-      platformFeeBtc: (data['platformFeeBtc'] as num?)?.toDouble() ?? 0,
-      totalDebitedBtc: (data['totalDebitedBtc'] as num?)?.toDouble() ?? 0,
-      sender: senderField ?? data['walletName']?.toString() ?? '',
+      amountReceived: receiverAmountSats == null
+          ? ((data['amount'] as num?)?.toDouble() ??
+              (data['amountReceived'] as num?)?.toDouble() ??
+              (data['amountBtc'] as num?)?.toDouble() ??
+              0)
+          : receiverAmountSats / 100000000.0,
+      networkFeeBtc: networkFeeSats == null
+          ? ((data['networkFeeBtc'] as num?)?.toDouble() ?? 0)
+          : networkFeeSats / 100000000.0,
+      platformFeeBtc: keroseneFeeSats == 0
+          ? ((data['platformFeeBtc'] as num?)?.toDouble() ?? 0)
+          : keroseneFeeSats / 100000000.0,
+      totalDebitedBtc: totalDebitSats == null
+          ? ((data['totalDebitedBtc'] as num?)?.toDouble() ?? 0)
+          : totalDebitSats / 100000000.0,
+      sender: senderField ??
+          data['sourceWalletId']?.toString() ??
+          data['walletName']?.toString() ??
+          '',
       receiver: receiverField ??
+          data['destinationWalletId']?.toString() ??
           data['destination']?.toString() ??
           data['paymentRequest']?.toString() ??
+          data['externalReference']?.toString() ??
           '',
-      context: data['context']?.toString() ?? data['description']?.toString(),
+      context: data['context']?.toString() ??
+          data['description']?.toString() ??
+          data['memo']?.toString(),
       message: json['message']?.toString(),
     );
   }

@@ -169,13 +169,13 @@ void main() {
 
       expect(payload, {
         'idempotencyKey': 'idem-123',
-        'fromWalletName': 'Minha Carteira',
-        'toAddress': 'bc1qdestino',
-        'amount': 0.0001,
-        'description': 'saque para carteira externa',
-        'totpCode': '123456',
-        'passkeyAssertionResponseJSON': null,
-        'confirmationPassphrase': 'frase',
+        'rail': 'ONCHAIN',
+        'direction': 'OUTBOUND',
+        'sourceWalletId': 'Minha Carteira',
+        'amountSats': 10000,
+        'networkFeeSats': 0,
+        'externalReference': 'bc1qdestino',
+        'memo': 'saque para carteira externa',
       });
     });
 
@@ -188,7 +188,7 @@ void main() {
         amount: 0.0001,
       );
 
-      expect(payload['description'], 'saque para carteira externa');
+      expect(payload['memo'], 'saque para carteira externa');
     });
 
     test('requires idempotencyKey for external withdrawals', () {

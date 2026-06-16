@@ -3,16 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import 'package:kerosene/core/performance/kerosene_performance_boundary.dart';
 import 'package:kerosene/core/providers/tor_providers.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
-import 'package:kerosene/features/web_admin/shell/admin_shell.dart';
-import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
-import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart';
-import 'package:kerosene/features/landing/presentation/kerosene_landing_page.dart';
+import 'package:kerosene/features/auth/presentation/screens/server_unavailable_screen.dart'
+    deferred as server_unavailable;
+import 'package:kerosene/features/landing/presentation/kerosene_landing_page.dart'
+    deferred as landing;
+import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart'
+    deferred as admin_content_router;
+import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart'
+    deferred as admin_login;
+import 'package:kerosene/features/web_admin/shell/admin_shell.dart'
+    deferred as admin_shell;
 
 /// Resolves the API URL for the web admin.
 ///
@@ -121,14 +128,30 @@ class _AdminWebApp extends ConsumerWidget {
       },
       initialRoute: _initialRoute(),
       routes: {
-        '/': (_) => const KeroseneLandingPage(),
-        '/bitcoin-banking': (_) => const KeroseneLandingPage(),
+        '/': (_) => DeferredPage(
+              loadLibrary: landing.loadLibrary,
+              builder: (_) => landing.KeroseneLandingPage(),
+            ),
+        '/bitcoin-banking': (_) => DeferredPage(
+              loadLibrary: landing.loadLibrary,
+              builder: (_) => landing.KeroseneLandingPage(),
+            ),
         '/admin': (_) => const _AdminAuthGate(),
-        '/download': (_) => const KeroseneLandingPage(focusDownload: true),
-        '/status': (_) => const KerosenePublicStatusPage(),
+        '/download': (_) => DeferredPage(
+              loadLibrary: landing.loadLibrary,
+              builder: (_) => landing.KeroseneLandingPage(focusDownload: true),
+            ),
+        '/status': (_) => DeferredPage(
+              loadLibrary: landing.loadLibrary,
+              builder: (_) => landing.KerosenePublicStatusPage(),
+            ),
       },
-      onUnknownRoute: (_) =>
-          MaterialPageRoute(builder: (_) => const KeroseneLandingPage()),
+      onUnknownRoute: (_) => MaterialPageRoute(
+        builder: (_) => DeferredPage(
+          loadLibrary: landing.loadLibrary,
+          builder: (_) => landing.KeroseneLandingPage(),
+        ),
+      ),
     );
   }
 
@@ -186,18 +209,29 @@ class _AdminAuthGate extends ConsumerWidget {
     }
 
     if (authState is AuthAuthenticated && authState.user.isAdmin) {
-      return const AdminShell(child: AdminContentRouter());
+      return DeferredPage(
+        loadLibrary: _loadAdminSurface,
+        builder: (_) => admin_shell.AdminShell(
+          child: admin_content_router.AdminContentRouter(),
+        ),
+      );
     }
 
     if (authState is AuthRequiresLoginTotp) {
-      return const AdminLoginScreen();
+      return DeferredPage(
+        loadLibrary: admin_login.loadLibrary,
+        builder: (_) => admin_login.AdminLoginScreen(),
+      );
     }
 
     if (authState is AuthServerUnavailable) {
       return _ServerUnavailableView(message: authState.message, ref: ref);
     }
 
-    return const AdminLoginScreen();
+    return DeferredPage(
+      loadLibrary: admin_login.loadLibrary,
+      builder: (_) => admin_login.AdminLoginScreen(),
+    );
   }
 }
 
@@ -209,53 +243,23 @@ class _ServerUnavailableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0E0E10),
-      body: Center(
-        child: Container(
-          width: 420,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1E),
-            border: Border.all(color: const Color(0xFF2C2C32)),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off, size: 48, color: Color(0xFF6A6A74)),
-              const SizedBox(height: 16),
-              Text(
-                'Server Unavailable',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                message,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Ensure the onion service is reachable or check your Tor gateway configuration.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6A6A74)),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton(
-                onPressed: () {
-                  ref.read(authControllerProvider.notifier).retrySessionCheck();
-                },
-                child: const Text('Retry Connection'),
-              ),
-            ],
-          ),
-        ),
+    return DeferredPage(
+      loadLibrary: server_unavailable.loadLibrary,
+      builder: (_) => server_unavailable.ServerUnavailableScreen(
+        message: message,
+        onRetryOverride: () {
+          return ref.read(authControllerProvider.notifier).retrySessionCheck();
+        },
       ),
     );
   }
+}
+
+Future<void> _loadAdminSurface() async {
+  await Future.wait<void>([
+    admin_shell.loadLibrary(),
+    admin_content_router.loadLibrary(),
+  ]);
 }
 
 class _WebScrollBehavior extends ScrollBehavior {

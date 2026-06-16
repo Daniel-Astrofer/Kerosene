@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/utils/money_display.dart';
@@ -398,18 +400,58 @@ class _TransactionDetailsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reference = transaction.blockchainTxid ??
-        transaction.paymentHash ??
-        transaction.invoiceId ??
-        transaction.externalReference ??
-        transaction.id;
+    final reference = _firstNonEmpty([
+      transaction.blockchainTxid,
+      transaction.paymentHash,
+      transaction.invoiceId,
+      transaction.externalReference,
+    ]);
     final rows = [
-      ('De', _detailValue(transaction.fromAddress, fallback: 'Carteira')),
-      ('Para', _detailValue(transaction.toAddress, fallback: 'Carteira')),
-      ('Valor', btcAmount),
-      ('Taxa de rede', feeAmount),
-      if (reference.trim().isNotEmpty)
-        ('Referência', StatementTransactionCard._shorten(reference)),
+      _TransactionDetailRow(
+        key: 'from',
+        label: _titleCase(context.tr.homeCounterpartyFrom),
+        displayValue: _detailValue(context, transaction.fromAddress),
+        copyValue: _copyValue(transaction.fromAddress),
+      ),
+      _TransactionDetailRow(
+        key: 'to',
+        label: _titleCase(context.tr.homeCounterpartyTo),
+        displayValue: _detailValue(context, transaction.toAddress),
+        copyValue: _copyValue(transaction.toAddress),
+      ),
+      _TransactionDetailRow(
+        key: 'amount',
+        label: context.tr.amount,
+        displayValue: btcAmount,
+      ),
+      _TransactionDetailRow(
+        key: 'network-fee',
+        label: context.tr.networkFee,
+        displayValue: feeAmount,
+      ),
+      _TransactionDetailRow(
+        key: 'id',
+        label: _localizedCopy(
+          context,
+          pt: 'ID da transação',
+          en: 'Transaction ID',
+          es: 'ID de transacción',
+        ),
+        displayValue: StatementTransactionCard._shorten(transaction.id),
+        copyValue: _copyValue(transaction.id),
+      ),
+      if (reference != null && reference != transaction.id)
+        _TransactionDetailRow(
+          key: 'reference',
+          label: _localizedCopy(
+            context,
+            pt: 'Referência',
+            en: 'Reference',
+            es: 'Referencia',
+          ),
+          displayValue: StatementTransactionCard._shorten(reference),
+          copyValue: reference,
+        ),
     ];
 
     return DecoratedBox(
@@ -428,39 +470,7 @@ class _TransactionDetailsTable extends StatelessWidget {
                 ),
               Padding(
                 padding: EdgeInsets.only(top: index == 0 ? 0 : 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      rows[index].$1,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        rows[index].$2,
-                        textAlign: TextAlign.right,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: style.secondaryText,
-                          fontFamily: rows[index].$2.length > 20
-                              ? 'IBMPlexSansHebrew'
-                              : 'Inter',
-                          fontSize: rows[index].$2.length > 20 ? 12 : 14,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: _TransactionDetailsRow(row: rows[index], style: style),
               ),
             ],
           ],
@@ -469,11 +479,165 @@ class _TransactionDetailsTable extends StatelessWidget {
     );
   }
 
-  String _detailValue(String value, {required String fallback}) {
+  String _detailValue(BuildContext context, String value) {
     final trimmed = value.trim();
-    if (trimmed.isEmpty) return fallback;
+    if (trimmed.isEmpty) {
+      return _localizedCopy(
+        context,
+        pt: 'Carteira',
+        en: 'Wallet',
+        es: 'Billetera',
+      );
+    }
     return StatementTransactionCard._shorten(trimmed, head: 18, tail: 8);
   }
+}
+
+class _TransactionDetailsRow extends StatelessWidget {
+  final _TransactionDetailRow row;
+  final _StatementCardStyle style;
+
+  const _TransactionDetailsRow({required this.row, required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          row.label,
+          style: const TextStyle(
+            color: Colors.black,
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            row.displayValue,
+            textAlign: TextAlign.right,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: style.secondaryText,
+              fontFamily: row.displayValue.length > 20
+                  ? 'IBMPlexSansHebrew'
+                  : 'Inter',
+              fontSize: row.displayValue.length > 20 ? 12 : 14,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+        if (row.copyValue != null) ...[
+          const SizedBox(width: 8),
+          _TransactionDetailCopyButton(row: row, style: style),
+        ],
+      ],
+    );
+  }
+}
+
+class _TransactionDetailCopyButton extends StatelessWidget {
+  final _TransactionDetailRow row;
+  final _StatementCardStyle style;
+
+  const _TransactionDetailCopyButton({required this.row, required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: context.tr.copy,
+      child: IconButton(
+        key: ValueKey('statement-detail-copy-${row.key}'),
+        onPressed: () => _copyDetail(context, row),
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+        icon: Icon(LucideIcons.copy, size: 15, color: style.secondaryText),
+      ),
+    );
+  }
+
+  Future<void> _copyDetail(
+    BuildContext context,
+    _TransactionDetailRow row,
+  ) async {
+    final value = row.copyValue;
+    if (value == null) return;
+
+    HapticFeedback.selectionClick();
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            _localizedCopy(
+              context,
+              pt: 'Detalhe copiado.',
+              en: 'Transaction detail copied.',
+              es: 'Detalle copiado.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+}
+
+class _TransactionDetailRow {
+  final String key;
+  final String label;
+  final String displayValue;
+  final String? copyValue;
+
+  const _TransactionDetailRow({
+    required this.key,
+    required this.label,
+    required this.displayValue,
+    this.copyValue,
+  });
+}
+
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final value in values) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isNotEmpty) return trimmed;
+  }
+  return null;
+}
+
+String? _copyValue(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+String _titleCase(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return value;
+  return trimmed[0].toUpperCase() + trimmed.substring(1);
+}
+
+String _localizedCopy(
+  BuildContext context, {
+  required String pt,
+  required String en,
+  required String es,
+}) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => en,
+    'es' => es,
+    _ => pt,
+  };
 }
 
 class _StatusPill extends StatelessWidget {

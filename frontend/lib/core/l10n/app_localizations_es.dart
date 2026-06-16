@@ -353,6 +353,60 @@ class AppLocalizationsEs extends AppLocalizations {
       'El primer banco internacional de Bitcoin centrado en la privacidad del mundo.';
 
   @override
+  String get welcomeHeaderTitleCustody => 'Custodia institucional.\n';
+
+  @override
+  String get welcomeHeaderTitleSimplicity => 'Simplicidad absoluta.';
+
+  @override
+  String get welcomeHeaderSubtitle =>
+      'Seguridad de nivel superior para su patrimonio digital. Diseñado para quienes exigen lo mejor.';
+
+  @override
+  String get welcomeCreateAccountButton => 'Crear cuenta';
+
+  @override
+  String get welcomeAlreadyHaveAccountButton => 'Ya tengo cuenta';
+
+  @override
+  String get loginTitle => 'Entrar';
+
+  @override
+  String get loginSubtitle =>
+      'Ingresa usuario y contraseña. Luego se confirma la llave del dispositivo.';
+
+  @override
+  String get loginPasswordRequired => 'Ingresa tu contraseña.';
+
+  @override
+  String get loginTotpRequired => 'Ingresa el código de 6 dígitos.';
+
+  @override
+  String get loginConfirmCodeTitle => 'Confirma el código';
+
+  @override
+  String get loginConfirmCodeSubtitle =>
+      'Ingresa el código de tu autenticador para terminar el acceso.';
+
+  @override
+  String get loginConfirmAccessButton => 'Confirmar acceso';
+
+  @override
+  String get loginLostAccessButton => 'Perdí el acceso a la cuenta';
+
+  @override
+  String get loginNewHere => '¿Nuevo por aquí?';
+
+  @override
+  String get loginCreateAccount => 'Crear cuenta';
+
+  @override
+  String get loginUsernameLabel => 'Nombre de usuario';
+
+  @override
+  String get loginContinueButton => 'Continuar';
+
+  @override
   String get signIn => 'Iniciar Sesión';
 
   @override
@@ -1637,6 +1691,27 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos crear esta tarjeta ahora. Revisa el nombre e inténtalo de nuevo.';
 
   @override
+  String get bitcoinAccountsCustodyInternalTitle => 'Billetera Interna';
+
+  @override
+  String get bitcoinAccountsCustodyInternalSubtitle =>
+      'Saldo custodiado, transferencias instantáneas y tarifas reducidas.';
+
+  @override
+  String get bitcoinAccountsCustodyOnchainTitle => 'Custodial On-chain';
+
+  @override
+  String get bitcoinAccountsCustodyOnchainSubtitle =>
+      'Aseguramos tus claves, validamos y firmamos tus transacciones con tu autorización.';
+
+  @override
+  String get bitcoinAccountsCustodyWatchOnlyTitle => 'Kerosene Watch-Only';
+
+  @override
+  String get bitcoinAccountsCustodyWatchOnlySubtitle =>
+      'Las claves privadas las gestionas tú; más complejo y lento, pero sin depender de nuestro servicio.';
+
+  @override
   String get coldWalletCreateTitle => 'Crear billetera fría';
 
   @override
@@ -1726,7 +1801,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get coldWalletVerifySubtitle =>
-      'Escribe las palabras solicitadas para confirmar tu respaldo antes de importar la clave pública de observación.';
+      'Escribe las palabras solicitadas antes de importar la clave pública de observación.';
 
   @override
   String coldWalletVerifyWordLabel(int index) {
@@ -2635,11 +2710,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String adminLogBody(
-    String createdAt,
-    String reference,
-    String userRef,
-    String payloadRef,
-  ) {
+      String createdAt, String reference, String userRef, String payloadRef) {
     return '$createdAt · ref $reference · usuario $userRef · payload $payloadRef';
   }
 
@@ -2718,6 +2789,127 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get bitcoinReceiveRequestsNoExpiry => 'sin expiración';
+
+  @override
+  String get paymentIntentScreenTitle => 'Intención de pago';
+
+  @override
+  String get paymentIntentScreenSubtitle => 'Cotización, confirmación y estado';
+
+  @override
+  String get paymentIntentRecipientHint => 'username, email o dirección';
+
+  @override
+  String get paymentIntentSearchAction => 'Buscar';
+
+  @override
+  String get paymentIntentAmountFeeTitle => 'Monto y comisión';
+
+  @override
+  String get paymentIntentGenerateQuoteAction => 'Generar cotización';
+
+  @override
+  String get paymentIntentQuoteTitle => 'Cotización';
+
+  @override
+  String get paymentIntentMetricReceiver => 'Receptor';
+
+  @override
+  String get paymentIntentMetricRoute => 'Ruta';
+
+  @override
+  String get paymentIntentMetricReceives => 'Recibe';
+
+  @override
+  String get paymentIntentMetricNetworkFee => 'Comisión de red';
+
+  @override
+  String get paymentIntentMetricKeroseneFee => 'Comisión Kerosene';
+
+  @override
+  String get paymentIntentMetricTotalDebit => 'Total debitado';
+
+  @override
+  String get paymentIntentConfirmPaymentAction => 'Confirmar pago';
+
+  @override
+  String get paymentIntentStatusTitle => 'Estado';
+
+  @override
+  String get paymentIntentNotCompleted => 'Pago no completado.';
+
+  @override
+  String get paymentIntentReviewTitle => 'Revisar envío';
+
+  @override
+  String paymentIntentReviewDebitMessage(Object total, Object receiver) {
+    return '$total se debitarán para $receiver.';
+  }
+
+  @override
+  String get paymentIntentAuthorizeAction => 'Autorizar';
+
+  @override
+  String get paymentIntentValidationRecipientRequired => 'Ingresa el receptor.';
+
+  @override
+  String get paymentIntentValidationAmountRequired => 'Ingresa el monto.';
+
+  @override
+  String get paymentIntentRailInternal => 'Kerosene';
+
+  @override
+  String get paymentIntentRailLightning => 'Lightning';
+
+  @override
+  String get paymentIntentRailOnchain => 'On-chain';
+
+  @override
+  String get paymentIntentFeeSenderPays => 'Paga el remitente';
+
+  @override
+  String get paymentIntentFeeRecipientPays => 'Paga el receptor';
+
+  @override
+  String get paymentIntentSpeedEconomy => 'Económica';
+
+  @override
+  String get paymentIntentSpeedNormal => 'Normal';
+
+  @override
+  String get paymentIntentSpeedFast => 'Rápida';
+
+  @override
+  String get paymentIntentStatusCreated => 'Creado';
+
+  @override
+  String get paymentIntentStatusQuoted => 'Cotizado';
+
+  @override
+  String get paymentIntentStatusConfirmed => 'Confirmado';
+
+  @override
+  String get paymentIntentStatusProcessing => 'Procesando';
+
+  @override
+  String get paymentIntentStatusAcceptedByProvider =>
+      'Aceptado por el proveedor';
+
+  @override
+  String get paymentIntentStatusRequiresReconciliation =>
+      'Requiere conciliación';
+
+  @override
+  String get paymentIntentStatusSettled => 'Liquidado';
+
+  @override
+  String get paymentIntentStatusFailed => 'Falló';
+
+  @override
+  String get paymentIntentStatusCanceled => 'Cancelado';
+
+  @override
+  String get paymentIntentStatusExpired => 'Expirado';
 
   @override
   String get bitcoinReceiveStatusDetected => 'Detectado';
@@ -6004,6 +6196,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get financialStatementFilterOutgoing => 'Enviadas';
 
   @override
+  String get financialStatementFilterPending => 'Pendientes';
+
+  @override
+  String get financialStatementFilterFailed => 'Fallidas';
+
+  @override
+  String get financialStatementNoResultsTitle =>
+      'No se encontraron transacciones';
+
+  @override
+  String get financialStatementNoResultsMessage =>
+      'Prueba otra búsqueda o borra los filtros.';
+
+  @override
+  String get financialStatementClearFilters => 'Borrar filtros';
+
+  @override
   String get receiveScreenQrEyebrow => 'QR Code';
 
   @override
@@ -6343,6 +6552,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sendMoneyRecentTitle => 'Ya enviados';
+
+  @override
+  String get recentDestinationInternal => 'Transferencia interna';
+
+  @override
+  String get recentDestinationOnChain => 'Dirección on-chain';
+
+  @override
+  String get recentDestinationLightning => 'Invoice Lightning';
+
+  @override
+  String get recentDestinationClearAll => 'Borrar todo';
 
   @override
   String get sendMoneyGoToAmount => 'Ir al valor';
@@ -7198,127 +7419,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeEducationKeroseneGeneralTag => 'Cómo elegir';
 
   @override
-  String get paymentIntentScreenTitle => 'Intención de pago';
-
-  @override
-  String get paymentIntentScreenSubtitle => 'Cotización, confirmación y estado';
-
-  @override
-  String get paymentIntentRecipientHint => 'username, email o dirección';
-
-  @override
-  String get paymentIntentSearchAction => 'Buscar';
-
-  @override
-  String get paymentIntentAmountFeeTitle => 'Monto y comisión';
-
-  @override
-  String get paymentIntentGenerateQuoteAction => 'Generar cotización';
-
-  @override
-  String get paymentIntentQuoteTitle => 'Cotización';
-
-  @override
-  String get paymentIntentMetricReceiver => 'Receptor';
-
-  @override
-  String get paymentIntentMetricRoute => 'Ruta';
-
-  @override
-  String get paymentIntentMetricReceives => 'Recibe';
-
-  @override
-  String get paymentIntentMetricNetworkFee => 'Comisión de red';
-
-  @override
-  String get paymentIntentMetricKeroseneFee => 'Comisión Kerosene';
-
-  @override
-  String get paymentIntentMetricTotalDebit => 'Total debitado';
-
-  @override
-  String get paymentIntentConfirmPaymentAction => 'Confirmar pago';
-
-  @override
-  String get paymentIntentStatusTitle => 'Estado';
-
-  @override
-  String get paymentIntentNotCompleted => 'Pago no completado.';
-
-  @override
-  String get paymentIntentReviewTitle => 'Revisar envío';
-
-  @override
-  String paymentIntentReviewDebitMessage(String total, String receiver) {
-    return '$total se debitarán para $receiver.';
-  }
-
-  @override
-  String get paymentIntentAuthorizeAction => 'Autorizar';
-
-  @override
-  String get paymentIntentValidationRecipientRequired => 'Ingresa el receptor.';
-
-  @override
-  String get paymentIntentValidationAmountRequired => 'Ingresa el monto.';
-
-  @override
-  String get paymentIntentRailInternal => 'Kerosene';
-
-  @override
-  String get paymentIntentRailLightning => 'Lightning';
-
-  @override
-  String get paymentIntentRailOnchain => 'On-chain';
-
-  @override
-  String get paymentIntentFeeSenderPays => 'Paga el remitente';
-
-  @override
-  String get paymentIntentFeeRecipientPays => 'Paga el receptor';
-
-  @override
-  String get paymentIntentSpeedEconomy => 'Económica';
-
-  @override
-  String get paymentIntentSpeedNormal => 'Normal';
-
-  @override
-  String get paymentIntentSpeedFast => 'Rápida';
-
-  @override
-  String get paymentIntentStatusCreated => 'Creado';
-
-  @override
-  String get paymentIntentStatusQuoted => 'Cotizado';
-
-  @override
-  String get paymentIntentStatusConfirmed => 'Confirmado';
-
-  @override
-  String get paymentIntentStatusProcessing => 'Procesando';
-
-  @override
-  String get paymentIntentStatusAcceptedByProvider =>
-      'Aceptado por el proveedor';
-
-  @override
-  String get paymentIntentStatusRequiresReconciliation =>
-      'Requiere conciliación';
-
-  @override
-  String get paymentIntentStatusSettled => 'Liquidado';
-
-  @override
-  String get paymentIntentStatusFailed => 'Falló';
-
-  @override
-  String get paymentIntentStatusCanceled => 'Cancelado';
-
-  @override
-  String get paymentIntentStatusExpired => 'Expirado';
-
-  @override
   String get designSystemTemplateTitle => 'Design system';
 
   @override
@@ -7341,4 +7441,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get designSystemTemplateStatusSection => '05. Etiquetas de estado';
+
+  @override
+  String get walletSelectorLoadErrorTitle =>
+      'No se pudieron cargar las carteras';
+
+  @override
+  String get walletSelectorRetry => 'Reintentar';
+
+  @override
+  String get walletSelectorNoWallets =>
+      'No se encontraron carteras. Crea una para empezar.';
+
+  @override
+  String get walletSelectorAvailableBalance => 'Saldo disponible';
 }

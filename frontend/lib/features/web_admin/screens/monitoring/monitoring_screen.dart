@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import '../../data/admin_data_service.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
@@ -149,16 +150,77 @@ class _AsyncMetric extends StatelessWidget {
   }
 }
 
-class _BlockchainPanel extends StatelessWidget {
+class _BlockchainPanel extends ConsumerStatefulWidget {
   final AsyncValue<Map<String, dynamic>> asyncValue;
 
   const _BlockchainPanel({required this.asyncValue});
 
   @override
+  ConsumerState<_BlockchainPanel> createState() => _BlockchainPanelState();
+}
+
+class _BlockchainPanelState extends ConsumerState<_BlockchainPanel> {
+  bool _isSyncing = false;
+  String? _syncStatus;
+  String? _syncError;
+
+  Future<void> _triggerSync() async {
+    if (_isSyncing) return;
+
+    setState(() {
+      _isSyncing = true;
+      _syncError = null;
+    });
+
+    try {
+      final response =
+          await ref.read(adminDataServiceProvider).triggerBlockchainSync();
+      final status = _syncStatusFromResponse(response);
+
+      if (!mounted) return;
+      setState(() {
+        _syncStatus = status;
+      });
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Blockchain sync: $status')),
+        );
+      ref.invalidate(adminBlockchainMonitorProvider);
+    } catch (e) {
+      if (!mounted) return;
+      final message = _syncErrorMessage(e);
+      setState(() {
+        _syncStatus = 'FAILED';
+        _syncError = message;
+      });
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Blockchain sync failed: $message')),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _Panel(
       title: context.tr.adminMonitoringBitcoinPanel,
-      child: asyncValue.when(
+      trailing: _BlockchainSyncAction(
+        isSyncing: _isSyncing,
+        status: _syncStatus,
+        error: _syncError,
+        onPressed: _triggerSync,
+      ),
+      child: widget.asyncValue.when(
         data: (data) {
           final chain = _map(data['chain']);
           final mempool = _map(data['mempool']);
@@ -221,6 +283,63 @@ class _BlockchainPanel extends StatelessWidget {
         ),
         error: (e, _) => Text(context.tr.adminMonitoringBlockchainError('$e')),
       ),
+    );
+  }
+}
+
+class _BlockchainSyncAction extends StatelessWidget {
+  final bool isSyncing;
+  final String? status;
+  final String? error;
+  final VoidCallback onPressed;
+
+  const _BlockchainSyncAction({
+    required this.isSyncing,
+    required this.status,
+    required this.error,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AdminTheme.spacingSm,
+      runSpacing: AdminTheme.spacingXs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (isSyncing)
+          const AdminStatusBadge(
+            label: 'SYNCING',
+            variant: AdminBadgeVariant.info,
+          )
+        else if (status != null)
+          AdminStatusBadge(
+            label: status!,
+            variant: _variant(status!),
+          ),
+        if (error != null)
+          Tooltip(
+            message: error!,
+            child: const Icon(
+              Icons.error_outline,
+              color: AdminColors.negative,
+              size: 16,
+            ),
+          ),
+        OutlinedButton.icon(
+          onPressed: isSyncing ? null : onPressed,
+          icon: isSyncing
+              ? const SizedBox.square(
+                  dimension: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AdminColors.textTertiary,
+                  ),
+                )
+              : const Icon(Icons.sync, size: 16),
+          label: Text(isSyncing ? 'Syncing' : 'Sync now'),
+        ),
+      ],
     );
   }
 }
@@ -434,8 +553,13 @@ class _LogsPanel extends StatelessWidget {
 class _Panel extends StatelessWidget {
   final String title;
   final Widget child;
+  final Widget? trailing;
 
-  const _Panel({required this.title, required this.child});
+  const _Panel({
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +574,32 @@ class _Panel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AdminTypography.h3),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final titleWidget = Text(title, style: AdminTypography.h3);
+              if (trailing == null) return titleWidget;
+
+              if (constraints.maxWidth < 560) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleWidget,
+                    const SizedBox(height: AdminTheme.spacingMd),
+                    trailing!,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: titleWidget),
+                  const SizedBox(width: AdminTheme.spacingMd),
+                  trailing!,
+                ],
+              );
+            },
+          ),
           const SizedBox(height: AdminTheme.spacingLg),
           child,
         ],
@@ -575,6 +724,21 @@ String _boolText(BuildContext context, bool value) {
   return value ? context.tr.adminValueTrue : context.tr.adminValueFalse;
 }
 
+String _syncStatusFromResponse(Map<String, dynamic> response) {
+  final status = response['status'] ??
+      response['syncStatus'] ??
+      response['result'] ??
+      response['state'];
+  final normalized = status?.toString().trim();
+  if (normalized == null || normalized.isEmpty) return 'TRIGGERED';
+  return normalized.toUpperCase();
+}
+
+String _syncErrorMessage(Object error) {
+  final message = error.toString().trim();
+  return message.isEmpty ? 'Unknown error' : message;
+}
+
 Map<String, dynamic> _map(Object? value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) return Map<String, dynamic>.from(value);
@@ -598,6 +762,8 @@ AdminBadgeVariant _variant(String status) {
   final normalized = status.toUpperCase();
   if (normalized.contains('UP') ||
       normalized.contains('OK') ||
+      normalized.contains('TRIGGERED') ||
+      normalized.contains('SYNCED') ||
       normalized.contains('SETTLED') ||
       normalized.contains('COMPLETED') ||
       normalized.contains('INFO')) {
@@ -611,6 +777,7 @@ AdminBadgeVariant _variant(String status) {
   }
   if (normalized.contains('WARN') ||
       normalized.contains('PENDING') ||
+      normalized.contains('THROTTLED') ||
       normalized.contains('DEGRADED')) {
     return AdminBadgeVariant.warning;
   }

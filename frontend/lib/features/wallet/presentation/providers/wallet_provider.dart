@@ -154,18 +154,16 @@ class WalletNotifier extends Notifier<WalletState> {
 
     final walletsResult = await getWalletsUseCase();
 
-    // Obter taxa de câmbio (BTC/USD)
-    final btcPriceAsync = ref.read(btcPriceProvider);
-    final double btcToUsdRate = btcPriceAsync.when(
-      data: (price) => price,
-      loading: () => 0.0,
-      error: (_, __) => 0.0,
-    );
+    const btcToUsdRate = 0.0;
 
     walletsResult.fold(
       (failure) {
         // If we fail to fetch wallets (e.g. 403, 401, timeout), we should emit an Error state, NOT an empty loaded state!
-        state = WalletError(failure.message);
+        state = WalletError(
+          failure.message,
+          statusCode: failure.statusCode,
+          errorCode: failure.errorCode,
+        );
       },
       (wallets) {
         state = WalletLoaded(
@@ -477,12 +475,18 @@ final totalBalanceBtcProvider = Provider<double>((ref) {
 });
 
 /// Provider for total balance in USD using real-time price
-final totalBalanceUsdProvider = Provider<double?>((ref) {
+final totalBalanceUsdProvider = Provider.autoDispose<double?>((ref) {
   final balanceBtc = ref.watch(totalBalanceBtcProvider);
-  final priceAsync = ref.watch(btcPriceProvider);
+  final priceAsync = ref.watch(backendBtcRatesProvider);
 
   return priceAsync.when(
-    data: (price) => balanceBtc * price,
+    data: (rates) {
+      final price = rates?.btcUsd;
+      if (price == null || price <= 0) {
+        return null;
+      }
+      return balanceBtc * price;
+    },
     loading: () => null,
     error: (_, __) => null,
   );

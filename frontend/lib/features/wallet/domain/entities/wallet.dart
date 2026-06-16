@@ -176,32 +176,45 @@ final class Wallet extends Equatable {
         ? Map<String, dynamic>.from(json['data'] as Map)
         : json;
     final balanceVal = data['balance'];
-    final btcValue = (balanceVal is num) ? balanceVal.toDouble() : 0.0;
+    final kind = data['kind']?.toString().toUpperCase();
+    final status = data['status']?.toString().toUpperCase();
+    final spendable = _parseBool(data['spendable'], fallback: true);
+    final fallbackSats = spendable
+        ? data['availableSats']
+        : (data['observedSats'] ?? data['availableSats']);
+    final btcValue = _parseBtcValue(balanceVal, fallbackSats);
     final cardType = WalletCardType.fromApi(data['cardType']);
+    final walletName =
+        (data['name'] ?? data['walletName'] ?? data['label'] ?? 'Wallet')
+            .toString();
 
     return Wallet(
       id: (data['id'] ??
               data['walletId'] ??
               DateTime.now().millisecondsSinceEpoch)
           .toString(),
-      name: data['name'] ?? data['walletName'] ?? 'Wallet',
+      name: walletName,
       address: (data['depositAddress'] ??
               data['onchainAddress'] ??
+              data['activeAddress'] ??
               data['address'] ??
               '')
           .toString(),
-      walletMode: data['walletMode']?.toString() ?? 'KEROSENE',
+      walletMode:
+          data['walletMode']?.toString() ?? _walletModeFromKfeKind(kind),
       passphraseHash: data['passphraseHash']?.toString() ?? '',
       balance: btcValue,
       derivationPath: "m/84'/0'/0'",
       type: WalletType.nativeSegwit,
       createdAt: _parseDateTime(data['createdAt']),
       updatedAt: _parseDateTime(data['updatedAt']),
-      isActive: _parseBool(data['isActive'], fallback: true),
+      isActive: _parseBool(
+        data['isActive'],
+        fallback: status == null || status == 'ACTIVE',
+      ),
       accountSecurity: data['accountSecurity']?.toString() ?? 'STANDARD',
       cardType: cardType,
-      cardHolderName:
-          data['cardHolderName']?.toString() ?? data['name']?.toString() ?? '',
+      cardHolderName: data['cardHolderName']?.toString() ?? walletName,
       cardMaskedNumber: data['cardMaskedNumber']?.toString() ?? '',
       cardNumberSuffix: data['cardNumberSuffix']?.toString() ?? '',
       cardSequence: (data['cardSequence'] as num?)?.toInt() ?? 1,
@@ -223,6 +236,37 @@ final class Wallet extends Equatable {
         cardType.defaultFeeRate,
       ),
     );
+  }
+
+  static double _parseBtcValue(Object? btcValue, Object? fallbackSats) {
+    if (btcValue is num) {
+      return btcValue.toDouble();
+    }
+    if (btcValue is String) {
+      final parsed = double.tryParse(btcValue.trim());
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+    final sats = _parseSats(fallbackSats);
+    if (sats == null) {
+      return 0.0;
+    }
+    return sats / 100000000.0;
+  }
+
+  static int? _parseSats(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  static String _walletModeFromKfeKind(String? kind) {
+    return kind == 'WATCH_ONLY' ? 'SELF_CUSTODY' : 'KEROSENE';
   }
 
   static double _parseFeeRate(Object? value, double fallback) {

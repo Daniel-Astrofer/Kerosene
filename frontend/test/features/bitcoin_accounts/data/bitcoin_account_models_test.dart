@@ -2,6 +2,48 @@ import 'package:kerosene/features/bitcoin_accounts/data/bitcoin_account_models.d
 import 'package:test/test.dart';
 
 void main() {
+  test('builds KFE receive view from active address', () {
+    final view = ReceivingRequestView.fromKfeActiveAddress(
+      accountId: 'wallet-1',
+      address: ' bcrt1qactive0000000000000000000000000000000 ',
+      createdAt: DateTime.utc(2026, 6, 15, 12),
+    );
+
+    expect(
+      view.id,
+      'kfe:wallet-1:bcrt1qactive0000000000000000000000000000000',
+    );
+    expect(view.accountId, 'wallet-1');
+    expect(view.address, 'bcrt1qactive0000000000000000000000000000000');
+    expect(
+      view.bip21,
+      'bitcoin:bcrt1qactive0000000000000000000000000000000',
+    );
+    expect(view.status, 'ACTIVE');
+    expect(view.amountSats, isNull);
+    expect(view.expiry, isEmpty);
+    expect(view.oneTime, isFalse);
+    expect(view.createdAt, DateTime.utc(2026, 6, 15, 12));
+  });
+
+  test('builds KFE receive view with amount in BIP21', () {
+    final view = ReceivingRequestView.fromKfeActiveAddress(
+      accountId: 'wallet-1',
+      address: 'bcrt1qactive0000000000000000000000000000000',
+      amountSats: 50000,
+      expiry: '15M',
+      oneTime: true,
+    );
+
+    expect(
+      view.bip21,
+      'bitcoin:bcrt1qactive0000000000000000000000000000000?amount=0.00050000',
+    );
+    expect(view.amountSats, 50000);
+    expect(view.expiry, '15M');
+    expect(view.oneTime, isTrue);
+  });
+
   test('parses cold wallet UTXO view', () {
     final utxo = ColdWalletUtxoView.fromJson(const {
       'id': 'utxo-1',

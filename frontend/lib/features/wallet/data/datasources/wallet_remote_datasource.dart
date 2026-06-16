@@ -4,7 +4,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
 
 abstract class WalletRemoteDataSource {
-  Future<String> createWallet({
+  Future<Map<String, dynamic>> createWallet({
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
@@ -34,8 +34,50 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
 
   WalletRemoteDataSourceImpl(this.apiClient);
 
+  Map<String, dynamic> _parseMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return {};
+  }
+
+  String _kfeKind({
+    required String walletMode,
+    required String? xpub,
+  }) {
+    final normalizedMode = walletMode.trim().toUpperCase();
+    if (normalizedMode == 'SELF_CUSTODY') {
+      return 'WATCH_ONLY';
+    }
+    if (normalizedMode == 'CUSTODIAL_ONCHAIN') {
+      return 'CUSTODIAL_ONCHAIN';
+    }
+    return 'INTERNAL';
+  }
+
+  Map<String, dynamic> _kfeCreatePayload({
+    required String name,
+    required String passphrase,
+    required String accountSecurity,
+    required String? xpub,
+    required String walletMode,
+  }) {
+    final normalizedXpub = xpub?.trim();
+    final kind = _kfeKind(walletMode: walletMode, xpub: normalizedXpub);
+    return {
+      'kind': kind,
+      'label': name,
+      if (normalizedXpub != null && normalizedXpub.isNotEmpty)
+        'xpub': normalizedXpub,
+      if (kind == 'CUSTODIAL_ONCHAIN' &&
+          normalizedXpub != null &&
+          normalizedXpub.isNotEmpty)
+        'issueInitialAddress': true,
+      if (kind == 'INTERNAL') 'issueInitialAddress': false,
+    };
+  }
+
   @override
-  Future<String> createWallet({
+  Future<Map<String, dynamic>> createWallet({
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
@@ -45,16 +87,24 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     try {
       final response = await apiClient.post(
         AppConfig.walletCreate,
-        data: {
-          'name': name,
-          'passphrase': passphrase,
-          'accountSecurity': accountSecurity,
-          'xpub': xpub,
-          'walletMode': walletMode,
-        },
+        data: _kfeCreatePayload(
+          name: name,
+          passphrase: passphrase,
+          accountSecurity: accountSecurity,
+          xpub: xpub,
+          walletMode: walletMode,
+        ),
         options: Options(contentType: 'application/json'),
       );
-      return response.data.toString();
+      final data = _parseMap(response.data);
+      if (data.isEmpty) {
+        throw ServerException(
+          message: 'Resposta inesperada ao criar carteira.',
+          errorCode: 'ERR_WALLET_CREATE_INVALID_RESPONSE',
+          data: response.data,
+        );
+      }
+      return data;
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao criar carteira: $e');
@@ -68,6 +118,11 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final data = response.data;
       if (data is List) {
         return data;
+      }
+      final map = _parseMap(data);
+      final wallets = map['wallets'];
+      if (wallets is List) {
+        return wallets;
       }
       throw ServerException(
         message: 'Resposta inesperada ao buscar carteiras.',
@@ -85,13 +140,25 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   @override
   Future<Map<String, dynamic>> findWallet({required String name}) async {
     try {
-      final response = await apiClient.get(
-        AppConfig.walletFind,
-        queryParameters: {'name': name},
+      final wallets = await getWallets();
+      final normalizedName = name.trim();
+      final wallet = wallets.whereType<Map>().map(_parseMap).firstWhere(
+            (wallet) =>
+                wallet['id']?.toString() == normalizedName ||
+                wallet['walletId']?.toString() == normalizedName ||
+                wallet['name']?.toString() == normalizedName ||
+                wallet['walletName']?.toString() == normalizedName ||
+                wallet['label']?.toString() == normalizedName,
+            orElse: () => const {},
+          );
+      if (wallet.isNotEmpty) {
+        return wallet;
+      }
+      throw const ValidationException(
+        message: 'Carteira não encontrada.',
+        statusCode: 404,
+        errorCode: 'ERR_WALLET_NOT_FOUND',
       );
-      return response.data is Map<String, dynamic>
-          ? response.data
-          : {'data': response.data};
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(message: 'Erro ao buscar carteira: $e');
@@ -104,16 +171,11 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     required String newName,
     required String passphrase,
   }) async {
-    try {
-      final response = await apiClient.put(
-        AppConfig.walletUpdate,
-        data: {'name': name, 'newName': newName, 'passphrase': passphrase},
-      );
-      return response.data.toString();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao atualizar carteira: $e');
-    }
+    throw const ValidationException(
+      message: 'Atualização de carteira ainda não está disponível no KFE.',
+      statusCode: 405,
+      errorCode: 'ERR_KFE_WALLET_UPDATE_UNAVAILABLE',
+    );
   }
 
   @override
@@ -121,15 +183,10 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     required String name,
     required String passphrase,
   }) async {
-    try {
-      final response = await apiClient.delete(
-        AppConfig.walletDelete,
-        data: {'name': name, 'passphrase': passphrase},
-      );
-      return response.data.toString();
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao deletar carteira: $e');
-    }
+    throw const ValidationException(
+      message: 'Arquivamento de carteira ainda não está disponível no KFE.',
+      statusCode: 405,
+      errorCode: 'ERR_KFE_WALLET_DELETE_UNAVAILABLE',
+    );
   }
 }

@@ -64,7 +64,7 @@ versioned_migration_files() {
     | awk -F/ '
         {
           filename = $NF
-          if (filename !~ /^V[0-9]+__/) {
+          if (filename !~ /^V[0-9_]+__/) {
             next
           }
           version = filename

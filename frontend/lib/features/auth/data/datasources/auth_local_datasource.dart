@@ -125,7 +125,8 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<void> saveUser(UserModel user) async {
     try {
       final userJson = json.encode(user.toJson());
-      await sharedPreferences.setString(AppConfig.userDataKey, userJson);
+      await secureStorage.write(key: AppConfig.userDataKey, value: userJson);
+      await sharedPreferences.remove(AppConfig.userDataKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao salvar usuário: $e');
     }
@@ -134,7 +135,18 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<UserModel?> getUser() async {
     try {
-      final userJson = sharedPreferences.getString(AppConfig.userDataKey);
+      var userJson = await secureStorage.read(key: AppConfig.userDataKey);
+      final legacyUserJson = sharedPreferences.getString(AppConfig.userDataKey);
+      if ((userJson == null || userJson.isEmpty) &&
+          legacyUserJson != null &&
+          legacyUserJson.isNotEmpty) {
+        userJson = legacyUserJson;
+        await secureStorage.write(
+          key: AppConfig.userDataKey,
+          value: legacyUserJson,
+        );
+        await sharedPreferences.remove(AppConfig.userDataKey);
+      }
       if (userJson == null) return null;
 
       final userMap = json.decode(userJson) as Map<String, dynamic>;
@@ -147,6 +159,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> removeUser() async {
     try {
+      await secureStorage.delete(key: AppConfig.userDataKey);
       await sharedPreferences.remove(AppConfig.userDataKey);
     } catch (e) {
       throw CacheException(message: 'Erro ao remover usuário: $e');

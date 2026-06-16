@@ -121,7 +121,7 @@ O produto combina:
 | Bitcoin Core local | Definido no compose atual | Healthcheck e scripts em `backend/kerosene/bitcoin-scripts`. |
 | Prometheus | Definido no compose atual | Scrape configurado para apps, sujeito aos endpoints actuator disponiveis. |
 | Runtime distroless | Definido para app e Vault | Dockerfiles em `backend/kerosene-infrastructure/images`. |
-| Vanguards/Tor hardening | Arquivos presentes | `backend/kerosene/tor/vanguards`. |
+| Vanguards/Tor hardening | Arquivos presentes | `backend/kerosene/deploy/tor/vanguards`. |
 
 ---
 
@@ -1111,10 +1111,10 @@ service MpcService {
 
 Estado atual:
 
-- o servidor Go registra `MpcService` e reflection;
-- o sidecar grava shard mock/simplificado em armazenamento volatil;
-- `Sign` retorna assinatura placeholder baseada em `R_VALUE`/`S_VALUE`;
-- o client Java abre canal gRPC, mas os metodos `keygen` e `sign` ainda retornam placeholders sem usar stubs gerados.
+- o servidor Go registra `MpcService` e habilita reflection apenas quando configurado;
+- o sidecar gera chave Ed25519, persiste shard criptografado e mantem plaintext no diretorio RAM configurado;
+- `Sign` assina hashes de 32 bytes e rejeita chave publica divergente quando informada;
+- o client Java chama os stubs gRPC gerados com deadline e configuracao de mTLS.
 
 ---
 
@@ -1180,12 +1180,13 @@ Observacoes:
 │   ├── kerosene/
 │   │   ├── src/main/java/source/
 │   │   ├── src/main/resources/
-│   │   ├── docker-entrypoint-initdb.d/
-│   │   ├── tor/
-│   │   ├── bitcoin-scripts/
-│   │   ├── lnd-scripts/
-│   │   ├── vault-scripts/
-│   │   ├── observability/
+│   │   ├── deploy/
+│   │   │   ├── compose/
+│   │   │   ├── docker/
+│   │   │   ├── host/
+│   │   │   ├── postgres/initdb/
+│   │   │   ├── observability/
+│   │   │   └── tor/
 │   │   ├── web-admin-build/
 │   │   ├── build.gradle.kts
 │   │   └── .env.example
@@ -1235,7 +1236,7 @@ Este README descreve o estado observado do repositorio em 2026-05-28. Pontos que
 | Licenca | Nao ha arquivo `LICENSE` no repositorio. Defina a licenca antes de abrir o projeto publicamente. |
 | CORS | `allowedOriginPatterns("*")` esta habilitado para desenvolvimento/teste. |
 | Bitcoin deposit address | `application.properties` contem endereco default; producao deve sobrescrever. |
-| MPC | Sidecar e client Java ainda possuem comportamento placeholder. |
+| MPC | Sidecar usa assinatura Ed25519 single-share pre-alpha; ainda nao e threshold MPC real nem substitui HSM/quorum auditado. |
 | Proof of reserves | Auditoria Merkle existe, mas precisa de processo operacional e publicacao de provas. |
 | On-chain balance | Algumas rotas de auditoria possuem mock/fallback no codigo documentado. |
 | Auth/passkeys | Existem fluxos simplificados e FIDO2/WebAuthn lado a lado; mantenha app, controllers e security matchers sincronizados a cada mudanca. |

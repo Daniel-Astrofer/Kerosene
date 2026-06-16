@@ -14,9 +14,6 @@ import '../../domain/entities/onchain_address_allocation.dart';
 import '../../domain/entities/wallet_network_address.dart';
 import '../../../wallet/domain/entities/unsigned_transaction.dart';
 
-/// Top-level function for isolates
-dynamic decodeJsonData(String source) => jsonDecode(source);
-
 /// Interface do TransactionRemoteDataSource
 abstract class TransactionRemoteDataSource {
   // Fee & Status
@@ -102,6 +99,7 @@ abstract class TransactionRemoteDataSource {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,
@@ -133,8 +131,108 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     return const [];
   }
 
-  List<ExternalTransfer> _externalTransfersFromResponse(dynamic data) {
-    return _parseJsonListResponse(data).map(ExternalTransfer.fromJson).toList();
+  List<Map<String, dynamic>> _kfeStatementPayloads(
+    Map<String, dynamic> dashboard,
+  ) {
+    return _parseJsonListResponse(dashboard['recentStatement']).map((item) {
+      final payloadJson = item['displayPayloadJson']?.toString();
+      Map<String, dynamic> payload = {};
+      if (payloadJson != null && payloadJson.trim().isNotEmpty) {
+        try {
+          payload = _parseJsonResponse(jsonDecode(payloadJson));
+        } catch (_) {}
+      }
+      return {
+        ...payload,
+        'id': payload['transactionId'] ?? item['transactionId'] ?? item['id'],
+        'transactionId': payload['transactionId'] ?? item['transactionId'],
+        'walletId': item['walletId'],
+        'createdAt': item['createdAt'],
+        'updatedAt': item['createdAt'],
+      };
+    }).toList();
+  }
+
+  ExternalTransfer _externalTransferFromKfePayload(
+    Map<String, dynamic> payload,
+  ) {
+    final rail = payload['rail']?.toString().toUpperCase() ?? 'ONCHAIN';
+    final direction = payload['direction']?.toString().toUpperCase() ?? '';
+    final amountSats = (payload['receiverAmountSats'] as num?)?.toInt() ??
+        (payload['grossAmountSats'] as num?)?.toInt() ??
+        0;
+    final networkFeeSats = (payload['networkFeeSats'] as num?)?.toInt() ?? 0;
+    final keroseneFeeSats = (payload['keroseneFeeSats'] as num?)?.toInt() ?? 0;
+    final totalDebitSats = (payload['totalDebitSats'] as num?)?.toInt() ?? 0;
+    final isInbound = direction == 'INBOUND';
+    return ExternalTransfer.fromJson({
+      'id': payload['transactionId']?.toString() ??
+          payload['id']?.toString() ??
+          '',
+      'network': rail,
+      'transferType': isInbound ? 'ADDRESS_ISSUE' : 'OUTBOUND_PAYMENT',
+      'status': payload['status']?.toString() ?? 'PENDING',
+      'provider': 'KFE',
+      'walletName': payload['walletId']?.toString() ??
+          payload['sourceWalletId']?.toString() ??
+          '',
+      'destination': payload['destinationWalletId']?.toString() ??
+          payload['externalReference']?.toString() ??
+          '',
+      'amountBtc': amountSats / 100000000.0,
+      'networkFeeBtc': networkFeeSats / 100000000.0,
+      'platformFeeBtc': keroseneFeeSats / 100000000.0,
+      'totalDebitedBtc': totalDebitSats / 100000000.0,
+      'externalReference': payload['externalReference']?.toString() ?? '',
+      'blockchainTxid': payload['blockchainTxid']?.toString() ?? '',
+      'paymentHash': payload['paymentHash']?.toString() ?? '',
+      'expectedAmountBtc': amountSats / 100000000.0,
+      'confirmations':
+          payload['status']?.toString().toUpperCase() == 'SETTLED' ? 6 : 0,
+      'createdAt': payload['createdAt']?.toString(),
+      'updatedAt': payload['updatedAt']?.toString(),
+      'context': payload['memo']?.toString() ?? '',
+    });
+  }
+
+  List<ExternalTransfer> _externalTransfersFromKfeDashboard(
+    Map<String, dynamic> dashboard,
+  ) {
+    return _kfeStatementPayloads(dashboard)
+        .where((payload) {
+          final rail = payload['rail']?.toString().toUpperCase();
+          return rail == 'ONCHAIN' || rail == 'LIGHTNING';
+        })
+        .map(_externalTransferFromKfePayload)
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> _getKfeDashboard() async {
+    final response = await apiClient.get(AppConfig.kfeDashboard);
+    return _parseJsonResponse(response.data);
+  }
+
+  List<Map<String, dynamic>> _kfeWalletsFromDashboard(
+    Map<String, dynamic> dashboard,
+  ) {
+    return _parseJsonListResponse(dashboard['wallets']);
+  }
+
+  Map<String, dynamic> _findKfeWallet(
+    Map<String, dynamic> dashboard,
+    String walletName,
+  ) {
+    final normalized = walletName.trim();
+    return _kfeWalletsFromDashboard(dashboard).firstWhere(
+      (wallet) => [
+        wallet['walletId'],
+        wallet['id'],
+        wallet['label'],
+        wallet['walletName'],
+        wallet['name'],
+      ].any((candidate) => candidate?.toString() == normalized),
+      orElse: () => const {},
+    );
   }
 
   bool _isCreditedExternalStatus(String status) {
@@ -193,6 +291,41 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     ].any((candidate) => candidate.trim() == normalized);
   }
 
+  int _btcToSats(double value) => (value * 100000000).round();
+
+  bool _looksLikeUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value.trim());
+  }
+
+  Map<String, dynamic> _kfeTransactionPayload({
+    required String idempotencyKey,
+    required String rail,
+    required String direction,
+    String? sourceWalletId,
+    String? destinationWalletId,
+    required int amountSats,
+    int networkFeeSats = 0,
+    String? externalReference,
+    String? memo,
+  }) {
+    return {
+      'idempotencyKey': idempotencyKey,
+      'rail': rail,
+      'direction': direction,
+      if (sourceWalletId != null && sourceWalletId.trim().isNotEmpty)
+        'sourceWalletId': sourceWalletId.trim(),
+      if (destinationWalletId != null && destinationWalletId.trim().isNotEmpty)
+        'destinationWalletId': destinationWalletId.trim(),
+      'amountSats': amountSats,
+      'networkFeeSats': networkFeeSats,
+      if (externalReference != null && externalReference.trim().isNotEmpty)
+        'externalReference': externalReference.trim(),
+      if (memo != null && memo.trim().isNotEmpty) 'memo': memo.trim(),
+    };
+  }
+
   Map<String, dynamic> _parseErrorPayload(dynamic data) {
     if (data is Map<String, dynamic>) {
       return data;
@@ -217,6 +350,74 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     }
 
     return const {};
+  }
+
+  PaymentLink _paymentLinkFromKfePayload(
+    Map<String, dynamic> payload, {
+    double? fallbackAmountBtc,
+    String? fallbackDescription,
+    DateTime? fallbackExpiresAt,
+    Map<String, String>? metadata,
+    String? referenceLabel,
+  }) {
+    final amountSats = (payload['amountSats'] as num?)?.toDouble() ??
+        (payload['receiverAmountSats'] as num?)?.toDouble() ??
+        (payload['grossAmountSats'] as num?)?.toDouble() ??
+        0;
+    final amountBtc =
+        amountSats > 0 ? amountSats / 100000000.0 : (fallbackAmountBtc ?? 0);
+    return PaymentLink.fromJson({
+      'id': payload['id'] ?? payload['transactionId'],
+      'amountBtc': amountBtc,
+      'description': payload['memo']?.toString() ??
+          fallbackDescription ??
+          'Recebimento via QR',
+      'depositAddress': payload['address']?.toString() ??
+          payload['externalReference']?.toString() ??
+          '',
+      'visibility': 'PRIVATE',
+      'confirmationMode': 'USER_ACTION_REQUIRED',
+      'amountLocked': true,
+      'referenceLabel': referenceLabel,
+      'metadata': metadata ?? const <String, String>{},
+      'status': payload['status']?.toString() ?? 'PENDING',
+      'txid': payload['blockchainTxid']?.toString(),
+      'createdAt': payload['createdAt']?.toString(),
+      'paidAt': payload['settledAt']?.toString(),
+      'completedAt': payload['updatedAt']?.toString(),
+      'expiresAt': payload['expiresAt']?.toString() ??
+          fallbackExpiresAt?.toIso8601String(),
+      'paymentRail': payload['rail']?.toString() ?? 'ONCHAIN',
+      'paymentIntentStatus': payload['status']?.toString() ?? 'PENDING',
+      'terminal': payload['terminal'] ?? false,
+    });
+  }
+
+  String _requirePaymentLinkWalletId({
+    required Map<String, String>? metadata,
+    required String? referenceLabel,
+  }) {
+    final walletId = metadata?['walletId']?.trim();
+    if (walletId != null && walletId.isNotEmpty) {
+      return walletId;
+    }
+    final walletName =
+        metadata?['walletName']?.trim() ?? referenceLabel?.trim();
+    if (walletName != null && walletName.isNotEmpty) {
+      return walletName;
+    }
+    throw const ValidationException(
+      message: 'walletName is required',
+      statusCode: 400,
+      errorCode: 'ERR_KFE_PAYMENT_LINK_WALLET_REQUIRED',
+    );
+  }
+
+  DateTime? _resolveExpiry(int? expiresInMinutes) {
+    if (expiresInMinutes == null || expiresInMinutes <= 0) {
+      return null;
+    }
+    return DateTime.now().toUtc().add(Duration(minutes: expiresInMinutes));
   }
 
   AppException _mapDioError(DioException error) {
@@ -263,18 +464,23 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
   @override
   Future<FeeEstimate> estimateFee(double amount) async {
-    try {
-      final response = await apiClient.get(
-        AppConfig.transactionsEstimateFee,
-        queryParameters: {'amount': amount},
-      );
-      return FeeEstimate.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos calcular a taxa agora. Tente novamente.',
-      );
-    }
+    const estimatedTxSizeVbytes = 141;
+    const fastSatPerByte = 18.0;
+    const standardSatPerByte = 10.0;
+    const slowSatPerByte = 5.0;
+    double feeBtc(double satPerByte) =>
+        (satPerByte * estimatedTxSizeVbytes) / 100000000.0;
+    final standardFee = feeBtc(standardSatPerByte);
+    return FeeEstimate(
+      fastSatPerByte: fastSatPerByte,
+      standardSatPerByte: standardSatPerByte,
+      slowSatPerByte: slowSatPerByte,
+      estimatedFastBtc: feeBtc(fastSatPerByte),
+      estimatedStandardBtc: standardFee,
+      estimatedSlowBtc: feeBtc(slowSatPerByte),
+      amountReceived: amount,
+      totalToSend: amount + standardFee,
+    );
   }
 
   @override
@@ -283,31 +489,24 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required double amount,
     required String feeLevel,
   }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.transactionsCreateUnsigned,
-        data: {'toAddress': toAddress, 'amount': amount, 'feeLevel': feeLevel},
-      );
-      return UnsignedTransaction.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is DioException) {
-        throw _mapDioError(e);
-      }
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message:
-            'Não conseguimos preparar essa transação agora. Tente novamente.',
-      );
-    }
+    throw const ValidationException(
+      message: 'Transações on-chain são preparadas pelo KFE no envio.',
+      statusCode: 410,
+      errorCode: 'ERR_KFE_UNSIGNED_TRANSACTION_DISABLED',
+    );
   }
 
   @override
   Future<TxStatus> getTransactionStatus(String txid) async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsStatus,
-        queryParameters: {'txid': txid},
-      );
+      if (!_looksLikeUuid(txid)) {
+        throw const ValidationException(
+          message: 'Identificador de transação KFE inválido.',
+          statusCode: 400,
+          errorCode: 'ERR_KFE_TRANSACTION_ID_INVALID',
+        );
+      }
+      final response = await apiClient.get(AppConfig.kfeTransaction(txid));
       return TxStatus.fromJson(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
@@ -336,20 +535,17 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       final normalizedSender =
           fromAddress.trim().isNotEmpty ? fromAddress.trim() : '';
       final response = await apiClient.post(
-        AppConfig.ledgerTransaction,
-        data: {
-          'sender': normalizedSender.isNotEmpty ? normalizedSender : null,
-          'receiver': toAddress,
-          'amount': amount,
-          'context': context ?? 'transfer',
-          if (passkeyAssertionJson != null)
-            'passkeyAssertionJson': passkeyAssertionJson,
-          if (confirmationPassphrase != null)
-            'confirmationPassphrase': confirmationPassphrase,
-          if (totpCode != null) 'totpCode': totpCode,
-          if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
-          if (requestTimestamp != null) 'requestTimestamp': requestTimestamp,
-        },
+        AppConfig.kfeTransactions,
+        data: _kfeTransactionPayload(
+          idempotencyKey: _requiredText(idempotencyKey, 'idempotencyKey'),
+          rail: 'INTERNAL',
+          direction: 'INTERNAL',
+          sourceWalletId: normalizedSender,
+          destinationWalletId: toAddress,
+          amountSats: _btcToSats(amount),
+          networkFeeSats: feeSatoshis,
+          memo: context ?? 'transfer',
+        ),
       );
 
       final data = _parseJsonResponse(response.data);
@@ -379,23 +575,11 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required double amount,
     String? message,
   }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.transactionsBroadcast,
-        data: {
-          'rawTxHex': rawTxHex,
-          'toAddress': toAddress,
-          'amount': amount,
-          if (message != null) 'message': message,
-        },
-      );
-      return TxStatus.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos transmitir a transação agora.',
-      );
-    }
+    throw const ValidationException(
+      message: 'Broadcast direto foi substituído por /kfe/transactions.',
+      statusCode: 410,
+      errorCode: 'ERR_KFE_DIRECT_BROADCAST_DISABLED',
+    );
   }
 
   // ==================== Deposits ====================
@@ -403,25 +587,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<String> getDepositAddress() async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsDepositAddress,
-      );
-
-      final data = response.data;
-      String address;
-
-      if (data is Map<String, dynamic>) {
-        address = (data['address'] ?? data['depositAddress'] ?? '').toString();
-      } else if (data is Map) {
-        final map = Map<String, dynamic>.from(data);
-        address = (map['address'] ?? map['depositAddress'] ?? '').toString();
-      } else {
-        address = data.toString().trim();
-      }
-
-      if (address.startsWith('"') && address.endsWith('"')) {
-        address = address.substring(1, address.length - 1);
-      }
+      final dashboard = await _getKfeDashboard();
+      final address = _kfeWalletsFromDashboard(dashboard)
+          .map((wallet) => wallet['activeAddress']?.toString().trim() ?? '')
+          .firstWhere((value) => value.isNotEmpty, orElse: () => '');
 
       if (address.isEmpty) {
         throw const ServerException(
@@ -482,18 +651,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<List<Deposit>> getDeposits() async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsNetworkTransfers,
-      );
-
-      var data = response.data;
-      if (data is String) {
-        try {
-          data = await compute<String, dynamic>(decodeJsonData, data);
-        } catch (_) {}
-      }
-
-      return _externalTransfersFromResponse(data)
+      final dashboard = await _getKfeDashboard();
+      return _externalTransfersFromKfeDashboard(dashboard)
           .where((transfer) => transfer.isInboundTransfer)
           .map(_depositFromExternalTransfer)
           .toList();
@@ -508,10 +667,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<double> getDepositBalance() async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsNetworkTransfers,
-      );
-      final deposits = _externalTransfersFromResponse(response.data)
+      final dashboard = await _getKfeDashboard();
+      final deposits = _externalTransfersFromKfeDashboard(dashboard)
           .where(
             (transfer) =>
                 transfer.isInboundTransfer &&
@@ -533,11 +690,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<Deposit> getDeposit(String txid) async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsNetworkTransfers,
-      );
       ExternalTransfer? transfer;
-      for (final candidate in _externalTransfersFromResponse(response.data)) {
+      final dashboard = await _getKfeDashboard();
+      for (final candidate in _externalTransfersFromKfeDashboard(dashboard)) {
         if (candidate.isInboundTransfer &&
             _matchesExternalTransfer(candidate, txid)) {
           transfer = candidate;
@@ -576,22 +731,37 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     Map<String, String>? metadata,
   }) async {
     try {
+      final requestedWalletId = _requirePaymentLinkWalletId(
+        metadata: metadata,
+        referenceLabel: referenceLabel,
+      );
+      final dashboard = await _getKfeDashboard();
+      final wallet = _findKfeWallet(dashboard, requestedWalletId);
+      final walletId = wallet['walletId']?.toString() ??
+          wallet['id']?.toString() ??
+          requestedWalletId;
+      final expiresAt = _resolveExpiry(expiresInMinutes);
       final response = await apiClient.post(
-        AppConfig.transactionsCreatePaymentLink,
-        data: {
-          'amount': amount,
-          'description': description ?? 'Recebimento via QR',
-          if (expiresInMinutes != null) 'expiresInMinutes': expiresInMinutes,
-          if (visibility != null) 'visibility': visibility,
-          if (confirmationMode != null) 'confirmationMode': confirmationMode,
-          'amountLocked': amountLocked,
-          if (referenceLabel != null) 'referenceLabel': referenceLabel,
-          if (metadata != null && metadata.isNotEmpty) 'metadata': metadata,
-        },
+        AppConfig.kfeWalletAddressRotate(walletId),
       );
 
       final data = _parseJsonResponse(response.data);
-      return PaymentLink.fromJson(data);
+      return _paymentLinkFromKfePayload(
+        {
+          ...data,
+          if (data['externalReference'] == null)
+            'externalReference': data['address'],
+          if (data['rail'] == null) 'rail': 'ONCHAIN',
+          if (data['status'] == null) 'status': 'ACTIVE',
+          if (data['createdAt'] == null)
+            'createdAt': DateTime.now().toUtc().toIso8601String(),
+        },
+        fallbackAmountBtc: amount,
+        fallbackDescription: description,
+        fallbackExpiresAt: expiresAt,
+        metadata: metadata,
+        referenceLabel: referenceLabel,
+      );
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -603,11 +773,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<PaymentLink> getPaymentLink(String linkId) async {
     try {
-      final response = await apiClient.get(
-        '${AppConfig.transactionsPaymentLink}/$linkId',
-      );
+      final response = await apiClient.get(AppConfig.kfeTransaction(linkId));
       final data = _parseJsonResponse(response.data);
-      return PaymentLink.fromJson(data);
+      return _paymentLinkFromKfePayload(data);
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -619,22 +787,15 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<List<PaymentLink>> getPaymentLinks() async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsPaymentLinksList,
-      );
-
-      var data = response.data;
-      if (data is List) {
-        return data
-            .whereType<Map<String, dynamic>>()
-            .map((e) => PaymentLink.fromJson(e))
-            .toList();
-      }
-      throw ServerException(
-        message: 'Resposta inesperada ao carregar links de pagamento.',
-        errorCode: 'ERR_PAYMENT_LINKS_INVALID_RESPONSE',
-        data: data,
-      );
+      final dashboard = await _getKfeDashboard();
+      return _kfeStatementPayloads(dashboard)
+          .where((payload) {
+            final rail = payload['rail']?.toString().toUpperCase();
+            final direction = payload['direction']?.toString().toUpperCase();
+            return rail == 'ONCHAIN' && direction == 'INBOUND';
+          })
+          .map(_paymentLinkFromKfePayload)
+          .toList();
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -648,18 +809,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String linkId,
     String? reason,
   }) async {
-    try {
-      final response = await apiClient.post(
-        '${AppConfig.transactionsPaymentLink}/$linkId/cancel',
-        data: {if (reason != null) 'reason': reason},
-      );
-      return PaymentLink.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos cancelar este link agora.',
-      );
-    }
+    throw const ValidationException(
+      message:
+          'Cancelamento de link de recebimento ainda não está disponível no KFE.',
+      statusCode: 410,
+      errorCode: 'ERR_KFE_PAYMENT_LINK_CANCEL_UNAVAILABLE',
+    );
   }
 
   @override
@@ -667,11 +822,30 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String walletName,
   }) async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsNetworkWalletProfile,
-        queryParameters: {'walletName': walletName},
-      );
-      return WalletNetworkAddress.fromJson(_parseJsonResponse(response.data));
+      final dashboard = await _getKfeDashboard();
+      final wallet = _findKfeWallet(dashboard, walletName);
+      if (wallet.isEmpty) {
+        throw const ValidationException(
+          message: 'Carteira não encontrada.',
+          statusCode: 404,
+          errorCode: 'ERR_WALLET_NOT_FOUND',
+        );
+      }
+      return WalletNetworkAddress.fromJson({
+        'walletName': wallet['label']?.toString() ?? walletName,
+        'onchainAddress': wallet['activeAddress']?.toString() ?? '',
+        'lightningAddress': '',
+        'network': wallet['kind']?.toString() ?? '',
+        'provider': 'KFE',
+        'externalWalletReference':
+            wallet['walletId']?.toString() ?? wallet['id']?.toString() ?? '',
+        'walletMode': wallet['kind']?.toString().toUpperCase() == 'WATCH_ONLY'
+            ? 'SELF_CUSTODY'
+            : 'KEROSENE',
+        'lightningEnabled': false,
+        'lightningUnavailableReason':
+            'Recebimento Lightning KFE ainda não está disponível.',
+      });
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -687,15 +861,23 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   }) async {
     try {
       final response = await apiClient.post(
-        AppConfig.transactionsNetworkOnchainAddress,
-        data: {
-          'walletName': walletName,
-          'expectedAmountBtc': expectedAmountBtc,
-        },
+        AppConfig.kfeWalletAddressRotate(walletName),
       );
-      return OnchainAddressAllocation.fromJson(
-        _parseJsonResponse(response.data),
-      );
+      final data = _parseJsonResponse(response.data);
+      return OnchainAddressAllocation.fromJson({
+        'walletName': walletName,
+        'onchainAddress': data['address']?.toString() ?? '',
+        'expectedAmountBtc': expectedAmountBtc,
+        'network': 'ONCHAIN',
+        'provider': data['providerReference']?.toString() ?? 'KFE',
+        'externalWalletReference': data['walletId']?.toString() ?? walletName,
+        'walletMode': 'KEROSENE',
+        'transferId': data['id']?.toString() ?? '',
+        'transferStatus': data['status']?.toString() ?? 'ACTIVE',
+        'confirmations': 0,
+        'requiredConfirmations': 3,
+        'blockchainTxid': '',
+      });
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -712,33 +894,18 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     String? memo,
     int expiresInSeconds = 900,
   }) async {
-    try {
-      final response = await apiClient.post(
-        AppConfig.transactionsNetworkLightningInvoice,
-        data: {
-          'idempotencyKey': idempotencyKey,
-          'walletName': walletName,
-          'amount': amount,
-          'memo': memo,
-          'expiresInSeconds': expiresInSeconds,
-        },
-      );
-      return LightningInvoice.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos criar o pedido Lightning agora.',
-      );
-    }
+    throw const ValidationException(
+      message: 'Recebimento Lightning ainda não está disponível no KFE.',
+      statusCode: 501,
+      errorCode: 'ERR_KFE_LIGHTNING_INVOICE_UNAVAILABLE',
+    );
   }
 
   @override
   Future<List<ExternalTransfer>> getExternalTransfers() async {
     try {
-      final response = await apiClient.get(
-        AppConfig.transactionsNetworkTransfers,
-      );
-      return _externalTransfersFromResponse(response.data);
+      final dashboard = await _getKfeDashboard();
+      return _externalTransfersFromKfeDashboard(dashboard);
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -750,10 +917,17 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<ExternalTransfer> getExternalTransfer(String transferId) async {
     try {
+      if (!_looksLikeUuid(transferId)) {
+        throw const ValidationException(
+          message: 'Identificador de transação KFE inválido.',
+          statusCode: 400,
+          errorCode: 'ERR_KFE_TRANSACTION_ID_INVALID',
+        );
+      }
       final response = await apiClient.get(
-        '${AppConfig.transactionsNetworkTransfers}/$transferId',
+        AppConfig.kfeTransaction(transferId),
       );
-      return ExternalTransfer.fromJson(_parseJsonResponse(response.data));
+      return _externalTransferFromKfePayload(_parseJsonResponse(response.data));
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
@@ -764,20 +938,12 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
   @override
   Future<ExternalTransfer> cancelInboundTransfer(String transferId) async {
-    try {
-      final response = await apiClient.post(
-        '${AppConfig.depositRoot}/$transferId/cancel',
-      );
-      return ExternalTransfer.fromJson(_parseJsonResponse(response.data));
-    } catch (e) {
-      if (e is DioException) {
-        throw _mapDioError(e);
-      }
-      if (e is AppException) rethrow;
-      throw ServerException(
-        message: 'Não conseguimos cancelar este depósito agora.',
-      );
-    }
+    throw const ValidationException(
+      message:
+          'Cancelamento de recebimento inbound não está disponível no KFE.',
+      statusCode: 410,
+      errorCode: 'ERR_KFE_INBOUND_CANCEL_UNAVAILABLE',
+    );
   }
 
   // ==================== Withdrawals ====================
@@ -790,6 +956,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,
@@ -798,9 +965,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   }) async {
     try {
       final response = await apiClient.post(
-        isLightning
-            ? AppConfig.transactionsNetworkLightningPay
-            : AppConfig.transactionsNetworkOnchainSend,
+        AppConfig.kfeTransactions,
         data: TransactionRemoteDataSourceImpl.buildWithdrawRequestPayload(
           fromWalletName: fromWalletName,
           toAddress: toAddress,
@@ -808,6 +973,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           amount: amount,
           totpCode: totpCode,
           isLightning: isLightning,
+          networkFeeBtc: networkFeeBtc,
           maxRoutingFeeBtc: maxRoutingFeeBtc,
           description: description,
           confirmationPassphrase: confirmationPassphrase,
@@ -837,6 +1003,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,
@@ -852,33 +1019,22 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       'idempotencyKey',
     );
     final normalizedDescription = _optionalText(description);
-    final normalizedTotp = _optionalText(totpCode);
-    final normalizedPassphrase = _optionalText(confirmationPassphrase);
-    final normalizedPasskeyAssertion = _optionalText(passkeyAssertionJson);
-
-    if (isLightning) {
-      return {
-        'idempotencyKey': normalizedIdempotencyKey,
-        'fromWalletName': normalizedWalletName,
-        'paymentRequest': _requiredText(paymentRequest, 'paymentRequest'),
-        'amount': amount,
-        'maxRoutingFeeBtc': maxRoutingFeeBtc,
-        'description': normalizedDescription,
-        'totpCode': normalizedTotp,
-        'passkeyAssertionResponseJSON': normalizedPasskeyAssertion,
-        'confirmationPassphrase': normalizedPassphrase,
-      };
-    }
+    final externalReference = isLightning
+        ? _requiredText(paymentRequest, 'paymentRequest')
+        : _requiredText(toAddress, 'toAddress');
+    final feeBtc =
+        isLightning && networkFeeBtc <= 0 ? maxRoutingFeeBtc : networkFeeBtc;
 
     return {
       'idempotencyKey': normalizedIdempotencyKey,
-      'fromWalletName': normalizedWalletName,
-      'toAddress': _requiredText(toAddress, 'toAddress'),
-      'amount': amount,
-      'description': normalizedDescription ?? 'saque para carteira externa',
-      'totpCode': normalizedTotp,
-      'passkeyAssertionResponseJSON': normalizedPasskeyAssertion,
-      'confirmationPassphrase': normalizedPassphrase,
+      'rail': isLightning ? 'LIGHTNING' : 'ONCHAIN',
+      'direction': 'OUTBOUND',
+      'sourceWalletId': normalizedWalletName,
+      'amountSats': (amount * 100000000).round(),
+      'networkFeeSats': (feeBtc * 100000000).round(),
+      'externalReference': externalReference,
+      'memo': normalizedDescription ??
+          (isLightning ? 'Pagamento Lightning' : 'saque para carteira externa'),
     };
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
@@ -15,9 +16,12 @@ import '../../../../core/services/background_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../auth/controller/auth_providers.dart';
-import '../../../bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
-import '../../../profile/presentation/screens/notification_settings_screen.dart';
-import '../../../profile/presentation/screens/security_settings_screen.dart';
+import '../../../bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+    deferred as bitcoin_accounts;
+import '../../../profile/presentation/screens/notification_settings_screen.dart'
+    deferred as notification_settings;
+import '../../../profile/presentation/screens/security_settings_screen.dart'
+    deferred as security_settings;
 import '../../../notifications/presentation/providers/session_notification_provider.dart';
 
 part 'settings_screen_header.dart';
@@ -30,13 +34,48 @@ part 'settings_screen_components.dart';
 // ─── Screen Entry ─────────────────────────────────────────────────────────────
 
 class _SettingsDesignColors {
-  static const background = Color(0xFF050505);
-  static const surfaceContainer = Color(0xFF201F1F);
-  static const surfaceContainerHighest = Color(0xFF353434);
-  static const borderMuted = Color(0xFF2A2A2A);
-  static const outlineVariant = Color(0xFF444748);
-  static const onSurfaceVariant = Color(0xFFC4C7C8);
-  static const primary = Color(0xFFFFFFFF);
+  final Color background;
+  final Color surfaceContainer;
+  final Color surfaceContainerHighest;
+  final Color borderMuted;
+  final Color outlineVariant;
+  final Color onSurfaceVariant;
+  final Color primary;
+
+  const _SettingsDesignColors({
+    required this.background,
+    required this.surfaceContainer,
+    required this.surfaceContainerHighest,
+    required this.borderMuted,
+    required this.outlineVariant,
+    required this.onSurfaceVariant,
+    required this.primary,
+  });
+
+  factory _SettingsDesignColors.of(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    if (isLight) {
+      return const _SettingsDesignColors(
+        background: Color(0xFFF7F7F5),
+        surfaceContainer: Color(0xFFFFFFFF),
+        surfaceContainerHighest: Color(0xFFE9EBE6),
+        borderMuted: Color(0xFFDADDD5),
+        outlineVariant: Color(0xFF747A70),
+        onSurfaceVariant: Color(0xFF62675F),
+        primary: Color(0xFF181A17),
+      );
+    }
+
+    return const _SettingsDesignColors(
+      background: Color(0xFF050505),
+      surfaceContainer: Color(0xFF201F1F),
+      surfaceContainerHighest: Color(0xFF353434),
+      borderMuted: Color(0xFF2A2A2A),
+      outlineVariant: Color(0xFF444748),
+      onSurfaceVariant: Color(0xFFC4C7C8),
+      primary: Color(0xFFFFFFFF),
+    );
+  }
 }
 
 final backupCodesProvider = FutureProvider<List<String>>((ref) async {
@@ -56,13 +95,14 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    ref.watch(appearanceProvider);
+    final appearance = ref.watch(appearanceProvider);
     final responsive = context.responsive;
+    final colors = _SettingsDesignColors.of(context);
     final bottomSectionPadding = MediaQuery.viewPaddingOf(context).bottom + 32;
     final contentMaxWidth = responsive.isCompact ? 480.0 : 768.0;
 
     return Scaffold(
-      backgroundColor: _SettingsDesignColors.background,
+      backgroundColor: colors.background,
       body: Column(
         children: [
           _SettingsHeader(onBack: _handleClose),
@@ -86,7 +126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Text(
                           'Configurações',
                           style: GoogleFonts.ibmPlexSerif(
-                            color: _SettingsDesignColors.primary,
+                            color: colors.primary,
                             fontSize: responsive.compactFontSize(
                               tiny: 42,
                               compact: 48,
@@ -101,7 +141,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Text(
                           'Gerencie sua conta, segurança e dispositivos',
                           style: GoogleFonts.inter(
-                            color: _SettingsDesignColors.onSurfaceVariant,
+                            color: colors.onSurfaceVariant,
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
                             height: 1.5,
@@ -156,6 +196,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               onTap: _openNotificationSettings,
                             ),
                             _SettingsNavigationItem(
+                              icon: Icons.contrast_rounded,
+                              title: context.tr.settingsUiAppearanceSection,
+                              subtitle:
+                                  '${context.tr.settingsUiThemeLabel}: ${appearance.themeVariant.label}',
+                              onTap: _showAppearanceSheet,
+                            ),
+                            _SettingsNavigationItem(
                               icon: Icons.account_balance_wallet_rounded,
                               title: 'Carteiras',
                               subtitle: 'Gerencie carteiras da conta',
@@ -192,20 +239,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     HapticFeedback.selectionClick();
   }
 
-  void _openScreen(Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  void _openScreen(
+    Future<void> Function() loadLibrary,
+    WidgetBuilder builder,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DeferredPage(
+          loadLibrary: loadLibrary,
+          builder: builder,
+        ),
+      ),
+    );
   }
 
   void _openSecuritySettings() {
-    _openScreen(const SecuritySettingsScreen());
+    _openScreen(
+      security_settings.loadLibrary,
+      (_) => security_settings.SecuritySettingsScreen(),
+    );
   }
 
   void _openNotificationSettings() {
-    _openScreen(const NotificationSettingsScreen());
+    _openScreen(
+      notification_settings.loadLibrary,
+      (_) => notification_settings.NotificationSettingsScreen(),
+    );
   }
 
   void _openWallets() {
-    _openScreen(const BitcoinAccountsScreen());
+    _openScreen(
+      bitcoin_accounts.loadLibrary,
+      (_) => bitcoin_accounts.BitcoinAccountsScreen(),
+    );
   }
 
   void _showAuthenticatedDevicesSheet() {
@@ -223,6 +289,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => const _AccountDetailsSheet(),
+    );
+  }
+
+  void _showAppearanceSheet() {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _AppearanceSheet(),
     );
   }
 

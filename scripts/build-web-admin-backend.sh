@@ -67,10 +67,7 @@ info "Building Flutter web admin for backend-served same-origin onion access."
 
 [[ -f "$FRONTEND_BUILD_DIR/index.html" ]] || fail "Flutter build did not produce $FRONTEND_BUILD_DIR/index.html"
 
-if [[ -e "$BACKEND_WEB_ADMIN_BUILD_DIR" ]]; then
-  stale_dir="$BACKEND_DIR/web-admin-build.stale-$(date +%s)"
-  mv "$BACKEND_WEB_ADMIN_BUILD_DIR" "$stale_dir"
-fi
+rm -rf -- "$BACKEND_WEB_ADMIN_BUILD_DIR"
 mkdir -p "$BACKEND_WEB_ADMIN_BUILD_DIR"
 cp -R "$FRONTEND_BUILD_DIR"/. "$BACKEND_WEB_ADMIN_BUILD_DIR"/
 : > "$BACKEND_WEB_ADMIN_BUILD_DIR/.gitkeep"

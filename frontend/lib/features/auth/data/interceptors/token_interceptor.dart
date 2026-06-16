@@ -136,9 +136,8 @@ class TokenInterceptor extends QueuedInterceptor {
     final isAuthRoute = path.contains('/auth/login') ||
         path.contains('/auth/signup') ||
         path.contains('/auth/passkey/');
-    final isTransactionRoute = path.contains('/transactions/') ||
-        path.contains('/ledger/transaction') ||
-        path.contains('/ledger/payment-request/');
+    final isTransactionRoute =
+        path.contains('/kfe/transactions') || path.contains('/transactions/');
     final isTransactionFactorError = isTransactionRoute &&
         (errorCode == 'ERR_AUTH_INCORRECT_TOTP' ||
             errorCode == 'ERR_AUTH_GENERIC' ||

@@ -42,5 +42,32 @@ void main() {
       expect(quote.receiverAmountBtc, 0);
       expect(quote.totalDebitedBtc, 0);
     });
+
+    test('treats a zero balance as insufficient for a positive debit', () {
+      expect(
+        WithdrawFeeQuoteCalculation.hasSufficientBalance(
+          availableBtc: 0,
+          totalDebitedBtc: 0.00000001,
+        ),
+        isFalse,
+      );
+    });
+
+    test('compares available balance at satoshi precision', () {
+      expect(
+        WithdrawFeeQuoteCalculation.hasSufficientBalance(
+          availableBtc: 0.00010000000000000002,
+          totalDebitedBtc: 0.0001,
+        ),
+        isTrue,
+      );
+      expect(
+        WithdrawFeeQuoteCalculation.hasSufficientBalance(
+          availableBtc: 0.00009999,
+          totalDebitedBtc: 0.0001,
+        ),
+        isFalse,
+      );
+    });
   });
 }

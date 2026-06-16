@@ -25,6 +25,7 @@ import 'package:kerosene/features/transactions/domain/entities/fee_estimate.dart
 import 'package:kerosene/features/transactions/domain/entities/withdraw_fee_quote_calculation.dart';
 import 'package:kerosene/features/transactions/presentation/screens/payment_confirmation_screen.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/lightning_keypad.dart';
 import 'package:kerosene/features/home/presentation/screens/qr_scanner_screen.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
@@ -33,6 +34,7 @@ import 'package:kerosene/features/wallet/presentation/widgets/receive_flow_ui.da
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 part 'withdraw_screen_components.dart';
+part 'withdraw_lightning_amount_step.dart';
 
 enum WithdrawEntryMode { onChain, lightning }
 
@@ -131,7 +133,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
   final _addressController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String _amountInput = '0';
+  final ValueNotifier<String> _amountInput = ValueNotifier<String>('0');
   late Currency _selectedCurrency;
   Timer? _feeEstimateDebounce;
   double _debouncedAmountBtc = 0;
@@ -154,7 +156,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     }
     if (widget.initialAmountBtc != null && widget.initialAmountBtc! > 0) {
       _selectedCurrency = Currency.btc;
-      _amountInput = widget.initialAmountBtc!
+      _amountInput.value = widget.initialAmountBtc!
           .toStringAsFixed(8)
           .replaceAll(RegExp(r'0+$'), '')
           .replaceAll(RegExp(r'\.$'), '');
@@ -173,13 +175,13 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     super.dispose();
   }
 
-  double get _parsedAmount {
-    return MoneyDisplay.parseEditableInput(_amountInput);
+  double _parsedAmount(String amountVal) {
+    return MoneyDisplay.parseEditableInput(amountVal);
   }
 
-  String get _displayAmount {
+  String _displayAmount(String amountVal) {
     return MoneyDisplay.formatEditableInput(
-      rawValue: _amountInput,
+      rawValue: amountVal,
       currency: _selectedCurrency,
       withSymbol: false,
     );
@@ -189,9 +191,10 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     required double? btcUsd,
     required double? btcEur,
     required double? btcBrl,
+    required String amountVal,
   }) {
     return MoneyDisplay.convertToBtcAmount(
-      amount: _parsedAmount,
+      amount: _parsedAmount(amountVal),
       currency: _selectedCurrency,
       btcUsd: btcUsd,
       btcEur: btcEur,
@@ -311,14 +314,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       );
     }
 
-    final lower = trimmed.toLowerCase();
-    final withoutLightningPrefix =
-        lower.startsWith('lightning:') ? trimmed.substring(10).trim() : trimmed;
-    final invoiceLower = withoutLightningPrefix.toLowerCase();
-
-    if (RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(invoiceLower) ||
-        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(invoiceLower) ||
-        _looksLikeLightningAddress(withoutLightningPrefix)) {
+    final withoutLightningPrefix = _stripLightningPrefix(trimmed);
+    if (_looksLikeLightningRequest(withoutLightningPrefix)) {
       return _WithdrawDestinationAnalysis(
         type: _WithdrawDestinationType.lightning,
         normalizedValue: withoutLightningPrefix,
@@ -326,7 +323,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     }
 
     final decoded = QrPaymentParser.decode(trimmed);
-    final normalized = decoded?.address ?? trimmed;
+    final normalized = decoded?.preferredDestination ?? trimmed;
+    final normalizedLightning = _stripLightningPrefix(normalized);
+    if (_looksLikeLightningRequest(normalizedLightning)) {
+      return _WithdrawDestinationAnalysis(
+        type: _WithdrawDestinationType.lightning,
+        normalizedValue: normalizedLightning,
+      );
+    }
+
     if (_looksLikeBitcoinAddress(normalized)) {
       final detectedOnchainNetwork = inferBitcoinNetworkFromAddress(normalized);
       return _WithdrawDestinationAnalysis(
@@ -350,6 +355,23 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   bool _looksLikeBitcoinAddress(String value) {
     return looksLikeBitcoinAddress(value);
+  }
+
+  String _stripLightningPrefix(String value) {
+    final trimmed = value.trim();
+    return trimmed.toLowerCase().startsWith('lightning:')
+        ? trimmed.substring('lightning:'.length).trim()
+        : trimmed;
+  }
+
+  bool _looksLikeLightningRequest(String value) {
+    final trimmed = _stripLightningPrefix(value);
+    if (trimmed.isEmpty) return false;
+
+    final lower = trimmed.toLowerCase();
+    return RegExp(r'^(lnbc|lntb|lnbcrt)[0-9][0-9a-z]+$').hasMatch(lower) ||
+        RegExp(r'^lnurl[0-9a-z]+$').hasMatch(lower) ||
+        _looksLikeLightningAddress(trimmed);
   }
 
   bool _looksLikeLightningAddress(String value) {
@@ -533,15 +555,12 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
 
   void _onKeyTap(String key) {
     HapticFeedback.lightImpact();
-    setState(() {
-      _amountInput = MoneyDisplay.applyKeypadInput(
-        currentValue: _amountInput,
-        key: key,
-        currency: _selectedCurrency,
-        maxLength: _selectedCurrency == Currency.btc ? 16 : 12,
-      );
-    });
-    _scheduleFeeEstimate();
+    _amountInput.value = MoneyDisplay.applyKeypadInput(
+      currentValue: _amountInput.value,
+      key: key,
+      currency: _selectedCurrency,
+      maxLength: _selectedCurrency == Currency.btc ? 16 : 12,
+    );
   }
 
   void _scheduleFeeEstimate() {
@@ -563,6 +582,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      amountVal: _amountInput.value,
     );
 
     _feeEstimateDebounce?.cancel();
@@ -634,7 +654,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       return;
     }
 
-    if (_parsedAmount <= 0 || !feeQuote.hasAmount) {
+    if (_parsedAmount(_amountInput.value) <= 0 || !feeQuote.hasAmount) {
       AppNotice.showWarning(
         context,
         title: context.tr.withdrawConfirmButton,
@@ -1114,6 +1134,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      amountVal: _amountInput.value,
     );
     final destination = _analyzeDestination(
       _addressController.text,
@@ -1208,6 +1229,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                         : context.tr.withdrawUiRecentOnchain,
                     destinations: recentDestinations,
                     onSelect: _applyRecentDestination,
+                    onRemove: _removeRecentDestination,
+                    onClearAll: _clearRecentDestinationsForCurrentFlow,
                   ),
                 ],
                 const SizedBox(height: AppSpacing.lg),
@@ -1554,6 +1577,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      amountVal: _amountInput.value,
     );
     final fiatLabel = _lightningFiatReference(
       btcAmount: amountBtc,
@@ -1634,9 +1658,14 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
                           ],
                           const SizedBox(height: 38),
                           const Spacer(),
-                          _ExternalSendAmountField(
-                            amountLabel: _displayAmount,
-                            fiatLabel: fiatLabel,
+                          ValueListenableBuilder<String>(
+                            valueListenable: _amountInput,
+                            builder: (context, amountVal, _) {
+                              return _ExternalSendAmountField(
+                                amountLabel: _displayAmount(amountVal),
+                                fiatLabel: fiatLabel,
+                              );
+                            },
                           ),
                           const SizedBox(height: 28),
                           _ExternalSendFinancialDetails(
@@ -2087,6 +2116,55 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 
+  static Widget _buildLightningPrimaryButtonStatic(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+    bool isLoading = false,
+    bool showIcon = true,
+  }) {
+    final buttonStyle = FilledButton.styleFrom(
+      backgroundColor: _lightningTextColor,
+      foregroundColor: _lightningBackgroundColor,
+      disabledBackgroundColor: Colors.white.withValues(alpha: 0.22),
+      disabledForegroundColor: Colors.white.withValues(alpha: 0.42),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.8,
+          ),
+    );
+    final onPressed = enabled && !isLoading ? onTap : null;
+    final spinner = const SizedBox(
+      width: 18,
+      height: 18,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: _lightningBackgroundColor,
+      ),
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      child: isLoading || !showIcon
+          ? FilledButton(
+              onPressed: onPressed,
+              style: buttonStyle,
+              child: isLoading ? spinner : Text(label.toUpperCase()),
+            )
+          : FilledButton.icon(
+              onPressed: onPressed,
+              style: buttonStyle,
+              icon: Icon(icon, size: 18),
+              label: Text(label.toUpperCase()),
+            ),
+    );
+  }
+
   Widget _buildLightningKeypad(BuildContext context) {
     const rows = [
       ['1', '2', '3'],
@@ -2227,7 +2305,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       );
       return;
     }
-    if (_parsedAmount <= 0) {
+    if (_parsedAmount(_amountInput.value) <= 0) {
       AppNotice.showWarning(
         context,
         title: context.tr.withdrawConfirmButton,
@@ -2299,7 +2377,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       );
       return;
     }
-    if (_parsedAmount <= 0 || !feeQuote.hasAmount) {
+    if (_parsedAmount(_amountInput.value) <= 0 || !feeQuote.hasAmount) {
       AppNotice.showWarning(
         context,
         title: context.tr.withdrawConfirmButton,
@@ -2522,7 +2600,36 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     );
   }
 
+  static String _formatBtcPlainStatic(
+    double amount, {
+    int decimalPlaces = 8,
+  }) {
+    return MoneyDisplay.format(
+      amount: amount,
+      currency: Currency.btc,
+      withSymbol: false,
+      decimalPlaces: decimalPlaces,
+    );
+  }
+
   String _lightningFiatReference({
+    required double btcAmount,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    bool includeApproxPrefix = true,
+  }) {
+    final value = MoneyDisplay.formatAmountFromBtc(
+      btcAmount: btcAmount,
+      currency: Currency.brl,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+    );
+    return includeApproxPrefix ? '≈ $value' : value;
+  }
+
+  static String _lightningFiatReferenceStatic({
     required double btcAmount,
     required double? btcUsd,
     required double? btcEur,
@@ -2550,6 +2657,17 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     return '${trimmed.substring(0, 12)}...';
   }
 
+  static String _shortExternalDestinationValueStatic(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '--';
+    }
+    if (trimmed.length <= 18) {
+      return trimmed;
+    }
+    return '${trimmed.substring(0, 12)}...';
+  }
+
   Widget _buildAmountCard(
     BuildContext context, {
     required Wallet wallet,
@@ -2561,6 +2679,7 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       btcUsd: btcUsd,
       btcEur: btcEur,
       btcBrl: btcBrl,
+      amountVal: _amountInput.value,
     );
 
     return ReceiveFlowPanel(
@@ -2588,14 +2707,19 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
               ),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  _displayAmount,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.amountInput(
-                    isBtc: _selectedCurrency == Currency.btc,
-                    color: receiveFlowTextColor,
-                  ).copyWith(fontWeight: FontWeight.w500),
+                child: ValueListenableBuilder<String>(
+                  valueListenable: _amountInput,
+                  builder: (context, amountVal, _) {
+                    return Text(
+                      _displayAmount(amountVal),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.amountInput(
+                        isBtc: _selectedCurrency == Currency.btc,
+                        color: receiveFlowTextColor,
+                      ).copyWith(fontWeight: FontWeight.w500),
+                    );
+                  },
                 ),
               ),
             ],
@@ -2991,6 +3115,30 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       );
     });
     _scheduleFeeEstimate();
+  }
+
+  Future<void> _removeRecentDestination(
+    RecentTransactionDestination destination,
+  ) async {
+    HapticFeedback.selectionClick();
+    await ref
+        .read(recentTransactionDestinationsProvider.notifier)
+        .removeDestination(
+          address: destination.address,
+          kind: destination.kind,
+        );
+  }
+
+  Future<void> _clearRecentDestinationsForCurrentFlow() async {
+    final kind = switch (widget.entryMode) {
+      WithdrawEntryMode.onChain => RecentTransactionDestinationKind.onChain,
+      WithdrawEntryMode.lightning => RecentTransactionDestinationKind.lightning,
+    };
+
+    HapticFeedback.selectionClick();
+    await ref
+        .read(recentTransactionDestinationsProvider.notifier)
+        .clearDestinations(kind: kind);
   }
 
   String? _resolveRecentDestinationLabel() {

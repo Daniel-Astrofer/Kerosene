@@ -11,6 +11,7 @@ import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/utils/snackbar_helper.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/transactions/presentation/widgets/statement_transaction_card.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart'
@@ -1072,7 +1073,7 @@ class _GatewayProvider {
   }
 }
 
-enum _StatementFilter { all, incoming, outgoing }
+enum _StatementFilter { all, incoming, outgoing, pending, failed }
 
 class TransactionStatementScreen extends ConsumerStatefulWidget {
   final String? initialTransactionId;
@@ -1090,6 +1091,8 @@ class TransactionStatementScreen extends ConsumerStatefulWidget {
 class _TransactionStatementScreenState
     extends ConsumerState<TransactionStatementScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<_StatementTopBarState> _topBarKey =
+      GlobalKey<_StatementTopBarState>();
   _StatementFilter _filter = _StatementFilter.all;
   String _query = '';
   String? _expandedTransactionId;
@@ -1131,6 +1134,18 @@ class _TransactionStatementScreenState
     _scrollToTop();
   }
 
+  void _clearStatementFilters() {
+    if (_filter == _StatementFilter.all && _query.trim().isEmpty) return;
+    HapticFeedback.selectionClick();
+    _topBarKey.currentState?.clearSearch();
+    setState(() {
+      _filter = _StatementFilter.all;
+      _query = '';
+      _expandedTransactionId = null;
+    });
+    _scrollToTop();
+  }
+
   void _scrollToTop() {
     if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
@@ -1167,6 +1182,7 @@ class _TransactionStatementScreenState
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
                           child: _StatementTopBar(
+                            key: _topBarKey,
                             onBack: () => Navigator.maybePop(context),
                             onSearchChanged: _updateQuery,
                           ),
@@ -1218,15 +1234,32 @@ class _TransactionStatementScreenState
                           ),
                         ),
                         data: (transactions) {
-                          final rows = _filtered(transactions);
+                          final rows = _filtered(context, transactions);
                           if (rows.isEmpty) {
+                            final hasActiveNarrowing =
+                                transactions.isNotEmpty &&
+                                    (_filter != _StatementFilter.all ||
+                                        _query.trim().isNotEmpty);
                             return SliverFillRemaining(
                               hasScrollBody: false,
                               child: _StatementMessage(
-                                icon: LucideIcons.receipt,
-                                title: context.tr.financialStatementEmptyTitle,
-                                message:
-                                    context.tr.financialStatementEmptyMessage,
+                                icon: hasActiveNarrowing
+                                    ? LucideIcons.searchX
+                                    : LucideIcons.receipt,
+                                title: hasActiveNarrowing
+                                    ? context
+                                        .tr.financialStatementNoResultsTitle
+                                    : context.tr.financialStatementEmptyTitle,
+                                message: hasActiveNarrowing
+                                    ? context
+                                        .tr.financialStatementNoResultsMessage
+                                    : context.tr.financialStatementEmptyMessage,
+                                actionLabel: hasActiveNarrowing
+                                    ? context.tr.financialStatementClearFilters
+                                    : null,
+                                onAction: hasActiveNarrowing
+                                    ? _clearStatementFilters
+                                    : null,
                               ),
                             );
                           }
@@ -1370,20 +1403,59 @@ class _TransactionStatementScreenState
         );
   }
 
-  List<Transaction> _filtered(List<Transaction> source) {
-    final query = _query.trim().toLowerCase();
+  List<Transaction> _filtered(BuildContext context, List<Transaction> source) {
+    final query = _normalizeStatementSearchText(_query);
     final rows = source.where((tx) {
       final directionMatches = switch (_filter) {
         _StatementFilter.all => true,
-        _StatementFilter.incoming => tx.type == TransactionType.receive ||
-            tx.type == TransactionType.deposit,
-        _StatementFilter.outgoing => tx.type == TransactionType.send ||
-            tx.type == TransactionType.withdrawal ||
-            tx.type == TransactionType.fee,
+        _StatementFilter.incoming => tx.isCredit,
+        _StatementFilter.outgoing => tx.isDebit,
+        _StatementFilter.pending => tx.status == TransactionStatus.pending ||
+            tx.status == TransactionStatus.confirming,
+        _StatementFilter.failed => tx.status == TransactionStatus.failed,
       };
       if (!directionMatches) return false;
       if (query.isEmpty) return true;
-      final haystack = [
+      final haystack = _statementSearchText(context, tx);
+      return haystack.contains(query);
+    }).toList();
+    rows.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return rows;
+  }
+
+  String _statementSearchText(BuildContext context, Transaction tx) {
+    final visual = TransactionVisualSpec.fromTransaction(tx);
+    final l10n = context.tr;
+    final timestamp = tx.timestamp.toLocal();
+    final status = switch (tx.status) {
+      TransactionStatus.confirmed => l10n.confirmed,
+      TransactionStatus.confirming => l10n.confirming,
+      TransactionStatus.pending => l10n.pending,
+      TransactionStatus.failed => l10n.failed,
+    };
+    final visibleRail = tx.isInternal
+        ? 'Transação Interna Internal transfer Kerosene'
+        : tx.isLightning
+            ? 'Lightning'
+            : _statementOnchainTitleMatches(visual)
+                ? 'Onchain On-chain Bitcoin'
+                : visual.localizedLabel(context);
+    final directionLabel = tx.isDebit
+        ? l10n.financialStatementFilterOutgoing
+        : l10n.financialStatementFilterIncoming;
+    final signedBtc = tx.signedAmountBTC.toStringAsFixed(8);
+    final unsignedBtc = tx.amountBTC.toStringAsFixed(8);
+    final dateTokens = [
+      timestamp.toIso8601String(),
+      '${timestamp.day.toString().padLeft(2, '0')}/'
+          '${timestamp.month.toString().padLeft(2, '0')}/'
+          '${timestamp.year}',
+      '${timestamp.hour.toString().padLeft(2, '0')}:'
+          '${timestamp.minute.toString().padLeft(2, '0')}',
+    ];
+
+    return _normalizeStatementSearchText(
+      [
         tx.id,
         tx.fromAddress,
         tx.toAddress,
@@ -1392,12 +1464,60 @@ class _TransactionStatementScreenState
         tx.externalReference,
         tx.invoiceId,
         tx.paymentHash,
-      ].whereType<String>().join(' ').toLowerCase();
-      return haystack.contains(query);
-    }).toList();
-    rows.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    return rows;
+        visual.localizedLabel(context),
+        visibleRail,
+        directionLabel,
+        status,
+        signedBtc,
+        unsignedBtc,
+        tx.amountSatoshis.toString(),
+        tx.feeSatoshis.toString(),
+        '${tx.amountSatoshis} sats',
+        '${tx.feeSatoshis} sats',
+        ...dateTokens,
+      ].whereType<String>().join(' '),
+    );
   }
+
+  bool _statementOnchainTitleMatches(TransactionVisualSpec visual) {
+    return visual.family == TransactionVisualFamily.onChain ||
+        visual.family == TransactionVisualFamily.deposit ||
+        visual.family == TransactionVisualFamily.withdrawal;
+  }
+}
+
+String _normalizeStatementSearchText(String value) {
+  var normalized = value.trim().toLowerCase();
+  const replacements = {
+    'á': 'a',
+    'à': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'í': 'i',
+    'ì': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ó': 'o',
+    'ò': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ö': 'o',
+    'ú': 'u',
+    'ù': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ç': 'c',
+    'ñ': 'n',
+  };
+  for (final entry in replacements.entries) {
+    normalized = normalized.replaceAll(entry.key, entry.value);
+  }
+  return normalized;
 }
 
 enum _StatementMenuDestination {
@@ -1602,6 +1722,7 @@ class _StatementTopBar extends StatefulWidget {
   final ValueChanged<String> onSearchChanged;
 
   const _StatementTopBar({
+    super.key,
     required this.onBack,
     required this.onSearchChanged,
   });
@@ -1611,7 +1732,45 @@ class _StatementTopBar extends StatefulWidget {
 }
 
 class _StatementTopBarState extends State<_StatementTopBar> {
+  final TextEditingController _controller = TextEditingController();
   bool _searching = false;
+  String _searchText = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void clearSearch() {
+    _controller.clear();
+    if (!_searching && _searchText.isEmpty) return;
+    setState(() {
+      _searchText = '';
+      _searching = false;
+    });
+  }
+
+  void _handleSearchChanged(String value) {
+    setState(() => _searchText = value);
+    widget.onSearchChanged(value);
+  }
+
+  void _clearSearchText() {
+    if (_controller.text.isEmpty && _searchText.isEmpty) return;
+    _controller.clear();
+    widget.onSearchChanged('');
+    setState(() => _searchText = '');
+  }
+
+  void _closeSearch() {
+    _controller.clear();
+    widget.onSearchChanged('');
+    setState(() {
+      _searchText = '';
+      _searching = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1620,16 +1779,14 @@ class _StatementTopBarState extends State<_StatementTopBar> {
         children: [
           _RoundIconButton(
             icon: LucideIcons.chevronLeft,
-            onPressed: () {
-              widget.onSearchChanged('');
-              setState(() => _searching = false);
-            },
+            onPressed: _closeSearch,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
+              controller: _controller,
               autofocus: true,
-              onChanged: widget.onSearchChanged,
+              onChanged: _handleSearchChanged,
               style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
               cursorColor: Colors.white,
               decoration: InputDecoration(
@@ -1641,6 +1798,24 @@ class _StatementTopBarState extends State<_StatementTopBar> {
                 ),
                 filled: true,
                 fillColor: const Color(0xFF1C1C1E),
+                suffixIcon: _searchText.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: MaterialLocalizations.of(context)
+                            .deleteButtonTooltip,
+                        onPressed: _clearSearchText,
+                        icon: const Icon(
+                          LucideIcons.x,
+                          color: Color(0xFFB8B8BC),
+                          size: 16,
+                        ),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                suffixIconConstraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(999),
                   borderSide: BorderSide.none,
@@ -1707,24 +1882,38 @@ class _StatementTabs extends StatelessWidget {
         color: const Color(0xFF1C1C1E),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Row(
-        children: [
-          _StatementTab(
-            label: context.tr.financialStatementFilterAll,
-            selected: selected == _StatementFilter.all,
-            onTap: () => onChanged(_StatementFilter.all),
-          ),
-          _StatementTab(
-            label: context.tr.financialStatementFilterIncoming,
-            selected: selected == _StatementFilter.incoming,
-            onTap: () => onChanged(_StatementFilter.incoming),
-          ),
-          _StatementTab(
-            label: context.tr.financialStatementFilterOutgoing,
-            selected: selected == _StatementFilter.outgoing,
-            onTap: () => onChanged(_StatementFilter.outgoing),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            _StatementTab(
+              label: context.tr.financialStatementFilterAll,
+              selected: selected == _StatementFilter.all,
+              onTap: () => onChanged(_StatementFilter.all),
+            ),
+            _StatementTab(
+              label: context.tr.financialStatementFilterIncoming,
+              selected: selected == _StatementFilter.incoming,
+              onTap: () => onChanged(_StatementFilter.incoming),
+            ),
+            _StatementTab(
+              label: context.tr.financialStatementFilterOutgoing,
+              selected: selected == _StatementFilter.outgoing,
+              onTap: () => onChanged(_StatementFilter.outgoing),
+            ),
+            _StatementTab(
+              label: context.tr.financialStatementFilterPending,
+              selected: selected == _StatementFilter.pending,
+              onTap: () => onChanged(_StatementFilter.pending),
+            ),
+            _StatementTab(
+              label: context.tr.financialStatementFilterFailed,
+              selected: selected == _StatementFilter.failed,
+              onTap: () => onChanged(_StatementFilter.failed),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1743,26 +1932,27 @@ class _StatementTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFF2C2C2E) : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              color: selected ? Colors.white : const Color(0xFF8A8A8E),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0,
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        constraints: const BoxConstraints(minWidth: 76),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF2C2C2E) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(
+            color: selected ? Colors.white : const Color(0xFF8A8A8E),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
           ),
         ),
       ),
@@ -1774,11 +1964,15 @@ class _StatementMessage extends StatelessWidget {
   final IconData icon;
   final String title;
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const _StatementMessage({
     required this.icon,
     required this.title,
     required this.message,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -1813,6 +2007,32 @@ class _StatementMessage extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 18),
+              TextButton.icon(
+                onPressed: onAction,
+                icon: const Icon(LucideIcons.xCircle, size: 16),
+                label: Text(actionLabel!),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.14),
+                    ),
+                  ),
+                  textStyle: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

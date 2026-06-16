@@ -49,10 +49,12 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
     final selectedCurrency = ref.watch(currencyProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
     final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
-    final btcDailyChangePercent = ref.watch(btcDailyChangePercentProvider);
+    final priceFeedActive = ref.watch(_homeRouteActiveProvider);
+    final btcUsd = priceFeedActive ? ref.watch(latestBtcPriceProvider) : null;
+    final btcEur = priceFeedActive ? ref.watch(btcEurPriceProvider) : null;
+    final btcBrl = priceFeedActive ? ref.watch(btcBrlPriceProvider) : null;
+    final btcDailyChangePercent =
+        priceFeedActive ? ref.watch(btcDailyChangePercentProvider) : null;
     final selectedView = ref.watch(_homeLedgerBalanceViewProvider);
     final wallets = widget.walletState is WalletLoaded
         ? (widget.walletState as WalletLoaded).wallets

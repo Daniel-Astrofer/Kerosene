@@ -23,35 +23,35 @@ void main() {
       AppConfig.authEmergencyRecoveryFinish,
       '/auth/recovery/emergency/finish',
     );
-    expect(AppConfig.walletAll, '/wallet/all');
-    expect(AppConfig.ledgerPaymentRequest, '/ledger/payment-request');
+    expect(AppConfig.walletAll, '/kfe/dashboard');
+    expect(AppConfig.ledgerPaymentRequest, '/kfe/transactions');
     expect(
         AppConfig.transactionsPaymentLinksList, '/transactions/payment-links');
     expect(
       AppConfig.bitcoinAccountReceiveRequests('account-1'),
-      '/bitcoin/accounts/account-1/receive-requests',
+      '/kfe/wallets/account-1/addresses/rotate',
     );
     expect(
       AppConfig.bitcoinColdWalletUtxos('cold-1'),
-      '/bitcoin/cold-wallets/cold-1/utxos',
+      '/kfe/wallets',
     );
     expect(
       AppConfig.bitcoinColdWalletPsbt('cold-1'),
-      '/bitcoin/cold-wallets/cold-1/psbt',
+      '/kfe/wallets',
     );
-    expect(AppConfig.bitcoinPsbt('workflow-1'), '/bitcoin/psbt/workflow-1');
+    expect(AppConfig.bitcoinPsbt('workflow-1'), '/kfe/transactions');
     expect(
       AppConfig.bitcoinPsbtSigned('workflow-1'),
-      '/bitcoin/psbt/workflow-1/signed',
+      '/kfe/transactions',
     );
-    expect(AppConfig.bitcoinTaxEvents, '/bitcoin/tax-events');
+    expect(AppConfig.bitcoinTaxEvents, '/kfe/dashboard');
     expect(
       AppConfig.bitcoinTaxEventsExport('csv'),
-      '/bitcoin/tax-events/export?format=csv',
+      '/kfe/dashboard',
     );
     expect(
       AppConfig.bitcoinTaxEventClassify('event-1'),
-      '/bitcoin/tax-events/event-1/classify',
+      '/kfe/dashboard',
     );
     expect(AppConfig.notificationsList, '/notifications');
     expect(AppConfig.auditStats, '/v1/audit/stats');

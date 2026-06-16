@@ -20,6 +20,8 @@
 !/README.md
 
 # Root-level material kept local only.
+/.local/
+/.local/**
 /assets/
 /assets/**
 /backups/
@@ -92,6 +94,10 @@
 **/target/**
 **/out/
 **/out/**
+!**/src/main/java/**/application/port/out/
+!**/src/main/java/**/application/port/out/**
+!**/src/test/java/**/application/port/out/
+!**/src/test/java/**/application/port/out/**
 **/bin/
 **/bin/**
 **/coverage/
@@ -120,6 +126,7 @@
 !/docs/**/*.md
 !/docs-final/**/*.md
 !/backend/**/docs/**/*.md
+!/backend/adapters/**/*.md
 !/backend/kerosene/*.md
 !/.gitignore
 !/.gitattributes

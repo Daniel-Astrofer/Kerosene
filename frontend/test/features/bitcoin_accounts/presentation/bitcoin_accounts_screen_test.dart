@@ -73,6 +73,38 @@ void main() {
     expect(find.text('Exportar JSON'), findsOneWidget);
   });
 
+  testWidgets('uses dedicated empty bitcoin accounts layout', (tester) async {
+    await _pumpBitcoinAccounts(
+      tester,
+      const _FakeBitcoinAccountsService([]),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contas Bitcoin'), findsOneWidget);
+    expect(find.text('Nenhuma conta Bitcoin ainda'), findsOneWidget);
+    expect(find.text('Novo cartão Kerosene'), findsOneWidget);
+    expect(find.text('Carteira interna'), findsNothing);
+  });
+
+  testWidgets('opens full-screen custody selector for new wallets',
+      (tester) async {
+    await _pumpBitcoinAccounts(
+      tester,
+      const _FakeBitcoinAccountsService([]),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Novo cartão Kerosene'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova Carteira'), findsOneWidget);
+    expect(find.text('Carteira Interna'), findsOneWidget);
+    expect(find.text('Custodial On-chain'), findsOneWidget);
+    expect(find.text('Kerosene Watch-Only'), findsOneWidget);
+    expect(find.text('Continuar'), findsOneWidget);
+  });
+
   testWidgets('shows receive requests empty state', (tester) async {
     await _pumpBitcoinAccounts(
       tester,

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
+import 'package:kerosene/core/security/secure_storage_service.dart';
 
 enum RecentTransactionDestinationKind {
   internal,
@@ -68,12 +70,15 @@ class RecentTransactionDestinationsNotifier
   static const String _storageKey = 'recent_transaction_destinations_v1';
   static const int _maxItems = 12;
 
+  final SecureStorageService _secureStorage = SecureStorageService();
   late final SharedPreferences _prefs;
 
   @override
   List<RecentTransactionDestination> build() {
     _prefs = ref.watch(sharedPreferencesProvider);
-    return _readFromPrefs();
+    final legacyEntries = _readFromPrefs();
+    unawaited(_loadFromSecureStorage(legacyEntries));
+    return legacyEntries;
   }
 
   Future<void> saveDestination({
@@ -115,6 +120,47 @@ class RecentTransactionDestinationsNotifier
     await _persist(next);
   }
 
+  Future<void> removeDestination({
+    required String address,
+    required RecentTransactionDestinationKind kind,
+  }) async {
+    final normalizedAddress = address.trim();
+    if (normalizedAddress.isEmpty) {
+      return;
+    }
+
+    final key = _entryKey(normalizedAddress, kind);
+    final next = [
+      for (final item in state)
+        if (_entryKey(item.address, item.kind) != key) item,
+    ];
+
+    if (next.length == state.length) {
+      return;
+    }
+
+    state = next;
+    await _persist(next);
+  }
+
+  Future<void> clearDestinations({
+    RecentTransactionDestinationKind? kind,
+  }) async {
+    final next = kind == null
+        ? const <RecentTransactionDestination>[]
+        : [
+            for (final item in state)
+              if (item.kind != kind) item,
+          ];
+
+    if (next.length == state.length) {
+      return;
+    }
+
+    state = next;
+    await _persist(next);
+  }
+
   RecentTransactionDestination? _findExisting({
     required String address,
     required RecentTransactionDestinationKind kind,
@@ -128,8 +174,49 @@ class RecentTransactionDestinationsNotifier
     return null;
   }
 
+  Future<void> _loadFromSecureStorage(
+    List<RecentTransactionDestination> legacyEntries,
+  ) async {
+    final raw = await _secureStorage.read(key: _storageKey);
+    final secureEntries = _decodeEntries(raw);
+
+    if (secureEntries.isNotEmpty) {
+      state = secureEntries;
+      if (legacyEntries.isNotEmpty) {
+        await _prefs.remove(_storageKey);
+      }
+      return;
+    }
+
+    if (legacyEntries.isNotEmpty) {
+      await _persist(legacyEntries);
+    }
+  }
+
   List<RecentTransactionDestination> _readFromPrefs() {
     final rawList = _prefs.getStringList(_storageKey) ?? const <String>[];
+    return _normalizeEntries(_decodeRawEntries(rawList));
+  }
+
+  List<RecentTransactionDestination> _decodeEntries(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return const [];
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        return const [];
+      }
+      return _normalizeEntries(
+        _decodeRawEntries(decoded.map((entry) => jsonEncode(entry)).toList()),
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  List<RecentTransactionDestination> _decodeRawEntries(List<String> rawList) {
     final entries = <RecentTransactionDestination>[];
 
     for (final raw in rawList) {
@@ -148,14 +235,20 @@ class RecentTransactionDestinationsNotifier
       }
     }
 
+    return entries;
+  }
+
+  List<RecentTransactionDestination> _normalizeEntries(
+    List<RecentTransactionDestination> entries,
+  ) {
     entries.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
     return entries.take(_maxItems).toList(growable: false);
   }
 
-  Future<void> _persist(List<RecentTransactionDestination> entries) {
-    final jsonList =
-        entries.map((entry) => jsonEncode(entry.toJson())).toList();
-    return _prefs.setStringList(_storageKey, jsonList);
+  Future<void> _persist(List<RecentTransactionDestination> entries) async {
+    final jsonList = entries.map((entry) => entry.toJson()).toList();
+    await _secureStorage.write(key: _storageKey, value: jsonEncode(jsonList));
+    await _prefs.remove(_storageKey);
   }
 
   String _entryKey(

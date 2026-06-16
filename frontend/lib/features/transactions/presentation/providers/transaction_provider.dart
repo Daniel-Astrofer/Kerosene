@@ -162,7 +162,7 @@ Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
 
 // ==================== Transaction History (API) ====================
 
-/// Busca o histórico de transações do endpoint GET /ledger/history
+/// Busca o histórico de transações a partir do dashboard KFE.
 final transactionHistoryProvider = FutureProvider<List<Transaction>>((
   ref,
 ) async {
@@ -769,6 +769,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,
@@ -787,6 +788,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
         amount: amount,
         totpCode: totpCode,
         isLightning: isLightning,
+        networkFeeBtc: networkFeeBtc,
         maxRoutingFeeBtc: maxRoutingFeeBtc,
         description: description,
         confirmationPassphrase: confirmationPassphrase,
@@ -814,6 +816,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
           amount: amount,
           totpCode: totpCode,
           isLightning: isLightning,
+          networkFeeBtc: networkFeeBtc,
           maxRoutingFeeBtc: maxRoutingFeeBtc,
           description: description,
           confirmationPassphrase: confirmationPassphrase,
@@ -834,6 +837,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,
@@ -850,6 +854,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
           amount: amount,
           totpCode: totpCode,
           isLightning: isLightning,
+          networkFeeBtc: networkFeeBtc,
           maxRoutingFeeBtc: maxRoutingFeeBtc,
           description: description,
           confirmationPassphrase: confirmationPassphrase,

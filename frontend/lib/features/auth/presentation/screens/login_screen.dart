@@ -16,14 +16,70 @@ import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 import 'passkey_verification_screen.dart';
 
-const Color _loginInk = Color(0xFF000000);
-const Color _loginSurface = Color(0xFF0A0A0A);
-const Color _loginField = Color(0xFF1A1A1A);
-const Color _loginBorder = Color(0xFF333333);
-const Color _loginBorderSoft = Color(0xFF27272A);
-const Color _loginMuted = Color(0xFFA1A1AA);
-const Color _loginDim = Color(0xFF71717A);
-const Color _loginText = Color(0xFFFFFFFF);
+class _AuthColors {
+  final bool isLight;
+  final Color background;
+  final Color surface;
+  final Color field;
+  final Color border;
+  final Color borderSoft;
+  final Color text;
+  final Color muted;
+  final Color dim;
+  final Color success;
+  final Color errorText;
+
+  const _AuthColors({
+    required this.isLight,
+    required this.background,
+    required this.surface,
+    required this.field,
+    required this.border,
+    required this.borderSoft,
+    required this.text,
+    required this.muted,
+    required this.dim,
+    required this.success,
+    required this.errorText,
+  });
+
+  factory _AuthColors.of(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    if (isLight) {
+      return const _AuthColors(
+        isLight: true,
+        background: Color(0xFFF7F7F5),
+        surface: Color(0xFFFFFFFF),
+        field: Color(0xFFF0F1EE),
+        border: Color(0xFFDDE0D8),
+        borderSoft: Color(0xFFE2E4DE),
+        text: Color(0xFF181A17),
+        muted: Color(0xFF62675F),
+        dim: Color(0xFF8B9087),
+        success: Color(0xFF16A34A),
+        errorText: Color(0xFFDC2626),
+      );
+    }
+    return const _AuthColors(
+      isLight: false,
+      background: Color(0xFF000000),
+      surface: Color(0xFF0A0A0A),
+      field: Color(0xFF1A1A1A),
+      border: Color(0xFF333333),
+      borderSoft: Color(0xFF27272A),
+      text: Color(0xFFFFFFFF),
+      muted: Color(0xFFA1A1AA),
+      dim: Color(0xFF71717A),
+      success: Color(0xFF4ADE80),
+      errorText: Color(0xFFF4C7C7),
+    );
+  }
+
+  BorderRadius get radiusMedium =>
+      isLight ? BorderRadius.circular(16) : BorderRadius.circular(12);
+  BorderRadius get radiusButton =>
+      isLight ? BorderRadius.circular(16) : BorderRadius.circular(999);
+}
 
 enum _LoginErrorTarget { username, password, totp, general }
 
@@ -82,22 +138,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _passwordFocusNode.dispose();
     _totpFocusNode.dispose();
     super.dispose();
-  }
-
-  String _copy({
-    required BuildContext context,
-    required String pt,
-    required String en,
-    required String es,
-  }) {
-    switch (Localizations.localeOf(context).languageCode) {
-      case 'en':
-        return en;
-      case 'es':
-        return es;
-      default:
-        return pt;
-    }
   }
 
   String _normalizedUsername(String value) {
@@ -163,12 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (_passwordController.text.trim().isEmpty) {
       _showInlineError(
         title: context.tr.authAccountPasswordLabel,
-        message: _copy(
-          context: context,
-          pt: 'Digite sua senha.',
-          en: 'Enter your password.',
-          es: 'Ingresa tu contraseña.',
-        ),
+        message: context.tr.loginPasswordRequired,
         target: _LoginErrorTarget.password,
       );
       return;
@@ -257,12 +292,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (code.length != 6) {
       _showInlineError(
         title: context.tr.totpCodeLabel,
-        message: _copy(
-          context: context,
-          pt: 'Informe o código de 6 dígitos.',
-          en: 'Enter the 6-digit code.',
-          es: 'Ingresa el código de 6 dígitos.',
-        ),
+        message: context.tr.loginTotpRequired,
         target: _LoginErrorTarget.totp,
       );
       return;
@@ -328,17 +358,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     });
 
+    final colors = _AuthColors.of(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: _loginInk,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness:
+            colors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness:
+            colors.isLight ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: colors.background,
+        systemNavigationBarIconBrightness:
+            colors.isLight ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: _loginInk,
+        backgroundColor: colors.background,
         resizeToAvoidBottomInset: true,
-        body: ColoredBox(
-          color: _loginInk,
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.opaque,
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -387,18 +425,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ],
                             SizedBox(height: responsive.isTinyPhone ? 24 : 34),
                             _LoginTitleBlock(
-                              title: _copy(
-                                context: context,
-                                pt: 'Entrar',
-                                en: 'Sign in',
-                                es: 'Entrar',
-                              ),
-                              subtitle: _copy(
-                                context: context,
-                                pt: 'Informe usuário e senha. A chave do dispositivo será confirmada em seguida.',
-                                en: 'Enter your username and password. Device key confirmation follows.',
-                                es: 'Ingresa usuario y contraseña. Luego se confirma la llave del dispositivo.',
-                              ),
+                              title: context.tr.loginTitle,
+                              subtitle: context.tr.loginSubtitle,
                             ),
                             if (_hasPendingTotp) ...[
                               const SizedBox(height: 26),
@@ -415,24 +443,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   errorPulseKey: _errorPulseKey,
                                   onCompleted: _submitInlineTotp,
                                   onSubmit: () => _submitInlineTotp(),
-                                  title: _copy(
-                                    context: context,
-                                    pt: 'Confirme o código',
-                                    en: 'Confirm the code',
-                                    es: 'Confirma el código',
-                                  ),
-                                  subtitle: _copy(
-                                    context: context,
-                                    pt: 'Digite o código do seu autenticador para concluir o acesso.',
-                                    en: 'Enter your authenticator code to finish signing in.',
-                                    es: 'Ingresa el código de tu autenticador para terminar el acceso.',
-                                  ),
-                                  buttonLabel: _copy(
-                                    context: context,
-                                    pt: 'Confirmar acesso',
-                                    en: 'Confirm access',
-                                    es: 'Confirmar acceso',
-                                  ),
+                                  title: context.tr.loginConfirmCodeTitle,
+                                  subtitle: context.tr.loginConfirmCodeSubtitle,
+                                  buttonLabel:
+                                      context.tr.loginConfirmAccessButton,
                                 ),
                               ),
                             ],
@@ -443,28 +457,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   _LoginErrorTarget.username,
                               child: _LoginTextField(
                                 controller: _usernameController,
-                                label: _copy(
-                                  context: context,
-                                  pt: 'Nome de usuário',
-                                  en: 'Username',
-                                  es: 'Nombre de usuario',
-                                ),
+                                label: context.tr.loginUsernameLabel,
                                 enabled: !isLoading,
                                 autofocus: !widget.focusPassword,
                                 keyboardType: TextInputType.text,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.username],
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   LucideIcons.user,
                                   size: 18,
-                                  color: _loginMuted,
+                                  color: colors.muted,
                                 ),
                                 suffixIcon: _usernameController.text.isNotEmpty
                                     ? Icon(
                                         LucideIcons.checkCircle2,
                                         size: 18,
                                         color:
-                                            _loginText.withValues(alpha: 0.86),
+                                            colors.text.withValues(alpha: 0.86),
                                       )
                                     : null,
                                 onChanged: (value) {
@@ -490,10 +499,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 obscureText: _obscurePassword,
                                 textInputAction: TextInputAction.done,
                                 autofillHints: const [AutofillHints.password],
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   LucideIcons.lock,
                                   size: 18,
-                                  color: _loginMuted,
+                                  color: colors.muted,
                                 ),
                                 suffixIcon: IconButton(
                                   onPressed: isLoading
@@ -509,7 +518,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ? LucideIcons.eye
                                         : LucideIcons.eyeOff,
                                     size: 18,
-                                    color: _loginMuted,
+                                    color: colors.muted,
                                   ),
                                 ),
                                 onChanged: (_) => _clearInlineError(),
@@ -522,12 +531,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const SizedBox(height: 24),
                             _LoginPrimaryButton(
-                              text: _copy(
-                                context: context,
-                                pt: 'Continuar',
-                                en: 'Continue',
-                                es: 'Continuar',
-                              ),
+                              text: context.tr.loginContinueButton,
                               isLoading: isLoading,
                               onPressed:
                                   isLoading ? null : _continueToDeviceKey,
@@ -542,12 +546,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         '/recovery/emergency',
                                       ),
                               child: Text(
-                                _copy(
-                                  context: context,
-                                  pt: 'Perdi acesso à conta',
-                                  en: 'I lost account access',
-                                  es: 'Perdí el acceso a la cuenta',
-                                ),
+                                context.tr.loginLostAccessButton,
                               ),
                             ),
                             const SizedBox(height: 26),
@@ -556,18 +555,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ? null
                                   : () =>
                                       Navigator.pushNamed(context, '/signup'),
-                              lead: _copy(
-                                context: context,
-                                pt: 'Novo por aqui?',
-                                en: 'New here?',
-                                es: '¿Nuevo por aquí?',
-                              ),
-                              action: _copy(
-                                context: context,
-                                pt: 'Criar conta',
-                                en: 'Create account',
-                                es: 'Crear cuenta',
-                              ),
+                              lead: context.tr.loginNewHere,
+                              action: context.tr.loginCreateAccount,
                             ),
                           ],
                         ),
@@ -591,6 +580,7 @@ class _LoginTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return SizedBox(
       height: 44,
       child: Stack(
@@ -601,7 +591,7 @@ class _LoginTopBar extends StatelessWidget {
             child: IconButton(
               onPressed: onBack,
               icon: const Icon(LucideIcons.arrowLeft, size: 24),
-              color: _loginText.withValues(alpha: 0.86),
+              color: colors.text.withValues(alpha: 0.86),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 44, height: 44),
             ),
@@ -610,7 +600,7 @@ class _LoginTopBar extends StatelessWidget {
             width: 42,
             height: 4,
             decoration: BoxDecoration(
-              color: _loginText.withValues(alpha: 0.86),
+              color: colors.text.withValues(alpha: 0.86),
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -631,12 +621,13 @@ class _LoginTitleBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: _LoginTypography.title()),
+        Text(title, style: _LoginTypography.title(colors)),
         const SizedBox(height: 10),
-        Text(subtitle, style: _LoginTypography.subtitle()),
+        Text(subtitle, style: _LoginTypography.subtitle(colors)),
       ],
     );
   }
@@ -655,13 +646,14 @@ class _LoginInlineFeedback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return _LoginPanel(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       borderRadius: 14,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: _loginText.withValues(alpha: 0.82)),
+          Icon(icon, size: 18, color: colors.text.withValues(alpha: 0.82)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -672,8 +664,8 @@ class _LoginInlineFeedback extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: _LoginTypography.label().copyWith(
-                    color: _loginText,
+                  style: _LoginTypography.label(colors).copyWith(
+                    color: colors.text,
                     fontSize: 14,
                     height: 1.16,
                   ),
@@ -683,7 +675,8 @@ class _LoginInlineFeedback extends StatelessWidget {
                   message,
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: _LoginTypography.bodySmall().copyWith(height: 1.34),
+                  style:
+                      _LoginTypography.bodySmall(colors).copyWith(height: 1.34),
                 ),
               ],
             ),
@@ -729,15 +722,16 @@ class _LoginTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: _loginBorder),
+      borderSide: BorderSide(color: colors.border),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: _LoginTypography.label()),
+        Text(label, style: _LoginTypography.label(colors)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -750,16 +744,16 @@ class _LoginTextField extends StatelessWidget {
           autofillHints: autofillHints,
           onChanged: onChanged,
           onSubmitted: onSubmitted,
-          cursorColor: _loginText,
-          style: _LoginTypography.field().copyWith(
-            color: enabled ? _loginText : _loginText.withValues(alpha: 0.48),
+          cursorColor: colors.text,
+          style: _LoginTypography.field(colors).copyWith(
+            color: enabled ? colors.text : colors.text.withValues(alpha: 0.48),
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: _loginField,
+            fillColor: colors.field,
             hintText: hintText,
-            hintStyle: _LoginTypography.field().copyWith(
-              color: _loginDim,
+            hintStyle: _LoginTypography.field(colors).copyWith(
+              color: colors.dim,
               fontWeight: FontWeight.w400,
             ),
             contentPadding: const EdgeInsets.symmetric(
@@ -771,10 +765,11 @@ class _LoginTextField extends StatelessWidget {
             enabledBorder: border,
             disabledBorder: border.copyWith(
               borderSide:
-                  BorderSide(color: _loginBorder.withValues(alpha: 0.72)),
+                  BorderSide(color: colors.border.withValues(alpha: 0.72)),
             ),
             focusedBorder: border.copyWith(
-              borderSide: BorderSide(color: _loginText.withValues(alpha: 0.45)),
+              borderSide:
+                  BorderSide(color: colors.text.withValues(alpha: 0.45)),
             ),
           ),
         ),
@@ -810,6 +805,7 @@ class _LoginTotpPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return _LoginPanel(
       padding: const EdgeInsets.all(18),
       borderRadius: 16,
@@ -823,15 +819,15 @@ class _LoginTotpPanel extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: _loginText.withValues(alpha: 0.08),
+                  color: colors.text.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: _loginText.withValues(alpha: 0.10),
+                    color: colors.text.withValues(alpha: 0.10),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   LucideIcons.keyRound,
-                  color: _loginText,
+                  color: colors.text,
                   size: 20,
                 ),
               ),
@@ -840,11 +836,11 @@ class _LoginTotpPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: _LoginTypography.sectionTitle()),
+                    Text(title, style: _LoginTypography.sectionTitle(colors)),
                     const SizedBox(height: 6),
                     Text(
                       subtitle,
-                      style: _LoginTypography.bodySmall(),
+                      style: _LoginTypography.bodySmall(colors),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -890,10 +886,11 @@ class _LoginPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     final disabled = onPressed == null || isLoading;
     final background =
-        disabled ? _loginText.withValues(alpha: 0.42) : _loginText;
-    const foreground = _loginInk;
+        disabled ? colors.text.withValues(alpha: 0.42) : colors.text;
+    final foreground = colors.background;
 
     return AuthMotionPressScale(
       enabled: !disabled,
@@ -915,7 +912,7 @@ class _LoginPrimaryButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(borderRadius),
               side: BorderSide.none,
             ),
-            textStyle: _LoginTypography.button(color: foreground),
+            textStyle: _LoginTypography.button(colors, color: foreground),
           ),
           child: isLoading
               ? SizedBox(
@@ -950,6 +947,7 @@ class _LoginSignupLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return Center(
       child: Material(
         color: Colors.transparent,
@@ -961,12 +959,13 @@ class _LoginSignupLink extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 text: '$lead ',
-                style: _LoginTypography.bodySmall(),
+                style: _LoginTypography.bodySmall(colors),
                 children: [
                   TextSpan(
                     text: action,
                     style: _LoginTypography.bodySmall(
-                      color: _loginText,
+                      colors,
+                      color: colors.text,
                     ).copyWith(fontWeight: FontWeight.w700),
                   ),
                 ],
@@ -993,13 +992,14 @@ class _LoginPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: _loginSurface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: _loginBorderSoft),
+        border: Border.all(color: colors.borderSoft),
       ),
       child: child,
     );
@@ -1009,9 +1009,9 @@ class _LoginPanel extends StatelessWidget {
 class _LoginTypography {
   const _LoginTypography._();
 
-  static TextStyle title() {
+  static TextStyle title(_AuthColors colors) {
     return GoogleFonts.ibmPlexSerif(
-      color: _loginText,
+      color: colors.text,
       fontSize: 32,
       fontWeight: FontWeight.w500,
       height: 1.08,
@@ -1019,10 +1019,10 @@ class _LoginTypography {
     );
   }
 
-  static TextStyle subtitle() {
-    return const TextStyle(
+  static TextStyle subtitle(_AuthColors colors) {
+    return TextStyle(
       fontFamily: AppTypography.fontFamily,
-      color: _loginMuted,
+      color: colors.muted,
       fontSize: 15,
       fontWeight: FontWeight.w400,
       height: 1.45,
@@ -1030,10 +1030,10 @@ class _LoginTypography {
     );
   }
 
-  static TextStyle label() {
-    return const TextStyle(
+  static TextStyle label(_AuthColors colors) {
+    return TextStyle(
       fontFamily: AppTypography.fontFamily,
-      color: _loginText,
+      color: colors.text,
       fontSize: 14,
       fontWeight: FontWeight.w600,
       height: 1.2,
@@ -1041,10 +1041,10 @@ class _LoginTypography {
     );
   }
 
-  static TextStyle field() {
-    return const TextStyle(
+  static TextStyle field(_AuthColors colors) {
+    return TextStyle(
       fontFamily: AppTypography.fontFamily,
-      color: _loginText,
+      color: colors.text,
       fontSize: 16,
       fontWeight: FontWeight.w500,
       height: 1.25,
@@ -1052,10 +1052,10 @@ class _LoginTypography {
     );
   }
 
-  static TextStyle bodySmall({Color color = _loginMuted}) {
+  static TextStyle bodySmall(_AuthColors colors, {Color? color}) {
     return TextStyle(
       fontFamily: AppTypography.fontFamily,
-      color: color,
+      color: color ?? colors.muted,
       fontSize: 14,
       fontWeight: FontWeight.w400,
       height: 1.35,
@@ -1063,10 +1063,10 @@ class _LoginTypography {
     );
   }
 
-  static TextStyle sectionTitle() {
-    return const TextStyle(
+  static TextStyle sectionTitle(_AuthColors colors) {
+    return TextStyle(
       fontFamily: AppTypography.fontFamily,
-      color: _loginText,
+      color: colors.text,
       fontSize: 20,
       fontWeight: FontWeight.w600,
       height: 1.25,
@@ -1074,7 +1074,7 @@ class _LoginTypography {
     );
   }
 
-  static TextStyle button({required Color color}) {
+  static TextStyle button(_AuthColors colors, {required Color color}) {
     return TextStyle(
       fontFamily: AppTypography.fontFamily,
       color: color,

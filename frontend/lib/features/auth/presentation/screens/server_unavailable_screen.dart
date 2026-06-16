@@ -42,11 +42,13 @@ class _ServerAvailabilityGateState
 class ServerUnavailableScreen extends ConsumerWidget {
   final String message;
   final String? retryRouteName;
+  final Future<void> Function()? onRetryOverride;
 
   const ServerUnavailableScreen({
     super.key,
     this.message = 'Servidor em manutenção',
     this.retryRouteName,
+    this.onRetryOverride,
   });
 
   @override
@@ -139,6 +141,11 @@ class ServerUnavailableScreen extends ConsumerWidget {
   }
 
   Future<void> _retry(BuildContext context, WidgetRef ref) async {
+    if (onRetryOverride != null) {
+      await onRetryOverride!();
+      return;
+    }
+
     if (retryRouteName != null) {
       Navigator.of(context)
           .pushNamedAndRemoveUntil(retryRouteName!, (_) => false);

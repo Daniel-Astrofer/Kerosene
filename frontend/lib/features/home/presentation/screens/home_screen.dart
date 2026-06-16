@@ -11,6 +11,7 @@ import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
+import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
@@ -30,7 +31,8 @@ import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
 import 'package:kerosene/features/transactions/domain/entities/tx_status.dart';
-import '../../../transactions/presentation/screens/deposits_screen.dart';
+import '../../../transactions/presentation/screens/deposits_screen.dart'
+    deferred as deposits;
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../../transactions/presentation/widgets/statement_transaction_card.dart';
 import '../../../wallet/presentation/providers/wallet_provider.dart';
@@ -39,9 +41,12 @@ import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
-import '../../../wallet/presentation/screens/deposit/deposit_amount_screen.dart';
-import '../../../wallet/presentation/screens/send_money_screen.dart';
+import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+    deferred as bitcoin_accounts;
+import '../../../wallet/presentation/screens/deposit/deposit_amount_screen.dart'
+    deferred as deposit_amount;
+import '../../../wallet/presentation/screens/send_money_screen.dart'
+    deferred as send_money;
 import '../widgets/animated_balance_display.dart';
 import 'qr_scanner_screen.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
@@ -71,6 +76,8 @@ final _homeLedgerBalanceViewProvider = StateProvider<_HomeLedgerBalanceView>((
 final _homeActivityFilterProvider = StateProvider<_HomeActivityFilter>((ref) {
   return _HomeActivityFilter.onChain;
 });
+
+final _homeRouteActiveProvider = StateProvider<bool>((ref) => true);
 
 const Color _homeBackgroundColor = Color(0xFF000000);
 const Color _homeCardColor = Color(0xFF141517);
@@ -164,6 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    ref.read(_homeRouteActiveProvider.notifier).state = true;
     _receivedTxSubscription = ref.listenManual<ReceivedTxEvent?>(
       receivedTxEventProvider,
       (previous, next) {
@@ -181,6 +189,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _receivedTxSubscription.close();
+    ref.read(_homeRouteActiveProvider.notifier).state = false;
     super.dispose();
   }
 
@@ -268,10 +277,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     double? initialAmountBtc,
   }) async {
     final result = await _pushFromBottom<dynamic>(
-      (_) => SendMoneyScreen(
-        walletId: wallet.id,
-        initialAddress: initialAddress,
-        initialAmountBtc: initialAmountBtc,
+      (_) => DeferredPage(
+        loadLibrary: send_money.loadLibrary,
+        builder: (_) => send_money.SendMoneyScreen(
+          walletId: wallet.id,
+          initialAddress: initialAddress,
+          initialAmountBtc: initialAmountBtc,
+        ),
       ),
     );
 
@@ -339,7 +351,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _pushFromBottom<void>((_) => DepositsScreen(initialWallet: wallet)),
+      _pushFromBottom<void>(
+        (_) => DeferredPage(
+          loadLibrary: deposits.loadLibrary,
+          builder: (_) => deposits.DepositsScreen(initialWallet: wallet),
+        ),
+      ),
     );
   }
 
@@ -395,7 +412,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     final parsed = QrPaymentParser.decode(trimmed);
-    final candidate = parsed?.address ?? trimmed;
+    final candidate = parsed?.preferredDestination ?? trimmed;
 
     if (_looksLikeLightningRequest(candidate)) {
       unawaited(
@@ -447,7 +464,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _pushFromBottom<void>((_) => DepositAmountScreen(wallet: wallet)),
+      _pushFromBottom<void>(
+        (_) => DeferredPage(
+          loadLibrary: deposit_amount.loadLibrary,
+          builder: (_) => deposit_amount.DepositAmountScreen(wallet: wallet),
+        ),
+      ),
     );
   }
 
@@ -458,7 +480,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _openCreateWalletFlow() async {
     await _pushFromBottom<void>(
-      (_) => const BitcoinAccountsScreen(),
+      (_) => DeferredPage(
+        loadLibrary: bitcoin_accounts.loadLibrary,
+        builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
+      ),
     );
     if (!mounted) {
       return;
@@ -591,7 +616,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     void openStatement() {
       unawaited(
-        _pushFromBottom<void>((_) => const TransactionStatementScreen()),
+        _pushFromBottom<void>(
+          (_) => DeferredPage(
+            loadLibrary: deposits.loadLibrary,
+            builder: (_) => deposits.TransactionStatementScreen(),
+          ),
+        ),
       );
     }
 

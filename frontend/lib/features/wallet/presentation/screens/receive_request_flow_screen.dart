@@ -140,7 +140,7 @@ class _ReceiveRequestFlowScreenState
     try {
       final allocation =
           await ref.read(transactionRepositoryProvider).issueOnchainAddress(
-                walletName: widget.wallet.name,
+                walletName: widget.wallet.id,
                 expectedAmountBtc: widget.amountBtc,
               );
       if (!mounted) return;
@@ -207,6 +207,14 @@ class _ReceiveRequestFlowScreenState
           .getExternalTransfer(transferId);
       if (!mounted) return;
 
+      final previousStatus =
+          (_observedTransfer?.status ?? _allocation?.transferStatus ?? '')
+              .trim()
+              .toUpperCase();
+      final previousConfirmations =
+          _observedTransfer?.confirmations ?? _allocation?.confirmations ?? 0;
+      final latestStatus = latest.status.trim().toUpperCase();
+
       setState(() {
         _observedTransfer = latest;
         _txid = latest.blockchainTxid.trim().isEmpty
@@ -221,6 +229,12 @@ class _ReceiveRequestFlowScreenState
           _identifiedAt = DateTime.now();
         }
       });
+
+      if (previousStatus != latestStatus ||
+          previousConfirmations != latest.confirmations) {
+        ref.invalidate(externalTransfersProvider);
+        ref.invalidate(transactionHistoryProvider);
+      }
 
       if (_stage == ReceiveRequestStage.identified) {
         _statusTimer?.cancel();
@@ -239,8 +253,11 @@ class _ReceiveRequestFlowScreenState
     final normalized = status.trim().toUpperCase();
     final required = _requiredConfirmations;
     final complete = normalized == 'COMPLETED' ||
+        normalized == 'SETTLED' ||
         (confirmations >= required &&
-            (normalized == 'CONFIRMED' || normalized == 'CREDITED'));
+            (normalized == 'CONFIRMED' ||
+                normalized == 'CREDITED' ||
+                normalized == 'SETTLED'));
     if (complete) {
       return ReceiveRequestStage.identified;
     }
@@ -282,6 +299,11 @@ class _ReceiveRequestFlowScreenState
       }
 
       if (!mounted) return;
+      final previousStatus = _link?.status.trim().toLowerCase() ?? '';
+      final previousTxid = _link?.txid?.trim() ?? '';
+      final latestStatus = latest.status.trim().toLowerCase();
+      final latestTxid = latest.txid?.trim() ?? '';
+
       setState(() {
         _link = latest;
         _address = latest.depositAddress.trim().isEmpty
@@ -291,6 +313,14 @@ class _ReceiveRequestFlowScreenState
         _txid = latest.txid?.trim().isEmpty == true ? _txid : latest.txid;
         _applyPaymentLinkStage(latest);
       });
+
+      if (previousStatus != latestStatus || previousTxid != latestTxid) {
+        ref.invalidate(paymentLinksProvider);
+        ref.invalidate(transactionHistoryProvider);
+        if (widget.onChainWallet) {
+          ref.invalidate(externalTransfersProvider);
+        }
+      }
 
       if (_stage == ReceiveRequestStage.identified) {
         _statusTimer?.cancel();
@@ -373,9 +403,9 @@ class _ReceiveRequestFlowScreenState
       }
       return widget.initialConfirmations ?? 0;
     }
-    return widget.initialConfirmations ??
-        _observedTransfer?.confirmations ??
+    return _observedTransfer?.confirmations ??
         _allocation?.confirmations ??
+        widget.initialConfirmations ??
         0;
   }
 
@@ -408,15 +438,29 @@ class _ReceiveRequestFlowScreenState
   }
 
   Future<void> _copyPaymentValue() async {
+    final successMessage = context.tr.receiveQrCopied;
     await Clipboard.setData(ClipboardData(text: _paymentValue));
     await HapticFeedback.selectionClick();
-    SnackbarHelper.showSuccess('Dados copiados.');
+    SnackbarHelper.showSuccess(successMessage);
+  }
+
+  Future<void> _copyAddressValue() async {
+    final address = _addressValue.trim();
+    if (address.isEmpty) {
+      return;
+    }
+    final successMessage = context.tr.receivePaymentLinkDepositAddressCopied;
+
+    await Clipboard.setData(ClipboardData(text: address));
+    await HapticFeedback.selectionClick();
+    SnackbarHelper.showSuccess(successMessage);
   }
 
   Future<void> _sharePaymentValue() async {
+    final successMessage = context.tr.apiDisplayDataCopied;
     await Clipboard.setData(ClipboardData(text: _paymentValue));
     await HapticFeedback.selectionClick();
-    SnackbarHelper.showSuccess('Dados prontos para compartilhar.');
+    SnackbarHelper.showSuccess(successMessage);
   }
 
   void _goHome() {
@@ -506,6 +550,8 @@ class _ReceiveRequestFlowScreenState
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                _buildPaymentDetailsPanel(),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
                   _InlineNotice(message: _errorMessage!),
@@ -521,7 +567,7 @@ class _ReceiveRequestFlowScreenState
               Expanded(
                 child: _ReceiveActionButton(
                   icon: LucideIcons.copy,
-                  label: 'Copiar',
+                  label: context.tr.copy,
                   onTap: _copyPaymentValue,
                 ),
               ),
@@ -529,7 +575,7 @@ class _ReceiveRequestFlowScreenState
               Expanded(
                 child: _ReceiveActionButton(
                   icon: LucideIcons.share2,
-                  label: 'Compartilhar',
+                  label: context.tr.share,
                   onTap: _sharePaymentValue,
                 ),
               ),
@@ -537,6 +583,40 @@ class _ReceiveRequestFlowScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentDetailsPanel() {
+    return _VaultCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Column(
+        children: [
+          _ReceiveDetailLine(
+            icon: LucideIcons.wallet,
+            label: 'Carteira',
+            value: widget.wallet.name,
+          ),
+          const _ReceiveDivider(),
+          _ReceiveDetailLine(
+            icon: widget.onChainWallet ? LucideIcons.bitcoin : LucideIcons.zap,
+            label: 'Rede',
+            value: _networkLabel,
+          ),
+          const _ReceiveDivider(),
+          _ReceiveDetailLine(
+            icon: LucideIcons.receipt,
+            label: 'Solicitado',
+            value: _amountLabel,
+          ),
+          const _ReceiveDivider(),
+          _ReceiveDetailLine(
+            icon: LucideIcons.mapPin,
+            label: widget.onChainWallet ? 'Endereço' : 'Destino',
+            value: _shortenAddress(_addressValue, head: 14, tail: 8),
+            monospace: true,
+          ),
+        ],
+      ),
     );
   }
 
@@ -595,7 +675,7 @@ class _ReceiveRequestFlowScreenState
                     Expanded(
                       child: _ReceiveActionButton(
                         icon: LucideIcons.copy,
-                        label: 'Copiar',
+                        label: context.tr.copy,
                         onTap: _copyPaymentValue,
                       ),
                     ),
@@ -603,7 +683,7 @@ class _ReceiveRequestFlowScreenState
                     Expanded(
                       child: _ReceiveActionButton(
                         icon: LucideIcons.share2,
-                        label: 'Compartilhar',
+                        label: context.tr.share,
                         primary: true,
                         onTap: _sharePaymentValue,
                       ),
@@ -820,25 +900,50 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildAddressPill() {
+    final borderRadius = BorderRadius.circular(8);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: _receiveBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: borderRadius,
         border: Border.all(color: _receiveBorder),
       ),
-      child: Text(
-        _shortenAddress(_addressValue, head: 22, tail: 0).toUpperCase(),
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(
-          color: _receiveMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 1.2,
-          letterSpacing: 1.1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const ValueKey('receive-address-pill-copy'),
+          borderRadius: borderRadius,
+          onTap: _copyAddressValue,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _shortenAddress(_addressValue, head: 22, tail: 0)
+                        .toUpperCase(),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: _receiveMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      height: 1.2,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  LucideIcons.copy,
+                  color: _receiveMuted,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1321,6 +1426,63 @@ class _ReceiveActionButton extends StatelessWidget {
             letterSpacing: 1.2,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReceiveDetailLine extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool monospace;
+
+  const _ReceiveDetailLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.monospace = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final valueStyle =
+        (monospace ? GoogleFonts.ibmPlexSansHebrew() : GoogleFonts.inter())
+            .copyWith(
+      color: _receiveText,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      height: 1.3,
+      letterSpacing: 0,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: _receiveMuted, size: 17),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: _receiveMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: valueStyle,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -148,6 +149,63 @@ void main() {
         ),
         findsOneWidget,
       );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('expanded detail rows copy exact transaction identifiers', (
+      tester,
+    ) async {
+      const paymentHash = 'payment-hash-fallback-00000000000000000000000001';
+      final transactionWithFallbackReference = Transaction(
+        id: 'tx-copyable-detail-001',
+        fromAddress: 'bc1qsourceaddresswithaverylongvalue00000000000000000000',
+        toAddress: 'bc1qdestinationaddresswithaverylongvalue1111111111111111',
+        amountSatoshis: 210000,
+        feeSatoshis: 1200,
+        status: TransactionStatus.confirmed,
+        type: TransactionType.withdrawal,
+        confirmations: 6,
+        timestamp: DateTime(2026, 5, 21, 9, 45),
+        blockchainTxid: '',
+        paymentHash: paymentHash,
+      );
+
+      await pumpCard(
+        tester,
+        size: regularPortrait,
+        child: SingleChildScrollView(
+          child: SizedBox(
+            width: 340,
+            child: StatementTransactionCard(
+              transaction: transactionWithFallbackReference,
+              expanded: true,
+              mode: StatementTransactionCardMode.separated,
+            ),
+          ),
+        ),
+      );
+
+      final referenceCopy = find.byKey(
+        const ValueKey('statement-detail-copy-reference'),
+      );
+      await tester.ensureVisible(referenceCopy);
+      await tester.tap(referenceCopy);
+      await tester.pump();
+
+      final referenceClipboard = await Clipboard.getData('text/plain');
+      expect(referenceClipboard?.text, paymentHash);
+      expect(find.text('Transaction detail copied.'), findsOneWidget);
+
+      final idCopy = find.byKey(const ValueKey('statement-detail-copy-id'));
+      await tester.ensureVisible(idCopy);
+      await tester.tap(idCopy);
+      await tester.pump();
+
+      final idClipboard = await Clipboard.getData('text/plain');
+      expect(idClipboard?.text, transactionWithFallbackReference.id);
+      expect(tester.takeException(), isNull);
+
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });

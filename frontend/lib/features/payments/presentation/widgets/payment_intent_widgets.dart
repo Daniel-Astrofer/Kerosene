@@ -3,12 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/features/payments/domain/payment_intent_models.dart';
-
-const _background = Color(0xFF050505);
-const _surface = Color(0xFF111113);
-const _surfaceHigh = Color(0xFF1A1A1D);
-const _border = Color(0xFF2A2A2E);
-const _muted = Color(0xFF9A9AA0);
+import 'package:kerosene/core/theme/app_colors.dart';
 
 class PaymentRecipientPicker extends StatelessWidget {
   final TextEditingController controller;
@@ -26,23 +21,23 @@ class PaymentRecipientPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _surface,
-        border: Border.all(color: _border),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            const Icon(LucideIcons.userCheck, color: Colors.white, size: 20),
+            const Icon(LucideIcons.userCheck, color: AppColors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: TextField(
                 controller: controller,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: const TextStyle(color: AppColors.white, fontSize: 15),
                 decoration: InputDecoration(
                   hintText: context.tr.paymentIntentRecipientHint,
-                  hintStyle: const TextStyle(color: _muted),
+                  hintStyle: const TextStyle(color: AppColors.textMuted),
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -85,9 +80,13 @@ class CapabilityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: enabled ? const Color(0xFF143321) : _surfaceHigh,
+        color: enabled
+            ? AppColors.success.withValues(alpha: 0.1)
+            : AppColors.surfaceLight,
         border: Border.all(
-          color: enabled ? const Color(0xFF2C7A4B) : _border,
+          color: enabled
+              ? AppColors.success.withValues(alpha: 0.3)
+              : AppColors.border,
         ),
         borderRadius: BorderRadius.circular(999),
       ),
@@ -98,14 +97,14 @@ class CapabilityBadge extends StatelessWidget {
           children: [
             Icon(
               enabled ? LucideIcons.checkCircle2 : LucideIcons.circleSlash,
-              color: enabled ? const Color(0xFF73E2A7) : _muted,
+              color: enabled ? AppColors.success : AppColors.textMuted,
               size: 14,
             ),
             const SizedBox(width: 6),
             Text(
               paymentIntentRailLabel(context, rail),
               style: TextStyle(
-                color: enabled ? Colors.white : _muted,
+                color: enabled ? AppColors.white : AppColors.textMuted,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -142,7 +141,7 @@ class RouteSelector extends StatelessWidget {
             avatar: Icon(
               _iconForRail(rail),
               size: 16,
-              color: selectedRail == rail ? Colors.black : Colors.white,
+              color: selectedRail == rail ? AppColors.black : AppColors.white,
             ),
             onSelected:
                 availableRails.contains(rail) ? (_) => onChanged(rail) : null,
@@ -192,7 +191,7 @@ class PaymentQuoteCard extends StatelessWidget {
             context.tr.paymentIntentMetricKeroseneFee,
             _sats(quote.keroseneFeeSats),
           ),
-          const Divider(color: _border, height: 22),
+          const Divider(color: AppColors.border, height: 22),
           _MetricLine(
             context.tr.paymentIntentMetricTotalDebit,
             _sats(quote.totalDebitSats),
@@ -279,12 +278,13 @@ class PaymentConfirmationSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(LucideIcons.shieldAlert, color: Colors.white, size: 28),
+            const Icon(LucideIcons.shieldAlert,
+                color: AppColors.white, size: 28),
             const SizedBox(height: 12),
             Text(
               context.tr.paymentIntentReviewTitle,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -295,7 +295,7 @@ class PaymentConfirmationSheet extends StatelessWidget {
                 _sats(quote.totalDebitSats),
                 quote.receiverDisplayName,
               ),
-              style: const TextStyle(color: _muted, height: 1.4),
+              style: const TextStyle(color: AppColors.textMuted, height: 1.4),
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
@@ -345,19 +345,19 @@ class PaymentAmountInput extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: onChanged,
       style: const TextStyle(
-        color: Colors.white,
+        color: AppColors.white,
         fontSize: 30,
         fontWeight: FontWeight.w800,
       ),
       decoration: const InputDecoration(
         prefixText: 'R\$ ',
         prefixStyle: TextStyle(
-          color: _muted,
+          color: AppColors.textMuted,
           fontSize: 24,
           fontWeight: FontWeight.w700,
         ),
         hintText: '0,00',
-        hintStyle: TextStyle(color: _muted),
+        hintStyle: TextStyle(color: AppColors.textMuted),
         border: InputBorder.none,
       ),
     );
@@ -390,8 +390,8 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _surface,
-        border: Border.all(color: _border),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -401,12 +401,12 @@ class _Panel extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon, color: Colors.white, size: 18),
+                Icon(icon, color: AppColors.white, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -435,7 +435,8 @@ class _MetricLine extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: const TextStyle(color: _muted)),
+            child:
+                Text(label, style: const TextStyle(color: AppColors.textMuted)),
           ),
           const SizedBox(width: 16),
           Flexible(
@@ -444,7 +445,7 @@ class _MetricLine extends StatelessWidget {
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -469,10 +470,10 @@ class _TimelineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = terminal
-        ? const Color(0xFF73E2A7)
+        ? AppColors.success
         : active
-            ? Colors.white
-            : _muted;
+            ? AppColors.white
+            : AppColors.textMuted;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
@@ -500,8 +501,8 @@ class _Notice extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF211A0D),
-        border: Border.all(color: const Color(0xFF5A4217)),
+        color: AppColors.primary.withValues(alpha: 0.1),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -509,13 +510,13 @@ class _Notice extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: const Color(0xFFF6C96F), size: 17),
+            Icon(icon, color: AppColors.primary, size: 17),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 text,
                 style: const TextStyle(
-                  color: Color(0xFFFFE6B0),
+                  color: AppColors.primary,
                   height: 1.35,
                 ),
               ),
@@ -603,4 +604,4 @@ String _sats(int value) {
   return '${value.toString()} sats';
 }
 
-Color get paymentIntentBackgroundColor => _background;
+Color get paymentIntentBackgroundColor => AppColors.background;

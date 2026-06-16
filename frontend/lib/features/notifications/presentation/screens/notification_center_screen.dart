@@ -21,8 +21,7 @@ Future<void> openNotificationCenter(
   final navigator = Navigator.of(context);
   final overlayObject = navigator.overlay?.context.findRenderObject();
   final overlayBox = overlayObject is RenderBox ? overlayObject : null;
-  final originRect =
-      _originRectForKey(originKey, overlayBox) ??
+  final originRect = _originRectForKey(originKey, overlayBox) ??
       _fallbackOriginRect(MediaQuery.sizeOf(context));
 
   return navigator.push<void>(_notificationCenterRoute(originRect));
@@ -196,17 +195,17 @@ class _NotificationCenterScreenState
                         onMarkAllRead: unreadCount == 0
                             ? null
                             : () => ref
-                                  .read(
-                                    sessionNotificationFeedProvider.notifier,
-                                  )
-                                  .markAllRead(),
+                                .read(
+                                  sessionNotificationFeedProvider.notifier,
+                                )
+                                .markAllRead(),
                         onClear: notifications.isEmpty
                             ? null
                             : () => ref
-                                  .read(
-                                    sessionNotificationFeedProvider.notifier,
-                                  )
-                                  .clear(),
+                                .read(
+                                  sessionNotificationFeedProvider.notifier,
+                                )
+                                .clear(),
                       ),
                       reduceMotion: reduceMotion,
                       delay: 170,
@@ -276,14 +275,12 @@ class _NotificationCenterScreenState
   ) {
     final filtered = switch (_filter) {
       _NotificationCenterFilter.all => List.of(notifications),
-      _NotificationCenterFilter.alerts =>
-        notifications
-            .where((item) => !_isSecurityNotification(context, item))
-            .toList(),
-      _NotificationCenterFilter.security =>
-        notifications
-            .where((item) => _isSecurityNotification(context, item))
-            .toList(),
+      _NotificationCenterFilter.alerts => notifications
+          .where((item) => !_isSecurityNotification(context, item))
+          .toList(),
+      _NotificationCenterFilter.security => notifications
+          .where((item) => _isSecurityNotification(context, item))
+          .toList(),
     };
     filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return filtered;
@@ -720,23 +717,23 @@ class _NotificationEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = switch (filter) {
       _NotificationCenterFilter.all => _copy(
-        context,
-        pt: 'Sem notificações',
-        en: 'No notifications',
-        es: 'Sin notificaciones',
-      ),
+          context,
+          pt: 'Sem notificações',
+          en: 'No notifications',
+          es: 'Sin notificaciones',
+        ),
       _NotificationCenterFilter.alerts => _copy(
-        context,
-        pt: 'Sem avisos',
-        en: 'No alerts',
-        es: 'Sin avisos',
-      ),
+          context,
+          pt: 'Sem avisos',
+          en: 'No alerts',
+          es: 'Sin avisos',
+        ),
       _NotificationCenterFilter.security => _copy(
-        context,
-        pt: 'Sem alertas de segurança',
-        en: 'No security alerts',
-        es: 'Sin alertas de seguridad',
-      ),
+          context,
+          pt: 'Sem alertas de segurança',
+          en: 'No security alerts',
+          es: 'Sin alertas de seguridad',
+        ),
     };
 
     return Padding(

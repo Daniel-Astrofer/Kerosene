@@ -47,11 +47,14 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
     with SingleTickerProviderStateMixin {
   late AnimationController _flashController;
   late Animation<double> _flashOpacity;
+  late String _visibleText;
+  late _BalanceCharacterLayout _characterLayout;
   Color _flashColor = Colors.green;
 
   @override
   void initState() {
     super.initState();
+    _refreshCharacterLayout();
     _flashController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
@@ -66,6 +69,9 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
   @override
   void didUpdateWidget(AnimatedBalanceDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (_shouldRefreshCharacterLayout(oldWidget)) {
+      _refreshCharacterLayout();
+    }
     if (widget.enableFlash && widget.balance != oldWidget.balance) {
       _flashColor = widget.balance > oldWidget.balance
           ? const Color(0xFF00FF94)
@@ -82,20 +88,12 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.decimalPattern(widget.locale);
-    formatter.minimumFractionDigits = widget.decimalPlaces;
-    formatter.maximumFractionDigits = widget.decimalPlaces;
-
-    final balanceStr = formatter.format(widget.balance);
-    final fullString = (widget.prefix ?? '') + balanceStr;
-
     if (widget.isHidden) {
-      final hiddenPrefix = widget.prefix ?? '';
-      return _buildRow('$hiddenPrefix••••••••', widget.style);
+      return _buildRow(widget.style);
     }
 
     if (!widget.enableFlash) {
-      return _buildRow(fullString, widget.style);
+      return _buildRow(widget.style);
     }
 
     return AnimatedBuilder(
@@ -109,58 +107,45 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
                 alpha,
               )!
             : (widget.style.color ?? Theme.of(context).colorScheme.onPrimary);
-        return _buildRow(fullString, widget.style.copyWith(color: textColor));
+        return _buildRow(widget.style.copyWith(color: textColor));
       },
     );
   }
 
-  Widget _buildRow(String fullString, TextStyle style) {
+  bool _shouldRefreshCharacterLayout(AnimatedBalanceDisplay oldWidget) {
+    return widget.balance != oldWidget.balance ||
+        widget.decimalPlaces != oldWidget.decimalPlaces ||
+        widget.prefix != oldWidget.prefix ||
+        widget.isHidden != oldWidget.isHidden ||
+        widget.locale != oldWidget.locale;
+  }
+
+  void _refreshCharacterLayout() {
+    _visibleText = widget.isHidden
+        ? '${widget.prefix ?? ''}••••••••'
+        : '${widget.prefix ?? ''}${_formatBalance()}';
+    _characterLayout = _BalanceCharacterLayout.from(_visibleText);
+  }
+
+  String _formatBalance() {
+    final formatter = NumberFormat.decimalPattern(widget.locale)
+      ..minimumFractionDigits = widget.decimalPlaces
+      ..maximumFractionDigits = widget.decimalPlaces;
+    return formatter.format(widget.balance);
+  }
+
+  Widget _buildRow(TextStyle style) {
     if (widget.isHidden) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: List.generate(fullString.length, (index) {
-          return Padding(
-            padding:
-                EdgeInsets.symmetric(horizontal: widget.characterSpacing * 0.5),
-            child: Text(
-              fullString[index],
-              style: style.copyWith(
-                fontSize: (style.fontSize ?? 40) * 0.8,
-                letterSpacing: 2,
-              ),
-            ),
-          );
-        }),
+        children: _characterLayout.all
+            .map((character) => _buildHiddenCharacter(character, style))
+            .toList(growable: false),
       );
     }
-    final dotIndex = fullString.lastIndexOf('.');
-    final commaIndex = fullString.lastIndexOf(',');
-    final separatorIndex = dotIndex != -1 ? dotIndex : commaIndex;
-    final leadingChars = separatorIndex == -1
-        ? _buildCharacters(
-            fullString: fullString,
-            style: style,
-            separatorIndex: separatorIndex,
-            start: 0,
-            end: fullString.length,
-          )
-        : _buildCharacters(
-            fullString: fullString,
-            style: style,
-            separatorIndex: separatorIndex,
-            start: 0,
-            end: separatorIndex,
-          );
-    final decimalChars = separatorIndex == -1
-        ? const <Widget>[]
-        : _buildCharacters(
-            fullString: fullString,
-            style: style,
-            separatorIndex: separatorIndex,
-            start: separatorIndex,
-            end: fullString.length,
-          );
+    final leadingChars = _buildCharacters(_characterLayout.leading, style);
+    final decimalChars = _buildCharacters(_characterLayout.decimal, style);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -180,19 +165,25 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
     );
   }
 
-  List<Widget> _buildCharacters({
-    required String fullString,
-    required TextStyle style,
-    required int separatorIndex,
-    required int start,
-    required int end,
-  }) {
-    return List.generate(end - start, (offset) {
-      final index = start + offset;
-      final char = fullString[index];
-      final isDigit = RegExp(r'[0-9]').hasMatch(char);
-      final isDecimalPart = separatorIndex != -1 && index > separatorIndex;
-      final currentStyle = isDecimalPart
+  Widget _buildHiddenCharacter(_BalanceCharacter character, TextStyle style) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: widget.characterSpacing * 0.5),
+      child: Text(
+        character.value,
+        style: style.copyWith(
+          fontSize: (style.fontSize ?? 40) * 0.8,
+          letterSpacing: 2,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildCharacters(
+    List<_BalanceCharacter> characters,
+    TextStyle style,
+  ) {
+    return characters.map((character) {
+      final currentStyle = character.isDecimalPart
           ? style.copyWith(
               fontSize: (style.fontSize ?? 40) * widget.decimalScaleFactor,
               color: style.color?.withValues(alpha: 0.8),
@@ -201,24 +192,24 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
 
       late final Widget child;
 
-      if (!isDigit) {
+      if (!character.isDigit) {
         child = Text(
-          char,
-          style: char == '.' || char == ','
+          character.value,
+          style: character.isSeparator
               ? style.copyWith(
                   fontSize:
                       (style.fontSize ?? 40) * widget.separatorScaleFactor,
                   color: style.color?.withValues(alpha: 0.5),
                 )
               : currentStyle,
-          key: ValueKey('static_$index'),
+          key: ValueKey('static_${character.index}'),
         );
       } else {
-        final delay = Duration(milliseconds: index * 50);
+        final delay = Duration(milliseconds: character.index * 50);
 
         child = _RollingDigit(
-          key: ValueKey('rolling_${fullString.length - index}'),
-          digit: char,
+          key: ValueKey('rolling_${_visibleText.length - character.index}'),
+          digit: character.value,
           style: currentStyle,
           delay: delay,
           widthFactor: widget.digitWidthFactor,
@@ -231,8 +222,71 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
             EdgeInsets.symmetric(horizontal: widget.characterSpacing * 0.5),
         child: child,
       );
-    });
+    }).toList(growable: false);
   }
+}
+
+class _BalanceCharacterLayout {
+  final List<_BalanceCharacter> leading;
+  final List<_BalanceCharacter> decimal;
+
+  const _BalanceCharacterLayout({
+    required this.leading,
+    required this.decimal,
+  });
+
+  List<_BalanceCharacter> get all {
+    if (decimal.isEmpty) {
+      return leading;
+    }
+    return [...leading, ...decimal];
+  }
+
+  factory _BalanceCharacterLayout.from(String value) {
+    final dotIndex = value.lastIndexOf('.');
+    final commaIndex = value.lastIndexOf(',');
+    final separatorIndex = dotIndex != -1 ? dotIndex : commaIndex;
+    final characters = List<_BalanceCharacter>.generate(value.length, (index) {
+      return _BalanceCharacter(
+        index: index,
+        value: value[index],
+        separatorIndex: separatorIndex,
+      );
+    }, growable: false);
+
+    if (separatorIndex == -1) {
+      return _BalanceCharacterLayout(
+        leading: characters,
+        decimal: const <_BalanceCharacter>[],
+      );
+    }
+
+    return _BalanceCharacterLayout(
+      leading: characters.take(separatorIndex).toList(growable: false),
+      decimal: characters.skip(separatorIndex).toList(growable: false),
+    );
+  }
+}
+
+class _BalanceCharacter {
+  final int index;
+  final String value;
+  final int separatorIndex;
+
+  const _BalanceCharacter({
+    required this.index,
+    required this.value,
+    required this.separatorIndex,
+  });
+
+  bool get isDigit {
+    final codeUnit = value.codeUnitAt(0);
+    return codeUnit >= 48 && codeUnit <= 57;
+  }
+
+  bool get isDecimalPart => separatorIndex != -1 && index > separatorIndex;
+
+  bool get isSeparator => value == '.' || value == ',';
 }
 
 class _RollingDigit extends StatefulWidget {

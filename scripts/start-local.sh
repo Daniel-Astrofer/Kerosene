@@ -129,6 +129,8 @@ print_compose_start_diagnostics() {
 
   local service
   for service in \
+    bitcoin-core lnd-neutrino lnd-bootstrap lnd-unlocker \
+    vault-raft-1 vault-raft-2 vault-raft-3 vault-raft-bootstrap \
     kerosene-app-is kerosene-app-ch kerosene-app-sg \
     kerosene-vanguards-is kerosene-vanguards-ch kerosene-vanguards-sg \
     kerosene-tor-is kerosene-tor-ch kerosene-tor-sg \
@@ -139,6 +141,8 @@ print_compose_start_diagnostics() {
 
   warn "Recent logs from critical services:"
   compose logs --no-color --tail 80 \
+    bitcoin-core lnd-neutrino lnd-bootstrap lnd-unlocker \
+    vault-raft-1 vault-raft-2 vault-raft-3 vault-raft-bootstrap \
     kerosene-app-is kerosene-app-ch kerosene-app-sg \
     kerosene-vanguards-is kerosene-vanguards-ch kerosene-vanguards-sg \
     kerosene-vault mpc-sidecar-is mpc-sidecar-ch mpc-sidecar-sg >&2 || true

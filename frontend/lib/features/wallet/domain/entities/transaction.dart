@@ -169,6 +169,12 @@ final class Transaction extends Equatable {
   }
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    if (json.containsKey('grossAmountSats') ||
+        json.containsKey('receiverAmountSats') ||
+        json.containsKey('totalDebitSats')) {
+      return _fromKfeJson(json);
+    }
+
     // If it's from local storage (newly added format)
     if (json.containsKey('status') &&
         json['status'] is String &&
@@ -342,6 +348,65 @@ final class Transaction extends Equatable {
     );
   }
 
+  static Transaction _fromKfeJson(Map<String, dynamic> json) {
+    final rail = json['rail']?.toString().toUpperCase() ?? '';
+    final direction = json['direction']?.toString().toUpperCase() ?? '';
+    final walletId = json['walletId']?.toString();
+    final sourceWalletId = json['sourceWalletId']?.toString();
+    final destinationWalletId = json['destinationWalletId']?.toString();
+    final externalReference = json['externalReference']?.toString();
+    final grossAmountSats = _parseInt(json['grossAmountSats']) ??
+        _parseInt(json['amountSats']) ??
+        0;
+    final receiverAmountSats =
+        _parseInt(json['receiverAmountSats']) ?? grossAmountSats;
+    final networkFeeSats = _parseInt(json['networkFeeSats']) ?? 0;
+    final keroseneFeeSats = _parseInt(json['keroseneFeeSats']) ?? 0;
+    final isLightning = rail == 'LIGHTNING';
+    final isInternal = rail == 'INTERNAL' || direction == 'INTERNAL';
+    final isCredit = direction == 'INBOUND' ||
+        (isInternal &&
+            walletId != null &&
+            destinationWalletId != null &&
+            walletId == destinationWalletId);
+    final txType = isCredit
+        ? TransactionType.receive
+        : isInternal
+            ? TransactionType.send
+            : direction == 'INBOUND'
+                ? TransactionType.deposit
+                : TransactionType.withdrawal;
+    final status = _resolveKfeStatus(json['status']?.toString());
+    final blockchainTxid = json['blockchainTxid']?.toString();
+    final id = [
+      blockchainTxid,
+      json['transactionId']?.toString(),
+      json['id']?.toString(),
+    ].firstWhere(
+      (value) => value != null && value.trim().isNotEmpty,
+      orElse: () => '',
+    )!;
+
+    return Transaction(
+      id: id,
+      fromAddress: sourceWalletId ?? (isCredit ? 'Rede Bitcoin' : ''),
+      toAddress: destinationWalletId ?? externalReference ?? '',
+      amountSatoshis: receiverAmountSats.abs(),
+      feeSatoshis: (networkFeeSats + keroseneFeeSats).abs(),
+      status: status,
+      type: txType,
+      confirmations: status == TransactionStatus.confirmed ? 6 : 0,
+      timestamp: _parseDateTime(json['createdAt'] ?? json['timestamp']) ??
+          DateTime.now(),
+      blockchainTxid: blockchainTxid,
+      externalReference: externalReference,
+      paymentHash: json['paymentHash']?.toString(),
+      description: json['memo']?.toString(),
+      isInternal: isInternal,
+      isLightning: isLightning,
+    );
+  }
+
   static int? _parseInt(dynamic value) {
     if (value is int) {
       return value;
@@ -498,6 +563,23 @@ final class Transaction extends Equatable {
         return confirmations > 0
             ? TransactionStatus.confirming
             : TransactionStatus.pending;
+    }
+  }
+
+  static TransactionStatus _resolveKfeStatus(String? rawStatus) {
+    switch (rawStatus?.toUpperCase()) {
+      case 'SETTLED':
+        return TransactionStatus.confirmed;
+      case 'FAILED':
+      case 'REQUIRES_RECONCILIATION':
+        return TransactionStatus.failed;
+      case 'EXECUTING':
+      case 'LOCKED':
+      case 'QUORUM_SYNC':
+      case 'VALIDATING':
+      case 'INTENT':
+      default:
+        return TransactionStatus.pending;
     }
   }
 

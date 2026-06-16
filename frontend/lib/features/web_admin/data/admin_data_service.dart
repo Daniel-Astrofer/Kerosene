@@ -66,6 +66,18 @@ class AdminDataService {
     );
   }
 
+  Future<Map<String, dynamic>> triggerBlockchainSync() async {
+    try {
+      final response = await _api.post(AppConfig.adminOperationsBlockchainSync);
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      throw _invalidResponse('triggerBlockchainSync', response.data);
+    } catch (e) {
+      _throwAdminFailure('triggerBlockchainSync', e);
+    }
+  }
+
   Future<Map<String, dynamic>> fetchLightningMonitor() async {
     return _fetchMap(
       AppConfig.adminOperationsLightning,

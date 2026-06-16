@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kerosene/core/navigation/deferred_page.dart';
 
 import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
+import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+    deferred as bitcoin_accounts;
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/wallet/presentation/state/wallet_state.dart';
-import 'package:kerosene/features/home/presentation/screens/home_screen.dart';
+import 'package:kerosene/features/home/presentation/screens/home_screen.dart'
+    deferred as home;
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 
 class HomeLoadingScreen extends ConsumerStatefulWidget {
@@ -29,6 +32,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
   String _errorMessage = "";
   bool _walletSetupRedirectAttempted = false;
   int _walletRetryAttempt = 0;
+  static const int _maxWalletRetryAttempts = 3;
 
   @override
   void initState() {
@@ -65,6 +69,12 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
       return;
     }
 
+    if (_walletRetryAttempt >= _maxWalletRetryAttempts) {
+      _walletRetryTimer?.cancel();
+      _navigateToHome(allowError: true);
+      return;
+    }
+
     final delay = switch (_walletRetryAttempt) {
       0 => const Duration(seconds: 3),
       1 => const Duration(seconds: 6),
@@ -83,8 +93,8 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
     });
   }
 
-  void _navigateToHome() {
-    if (_isNavigating || _hasError) return;
+  void _navigateToHome({bool allowError = false}) {
+    if (_isNavigating || (_hasError && !allowError)) return;
     _isNavigating = true;
     _timeoutTimer?.cancel();
 
@@ -93,7 +103,10 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
         Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const HomeScreen(),
+                DeferredPage(
+              loadLibrary: home.loadLibrary,
+              builder: (_) => home.HomeScreen(),
+            ),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
@@ -119,8 +132,10 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
 
     await Navigator.of(context).push<void>(
       PageRouteBuilder<void>(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const BitcoinAccountsScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => DeferredPage(
+          loadLibrary: bitcoin_accounts.loadLibrary,
+          builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
+        ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -171,7 +186,11 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
             _errorMessage = next.message;
           });
         }
-        _scheduleWalletRetry();
+        if (next.isRetryable) {
+          _scheduleWalletRetry();
+        } else {
+          _walletRetryTimer?.cancel();
+        }
         return;
       }
 
@@ -199,6 +218,13 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
       } else {
         _navigateToHome();
       }
+    }
+
+    if (walletState is WalletError &&
+        (!walletState.isRetryable ||
+            _walletRetryAttempt >= _maxWalletRetryAttempts) &&
+        _minDurationPassed) {
+      _navigateToHome(allowError: true);
     }
 
     return KeroseneLogoLoadingView(

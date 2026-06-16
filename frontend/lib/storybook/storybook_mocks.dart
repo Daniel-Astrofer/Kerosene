@@ -351,7 +351,6 @@ final mockBitcoinAccounts = [
     cardId: 'card-storybook',
     balanceAvailableSats: 4200000,
     balancePendingSats: 120000,
-    dailyLimitSats: 10000000,
   ),
   const BitcoinAccount(
     id: 'story-account-cold',
@@ -898,7 +897,6 @@ class MockBitcoinAccountsService implements BitcoinAccountsService {
   @override
   Future<BitcoinAccount> createInternalCard({
     required String label,
-    required int dailyLimitSats,
   }) async {
     final account = BitcoinAccount(
       id: 'story-account-${_accounts.length + 1}',
@@ -906,9 +904,8 @@ class MockBitcoinAccountsService implements BitcoinAccountsService {
       custody: 'KEROSENE_CUSTODIAL',
       status: 'ACTIVE',
       label: label,
-      riskTier: dailyLimitSats >= 10000000 ? 'SILVER' : 'BRONZE',
+      riskTier: 'BRONZE',
       cardId: 'card-storybook-${_accounts.length + 1}',
-      dailyLimitSats: dailyLimitSats,
     );
     _accounts.add(account);
     return account;
@@ -1404,6 +1401,7 @@ class MockTransactionRepository implements TransactionRepository {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,

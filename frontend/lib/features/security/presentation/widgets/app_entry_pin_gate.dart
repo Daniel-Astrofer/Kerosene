@@ -138,9 +138,13 @@ class _AppEntryPinLockScreen extends ConsumerStatefulWidget {
 class _AppEntryPinLockScreenState
     extends ConsumerState<_AppEntryPinLockScreen> {
   Timer? _ticker;
-  String _pin = '';
+  final ValueNotifier<String> _pinNotifier = ValueNotifier('');
+  final ValueNotifier<String?> _errorNotifier = ValueNotifier(null);
+  String get _pin => _pinNotifier.value;
+  set _pin(String val) => _pinNotifier.value = val;
+  String? get _errorMessage => _errorNotifier.value;
+  set _errorMessage(String? val) => _errorNotifier.value = val;
   bool _busy = false;
-  String? _errorMessage;
 
   AppPinStatus get _status => ref.watch(appPinStatusProvider).maybeWhen(
         data: (status) => status,
@@ -160,6 +164,8 @@ class _AppEntryPinLockScreenState
   @override
   void dispose() {
     _ticker?.cancel();
+    _pinNotifier.dispose();
+    _errorNotifier.dispose();
     super.dispose();
   }
 
@@ -168,10 +174,8 @@ class _AppEntryPinLockScreenState
       return;
     }
     HapticFeedback.selectionClick();
-    setState(() {
-      _pin += digit;
-      _errorMessage = null;
-    });
+    _pin += digit;
+    _errorMessage = null;
   }
 
   void _deleteDigit() {
@@ -179,10 +183,8 @@ class _AppEntryPinLockScreenState
       return;
     }
     HapticFeedback.selectionClick();
-    setState(() {
-      _pin = _pin.substring(0, _pin.length - 1);
-      _errorMessage = null;
-    });
+    _pin = _pin.substring(0, _pin.length - 1);
+    _errorMessage = null;
   }
 
   Future<void> _submit() async {
@@ -191,12 +193,10 @@ class _AppEntryPinLockScreenState
     }
     if (_pin.length < _status.minPinLength ||
         _pin.length > _status.maxPinLength) {
-      setState(() {
-        _errorMessage = context.tr.appEntryPinLengthError(
-          _status.minPinLength,
-          _status.maxPinLength,
-        );
-      });
+      _errorMessage = context.tr.appEntryPinLengthError(
+        _status.minPinLength,
+        _status.maxPinLength,
+      );
       return;
     }
 
@@ -336,43 +336,49 @@ class _AppEntryPinLockScreenState
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: monochromePanelDecoration(
-                      color: monoSurfaceColor,
-                      borderColor: monoBorderStrongColor,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _PinDots(
-                          length: _pin.length,
-                          maxLength: _status.maxPinLength,
+                  ListenableBuilder(
+                    listenable:
+                        Listenable.merge([_pinNotifier, _errorNotifier]),
+                    builder: (context, _) {
+                      return Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: monochromePanelDecoration(
+                          color: monoSurfaceColor,
+                          borderColor: monoBorderStrongColor,
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        SizedBox(
-                          height: 36,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 180),
-                            child: _errorMessage == null
-                                ? const SizedBox.shrink()
-                                : Text(
-                                    _errorMessage!.toUpperCase(),
-                                    key: ValueKey(_errorMessage),
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: monoMutedTextColor,
-                                          letterSpacing: 0.8,
-                                          height: 1.35,
-                                        ),
-                                  ),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _PinDots(
+                              length: _pin.length,
+                              maxLength: _status.maxPinLength,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            SizedBox(
+                              height: 36,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 180),
+                                child: _errorMessage == null
+                                    ? const SizedBox.shrink()
+                                    : Text(
+                                        _errorMessage!.toUpperCase(),
+                                        key: ValueKey(_errorMessage),
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: monoMutedTextColor,
+                                              letterSpacing: 0.8,
+                                              height: 1.35,
+                                            ),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Container(

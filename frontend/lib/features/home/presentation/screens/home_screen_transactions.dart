@@ -56,7 +56,10 @@ class HomeTransactionsList extends ConsumerWidget {
                 if (!hasWallet) {
                   Navigator.of(context).push<void>(
                     _buildBottomUpRoute(
-                      builder: (_) => const BitcoinAccountsScreen(),
+                      builder: (_) => DeferredPage(
+                        loadLibrary: bitcoin_accounts.loadLibrary,
+                        builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
+                      ),
                     ),
                   );
                   return;
@@ -65,7 +68,10 @@ class HomeTransactionsList extends ConsumerWidget {
                 if (!hasBalance) {
                   Navigator.of(context).push<void>(
                     _buildBottomUpRoute(
-                      builder: (_) => DepositAmountScreen(wallet: activeWallet),
+                      builder: (_) => DeferredPage(
+                        loadLibrary: deposit_amount.loadLibrary,
+                        builder: (_) => deposit_amount.DepositAmountScreen(wallet: activeWallet),
+                      ),
                     ),
                   );
                   return;
@@ -150,11 +156,15 @@ class _HomeStatementTransactionLauncherState
         onTap: () {
           HapticFeedback.selectionClick();
           unawaited(
-            openTransactionStatement(
-              context,
-              originKey: _originKey,
-              initialTransactionId: widget.transaction.id,
-            ),
+            deposits.loadLibrary().then((_) {
+              if (context.mounted) {
+                deposits.openTransactionStatement(
+                  context,
+                  originKey: _originKey,
+                  initialTransactionId: widget.transaction.id,
+                );
+              }
+            }),
           );
         },
       ),

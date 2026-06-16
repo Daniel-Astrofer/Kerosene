@@ -1,3 +1,4 @@
-import 'bootstrap/mobile_bootstrap.dart';
+import 'mobile_main.dart' if (dart.library.js_interop) 'web_main.dart'
+    as entrypoint;
 
-Future<void> main() => bootstrapMobile();
+Future<void> main() => entrypoint.main();

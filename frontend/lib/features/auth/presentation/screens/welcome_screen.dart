@@ -1,8 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 import '../../controller/auth_controller.dart';
+
+class _AuthColors {
+  final bool isLight;
+  final Color background;
+  final Color surface;
+  final Color field;
+  final Color border;
+  final Color borderSoft;
+  final Color text;
+  final Color muted;
+  final Color dim;
+  final Color success;
+  final Color errorText;
+
+  const _AuthColors({
+    required this.isLight,
+    required this.background,
+    required this.surface,
+    required this.field,
+    required this.border,
+    required this.borderSoft,
+    required this.text,
+    required this.muted,
+    required this.dim,
+    required this.success,
+    required this.errorText,
+  });
+
+  factory _AuthColors.of(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    if (isLight) {
+      return const _AuthColors(
+        isLight: true,
+        background: Color(0xFFF7F7F5),
+        surface: Color(0xFFFFFFFF),
+        field: Color(0xFFF0F1EE),
+        border: Color(0xFFDDE0D8),
+        borderSoft: Color(0xFFE2E4DE),
+        text: Color(0xFF181A17),
+        muted: Color(0xFF62675F),
+        dim: Color(0xFF8B9087),
+        success: Color(0xFF16A34A),
+        errorText: Color(0xFFDC2626),
+      );
+    }
+    return const _AuthColors(
+      isLight: false,
+      background: Color(0xFF000000),
+      surface: Color(0xFF0A0A0A),
+      field: Color(0xFF1A1A1A),
+      border: Color(0xFF333333),
+      borderSoft: Color(0xFF27272A),
+      text: Color(0xFFFFFFFF),
+      muted: Color(0xFFA1A1AA),
+      dim: Color(0xFF71717A),
+      success: Color(0xFF4ADE80),
+      errorText: Color(0xFFF4C7C7),
+    );
+  }
+
+  BorderRadius get radiusMedium =>
+      isLight ? BorderRadius.circular(16) : BorderRadius.circular(12);
+  BorderRadius get radiusButton =>
+      isLight ? BorderRadius.circular(16) : BorderRadius.circular(999);
+}
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -32,8 +98,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       }
     });
 
+    final colors = _AuthColors.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -85,16 +153,17 @@ class _WelcomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return Column(
       children: [
         Text.rich(
           TextSpan(
             children: [
-              const TextSpan(text: 'Custódia institucional.\n'),
+              TextSpan(text: context.tr.welcomeHeaderTitleCustody),
               TextSpan(
-                text: 'Simplicidade absoluta.',
+                text: context.tr.welcomeHeaderTitleSimplicity,
                 style: GoogleFonts.ibmPlexSerif(
-                  color: const Color(0xFF9CA3AF),
+                  color: colors.muted,
                   fontSize: 40,
                   fontWeight: FontWeight.w500,
                   height: 1.05,
@@ -105,7 +174,7 @@ class _WelcomeHeader extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
           style: GoogleFonts.ibmPlexSerif(
-            color: Colors.white,
+            color: colors.text,
             fontSize: 40,
             fontWeight: FontWeight.w500,
             height: 1.05,
@@ -114,11 +183,10 @@ class _WelcomeHeader extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'Segurança de nível superior para seu patrimônio digital. '
-          'Projetado para quem exige o melhor.',
+          context.tr.welcomeHeaderSubtitle,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            color: const Color(0xFF9CA3AF),
+            color: colors.muted,
             fontSize: 14,
             fontWeight: FontWeight.w400,
             height: 1.45,
@@ -135,6 +203,7 @@ class _PhoneHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final imageSize =
@@ -160,7 +229,7 @@ class _PhoneHeroImage extends StatelessWidget {
                       colors: [
                         Colors.transparent,
                         Colors.transparent,
-                        Colors.black.withValues(alpha: 0.72),
+                        colors.background.withValues(alpha: 0.72),
                       ],
                       stops: const [0, 0.62, 1],
                     ),
@@ -186,23 +255,24 @@ class _WelcomeActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _WelcomeButton(
-          label: 'Criar conta',
+          label: context.tr.welcomeCreateAccountButton,
           onPressed: onCreateAccount,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          borderColor: Colors.white,
+          backgroundColor: colors.text,
+          foregroundColor: colors.background,
+          borderColor: colors.text,
         ),
         const SizedBox(height: 14),
         _WelcomeButton(
-          label: 'Já tenho conta',
+          label: context.tr.welcomeAlreadyHaveAccountButton,
           onPressed: onSignIn,
           backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          borderColor: Colors.white.withValues(alpha: 0.22),
+          foregroundColor: colors.text,
+          borderColor: colors.borderSoft,
         ),
       ],
     );
@@ -226,6 +296,7 @@ class _WelcomeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _AuthColors.of(context);
     return SizedBox(
       height: 58,
       child: TextButton(
@@ -246,7 +317,7 @@ class _WelcomeButton extends StatelessWidget {
           ),
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: colors.radiusButton,
               side: BorderSide(color: borderColor),
             ),
           ),

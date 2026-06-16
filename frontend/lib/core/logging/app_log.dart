@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 String sanitizeLogMessage(Object? message) {
   var sanitized = '$message';
 
@@ -28,7 +30,8 @@ String sanitizeLogMessage(Object? message) {
 }
 
 void appLog(Object? message) {
-  // Keep logging opt-in and sanitized at the boundary.
-  // ignore: avoid_print
-  print(sanitizeLogMessage(message));
+  if (!kDebugMode) {
+    return;
+  }
+  debugPrint(sanitizeLogMessage(message));
 }

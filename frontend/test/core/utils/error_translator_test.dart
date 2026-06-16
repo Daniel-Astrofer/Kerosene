@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/core/l10n/app_localizations_pt.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
@@ -6,6 +8,108 @@ void main() {
   final l10n = AppLocalizationsPt();
 
   group('ErrorTranslator', () {
+    test('maps standard numeric backend error codes to localized messages', () {
+      final expectations = <String, String>{
+        'AUTH_001': l10n.errAuthUserAlreadyExists,
+        'AUTH_002': l10n.errAuthUsernameMissing,
+        'AUTH_003': l10n.errAuthPassphraseMissing,
+        'AUTH_004': l10n.errAuthInvalidUsernameFormat,
+        'AUTH_005': l10n.errAuthCharLimitExceeded,
+        'AUTH_006': l10n.errAuthUserNotFound,
+        'AUTH_007': l10n.errAuthInvalidPassphraseFormat,
+        'AUTH_008': l10n.errAuthIncorrectTotp,
+        'AUTH_009': l10n.errAuthInvalidCredentials,
+        'AUTH_010': l10n.errPasskeyDeviceNotLinked,
+        'AUTH_011': l10n.errAuthTotpTimeout,
+        'AUTH_012': l10n.errPasskeyRequired,
+        'AUTH_013': l10n.errSessionExpired,
+        'AUTH_014': l10n.errPasskeyDeviceNotLinked,
+        'AUTH_015': l10n.errPasskeyRejected,
+        'AUTH_016': l10n.errPasskeyRejected,
+        'AUTH_017': l10n.errPasskeyDeviceNotLinked,
+        'AUTH_018': l10n.appEntryPinUnavailableMessage,
+        'AUTH_019': l10n.errAuthInvalidCredentials,
+        'AUTH_020': l10n.appEntryLockedHelper,
+        'AUTH_021': l10n.appEntryPinUnavailableMessage,
+        'AUTH_022': l10n.errPasskeyRejected,
+        'AUTH_099': l10n.errUnexpected,
+        'LEDGER_001': l10n.errLedgerNotFound,
+        'LEDGER_002': l10n.errLedgerReceiverNotFound,
+        'LEDGER_003': l10n.errLedgerAlreadyExists,
+        'LEDGER_004': l10n.errLedgerInsufficientBalance,
+        'LEDGER_005': l10n.errLedgerInvalidOperation,
+        'LEDGER_006': l10n.errLedgerPaymentRequestNotFound,
+        'LEDGER_007': l10n.errLedgerPaymentRequestExpired,
+        'LEDGER_008': l10n.errLedgerPaymentRequestAlreadyPaid,
+        'LEDGER_009': l10n.errLedgerPaymentRequestSelfPay,
+        'LEDGER_099': l10n.errLedgerGeneric,
+        'WALLET_001': l10n.errWalletAlreadyExists,
+        'WALLET_002': l10n.errWalletNotFound,
+        'WALLET_099': l10n.errWalletGeneric,
+        'HYDRA_001': l10n.errInternalServer,
+        'VAULT_001': l10n.errInternalServer,
+        'KRS_099': l10n.errInternalServer,
+        'SYS_001': l10n.errUnexpected,
+        'SYS_002': l10n.errUnexpected,
+        'SYS_404': l10n.errUnexpected,
+        'SYS_500': l10n.errInternalServer,
+      };
+
+      for (final entry in expectations.entries) {
+        expect(
+          ErrorTranslator.translate(l10n, entry.key),
+          entry.value,
+          reason: '${entry.key} should map to localized copy',
+        );
+      }
+    });
+
+    test('uses structured backend guidance for assisted financial UX', () {
+      final guidanceByCode = <String, String>{
+        'ERR_ACCOUNT_DEPOSIT_REQUIRED':
+            'Ative uma carteira ou adicione saldo para receber pela plataforma.',
+        'ERR_VAULT_NOT_READY':
+            'O cofre master não pôde ser ativado para esta conta. Tente novamente em instantes.',
+        'ERR_LEDGER_RECEIVER_NOT_READY':
+            'O destinatário ainda não concluiu a ativação da carteira.',
+        'ERR_KFE_RAIL_PROVIDER_UNAVAILABLE':
+            'Os serviços de custódia e trilhos financeiros estão indisponíveis no momento. Tente novamente mais tarde.',
+        'ERR_DUPLICATE_TRANSACTION':
+            'Esta transação já foi processada recentemente. Evite duplicidade.',
+      };
+
+      for (final entry in guidanceByCode.entries) {
+        final payload = jsonEncode({
+          'type': 'AppException',
+          'message': 'Backend fallback message',
+          'statusCode': 409,
+          'errorCode': entry.key,
+          'data': {'guidance': entry.value},
+        });
+
+        expect(
+          ErrorTranslator.translate(l10n, payload),
+          entry.value,
+          reason: '${entry.key} should prefer data.guidance',
+        );
+      }
+    });
+
+    test('uses sanitized backend message for validation system codes', () {
+      expect(
+        ErrorTranslator.translate(
+          l10n,
+          jsonEncode({
+            'type': 'AppException',
+            'message': 'Informe um valor válido para continuar.',
+            'statusCode': 400,
+            'errorCode': 'SYS_001',
+          }),
+        ),
+        'Informe um valor válido para continuar.',
+      );
+    });
+
     test('maps receiver not found to address unavailable', () {
       expect(
         ErrorTranslator.translate(l10n, 'ERR_LEDGER_RECEIVER_NOT_FOUND'),

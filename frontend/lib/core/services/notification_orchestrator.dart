@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/config/app_config.dart';
 import 'package:kerosene/core/network/api_client.dart';
 import 'package:kerosene/core/network/api_client_provider.dart';
 import 'package:kerosene/core/services/balance_websocket_service.dart';
+import 'package:kerosene/core/security/secure_storage_service.dart';
 
 final notificationOrchestratorProvider =
     Provider<NotificationOrchestrator>((ref) {
@@ -16,14 +16,17 @@ final notificationOrchestratorProvider =
 
 class NotificationOrchestrator {
   final ApiClient apiClient;
+  final SecureStorageService secureStorage;
   static const String _storageKey = 'local_notifications_inbox';
 
-  NotificationOrchestrator({required this.apiClient});
+  NotificationOrchestrator({
+    required this.apiClient,
+    SecureStorageService? secureStorage,
+  }) : secureStorage = secureStorage ?? SecureStorageService();
 
   Future<List<RealtimeNotificationEvent>> getInbox() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final storedStr = prefs.getString(_storageKey);
+      final storedStr = await secureStorage.read(key: _storageKey);
       List<RealtimeNotificationEvent> localList = [];
 
       if (storedStr != null && storedStr.isNotEmpty) {
@@ -72,7 +75,6 @@ class NotificationOrchestrator {
   }
 
   Future<void> _saveInbox(List<RealtimeNotificationEvent> list) async {
-    final prefs = await SharedPreferences.getInstance();
     final jsonList = list
         .map((n) => {
               'id': n.id,
@@ -87,7 +89,7 @@ class NotificationOrchestrator {
               'metadata': n.metadata,
             })
         .toList();
-    await prefs.setString(_storageKey, jsonEncode(jsonList));
+    await secureStorage.write(key: _storageKey, value: jsonEncode(jsonList));
   }
 
   Future<void> saveRealtimeNotification(RealtimeNotificationEvent event) async {

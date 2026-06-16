@@ -6,7 +6,6 @@ import 'package:dio/io.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:socks5_proxy/socks_client.dart';
 import 'package:kerosene/core/config/app_config.dart';
 import 'package:kerosene/core/errors/exceptions.dart';
@@ -16,11 +15,7 @@ import 'package:kerosene/core/services/tor_network_bootstrap.dart';
 import 'package:kerosene/core/services/tor_service.dart';
 
 Future<void> initializeCookieSupport(Dio dio) async {
-  final appDocDir = await getApplicationDocumentsDirectory();
-  final cookieJar = PersistCookieJar(
-    storage: FileStorage('${appDocDir.path}/.cookies/'),
-  );
-  dio.interceptors.add(CookieManager(cookieJar));
+  dio.interceptors.add(CookieManager(CookieJar()));
 }
 
 Future<void> ensureNetworkReady({

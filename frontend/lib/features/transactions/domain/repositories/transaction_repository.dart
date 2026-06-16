@@ -99,6 +99,7 @@ abstract class TransactionRepository {
     required double amount,
     String? totpCode,
     bool isLightning = false,
+    double networkFeeBtc = 0,
     double maxRoutingFeeBtc = 0.000001,
     String? description,
     String? confirmationPassphrase,

@@ -79,6 +79,14 @@ class PaymentLink extends Equatable {
         ? Map<String, dynamic>.from(json['data'] as Map)
         : json;
     double amountBtc = (data['amountBtc'] as num?)?.toDouble() ?? 0;
+    if (amountBtc == 0) {
+      final amountSats = (data['amountSats'] as num?)?.toDouble() ??
+          (data['receiverAmountSats'] as num?)?.toDouble() ??
+          (data['grossAmountSats'] as num?)?.toDouble();
+      if (amountSats != null && amountSats > 0) {
+        amountBtc = amountSats / 100000000.0;
+      }
+    }
     if (amountBtc == 0 && data['amount'] is num) {
       amountBtc = (data['amount'] as num).toDouble();
     }
@@ -89,22 +97,31 @@ class PaymentLink extends Equatable {
         (data['netAmountBtc'] as num?)?.toDouble() ?? amountBtc;
 
     final rawStatus = data['status']?.toString() ?? 'pending';
-    final normalizedStatus = rawStatus.toLowerCase();
+    final normalizedStatus = _normalizeStatus(
+      rawStatus,
+      txid: data['txid']?.toString() ?? data['blockchainTxid']?.toString(),
+    );
     final paymentIntentStatus =
         data['paymentIntentStatus']?.toString().toUpperCase() ??
             _paymentIntentStatusFor(normalizedStatus);
 
     return PaymentLink(
-      id: data['id']?.toString() ?? '',
+      id: data['id']?.toString() ??
+          data['transactionId']?.toString() ??
+          data['providerReference']?.toString() ??
+          '',
       userId: (data['userId'] as num?)?.toInt() ?? 0,
       sessionId: data['sessionId']?.toString(),
       amountBtc: amountBtc,
       grossAmountBtc: grossAmountBtc,
       depositFeeBtc: depositFeeBtc,
       netAmountBtc: netAmountBtc,
-      description: data['description']?.toString() ?? '',
+      description:
+          data['description']?.toString() ?? data['memo']?.toString() ?? '',
       depositAddress: data['depositAddress']?.toString() ??
           data['address']?.toString() ??
+          data['activeAddress']?.toString() ??
+          data['externalReference']?.toString() ??
           '',
       visibility: data['visibility']?.toString().toUpperCase() ?? 'PRIVATE',
       confirmationMode: data['confirmationMode']?.toString().toUpperCase() ??
@@ -123,7 +140,7 @@ class PaymentLink extends Equatable {
       paymentUri: data['paymentUri']?.toString(),
       locked: _parseBool(data['locked']),
       status: normalizedStatus,
-      txid: data['txid']?.toString(),
+      txid: data['txid']?.toString() ?? data['blockchainTxid']?.toString(),
       expiresAt: data['expiresAt'] != null
           ? DateTime.tryParse(data['expiresAt'].toString())
           : null,
@@ -140,7 +157,9 @@ class PaymentLink extends Equatable {
           ? DateTime.tryParse(data['cancelledAt'].toString())
           : null,
       cancelReason: data['cancelReason']?.toString(),
-      paymentRail: data['paymentRail']?.toString().toUpperCase() ?? 'ONCHAIN',
+      paymentRail: data['paymentRail']?.toString().toUpperCase() ??
+          data['rail']?.toString().toUpperCase() ??
+          'ONCHAIN',
       paymentIntentStatus: paymentIntentStatus,
       settlementReference: data['settlementReference']?.toString(),
       terminal: _parseBool(
@@ -229,6 +248,35 @@ class PaymentLink extends Equatable {
         return 'PROCESSING';
       default:
         return 'REQUIRES_RECONCILIATION';
+    }
+  }
+
+  static String _normalizeStatus(String status, {String? txid}) {
+    final normalized = status.trim().toUpperCase();
+    switch (normalized) {
+      case 'ACTIVE':
+      case 'PENDING':
+      case 'CREATED':
+      case 'IDENTIFIED':
+        return 'pending';
+      case 'SETTLED':
+      case 'PAID':
+        return 'paid';
+      case 'COMPLETED':
+      case 'CONFIRMED':
+        return 'completed';
+      case 'EXPIRED':
+        return 'expired';
+      case 'CANCELED':
+      case 'CANCELLED':
+        return 'cancelled';
+      case 'FAILED':
+        return 'failed';
+      default:
+        if ((txid ?? '').trim().isNotEmpty) {
+          return 'paid';
+        }
+        return normalized.toLowerCase();
     }
   }
 

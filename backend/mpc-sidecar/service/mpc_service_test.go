@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
+	"strings"
 	"sync"
 	"testing"
 
@@ -45,6 +46,14 @@ func TestMpcKeygenAndSign(t *testing.T) {
 	if len(sign.Signature) != ed25519.SignatureSize {
 		t.Fatalf("signature length = %d, want %d", len(sign.Signature), ed25519.SignatureSize)
 	}
+
+	publicKey, err := base64.StdEncoding.DecodeString(keygen.PublicKey)
+	if err != nil {
+		t.Fatalf("public key is not valid base64: %v", err)
+	}
+	if !ed25519.Verify(ed25519.PublicKey(publicKey), messageHash[:], sign.Signature) {
+		t.Fatal("signature did not verify against returned public key")
+	}
 }
 
 func TestMpcSignRejectsWrongPublicKey(t *testing.T) {
@@ -71,6 +80,44 @@ func TestMpcSignRejectsWrongPublicKey(t *testing.T) {
 	}
 	if sign.Success {
 		t.Fatal("sign succeeded with wrong public key")
+	}
+}
+
+func TestMpcRequestsRejectNilWithoutPanic(t *testing.T) {
+	service := &MpcService{}
+
+	keygen, err := service.Keygen(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("keygen returned transport error: %v", err)
+	}
+	if keygen.Success || keygen.ErrorMessage == "" {
+		t.Fatalf("keygen nil request response = %+v, want validation failure", keygen)
+	}
+
+	sign, err := service.Sign(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("sign returned transport error: %v", err)
+	}
+	if sign.Success || sign.ErrorMessage == "" {
+		t.Fatalf("sign nil request response = %+v, want validation failure", sign)
+	}
+}
+
+func TestShardNameForUserIDDoesNotExposeOrCollapseUserIDs(t *testing.T) {
+	userID := "alice@example.com"
+	shardName := shardNameForUserID(userID)
+
+	if !strings.HasPrefix(shardName, "user_") {
+		t.Fatalf("shard name %q does not use the hashed user prefix", shardName)
+	}
+	if strings.Contains(shardName, "alice") || strings.Contains(shardName, "example") {
+		t.Fatalf("shard name %q exposes the user id", shardName)
+	}
+	if shardName != shardNameForUserID("  "+userID+"  ") {
+		t.Fatal("shard names must remain stable across leading/trailing whitespace")
+	}
+	if shardNameForUserID("alice/bob") == shardNameForUserID("alice_bob") {
+		t.Fatal("hashed shard names must not collapse sanitized user id collisions")
 	}
 }
 

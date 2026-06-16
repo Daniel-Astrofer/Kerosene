@@ -32,6 +32,7 @@ class ReceivedTxEvent {
 }
 
 const double _balanceChangeEpsilon = 0.000000001;
+final RegExp _nonAddressCharacterPattern = RegExp(r'[^a-zA-Z0-9]');
 
 class ReceivedTxEventNotifier extends Notifier<ReceivedTxEvent?> {
   static const int _maxRememberedEvents = 64;
@@ -100,19 +101,7 @@ final balanceWebSocketServiceProvider =
   try {
     token = await ref.read(authLocalDataSourceProvider).getToken();
     debugPrint('BalanceWebSocket: session credential lookup completed.');
-    if (token != null) {
-      if (token.startsWith('"') && token.endsWith('"')) {
-        token = token.substring(1, token.length - 1).trim();
-      }
-      if (token.startsWith('Bearer ')) {
-        token = token.substring(7).trim();
-      }
-      // Garante que o Token comece exclusivamente com 'eyJ' (Assinatura JWT Padrão)
-      // Isso limpa qualquer prefixo corrompido no SharedPreferences local do cache antigo
-      if (token.contains('eyJ')) {
-        token = token.substring(token.indexOf('eyJ'));
-      }
-    }
+    token = _normalizeSessionToken(token);
     if (token != null && token.length < 10) {
       debugPrint('BalanceWebSocket: session credential was rejected locally.');
     }
@@ -155,25 +144,7 @@ final balanceWebSocketServiceProvider =
         final receivedAmount = update.amount > 0 ? update.amount : delta;
 
         if (receivedAmount > _balanceChangeEpsilon) {
-          // Heuristic to find address in context if sender is missing
-          String? extractedSender =
-              (update.sender != null && update.sender!.isNotEmpty)
-                  ? update.sender
-                  : null;
-
-          if (extractedSender == null && update.context.isNotEmpty) {
-            final words = update.context.split(' ');
-            for (final word in words) {
-              final clean = word.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-              if (clean.length >= 26 &&
-                  (clean.startsWith('1') ||
-                      clean.startsWith('3') ||
-                      clean.startsWith('bc1'))) {
-                extractedSender = clean;
-                break;
-              }
-            }
-          }
+          final extractedSender = _extractSenderAddress(update);
 
           // Balance increased — trigger history refresh from server
           ref.invalidate(transactionHistoryProvider);
@@ -253,6 +224,49 @@ final balanceWebSocketServiceProvider =
 
   return service;
 });
+
+String? _normalizeSessionToken(String? token) {
+  if (token == null) {
+    return null;
+  }
+
+  var normalized = token.trim();
+  if (normalized.startsWith('"') && normalized.endsWith('"')) {
+    normalized = normalized.substring(1, normalized.length - 1).trim();
+  }
+  if (normalized.startsWith('Bearer ')) {
+    normalized = normalized.substring(7).trim();
+  }
+  if (normalized.contains('eyJ')) {
+    normalized = normalized.substring(normalized.indexOf('eyJ'));
+  }
+  return normalized;
+}
+
+String? _extractSenderAddress(BalanceUpdate update) {
+  final sender = update.sender;
+  if (sender != null && sender.isNotEmpty) {
+    return sender;
+  }
+  if (update.context.isEmpty) {
+    return null;
+  }
+
+  for (final word in update.context.split(' ')) {
+    final clean = word.replaceAll(_nonAddressCharacterPattern, '');
+    if (_looksLikeBitcoinAddress(clean)) {
+      return clean;
+    }
+  }
+  return null;
+}
+
+bool _looksLikeBitcoinAddress(String value) {
+  return value.length >= 26 &&
+      (value.startsWith('1') ||
+          value.startsWith('3') ||
+          value.startsWith('bc1'));
+}
 
 String _buildReceivedEventId({
   required BalanceUpdate update,

@@ -19,6 +19,7 @@ Shows local backend logs with noisy sync/healthcheck lines filtered by default.
 
 Options:
   --raw             Show unfiltered docker compose logs.
+  --dashboard       Open the local animated status dashboard.
   --no-follow       Print the current tail and exit.
   --tail N          Number of recent lines per service to read first.
   --filter-only     Read stdin and apply the local noise filter. Useful for tests.
@@ -30,6 +31,9 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --dashboard)
+      exec "$SCRIPT_DIR/status-local.sh"
+      ;;
     --raw|--include-noisy)
       RAW=1
       ;;

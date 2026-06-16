@@ -3,7 +3,6 @@
 
 x-app-limits: &app-limits
   cpus: "${KEROSENE_LOCAL_APP_CPUS:-0.75}"
-  mem_limit: "${KEROSENE_LOCAL_APP_MEMORY:-768M}"
   deploy:
     resources:
       limits:
@@ -12,7 +11,6 @@ x-app-limits: &app-limits
 
 x-db-limits: &db-limits
   cpus: "${KEROSENE_LOCAL_DB_CPUS:-0.50}"
-  mem_limit: "${KEROSENE_LOCAL_DB_MEMORY:-384M}"
   deploy:
     resources:
       limits:
@@ -21,7 +19,6 @@ x-db-limits: &db-limits
 
 x-redis-limits: &redis-limits
   cpus: "${KEROSENE_LOCAL_REDIS_CPUS:-0.25}"
-  mem_limit: "${KEROSENE_LOCAL_REDIS_MEMORY:-128M}"
   deploy:
     resources:
       limits:
@@ -30,7 +27,6 @@ x-redis-limits: &redis-limits
 
 x-mpc-limits: &mpc-limits
   cpus: "${KEROSENE_LOCAL_MPC_CPUS:-0.50}"
-  mem_limit: "${KEROSENE_LOCAL_MPC_MEMORY:-256M}"
   deploy:
     resources:
       limits:
@@ -39,7 +35,6 @@ x-mpc-limits: &mpc-limits
 
 x-tor-limits: &tor-limits
   cpus: "${KEROSENE_LOCAL_TOR_CPUS:-0.25}"
-  mem_limit: "${KEROSENE_LOCAL_TOR_MEMORY:-128M}"
   deploy:
     resources:
       limits:
@@ -48,7 +43,6 @@ x-tor-limits: &tor-limits
 
 x-vanguards-limits: &vanguards-limits
   cpus: "${KEROSENE_LOCAL_VANGUARDS_CPUS:-0.25}"
-  mem_limit: "${KEROSENE_LOCAL_VANGUARDS_MEMORY:-96M}"
   deploy:
     resources:
       limits:
@@ -57,7 +51,6 @@ x-vanguards-limits: &vanguards-limits
 
 x-vault-limits: &vault-limits
   cpus: "${KEROSENE_LOCAL_VAULT_CPUS:-0.50}"
-  mem_limit: "${KEROSENE_LOCAL_VAULT_MEMORY:-512M}"
   deploy:
     resources:
       limits:
@@ -66,7 +59,6 @@ x-vault-limits: &vault-limits
 
 x-vault-raft-limits: &vault-raft-limits
   cpus: "${KEROSENE_LOCAL_VAULT_RAFT_CPUS:-0.50}"
-  mem_limit: "${KEROSENE_LOCAL_VAULT_RAFT_MEMORY:-512M}"
   deploy:
     resources:
       limits:
@@ -75,16 +67,14 @@ x-vault-raft-limits: &vault-raft-limits
 
 x-bitcoin-limits: &bitcoin-limits
   cpus: "${KEROSENE_LOCAL_BITCOIN_CPUS:-2.00}"
-  mem_limit: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-2048M}"
   deploy:
     resources:
       limits:
         cpus: "${KEROSENE_LOCAL_BITCOIN_CPUS:-2.00}"
-        memory: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-2048M}"
+        memory: "${KEROSENE_LOCAL_BITCOIN_MEMORY:-4096M}"
 
 x-lnd-limits: &lnd-limits
   cpus: "${KEROSENE_LOCAL_LND_CPUS:-0.50}"
-  mem_limit: "${KEROSENE_LOCAL_LND_MEMORY:-512M}"
   deploy:
     resources:
       limits:
@@ -93,7 +83,6 @@ x-lnd-limits: &lnd-limits
 
 x-small-job-limits: &small-job-limits
   cpus: "${KEROSENE_LOCAL_JOB_CPUS:-0.50}"
-  mem_limit: "${KEROSENE_LOCAL_JOB_MEMORY:-192M}"
   deploy:
     resources:
       limits:
@@ -118,7 +107,6 @@ services:
     <<: *bitcoin-limits
   bitcoin-indexer:
     cpus: "${KEROSENE_LOCAL_INDEXER_CPUS:-0.75}"
-    mem_limit: "${KEROSENE_LOCAL_INDEXER_MEMORY:-1024M}"
     deploy:
       resources:
         limits:
@@ -183,7 +171,6 @@ services:
 
   web-admin:
     cpus: "${KEROSENE_LOCAL_WEB_CPUS:-0.25}"
-    mem_limit: "${KEROSENE_LOCAL_WEB_MEMORY:-128M}"
     deploy:
       resources:
         limits:
@@ -191,7 +178,6 @@ services:
           memory: "${KEROSENE_LOCAL_WEB_MEMORY:-128M}"
   prometheus:
     cpus: "${KEROSENE_LOCAL_PROMETHEUS_CPUS:-0.50}"
-    mem_limit: "${KEROSENE_LOCAL_PROMETHEUS_MEMORY:-384M}"
     deploy:
       resources:
         limits:

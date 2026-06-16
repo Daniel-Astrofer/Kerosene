@@ -31,7 +31,7 @@ RUN ./gradlew dependencies --no-daemon --max-workers=${GRADLE_MAX_WORKERS} --qui
 
 # ── Layer 3: Source compilation ───────────────────────────────────────────────
 COPY src src/
-COPY docker docker/
+COPY deploy/docker docker/
 COPY web-admin-build web-admin-build/
 RUN ./gradlew bootJar --no-daemon --max-workers=${GRADLE_MAX_WORKERS} -x test
 RUN javac docker/Healthcheck.java -d /workspace/healthcheck

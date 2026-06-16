@@ -88,7 +88,7 @@ class _DepositOnchainInvoiceScreenState
 
       final allocation =
           await ref.read(transactionRepositoryProvider).issueOnchainAddress(
-                walletName: widget.wallet.name,
+                walletName: widget.wallet.id,
                 expectedAmountBtc: expectedAmountBtc,
               );
       final normalized = allocation.onchainAddress.trim();

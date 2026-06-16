@@ -12,7 +12,6 @@ class BitcoinAccount {
   final int balanceLockedSats;
   final int balanceAutoHoldSats;
   final int observedBalanceSats;
-  final int dailyLimitSats;
   final String? xpubFingerprint;
   final String? derivationPath;
   final String? scriptPolicy;
@@ -31,7 +30,6 @@ class BitcoinAccount {
     this.balanceLockedSats = 0,
     this.balanceAutoHoldSats = 0,
     this.observedBalanceSats = 0,
-    this.dailyLimitSats = 0,
     this.xpubFingerprint,
     this.derivationPath,
     this.scriptPolicy,
@@ -65,7 +63,6 @@ class BitcoinAccount {
       balanceLockedSats: _intFromJson(json['balanceLockedSats']),
       balanceAutoHoldSats: _intFromJson(json['balanceAutoHoldSats']),
       observedBalanceSats: _intFromJson(json['observedBalanceSats']),
-      dailyLimitSats: _intFromJson(json['dailyLimitSats']),
       xpubFingerprint:
           (json['xpubFingerprint'] ?? json['fingerprint']) as String?,
       derivationPath: json['derivationPath'] as String?,
@@ -87,7 +84,6 @@ class BitcoinAccount {
         'balanceLockedSats': balanceLockedSats,
         'balanceAutoHoldSats': balanceAutoHoldSats,
         'observedBalanceSats': observedBalanceSats,
-        'dailyLimitSats': dailyLimitSats,
         'xpubFingerprint': xpubFingerprint,
         'derivationPath': derivationPath,
         'scriptPolicy': scriptPolicy,
@@ -155,6 +151,34 @@ class ReceivingRequestView {
       oneTime: json['oneTime'] as bool? ?? true,
       createdAt: DateTime.tryParse(createdAt ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
+  factory ReceivingRequestView.fromKfeActiveAddress({
+    required String accountId,
+    required String address,
+    int? amountSats,
+    String expiry = '',
+    bool oneTime = false,
+    DateTime? createdAt,
+  }) {
+    final normalizedAddress = address.trim();
+    final amountBtc = amountSats == null
+        ? null
+        : (amountSats / 100000000.0).toStringAsFixed(8);
+    final bip21 = amountBtc == null
+        ? 'bitcoin:$normalizedAddress'
+        : 'bitcoin:$normalizedAddress?amount=$amountBtc';
+    return ReceivingRequestView(
+      id: 'kfe:$accountId:$normalizedAddress',
+      accountId: accountId,
+      address: normalizedAddress,
+      bip21: bip21,
+      status: 'ACTIVE',
+      amountSats: amountSats,
+      expiry: expiry,
+      oneTime: oneTime,
+      createdAt: createdAt ?? DateTime.now(),
     );
   }
 

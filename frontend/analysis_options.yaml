@@ -12,8 +12,11 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
+    - build/**
     - lib/src/bridge_generated.dart
     - lib/storybook/**
+    - third_party/lucide_icons/test/**
+    - third_party/lucide_icons/tool/**
 
 linter:
   # The lint rules applied to this project can be customized in the

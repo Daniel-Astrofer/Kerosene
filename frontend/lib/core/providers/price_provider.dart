@@ -4,7 +4,8 @@ import '../network/api_client_provider.dart';
 import '../services/price_websocket_service.dart';
 
 /// Provider for WebSocket price service
-final priceWebSocketServiceProvider = Provider<PriceWebSocketService>((ref) {
+final priceWebSocketServiceProvider =
+    Provider.autoDispose<PriceWebSocketService>((ref) {
   final service = PriceWebSocketService();
   service.connect();
 
@@ -17,17 +18,18 @@ final priceWebSocketServiceProvider = Provider<PriceWebSocketService>((ref) {
 });
 
 /// Stream provider for BTC price in USD
-final btcPriceProvider = StreamProvider<double>((ref) {
+final btcPriceProvider = StreamProvider.autoDispose<double>((ref) {
   final service = ref.watch(priceWebSocketServiceProvider);
   return service.priceStream;
 });
 
-final btcTickerProvider = StreamProvider<PriceTickerSnapshot>((ref) {
+final btcTickerProvider =
+    StreamProvider.autoDispose<PriceTickerSnapshot>((ref) {
   final service = ref.watch(priceWebSocketServiceProvider);
   return service.tickerStream;
 });
 
-final btcDailyChangePercentProvider = Provider<double?>((ref) {
+final btcDailyChangePercentProvider = Provider.autoDispose<double?>((ref) {
   final tickerAsync = ref.watch(btcTickerProvider);
   return tickerAsync.whenOrNull(
     data: (ticker) => ticker.dailyChangePercent,
@@ -36,7 +38,7 @@ final btcDailyChangePercentProvider = Provider<double?>((ref) {
 
 /// Provider for latest BTC price (synchronous access).
 /// Falls back to backend HTTP price when the external WebSocket feed is unavailable.
-final latestBtcPriceProvider = Provider<double?>((ref) {
+final latestBtcPriceProvider = Provider.autoDispose<double?>((ref) {
   final priceAsync = ref.watch(btcPriceProvider);
   final wsPrice = priceAsync.whenOrNull(data: (price) => price);
 
@@ -83,7 +85,8 @@ class BackendBtcRates {
   }
 }
 
-final backendBtcRatesProvider = FutureProvider<BackendBtcRates?>((ref) async {
+final backendBtcRatesProvider =
+    FutureProvider.autoDispose<BackendBtcRates?>((ref) async {
   try {
     final apiClient = ref.watch(apiClientProvider);
     final response = await apiClient.get('/api/economy/btc-price');
@@ -94,13 +97,13 @@ final backendBtcRatesProvider = FutureProvider<BackendBtcRates?>((ref) async {
   }
 });
 
-final usdBrlRateProvider = Provider<double?>((ref) {
+final usdBrlRateProvider = Provider.autoDispose<double?>((ref) {
   final backendRates = ref.watch(backendBtcRatesProvider);
   return backendRates.asData?.value?.usdBrl;
 });
 
 /// Provider for BTC/EUR exchange rate
-final btcEurPriceProvider = Provider<double?>((ref) {
+final btcEurPriceProvider = Provider.autoDispose<double?>((ref) {
   final backendRates = ref.watch(backendBtcRatesProvider).asData?.value;
   final btcEur = backendRates?.btcEur;
   if (btcEur != null && btcEur > 0) {
@@ -110,7 +113,7 @@ final btcEurPriceProvider = Provider<double?>((ref) {
 });
 
 /// Provider for BTC/BRL exchange rate
-final btcBrlPriceProvider = Provider<double?>((ref) {
+final btcBrlPriceProvider = Provider.autoDispose<double?>((ref) {
   final backendRates = ref.watch(backendBtcRatesProvider).asData?.value;
   final backendBrl = backendRates?.btcBrl;
   if (backendBrl != null && backendBrl > 0) {
@@ -144,7 +147,7 @@ enum Currency {
 }
 
 final currencyQuoteProvider =
-    Provider.family<double?, Currency>((ref, currency) {
+    Provider.autoDispose.family<double?, Currency>((ref, currency) {
   switch (currency) {
     case Currency.btc:
       return 1;

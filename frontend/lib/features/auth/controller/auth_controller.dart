@@ -27,6 +27,10 @@ class AuthController extends Notifier<AuthState> {
   bool _isPollingOnboarding = false;
   bool _isCompletingOnboarding = false;
   static const int _maxTransparentChallengeRenewals = 2;
+  static final RegExp _passkeyErrorCodePattern = RegExp(
+    r'(ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS|ERR_AUTH_PASSKEY_AUTH_CANCELLED|ERR_AUTH_PASSKEY_NOT_REGISTERED|ERR_AUTH_PASSKEY_CORRUPTED_KEY_MATERIAL)',
+  );
+  static final RegExp _hexChallengePattern = RegExp(r'^[0-9a-fA-F]{64}$');
 
   AuthError _mapFailureToAuthError(Failure failure) {
     return AuthError(
@@ -42,9 +46,7 @@ class AuthController extends Notifier<AuthState> {
     required String fallbackMessage,
   }) {
     final raw = error.toString().trim();
-    final knownCode = RegExp(
-      r'(ERR_AUTH_PASSKEY_NO_LOCAL_CREDENTIALS|ERR_AUTH_PASSKEY_AUTH_CANCELLED|ERR_AUTH_PASSKEY_NOT_REGISTERED|ERR_AUTH_PASSKEY_CORRUPTED_KEY_MATERIAL)',
-    ).firstMatch(raw);
+    final knownCode = _passkeyErrorCodePattern.firstMatch(raw);
 
     if (knownCode != null) {
       return AuthError(
@@ -152,55 +154,68 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    _isPollingOnboarding = true;
-    final result = await authRepository.getActivationStatus();
-    _isPollingOnboarding = false;
+    try {
+      _isPollingOnboarding = true;
+      final result = await authRepository.getActivationStatus();
 
-    result.fold(
-      (failure) {
-        final latestState = state;
-        if (latestState is AuthPaymentRequired &&
-            latestState.paymentLinkId == linkId) {
+      result.fold(
+        (failure) {
+          final latestState = state;
+          if (latestState is AuthPaymentRequired &&
+              latestState.paymentLinkId == linkId) {
+            state = latestState.copyWith(
+              isSubmitting: false,
+              errorMessage: failure.message,
+            );
+          }
+        },
+        (status) {
+          final latestState = state;
+          if (latestState is! AuthPaymentRequired ||
+              latestState.paymentLinkId != linkId) {
+            _stopOnboardingPolling();
+            return;
+          }
+
           state = latestState.copyWith(
+            amountBtc: status.amountBtc > 0
+                ? status.amountBtc
+                : latestState.amountBtc,
+            depositAddress: status.depositAddress.isNotEmpty
+                ? status.depositAddress
+                : latestState.depositAddress,
+            paymentStatus: status.paymentStatus.isNotEmpty
+                ? status.paymentStatus
+                : latestState.paymentStatus,
+            statusMessage: status.warningMessage.isNotEmpty
+                ? status.warningMessage
+                : _statusMessageForPaymentStatus(status.paymentStatus),
             isSubmitting: false,
-            errorMessage: failure.message,
+            clearError: true,
           );
-        }
-      },
-      (status) {
-        final latestState = state;
-        if (latestState is! AuthPaymentRequired ||
-            latestState.paymentLinkId != linkId) {
-          _stopOnboardingPolling();
-          return;
-        }
 
+          if (status.activated) {
+            _completeOnboardingAndLogin(
+              username: username,
+              password: password,
+            );
+          } else if (status.paymentStatus == 'expired') {
+            _stopOnboardingPolling();
+          }
+        },
+      );
+    } catch (error) {
+      final latestState = state;
+      if (latestState is AuthPaymentRequired &&
+          latestState.paymentLinkId == linkId) {
         state = latestState.copyWith(
-          amountBtc:
-              status.amountBtc > 0 ? status.amountBtc : latestState.amountBtc,
-          depositAddress: status.depositAddress.isNotEmpty
-              ? status.depositAddress
-              : latestState.depositAddress,
-          paymentStatus: status.paymentStatus.isNotEmpty
-              ? status.paymentStatus
-              : latestState.paymentStatus,
-          statusMessage: status.warningMessage.isNotEmpty
-              ? status.warningMessage
-              : _statusMessageForPaymentStatus(status.paymentStatus),
           isSubmitting: false,
-          clearError: true,
+          errorMessage: 'Erro inesperado: $error',
         );
-
-        if (status.activated) {
-          _completeOnboardingAndLogin(
-            username: username,
-            password: password,
-          );
-        } else if (status.paymentStatus == 'expired') {
-          _stopOnboardingPolling();
-        }
-      },
-    );
+      }
+    } finally {
+      _isPollingOnboarding = false;
+    }
   }
 
   Future<void> _checkAuthStatus() async {
@@ -236,29 +251,33 @@ class AuthController extends Notifier<AuthState> {
     required String password,
   }) async {
     _stopOnboardingPolling();
-    state = const AuthLoading();
-    final result = await loginUseCase(
-      LoginParams(username: username, passphrase: password),
-    );
+    try {
+      state = const AuthLoading();
+      final result = await loginUseCase(
+        LoginParams(username: username, passphrase: password),
+      );
 
-    result.fold(
-      (failure) async {
-        AudioService.instance.playError();
-        await authRepository.clearInvalidSession();
-        state = _mapFailureToAuthError(failure);
-      },
-      (loginResult) {
-        if (loginResult.requiresTotp) {
-          state = AuthRequiresLoginTotp(
-            username: username,
-            passphrase: password,
-            preAuthToken: loginResult.jwt,
-          );
-        } else {
-          _checkAuthStatus();
-        }
-      },
-    );
+      result.fold(
+        (failure) async {
+          AudioService.instance.playError();
+          await authRepository.clearInvalidSession();
+          state = _mapFailureToAuthError(failure);
+        },
+        (loginResult) {
+          if (loginResult.requiresTotp) {
+            state = AuthRequiresLoginTotp(
+              username: username,
+              passphrase: password,
+              preAuthToken: loginResult.jwt,
+            );
+          } else {
+            _checkAuthStatus();
+          }
+        },
+      );
+    } catch (e) {
+      state = AuthError('Erro inesperado: $e');
+    }
   }
 
   Future<void> signup({
@@ -269,33 +288,37 @@ class AuthController extends Notifier<AuthState> {
     int? shamirThreshold,
     int? multisigThreshold,
   }) async {
-    state = const AuthLoading();
-    final result = await signupUseCase(
-      SignupParams(
-        username: username,
-        passphrase: password,
-        accountSecurity: accountSecurity,
-        shamirTotalShares: shamirTotalShares,
-        shamirThreshold: shamirThreshold,
-        multisigThreshold: multisigThreshold,
-      ),
-    );
+    try {
+      state = const AuthLoading();
+      final result = await signupUseCase(
+        SignupParams(
+          username: username,
+          passphrase: password,
+          accountSecurity: accountSecurity,
+          shamirTotalShares: shamirTotalShares,
+          shamirThreshold: shamirThreshold,
+          multisigThreshold: multisigThreshold,
+        ),
+      );
 
-    result.fold(
-      (failure) {
-        AudioService.instance.playError();
-        state = _mapFailureToAuthError(failure);
-      },
-      (signupResult) => state = AuthRequiresTotpSetup(
-        username: username,
-        passphrase: password,
-        sessionId: signupResult.sessionId,
-        totpSecret: signupResult.totpSecret,
-        qrCodeUri: signupResult.qrCodeUri,
-        backupCodes: signupResult.backupCodes,
-        totpOptional: signupResult.totpOptional,
-      ),
-    );
+      result.fold(
+        (failure) {
+          AudioService.instance.playError();
+          state = _mapFailureToAuthError(failure);
+        },
+        (signupResult) => state = AuthRequiresTotpSetup(
+          username: username,
+          passphrase: password,
+          sessionId: signupResult.sessionId,
+          totpSecret: signupResult.totpSecret,
+          qrCodeUri: signupResult.qrCodeUri,
+          backupCodes: signupResult.backupCodes,
+          totpOptional: signupResult.totpOptional,
+        ),
+      );
+    } catch (e) {
+      state = AuthError('Erro inesperado: $e');
+    }
   }
 
   Future<void> verifyTotp({
@@ -367,10 +390,14 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> logout() async {
     _stopOnboardingPolling();
-    state = const AuthLoading();
-    await authRepository.logout();
-    state = const AuthUnauthenticated();
-    stopBackgroundService();
+    try {
+      state = const AuthLoading();
+      await authRepository.logout();
+      await stopBackgroundService();
+      state = const AuthUnauthenticated();
+    } catch (e) {
+      state = AuthError('Erro ao sair: $e');
+    }
   }
 
   void markSessionInvalidated() {
@@ -500,13 +527,13 @@ class AuthController extends Notifier<AuthState> {
       return null;
     }
     final value = failure.message.substring(markerIndex + marker.length).trim();
-    return RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(value) ? value : null;
+    return _hexChallengePattern.hasMatch(value) ? value : null;
   }
 
   String? _extractChallengeFromValue(Object? value) {
     if (value is Map) {
       final direct = value['challenge']?.toString().trim();
-      if (direct != null && RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(direct)) {
+      if (direct != null && _hexChallengePattern.hasMatch(direct)) {
         return direct;
       }
       return _extractChallengeFromValue(value['data']);
@@ -656,8 +683,12 @@ class AuthController extends Notifier<AuthState> {
     required String password,
   }) async {
     _stopOnboardingPolling();
-    state = const AuthLoading();
-    await _loadActivationDepositState(sessionId: sessionId);
+    try {
+      state = const AuthLoading();
+      await _loadActivationDepositState(sessionId: sessionId);
+    } catch (e) {
+      state = AuthError('Erro inesperado: $e');
+    }
   }
 
   Future<void> submitOnboardingPayment({
@@ -671,71 +702,82 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    state = currentState.copyWith(
-      isSubmitting: true,
-      statusMessage: 'Atualizando o status do depósito de ativação...',
-      clearError: true,
-    );
+    try {
+      state = currentState.copyWith(
+        isSubmitting: true,
+        statusMessage: 'Atualizando o status do depósito de ativação...',
+        clearError: true,
+      );
 
-    final result = await authRepository.getActivationStatus();
+      final result = await authRepository.getActivationStatus();
 
-    result.fold(
-      (failure) {
-        final latestState = state;
-        if (latestState is AuthPaymentRequired) {
+      result.fold(
+        (failure) {
+          final latestState = state;
+          if (latestState is AuthPaymentRequired) {
+            state = latestState.copyWith(
+              isSubmitting: false,
+              errorMessage: failure.message,
+            );
+          } else {
+            state = _mapFailureToAuthError(failure);
+          }
+        },
+        (status) {
+          final latestState = state;
+          if (latestState is! AuthPaymentRequired) {
+            return;
+          }
+
           state = latestState.copyWith(
+            paymentStatus: status.paymentStatus.isNotEmpty
+                ? status.paymentStatus
+                : latestState.paymentStatus,
+            statusMessage: status.warningMessage.isNotEmpty
+                ? status.warningMessage
+                : _statusMessageForPaymentStatus(status.paymentStatus),
             isSubmitting: false,
-            errorMessage: failure.message,
+            errorMessage: status.activated
+                ? null
+                : 'A confirmação manual por TXID foi descontinuada. Faça o depósito pelo fluxo de recebimento do app e aguarde o monitoramento automático.',
+            clearError: status.activated,
           );
-        } else {
-          state = _mapFailureToAuthError(failure);
-        }
-      },
-      (status) {
-        final latestState = state;
-        if (latestState is! AuthPaymentRequired) {
-          return;
-        }
 
-        state = latestState.copyWith(
-          paymentStatus: status.paymentStatus.isNotEmpty
-              ? status.paymentStatus
-              : latestState.paymentStatus,
-          statusMessage: status.warningMessage.isNotEmpty
-              ? status.warningMessage
-              : _statusMessageForPaymentStatus(status.paymentStatus),
-          isSubmitting: false,
-          errorMessage: status.activated
-              ? null
-              : 'A confirmação manual por TXID foi descontinuada. Faça o depósito pelo fluxo de recebimento do app e aguarde o monitoramento automático.',
-          clearError: status.activated,
-        );
+          if (status.activated) {
+            _completeOnboardingAndLogin(
+              username: username,
+              password: password,
+            );
+            return;
+          }
 
-        if (status.activated) {
-          _completeOnboardingAndLogin(
+          if (status.paymentStatus == 'expired') {
+            _stopOnboardingPolling();
+            return;
+          }
+
+          _startOnboardingPolling(
+            linkId: linkId,
             username: username,
             password: password,
           );
-          return;
-        }
-
-        if (status.paymentStatus == 'expired') {
-          _stopOnboardingPolling();
-          return;
-        }
-
-        _startOnboardingPolling(
-          linkId: linkId,
-          username: username,
-          password: password,
+          unawaited(_pollOnboardingPaymentStatus(
+            linkId: linkId,
+            username: username,
+            password: password,
+          ));
+        },
+      );
+    } catch (e) {
+      if (state is AuthPaymentRequired) {
+        state = (state as AuthPaymentRequired).copyWith(
+          isSubmitting: false,
+          errorMessage: 'Erro inesperado: $e',
         );
-        unawaited(_pollOnboardingPaymentStatus(
-          linkId: linkId,
-          username: username,
-          password: password,
-        ));
-      },
-    );
+      } else {
+        state = AuthError('Erro inesperado: $e');
+      }
+    }
   }
 
   Future<void> continueAfterOnboardingPayment({

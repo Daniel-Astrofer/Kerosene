@@ -6,6 +6,7 @@ import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/features/payments/domain/payment_intent_models.dart';
 import 'package:kerosene/features/payments/presentation/providers/payment_intent_provider.dart';
 import 'package:kerosene/features/payments/presentation/widgets/payment_intent_widgets.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 
 class PaymentIntentFlowScreen extends ConsumerStatefulWidget {
   final String initialRecipient;
@@ -212,7 +213,7 @@ class _PaymentIntentFlowScreenState
   Future<void> _confirmQuote(BuildContext context, PaymentQuote quote) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF111113),
+      backgroundColor: AppColors.surface,
       builder: (sheetContext) {
         return PaymentConfirmationSheet(
           quote: quote,
@@ -239,11 +240,11 @@ class _Header extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: const Color(0xFF171719),
-            border: Border.all(color: const Color(0xFF2A2A2E)),
+            color: AppColors.surfaceLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(LucideIcons.send, color: Colors.white, size: 20),
+          child: const Icon(LucideIcons.send, color: AppColors.white, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -253,7 +254,7 @@ class _Header extends StatelessWidget {
               Text(
                 context.tr.paymentIntentScreenTitle,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -262,7 +263,7 @@ class _Header extends StatelessWidget {
               Text(
                 context.tr.paymentIntentScreenSubtitle,
                 style: const TextStyle(
-                  color: Color(0xFF9A9AA0),
+                  color: AppColors.textMuted,
                   fontSize: 13,
                 ),
               ),
@@ -273,7 +274,7 @@ class _Header extends StatelessWidget {
           Text(
             paymentIntentStatusLabel(context, status!),
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.white,
               fontSize: 11,
               fontWeight: FontWeight.w800,
             ),

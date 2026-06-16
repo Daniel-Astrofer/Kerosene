@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
 
+import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../core/providers/appearance_provider.dart';
@@ -17,18 +18,23 @@ import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/screens/emergency_recovery_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
-import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
-import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
-import '../features/wallet/presentation/screens/send_money_screen.dart';
+import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+    deferred as bitcoin_accounts;
+import '../features/home/presentation/screens/home_screen.dart'
+    deferred as home;
 import '../features/security/presentation/providers/security_provider.dart';
 import '../features/security/presentation/widgets/app_entry_pin_gate.dart';
-import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/settings/presentation/screens/settings_screen.dart'
+    deferred as settings;
 import '../features/notifications/presentation/widgets/global_notification_host.dart';
 import '../core/services/background_service.dart';
 import '../core/services/notification_service.dart' as local_notifications;
-import '../features/transactions/presentation/screens/deposits_screen.dart';
+import '../features/transactions/presentation/screens/deposits_screen.dart'
+    deferred as deposits;
+import '../features/wallet/presentation/screens/send_money_screen.dart'
+    deferred as send_money;
 import '../core/services/audio_service.dart';
 import '../core/providers/tor_providers.dart';
 import '../core/services/tor_network_bootstrap.dart';
@@ -160,26 +166,57 @@ class MyApp extends ConsumerWidget {
         '/recovery/emergency': (context) => const EmergencyRecoveryScreen(),
         '/signup': (context) => const SignupFlowScreen(),
         '/server-unavailable': (context) => const ServerUnavailableScreen(),
-        '/home': (context) => const _PrivateMobileRoute(child: HomeScreen()),
+        '/home': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: home.loadLibrary,
+                builder: (_) => home.HomeScreen(),
+              ),
+            ),
         '/home_loading': (context) =>
             const _PrivateMobileRoute(child: HomeLoadingScreen()),
-        '/settings': (context) => const _PrivateMobileRoute(
-              child: SettingsScreen(showPrimaryNavigation: true),
+        '/settings': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: settings.loadLibrary,
+                builder: (_) => settings.SettingsScreen(
+                  showPrimaryNavigation: true,
+                ),
+              ),
             ),
-        '/history': (context) => const _PrivateMobileRoute(
-              child: TransactionStatementScreen(),
+        '/history': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: deposits.loadLibrary,
+                builder: (_) => deposits.TransactionStatementScreen(),
+              ),
             ),
-        '/card': (context) =>
-            const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
-        '/bitcoin/advanced': (context) =>
-            const _PrivateMobileRoute(child: BitcoinAccountsScreen()),
-        '/receive': (context) => const _PrivateMobileRoute(
-              child: DepositsScreen(),
+        '/card': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: bitcoin_accounts.loadLibrary,
+                builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
+              ),
             ),
-        '/send-money': (context) =>
-            const _PrivateMobileRoute(child: SendMoneyScreen()),
-        '/deposits': (context) => const _PrivateMobileRoute(
-              child: DepositsScreen(),
+        '/bitcoin/advanced': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: bitcoin_accounts.loadLibrary,
+                builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
+              ),
+            ),
+        '/receive': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: deposits.loadLibrary,
+                builder: (_) => deposits.DepositsScreen(),
+              ),
+            ),
+        '/send-money': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: send_money.loadLibrary,
+                builder: (_) => send_money.SendMoneyScreen(),
+              ),
+            ),
+        '/deposits': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: deposits.loadLibrary,
+                builder: (_) => deposits.DepositsScreen(),
+              ),
             ),
       },
       onGenerateRoute: (settings) {
@@ -190,8 +227,11 @@ class MyApp extends ConsumerWidget {
           return MaterialPageRoute(
             settings: settings,
             builder: (_) => _PrivateMobileRoute(
-              child: SendMoneyScreen(
-                initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+              child: DeferredPage(
+                loadLibrary: send_money.loadLibrary,
+                builder: (_) => send_money.SendMoneyScreen(
+                  initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+                ),
               ),
             ),
           );

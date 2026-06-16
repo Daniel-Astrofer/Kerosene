@@ -110,7 +110,9 @@ jobs:
           APP_CORS_ALLOWED_ORIGINS: https://app.kerosene.example
           WEBAUTHN_ORIGINS: https://app.kerosene.example
           WEBAUTHN_RP_ID: app.kerosene.example
-        run: docker compose --env-file .env.example config --quiet
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env -f deploy/compose/hardened.yml config --quiet
 
   frontend:
     name: Flutter Test And Release Bundle

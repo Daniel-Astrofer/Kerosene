@@ -69,7 +69,7 @@ class _PaymentPayloadDraft {
     }
 
     final parsed = QrPaymentParser.decode(trimmed);
-    final candidate = parsed?.address ?? trimmed;
+    final candidate = parsed?.preferredDestination ?? trimmed;
     if (_isLightningPaymentPayload(candidate)) {
       final normalized = candidate.toLowerCase().startsWith('lightning:')
           ? candidate.substring(10).trim()

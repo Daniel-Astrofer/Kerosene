@@ -29,8 +29,39 @@ class WalletRepositoryImpl implements WalletRepository {
     required this.walletSecurityService,
   });
 
+  Failure _failureFromException(AppException exception) {
+    if (exception is AuthException) {
+      return AuthFailure(
+        message: exception.message,
+        statusCode: exception.statusCode,
+        errorCode: exception.errorCode,
+        data: exception.data,
+      );
+    }
+    if (exception is ValidationException) {
+      return ValidationFailure(
+        message: exception.message,
+        statusCode: exception.statusCode,
+        errorCode: exception.errorCode,
+        data: exception.data,
+      );
+    }
+    if (exception is ServerException) {
+      return ServerFailure(
+        message: exception.message,
+        statusCode: exception.statusCode,
+        errorCode: exception.errorCode,
+        data: exception.data,
+      );
+    }
+    if (exception is NetworkException) {
+      return NetworkFailure(message: exception.message);
+    }
+    return UnknownFailure(message: exception.message);
+  }
+
   @override
-  Future<Either<Failure, String>> createWallet({
+  Future<Either<Failure, Wallet>> createWallet({
     required String name,
     required String passphrase,
     String accountSecurity = 'STANDARD',
@@ -55,9 +86,9 @@ class WalletRepositoryImpl implements WalletRepository {
         await walletSecurityService.saveMnemonic(passphrase);
       }
 
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Right(Wallet.fromJson(result));
+    } on AppException catch (e) {
+      return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao criar carteira: $e'));
     }
@@ -73,6 +104,14 @@ class WalletRepositoryImpl implements WalletRepository {
 
       final result = await remoteDataSource.getWallets();
       final walletsList = result.map((data) => Wallet.fromJson(data)).toList();
+      final hasKfeBalances = result.whereType<Map>().any((wallet) {
+        return wallet.containsKey('availableSats') ||
+            wallet.containsKey('observedSats');
+      });
+
+      if (hasKfeBalances) {
+        return Right(walletsList);
+      }
 
       // Enforce Ledger Balance: Fetch all ledgers to get real-time balances
       Map<String, double> balances = {};
@@ -111,8 +150,8 @@ class WalletRepositoryImpl implements WalletRepository {
       }
 
       return Right(walletsWithBalance);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao buscar carteiras: $e'));
     }
@@ -146,8 +185,8 @@ class WalletRepositoryImpl implements WalletRepository {
         );
 
         return Right(wallet.copyWith(balance: balance));
-      } on ServerException catch (e) {
-        return Left(ServerFailure(message: e.message));
+      } on AppException catch (e) {
+        return Left(_failureFromException(e));
       } catch (e) {
         return Left(UnknownFailure(message: 'Erro ao atualizar saldo: $e'));
       }
@@ -217,9 +256,8 @@ class WalletRepositoryImpl implements WalletRepository {
   }) async {
     // Internal transfer via Ledger
     try {
-      final username = await authLocalDataSource.getUsername();
       final result = await ledgerRemoteDataSource.sendInternalTransaction(
-        senderWalletName: username ?? fromWalletId,
+        senderWalletName: fromWalletId,
         receiverWalletName: toAddress,
         amount: amountSatoshis / 100000000.0,
         idempotencyKey: const Uuid().v4(),
@@ -227,8 +265,8 @@ class WalletRepositoryImpl implements WalletRepository {
       );
 
       return Right(Transaction.fromJson(result));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao enviar: $e'));
     }
@@ -311,8 +349,8 @@ class WalletRepositoryImpl implements WalletRepository {
     try {
       final result = await remoteDataSource.findWallet(name: name);
       return Right(Wallet.fromJson(result));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao buscar carteira: $e'));
     }
@@ -331,8 +369,8 @@ class WalletRepositoryImpl implements WalletRepository {
         passphrase: passphrase,
       );
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao atualizar carteira: $e'));
     }
@@ -349,8 +387,8 @@ class WalletRepositoryImpl implements WalletRepository {
         passphrase: passphrase,
       );
       return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+    } on AppException catch (e) {
+      return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao deletar carteira: $e'));
     }

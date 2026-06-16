@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
@@ -26,6 +27,8 @@ void main() {
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: AdminTheme.themeData,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: const AdminContentRouter(),
           ),
         ),

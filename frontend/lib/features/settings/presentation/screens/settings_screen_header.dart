@@ -14,12 +14,14 @@ class _SettingsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _SettingsDesignColors.of(context);
+
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: _SettingsDesignColors.background,
+      decoration: BoxDecoration(
+        color: colors.background,
         border: Border(
-          bottom: BorderSide(color: _SettingsDesignColors.borderMuted),
+          bottom: BorderSide(color: colors.borderMuted),
         ),
       ),
       child: SafeArea(
@@ -38,12 +40,12 @@ class _SettingsHeader extends StatelessWidget {
                     child: InkWell(
                       customBorder: const CircleBorder(),
                       onTap: onBack,
-                      child: const SizedBox(
+                      child: SizedBox(
                         width: 40,
                         height: 40,
                         child: Icon(
                           Icons.close_rounded,
-                          color: _SettingsDesignColors.primary,
+                          color: colors.primary,
                           size: 24,
                         ),
                       ),
@@ -66,6 +68,7 @@ class _SettingsOverviewCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = _SettingsDesignColors.of(context);
     final authState = ref.watch(authControllerProvider);
     final user = authState is AuthAuthenticated ? authState.user : null;
     final handle = _formatAccountHandle(user?.username ?? 'lucas_01');
@@ -82,12 +85,12 @@ class _SettingsOverviewCard extends ConsumerWidget {
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _SettingsDesignColors.surfaceContainerHighest,
-              border: Border.all(color: _SettingsDesignColors.borderMuted),
+              color: colors.surfaceContainerHighest,
+              border: Border.all(color: colors.borderMuted),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_rounded,
-              color: _SettingsDesignColors.primary,
+              color: colors.primary,
               size: 28,
             ),
           ),
@@ -101,7 +104,7 @@ class _SettingsOverviewCard extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.ibmPlexSerif(
-                    color: _SettingsDesignColors.primary,
+                    color: colors.primary,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
@@ -114,7 +117,7 @@ class _SettingsOverviewCard extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    color: _SettingsDesignColors.onSurfaceVariant,
+                    color: colors.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
@@ -126,21 +129,21 @@ class _SettingsOverviewCard extends ConsumerWidget {
           ),
           const SizedBox(width: 16),
           Material(
-            color: _SettingsDesignColors.surfaceContainer,
+            color: colors.surfaceContainer,
             shape: CircleBorder(
               side: BorderSide(
-                color: _SettingsDesignColors.borderMuted.withValues(alpha: 0.5),
+                color: colors.borderMuted.withValues(alpha: 0.5),
               ),
             ),
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: onQrTap,
-              child: const SizedBox(
+              child: SizedBox(
                 width: 40,
                 height: 40,
                 child: Icon(
                   Icons.qr_code_rounded,
-                  color: _SettingsDesignColors.primary,
+                  color: colors.primary,
                   size: 20,
                 ),
               ),

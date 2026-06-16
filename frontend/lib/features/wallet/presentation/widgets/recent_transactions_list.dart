@@ -87,7 +87,8 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
             ? '+'
             : visual.prefix;
 
-    return GestureDetector(
+    return RepaintBoundary(
+      child: GestureDetector(
       onTap: () {
         setState(() => _isExpanded = !_isExpanded);
       },
@@ -200,6 +201,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
           ],
         ),
       ),
+    ),
     );
   }
 

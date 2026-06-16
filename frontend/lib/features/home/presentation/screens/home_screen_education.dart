@@ -161,65 +161,65 @@ List<_HomeEducationCardData> _homeEducationCards(
 
   return switch (view) {
     _HomeLedgerBalanceView.platform => [
-      _HomeEducationCardData(
-        icon: LucideIcons.repeat2,
-        title: tr.homeEducationInternalTitle,
-        body: tr.homeEducationInternalBody,
-        tag: tr.homeEducationInternalTag,
-      ),
-      _HomeEducationCardData(
-        icon: LucideIcons.fingerprint,
-        title: tr.homeEducationWalletHashTitle,
-        body: tr.homeEducationWalletHashBody,
-        tag: tr.homeEducationWalletHashTag,
-      ),
-      _HomeEducationCardData(
-        icon: LucideIcons.zap,
-        title: tr.homeEducationLightningTitle,
-        body: tr.homeEducationLightningBody,
-        tag: tr.homeEducationLightningTag,
-      ),
-    ],
+        _HomeEducationCardData(
+          icon: LucideIcons.repeat2,
+          title: tr.homeEducationInternalTitle,
+          body: tr.homeEducationInternalBody,
+          tag: tr.homeEducationInternalTag,
+        ),
+        _HomeEducationCardData(
+          icon: LucideIcons.fingerprint,
+          title: tr.homeEducationWalletHashTitle,
+          body: tr.homeEducationWalletHashBody,
+          tag: tr.homeEducationWalletHashTag,
+        ),
+        _HomeEducationCardData(
+          icon: LucideIcons.zap,
+          title: tr.homeEducationLightningTitle,
+          body: tr.homeEducationLightningBody,
+          tag: tr.homeEducationLightningTag,
+        ),
+      ],
     _HomeLedgerBalanceView.onChain => [
-      _HomeEducationCardData(
-        icon: LucideIcons.bitcoin,
-        title: tr.homeEducationOnchainTitle,
-        body: tr.homeEducationOnchainBody,
-        tag: tr.homeEducationOnchainTag,
-      ),
-      _HomeEducationCardData(
-        icon: LucideIcons.activity,
-        title: tr.homeEducationConfirmationsTitle,
-        body: tr.homeEducationConfirmationsBody,
-        tag: tr.homeEducationConfirmationsTag,
-      ),
-      _HomeEducationCardData(
-        icon: LucideIcons.gauge,
-        title: tr.homeEducationFeesTitle,
-        body: tr.homeEducationFeesBody,
-        tag: tr.homeEducationFeesTag,
-      ),
-    ],
+        _HomeEducationCardData(
+          icon: LucideIcons.bitcoin,
+          title: tr.homeEducationOnchainTitle,
+          body: tr.homeEducationOnchainBody,
+          tag: tr.homeEducationOnchainTag,
+        ),
+        _HomeEducationCardData(
+          icon: LucideIcons.activity,
+          title: tr.homeEducationConfirmationsTitle,
+          body: tr.homeEducationConfirmationsBody,
+          tag: tr.homeEducationConfirmationsTag,
+        ),
+        _HomeEducationCardData(
+          icon: LucideIcons.gauge,
+          title: tr.homeEducationFeesTitle,
+          body: tr.homeEducationFeesBody,
+          tag: tr.homeEducationFeesTag,
+        ),
+      ],
     _ => [
-      _HomeEducationCardData(
-        icon: LucideIcons.bitcoin,
-        title: tr.homeEducationBitcoinTitle,
-        body: tr.homeEducationBitcoinBody,
-        tag: tr.homeEducationBitcoinTag,
-      ),
-      _HomeEducationCardData(
-        icon: LucideIcons.zap,
-        title: tr.homeEducationLightningTitle,
-        body: tr.homeEducationLightningGeneralBody,
-        tag: tr.homeEducationLightningGeneralTag,
-      ),
-      _HomeEducationCardData(
-        icon: LucideIcons.wallet,
-        title: tr.homeEducationInternalTitle,
-        body: tr.homeEducationKeroseneGeneralBody,
-        tag: tr.homeEducationKeroseneGeneralTag,
-      ),
-    ],
+        _HomeEducationCardData(
+          icon: LucideIcons.bitcoin,
+          title: tr.homeEducationBitcoinTitle,
+          body: tr.homeEducationBitcoinBody,
+          tag: tr.homeEducationBitcoinTag,
+        ),
+        _HomeEducationCardData(
+          icon: LucideIcons.zap,
+          title: tr.homeEducationLightningTitle,
+          body: tr.homeEducationLightningGeneralBody,
+          tag: tr.homeEducationLightningGeneralTag,
+        ),
+        _HomeEducationCardData(
+          icon: LucideIcons.wallet,
+          title: tr.homeEducationInternalTitle,
+          body: tr.homeEducationKeroseneGeneralBody,
+          tag: tr.homeEducationKeroseneGeneralTag,
+        ),
+      ],
   };
 }
 
@@ -246,9 +246,8 @@ class _HomeFundsDistributionSection extends StatelessWidget {
     );
     final totalBalance = onchainBalance + keroseneBalance;
     final onchainShare = totalBalance > 0 ? onchainBalance / totalBalance : 0.0;
-    final keroseneShare = totalBalance > 0
-        ? keroseneBalance / totalBalance
-        : 0.0;
+    final keroseneShare =
+        totalBalance > 0 ? keroseneBalance / totalBalance : 0.0;
     final totalLabel = totalBalance > 0 ? '100%' : '0%';
 
     return _HomeGlassPanel(

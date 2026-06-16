@@ -23,12 +23,10 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
 
   Future<void> createInternalCard({
     required String label,
-    required int dailyLimitSats,
   }) async {
     state = await AsyncValue.guard(() async {
       await _service.createInternalCard(
         label: label,
-        dailyLimitSats: dailyLimitSats,
       );
       return _service.listAccounts();
     });

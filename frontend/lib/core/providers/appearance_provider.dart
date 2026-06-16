@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ─── Theme Variants ──────────────────────────────────
-enum AppThemeVariant { dark, amoled, dimmed }
+enum AppThemeVariant { dark, amoled, dimmed, light }
 
 extension AppThemeVariantX on AppThemeVariant {
   String get label {
@@ -13,6 +13,8 @@ extension AppThemeVariantX on AppThemeVariant {
         return 'AMOLED Black';
       case AppThemeVariant.dimmed:
         return 'Dimmed';
+      case AppThemeVariant.light:
+        return 'Light';
     }
   }
 
@@ -24,6 +26,8 @@ extension AppThemeVariantX on AppThemeVariant {
         return 'Pure black saves battery on OLED';
       case AppThemeVariant.dimmed:
         return 'Softer contrast for night use';
+      case AppThemeVariant.light:
+        return 'Light surfaces for daytime use';
     }
   }
 }

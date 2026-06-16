@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:kerosene/core/logging/app_log.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:kerosene/core/errors/exceptions.dart';
 import 'package:kerosene/core/network/api_response_interceptor.dart';
 import 'package:kerosene/core/network/api_client_route_policy.dart';
@@ -52,7 +54,7 @@ class ApiClient {
         logPrint: (msg) {
           // Print only the first line of retry messages to avoid multi-line noise
           final firstLine = msg.split('\n').first;
-          debugPrint('[Retry] $firstLine');
+          appLog('[Retry] $firstLine');
         },
         retries: 3,
         retryDelays: const [
@@ -72,6 +74,22 @@ class ApiClient {
           598, // NetworkReadTimeoutError
           599, // NetworkConnectTimeoutError
         }).evaluate,
+      ),
+    );
+
+    // Cache Interceptor for Network Caching (Phase 5)
+    _dio.interceptors.add(
+      DioCacheInterceptor(
+        options: CacheOptions(
+          store: MemCacheStore(),
+          policy: CachePolicy.request,
+          hitCacheOnErrorExcept: [401, 403],
+          maxStale: const Duration(minutes: 5),
+          priority: CachePriority.normal,
+          cipher: null,
+          keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+          allowPostMethod: false,
+        ),
       ),
     );
 
@@ -381,13 +399,13 @@ class ApiClient {
 class _LogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    debugPrint('🌐 [${options.method}] ${options.baseUrl}${options.path}');
+    appLog('[${options.method}] ${options.baseUrl}${options.path}');
     super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint('✅ [${response.statusCode}] ${response.requestOptions.path}');
+    appLog('[${response.statusCode}] ${response.requestOptions.path}');
     super.onResponse(response, handler);
   }
 
@@ -398,7 +416,7 @@ class _LogInterceptor extends Interceptor {
     final errCode = err.response?.data is Map
         ? (err.response!.data['errorCode'] ?? '')
         : '';
-    debugPrint('❌ [$code] $path${errCode.isNotEmpty ? ' ($errCode)' : ''}');
+    appLog('[$code] $path${errCode.isNotEmpty ? ' ($errCode)' : ''}');
     super.onError(err, handler);
   }
 }

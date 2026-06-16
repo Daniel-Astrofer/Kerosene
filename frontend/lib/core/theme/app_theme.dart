@@ -92,59 +92,103 @@ class AppTheme {
           border: Color(0xFF343C49),
           inputFill: Color(0xFF20252E),
         );
+      case AppThemeVariant.light:
+        return const AppThemePalette(
+          background: Color(0xFFF7F7F5),
+          backgroundTop: Color(0xFFFFFFFF),
+          backgroundMid: Color(0xFFF7F7F5),
+          backgroundBottom: Color(0xFFEDEDEA),
+          surface: Color(0xFFFFFFFF),
+          border: Color(0xFFD9DAD6),
+          inputFill: Color(0xFFF0F1EE),
+        );
     }
   }
 
   static ThemeData themeFor(AppThemeVariant variant) {
     final palette = paletteFor(variant);
+    final isLight = variant == AppThemeVariant.light;
+    final brightness = isLight ? Brightness.light : Brightness.dark;
+    final onSurface = isLight ? const Color(0xFF181A17) : AppColors.white;
+    final onSurfaceVariant =
+        isLight ? const Color(0xFF62675F) : AppColors.white70;
+    final hintColor = isLight
+        ? const Color(0xFF8B9087)
+        : Colors.white.withValues(alpha: 0.48);
+    final labelColor = isLight
+        ? const Color(0xFF5F645B)
+        : Colors.white.withValues(alpha: 0.72);
+    final baseTextTheme =
+        isLight ? ThemeData.light().textTheme : ThemeData.dark().textTheme;
+    final colorScheme = isLight
+        ? ColorScheme.light(
+            primary: AppColors.black,
+            secondary: AppColors.secondary,
+            surface: palette.surface,
+            surfaceContainerHighest: palette.inputFill,
+            error: AppColors.error,
+            onPrimary: AppColors.white,
+            onSecondary: AppColors.white,
+            onSurface: onSurface,
+            onSurfaceVariant: onSurfaceVariant,
+            onError: AppColors.white,
+            secondaryContainer: AppColors.secondary.withValues(alpha: 0.12),
+            onSecondaryContainer: onSurface,
+          )
+        : ColorScheme.dark(
+            primary: AppColors.primary,
+            secondary: AppColors.secondary,
+            surface: palette.surface,
+            surfaceContainerHighest: palette.inputFill,
+            error: AppColors.error,
+            onPrimary: AppColors.white,
+            onSecondary: AppColors.white,
+            onSurface: onSurface,
+            onSurfaceVariant: onSurfaceVariant,
+            onError: AppColors.white,
+            secondaryContainer: AppColors.secondary.withValues(alpha: 0.2),
+            onSecondaryContainer: AppColors.white,
+          );
+    final filledBackground = isLight ? AppColors.black : AppColors.white;
+    final filledForeground = isLight ? AppColors.white : AppColors.black;
+    final disabledBackground =
+        onSurface.withValues(alpha: isLight ? 0.08 : 0.08);
+    final disabledForeground =
+        onSurface.withValues(alpha: isLight ? 0.38 : 0.54);
 
     return ThemeData(
-      brightness: Brightness.dark,
+      brightness: brightness,
       scaffoldBackgroundColor: palette.background,
       canvasColor: palette.background,
       dividerColor: palette.border,
       fontFamily: AppTypography.fontFamily,
       useMaterial3: true,
-      colorScheme: ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        surface: palette.surface,
-        surfaceContainerHighest: palette.inputFill,
-        error: AppColors.error,
-        onPrimary: AppColors.white,
-        onSecondary: AppColors.white,
-        onSurface: AppColors.white,
-        onSurfaceVariant: AppColors.white70,
-        onError: AppColors.white,
-        secondaryContainer: AppColors.secondary.withValues(alpha: 0.2),
-        onSecondaryContainer: AppColors.white,
-      ),
-      disabledColor: AppColors.white.withValues(alpha: 0.42),
+      colorScheme: colorScheme,
+      disabledColor: onSurface.withValues(alpha: 0.42),
       pageTransitionsTheme: kerosenePageTransitionsTheme,
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: AppColors.white,
-        selectionColor: AppColors.white.withValues(alpha: 0.22),
-        selectionHandleColor: AppColors.white,
+        cursorColor: onSurface,
+        selectionColor: onSurface.withValues(alpha: 0.18),
+        selectionHandleColor: onSurface,
       ),
       // Base TextTheme: Inter for body/labels. Headings are mapped through
       // AppTypography to IBM Plex Serif and IBM Plex Sans Hebrew.
-      textTheme:
-          GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        displayLarge: AppTypography.h1,
-        displayMedium: AppTypography.h1,
-        displaySmall: AppTypography.h2,
-        headlineLarge: AppTypography.h1,
-        headlineMedium: AppTypography.h2,
-        headlineSmall: AppTypography.h3,
-        titleLarge: AppTypography.h2,
-        titleMedium: AppTypography.h3,
-        titleSmall: AppTypography.bodyLarge,
-        bodyLarge: AppTypography.bodyLarge,
-        bodyMedium: AppTypography.bodyMedium,
-        bodySmall: AppTypography.bodySmall,
-        labelLarge: AppTypography.buttonText,
-        labelMedium: AppTypography.caption,
-        labelSmall: AppTypography.caption,
+      textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
+        displayLarge: AppTypography.h1.copyWith(color: onSurface),
+        displayMedium: AppTypography.h1.copyWith(color: onSurface),
+        displaySmall: AppTypography.h2.copyWith(color: onSurface),
+        headlineLarge: AppTypography.h1.copyWith(color: onSurface),
+        headlineMedium: AppTypography.h2.copyWith(color: onSurface),
+        headlineSmall: AppTypography.h3.copyWith(color: onSurface),
+        titleLarge: AppTypography.h2.copyWith(color: onSurface),
+        titleMedium: AppTypography.h3.copyWith(color: onSurface),
+        titleSmall: AppTypography.bodyLarge.copyWith(color: onSurface),
+        bodyLarge: AppTypography.bodyLarge.copyWith(color: onSurface),
+        bodyMedium: AppTypography.bodyMedium.copyWith(color: onSurface),
+        bodySmall: AppTypography.bodySmall.copyWith(color: onSurfaceVariant),
+        labelLarge: AppTypography.buttonText.copyWith(color: onSurface),
+        labelMedium: AppTypography.caption.copyWith(color: onSurfaceVariant),
+        labelSmall: AppTypography.caption.copyWith(color: onSurfaceVariant),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -173,29 +217,25 @@ class AppTheme {
           borderRadius: AppRadius.medium,
           borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
-        hintStyle: AppTypography.bodyMedium.copyWith(
-          color: Colors.white.withValues(alpha: 0.48),
-        ),
-        labelStyle: AppTypography.bodyMedium.copyWith(
-          color: Colors.white.withValues(alpha: 0.72),
-        ),
+        hintStyle: AppTypography.bodyMedium.copyWith(color: hintColor),
+        labelStyle: AppTypography.bodyMedium.copyWith(color: labelColor),
         floatingLabelStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.white,
+          color: onSurface,
           fontWeight: FontWeight.w600,
         ),
         errorStyle: AppTypography.bodySmall.copyWith(
           color: AppColors.error,
           fontWeight: FontWeight.w600,
         ),
-        prefixIconColor: Colors.white.withValues(alpha: 0.72),
-        suffixIconColor: Colors.white.withValues(alpha: 0.72),
+        prefixIconColor: labelColor,
+        suffixIconColor: labelColor,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.black,
-          disabledBackgroundColor: AppColors.white.withValues(alpha: 0.08),
-          disabledForegroundColor: AppColors.white.withValues(alpha: 0.54),
+          backgroundColor: filledBackground,
+          foregroundColor: filledForeground,
+          disabledBackgroundColor: disabledBackground,
+          disabledForegroundColor: disabledForeground,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
           padding: const EdgeInsets.symmetric(
@@ -207,10 +247,10 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.black,
-          disabledBackgroundColor: AppColors.white.withValues(alpha: 0.08),
-          disabledForegroundColor: AppColors.white.withValues(alpha: 0.54),
+          backgroundColor: filledBackground,
+          foregroundColor: filledForeground,
+          disabledBackgroundColor: disabledBackground,
+          disabledForegroundColor: disabledForeground,
           minimumSize: const Size.fromHeight(48),
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.md,
@@ -225,9 +265,9 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           backgroundColor: palette.surface,
-          foregroundColor: AppColors.white,
-          disabledForegroundColor: AppColors.white.withValues(alpha: 0.52),
-          side: BorderSide(color: AppColors.white.withValues(alpha: 0.26)),
+          foregroundColor: onSurface,
+          disabledForegroundColor: onSurface.withValues(alpha: 0.52),
+          side: BorderSide(color: onSurface.withValues(alpha: 0.22)),
           minimumSize: const Size.fromHeight(48),
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.md,
@@ -241,8 +281,8 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.white,
-          disabledForegroundColor: AppColors.white.withValues(alpha: 0.50),
+          foregroundColor: onSurface,
+          disabledForegroundColor: onSurface.withValues(alpha: 0.50),
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.sm,
             horizontal: AppSpacing.md,
@@ -254,8 +294,8 @@ class AppTheme {
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          foregroundColor: AppColors.white,
-          disabledForegroundColor: AppColors.white.withValues(alpha: 0.46),
+          foregroundColor: onSurface,
+          disabledForegroundColor: onSurface.withValues(alpha: 0.46),
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -263,7 +303,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: AppTypography.h2,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: onSurface),
       ),
       cardTheme: CardThemeData(
         color: palette.surface,
@@ -279,21 +319,22 @@ class AppTheme {
         backgroundColor: palette.surface,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: palette.surface,
-        modalBarrierColor: Colors.black.withValues(alpha: 0.74),
+        modalBarrierColor:
+            Colors.black.withValues(alpha: isLight ? 0.30 : 0.74),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: palette.surface,
         surfaceTintColor: Colors.transparent,
-        textStyle: AppTypography.bodyMedium.copyWith(color: AppColors.white),
+        textStyle: AppTypography.bodyMedium.copyWith(color: onSurface),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.white,
+        backgroundColor: filledBackground,
         contentTextStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.black,
+          color: filledForeground,
           fontWeight: FontWeight.w600,
         ),
-        actionTextColor: AppColors.black,
-        disabledActionTextColor: AppColors.black.withValues(alpha: 0.48),
+        actionTextColor: filledForeground,
+        disabledActionTextColor: filledForeground.withValues(alpha: 0.48),
       ),
     );
   }

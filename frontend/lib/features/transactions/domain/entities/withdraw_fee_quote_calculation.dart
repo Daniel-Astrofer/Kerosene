@@ -1,6 +1,8 @@
 enum WithdrawFeeMode { senderPays, recipientPays }
 
 class WithdrawFeeQuoteCalculation {
+  static const int _satsPerBtc = 100000000;
+
   final WithdrawFeeMode mode;
   final double requestedAmountBtc;
   final double receiverAmountBtc;
@@ -21,6 +23,20 @@ class WithdrawFeeQuoteCalculation {
 
   double get totalFeesBtc => platformFeeBtc + networkFeeBtc;
   bool get deductsFees => mode == WithdrawFeeMode.recipientPays;
+
+  static bool hasSufficientBalance({
+    required double availableBtc,
+    required double totalDebitedBtc,
+  }) {
+    if (totalDebitedBtc <= 0) {
+      return true;
+    }
+    if (!availableBtc.isFinite || !totalDebitedBtc.isFinite) {
+      return false;
+    }
+
+    return _toSats(availableBtc) >= _toSats(totalDebitedBtc);
+  }
 
   static WithdrawFeeQuoteCalculation resolve({
     required WithdrawFeeMode mode,
@@ -76,4 +92,6 @@ class WithdrawFeeQuoteCalculation {
     }
     return netBeforePlatformFee / (1 + platformFeeRate);
   }
+
+  static int _toSats(double btc) => (btc * _satsPerBtc).round();
 }

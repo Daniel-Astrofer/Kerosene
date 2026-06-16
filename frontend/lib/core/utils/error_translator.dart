@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:kerosene/core/l10n/app_localizations.dart';
 
 class ErrorTranslator {
@@ -50,34 +51,82 @@ class ErrorTranslator {
     }
 
     final normalizedCode = codeToTest.trim().toUpperCase();
+    final safeExtractedMessage = _safeUserMessage(extractedMessage);
 
     // Check for exact known Error Codes explicitly
     switch (normalizedCode) {
       // Auth Errors
+      case 'AUTH_001':
       case 'ERR_AUTH_USER_ALREADY_EXISTS':
         return l10n.errAuthUserAlreadyExists;
+      case 'AUTH_002':
       case 'ERR_AUTH_USERNAME_MISSING':
         return l10n.errAuthUsernameMissing;
+      case 'AUTH_003':
       case 'ERR_AUTH_PASSPHRASE_MISSING':
+      case 'ERR_AUTH_PASSWORD_MISSING':
         return l10n.errAuthPassphraseMissing;
+      case 'AUTH_004':
       case 'ERR_AUTH_INVALID_USERNAME_FORMAT':
         return l10n.errAuthInvalidUsernameFormat;
+      case 'AUTH_005':
       case 'ERR_AUTH_CHARACTER_LIMIT_EXCEEDED':
         return l10n.errAuthCharLimitExceeded;
+      case 'AUTH_006':
       case 'ERR_AUTH_USER_NOT_FOUND':
         return l10n.errAuthUserNotFound;
+      case 'AUTH_007':
       case 'ERR_AUTH_INVALID_PASSPHRASE_FORMAT':
+      case 'ERR_AUTH_INVALID_PASSWORD_FORMAT':
         return l10n.errAuthInvalidPassphraseFormat;
+      case 'AUTH_008':
       case 'ERR_AUTH_INCORRECT_TOTP':
         return l10n.errAuthIncorrectTotp;
+      case 'AUTH_009':
       case 'ERR_AUTH_INVALID_CREDENTIALS':
         return l10n.errAuthInvalidCredentials;
+      case 'AUTH_010':
       case 'ERR_AUTH_UNRECOGNIZED_DEVICE':
       case 'ERR_AUTH_PASSKEY_NOT_REGISTERED':
-      case 'AUTH_014':
         return l10n.errPasskeyDeviceNotLinked;
+      case 'AUTH_011':
       case 'ERR_AUTH_TOTP_TIMEOUT':
         return l10n.errAuthTotpTimeout;
+      case 'AUTH_012':
+      case 'ERR_AUTH_PASSKEY_CHALLENGE':
+        return l10n.errPasskeyRequired;
+      case 'AUTH_013':
+        return l10n.errSessionExpired;
+      case 'AUTH_014':
+      case 'ERR_AUTH_PASSKEY_LINK_REQUIRED':
+        return l10n.errPasskeyDeviceNotLinked;
+      case 'AUTH_015':
+      case 'ERR_AUTH_PASSKEY_ASSERTION_FAILED':
+        return l10n.errPasskeyRejected;
+      case 'AUTH_016':
+      case 'ERR_AUTH_PASSKEY_REPLAY':
+        return l10n.errPasskeyRejected;
+      case 'AUTH_017':
+      case 'ERR_AUTH_PASSKEY_CREDENTIAL_NOT_FOUND':
+        return l10n.errPasskeyDeviceNotLinked;
+      case 'AUTH_018':
+      case 'ERR_AUTH_APP_PIN_NOT_CONFIGURED':
+        return l10n.appEntryPinUnavailableMessage;
+      case 'AUTH_019':
+      case 'ERR_AUTH_APP_PIN_INVALID':
+        return l10n.errAuthInvalidCredentials;
+      case 'AUTH_020':
+      case 'ERR_AUTH_APP_PIN_LOCKED':
+        return l10n.appEntryLockedHelper;
+      case 'AUTH_021':
+      case 'ERR_AUTH_APP_PIN_DEVICE_REQUIRED':
+        return l10n.appEntryPinUnavailableMessage;
+      case 'AUTH_022':
+      case 'ERR_AUTH_PASSKEY_INVALID_ORIGIN':
+        return l10n.errPasskeyRejected;
+      case 'AUTH_099':
+      case 'ERR_AUTH_GENERIC':
+        return l10n.errUnexpected;
       case 'ERR_AUTH_PASSKEY_INVALID':
         return l10n.passkeyErrorFinishing(
             l10n.errUnexpected); // Fallback to generic message
@@ -89,32 +138,49 @@ class ErrorTranslator {
         return l10n.passkeySessionNotFound;
 
       // Ledger / Balance Errors
+      case 'LEDGER_001':
       case 'ERR_LEDGER_NOT_FOUND':
         return l10n.errLedgerNotFound;
+      case 'LEDGER_003':
       case 'ERR_LEDGER_ALREADY_EXISTS':
         return l10n.errLedgerAlreadyExists;
+      case 'LEDGER_004':
       case 'ERR_LEDGER_INSUFFICIENT_BALANCE':
         return l10n.errLedgerInsufficientBalance;
+      case 'LEDGER_005':
       case 'ERR_LEDGER_INVALID_OPERATION':
         return l10n.errLedgerInvalidOperation;
+      case 'LEDGER_002':
       case 'ERR_LEDGER_RECEIVER_NOT_FOUND':
         return l10n.errLedgerReceiverNotFound;
+      case 'LEDGER_099':
       case 'ERR_LEDGER_GENERIC':
         return l10n.errLedgerGeneric;
+      case 'LEDGER_006':
       case 'ERR_LEDGER_PAYMENT_REQUEST_NOT_FOUND':
+      case 'ERR_LEDGER_PAYMENT_NOT_FOUND':
         return l10n.errLedgerPaymentRequestNotFound;
+      case 'LEDGER_007':
       case 'ERR_LEDGER_PAYMENT_REQUEST_EXPIRED':
+      case 'ERR_LEDGER_PAYMENT_EXPIRED':
         return l10n.errLedgerPaymentRequestExpired;
+      case 'LEDGER_008':
       case 'ERR_LEDGER_PAYMENT_REQUEST_ALREADY_PAID':
+      case 'ERR_LEDGER_PAYMENT_ALREADY_PAID':
         return l10n.errLedgerPaymentRequestAlreadyPaid;
+      case 'LEDGER_009':
       case 'ERR_LEDGER_PAYMENT_REQUEST_SELF_PAY':
+      case 'ERR_LEDGER_PAYMENT_SELF_PAY':
         return l10n.errLedgerPaymentRequestSelfPay;
 
       // Wallet Errors
+      case 'WALLET_001':
       case 'ERR_WALLET_ALREADY_EXISTS':
         return l10n.errWalletAlreadyExists;
+      case 'WALLET_002':
       case 'ERR_WALLET_NOT_FOUND':
         return l10n.errWalletNotFound;
+      case 'WALLET_099':
       case 'ERR_WALLET_GENERIC':
         return l10n.errWalletGeneric;
 
@@ -123,7 +189,18 @@ class ErrorTranslator {
         return l10n.errNotifMissingToken;
       case 'ERR_NOTIF_MISSING_FIELDS':
         return l10n.errNotifMissingFields;
+      case 'SYS_001':
+        return safeExtractedMessage ?? l10n.errUnexpected;
+      case 'SYS_002':
+        return safeExtractedMessage ?? l10n.errUnexpected;
+      case 'SYS_404':
+        return safeExtractedMessage ?? l10n.errUnexpected;
+      case 'SYS_500':
       case 'ERR_INTERNAL_SERVER':
+        return l10n.errInternalServer;
+      case 'HYDRA_001':
+      case 'VAULT_001':
+      case 'KRS_099':
         return l10n.errInternalServer;
 
       // Payment rail errors
@@ -205,13 +282,10 @@ class ErrorTranslator {
       return l10n.errInvalidBtcAddress;
     }
 
-    if (extractedMessage != null &&
-        extractedMessage.isNotEmpty &&
-        extractedMessage != 'null') {
-      if (!_looksTechnical(extractedMessage) &&
-          (extractedMessage.contains(' ') || extractedMessage.length < 40)) {
-        return extractedMessage;
-      }
+    if (safeExtractedMessage != null &&
+        (safeExtractedMessage.contains(' ') ||
+            safeExtractedMessage.length < 40)) {
+      return safeExtractedMessage;
     }
 
     final cleaned = codeOrMessage
@@ -231,6 +305,17 @@ class ErrorTranslator {
     }
 
     return cleaned;
+  }
+
+  static String? _safeUserMessage(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty || trimmed == 'null') {
+      return null;
+    }
+    if (_looksTechnical(trimmed)) {
+      return null;
+    }
+    return trimmed;
   }
 
   static bool _looksTechnical(String value) {
