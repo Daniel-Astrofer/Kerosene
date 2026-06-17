@@ -7446,5 +7446,21 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhuma carteira encontrada. Crie uma para começar.';
 
   @override
+  String get walletSelectorSendSubtitle =>
+      'Escolha qual carteira vai financiar este envio.';
+
+  @override
+  String get walletSelectorReceiveSubtitle =>
+      'Escolha onde os fundos recebidos devem entrar.';
+
+  @override
+  String get walletSelectorDepositSubtitle =>
+      'Escolha qual carteira vai receber este depósito.';
+
+  @override
+  String get walletSelectorWithdrawSubtitle =>
+      'Escolha qual carteira vai financiar este saque externo.';
+
+  @override
   String get walletSelectorAvailableBalance => 'Saldo disponível';
 }

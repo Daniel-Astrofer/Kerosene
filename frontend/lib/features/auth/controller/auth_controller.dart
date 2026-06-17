@@ -5,7 +5,6 @@ import '../domain/usecases/login_usecase.dart';
 import '../domain/usecases/signup_usecase.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../data/datasources/auth_remote_datasource.dart' show LoginResult;
-import '../../../core/services/audio_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/passkey_service.dart';
 import '../../../core/errors/failures.dart';
@@ -178,9 +177,8 @@ class AuthController extends Notifier<AuthState> {
           }
 
           state = latestState.copyWith(
-            amountBtc: status.amountBtc > 0
-                ? status.amountBtc
-                : latestState.amountBtc,
+            amountBtc:
+                status.amountBtc > 0 ? status.amountBtc : latestState.amountBtc,
             depositAddress: status.depositAddress.isNotEmpty
                 ? status.depositAddress
                 : latestState.depositAddress,
@@ -259,7 +257,6 @@ class AuthController extends Notifier<AuthState> {
 
       result.fold(
         (failure) async {
-          AudioService.instance.playError();
           await authRepository.clearInvalidSession();
           state = _mapFailureToAuthError(failure);
         },
@@ -303,7 +300,6 @@ class AuthController extends Notifier<AuthState> {
 
       result.fold(
         (failure) {
-          AudioService.instance.playError();
           state = _mapFailureToAuthError(failure);
         },
         (signupResult) => state = AuthRequiresTotpSetup(
@@ -634,7 +630,6 @@ class AuthController extends Notifier<AuthState> {
               state = _mapFailureToAuthError(failure);
             },
             (_) async {
-              AudioService.instance.playTransaction();
               await _checkAuthStatus();
             },
           );

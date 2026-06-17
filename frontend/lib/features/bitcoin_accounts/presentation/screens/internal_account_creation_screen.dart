@@ -602,11 +602,9 @@ class _WalletPurpose {
 
 const _walletPurposeOptions = [
   _WalletPurpose('Investimento', LucideIcons.trendingUp),
-  _WalletPurpose('Casa', LucideIcons.home),
-  _WalletPurpose('Reserva', LucideIcons.building2),
-  _WalletPurpose('Veículo', LucideIcons.car),
-  _WalletPurpose('Gastos mensais', LucideIcons.receipt),
-  _WalletPurpose('Dia a Dia', LucideIcons.calendarDays),
+  _WalletPurpose('Dia a dia', LucideIcons.calendarDays),
+  _WalletPurpose('Veiculo', LucideIcons.car),
+  _WalletPurpose('Futuros gastos', LucideIcons.receipt),
 ];
 
 enum _InternalAccountStep { custody, purpose }

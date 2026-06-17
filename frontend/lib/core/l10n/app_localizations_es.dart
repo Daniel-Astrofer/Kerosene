@@ -7454,5 +7454,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se encontraron carteras. Crea una para empezar.';
 
   @override
+  String get walletSelectorSendSubtitle =>
+      'Elige qué cartera financiará este envío.';
+
+  @override
+  String get walletSelectorReceiveSubtitle =>
+      'Elige dónde deben llegar los fondos recibidos.';
+
+  @override
+  String get walletSelectorDepositSubtitle =>
+      'Elige qué cartera recibirá este depósito.';
+
+  @override
+  String get walletSelectorWithdrawSubtitle =>
+      'Elige qué cartera financiará este retiro externo.';
+
+  @override
   String get walletSelectorAvailableBalance => 'Saldo disponible';
 }

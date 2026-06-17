@@ -19,13 +19,14 @@ import 'package:kerosene/features/home/presentation/screens/qr_scanner_screen.da
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/features/security/domain/entities/account_security_profile.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
+import 'package:kerosene/features/payments/presentation/providers/payment_intent_provider.dart';
 import 'package:kerosene/features/transactions/domain/entities/fee_estimate.dart';
 import 'package:kerosene/features/transactions/domain/entities/withdraw_fee_quote_calculation.dart';
 
 import '../../../../core/utils/qr_payment_parser.dart';
 import '../../../../core/widgets/transaction_auth_gate.dart';
 
-import '../providers/wallet_provider.dart';
+import '../providers/wallet_provider.dart' hide transactionRepositoryProvider;
 import '../state/wallet_state.dart';
 import '../widgets/send_money_components.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
@@ -138,12 +139,19 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   final ValueNotifier<String> _amount = ValueNotifier<String>('0');
   late Currency _selectedCurrency;
 
-  int _currentStep = 0;
-  final _pageController = PageController();
+  late int _currentStep;
+  late final PageController _pageController;
+
+  bool get _hasPreselectedWallet =>
+      widget.walletId != null && widget.walletId!.trim().isNotEmpty;
+
+  int get _firstStep => _hasPreselectedWallet ? 1 : 0;
 
   @override
   void initState() {
     super.initState();
+    _currentStep = _firstStep;
+    _pageController = PageController(initialPage: _currentStep);
     _selectedCurrency = Currency.btc;
     if (widget.initialAmountBtc != null) {
       _lockedAmountBtc = widget.initialAmountBtc!;
@@ -263,7 +271,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   void _handleBack() {
-    if (_currentStep > 0) {
+    if (_currentStep > _firstStep) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
@@ -354,6 +362,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       );
       destination = _currentDestinationAnalysis();
     }
+
+    final resolvedDestination = await _resolveDestinationForKfe(destination);
+    if (!mounted) return;
+    if (resolvedDestination == null) return;
+    destination = resolvedDestination;
 
     if (amountBtc <= 0) {
       SnackbarHelper.showError(context.tr.errorAmountRequired);
@@ -982,27 +995,35 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     _SendDestinationAnalysis analysis,
   ) async {
     FocusScope.of(context).unfocus();
+    var destination = analysis;
 
-    if (analysis.isPaymentLink) {
-      final linkId = analysis.paymentLinkId;
+    if (destination.isPaymentLink) {
+      final linkId = destination.paymentLinkId;
       if (linkId == null || linkId.isEmpty) {
         SnackbarHelper.showError(context.tr.sendMoneyInvalidPaymentRequest);
         return;
       }
       final loaded = await _fetchPaymentLinkDetails(linkId);
       if (!loaded || !mounted) return;
-    } else if (analysis.hasLockedAmount) {
-      _amount.value = analysis.amountBtc!
+    } else {
+      final resolvedDestination = await _resolveDestinationForKfe(destination);
+      if (resolvedDestination == null || !mounted) return;
+      destination = resolvedDestination;
+    }
+
+    if (destination.hasLockedAmount) {
+      _amount.value = destination.amountBtc!
           .toStringAsFixed(8)
           .replaceAll(RegExp(r'0+$'), '')
           .replaceAll(RegExp(r'\.$'), '');
       setState(() {
-        _lockedRecipientLabel = analysis.label;
-        _lockedRecipientAddress = analysis.normalizedValue;
+        _lockedRecipientLabel = destination.label;
+        _lockedRecipientAddress = destination.normalizedValue;
       });
-    } else if (analysis.label != null && analysis.label!.trim().isNotEmpty) {
+    } else if (destination.label != null &&
+        destination.label!.trim().isNotEmpty) {
       setState(() {
-        _lockedRecipientLabel = analysis.label;
+        _lockedRecipientLabel = destination.label;
       });
     }
 
@@ -1027,7 +1048,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     }
 
     final locked = _lockedRecipientAddress.trim();
-    if (locked.isNotEmpty && _receiverController.text.trim().isEmpty) {
+    if (locked.isNotEmpty) {
       final lockedAnalysis = _analyzeDestination(locked);
       return _SendDestinationAnalysis(
         type: lockedAnalysis.type,
@@ -1104,6 +1125,50 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     );
   }
 
+  Future<_SendDestinationAnalysis?> _resolveDestinationForKfe(
+    _SendDestinationAnalysis analysis,
+  ) async {
+    if (!analysis.isInternal || _looksLikeUuid(analysis.normalizedValue)) {
+      return analysis;
+    }
+
+    try {
+      final capabilities = await ref
+          .read(paymentIntentServiceProvider)
+          .receivingCapabilities(analysis.normalizedValue);
+      if (!mounted) return null;
+      final walletId = capabilities.internalWalletId?.trim();
+      if (!capabilities.canReceiveInternal ||
+          walletId == null ||
+          walletId.isEmpty) {
+        SnackbarHelper.showError(context.tr.errReceiverNotReady);
+        return null;
+      }
+
+      final resolved = _SendDestinationAnalysis(
+        type: _SendDestinationType.internal,
+        normalizedValue: walletId,
+        amountBtc: analysis.amountBtc,
+        label: capabilities.receiverDisplayName.trim().isNotEmpty
+            ? capabilities.receiverDisplayName.trim()
+            : analysis.normalizedValue,
+        message: analysis.message,
+      );
+
+      setState(() {
+        _lockedRecipientAddress = walletId;
+        _lockedRecipientLabel = resolved.label;
+      });
+      return resolved;
+    } catch (error) {
+      if (!mounted) return null;
+      SnackbarHelper.showError(
+        ErrorTranslator.translate(context.tr, error.toString()),
+      );
+      return null;
+    }
+  }
+
   String _stripLightningPrefix(String value) {
     final trimmed = value.trim();
     return trimmed.toLowerCase().startsWith('lightning:')
@@ -1128,6 +1193,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return RegExp(
       r'^[a-zA-Z0-9._%+\-]{1,64}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$',
     ).hasMatch(trimmed);
+  }
+
+  bool _looksLikeUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value.trim());
   }
 
   double? _extractLightningAmountBtc(String value) {
@@ -1777,80 +1848,55 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   Future<bool> _fetchPaymentLinkDetails(String linkId) async {
-    final result =
-        await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
+    try {
+      final payload =
+          await ref.read(transactionRepositoryProvider).getPaymentLink(linkId);
+      final amount = payload.amountBtc;
+      final status = payload.status.toUpperCase();
+      final destinationHash = payload.destinationHash ?? '';
 
-    return result.fold(
-      (failure) {
-        SnackbarHelper.showError(
-          ErrorTranslator.translate(
-            context.tr,
-            failure.errorCode ?? failure.message,
-          ),
-        );
+      if (!mounted) {
         return false;
-      },
-      (data) {
-        final payload = data['data'] is Map
-            ? Map<String, dynamic>.from(data['data'] as Map)
-            : data;
-        final rawAmount = payload['amount'];
-        final amount = rawAmount is num
-            ? rawAmount.toDouble()
-            : double.tryParse(rawAmount?.toString() ?? '') ?? 0.0;
-        final status =
-            (payload['status']?.toString() ?? 'PENDING').toUpperCase();
-        final destinationHash = _readPaymentRequestDestinationHash(payload);
-
-        if (status == 'PAID') {
-          SnackbarHelper.showError(context.tr.sendMoneyRequestAlreadyPaid);
-          return false;
-        }
-        if (status == 'CANCELED' || status == 'EXPIRED') {
-          SnackbarHelper.showError(context.tr.sendMoneyRequestExpired);
-          return false;
-        }
-
-        setState(() {
-          _pendingPaymentLinkId = linkId;
-          _lockedRecipientLabel = destinationHash.isNotEmpty
-              ? _shortHash(destinationHash)
-              : context.tr.sendMoneyLockedDestination;
-          _lockedRecipientAddress = destinationHash.isNotEmpty
-              ? destinationHash
-              : context.tr.sendMoneyLockedDestination;
-          if (amount > 0) {
-            _lockedAmountBtc = amount;
-            _amount.value = amount
-                .toStringAsFixed(8)
-                .replaceAll(RegExp(r'0+$'), '')
-                .replaceAll(RegExp(r'\.$'), '');
-          }
-        });
-        SnackbarHelper.showSuccess(context.tr.sendMoneyPaymentRequestLoaded);
-        return true;
-      },
-    );
-  }
-
-  String _readPaymentRequestDestinationHash(Map<String, dynamic> data) {
-    const keys = [
-      'destinationHash',
-      'destination_hash',
-      'addressHash',
-      'address_hash',
-      'walletHash',
-      'wallet_hash',
-    ];
-
-    for (final key in keys) {
-      final value = data[key]?.toString().trim();
-      if (value != null && value.isNotEmpty) {
-        return value;
       }
-    }
 
-    return '';
+      if (status == 'PAID') {
+        SnackbarHelper.showError(context.tr.sendMoneyRequestAlreadyPaid);
+        return false;
+      }
+      if (status == 'CANCELED' || status == 'EXPIRED') {
+        SnackbarHelper.showError(context.tr.sendMoneyRequestExpired);
+        return false;
+      }
+
+      setState(() {
+        _pendingPaymentLinkId = linkId;
+        _lockedRecipientLabel = destinationHash.isNotEmpty
+            ? _shortHash(destinationHash)
+            : payload.referenceLabel?.trim().isNotEmpty == true
+                ? payload.referenceLabel!.trim()
+                : context.tr.sendMoneyLockedDestination;
+        _lockedRecipientAddress = destinationHash.isNotEmpty
+            ? destinationHash
+            : payload.depositAddress;
+        if (amount > 0) {
+          _lockedAmountBtc = amount;
+          _amount.value = amount
+              .toStringAsFixed(8)
+              .replaceAll(RegExp(r'0+$'), '')
+              .replaceAll(RegExp(r'\.$'), '');
+        }
+      });
+      SnackbarHelper.showSuccess(context.tr.sendMoneyPaymentRequestLoaded);
+      return true;
+    } catch (error) {
+      if (!mounted) {
+        return false;
+      }
+      SnackbarHelper.showError(
+        ErrorTranslator.translate(context.tr, error.toString()),
+      );
+      return false;
+    }
   }
 
   void _applyRecentInternalDestination(
@@ -1937,7 +1983,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     if (RegExp(r'^[A-Za-z0-9_]{3,50}$').hasMatch(trimmed)) {
       return true;
     }
-    return RegExp(r'^[a-fA-F0-9]{32,128}$').hasMatch(trimmed);
+    return _looksLikeUuid(trimmed) ||
+        RegExp(r'^[a-fA-F0-9]{32,128}$').hasMatch(trimmed);
   }
 
   String _compactInternalValue(String value) {

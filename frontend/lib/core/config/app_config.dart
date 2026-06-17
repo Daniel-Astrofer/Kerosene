@@ -187,7 +187,7 @@ class AppConfig {
   static String paymentsStatus(String paymentIntentId) =>
       '/payments/$paymentIntentId';
   static String paymentReceivingCapabilities(String receiverIdentifier) =>
-      '/users/$receiverIdentifier/receiving-capabilities';
+      '/kfe/users/$receiverIdentifier/receiving-capabilities';
 
   // ==================== Bitcoin Accounts ====================
   static const String bitcoinAccounts = kfeDashboard;

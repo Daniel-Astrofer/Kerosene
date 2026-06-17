@@ -132,9 +132,10 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
           child: CircularProgressIndicator(color: _text),
         ),
       WalletError(:final message) => _buildError(context, message),
-      WalletLoaded(:final wallets) => wallets.isEmpty
-          ? _buildEmpty(context)
-          : _buildWalletGrid(context, walletState),
+      WalletLoaded(:final wallets) =>
+        wallets.where((wallet) => wallet.isActive).isEmpty
+            ? _buildEmpty(context)
+            : _buildWalletGrid(context, walletState),
     };
   }
 
@@ -193,8 +194,11 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
   }
 
   Widget _buildWalletGrid(BuildContext context, WalletLoaded walletState) {
-    final selectedWallet = _resolveSelectedWallet(walletState);
-    final wallets = walletState.wallets;
+    final wallets =
+        walletState.wallets.where((wallet) => wallet.isActive).toList();
+    final selectedWallet = _resolveSelectedWallet(
+      walletState.copyWith(wallets: wallets),
+    );
 
     return Semantics(
       label: widget.subtitle,

@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/payment_link.dart';
-import '../../../wallet/domain/repositories/ledger_repository.dart';
+import '../repositories/transaction_repository.dart';
 
 class CreatePaymentLinkUseCase {
-  final LedgerRepository repository;
+  final TransactionRepository repository;
 
   CreatePaymentLinkUseCase(this.repository);
 
@@ -12,11 +12,25 @@ class CreatePaymentLinkUseCase {
     required double amount,
     required String receiverWalletName,
   }) async {
-    final result = await repository.createPaymentRequest(
-      amount: amount,
-      receiverWalletName: receiverWalletName,
-    );
+    try {
+      final result = await repository.createPaymentLink(
+        amount: amount,
+        description: 'Recebimento $receiverWalletName',
+        expiresInMinutes: 60,
+        visibility: 'PRIVATE',
+        confirmationMode: 'USER_ACTION_REQUIRED',
+        amountLocked: true,
+        referenceLabel: receiverWalletName,
+        metadata: {
+          'walletName': receiverWalletName,
+          'rail': 'ONCHAIN',
+          'source': 'receive_flow',
+        },
+      );
 
-    return result.map((data) => PaymentLink.fromJson(data));
+      return Right(result);
+    } catch (error) {
+      return Left(UnknownFailure(message: error.toString()));
+    }
   }
 }

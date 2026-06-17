@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
 
+import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import 'package:kerosene/core/navigation/deferred_page.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../core/providers/appearance_provider.dart';
@@ -33,9 +35,10 @@ import '../core/services/background_service.dart';
 import '../core/services/notification_service.dart' as local_notifications;
 import '../features/transactions/presentation/screens/deposits_screen.dart'
     deferred as deposits;
+import '../features/wallet/domain/entities/wallet.dart';
 import '../features/wallet/presentation/screens/send_money_screen.dart'
     deferred as send_money;
-import '../core/services/audio_service.dart';
+import '../features/wallet/presentation/widgets/wallet_flow_selector.dart';
 import '../core/providers/tor_providers.dart';
 import '../core/services/tor_network_bootstrap.dart';
 import '../core/services/tor_service.dart';
@@ -75,10 +78,7 @@ Future<void> initializeApp(ProviderContainer container) async {
   };
 
   unawaited(_bootstrapTor(container));
-
-  await local_notifications.NotificationService().init();
-  await initializeBackgroundService();
-  await AudioService.instance.init();
+  unawaited(_bootstrapPeripheralServices());
 
   PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024;
   PaintingBinding.instance.imageCache.maximumSize = 300;
@@ -91,6 +91,15 @@ Future<void> _bootstrapTor(ProviderContainer container) async {
       container.read(torApiUrlProvider.notifier).updateUrl(url);
     },
   );
+}
+
+Future<void> _bootstrapPeripheralServices() async {
+  try {
+    await local_notifications.NotificationService().init();
+    await initializeBackgroundService();
+  } catch (error) {
+    debugPrint('Peripheral service bootstrap failed: $error');
+  }
 }
 
 Widget buildApp() => const MyApp();
@@ -201,21 +210,29 @@ class MyApp extends ConsumerWidget {
               ),
             ),
         '/receive': (context) => _PrivateMobileRoute(
-              child: DeferredPage(
-                loadLibrary: deposits.loadLibrary,
-                builder: (_) => deposits.DepositsScreen(),
+              child: _WalletFlowMobileRoute(
+                titleBuilder: (context) => context.tr.receive,
+                subtitleBuilder: (context) =>
+                    context.tr.walletSelectorReceiveSubtitle,
+                destinationBuilder: (wallet) => DeferredPage(
+                  loadLibrary: deposits.loadLibrary,
+                  builder: (_) => deposits.DepositsScreen(
+                    initialWallet: wallet,
+                  ),
+                ),
               ),
             ),
         '/send-money': (context) => _PrivateMobileRoute(
-              child: DeferredPage(
-                loadLibrary: send_money.loadLibrary,
-                builder: (_) => send_money.SendMoneyScreen(),
-              ),
-            ),
-        '/deposits': (context) => _PrivateMobileRoute(
-              child: DeferredPage(
-                loadLibrary: deposits.loadLibrary,
-                builder: (_) => deposits.DepositsScreen(),
+              child: _WalletFlowMobileRoute(
+                titleBuilder: (context) => context.tr.send,
+                subtitleBuilder: (context) =>
+                    context.tr.walletSelectorSendSubtitle,
+                destinationBuilder: (wallet) => DeferredPage(
+                  loadLibrary: send_money.loadLibrary,
+                  builder: (_) => send_money.SendMoneyScreen(
+                    walletId: wallet.id,
+                  ),
+                ),
               ),
             ),
       },
@@ -227,16 +244,49 @@ class MyApp extends ConsumerWidget {
           return MaterialPageRoute(
             settings: settings,
             builder: (_) => _PrivateMobileRoute(
-              child: DeferredPage(
-                loadLibrary: send_money.loadLibrary,
-                builder: (_) => send_money.SendMoneyScreen(
-                  initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+              child: _WalletFlowMobileRoute(
+                titleBuilder: (context) => context.tr.send,
+                subtitleBuilder: (context) =>
+                    context.tr.walletSelectorSendSubtitle,
+                destinationBuilder: (wallet) => DeferredPage(
+                  loadLibrary: send_money.loadLibrary,
+                  builder: (_) => send_money.SendMoneyScreen(
+                    walletId: wallet.id,
+                    initialAddress: QrPaymentParser.encodePaymentLink(linkId),
+                  ),
                 ),
               ),
             ),
           );
         }
         return null;
+      },
+    );
+  }
+}
+
+class _WalletFlowMobileRoute extends StatelessWidget {
+  final String Function(BuildContext context) titleBuilder;
+  final String Function(BuildContext context) subtitleBuilder;
+  final Widget Function(Wallet wallet) destinationBuilder;
+
+  const _WalletFlowMobileRoute({
+    required this.titleBuilder,
+    required this.subtitleBuilder,
+    required this.destinationBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return WalletFlowSelector(
+      title: titleBuilder(context),
+      subtitle: subtitleBuilder(context),
+      onContinue: (wallet) {
+        Navigator.of(context).pushReplacement<void, void>(
+          keroseneHorizontalRoute<void>(
+            builder: (_) => destinationBuilder(wallet),
+          ),
+        );
       },
     );
   }
@@ -274,7 +324,7 @@ class _AppRealtimeBootstrap extends ConsumerWidget {
     final appPinStatus = ref.watch(appPinStatusProvider);
     final appUnlocked = ref.watch(appEntryPinUnlockedProvider);
     final appPinSatisfied = appPinStatus.maybeWhen(
-      data: (status) => !status.enabled || appUnlocked,
+      data: (status) => !status.requiresGate || appUnlocked,
       orElse: () => false,
     );
     if (authState is AuthAuthenticated && appPinSatisfied) {

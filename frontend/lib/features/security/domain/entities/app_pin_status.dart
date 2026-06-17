@@ -58,6 +58,12 @@ class AppPinStatus extends Equatable {
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
+  bool get requiresSetup => !configured;
+
+  bool get requiresVerification => enabled || configured;
+
+  bool get requiresGate => requiresSetup || requiresVerification;
+
   AppPinStatus copyWith({
     bool? enabled,
     bool? configured,

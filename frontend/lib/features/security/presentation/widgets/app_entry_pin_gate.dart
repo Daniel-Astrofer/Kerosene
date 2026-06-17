@@ -27,7 +27,13 @@ class AppEntryPinGate extends ConsumerWidget {
 
     return statusAsync.when(
       data: (status) {
-        if (!status.enabled || unlocked) {
+        if (unlocked) {
+          return child;
+        }
+        if (status.requiresSetup) {
+          return _AppEntryPinSetupScreen(status: status);
+        }
+        if (!status.requiresVerification) {
           return child;
         }
         return _AppEntryPinLockScreen(status: status);
@@ -116,6 +122,210 @@ class _PinGateErrorState extends StatelessWidget {
                     child: Text(context.tr.appEntryRefresh),
                   ),
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppEntryPinSetupScreen extends ConsumerStatefulWidget {
+  final AppPinStatus status;
+
+  const _AppEntryPinSetupScreen({required this.status});
+
+  @override
+  ConsumerState<_AppEntryPinSetupScreen> createState() =>
+      _AppEntryPinSetupScreenState();
+}
+
+class _AppEntryPinSetupScreenState
+    extends ConsumerState<_AppEntryPinSetupScreen> {
+  final _pinController = TextEditingController();
+  final _confirmController = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final pin = _pinController.text.trim();
+    final confirmation = _confirmController.text.trim();
+    if (pin.length < widget.status.minPinLength ||
+        pin.length > widget.status.maxPinLength) {
+      setState(() {
+        _error = context.tr.appEntryPinLengthError(
+          widget.status.minPinLength,
+          widget.status.maxPinLength,
+        );
+      });
+      return;
+    }
+    if (pin != confirmation) {
+      setState(() {
+        _error = context.tr.securityPinMismatchError;
+      });
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    final result = await ref.read(securityRepositoryProvider).configureAppPin(
+          enabled: true,
+          pin: pin,
+        );
+
+    result.fold(
+      (failure) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _busy = false;
+          _error = ErrorTranslator.translate(context.tr, failure.message);
+        });
+      },
+      (_) {
+        ref.read(appEntryPinUnlockedProvider.notifier).unlock();
+        ref.invalidate(appPinStatusProvider);
+      },
+    );
+
+    if (mounted) {
+      setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _logout() async {
+    await ref.read(authControllerProvider.notifier).logout();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberBackground.authenticated(
+      useScroll: false,
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: monochromePanelDecoration(
+                  color: monoSurfaceColor,
+                  borderColor: monoBorderStrongColor,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: monochromePanelDecoration(
+                        color: monoSurfaceAltColor,
+                        borderColor: monoBorderStrongColor,
+                        showShadow: false,
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        LucideIcons.keyRound,
+                        color: monoTextColor,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      context.tr.securityPinEnableTitle,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: monoTextColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      context.tr.securityPinEnableBody,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: monoMutedTextColor,
+                            height: 1.45,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    TextField(
+                      controller: _pinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: widget.status.maxPinLength,
+                      enabled: !_busy,
+                      style: const TextStyle(color: monoTextColor),
+                      decoration: monochromeInputDecoration(
+                        label: context.tr.appEntryNewPinLabel,
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: _confirmController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: widget.status.maxPinLength,
+                      enabled: !_busy,
+                      style: const TextStyle(color: monoTextColor),
+                      decoration: monochromeInputDecoration(
+                        label: context.tr.securityConfirmNewPinLabel,
+                        counterText: '',
+                      ),
+                      onSubmitted: (_) => _busy ? null : _submit(),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        _error!.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: monoMutedTextColor,
+                              letterSpacing: 0.8,
+                              height: 1.35,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    FilledButton(
+                      onPressed: _busy ? null : _submit,
+                      style: monochromeFilledButtonStyle(),
+                      child: _busy
+                          ? const SizedBox(
+                              height: 18,
+                              child: TorLoadingDots(
+                                dotSize: 6,
+                                spacing: 8,
+                                travel: 10,
+                                color: Colors.black,
+                              ),
+                            )
+                          : Text(context.tr.appEntrySavePin),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextButton(
+                      onPressed: _busy ? null : _logout,
+                      style: monochromeTextButtonStyle(),
+                      child: Text(context.tr.appEntryExit),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

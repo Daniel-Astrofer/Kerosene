@@ -17,8 +17,6 @@ import 'package:kerosene/features/transactions/domain/entities/onchain_address_a
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
-import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart'
-    show ledgerRepositoryProvider;
 import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
 
 enum ReceiveRequestStage { qr, confirmations, identified }
@@ -285,18 +283,9 @@ class _ReceiveRequestFlowScreenState
 
     try {
       final PaymentLink latest;
-      if (widget.onChainWallet) {
-        latest = await ref
-            .read(transactionRepositoryProvider)
-            .getPaymentLink(linkId);
-      } else {
-        final result =
-            await ref.read(ledgerRepositoryProvider).getPaymentRequest(linkId);
-        latest = result.fold(
-          (failure) => throw Exception(failure.message),
-          (data) => PaymentLink.fromJson(data),
-        );
-      }
+      latest = await ref.read(transactionRepositoryProvider).getPaymentLink(
+            linkId,
+          );
 
       if (!mounted) return;
       final previousStatus = _link?.status.trim().toLowerCase() ?? '';

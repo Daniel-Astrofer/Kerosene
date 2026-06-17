@@ -2818,5 +2818,9 @@
   "walletSelectorLoadErrorTitle": "Não foi possível carregar as carteiras",
   "walletSelectorRetry": "Tentar novamente",
   "walletSelectorNoWallets": "Nenhuma carteira encontrada. Crie uma para começar.",
+  "walletSelectorSendSubtitle": "Escolha qual carteira vai financiar este envio.",
+  "walletSelectorReceiveSubtitle": "Escolha onde os fundos recebidos devem entrar.",
+  "walletSelectorDepositSubtitle": "Escolha qual carteira vai receber este depósito.",
+  "walletSelectorWithdrawSubtitle": "Escolha qual carteira vai financiar este saque externo.",
   "walletSelectorAvailableBalance": "Saldo disponível"
 }

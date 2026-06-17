@@ -121,34 +121,24 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
   }
 
   Future<PaymentLink?> _createPaymentLinkIfNeeded() async {
-    if (widget.onChainWallet) {
-      if (widget.method != ReceiveAmountMethod.paymentLink) {
-        return null;
-      }
-      return ref.read(transactionRepositoryProvider).createPaymentLink(
-        amount: _amountBtc,
-        description: 'Recebimento ${widget.wallet.name}',
-        expiresInMinutes: 60,
-        visibility: 'PRIVATE',
-        confirmationMode: 'USER_ACTION_REQUIRED',
-        amountLocked: true,
-        metadata: {
-          'walletName': widget.wallet.name,
-          'rail': 'ONCHAIN',
-          'source': 'receive_flow',
-        },
-      );
+    if (widget.method != ReceiveAmountMethod.paymentLink) {
+      return null;
     }
 
-    final link = await ref.read(paymentLinkNotifierProvider.notifier).create(
-          amount: _amountBtc,
-          receiverWalletName: widget.wallet.name,
-        );
-    if (link != null) {
-      return link;
-    }
-    final error = ref.read(paymentLinkNotifierProvider).error;
-    throw Exception(error ?? 'Nao foi possivel criar o recebimento.');
+    return ref.read(transactionRepositoryProvider).createPaymentLink(
+      amount: _amountBtc,
+      description: 'Recebimento ${widget.wallet.name}',
+      expiresInMinutes: 60,
+      visibility: 'PRIVATE',
+      confirmationMode: 'USER_ACTION_REQUIRED',
+      amountLocked: true,
+      referenceLabel: widget.wallet.name,
+      metadata: {
+        'walletName': widget.wallet.name,
+        'rail': 'ONCHAIN',
+        'source': 'receive_flow',
+      },
+    );
   }
 
   @override

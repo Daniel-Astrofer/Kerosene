@@ -144,8 +144,15 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     if (next is AuthError) {
       _totpTransitionTimer?.cancel();
       _creationCompleted = false;
-      if (_step == 3) {
-        _goToStep(2);
+      final wasTotpOrPasskeyStep = _step == 4 || _step == 5;
+      if (_step == 3 || wasTotpOrPasskeyStep) {
+        _sessionId = '';
+        _totpSecret = '';
+        _qrCodeUri = '';
+        _backupCodes = const [];
+        _successRedirectScheduled = false;
+        _redirectTimer?.cancel();
+        _goToStep(wasTotpOrPasskeyStep ? 0 : 2);
       }
       _showInlineFeedback(
         title: context.tr.authFlowInterruptedTitle,
@@ -246,6 +253,10 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       return;
     }
     if (_step == 3) {
+      ref.read(authControllerProvider.notifier).clearError();
+      _totpTransitionTimer?.cancel();
+      _creationCompleted = false;
+      _goToStep(2);
       return;
     }
     _goToStep(_step - 1);

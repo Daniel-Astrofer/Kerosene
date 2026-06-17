@@ -185,7 +185,7 @@ final class Wallet extends Equatable {
     final btcValue = _parseBtcValue(balanceVal, fallbackSats);
     final cardType = WalletCardType.fromApi(data['cardType']);
     final walletName =
-        (data['name'] ?? data['walletName'] ?? data['label'] ?? 'Wallet')
+        (data['walletName'] ?? data['name'] ?? data['label'] ?? 'Wallet')
             .toString();
 
     return Wallet(
@@ -266,7 +266,11 @@ final class Wallet extends Equatable {
   }
 
   static String _walletModeFromKfeKind(String? kind) {
-    return kind == 'WATCH_ONLY' ? 'SELF_CUSTODY' : 'KEROSENE';
+    return switch (kind) {
+      'WATCH_ONLY' => 'SELF_CUSTODY',
+      'CUSTODIAL_ONCHAIN' => 'CUSTODIAL_ONCHAIN',
+      _ => 'KEROSENE',
+    };
   }
 
   static double _parseFeeRate(Object? value, double fallback) {

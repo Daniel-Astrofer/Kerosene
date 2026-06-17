@@ -164,6 +164,9 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   }
 
   bool _walletMatchesRail(Wallet wallet, _ReceiveRail rail) {
+    if (!wallet.isActive) {
+      return false;
+    }
     return switch (rail) {
       _ReceiveRail.kerosene => !_isOnChainWallet(wallet),
       _ReceiveRail.onChain => _isOnChainWallet(wallet),
@@ -301,6 +304,15 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
   }
 
   Widget _buildWalletSelection() {
+    final walletState = ref.watch(walletProvider);
+    final activeWallets = walletState is WalletLoaded
+        ? walletState.wallets.where((wallet) => wallet.isActive).toList()
+        : const <Wallet>[];
+    final hasKerosene = activeWallets
+        .any((wallet) => _walletMatchesRail(wallet, _ReceiveRail.kerosene));
+    final hasOnChain = activeWallets
+        .any((wallet) => _walletMatchesRail(wallet, _ReceiveRail.onChain));
+
     return LayoutBuilder(
       key: const ValueKey('receive-wallet'),
       builder: (context, constraints) {
@@ -341,23 +353,39 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
                     ),
                   ),
                   const SizedBox(height: 42),
-                  _ReceiveActionList(
-                    children: [
-                      _ReceiveActionTile(
-                        icon: LucideIcons.arrowLeftRight,
-                        title: context.tr.receiveWalletKeroseneTitle,
-                        subtitle: context.tr.receiveWalletKeroseneSubtitle,
-                        onTap: () => _selectRail(_ReceiveRail.kerosene),
+                  if (!hasKerosene && !hasOnChain)
+                    Text(
+                      context.tr.receiveHubNoWalletMessage,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: _receiveMutedTextColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        height: 1.45,
+                        letterSpacing: 0,
                       ),
-                      _ReceiveActionTile(
-                        icon: LucideIcons.bitcoin,
-                        title: context.tr.receiveWalletOnchainTitle,
-                        subtitle: context.tr.receiveWalletOnchainSubtitle,
-                        onTap: () => _selectRail(_ReceiveRail.onChain),
-                        showDivider: false,
-                      ),
-                    ],
-                  ),
+                    )
+                  else
+                    _ReceiveActionList(
+                      children: [
+                        if (hasKerosene)
+                          _ReceiveActionTile(
+                            icon: LucideIcons.arrowLeftRight,
+                            title: context.tr.receiveWalletKeroseneTitle,
+                            subtitle: context.tr.receiveWalletKeroseneSubtitle,
+                            onTap: () => _selectRail(_ReceiveRail.kerosene),
+                            showDivider: hasOnChain,
+                          ),
+                        if (hasOnChain)
+                          _ReceiveActionTile(
+                            icon: LucideIcons.bitcoin,
+                            title: context.tr.receiveWalletOnchainTitle,
+                            subtitle: context.tr.receiveWalletOnchainSubtitle,
+                            onTap: () => _selectRail(_ReceiveRail.onChain),
+                            showDivider: false,
+                          ),
+                      ],
+                    ),
                 ],
               ),
             ),

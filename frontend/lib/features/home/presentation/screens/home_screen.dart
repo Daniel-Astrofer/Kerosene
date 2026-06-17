@@ -41,14 +41,12 @@ import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/wallet/presentation/widgets/receive_flow_ui.dart';
+import 'package:kerosene/features/wallet/presentation/widgets/wallet_flow_selector.dart';
 import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
-import '../../../wallet/presentation/screens/deposit/deposit_amount_screen.dart'
-    deferred as deposit_amount;
 import '../../../wallet/presentation/screens/send_money_screen.dart'
     deferred as send_money;
 import '../widgets/animated_balance_display.dart';
-import 'qr_scanner_screen.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
@@ -276,11 +274,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String? initialAddress,
     double? initialAmountBtc,
   }) async {
-    final result = await _pushFromBottom<dynamic>(
-      (_) => DeferredPage(
+    final result = await _pushWalletSelectorFlow<dynamic>(
+      title: context.tr.send,
+      subtitle: context.tr.walletSelectorSendSubtitle,
+      initialWallet: wallet,
+      destinationBuilder: (selectedWallet) => DeferredPage(
         loadLibrary: send_money.loadLibrary,
         builder: (_) => send_money.SendMoneyScreen(
-          walletId: wallet.id,
+          walletId: selectedWallet.id,
           initialAddress: initialAddress,
           initialAmountBtc: initialAmountBtc,
         ),
@@ -290,46 +291,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await _presentFinancialActionResult(result);
   }
 
-  void _openSend(WalletState walletState) {
-    final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
-
-    if (wallet == null) {
-      _showWalletRequiredNotice();
-      return;
-    }
-
-    unawaited(_openSendFlow(wallet: wallet));
-  }
-
-  void _openSendActionsSheet(WalletState walletState) {
-    final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
-
-    if (wallet == null) {
-      _showWalletRequiredNotice();
-      return;
-    }
-
-    final actions = _buildSendActions(walletState);
-    unawaited(
-      _pushFromBottom<void>((_) => _SendMethodScreen(actions: actions)),
+  Future<T?> _pushWalletSelectorFlow<T>({
+    required String title,
+    required String subtitle,
+    required Wallet initialWallet,
+    required Widget Function(Wallet wallet) destinationBuilder,
+  }) {
+    return _pushFromBottom<T>(
+      (selectorContext) => WalletFlowSelector(
+        title: title,
+        subtitle: subtitle,
+        initialWallet: initialWallet,
+        onContinue: (selectedWallet) {
+          Navigator.of(selectorContext).pushReplacement<T, void>(
+            _buildBottomUpRoute<T>(
+              builder: (_) => destinationBuilder(selectedWallet),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  void _openSendOnChain(WalletState walletState) {
-    final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
-
-    if (wallet == null) {
-      _showWalletRequiredNotice();
-      return;
-    }
-
-    unawaited(_openSendFlow(wallet: wallet));
-  }
-
-  void _openSendLightning(WalletState walletState) {
+  void _openSend(WalletState walletState) {
     final wallet = _resolveActiveWallet(walletState);
     HapticFeedback.lightImpact();
 
@@ -351,123 +335,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     unawaited(
-      _pushFromBottom<void>(
-        (_) => DeferredPage(
+      _pushWalletSelectorFlow<void>(
+        title: context.tr.receive,
+        subtitle: context.tr.walletSelectorReceiveSubtitle,
+        initialWallet: wallet,
+        destinationBuilder: (selectedWallet) => DeferredPage(
           loadLibrary: deposits.loadLibrary,
-          builder: (_) => deposits.DepositsScreen(initialWallet: wallet),
+          builder: (_) =>
+              deposits.DepositsScreen(initialWallet: selectedWallet),
         ),
       ),
     );
-  }
-
-  Future<void> _openSendQr(WalletState walletState) async {
-    final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
-
-    if (wallet == null) {
-      _showWalletRequiredNotice();
-      return;
-    }
-
-    final payload = await _pushFromBottom<String>(
-      (_) => const QrScannerScreen(),
-    );
-
-    if (!mounted || payload == null || payload.trim().isEmpty) {
-      return;
-    }
-
-    _routeSendPayload(wallet, payload);
-  }
-
-  Future<void> _openSendPaymentLink(WalletState walletState) async {
-    final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
-
-    if (wallet == null) {
-      _showWalletRequiredNotice();
-      return;
-    }
-
-    final payload = await _pushFromBottom<String>(
-      (_) => const _PaymentLinkEntryScreen(),
-    );
-
-    if (!mounted || payload == null || payload.trim().isEmpty) {
-      return;
-    }
-
-    _routeSendPayload(wallet, payload);
-  }
-
-  void _routeSendPayload(Wallet wallet, String payload) {
-    final trimmed = payload.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
-
-    if (QrPaymentParser.extractPaymentLinkId(trimmed) != null) {
-      unawaited(_openSendFlow(wallet: wallet, initialAddress: trimmed));
-      return;
-    }
-
-    final parsed = QrPaymentParser.decode(trimmed);
-    final candidate = parsed?.preferredDestination ?? trimmed;
-
-    if (_looksLikeLightningRequest(candidate)) {
-      unawaited(
-        _openSendFlow(
-          wallet: wallet,
-          initialAddress: candidate,
-          initialAmountBtc:
-              parsed?.amountBtc ?? _extractLightningAmountBtc(candidate),
-        ),
-      );
-      return;
-    }
-
-    if (_looksLikeOnChainRequest(trimmed, candidate)) {
-      unawaited(
-        _openSendFlow(
-          wallet: wallet,
-          initialAddress: candidate,
-          initialAmountBtc: parsed?.amountBtc,
-        ),
-      );
-      return;
-    }
-
-    unawaited(
-      _openSendFlow(
-        wallet: wallet,
-        initialAddress: trimmed,
-        initialAmountBtc: parsed?.amountBtc,
-      ),
-    );
-  }
-
-  bool _looksLikeLightningRequest(String value) {
-    return _isLightningPaymentPayload(value);
-  }
-
-  bool _looksLikeOnChainRequest(String raw, String candidate) {
-    return _isOnChainPaymentPayload(raw, candidate);
   }
 
   void _openDeposit(WalletState walletState) {
     final wallet = _resolveActiveWallet(walletState);
-    HapticFeedback.lightImpact();
 
     if (wallet == null) {
+      HapticFeedback.lightImpact();
       _showWalletRequiredNotice();
       return;
     }
 
+    _openDepositForWallet(wallet);
+  }
+
+  void _openDepositForWallet(Wallet wallet) {
+    HapticFeedback.lightImpact();
+
     unawaited(
-      _pushFromBottom<void>(
-        (_) => DeferredPage(
-          loadLibrary: deposit_amount.loadLibrary,
-          builder: (_) => deposit_amount.DepositAmountScreen(wallet: wallet),
+      _pushWalletSelectorFlow<void>(
+        title: context.tr.depositFlowDepositTitle,
+        subtitle: context.tr.walletSelectorDepositSubtitle,
+        initialWallet: wallet,
+        destinationBuilder: (selectedWallet) => DeferredPage(
+          loadLibrary: deposits.loadLibrary,
+          builder: (_) =>
+              deposits.DepositsScreen(initialWallet: selectedWallet),
         ),
       ),
     );
@@ -520,47 +424,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .setBool(_firstUseActionPanelKey(userId), true),
       );
     });
-  }
-
-  List<_HomeSendActionData> _buildSendActions(WalletState walletState) {
-    final actions = <_HomeSendActionData>[
-      _HomeSendActionData(
-        kind: _HomeSendActionKind.sendOnChain,
-        label: context.tr.homeSendMethodOnchainLabel,
-        subtitle: context.tr.homeSendMethodOnchainSubtitle,
-        onTap: () => _openSendOnChain(walletState),
-      ),
-      _HomeSendActionData(
-        kind: _HomeSendActionKind.payLightning,
-        label: context.tr.homeSendMethodLightningLabel,
-        subtitle: context.tr.homeSendMethodLightningSubtitle,
-        onTap: () => _openSendLightning(walletState),
-      ),
-      _HomeSendActionData(
-        kind: _HomeSendActionKind.internalTransfer,
-        label: context.tr.homeSendMethodInternalLabel,
-        subtitle: context.tr.homeSendMethodInternalSubtitle,
-        onTap: () => _openSend(walletState),
-      ),
-      _HomeSendActionData(
-        kind: _HomeSendActionKind.scanQr,
-        label: context.tr.homeScanQrLabel,
-        subtitle: context.tr.homeScanQrSubtitle,
-        onTap: () {
-          unawaited(_openSendQr(walletState));
-        },
-      ),
-      _HomeSendActionData(
-        kind: _HomeSendActionKind.payLink,
-        label: context.tr.homePaymentLinkLabel,
-        subtitle: context.tr.homePaymentLinkSubtitle,
-        onTap: () {
-          unawaited(_openSendPaymentLink(walletState));
-        },
-      ),
-    ];
-
-    return actions;
   }
 
   @override
@@ -697,8 +560,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         activeWallet: activeWallet,
                                         onReceive: () =>
                                             _openReceiveFlow(walletState),
-                                        onSend: () =>
-                                            _openSendActionsSheet(walletState),
+                                        onSend: () => _openSend(walletState),
                                         onViewStatement: openStatement,
                                         onOpenWallets: () =>
                                             AppPrimaryNavigationBar.navigateTo(
@@ -743,9 +605,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               : !hasBalance
                                                   ? () =>
                                                       _openDeposit(walletState)
-                                                  : () => _openSendActionsSheet(
-                                                        walletState,
-                                                      ),
+                                                  : () => _openSend(walletState),
                                         ),
                                       ],
                                       SizedBox(height: _homeSize(24)),
@@ -767,7 +627,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       SizedBox(height: _homeSize(12)),
                                       const _HomeActivityFilterChips(),
                                       SizedBox(height: _homeSize(14)),
-                                      const HomeTransactionsList(),
+                                      HomeTransactionsList(
+                                        onCreateWallet: _openCreateWallet,
+                                        onDepositWallet: _openDepositForWallet,
+                                      ),
                                     ],
                                   ),
                                 ),

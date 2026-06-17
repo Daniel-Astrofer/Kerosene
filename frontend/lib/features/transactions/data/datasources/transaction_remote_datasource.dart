@@ -309,6 +309,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     int networkFeeSats = 0,
     String? externalReference,
     String? memo,
+    String? totpCode,
+    String? passkeyAssertionJson,
+    String? confirmationPassphrase,
   }) {
     return {
       'idempotencyKey': idempotencyKey,
@@ -323,6 +326,14 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       if (externalReference != null && externalReference.trim().isNotEmpty)
         'externalReference': externalReference.trim(),
       if (memo != null && memo.trim().isNotEmpty) 'memo': memo.trim(),
+      if (totpCode != null && totpCode.trim().isNotEmpty)
+        'totpCode': totpCode.trim(),
+      if (passkeyAssertionJson != null &&
+          passkeyAssertionJson.trim().isNotEmpty)
+        'passkeyAssertionJson': passkeyAssertionJson.trim(),
+      if (confirmationPassphrase != null &&
+          confirmationPassphrase.trim().isNotEmpty)
+        'confirmationPassphrase': confirmationPassphrase.trim(),
     };
   }
 
@@ -545,6 +556,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           amountSats: _btcToSats(amount),
           networkFeeSats: feeSatoshis,
           memo: context ?? 'transfer',
+          totpCode: totpCode,
+          passkeyAssertionJson: passkeyAssertionJson,
+          confirmationPassphrase: confirmationPassphrase,
         ),
       );
 
@@ -1035,6 +1049,14 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       'externalReference': externalReference,
       'memo': normalizedDescription ??
           (isLightning ? 'Pagamento Lightning' : 'saque para carteira externa'),
+      if (totpCode != null && totpCode.trim().isNotEmpty)
+        'totpCode': totpCode.trim(),
+      if (passkeyAssertionJson != null &&
+          passkeyAssertionJson.trim().isNotEmpty)
+        'passkeyAssertionJson': passkeyAssertionJson.trim(),
+      if (confirmationPassphrase != null &&
+          confirmationPassphrase.trim().isNotEmpty)
+        'confirmationPassphrase': confirmationPassphrase.trim(),
     };
   }
 

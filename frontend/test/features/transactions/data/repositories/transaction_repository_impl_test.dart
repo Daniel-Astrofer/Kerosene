@@ -121,8 +121,7 @@ void main() {
       },
     );
 
-    test('prefers the explicit wallet address hint when it is available',
-        () async {
+    test('prefers the explicit KFE wallet id when it is available', () async {
       remoteDataSource.response = const TxStatus(
         txid: 'tx-manual-2',
         status: 'confirmed',
@@ -143,7 +142,7 @@ void main() {
       expect(result, remoteDataSource.response);
       expect(authLocalDataSource.getTokenCalls, 0);
       expect(remoteDataSource.sendCalls, 1);
-      expect(remoteDataSource.lastFromAddress, 'hash-da-carteira');
+      expect(remoteDataSource.lastFromAddress, '42');
       expect(remoteDataSource.lastToAddress, 'destino');
       expect(remoteDataSource.lastAmount, 0.5);
       expect(remoteDataSource.lastFeeSatoshis, 0);
@@ -176,6 +175,8 @@ void main() {
         'networkFeeSats': 0,
         'externalReference': 'bc1qdestino',
         'memo': 'saque para carteira externa',
+        'totpCode': '123456',
+        'confirmationPassphrase': 'frase',
       });
     });
 

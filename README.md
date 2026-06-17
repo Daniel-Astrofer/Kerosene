@@ -228,7 +228,8 @@ POST /audit/trigger
 Full API details live in:
 
 ```text
-docs/API_REFERENCE.md
+docs/backend/api/README.md
+docs/backend/API_REFERENCE.md
 ```
 
 ---
@@ -243,7 +244,7 @@ docs/API_REFERENCE.md
 │   ├── mpc-sidecar/               # Go/gRPC signing sidecar
 │   └── kerosene-infrastructure/   # Docker, Tor, DB, Redis, Prometheus
 ├── frontend/                      # Flutter app, web, landing, admin UI
-├── docs/                          # Architecture, infrastructure, API, APK notes
+├── docs/                          # Backend, frontend, API and audit documentation
 └── scripts/                       # Local bootstrap, logs, Vault arming, shutdown
 ```
 
@@ -295,10 +296,13 @@ It is not a licensed bank, custody provider, investment product, or security gua
 
 | Document | Purpose |
 | --- | --- |
-| `docs/ARCHITECTURE.md` | System architecture and component boundaries. |
-| `docs/INFRASTRUCTURE.md` | Docker, Tor, DB, Redis, Vault, network, and volume details. |
-| `docs/API_REFERENCE.md` | REST, WebSocket, and Vault API reference. |
-| `docs/APK.md` | Android artifact and release notes. |
+| `docs/backend/REPOSITORY_ORGANIZATION.md` | Monorepo layout and structural change rules. |
+| `docs/backend/INFRASTRUCTURE.md` | Docker, Tor, DB, Redis, Vault, network, and volume details. |
+| `docs/backend/BUSINESS_LOGIC.md` | Backend financial domains and core business rules. |
+| `docs/backend/api/README.md` | Split backend API reference by domain, generated from controllers, DTOs, and security rules. |
+| `docs/backend/API_REFERENCE.md` | Consolidated backend API reference kept for full-text review and audit comparison. |
+| `docs/frontend/APP.md` | Flutter app surfaces, routes, runtime bootstrap, and API integration notes. |
+| `docs/frontend/FRONTEND_DESIGN_SYSTEM.md` | Frontend design tokens, UI conventions, and component guidance. |
 
 ---
 

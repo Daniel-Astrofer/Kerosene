@@ -54,6 +54,31 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     return 'INTERNAL';
   }
 
+  String _kfeWalletName(String value) {
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll('í', 'i')
+        .replaceAll('é', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('á', 'a')
+        .replaceAll('ã', 'a')
+        .replaceAll('ç', 'c')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    return switch (normalized) {
+      'investimento' || 'investment' || 'reserva' => 'INVESTMENT',
+      'veiculo' || 'vehicle' => 'VEHICLE',
+      'futuros_gastos' ||
+      'futuro_gastos' ||
+      'gastos_futuros' ||
+      'gastos_mensais' =>
+        'FUTURE_EXPENSES',
+      'dia_a_dia' || 'daily' => 'DAILY',
+      _ => 'DAILY',
+    };
+  }
+
   Map<String, dynamic> _kfeCreatePayload({
     required String name,
     required String passphrase,
@@ -65,6 +90,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     final kind = _kfeKind(walletMode: walletMode, xpub: normalizedXpub);
     return {
       'kind': kind,
+      'name': _kfeWalletName(name),
       'label': name,
       if (normalizedXpub != null && normalizedXpub.isNotEmpty)
         'xpub': normalizedXpub,

@@ -65,10 +65,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     // the source of truth for 401/403. This keeps the request from being blocked
     // locally with "Usuário não autenticado" before it reaches the server.
 
-    final senderHint = (fromAddress != null && fromAddress.trim().isNotEmpty)
-        ? fromAddress.trim()
-        : (fromWalletId != null && fromWalletId.trim().isNotEmpty)
-            ? fromWalletId.trim()
+    final senderHint = (fromWalletId != null && fromWalletId.trim().isNotEmpty)
+        ? fromWalletId.trim()
+        : (fromAddress != null && fromAddress.trim().isNotEmpty)
+            ? fromAddress.trim()
             : '';
     return remoteDataSource.sendTransaction(
       fromAddress: senderHint,

@@ -102,6 +102,7 @@ class ReceivingCapabilities {
   final PaymentRail preferredRail;
   final List<String> missingRequirements;
   final String receiverDisplayName;
+  final String? internalWalletId;
   final List<PaymentRail> availableRails;
   final PaymentLimits limits;
 
@@ -112,6 +113,7 @@ class ReceivingCapabilities {
     required this.preferredRail,
     required this.missingRequirements,
     required this.receiverDisplayName,
+    this.internalWalletId,
     required this.availableRails,
     required this.limits,
   });
@@ -126,6 +128,7 @@ class ReceivingCapabilities {
       missingRequirements: _stringList(json['missingRequirements']),
       receiverDisplayName:
           json['receiverDisplayName']?.toString().trim() ?? 'Kerosene user',
+      internalWalletId: json['internalWalletId']?.toString().trim(),
       availableRails: _stringList(json['availableRails'])
           .map(_railFromApi)
           .toList(growable: false),

@@ -4,6 +4,7 @@ class BitcoinAccount {
   final String custody;
   final String status;
   final String label;
+  final String walletTypeDescription;
   final String riskTier;
   final String? cardId;
   final String? coldWalletId;
@@ -22,6 +23,7 @@ class BitcoinAccount {
     required this.custody,
     required this.status,
     required this.label,
+    this.walletTypeDescription = '',
     required this.riskTier,
     this.cardId,
     this.coldWalletId,
@@ -55,6 +57,7 @@ class BitcoinAccount {
       custody: json['custody'] as String? ?? 'KEROSENE_CUSTODIAL',
       status: json['status'] as String? ?? 'ACTIVE',
       label: json['label'] as String? ?? '',
+      walletTypeDescription: json['walletTypeDescription'] as String? ?? '',
       riskTier: json['riskTier'] as String? ?? 'BRONZE',
       cardId: json['cardId'] as String?,
       coldWalletId: json['coldWalletId'] as String?,
@@ -76,6 +79,7 @@ class BitcoinAccount {
         'custody': custody,
         'status': status,
         'label': label,
+        'walletTypeDescription': walletTypeDescription,
         'riskTier': riskTier,
         'cardId': cardId,
         'coldWalletId': coldWalletId,

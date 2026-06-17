@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A Riverpod provider to inject the AudioService.
@@ -16,6 +17,7 @@ class AudioService {
 
   bool _isInit = false;
   bool _isInitialing = false;
+  bool _disabled = false;
 
   /// Defines all relative paths to the synthesized sounds in assets/sounds/
   static const String _kLoginSound = 'sounds/login.wav';
@@ -26,7 +28,7 @@ class AudioService {
 
   /// Initializes the service and pre-caches the audio files for zero-latency playback.
   Future<void> init() async {
-    if (_isInit || _isInitialing) return;
+    if (_disabled || _isInit || _isInitialing) return;
     _isInitialing = true;
     try {
       final player = AudioPlayer()
@@ -82,12 +84,17 @@ class AudioService {
 
   /// Core helper to actually play a file.
   Future<void> _playFile(String assetPath) async {
+    if (_disabled) return;
     if (!_isInit) await init();
     if (_player == null) return;
     try {
       // Re-initialize a fast play request without creating a new player entirely
       await _player!.stop();
       await _player!.play(AssetSource(assetPath), volume: 1.0);
+    } on PlatformException catch (e) {
+      _disabled = true;
+      await dispose();
+      debugPrint('🎵 AudioService: Disabled after platform audio failure: $e');
     } catch (e) {
       debugPrint('🎵 AudioService: Failed to play $assetPath -> $e');
     }
@@ -97,6 +104,15 @@ class AudioService {
   Future<void> stop() async {
     if (_isInit && _player != null) {
       await _player!.stop();
+    }
+  }
+
+  Future<void> dispose() async {
+    final player = _player;
+    _player = null;
+    _isInit = false;
+    if (player != null) {
+      await player.dispose();
     }
   }
 }

@@ -12,7 +12,7 @@ class DevScreenMenu extends StatelessWidget {
       '/signup': 'Signup Flow',
       '/home': 'Home/Dashboard',
       '/send-money': 'Send Money/Transaction',
-      '/deposits': 'Deposits/Receive History',
+      '/receive': 'Receive',
     };
 
     return Scaffold(

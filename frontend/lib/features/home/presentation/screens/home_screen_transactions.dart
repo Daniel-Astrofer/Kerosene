@@ -1,7 +1,14 @@
 part of 'home_screen.dart';
 
 class HomeTransactionsList extends ConsumerWidget {
-  const HomeTransactionsList({super.key});
+  final VoidCallback onCreateWallet;
+  final ValueChanged<Wallet> onDepositWallet;
+
+  const HomeTransactionsList({
+    super.key,
+    required this.onCreateWallet,
+    required this.onDepositWallet,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,26 +61,12 @@ class HomeTransactionsList extends ConsumerWidget {
                       : LucideIcons.refreshCw,
               onAction: () {
                 if (!hasWallet) {
-                  Navigator.of(context).push<void>(
-                    _buildBottomUpRoute(
-                      builder: (_) => DeferredPage(
-                        loadLibrary: bitcoin_accounts.loadLibrary,
-                        builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
-                      ),
-                    ),
-                  );
+                  onCreateWallet();
                   return;
                 }
 
                 if (!hasBalance) {
-                  Navigator.of(context).push<void>(
-                    _buildBottomUpRoute(
-                      builder: (_) => DeferredPage(
-                        loadLibrary: deposit_amount.loadLibrary,
-                        builder: (_) => deposit_amount.DepositAmountScreen(wallet: activeWallet),
-                      ),
-                    ),
-                  );
+                  onDepositWallet(activeWallet);
                   return;
                 }
 

@@ -7391,5 +7391,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'No wallets found. Create one to get started.';
 
   @override
+  String get walletSelectorSendSubtitle =>
+      'Choose which wallet will fund this transfer.';
+
+  @override
+  String get walletSelectorReceiveSubtitle =>
+      'Choose where the incoming funds should arrive.';
+
+  @override
+  String get walletSelectorDepositSubtitle =>
+      'Choose which wallet will receive this deposit.';
+
+  @override
+  String get walletSelectorWithdrawSubtitle =>
+      'Choose which wallet will fund this external withdrawal.';
+
+  @override
   String get walletSelectorAvailableBalance => 'Available balance';
 }

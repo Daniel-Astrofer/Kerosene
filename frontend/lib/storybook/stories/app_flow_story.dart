@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
-import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/features/auth/presentation/screens/login_screen.dart';
 import 'package:kerosene/features/auth/presentation/screens/emergency_recovery_screen.dart';
 import 'package:kerosene/features/auth/presentation/screens/passkey_verification_screen.dart';
@@ -22,10 +21,6 @@ import 'package:kerosene/features/security/presentation/screens/sovereignty_stat
 import 'package:kerosene/features/settings/presentation/screens/settings_screen.dart';
 import 'package:kerosene/features/transactions/presentation/screens/deposits_screen.dart';
 import 'package:kerosene/features/transactions/presentation/screens/withdraw_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/deposit/deposit_lightning_invoice_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/deposit/deposit_method_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/deposit/deposit_onchain_invoice_screen.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_amount_screen.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
@@ -579,7 +574,7 @@ Map<String, WidgetBuilder> _routeBuilders() {
     '/account/notifications': (_) => const NotificationSettingsScreen(),
     '/security/sovereignty': (_) => const SovereigntyStatusScreen(),
     '/send-money': (_) => SendMoneyScreen(
-          walletId: primaryWallet.name,
+          walletId: primaryWallet.id,
           initialAddress: 'bc1qstorybookrecipient00000000000000000',
           initialAmountBtc: 0.0015,
         ),
@@ -706,24 +701,6 @@ Map<String, WidgetBuilder> _routeBuilders() {
           wallet: coldWallet,
           onChainWallet: true,
           amountBtc: 0.00125,
-        ),
-    '/deposit/amount': (_) => DepositAmountScreen(wallet: primaryWallet),
-    '/deposit/method': (_) => DepositMethodScreen(
-          wallet: primaryWallet,
-          inputAmount: 500,
-          inputCurrency: Currency.brl,
-        ),
-    '/deposit/lightning': (_) => DepositLightningInvoiceScreen(
-          wallet: primaryWallet,
-          inputAmount: 500,
-          inputCurrency: Currency.brl,
-          providerName: 'Kerosene',
-        ),
-    '/deposit/onchain': (_) => DepositOnchainInvoiceScreen(
-          wallet: primaryWallet,
-          inputAmount: 500,
-          inputCurrency: Currency.brl,
-          providerName: 'Kerosene',
         ),
     '/public/landing': (_) => const KeroseneLandingPage(),
     '/public/download': (_) => const KeroseneLandingPage(focusDownload: true),
@@ -1187,38 +1164,6 @@ const _flowItems = [
     title: 'NFC on-chain',
     routeName: '/receive/onchain-nfc',
     icon: LucideIcons.nfc,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'deposit-amount',
-    section: 'Depósito',
-    title: 'Valor',
-    routeName: '/deposit/amount',
-    icon: LucideIcons.coins,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'deposit-method',
-    section: 'Depósito',
-    title: 'Método',
-    routeName: '/deposit/method',
-    icon: LucideIcons.arrowLeftRight,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'deposit-lightning',
-    section: 'Depósito',
-    title: 'Invoice Lightning',
-    routeName: '/deposit/lightning',
-    icon: LucideIcons.zap,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'deposit-onchain',
-    section: 'Depósito',
-    title: 'Endereço on-chain',
-    routeName: '/deposit/onchain',
-    icon: LucideIcons.link,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(

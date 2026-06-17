@@ -94,6 +94,7 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
       AppConfig.kfeWallets,
       data: {
         'kind': 'INTERNAL',
+        'name': _walletNameEnum(label),
         'label': label,
         'issueInitialAddress': false,
       },
@@ -115,6 +116,7 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
       AppConfig.kfeWallets,
       data: {
         'kind': 'WATCH_ONLY',
+        'name': _walletNameEnum(label),
         'label': label,
         'xpub': xpub,
         'fingerprint': fingerprint,
@@ -219,7 +221,8 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
       'type': isWatchOnly ? 'WATCH_ONLY_COLD_WALLET' : 'INTERNAL_CARD',
       'custody': isWatchOnly ? 'WATCH_ONLY' : 'KEROSENE_CUSTODIAL',
       'status': wallet['status']?.toString() ?? 'ACTIVE',
-      'label': wallet['label']?.toString() ?? '',
+      'label': (wallet['walletName'] ?? wallet['label'])?.toString() ?? '',
+      'walletTypeDescription': wallet['walletTypeDescription']?.toString(),
       'riskTier': 'BRONZE',
       'cardId': isWatchOnly ? null : id,
       'coldWalletId': isWatchOnly ? id : null,
@@ -238,6 +241,31 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse('$value') ?? 0;
+  }
+
+  static String _walletNameEnum(String value) {
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll('í', 'i')
+        .replaceAll('é', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('á', 'a')
+        .replaceAll('ã', 'a')
+        .replaceAll('ç', 'c')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    return switch (normalized) {
+      'investimento' || 'investment' || 'reserva' => 'INVESTMENT',
+      'veiculo' || 'vehicle' => 'VEHICLE',
+      'futuros_gastos' ||
+      'futuro_gastos' ||
+      'gastos_futuros' ||
+      'gastos_mensais' =>
+        'FUTURE_EXPENSES',
+      'dia_a_dia' || 'daily' => 'DAILY',
+      _ => 'DAILY',
+    };
   }
 
   static Map<String, dynamic> _requireMap(

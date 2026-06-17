@@ -19,7 +19,6 @@ import '../../domain/entities/deposit.dart';
 import '../../domain/entities/external_transfer.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../domain/entities/wallet_network_address.dart';
-import '../../../wallet/domain/repositories/ledger_repository.dart'; // Add this
 import '../../../wallet/presentation/providers/wallet_provider.dart'
     show ledgerRepositoryProvider, walletProvider;
 import '../../../wallet/presentation/state/wallet_state.dart';
@@ -581,11 +580,11 @@ final confirmDepositProvider =
 
 /// Notifier para Payment Links
 class PaymentLinkNotifier extends Notifier<AsyncActionState> {
-  late LedgerRepository _ledgerRepository;
+  late TransactionRepository _repository;
 
   @override
   AsyncActionState build() {
-    _ledgerRepository = ref.watch(ledgerRepositoryProvider);
+    _repository = ref.watch(transactionRepositoryProvider);
     return const AsyncActionState();
   }
 
@@ -596,33 +595,33 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
-      final result = await _ledgerRepository.createPaymentRequest(
+      final result = await _repository.createPaymentLink(
         amount: amount,
-        receiverWalletName: receiverWalletName,
-      );
-
-      return result.fold(
-        (failure) {
-          state = AsyncActionState(error: failure.message);
-          return null;
-        },
-        (data) {
-          final link = PaymentLink.fromJson(data);
-          ref.invalidate(transactionHistoryProvider);
-          ref.invalidate(depositsProvider);
-          ref.invalidate(depositBalanceProvider);
-          ref.read(walletProvider.notifier).refresh();
-          state = AsyncActionState(result: link);
-          return link;
+        description: 'Recebimento $receiverWalletName',
+        expiresInMinutes: 60,
+        visibility: 'PRIVATE',
+        confirmationMode: 'USER_ACTION_REQUIRED',
+        amountLocked: true,
+        referenceLabel: receiverWalletName,
+        metadata: {
+          'walletName': receiverWalletName,
+          'rail': 'ONCHAIN',
+          'source': 'receive_flow',
         },
       );
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(depositsProvider);
+      ref.invalidate(depositBalanceProvider);
+      await ref.read(walletProvider.notifier).refresh();
+      state = AsyncActionState(result: result);
+      return result;
     } catch (e) {
       state = AsyncActionState(error: e.toString());
       return null;
     }
   }
 
-  Future<PaymentLink?> pay({
+  Future<TxStatus?> pay({
     required String linkId,
     required String payerWalletName,
     String? totpCode,
@@ -630,119 +629,29 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
     String? passkeyAssertionJson,
   }) async {
     state = const AsyncActionState(isLoading: true);
-    final operationIdempotencyKey = const Uuid().v4();
-    final requestTimestamp = DateTime.now().millisecondsSinceEpoch;
     try {
-      final result = await _ledgerRepository.payPaymentRequest(
-        linkId: linkId,
-        payerWalletName: payerWalletName,
-        totpCode: totpCode,
+      final link = await _repository.getPaymentLink(linkId);
+      final result = await _repository.withdraw(
+        fromWalletName: payerWalletName,
+        toAddress: link.depositAddress,
+        amount: link.amountBtc,
+        description: link.description.isNotEmpty
+            ? link.description
+            : 'Pagamento de link',
         confirmationPassphrase: confirmationPassphrase,
         passkeyAssertionJson: passkeyAssertionJson,
-        idempotencyKey: operationIdempotencyKey,
-        requestTimestamp: requestTimestamp,
-      );
-
-      return result.fold<Future<PaymentLink?>>(
-        (failure) => _handlePayFailure(
-          failure.message,
-          linkId: linkId,
-          payerWalletName: payerWalletName,
-          totpCode: totpCode,
-          confirmationPassphrase: confirmationPassphrase,
-          idempotencyKey: operationIdempotencyKey,
-          requestTimestamp: requestTimestamp,
-        ),
-        (data) async => _completePayment(data),
-      );
-    } catch (e) {
-      return _handlePayFailure(
-        e,
-        linkId: linkId,
-        payerWalletName: payerWalletName,
         totpCode: totpCode,
-        confirmationPassphrase: confirmationPassphrase,
-        idempotencyKey: operationIdempotencyKey,
-        requestTimestamp: requestTimestamp,
       );
-    }
-  }
-
-  Future<PaymentLink?> _handlePayFailure(
-    Object error, {
-    required String linkId,
-    required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    required String idempotencyKey,
-    required int requestTimestamp,
-  }) async {
-    final errorStr = error.toString();
-    final challenge = _extractPasskeyChallenge(error);
-    if (challenge == null) {
-      state = AsyncActionState(error: errorStr);
+      ref.invalidate(transactionHistoryProvider);
+      ref.invalidate(depositsProvider);
+      ref.invalidate(depositBalanceProvider);
+      await ref.read(walletProvider.notifier).refresh();
+      state = AsyncActionState(result: result);
+      return result;
+    } catch (e) {
+      state = AsyncActionState(error: e.toString());
       return null;
     }
-
-    try {
-      var currentChallenge = challenge;
-      for (var attempt = 0; attempt < 2; attempt++) {
-        try {
-          final assertionJson =
-              await _buildPasskeyAssertionJson(currentChallenge);
-          final result = await _ledgerRepository.payPaymentRequest(
-            linkId: linkId,
-            payerWalletName: payerWalletName,
-            totpCode: totpCode,
-            confirmationPassphrase: confirmationPassphrase,
-            passkeyAssertionJson: assertionJson,
-            idempotencyKey: idempotencyKey,
-            requestTimestamp: requestTimestamp,
-          );
-
-          final failure =
-              result.fold<Failure?>((failure) => failure, (_) => null);
-          if (failure != null) {
-            final renewedChallenge = _extractPasskeyChallenge(failure);
-            if (renewedChallenge != null &&
-                renewedChallenge != currentChallenge &&
-                attempt == 0) {
-              currentChallenge = renewedChallenge;
-              continue;
-            }
-            state = AsyncActionState(error: failure.message);
-            return null;
-          }
-
-          return result.fold<PaymentLink?>(
-            (_) => null,
-            _completePayment,
-          );
-        } catch (signErr) {
-          final renewedChallenge = _extractPasskeyChallenge(signErr);
-          if (renewedChallenge == null ||
-              renewedChallenge == currentChallenge ||
-              attempt == 1) {
-            rethrow;
-          }
-          currentChallenge = renewedChallenge;
-        }
-      }
-      return null;
-    } catch (signErr) {
-      state = AsyncActionState(error: signErr.toString());
-      return null;
-    }
-  }
-
-  PaymentLink _completePayment(Map<String, dynamic> data) {
-    final link = PaymentLink.fromJson(data);
-    ref.invalidate(transactionHistoryProvider);
-    ref.invalidate(depositsProvider);
-    ref.invalidate(depositBalanceProvider);
-    ref.read(walletProvider.notifier).refresh();
-    state = AsyncActionState(result: link);
-    return link;
   }
 
   void reset() => state = const AsyncActionState();

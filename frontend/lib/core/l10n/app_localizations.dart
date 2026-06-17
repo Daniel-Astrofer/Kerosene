@@ -13458,6 +13458,30 @@ abstract class AppLocalizations {
   /// **'No wallets found. Create one to get started.'**
   String get walletSelectorNoWallets;
 
+  /// No description provided for @walletSelectorSendSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which wallet will fund this transfer.'**
+  String get walletSelectorSendSubtitle;
+
+  /// No description provided for @walletSelectorReceiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where the incoming funds should arrive.'**
+  String get walletSelectorReceiveSubtitle;
+
+  /// No description provided for @walletSelectorDepositSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which wallet will receive this deposit.'**
+  String get walletSelectorDepositSubtitle;
+
+  /// No description provided for @walletSelectorWithdrawSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which wallet will fund this external withdrawal.'**
+  String get walletSelectorWithdrawSubtitle;
+
   /// No description provided for @walletSelectorAvailableBalance.
   ///
   /// In en, this message translates to:

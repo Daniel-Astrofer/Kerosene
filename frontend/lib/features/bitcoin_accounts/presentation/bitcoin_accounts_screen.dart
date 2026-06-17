@@ -878,6 +878,9 @@ class _InternalWalletCard extends StatelessWidget {
     final label = account.label.trim().isEmpty
         ? context.tr.bitcoinAccountsUnnamedAccount
         : account.label.trim();
+    final typeDescription = account.walletTypeDescription.trim().isEmpty
+        ? 'Carteira Global'
+        : account.walletTypeDescription.trim();
     final colors = _BitcoinAccountsColors.of(context);
 
     return Material(
@@ -935,6 +938,11 @@ class _InternalWalletCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _Pill(text: typeDescription),
                 ),
                 const Spacer(),
                 Text(
@@ -1527,6 +1535,9 @@ class _ColdWalletTile extends StatelessWidget {
     final label = account.label.trim().isEmpty
         ? context.tr.bitcoinAccountsUnnamedAccount
         : account.label.trim();
+    final typeDescription = account.walletTypeDescription.trim().isEmpty
+        ? context.tr.bitcoinAccountsColdWalletBadge
+        : account.walletTypeDescription.trim();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1549,7 +1560,7 @@ class _ColdWalletTile extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _Pill(text: context.tr.bitcoinAccountsColdWalletBadge),
+                        _Pill(text: typeDescription),
                         _Pill(text: context.tr.bitcoinAccountsReviewBalance),
                       ],
                     ),

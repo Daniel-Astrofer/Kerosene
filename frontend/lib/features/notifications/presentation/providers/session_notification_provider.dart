@@ -15,6 +15,7 @@ class SessionNotificationFeedNotifier
   static const int _maxItems = 50;
   static const String _storageKeyBase = 'session_notification_feed_v2';
   String? _activeStorageKey;
+  String? _hydratingStorageKey;
 
   @override
   List<SessionNotificationItem> build() {
@@ -29,10 +30,13 @@ class SessionNotificationFeedNotifier
     final nextStorageKey = '$_storageKeyBase-$userId';
     if (_activeStorageKey != nextStorageKey) {
       _activeStorageKey = nextStorageKey;
-      unawaited(_hydrate(nextStorageKey));
+      if (_hydratingStorageKey != nextStorageKey) {
+        _hydratingStorageKey = nextStorageKey;
+        unawaited(_hydrate(nextStorageKey));
+      }
     }
 
-    return state;
+    return const [];
   }
 
   void add(SessionNotificationItem item) {
@@ -89,17 +93,23 @@ class SessionNotificationFeedNotifier
   }
 
   Future<void> _hydrate(String storageKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    final persisted = prefs.getStringList(storageKey) ?? const <String>[];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final persisted = prefs.getStringList(storageKey) ?? const <String>[];
 
-    final localItems = persisted
-        .map((item) => jsonDecode(item) as Map<String, dynamic>)
-        .map(SessionNotificationItem.fromJson)
-        .toList();
+      final localItems = persisted
+          .map((item) => jsonDecode(item) as Map<String, dynamic>)
+          .map(SessionNotificationItem.fromJson)
+          .toList();
 
-    if (_activeStorageKey == storageKey) {
-      _replaceState(_merge(localItems, const []), persist: false);
-      await reloadFromServer();
+      if (_activeStorageKey == storageKey) {
+        _replaceState(_merge(localItems, const []), persist: false);
+        await reloadFromServer();
+      }
+    } finally {
+      if (_hydratingStorageKey == storageKey) {
+        _hydratingStorageKey = null;
+      }
     }
   }
 
